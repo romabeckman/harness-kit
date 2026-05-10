@@ -27,32 +27,49 @@ Processos estruturados que guiam os agentes em tarefas complexas:
 
 ---
 
+## ✨ Superpowers Skills
+
+Este suite foi projetado para trabalhar em harmonia com as [Superpowers Skills](https://github.com/obra/superpowers). Enquanto nossos agentes definem *quem* faz o quê, as skills do Superpowers definem *como* tarefas complexas devem ser executadas com precisão cirúrgica.
+
+*   **Disciplina Operacional:** Workflows rígidos para TDD, Debugging e Refinamento.
+*   **Pensamento Crítico:** Uso de brainstorming e revisões socráticas.
+*   **Consistência:** Garante que a IA siga processos padronizados de engenharia de software.
+
+---
+
+## 🛠️ Instalação e Configuração
+
+Para instalar e usar **agents** e **skills** em diferentes CLIs de IA (Claude Code CLI, Cursor e Google Gemini CLI), o processo segue uma lógica semelhante: configurar o ambiente, referenciar os arquivos de agentes e ativar os workflows.
+
+### 1. Claude Code CLI
+*   **Instalação:** Certifique-se de ter o Claude Code instalado (`npm install -g @anthropic-ai/claude-code`).
+*   **Configuração:** Clone este repositório dentro do seu diretório de projeto ou em um local acessível.
+*   **Ativação:** Use o comando `/add` para carregar os agentes da pasta `/agents` na sua sessão atual.
+
+### 2. Cursor (IDE & CLI)
+*   **Configuração:** Adicione os arquivos de agentes ao seu `.cursorrules` para persistência global no projeto.
+*   **Uso:** Use `@` para indexar a pasta `/agents`. O Cursor usará o contexto dos arquivos markdown para guiar as respostas do chat e do Composer.
+
+### 3. Google Gemini CLI
+*   **Instalação:** Certifique-se de ter o Gemini CLI configurado com sua API Key.
+*   **Configuração:** Você pode passar os arquivos de agentes como contexto inicial usando flags de arquivo ou importando-os como instruções de sistema (System Instructions).
+*   **Ativação:** Utilize os prompts da pasta `/workflows` para iniciar sessões estruturadas de TDD ou DDD.
+
+---
+
 ## 🚀 Como Aplicar
 
-### 🛠️ Claude Code
-Para usar o suite no Claude Code, você deve referenciar os arquivos de agentes para dar o contexto necessário à ferramenta.
-
-**Exemplo de uso:**
+### Claude Code
 ```bash
-# Inicie o Claude Code referenciando o CTO para planejar um projeto
-claude "Using context from agents/cto.md, help me plan the architecture for a new microservice"
-
-# Dentro da sessão, adicione agentes conforme necessário
-/add agents/software-architect.md
+# Exemplo: Iniciando com o CTO
+claude "Usando agents/cto.md, analise meu projeto atual"
 ```
 
-### 🖱️ Cursor
-No Cursor, você pode integrar o suite de duas formas:
+### Cursor
+*   No Chat/Composer: `@agents/software-architect.md crie um plano de design para...`
 
-1.  **Regras de Projeto (`.cursorrules`):** Copie o conteúdo do `cto.md` (ou outro agente principal) para o arquivo `.cursorrules` na raiz do seu projeto para que o Cursor sempre siga essas diretrizes.
-2.  **Referência Contextual:** Use a tecla `@` no chat para referenciar arquivos específicos:
-    *   `@agents/developer.md implemente a função X seguindo o protocolo de TDD.`
-
-### 🛸 Antigravity
-Para o Antigravity, você pode configurar os agentes como instruções de projeto ou skills:
-
-*   **Instruções de Projeto:** Adicione o caminho da pasta `/agents` nas configurações de contexto persistente.
-*   **Uso de Skills:** Utilize a skill de `brainstorming` ou `writing-plans` integrada com as definições do `software-architect.md` para gerar planos de implementação precisos.
+### Gemini CLI
+*   Carregue o agente como instrução de sistema para manter a personalidade durante toda a conversa.
 
 ---
 
