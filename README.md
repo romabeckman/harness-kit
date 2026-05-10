@@ -2,9 +2,6 @@
 
 A poderosa orquestração de agentes de IA para engenharia de software avançada. Este repositório contém uma coleção de prompts estruturados e workflows projetados para transformar LLMs em especialistas altamente qualificados (CTO, Arquiteto, Desenvolvedor, Tester e Debugger).
 
-[![GitHub Repo Size](https://img.shields.io/github/repo-size/romabeckman/llm-agent-suite)](https://github.com/romabeckman/llm-agent-suite)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 ---
 
 ## 🏛️ Estrutura do Suite
@@ -65,12 +62,3 @@ Para o Antigravity, você pode configurar os agentes como instruções de projet
 2.  **Fase 2 (Planejamento):** O Architect gera o plano de tarefas (Bite-sized TDD).
 3.  **Fase 3 (Implementação):** O `@developer` executa as tarefas em paralelo ou sequencial.
 4.  **Fase 4 (Verificação):** O `@tester` valida a entrega final.
-
----
-
-## 🤝 Contribuição
-
-Sinta-se à vontade para abrir Issues ou enviar Pull Requests com novos agentes ou melhorias nos prompts existentes.
-
-**Mantenedor:** [Roma Beckman](https://github.com/romabeckman)
-**URL do Projeto:** [https://github.com/romabeckman/llm-agent-suite](https://github.com/romabeckman/llm-agent-suite)
