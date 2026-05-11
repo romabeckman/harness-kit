@@ -57,16 +57,37 @@ Para instalar e usar **agents** e **skills** em diferentes CLIs de IA (Claude Co
 
 ---
 
+## 📂 Documentação do Projeto (Setup Inicial)
+
+A pasta `docs/` atua como a **memória persistente** do seu projeto. Ela centraliza o conhecimento técnico que permite aos agentes operar de forma autônoma e precisa, consultando regras e padrões sempre que necessário.
+
+### 🧠 Como Funciona
+*   **Navegação Inteligente:** O agente decide dinamicamente qual documento ler com base na tarefa. O `docs/README.md` atua como o **sumário principal com índices**, guiando a LLM para os arquivos específicos.
+*   **Obrigatoriedade:** Para garantir o funcionamento mínimo dos agentes, os arquivos `docs/README.md`, `docs/ARCHITECTURE.md` e `docs/TESTS.md` são **obrigatórios**. Qualquer outro documento adicional na pasta é opcional.
+
+### 📝 Arquivos Base
+
+| Arquivo | Função | Impacto no Agente |
+| :--- | :--- | :--- |
+| `docs/README.md` | **Sumário e Índice.** | Mapa principal para a LLM encontrar outros documentos. |
+| `docs/ARCHITECTURE.md` | **Regras de Arquitetura.** | Impede decisões de design inconsistentes com o projeto. |
+| `docs/TESTS.md` | **Protocolo de Qualidade.** | Define o "contrato de testes" que o Developer deve seguir. |
+
+> [!TIP]
+> Use a skill `update-docs` ou peça ao `@developer`: *"Gere a documentação base (docs/README, ARCHITECTURE e TESTS) para este projeto baseado na minha stack atual."* A skill também é excelente para **mapear projetos existentes** e documentar regras de negócio.
+
+---
+
 ## 🚀 Como Aplicar
 
 ### Claude Code
 ```bash
 # Exemplo: Iniciando com o CTO
-claude "Usando agents/cto.md, analise meu projeto atual"
+claude "Usando agente cto analise meu projeto atual"
 ```
 
 ### Cursor
-*   No Chat/Composer: `@agents/software-architect.md crie um plano de design para...`
+*   No Chat/Composer: `Use o agente software-architect crie um plano de design para...`
 
 ### Gemini CLI
 *   Carregue o agente como instrução de sistema para manter a personalidade durante toda a conversa.
