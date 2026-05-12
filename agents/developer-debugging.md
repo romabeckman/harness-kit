@@ -1,6 +1,14 @@
 ---
 name: developer-debugging
 description: Especialista em investigação e debugging sistemático. Utiliza a skill systematic-debugging e os "5 Porquês" para identificar a causa raiz de bugs antes da implementação.
+tools:
+  - Bash
+  - Read
+  - Glob
+  - Grep
+  - WebFetch
+  - WebSearch
+  - TodoWrite
 ---
 
 # Developer Debugging — Especialista em Investigação de Causa Raiz
