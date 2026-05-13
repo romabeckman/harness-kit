@@ -1,64 +1,64 @@
 # 🤖 LLM Agent Suite
 
-A poderosa orquestração de agentes de IA para engenharia de software avançada. Este repositório contém uma coleção de **Skills Avançadas** e prompts estruturados projetados para transformar LLMs em especialistas altamente qualificados, garantindo disciplina, consistência e qualidade técnica.
+The powerful orchestration of AI agents for advanced software engineering. This repository contains a collection of **Advanced Skills** and structured prompts designed to transform LLMs into highly qualified experts, ensuring discipline, consistency, and technical quality.
 
 ---
 
-## 🏛️ Estrutura do Suite
+## 🏛️ Suite Structure
 
-O projeto é focado em **Skills Especialistas** (`/skills`) que estendem as capacidades da IA para execução técnica rigorosa. Todas as skills possuem instruções em **inglês** para máxima performance dos modelos, mas são configuradas para gerar **outputs em português (pt-BR)**.
+The project is focused on **Expert Skills** (`/skills`) that extend AI capabilities for rigorous technical execution. All skills have instructions in **English** for maximum model performance, but are configured to generate **outputs in Portuguese (pt-BR)**.
 
-### 🛠️ Skills Avançadas (`/skills`)
+### 🛠️ Advanced Skills (`/skills`)
 
-| Skill | Função Principal |
+| Skill | Core Function |
 | :--- | :--- |
-| **Project Memory** (`project-memory`) | Gerenciamento de memória persistente e documentação técnica (README, ARCHITECTURE, TESTS). |
-| **Scope Refinement** (`scope-refinement`) | Orquestrador de refinamento de escopo usando DDD (Design Estratégico e Tático). |
-| **TDD Orchestrator** (`tdd-orchestrator`) | Maestro do fluxo de desenvolvimento baseado em Test-Driven Development. |
-| **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Revisão técnica crítica com foco em impactos sistêmicos e mentoria socrática. |
+| **Project Memory** (`project-memory`) | Persistent memory management and technical documentation (README, ARCHITECTURE, TESTS). |
+| **Scope Refinement** (`scope-refinement`) | Scope refinement orchestrator using DDD (Strategic and Tactical Design). |
+| **TDD Orchestrator** (`tdd-orchestrator`) | Development workflow maestro based on Test-Driven Development. |
+| **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Critical technical review focused on systemic impacts and Socratic mentoring. |
 
 ---
 
-## ✨ Integração com Superpowers
+## ✨ Integration with Superpowers
 
-Este suite foi projetado para trabalhar em harmonia com as [Superpowers Skills](https://github.com/obra/superpowers). Enquanto nossos agentes definem a estratégia, as skills do Superpowers fornecem as ferramentas de baixo nível para execução (Git, Debugging, etc.).
+This suite was designed to work in harmony with [Superpowers Skills](https://github.com/obra/superpowers). While our agents define the strategy, Superpowers skills provide the low-level tools for execution (Git, Debugging, etc.).
 
-*   **Disciplina Operacional:** Processos rígidos para TDD, Debugging e Refinamento.
-*   **Pensamento Crítico:** Uso de revisões socráticas e análise de causa raiz.
-*   **Consistência:** Garante que a IA siga processos padronizados de engenharia de software.
+*   **Operational Discipline:** Rigid processes for TDD, Debugging, and Refinement.
+*   **Critical Thinking:** Use of Socratic reviews and root cause analysis.
+*   **Consistency:** Ensures that the AI follows standardized software engineering processes.
 
 ---
 
-## 📂 Documentação do Projeto (Setup Inicial)
+## 📂 Project Documentation (Initial Setup)
 
-A pasta `docs/` atua como a **memória persistente** do seu projeto. Ela centraliza o conhecimento técnico que permite aos agentes operar de forma autônoma e precisa.
+The `docs/` folder acts as your project's **persistent memory**. It centralizes the technical knowledge that allows agents to operate autonomously and accurately.
 
-### 🧠 Como Funciona
-*   **Navegação Inteligente:** O agente decide dinamicamente qual documento ler com base na tarefa.
-*   **Obrigatoriedade:** Para garantir o funcionamento das skills, os arquivos `docs/README.md`, `docs/ARCHITECTURE.md` e `docs/TESTS.md` são **obrigatórios**.
+### 🧠 How It Works
+*   **Intelligent Navigation:** The agent dynamically decides which document to read based on the task.
+*   **Mandatory:** To ensure the proper functioning of the skills, the files `docs/README.md`, `docs/ARCHITECTURE.md`, and `docs/TESTS.md` are **mandatory**.
 
-### 📝 Arquivos Base
+### 📝 Base Files
 
-| Arquivo | Função | Impacto no Agente |
+| File | Function | Agent Impact |
 | :--- | :--- | :--- |
-| `docs/README.md` | **Sumário e Índice.** | Mapa principal para a LLM encontrar outros documentos. |
-| `docs/ARCHITECTURE.md` | **Regras de Arquitetura.** | Impede decisões de design inconsistentes com o projeto. |
-| `docs/TESTS.md` | **Protocolo de Qualidade.** | Define o framework e os padrões de teste do projeto. |
+| `docs/README.md` | **Summary and Index.** | Main map for the LLM to find other documents. |
+| `docs/ARCHITECTURE.md` | **Architecture Rules.** | Prevents design decisions inconsistent with the project. |
+| `docs/TESTS.md` | **Quality Protocol.** | Defines the project's testing framework and standards. |
 
 > [!TIP]
-> Use a skill `project-memory` para gerar automaticamente a documentação base: *"Gere a documentação base para este projeto baseado na minha stack atual."*
+> Use the `project-memory` skill to automatically generate base documentation: *"Generate base documentation for this project based on my current stack."*
 
 ---
 
-## 🏗️ Fluxo de Trabalho Recomendado
+## 🏗️ Recommended Workflow
 
-1.  **Fase 1 (Escopo):** Inicie a skill `scope-refinement` para mapear o domínio e cenários de teste.
-2.  **Fase 2 (Qualidade):** Utilize `the-grumpy-tech-lead` para revisar o design planejado antes de codar.
-3.  **Fase 3 (Desenvolvimento):** Siga o fluxo da skill `tdd-orchestrator` para implementação garantida por testes.
-4.  **Fase 4 (Documentação):** Mantenha o projeto atualizado usando `project-memory`.
+1.  **Phase 1 (Scope):** Start the `scope-refinement` skill to map the domain and test scenarios.
+2.  **Phase 2 (Quality):** Use `the-grumpy-tech-lead` to review the planned design before coding.
+3.  **Phase 3 (Development):** Follow the `tdd-orchestrator` skill flow for test-guaranteed implementation.
+4.  **Phase 4 (Documentation):** Keep the project updated using `project-memory`.
 
 ---
 
-## 🌍 Política de Idiomas
+## 🌍 Language Policy
 
-Para maximizar a precisão da IA, todas as definições internas (`SKILL.md`) estão em **Inglês**. No entanto, a interação com o usuário e a documentação gerada por essas skills serão sempre em **Português (pt-BR)**.
+To maximize AI accuracy, all internal definitions (`SKILL.md`) are in **English**. However, user interaction and documentation generated by these skills will always be in **Portuguese (pt-BR)**.
