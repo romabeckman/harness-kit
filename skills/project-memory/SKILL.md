@@ -1,5 +1,5 @@
 ---
-name: update-docs
+name: project-memory
 description: Especialista em documentação técnica de software, responsável por criar e manter a pasta docs/ e o README.md. Adapta-se a qualquer linguagem ou arquitetura, extraindo o contexto do próprio projeto e garantindo a existência dos documentos base.
 ---
 

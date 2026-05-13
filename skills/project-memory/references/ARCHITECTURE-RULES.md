@@ -138,13 +138,18 @@ Use this framework to systematically analyze any project:
 
 **Structure Analysis:**
 ```
-📁 Project Root
-├── 📁 [Identify main application directory]
-├── 📁 [Identify feature/module organization]
-├── 📁 [Identify shared/common code location]
-├── 📁 [Identify configuration location]
-├── 📁 [Identify API/interface layer]
-└── 📁 [Identify other significant directories]
+Project Root
+├── [Identify main application directory] (ex: src/)
+│   ├── [Identify feature/module organization] (ex: modules/)
+│   │   └── [Feature Name]
+│   │       ├── [Subfolder] (ex: controllers/)
+│   │       │   └── {feature}.controller.ts
+│   │       └── [Subfolder] (ex: services/)
+│   │           └── {feature}.service.ts
+│   └── [Identify shared/common code location] (ex: shared/)
+├── [Identify configuration location] (ex: config/)
+├── [Identify API/interface layer] (ex: api/)
+└── [Global configuration files] (ex: package.json, .env)
 ```
 
 **Pattern Recognition:**
@@ -170,77 +175,53 @@ Your response must be structured as a complete documentation file that will be s
 
 **Language:** Portuguese (Brazil)
 
-**Structure:** The document must include all sections below written in Portuguese
+**Structure:** The document must include all sections below written in Portuguese (Brazil)
 
 ### Output Format
 
 Structure your response as a complete markdown document with the following sections:
 
 ```markdown
-# Arquitetura do Projeto
+# Architecture
 
-## 🔍 Análise da Arquitetura
+## OVERVIEW
+[System type, main modules, data flow — maximum 3 lines]
 
-### Padrão Arquitetural
-[Análise detalhada da arquitetura, padrões e convenções em português]
+## FOLDER STRUCTURE
+[Folder structure and files with placeholders]
 
-### Estrutura de Diretórios
-[Mapeamento completo da estrutura do projeto]
+## LAYERS
+[Main layers and responsibilities]
 
-### Stack Tecnológico
-[Tecnologias, frameworks e bibliotecas utilizadas]
+## MODULES
+| Module | Responsibility | Location |
+|--------|-----------------|-------------|
 
-### Padrões de Código
-[Convenções de nomenclatura, estruturas de classes, etc.]
+## PATTERNS
+REQUIRED: [pattern]
+FORBIDDEN: [anti-pattern]
 
-## 📋 Guia de Implementação
+## INTEGRATIONS
+| Service | Purpose | Authentication |
+|---------|-----------|-------------|
 
-### Estrutura de Features
-[Como implementar novas funcionalidades seguindo os padrões do projeto]
-
-### Templates de Código
-[Templates específicos para este projeto]
-
-### Pontos de Integração
-[Como integrar novos componentes ao projeto existente]
-
-## 💻 Exemplo de Implementação
-
-### Estrutura de Arquivos
-[Exemplo prático de implementação de uma feature]
-
-### Código de Exemplo
-[Exemplos de código seguindo os padrões do projeto]
-
-## 🔧 Instruções de Integração
-
-### Passos de Configuração
-[Passos necessários para integrar novas funcionalidades]
-
-### Checklist de Implementação
-[Lista de verificação para garantir conformidade com o projeto]
-
-## 📚 Referências e Convenções
-
-### Boas Práticas
-[Práticas recomendadas específicas para este projeto]
-
-### Padrões de Nomenclatura
-[Convenções de nomes utilizadas no projeto]
-
-### Tratamento de Erros
-[Como implementar tratamento de erros seguindo o padrão do projeto]
+## ADRs
+- [ADR-001](adr/001-title.md) — [summary decision]
 ```
 
 ## Important Notes
 
-- **All content must be written in Portuguese (Brazil)**
 - **The document must be complete and self-contained**
 - **Include specific examples from the analyzed project**
 - **Provide actionable implementation guidance**
 - **Follow markdown formatting standards**
 - **The document should serve as the definitive architecture guide for the project**
-
----
-
-**Remember:** Every project is unique. Your job is to understand THIS specific project's patterns and create comprehensive Portuguese documentation that enables developers to implement features that feel native to the existing codebase.
+- **LLM Optimization (REQUIRED):** All created or updated documentation MUST follow the principles below:
+  - **Section titles in ALL CAPS** — facilitate context extraction by the LLM.
+  - **Explicit rules in code block format** with prefixes `ALLOWED:`, `FORBIDDEN:`, `REQUIRED:` — eliminate ambiguity.
+  - **No long introductions** — get straight to the point; remove phrases like "This document describes..." or "This guide aims to...".
+  - **No decorative content** — emojis and merely introductory sections should be eliminated or kept to a minimum.
+  - **Short and focused sections** — each section answers a specific question; maximum 10–15 lines per block.
+  - **Tables for references, flags, parameters, and comparisons** — more efficient than text lists for LLMs.
+  - **Code examples with explicit labels** (`# CORRECT` / `# WRONG`) — do not let the LLM infer the pattern.
+  - **Explicit cross-references** — at the end of each document, list related files with a description of what each contains.
