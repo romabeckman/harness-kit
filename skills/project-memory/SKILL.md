@@ -39,7 +39,9 @@ CRITICAL: Create software technical documentation optimized for LLM. LLM-optimiz
 - Use **numbered lists** for sequential processes/steps and **bullets** for characteristics.
 - Include **comparative examples** (CORRECT vs WRONG) when there are patterns to avoid.
 - **README Rule:** When creating or updating the main project index (`./docs/README.md`), you **must** read and follow the guidelines established in `./references/README-RULES.md`.
-- **ARCHITECTURE Rule:** When creating or updating the architecture and testing rules (`./docs/ARCHITECTURE.md` and `./docs/TESTS.md`), you **must** read and follow the guidelines established in `./references/ARCHITECTURE-RULES.md`.
+- **ARCHITECTURE Rule:** When creating or updating the architecture rules (`./docs/ARCHITECTURE.md`), you **must** read and follow the guidelines established in `./references/ARCHITECTURE-RULES.md`.
+- **TESTS Rule:** When creating or updating the testing protocol (`./docs/TESTS.md`), you **must** read and follow the guidelines established in `./references/TESTS-RULES.md`.
+- **DOCUMENT Template Rule:** When creating or updating any technical document, you **must** read and follow the structure established in `./references/DOCUMENT-TEMPLATE.md`.
 
 ## Testing Protocol
 
@@ -79,82 +81,3 @@ CRITICAL: Create software technical documentation optimized for LLM. LLM-optimiz
 
 **Step 7: Proposal Presentation**
 - Present content in an organized way and explain changes concisely.
-
-## Output Template
-
-Always structure new documents or sections using the format below, adapting content (languages, commands, and tools) to the project's reality:
-
-```markdown
-# [Document Title]
-[One-line description explaining the purpose of the document]
-
-## OVERVIEW
-[Quick and objective context. Maximum 2-3 paragraphs explaining the main concept in the context of the project stack.]
-
-## [MAIN CONCEPTS/COMPONENTS]
-[If applicable, explain necessary concepts before "how-to"]
-
-### [Concept 1]
-* **[Important Item]**: Description
-* **[Other Item]**: Description
-
-## HOW TO [DO SOMETHING] / HOW IT WORKS
-[Main practical section - focus on implementation]
-
-### Prerequisites
-1. [Requirement 1, e.g., Tool installed]
-2. [Requirement 2, e.g., Environment variable configured]
-
-### Implementation Example / Steps
-[Include code with inline comments using the project's actual language]
-
-```[project_language]
-// Comment explaining decision or important detail
-exampleCode()
-
-// Example 1: [Description]
-example1()
-```
-
-### How [Specific Aspect] Works
-1. [Step 1 of the process]
-2. [Step 2 of the process]
-
-## PARAMETERS / CONFIGURATIONS / OPTIONS
-[If applicable, use a table to list function parameters, environment configs, or CLI options]
-
-| Name | Type | Required | Description | Default |
-| --- | --- | --- | --- | --- |
-| param1 | string | Yes | Clear description | - |
-| param2 | int | No | Description | 100 |
-
-## BEST PRACTICES
-[List of recommended practices based on the project stack]
-
-* **[Main Action]** [explanation].
-* **[Main Action]** [explanation]. [Additional context].
-
-```[project_language]
-// CORRECT: [Explanation of the correct pattern]
-correct_code()
-
-// WRONG: [Explanation of common error]
-wrong_code()  // [Comment about the problem]
-```
-
-## 💡 TIPS
-[Valuable practical tip that saves time or avoids common problems in the framework/language used]
-
-```[project_language]
-// Practical example of the tip
-optimized_code()
-```
-
-[Explanation of benefit]
-
----
-
-**Summary of Changes** [Only when presenting changes to existing docs to the user]
-
-* ✅ [Action taken]: [file or section]
-```

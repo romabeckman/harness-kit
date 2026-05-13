@@ -1,43 +1,41 @@
 # 🤖 LLM Agent Suite
 
-A poderosa orquestração de agentes de IA para engenharia de software avançada. Este repositório contém uma coleção de prompts estruturados e agentes projetados para transformar LLMs em especialistas altamente qualificados (CTO, Arquiteto, Desenvolvedor, Tester e Debugger).
+A poderosa orquestração de agentes de IA para engenharia de software avançada. Este repositório contém uma coleção de **Skills Avançadas** e prompts estruturados projetados para transformar LLMs em especialistas altamente qualificados, garantindo disciplina, consistência e qualidade técnica.
 
 ---
 
 ## 🏛️ Estrutura do Suite
 
-O projeto é focado em **Agentes Especialistas** que utilizam skills avançadas para execução técnica.
+O projeto é focado em **Skills Especialistas** (`/skills`) que estendem as capacidades da IA para execução técnica rigorosa. Todas as skills possuem instruções em **inglês** para máxima performance dos modelos, mas são configuradas para gerar **outputs em português (pt-BR)**.
 
-### 👥 Agentes Especialistas (`/agents`)
-Cada agente possui um arquivo `.md` que define sua personalidade, responsabilidades e protocolos de decisão:
+### 🛠️ Skills Avançadas (`/skills`)
 
-| Agente | Função Principal |
+| Skill | Função Principal |
 | :--- | :--- |
-| **CTO** (`cto.md`) | Visão estratégica, orquestração de sub-agentes e validação de gates de fase. |
-| **Software Architect** (`software-architect.md`) | Design de sistemas, refinamento de escopo (DDD) e planejamento de tasks. |
-| **Developer** (`developer.md`) | Implementação técnica seguindo padrões de clean code e TDD. |
-| **Tester** (`tester.md`) | Garantia de qualidade, criação de planos de teste e validação de cobertura. |
-| **Root Cause Debugger** (`developer-debugging.md`) | Diagnóstico sistemático de bugs usando a metodologia dos "5 Whys". |
+| **Project Memory** (`project-memory`) | Gerenciamento de memória persistente e documentação técnica (README, ARCHITECTURE, TESTS). |
+| **Scope Refinement** (`scope-refinement`) | Orquestrador de refinamento de escopo usando DDD (Design Estratégico e Tático). |
+| **TDD Orchestrator** (`tdd-orchestrator`) | Maestro do fluxo de desenvolvimento baseado em Test-Driven Development. |
+| **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Revisão técnica crítica com foco em impactos sistêmicos e mentoria socrática. |
 
 ---
 
-## ✨ Superpowers Skills
+## ✨ Integração com Superpowers
 
-Este suite foi projetado para trabalhar em harmonia com as [Superpowers Skills](https://github.com/obra/superpowers). Enquanto nossos agentes definem *quem* faz o quê, as skills do Superpowers definem *como* tarefas complexas devem ser executadas com precisão cirúrgica.
+Este suite foi projetado para trabalhar em harmonia com as [Superpowers Skills](https://github.com/obra/superpowers). Enquanto nossos agentes definem a estratégia, as skills do Superpowers fornecem as ferramentas de baixo nível para execução (Git, Debugging, etc.).
 
 *   **Disciplina Operacional:** Processos rígidos para TDD, Debugging e Refinamento.
-*   **Pensamento Crítico:** Uso de brainstorming e revisões socráticas.
+*   **Pensamento Crítico:** Uso de revisões socráticas e análise de causa raiz.
 *   **Consistência:** Garante que a IA siga processos padronizados de engenharia de software.
 
 ---
 
 ## 📂 Documentação do Projeto (Setup Inicial)
 
-A pasta `docs/` atua como a **memória persistente** do seu projeto. Ela centraliza o conhecimento técnico que permite aos agentes operar de forma autônoma e precisa, consultando regras e padrões sempre que necessário.
+A pasta `docs/` atua como a **memória persistente** do seu projeto. Ela centraliza o conhecimento técnico que permite aos agentes operar de forma autônoma e precisa.
 
 ### 🧠 Como Funciona
-*   **Navegação Inteligente:** O agente decide dinamicamente qual documento ler com base na tarefa. O `docs/README.md` atua como o **sumário principal com índices**, guiando a LLM para os arquivos específicos.
-*   **Obrigatoriedade:** Para garantir o funcionamento mínimo dos agentes, os arquivos `docs/README.md`, `docs/ARCHITECTURE.md` e `docs/TESTS.md` são **obrigatórios**. Qualquer outro documento adicional na pasta é opcional.
+*   **Navegação Inteligente:** O agente decide dinamicamente qual documento ler com base na tarefa.
+*   **Obrigatoriedade:** Para garantir o funcionamento das skills, os arquivos `docs/README.md`, `docs/ARCHITECTURE.md` e `docs/TESTS.md` são **obrigatórios**.
 
 ### 📝 Arquivos Base
 
@@ -45,14 +43,22 @@ A pasta `docs/` atua como a **memória persistente** do seu projeto. Ela central
 | :--- | :--- | :--- |
 | `docs/README.md` | **Sumário e Índice.** | Mapa principal para a LLM encontrar outros documentos. |
 | `docs/ARCHITECTURE.md` | **Regras de Arquitetura.** | Impede decisões de design inconsistentes com o projeto. |
-| `docs/TESTS.md` | **Protocolo de Qualidade.** | Define o "contrato de testes" que o Developer deve seguir. |
+| `docs/TESTS.md` | **Protocolo de Qualidade.** | Define o framework e os padrões de teste do projeto. |
 
 > [!TIP]
-> Use a skill `update-docs` ou peça ao `@developer`: *"Gere a documentação base (docs/README, ARCHITECTURE e TESTS) para este projeto baseado na minha stack atual."* A skill também é excelente para **mapear projetos existentes** e documentar regras de negócio.
+> Use a skill `project-memory` para gerar automaticamente a documentação base: *"Gere a documentação base para este projeto baseado na minha stack atual."*
+
+---
 
 ## 🏗️ Fluxo de Trabalho Recomendado
 
-1.  **Fase 1 (Descoberta):** Ative o `@software-architect` para refinamento de escopo.
-2.  **Fase 2 (Planejamento):** O Architect gera o plano de tarefas (Bite-sized TDD).
-3.  **Fase 3 (Implementação):** O `@developer` executa as tarefas em paralelo ou sequencial.
-4.  **Fase 4 (Verificação):** O `@tester` valida a entrega final.
+1.  **Fase 1 (Escopo):** Inicie a skill `scope-refinement` para mapear o domínio e cenários de teste.
+2.  **Fase 2 (Qualidade):** Utilize `the-grumpy-tech-lead` para revisar o design planejado antes de codar.
+3.  **Fase 3 (Desenvolvimento):** Siga o fluxo da skill `tdd-orchestrator` para implementação garantida por testes.
+4.  **Fase 4 (Documentação):** Mantenha o projeto atualizado usando `project-memory`.
+
+---
+
+## 🌍 Política de Idiomas
+
+Para maximizar a precisão da IA, todas as definições internas (`SKILL.md`) estão em **Inglês**. No entanto, a interação com o usuário e a documentação gerada por essas skills serão sempre em **Português (pt-BR)**.
