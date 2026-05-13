@@ -46,11 +46,11 @@ Execute all tests to validate the implementation. *Note: The test command varies
 - After identifying the root cause, fix the implementation using the `test-driven-development` skill (Iron Law: never change tests to force passing unless the original test was conceptually wrong).
 - Re-run tests until all pass.
 
-### Step 4: Update Documentation (use skill `update-docs`)
-When applicable, invoke the `update-docs` skill to update technical documentation:
+### Step 4: Update Documentation (use skill `project-memory`)
+When applicable, invoke the `project-memory` skill to update technical documentation:
 - Update OpenAPI/Swagger specifications, GraphQL schemas, or internal endpoint documentation in the corresponding folder.
 - Ensure Input/Output schemas, descriptions, and HTTP status codes reflect the new implementation.
-- The `update-docs` skill automatically checks for the existence of baseline documents (`README.md`, `ARCHITECTURE.md`, `TESTS.md`) and creates them if necessary.
+- The `project-memory` skill automatically checks for the existence of baseline documents (`README.md`, `ARCHITECTURE.md`, `TESTS.md`) and creates them if necessary.
 
 ### Step 5: Final Validation (use skill `verification-before-completion`)
 Invoke the `verification-before-completion` skill **before declaring the task complete** — it requires concrete evidence (test command output) before any claim of success.
@@ -70,7 +70,7 @@ After successful final validation, invoke the `finishing-a-development-branch` s
 - Always invoke `test-driven-development` before writing any production code.
 - Run (or request the execution of) tests after each change.
 - Fix production code to pass tests.
-- Invoke `update-docs` to update API documentation for new endpoints.
+- Invoke `project-memory` to update API documentation for new endpoints.
 - Strictly follow the TDD workflow order.
 - Invoke `systematic-debugging` whenever tests fail.
 - Invoke `verification-before-completion` before declaring any completion.
@@ -103,7 +103,7 @@ Requirement → Tests (Fail) → Implementation → Tests (Pass) → Documentati
      ↓              ↓               ↓               ↓               ↓                ↓                  ↓
   Analyze    test-driven-dev   test-driven-dev   Run Tests       Manual         verification-    finishing-a-
              (RED: write       (GREEN: min impl  (if fail:       (OpenAPI/       before-          development-
-             failing test)     REFACTOR:         systematic-    update-docs     completion       branch
+             failing test)     REFACTOR:         systematic-    project-memory     completion       branch
                                clean code)       debugging +    (OpenAPI/       [mandatory
                                                  test-driven-   Swagger etc.)   evidence]
                                                  dev fix)
@@ -146,8 +146,8 @@ Example output:
 📋 Step 3: Re-running Tests
 ✅ All tests passed
 
-📋 Step 4: Updating Documentation (update-docs)
-✅ API contracts and docs updated via update-docs skill
+📋 Step 4: Updating Documentation (project-memory)
+✅ API contracts and docs updated via project-memory skill
 
 📋 Step 5: Final Validation (verification-before-completion)
 ✅ [test output evidence] All tests passed — claim verified
