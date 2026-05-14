@@ -17,6 +17,19 @@ The project is focused on **Expert Skills** (`/skills`) that extend AI capabilit
 | **TDD Orchestrator** (`tdd-orchestrator`) | Development workflow maestro based on Test-Driven Development. |
 | **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Critical technical review focused on systemic impacts and Socratic mentoring. |
 
+### 🤖 Expert Agents (`/agents`)
+
+These are pre-configured agent personas that embody specific roles and workflows. They are designed to be used in conjunction with the Expert Skills.
+
+| Agent | Role | Focus |
+| :--- | :--- | :--- |
+| **Software Architect** (`software-architect`) | System Design & Refinement | DDD modeling, technical decision-making, and implementation planning. |
+| **Code Reviewer** (`code-reviewer`) | Automated Audit | Sequential Git diff analysis focused on bugs, security, and performance. |
+| **Developer Backend** (`developer-backend`) | Backend Engineering | Robust APIs, database modeling, and server-side business logic with TDD. |
+| **Developer Frontend** (`developer-frontend`) | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
+| **Developer Debugging** (`developer-debugging`) | Root Cause Specialist | Systematic investigation of complex bugs using the "5 Whys" methodology. |
+| **QA Engineer** (`qa`) | Quality Assurance | E2E testing strategy, automation, and full-flow validation. |
+
 ## ⚙️ Harness Engineering
 
 This project follows the **Harness Engineering** methodology, where an Agent is defined as the sum of the **Model (AI)** + **Harness (Controls)**. The "Harness" is the set of sensors and guides that ensures the reliability and quality of the generated code.
