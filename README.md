@@ -19,11 +19,11 @@ The project is focused on **Expert Skills** (`/skills`) that extend AI capabilit
 
 ## ⚙️ Harness Engineering
 
-Este projeto segue a metodologia de **Harness Engineering**, onde um Agente é definido pela soma do **Modelo (IA)** + **Harness (Controles)**. O "Harness" é o conjunto de sensores e guias que garante a confiabilidade e a qualidade do código gerado.
+This project follows the **Harness Engineering** methodology, where an Agent is defined as the sum of the **Model (AI)** + **Harness (Controls)**. The "Harness" is the set of sensors and guides that ensures the reliability and quality of the generated code.
 
-*   **Feedforward (Guias):** Documentação otimizada para LLM (`project-memory`) e definições de domínio (`scope-refinement`) que direcionam a IA antes da execução.
-*   **Feedback (Sensores):** Testes automatizados (`tdd-orchestrator`) e revisões críticas (`the-grumpy-tech-lead`) que validam o resultado após a execução.
-*   **Equilíbrio:** Combinamos validação **Computacional** (determinística via testes) com validação **Inferencial** (julgamento semântico e arquitetural).
+*   **Feedforward (Guides):** LLM-optimized documentation (`project-memory`) and domain definitions (`scope-refinement`) that direct the AI before execution.
+*   **Feedback (Sensors):** Automated tests (`tdd-orchestrator`) and critical reviews (`the-grumpy-tech-lead`) that validate the result after execution.
+*   **Balance:** We combine **Computational** validation (deterministic via tests) with **Inferential** validation (semantic and architectural judgment).
 
 ---
 
@@ -58,15 +58,15 @@ The `docs/` folder acts as your project's **persistent memory**. It centralizes 
 
 ---
 
-## 🔄 Fluxo de Trabalho (Harness Process)
+## 🔄 Harness Process (Workflow)
 
-Para obter o máximo de segurança e qualidade, siga este processo iterativo:
+To achieve maximum safety and quality, follow this iterative process:
 
-1.  **Harnessing (Preparação):** Use o `project-memory` para garantir que as regras de arquitetura e testes estejam explícitas nos arquivos `docs/`.
-2.  **Direcionamento (Feedforward):** Execute o `scope-refinement` para mapear o domínio e definir os cenários de teste antes de codar.
-3.  **Execução Controlada (Feedback):** Implemente via `tdd-orchestrator`, onde cada linha de código é validada por um sensor computacional (teste).
-4.  **Refino Semântico (Inferencial):** Use o `the-grumpy-tech-lead` para revisar a implementação em busca de riscos sistêmicos e gargalos.
-5.  **Persistência:** Finalize atualizando a documentação com `project-memory` para que o conhecimento seja herdado por futuras tarefas.
+1.  **Harnessing (Preparation):** Use `project-memory` to ensure architecture and testing rules are explicit in the `docs/` files.
+2.  **Direction (Feedforward):** Run `scope-refinement` to map the domain and define test scenarios before coding.
+3.  **Controlled Execution (Feedback):** Implement via `tdd-orchestrator`, where every line of code is validated by a computational sensor (test).
+4.  **Semantic Refinement (Inferential):** Use `the-grumpy-tech-lead` to review the implementation for systemic risks and bottlenecks.
+5.  **Persistence:** Finish by updating documentation with `project-memory` so the knowledge is inherited by future tasks.
 
 ---
 
