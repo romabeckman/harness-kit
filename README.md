@@ -17,6 +17,14 @@ The project is focused on **Expert Skills** (`/skills`) that extend AI capabilit
 | **TDD Orchestrator** (`tdd-orchestrator`) | Development workflow maestro based on Test-Driven Development. |
 | **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Critical technical review focused on systemic impacts and Socratic mentoring. |
 
+## ⚙️ Harness Engineering
+
+Este projeto segue a metodologia de **Harness Engineering**, onde um Agente é definido pela soma do **Modelo (IA)** + **Harness (Controles)**. O "Harness" é o conjunto de sensores e guias que garante a confiabilidade e a qualidade do código gerado.
+
+*   **Feedforward (Guias):** Documentação otimizada para LLM (`project-memory`) e definições de domínio (`scope-refinement`) que direcionam a IA antes da execução.
+*   **Feedback (Sensores):** Testes automatizados (`tdd-orchestrator`) e revisões críticas (`the-grumpy-tech-lead`) que validam o resultado após a execução.
+*   **Equilíbrio:** Combinamos validação **Computacional** (determinística via testes) com validação **Inferencial** (julgamento semântico e arquitetural).
+
 ---
 
 ## ✨ Integration with Superpowers
@@ -50,12 +58,15 @@ The `docs/` folder acts as your project's **persistent memory**. It centralizes 
 
 ---
 
-## 🏗️ Recommended Workflow
+## 🔄 Fluxo de Trabalho (Harness Process)
 
-1.  **Phase 1 (Scope):** Start the `scope-refinement` skill to map the domain and test scenarios.
-2.  **Phase 2 (Quality):** Use `the-grumpy-tech-lead` to review the planned design before coding.
-3.  **Phase 3 (Development):** Follow the `tdd-orchestrator` skill flow for test-guaranteed implementation.
-4.  **Phase 4 (Documentation):** Keep the project updated using `project-memory`.
+Para obter o máximo de segurança e qualidade, siga este processo iterativo:
+
+1.  **Harnessing (Preparação):** Use o `project-memory` para garantir que as regras de arquitetura e testes estejam explícitas nos arquivos `docs/`.
+2.  **Direcionamento (Feedforward):** Execute o `scope-refinement` para mapear o domínio e definir os cenários de teste antes de codar.
+3.  **Execução Controlada (Feedback):** Implemente via `tdd-orchestrator`, onde cada linha de código é validada por um sensor computacional (teste).
+4.  **Refino Semântico (Inferencial):** Use o `the-grumpy-tech-lead` para revisar a implementação em busca de riscos sistêmicos e gargalos.
+5.  **Persistência:** Finalize atualizando a documentação com `project-memory` para que o conhecimento seja herdado por futuras tarefas.
 
 ---
 
