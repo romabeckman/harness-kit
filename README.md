@@ -1,5 +1,9 @@
 # 🔧 HarnessKit
 
+> [!IMPORTANT]
+> This project requires the [Superpowers](https://github.com/obra/superpowers) skill. Install it using the command:
+> `/plugin install superpowers@claude-plugins-official`
+
 HarnessKit is a complete AI-assisted software engineering methodology built on **Harness Engineering** — the principle that a reliable agent is defined as **Model (AI) + Harness (Controls)**.
 
 It gives your coding agent a set of composable expert skills and structured agent personas that enforce discipline, consistency, and quality across the full development lifecycle: from domain modeling to TDD implementation, critical code review, and persistent project memory.
