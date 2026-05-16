@@ -1,88 +1,164 @@
-# 🤖 LLM Agent Suite
+# 🔧 HarnessKit
 
-The powerful orchestration of AI agents for advanced software engineering. This repository contains a collection of **Advanced Skills** and structured prompts designed to transform LLMs into highly qualified experts, ensuring discipline, consistency, and technical quality.
+HarnessKit is a complete AI-assisted software engineering methodology built on **Harness Engineering** — the principle that a reliable agent is defined as **Model (AI) + Harness (Controls)**.
+
+It gives your coding agent a set of composable expert skills and structured agent personas that enforce discipline, consistency, and quality across the full development lifecycle: from domain modeling to TDD implementation, critical code review, and persistent project memory.
 
 ---
 
-## 🏛️ Suite Structure
+## Quickstart
 
-The project is focused on **Expert Skills** (`/skills`) that extend AI capabilities for rigorous technical execution. All skills have instructions in **English** for maximum model performance, but are configured to generate **outputs in Portuguese (pt-BR)**.
+Install HarnessKit for [Claude Code](#claude-code).
 
-### 🛠️ Advanced Skills (`/skills`)
+---
+
+## How it works
+
+From the moment you start a task, HarnessKit changes how your agent thinks.
+
+Instead of jumping straight to writing code, it guides the agent to first understand the domain, model the problem with DDD, and define test scenarios before a single line is written.
+
+- **Feedforward (Guides):** `project-memory` and `scope-refinement` align the agent with your architecture and domain *before* execution.
+- **Feedback (Sensors):** `tdd-orchestrator` validates every implementation computationally (tests), while `the-grumpy-tech-lead` validates it semantically (Socratic review).
+- **Balance:** Computational validation (deterministic via tests) + Inferential validation (architectural judgment) working together.
+
+The skills activate when relevant. Your agent just has a Harness.
+
+---
+
+## Installation
+
+### Claude Code
+
+HarnessKit is distributed as a Claude Code plugin via its own marketplace hosted on GitHub.
+
+**Step 1 — Register the marketplace:**
+
+```bash
+/plugin marketplace add romabeckman/harness-kit
+```
+
+**Step 2 — Install the plugin:**
+
+```bash
+/plugin install harness-kit@harness-kit
+```
+
+**Step 3 — Use a skill:**
+
+```bash
+/harness-kit:tdd-orchestrator
+/harness-kit:scope-refinement
+/harness-kit:the-grumpy-tech-lead
+/harness-kit:project-memory
+```
+
+**Update later:**
+
+```bash
+/plugin update harness-kit
+```
+
+---
+
+## The Harness Workflow
+
+Follow this iterative process for maximum quality and safety:
+
+1. **Harnessing (Preparation)** — Use `project-memory` to generate and maintain `docs/README.md`, `docs/ARCHITECTURE.md`, and `docs/TESTS.md`. These files are the agent's persistent memory.
+
+2. **Direction (Feedforward)** — Run `scope-refinement` to map the domain using DDD (Bounded Contexts, Aggregates, Use Cases) and define acceptance scenarios *before* any code is written.
+
+3. **Controlled Execution (Feedback)** — Implement via `tdd-orchestrator`, enforcing RED → GREEN → REFACTOR. Every line of code is validated by a test before it's considered done.
+
+4. **Semantic Review (Inferential)** — Use `the-grumpy-tech-lead` to review the implementation for systemic risks: N+1 queries, memory leaks, race conditions, SOLID violations, and architectural drift.
+
+5. **Persistence** — Close by updating documentation with `project-memory` so the knowledge is inherited by future sessions.
+
+---
+
+## What's Inside
+
+### 🛠️ Skills (`/skills`)
 
 | Skill | Core Function |
 | :--- | :--- |
-| **Project Memory** (`project-memory`) | Persistent memory management and technical documentation (README, ARCHITECTURE, TESTS). |
-| **Scope Refinement** (`scope-refinement`) | Scope refinement orchestrator using DDD (Strategic and Tactical Design). |
-| **TDD Orchestrator** (`tdd-orchestrator`) | Development workflow maestro based on Test-Driven Development. |
-| **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Critical technical review focused on systemic impacts and Socratic mentoring. |
+| **Project Memory** (`project-memory`) | Generates and maintains persistent technical documentation (`docs/README.md`, `docs/ARCHITECTURE.md`, `docs/TESTS.md`). The agent's long-term memory. |
+| **Scope Refinement** (`scope-refinement`) | DDD-based scope orchestrator. Maps Bounded Contexts, Aggregates, and Use Cases. Produces test scenarios before implementation starts. |
+| **TDD Orchestrator** (`tdd-orchestrator`) | Enforces RED → GREEN → REFACTOR. Coordinates the full test-driven development cycle, blocking implementation without a failing test first. |
+| **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Senior technical reviewer. Uses Socratic questioning to expose systemic risks (N+1, leaks, race conditions, SOLID violations) without providing ready-made solutions. |
 
 ### 🤖 Expert Agents (`/agents`)
 
-These are pre-configured agent personas that embody specific roles and workflows. They are designed to be used in conjunction with the Expert Skills.
+Pre-configured agent personas that embody specific engineering roles, designed to work with the skills above.
 
 | Agent | Role | Focus |
 | :--- | :--- | :--- |
-| **Software Architect** (`software-architect`) | System Design & Refinement | DDD modeling, technical decision-making, and implementation planning. |
+| **Software Architect** (`software-architect`) | System Design & Refinement | DDD modeling, architectural decisions, and implementation planning. |
 | **Code Reviewer** (`code-reviewer`) | Automated Audit | Sequential Git diff analysis focused on bugs, security, and performance. |
-| **Developer Backend** (`developer-backend`) | Backend Engineering | Robust APIs, database modeling, and server-side business logic with TDD. |
+| **Developer Backend** (`developer-backend`) | Backend Engineering | Robust APIs, database modeling, and server-side logic with TDD. |
 | **Developer Frontend** (`developer-frontend`) | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
-| **Developer Debugging** (`developer-debugging`) | Root Cause Specialist | Systematic investigation of complex bugs using the "5 Whys" methodology. |
+| **Developer Debugging** (`developer-debugging`) | Root Cause Specialist | Systematic bug investigation using the "5 Whys" methodology. |
 | **QA Engineer** (`qa`) | Quality Assurance | E2E testing strategy, automation, and full-flow validation. |
 
-## ⚙️ Harness Engineering
+---
 
-This project follows the **Harness Engineering** methodology, where an Agent is defined as the sum of the **Model (AI)** + **Harness (Controls)**. The "Harness" is the set of sensors and guides that ensures the reliability and quality of the generated code.
+## Project Documentation Setup
 
-*   **Feedforward (Guides):** LLM-optimized documentation (`project-memory`) and domain definitions (`scope-refinement`) that direct the AI before execution.
-*   **Feedback (Sensors):** Automated tests (`tdd-orchestrator`) and critical reviews (`the-grumpy-tech-lead`) that validate the result after execution.
-*   **Balance:** We combine **Computational** validation (deterministic via tests) with **Inferential** validation (semantic and architectural judgment).
+The `docs/` folder acts as HarnessKit's **persistent memory** for your project. It centralizes the technical knowledge that allows agents to operate autonomously and accurately across sessions.
+
+### Required files
+
+| File | Function |
+| :--- | :--- |
+| `docs/README.md` | Summary and index. The agent's main map for navigating your project. |
+| `docs/ARCHITECTURE.md` | Architecture rules. Prevents design decisions inconsistent with the project. |
+| `docs/TESTS.md` | Quality protocol. Defines the testing framework and standards. |
+
+> **Tip:** Use `project-memory` to generate these automatically:
+> ```
+> /harness-kit:project-memory
+> ```
+> Then say: *"Generate base documentation for this project based on my current stack."*
 
 ---
 
-## ✨ Integration with Superpowers
+## Philosophy
 
-This suite was designed to work in harmony with [Superpowers Skills](https://github.com/obra/superpowers). While our agents define the strategy, Superpowers skills provide the low-level tools for execution (Git, Debugging, etc.).
-
-*   **Operational Discipline:** Rigid processes for TDD, Debugging, and Refinement.
-*   **Critical Thinking:** Use of Socratic reviews and root cause analysis.
-*   **Consistency:** Ensures that the AI follows standardized software engineering processes.
-
----
-
-## 📂 Project Documentation (Initial Setup)
-
-The `docs/` folder acts as your project's **persistent memory**. It centralizes the technical knowledge that allows agents to operate autonomously and accurately.
-
-### 🧠 How It Works
-*   **Intelligent Navigation:** The agent dynamically decides which document to read based on the task.
-*   **Mandatory:** To ensure the proper functioning of the skills, the files `docs/README.md`, `docs/ARCHITECTURE.md`, and `docs/TESTS.md` are **mandatory**.
-
-### 📝 Base Files
-
-| File | Function | Agent Impact |
-| :--- | :--- | :--- |
-| `docs/README.md` | **Summary and Index.** | Main map for the LLM to find other documents. |
-| `docs/ARCHITECTURE.md` | **Architecture Rules.** | Prevents design decisions inconsistent with the project. |
-| `docs/TESTS.md` | **Quality Protocol.** | Defines the project's testing framework and standards. |
-
-> [!TIP]
-> Use the `project-memory` skill to automatically generate base documentation: *"Generate base documentation for this project based on my current stack."*
+- **Harness Engineering** — Reliability comes from controls, not just capability. An agent without a harness is unpredictable.
+- **Test-Driven Development** — Write tests first. Always. No exceptions.
+- **Domain-Driven Design** — Model the problem before solving it.
+- **Socratic over Prescriptive** — The Grumpy Tech Lead asks questions that force the engineer to think, rather than providing ready-made answers.
+- **Computational + Inferential** — Tests validate correctness. Reviews validate judgment.
 
 ---
 
-## 🔄 Harness Process (Workflow)
+## Language Policy
 
-To achieve maximum safety and quality, follow this iterative process:
-
-1.  **Harnessing (Preparation):** Use `project-memory` to ensure architecture and testing rules are explicit in the `docs/` files.
-2.  **Direction (Feedforward):** Run `scope-refinement` to map the domain and define test scenarios before coding.
-3.  **Controlled Execution (Feedback):** Implement via `tdd-orchestrator`, where every line of code is validated by a computational sensor (test).
-4.  **Semantic Refinement (Inferential):** Use `the-grumpy-tech-lead` to review the implementation for systemic risks and bottlenecks.
-5.  **Persistence:** Finish by updating documentation with `project-memory` so the knowledge is inherited by future tasks.
+All internal skill definitions (`SKILL.md`) are written in **English** to maximize AI model performance. User interactions and deliverables generated by the skills are in **Portuguese (pt-BR)**.
 
 ---
 
-## 🌍 Language Policy
+## Integration with Superpowers
 
-To maximize AI accuracy, all internal definitions (`SKILL.md`) are in **English**. However, user interaction and documentation generated by these skills will always be in **Portuguese (pt-BR)**.
+HarnessKit is designed to complement [Superpowers Skills](https://github.com/obra/superpowers). While HarnessKit defines the *strategy and discipline* (what to build and how to validate it), Superpowers provides the low-level *execution tools* (Git worktrees, parallel agents, etc.).
+
+---
+
+## Contributing
+
+1. Fork the repository: `https://github.com/romabeckman/harness-kit`
+2. Create a branch for your changes
+3. Follow the skill conventions in `skills/*/SKILL.md`
+4. Submit a PR with a clear description of what changed and why
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) file for details.
+
+## Issues & Feedback
+
+- **Issues:** https://github.com/romabeckman/harness-kit/issues
+- **Author:** [Romario Beckman](https://github.com/romabeckman)

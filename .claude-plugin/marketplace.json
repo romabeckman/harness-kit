@@ -1,0 +1,40 @@
+{
+    "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+    "name": "harness-kit",
+    "description": "Marketplace for HarnessKit — expert AI agents and engineering workflow skills built with Harness Engineering methodology.",
+    "owner": {
+        "name": "Romario Beckman",
+        "url": "https://github.com/romabeckman"
+    },
+    "plugins": [
+        {
+            "name": "harness-kit",
+            "source": "./",
+            "description": "Expert AI agents (Architect, Backend, Frontend, QA, Code Reviewer, Debugger) and skills (TDD Orchestrator, Scope Refinement, Grumpy Tech Lead, Project Memory) implementing Harness Engineering for disciplined software development.",
+            "author": {
+                "name": "Romario Beckman",
+                "url": "https://github.com/romabeckman"
+            },
+            "homepage": "https://github.com/romabeckman/harness-kit",
+            "repository": "https://github.com/romabeckman/harness-kit",
+            "license": "MIT",
+            "keywords": [
+                "agents",
+                "tdd",
+                "ddd",
+                "code-review",
+                "software-engineering",
+                "harness",
+                "ai-workflow"
+            ],
+            "category": "productivity",
+            "tags": [
+                "tdd",
+                "ddd",
+                "agents",
+                "code-review",
+                "harness-engineering"
+            ]
+        }
+    ]
+}
