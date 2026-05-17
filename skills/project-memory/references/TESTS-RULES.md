@@ -1,76 +1,88 @@
-# Tests Rules
+# Rules for docs/TESTS.md
 
-This document establishes the standards for creating and maintaining the `./docs/TESTS.md` file. Use this as a reference whenever you are tasked with documenting the project's testing protocol.
+Defines the analysis framework and strict rules for generating and maintaining `docs/TESTS.md`.
 
-## Objective
+---
 
-The `./docs/TESTS.md` file must provide a clear, actionable guide on how to run tests, what is being tested, and the quality standards (coverage) required for the project.
+## EXPECTED OUTPUT
 
-## Analysis Phase
+| Field | Value |
+|---|---|
+| Target file | `docs/TESTS.md` |
+| Output language | **Portuguese (pt-BR)** — no exceptions |
+| Agent action | Analyze the repository, apply the PRE-GENERATION ANALYSIS below, then generate or overwrite the file using the MANDATORY TEMPLATE exactly as specified |
 
-Before generating the document, analyze the project to identify:
-- **Test Framework:** Which tool is used (e.g., Jest, Vitest, Pytest, Go Test).
-- **Test Types:** Presence of Unit, Integration, E2E, or Smoke tests.
-- **Commands:** How to run all tests, specific suites, and coverage reports.
-- **Coverage Tool:** Which tool reports coverage (e.g., c8, istanbul, coverage.py).
-- **Mocking Strategy:** How external dependencies are handled (e.g., MSW, mocks, stubs).
+---
 
-## Output Requirements
+## PRE-GENERATION ANALYSIS
 
-### Document Format
-Your response must be structured as a complete documentation file that will be saved as:
+REQUIRED: Answer every item below by inspecting the repository before writing a single line of the document. Each item maps directly to a template section.
 
-**File:** `./docs/TESTS.md`
+| Analysis item | Where to look | Feeds template section |
+|---|---|---|
+| Test framework | `package.json`, `pyproject.toml`, `go.mod`, CI config | `## TOOLING` |
+| Test types present | Test file naming, folder structure (`unit/`, `e2e/`, etc.) | `## COMMANDS` |
+| Run commands | `package.json` scripts, `Makefile`, CI pipeline | `## COMMANDS` |
+| Coverage tool and thresholds | Coverage config files, CI gates | `## MINIMUM COVERAGE` |
+| Mocking strategy | Test files, mock folders, MSW config | `## PATTERNS & BEST PRACTICES` |
+| Known flaky or debug procedures | CI logs, test helper files | `## TROUBLESHOOTING` |
 
-**Language:** Portuguese (Brazil)
+PROHIBITED: Inventing commands or coverage thresholds not found in the repository. Use only verified values.
 
-**Structure:** The document must include all sections below written in Portuguese (Brazil).
+---
 
-### Template structure for `docs/TESTS.md`
+## MANDATORY TEMPLATE
+
+REQUIRED: Use the exact structure below as literal output when generating or updating `docs/TESTS.md`. Replace every `[placeholder]` with actual project content — **never leave placeholder literals in the final file.**
 
 ```markdown
-# Tests Protocol
+# Protocolo de Testes
 
 ## OVERVIEW
-[Testing philosophy, main frameworks used, and overall quality goal — maximum 3 lines]
+[Testing philosophy, main frameworks, and overall quality goal — maximum 3 lines.]
 
 ## COMMANDS
-| Type | Command | Description |
-|------|---------|-------------|
-| Unit | `npm test` | Runs all unit tests |
-| Integration | `npm run test:int` | Runs integration tests |
-| E2E | `npm run test:e2e` | Runs end-to-end tests |
-| Coverage | `npm run test:cov` | Generates coverage report |
+| Tipo | Comando | Descrição |
+|------|---------|-----------|
+| Unitário | `[command]` | [What it runs] |
+| Integração | `[command]` | [What it runs] |
+| E2E | `[command]` | [What it runs] |
+| Cobertura | `[command]` | [What it generates] |
 
 ## MINIMUM COVERAGE
-REQUIRED: The project must maintain the following minimum coverage levels:
+REQUIRED: Maintain the following minimum coverage levels:
 
-| Layer | Coverage | Description |
-|-------|----------|-------------|
-| Domain / Core | 90% | Logic and business invariants |
-| Application / Use Cases | 80% | Orchestration and flows |
-| Infrastructure / Adapters | 70% | External integrations and persistence |
-| Global | 80% | Average total coverage |
+| Camada | Cobertura | Descrição |
+|--------|-----------|-----------|
+| Domínio / Core | [X]% | Lógica e invariantes de negócio |
+| Aplicação / Use Cases | [X]% | Orquestração e fluxos |
+| Infraestrutura / Adapters | [X]% | Integrações externas e persistência |
+| Global | [X]% | Cobertura total média |
 
 ## PATTERNS & BEST PRACTICES
-REQUIRED: [e.g., AAA (Arrange, Act, Assert)]
-REQUIRED: [e.g., Mocking only external boundaries]
-FORBIDDEN: [e.g., Logic in tests, fragile tests depending on implementation details]
+REQUIRED: [e.g., AAA (Arrange, Act, Assert) — one assertion per test]
+REQUIRED: [e.g., Mock only external boundaries, never internal domain logic]
+FORBIDDEN: [e.g., Business logic inside test setup methods]
+FORBIDDEN: [e.g., Tests that depend on execution order]
 
 ## TOOLING
-- **Framework:** [Name]
+- **Framework:** [Name and version]
 - **Assertions:** [Name]
 - **Mocks/Stubs:** [Name]
-- **CI Integration:** [How it runs in pipeline]
+- **Coverage:** [Tool name and report format]
+- **CI Integration:** [How tests run in the pipeline]
 
 ## TROUBLESHOOTING
-- **Flaky Tests:** [How to handle or report]
-- **Debug Mode:** [How to run tests in debug mode]
+- **Flaky tests:** [How to identify and report]
+- **Debug mode:** [Command or flag to run tests with verbose/debug output]
 ```
 
-## Important Notes
+---
 
-- **The document must be complete and self-contained**
-- **Commands must be verified against the project's real configuration (e.g., package.json)**
-- **Coverage levels should be realistic but challenging**
-- **Follow markdown formatting standards**
+## LLM OPTIMIZATION RULES (MANDATORY)
+
+- REQUIRED: Verify every command against the project's actual configuration (e.g., `package.json` scripts, `Makefile`) before writing.
+- REQUIRED: Coverage levels must reflect actual CI gates — not aspirational values.
+- PROHIBITED: Filler text — remove any sentence starting with "This section describes…" or "Below we can see…".
+- PROHIBITED: Placeholder literals in the final file.
+- REQUIRED: UPPERCASE section titles (`## COMMANDS`, `## TOOLING`, etc.) for reliable LLM context extraction.
