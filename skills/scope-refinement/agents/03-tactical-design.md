@@ -100,6 +100,13 @@ Define data access interfaces:
 - Necessary methods (only those the business actually needs)
 - Do not include infrastructure details, only the interface/contract
 
+### 6. Ordered Development Tasks
+
+Create a logical, sequentially ordered list of development tasks to implement the tactical design. This list will guide the execution phase.
+- **Sequential Order**: Start with foundational elements (e.g., core domain models, types, interfaces) and move outwards to logic, and finally integrations or UI.
+- **Task Details**: Provide a clear title, brief description, and acceptance criteria for each task.
+- **Dependencies**: Explicitly state if a task depends on the completion of another.
+
 ---
 
 ## Golden Rule
@@ -138,6 +145,6 @@ Example expected output:
 - `docs/specs/${dominio}/003-my-service-tactical-design.md`
 - `docs/specs/${dominio}/003-other-service-tactical-design.md`
 
-Each document must contain the tactical modeling adapted to the project architecture (Components/Aggregates, Types/VOs, Services/Actions, Events, Integration/Repositories).
+Each document must contain the tactical modeling adapted to the project architecture (Components/Aggregates, Types/VOs, Services/Actions, Events, Integration/Repositories, and Ordered Development Tasks).
 
 **Confirm ALL saved files with full paths.**
