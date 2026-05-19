@@ -1,6 +1,6 @@
-# Rules for docs/ARCHITECTURE.md
+# Rules for docs/adr/ARCHITECTURE.md
 
-Defines the analysis framework and strict rules for generating and maintaining `docs/ARCHITECTURE.md`.
+Defines the analysis framework and strict rules for generating and maintaining `docs/adr/ARCHITECTURE.md`.
 
 ---
 
@@ -8,8 +8,7 @@ Defines the analysis framework and strict rules for generating and maintaining `
 
 | Field | Value |
 |---|---|
-| Target file | `docs/ARCHITECTURE.md` |
-| Output language | **Portuguese (pt-BR)** — no exceptions |
+| Target file | `docs/adr/ARCHITECTURE.md` |
 | Agent action | Read the repository, apply the PRE-GENERATION ANALYSIS below, then generate or overwrite the file using the MANDATORY TEMPLATE exactly as specified |
 
 ---
@@ -51,7 +50,7 @@ REQUIRED: Map findings into the `## INTEGRATIONS` table.
 
 ## MANDATORY TEMPLATE
 
-REQUIRED: Use the exact structure below as literal output when generating or updating `docs/ARCHITECTURE.md`. UPPERCASE section titles are mandatory and must not be renamed or removed.
+REQUIRED: Use the exact structure below as literal output when generating or updating `docs/adr/ARCHITECTURE.md`. UPPERCASE section titles are mandatory and must not be renamed or removed.
 
 ```markdown
 # Arquitetura do Projeto

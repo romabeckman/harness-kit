@@ -1,13 +1,12 @@
 # Standard Document Template
 
-Use this template for any `docs/*.md` file that is not `README.md`, `ARCHITECTURE.md`, or `TESTS.md`. Adapt all content (languages, commands, tools) to the project's actual stack.
+Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is not `README.md`, `ARCHITECTURE.md`, or `TESTS.md`. Adapt all content (languages, commands, tools) to the project's actual stack.
 
 ---
 
 ## RULES BEFORE WRITING
 
 - REQUIRED: One document covers exactly **one** business domain, module, or architectural layer.
-- REQUIRED: Output language is **Portuguese (pt-BR)** — no exceptions.
 - PROHIBITED: Mixing unrelated topics in a single file.
 - PROHIBITED: Leaving placeholder literals (`[like this]`) in the final file.
 - PROHIBITED: Emoji in section titles or body text.
@@ -19,7 +18,7 @@ Use this template for any `docs/*.md` file that is not `README.md`, `ARCHITECTUR
 ## MANDATORY TEMPLATE
 
 ```markdown
-# [Título do Documento]
+# [Document Title]
 [One sentence stating the purpose of this document.]
 
 ## OVERVIEW
@@ -85,9 +84,9 @@ FORBIDDEN: [Anti-pattern] — [brief justification]
 optimized_code()
 </code_tip>
 
-## REFERÊNCIAS
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md): [One-line description of the relationship]
-- [**TESTS.md**](./TESTS.md): [One-line description of the relationship]
+## REFERENCES
+- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md or ./ARCHITECTURE.md): [One-line description of the relationship]
+- [**TESTS.md**](../adr/TESTS.md or ./TESTS.md): [One-line description of the relationship]
 ```
 
 ---

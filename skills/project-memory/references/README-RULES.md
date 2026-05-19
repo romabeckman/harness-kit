@@ -11,7 +11,6 @@ Defines strict rules for generating and maintaining `docs/README.md`.
 | Field | Value |
 |---|---|
 | Target file | `docs/README.md` (root of the `docs/` folder) |
-| Output language | **Portuguese (pt-BR)** — no exceptions |
 | Agent action | Generate or overwrite `docs/README.md` using the MANDATORY TEMPLATE exactly as specified. Replace every placeholder — **never leave placeholder literals in the final file.** |
 | When to update | REQUIRED: Every time a document is added, removed, or renamed in `docs/`, update `docs/README.md` in the same operation. |
 
@@ -40,7 +39,7 @@ REQUIRED: Reject any attempt to include the following content in this file.
 2. **Introductory header:** Maximum 2 sentences. State only that this is a navigation index for the project documentation. PROHIBITED: Technical details.
 
 3. **Index table:** Three fixed columns:
-   - `Documento`: filename with relative link (e.g., `[**ARCHITECTURE.md**](./ARCHITECTURE.md)`).
+   - `Documento`: filename with relative link (e.g., `[**ARCHITECTURE.md**](./adr/ARCHITECTURE.md)`).
    - `Descrição`: maximum **2 sentences**, purely objective — states *what the document is*, not *what it contains in detail*.
    - `Leitura`: **`Obrigatória`** (bold) for structural and architectural documents; `Opcional` for specific guides.
 
@@ -50,7 +49,7 @@ REQUIRED: Reject any attempt to include the following content in this file.
    - Process/test documents after.
    - Auxiliary tools and guides last.
 
-5. **Index updates:** REQUIRED: Add every new `docs/` document to the table. PROHIBITED: Removing entries unless the corresponding file has been deleted.
+5. **Index updates:** REQUIRED: Add every new `docs/adr/` or `docs/feature/` document to the table. PROHIBITED: Removing entries unless the corresponding file has been deleted.
 
 ---
 
@@ -67,14 +66,14 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 
 | Documento | Descrição | Leitura |
 |-----------|-----------|---------|
-| [**ARCHITECTURE.md**](./ARCHITECTURE.md) | Arquitetura, organização de pastas e padrões de código do projeto. | **Obrigatória** |
-| [**TESTS.md**](./TESTS.md) | Estratégias de teste, padrões e comandos de execução. | **Obrigatória** |
+| [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Arquitetura, organização de pastas e padrões de código do projeto. | **Obrigatória** |
+| [**TESTS.md**](./adr/TESTS.md) | Estratégias de teste, padrões e comandos de execução. | **Obrigatória** |
 
 ## Ordem de Leitura Recomendada
 
-1. **ARCHITECTURE.md** — fundação técnica e organização do projeto.
-2. **TESTS.md** — validação e qualidade do código.
-3. Demais documentos conforme a necessidade da tarefa.
+1. **adr/ARCHITECTURE.md** — fundação técnica e organização do projeto.
+2. **adr/TESTS.md** — validação e qualidade do código.
+3. Demais documentos nas pastas adr/ ou feature/ conforme a necessidade da tarefa.
 ```
 
 > **Note:** The template above shows the minimum expected documents. Add new rows to the table and the reading list to reflect the actual documents present in `docs/`.

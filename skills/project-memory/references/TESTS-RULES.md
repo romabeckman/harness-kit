@@ -1,6 +1,6 @@
-# Rules for docs/TESTS.md
+# Rules for docs/adr/TESTS.md
 
-Defines the analysis framework and strict rules for generating and maintaining `docs/TESTS.md`.
+Defines the analysis framework and strict rules for generating and maintaining `docs/adr/TESTS.md`.
 
 ---
 
@@ -8,8 +8,7 @@ Defines the analysis framework and strict rules for generating and maintaining `
 
 | Field | Value |
 |---|---|
-| Target file | `docs/TESTS.md` |
-| Output language | **Portuguese (pt-BR)** — no exceptions |
+| Target file | `docs/adr/TESTS.md` |
 | Agent action | Analyze the repository, apply the PRE-GENERATION ANALYSIS below, then generate or overwrite the file using the MANDATORY TEMPLATE exactly as specified |
 
 ---
@@ -33,7 +32,7 @@ PROHIBITED: Inventing commands or coverage thresholds not found in the repositor
 
 ## MANDATORY TEMPLATE
 
-REQUIRED: Use the exact structure below as literal output when generating or updating `docs/TESTS.md`. Replace every `[placeholder]` with actual project content — **never leave placeholder literals in the final file.**
+REQUIRED: Use the exact structure below as literal output when generating or updating `docs/adr/TESTS.md`. Replace every `[placeholder]` with actual project content — **never leave placeholder literals in the final file.**
 
 ```markdown
 # Protocolo de Testes
