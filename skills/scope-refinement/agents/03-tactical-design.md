@@ -22,13 +22,13 @@ ${projectPaths}
 
 For **EACH** project listed above:
 1. Access the `docs/` directory and execute the steps below:
-   a. Read `docs/README.md` and `docs/ARCHITECTURE.md` — overview and project architecture (if they exist)
-   b. Based on the README and the provided scope, identify which additional documents in `docs/` are relevant to the scope under analysis
+   a. Read `docs/README.md` and `docs/adr/ARCHITECTURE.md` — overview and project architecture (if they exist)
+   b. Based on the README and the provided scope, identify which additional documents in `docs/` (inside `docs/adr/` or `docs/feature/`) are relevant to the scope under analysis
    c. Read all documents identified as relevant
 
 2. Analyze the Tactical Design **INDIVIDUALLY** for each project.
 
-   > ⚠️ **ATTENTION: You MUST NOT force the DDD architecture.** You **MUST** follow the `docs/ARCHITECTURE.md` of each project (which could be frontend, MVC, Clean Architecture, etc.). DDD may only be suggested if it makes sense and does not conflict with the existing architecture.
+   > ⚠️ **ATTENTION: You MUST NOT force the DDD architecture.** You **MUST** follow the `docs/adr/ARCHITECTURE.md` of each project (which could be frontend, MVC, Clean Architecture, etc.). DDD may only be suggested if it makes sense and does not conflict with the existing architecture.
 
 3. Save a separate document for each project.
 
@@ -64,7 +64,7 @@ ${regras}
 
 ## Your Mission: Tactical Design (PER PROJECT)
 
-For each project in the path list, execute the following, **adapting the concepts below to the project's actual architecture (as per `docs/ARCHITECTURE.md`)**:
+For each project in the path list, execute the following, **adapting the concepts below to the project's actual architecture (as per `docs/adr/ARCHITECTURE.md`)**:
 
 ### 1. Main Structure (Aggregates/Entities/Components)
 

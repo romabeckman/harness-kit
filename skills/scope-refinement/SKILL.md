@@ -41,7 +41,7 @@ Wait for the response. Store it as `${escopo}`.
 >
 > ⚠️ **If using VS Code, make sure the projects are in the workspace.**
 >
-> These paths will be used to read `docs/README.md` and `docs/ARCHITECTURE.md` from each project.
+> These paths will be used to read `docs/README.md` and `docs/adr/ARCHITECTURE.md` from each project.
 
 Wait for the response. Store it as `${projectPaths}`.
 
@@ -194,6 +194,6 @@ Upon completing all phases, present to the user:
 2. **Format**: Structured Markdown with hierarchical H2/H3 titles, lists, and tables.
 3. **Ubiquitous Language**: Use glossary terms consistently across ALL documents.
 4. **LLM Optimization**: Maximize information density. No vague, colloquial, or redundant phrases.
-5. **Projects**: Always read `docs/README.md` and `docs/ARCHITECTURE.md` of each project before analyzing.
-6. **Architecture**: DO NOT force DDD on projects that do not follow this architecture. Adapt to each project's `docs/ARCHITECTURE.md`.
+5. **Projects**: Always read `docs/README.md` and `docs/adr/ARCHITECTURE.md` of each project before analyzing.
+6. **Architecture**: DO NOT force DDD on projects that do not follow this architecture. Adapt to each project's `docs/adr/ARCHITECTURE.md`.
 7. **Spec Path**: All documents stay in `docs/specs/${dominio}/` within the **first project** of the list (or the project the user indicates as main).

@@ -23,8 +23,8 @@ ${projectPaths}
 For **EACH** project listed above:
 1. Access the `docs/` directory and execute the steps below:
    a. Read `docs/README.md` — overview and project index (if it exists)
-   b. Read `docs/TESTS.md` — test frameworks, organization patterns, and execution commands (if it exists)
-   c. Based on the README and the provided scope, identify which additional documents in `docs/` are relevant to the scope under analysis
+   b. Read `docs/adr/TESTS.md` — test frameworks, organization patterns, and execution commands (if it exists)
+   c. Based on the README and the provided scope, identify which additional documents in `docs/` (inside `docs/adr/` or `docs/feature/`) are relevant to the scope under analysis
    d. Read all documents identified as relevant
 
 2. Derive the **SPECIFIC** test scenarios for that project, using the corresponding Tactical Design
@@ -219,7 +219,7 @@ Save the result following exactly this structure:
 **Scope:** [brief scope summary]
 **Date:** [current date]
 **Project:** [PROJECT_NAME]
-**Framework:** [framework identified in docs/TESTS.md of this project]
+**Framework:** [framework identified in docs/adr/TESTS.md of this project]
 
 ---
 

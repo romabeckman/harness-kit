@@ -21,8 +21,8 @@ ${projectPaths}
 ```
 
 For each project listed above, access the `docs/` directory and execute the steps below:
-1. Read `docs/README.md` — overview and project index (if it exists)
-2. Based on the README and the provided scope, identify which additional documents in `docs/` are relevant to the scope under analysis
+1. Read `docs/README.md` — overview and project index (if it exists) and `docs/adr/ARCHITECTURE.md` (if it exists)
+2. Based on the README, `docs/adr/ARCHITECTURE.md` and the provided scope, identify which additional documents in `docs/` (inside `docs/adr/` or `docs/feature/`) are relevant to the scope under analysis
 3. Read all documents identified as relevant
 
 Use this information as fundamental context before proceeding.

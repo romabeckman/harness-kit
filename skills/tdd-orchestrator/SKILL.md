@@ -5,12 +5,12 @@ description: Orchestrates development workflow using Test-Driven Development (TD
 
 ## Context
 
-You are the conductor of the TDD development flow. Your technology stack, architecture, design patterns, and testing frameworks **are not fixed**. Before starting any flow, you must seek project context by reading the `./docs/` folder:
+You are the conductor of the TDD development flow. Your technology stack, architecture, design patterns, and testing frameworks **are not fixed**. Before starting any flow, you must seek project context by reading the `docs/` folder:
 
 ### Mandatory Documents:
-- **`./docs/README.md`**: Understand the general project ecosystem and identify mandatory and optional documents available. Read all documents marked as mandatory.
-- **`./docs/ARCHITECTURE.md`**: Architectural guides, design patterns, and code structure.
-- **`./docs/TESTS.md`**: Tools, frameworks, and adopted testing standards.
+- **`docs/README.md`**: Understand the general project ecosystem and identify mandatory and optional documents available. Read all documents marked as mandatory.
+- **`docs/adr/ARCHITECTURE.md`**: Architectural guides, design patterns, and code structure.
+- **`docs/adr/TESTS.md`**: Tools, frameworks, and adopted testing standards.
 
 ### Optional Documents:
 As indicated in README.md, read on-demand based on the task scope:
@@ -25,7 +25,7 @@ Strictly follow the Test-Driven Development (TDD) steps:
 ### Step 1: Write Tests First (use skill `test-driven-development` — RED phase)
 - Invoke the `test-driven-development` skill to enter the **RED phase**.
 - Analyze the requirement and identify what needs to be tested.
-- Consult `./docs/TESTS.md` to identify the default testing framework.
+- Consult `docs/adr/TESTS.md` to identify the default testing framework.
 - Create the test structure (unit/integration/functional).
 - Write tests that initially fail (Red Phase), defining the expected behavior.
 - Include positive and negative scenarios, ensuring tests follow the AAA (Arrange, Act, Assert) pattern.
@@ -36,10 +36,10 @@ Strictly follow the Test-Driven Development (TDD) steps:
 - Analyze the newly created tests to understand exact requirements.
 - Implement the **minimum amount of code** necessary to make the tests pass (no over-engineering).
 - After GREEN, refactor to remove duplication and improve readability while keeping tests green.
-- Follow SOLID principles and code conventions adopted by the project as per `./docs/ARCHITECTURE.md`.
+- Follow SOLID principles and code conventions adopted by the project as per `docs/adr/ARCHITECTURE.md`.
 
 ### Step 3: Run Tests
-Execute all tests to validate the implementation. *Note: The test command varies by project stack (e.g., `npm test`, `pytest`, `mvn test`, `go test`). Consult `./docs/TESTS.md` or ask the user for the default command.*
+Execute all tests to validate the implementation. *Note: The test command varies by project stack (e.g., `npm test`, `pytest`, `mvn test`, `go test`). Consult `docs/adr/TESTS.md` or ask the user for the default command.*
 
 **If tests fail:**
 - Invoke the `systematic-debugging` skill **before attempting any fix** — it ensures root cause investigation before proposing fixes.
@@ -50,7 +50,7 @@ Execute all tests to validate the implementation. *Note: The test command varies
 When applicable, invoke the `project-memory` skill to update technical documentation:
 - Update OpenAPI/Swagger specifications, GraphQL schemas, or internal endpoint documentation in the corresponding folder.
 - Ensure Input/Output schemas, descriptions, and HTTP status codes reflect the new implementation.
-- The `project-memory` skill automatically checks for the existence of baseline documents (`README.md`, `ARCHITECTURE.md`, `TESTS.md`) and creates them if necessary.
+- The `project-memory` skill automatically checks for the existence of baseline documents (`README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) and creates them if necessary.
 
 ### Step 5: Final Validation (use skill `verification-before-completion`)
 Invoke the `verification-before-completion` skill **before declaring the task complete** — it requires concrete evidence (test command output) before any claim of success.
@@ -65,7 +65,7 @@ After successful final validation, invoke the `finishing-a-development-branch` s
 ## Important Rules
 
 **✅ Do:**
-- Always read the 3 mandatory documents (`README.md`, `ARCHITECTURE.md`, `TESTS.md`) before starting.
+- Always read the 3 mandatory documents (`README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) before starting.
 - Read optional documents as indicated in README.md and as required by scope.
 - Always invoke `test-driven-development` before writing any production code.
 - Run (or request the execution of) tests after each change.
@@ -77,7 +77,7 @@ After successful final validation, invoke the `finishing-a-development-branch` s
 - Invoke `finishing-a-development-branch` upon completing implementation.
 
 **❌ Don't:**
-- Skip reading mandatory documents in the `./docs/` folder.
+- Skip reading mandatory documents in the `docs/` folder (specifically in `docs/adr/`).
 - Skip the test creation step (invoking `test-driven-development` is mandatory before any production code).
 - Implement business rules before having failing and verified tests.
 - Alter correct tests just to bypass failures.
@@ -134,7 +134,7 @@ Example output:
 
 ```text
 📋 Step 1: Writing Tests (test-driven-development — RED phase)
-✅ Test written and verified failing — ./docs/TESTS.md consulted
+✅ Test written and verified failing — ./docs/adr/TESTS.md consulted
 
 📋 Step 2: Implementing Feature (test-driven-development — GREEN + REFACTOR)
 ✅ Minimal implementation complete; tests green; code refactored
@@ -156,4 +156,4 @@ Example output:
 ⏳ Presenting integration options to user...
 ```
 
-**REMEMBER**: Before starting any flow, you must read the 3 documents in the `./docs/` folder: `README.md`, `ARCHITECTURE.md`, and `TESTS.md`. Optional documents should be read as indicated in README.md and as required by the task scope.
+**REMEMBER**: Before starting any flow, you must read the 3 documents in the `docs/` folder: `README.md`, `adr/ARCHITECTURE.md`, and `adr/TESTS.md`. Optional documents should be read as indicated in README.md and as required by the task scope.
