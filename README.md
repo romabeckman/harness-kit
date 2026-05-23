@@ -1,6 +1,10 @@
 # 🔧 HarnessKit
 
-> [!IMPORTANT]
+![HarnessKit - 5-Step Engineering Cycle](docs/assets/harness-cycle-banner.png)
+
+> **Harness Engineering**: A reliable agent is defined as **Model (AI) + Harness (Controls)**. [1]
+
+> **IMPORTANT!**
 > This project requires the [Superpowers](https://github.com/obra/superpowers) skill. Install it using the command:
 > `/plugin install superpowers@claude-plugins-official`
 
