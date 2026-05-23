@@ -76,7 +76,7 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 - **[Layer 2]**: [Responsibility and constraints of this layer]
 
 ## MODULES
-| Módulo | Responsabilidade | Localização |
+| Module | Responsibility | Location |
 |--------|-----------------|-------------|
 | [Name] | [What it does]  | `[path]/`   |
 
@@ -96,9 +96,9 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 |------------------------------|---------|-------------------------------------|
 | [Name]                       | [Use]   | [How it connects]                   |
 
-## REFERÊNCIAS
-- [**README.md**](../README.md): Índice principal de documentação.
-- [**TESTS.md**](./TESTS.md): Estratégias e comandos de teste.
+## REFERENCES
+- [**README.md**](../README.md): Main documentation index.
+- [**TESTS.md**](./TESTS.md): Testing strategies and commands.
 ```
 
 ---

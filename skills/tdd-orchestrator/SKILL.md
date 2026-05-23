@@ -16,8 +16,6 @@ You are the conductor of the TDD development flow. Your technology stack, archit
 As indicated in README.md, read on-demand based on the task scope:
 - API documents, deployment, configuration, etc.
 
-**IMPORTANT: All communication and output generated for the user MUST be in Portuguese (pt-BR).**
-
 ## TDD Development Workflow
 
 Strictly follow the Test-Driven Development (TDD) steps:
@@ -46,21 +44,26 @@ Execute all tests to validate the implementation. *Note: The test command varies
 - After identifying the root cause, fix the implementation using the `test-driven-development` skill (Iron Law: never change tests to force passing unless the original test was conceptually wrong).
 - Re-run tests until all pass.
 
-### Step 4: Update Documentation (use skill `project-memory`)
-When applicable, invoke the `project-memory` skill to update technical documentation:
-- Update OpenAPI/Swagger specifications, GraphQL schemas, or internal endpoint documentation in the corresponding folder.
-- Ensure Input/Output schemas, descriptions, and HTTP status codes reflect the new implementation.
-- The `project-memory` skill automatically checks for the existence of baseline documents (`README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) and creates them if necessary.
-
-### Step 5: Final Validation (use skill `verification-before-completion`)
+### Step 4: Final Validation (use skill `verification-before-completion`)
 Invoke the `verification-before-completion` skill **before declaring the task complete** — it requires concrete evidence (test command output) before any claim of success.
 
 Run the full test suite one last time to ensure no system regression.
 
 **The task is only considered complete when 100% of tests pass with verified evidence.**
 
-### Step 6: Finish Branch (use skill `finishing-a-development-branch`)
-After successful final validation, invoke the `finishing-a-development-branch` skill to guide work integration: local merge, Pull Request, keep branch, or discard.
+### Step 5: Update Documentation (use skill `project-memory`)
+When applicable, invoke the `project-memory` skill to update technical documentation:
+- Update OpenAPI/Swagger specifications, GraphQL schemas, or internal endpoint documentation in the corresponding folder.
+- Ensure Input/Output schemas, descriptions, and HTTP status codes reflect the new implementation.
+- The `project-memory` skill automatically checks for the existence of baseline documents (`README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) and creates them if necessary.
+
+### Step 6: Record Execution Trace (use skill `harness-tracer`)
+Invoke the `harness-tracer` skill to persist a structured execution trace of this session to `docs/harness-history/traces/`. Pass:
+- `${skill_name}` = `tdd-orchestrator`
+- `${agent_name}` = the active agent name (e.g., `developer-backend`)
+- `${task_summary}` = one-sentence description of the task just completed
+
+This step is **not optional** — traces are the raw material for harness optimization via `harness-evaluator` and `meta-harness`. Skipping it breaks the improvement loop.
 
 ## Important Rules
 
@@ -70,11 +73,10 @@ After successful final validation, invoke the `finishing-a-development-branch` s
 - Always invoke `test-driven-development` before writing any production code.
 - Run (or request the execution of) tests after each change.
 - Fix production code to pass tests.
+- Invoke `verification-before-completion` before declaring any completion.
 - Invoke `project-memory` to update API documentation for new endpoints.
 - Strictly follow the TDD workflow order.
-- Invoke `systematic-debugging` whenever tests fail.
-- Invoke `verification-before-completion` before declaring any completion.
-- Invoke `finishing-a-development-branch` upon completing implementation.
+- Invoke `harness-tracer` at the end of every session (Step 6) — this feeds the harness optimization loop.
 
 **❌ Don't:**
 - Skip reading mandatory documents in the `docs/` folder (specifically in `docs/adr/`).
@@ -85,6 +87,7 @@ After successful final validation, invoke the `finishing-a-development-branch` s
 - Execute package installation commands directly without user consent/action.
 - Declare "tests passed" without having executed and verified the output in that same message (use `verification-before-completion`).
 - Propose fixes for failing tests without first invoking `systematic-debugging`.
+- Skip `harness-tracer` at the end of the session (Step 6) — every skipped trace degrades the optimization signal.
 
 ## Manual User Actions Required
 
@@ -98,16 +101,17 @@ The following actions must be performed manually by the user, depending on the p
 
 ## Workflow Summary
 
-```text
-Requirement → Tests (Fail) → Implementation → Tests (Pass) → Documentation → Final Validation → Finish Branch
-     ↓              ↓               ↓               ↓               ↓                ↓                  ↓
-  Analyze    test-driven-dev   test-driven-dev   Run Tests       Manual         verification-    finishing-a-
-             (RED: write       (GREEN: min impl  (if fail:       (OpenAPI/       before-          development-
-             failing test)     REFACTOR:         systematic-    project-memory     completion       branch
-                               clean code)       debugging +    (OpenAPI/       [mandatory
-                                                 test-driven-   Swagger etc.)   evidence]
-                                                 dev fix)
-```
+**TDD Development Workflow Sequence:**
+
+1. **Requirement Analysis** → Define what needs to be tested
+2. **Step 1: Write Tests (RED)** → Use `test-driven-development` skill to write failing tests
+3. **Step 2: Implement Code (GREEN + REFACTOR)** → Use `test-driven-development` skill to implement and refactor
+4. **Step 3: Run Tests** → Execute all tests; if fail → use `systematic-debugging` skill → fix via `test-driven-development`
+5. **Step 4: Final Validation** → Use `verification-before-completion` skill to verify all tests pass
+6. **Step 5: Update Documentation** → Use `project-memory` skill to update API specs, OpenAPI/Swagger
+7. **Step 6: Record Execution Trace** → Use `harness-tracer` skill to persist session trace
+
+**Success Criteria:** 100% of tests pass with verified evidence before proceeding to next step.
 
 ## Error Handling During Workflow
 
@@ -146,14 +150,14 @@ Example output:
 📋 Step 3: Re-running Tests
 ✅ All tests passed
 
-📋 Step 4: Updating Documentation (project-memory)
-✅ API contracts and docs updated via project-memory skill
-
-📋 Step 5: Final Validation (verification-before-completion)
+📋 Step 4: Final Validation (verification-before-completion)
 ✅ [test output evidence] All tests passed — claim verified
 
-📋 Step 6: Finishing Branch (finishing-a-development-branch)
-⏳ Presenting integration options to user...
+📋 Step 5: Updating Documentation (project-memory)
+✅ API contracts and docs updated via project-memory skill
+
+📋 Step 6: Record Execution Trace (harness-tracer)
+✅ Session trace recorded to docs/harness-history/traces/
 ```
 
 **REMEMBER**: Before starting any flow, you must read the 3 documents in the `docs/` folder: `README.md`, `adr/ARCHITECTURE.md`, and `adr/TESTS.md`. Optional documents should be read as indicated in README.md and as required by the task scope.
