@@ -156,7 +156,80 @@ Update docs/adr/TESTS.md with new tests
 
 ---
 
-### Step 4: Invoke the-grumpy-tech-lead (10-15 min)
+### Step 4: Continue on TDD-Orchestrator for Automatic Harness-Tracer
+
+> **Note:** At the end of the process, the TDD-Orchestrator should execute the `/harness-kit:harness-tracer` skill. If it fails to run automatically, you must execute it manually.
+
+```bash
+[tdd-orchestrator ends]
+↓
+[automatic] /harness-kit:harness-tracer
+```
+
+**Tracer creates:**
+```
+docs/harness-history/traces/session-2026-05-22-001/
+├── metadata.md
+│   skill_used: tdd-orchestrator
+│   agent: developer-backend
+│   task_summary: Implement TOTP authentication
+│   duration: long (> 60 min)
+│
+├── steps.md
+│   # Skill Chain
+│   project-memory → scope-refinement → tdd-orchestrator → the-grumpy-tech-lead
+│
+│   # Action Sequence
+│   | 1 | Read docs/adr/ARCHITECTURE.md | Read | success |
+│   | 2 | Read docs/specs/mfa-totp/ | Read | success |
+│   | 3 | Wrote test 1 (happy path) | Write | success |
+│   | 4 | tdd-orchestrator invoked test-driven... | Chain | RED ✅ |
+│   | 5 | Implemented OTPValidator | Edit | success |
+│   | 6 | Cycle 1 passed | Bash | GREEN ✅ |
+│   | 7 | Refactored to classes | Edit | success |
+│   | 8 | Cycle 1 still passes | Bash | REFACTOR ✅ |
+│   | 9 | Wrote test 2 (previous period) | Write | success |
+│   | 10| Cycle 2: RED | Bash | RED ✅ |
+│   | 11| Implemented tolerance | Edit | success |
+│   | 12| Cycle 2: GREEN | Bash | GREEN ✅ |
+│   | ... | (more tests/cycles) | ... | ... |
+│   | 25| the-grumpy-tech-lead raised points | Eval | 5 points |
+│   | 26| Implemented rate-limiting | Edit | success |
+│   | 27| All cycles still pass | Bash | SUCCESS ✅ |
+│
+├── score.md
+│   tdd_cycles: 3              ← 3 times RED→GREEN→REFACTOR complete
+│   iterations_to_pass: 2      ← 2 test runs until 100%
+│   grumpy_open_points: 5      ← 5 points raised
+│   context_docs_read: 4       ← docs read
+│   skill_chain_length: 4      ← 4 skills invoked
+│   deviations: 0              ← no deviations
+│   blockers_hit: 0            ← no blockers
+│
+└── verdict.md
+    # Session Verdict
+    
+    ## What Worked Well
+    - Scope-refinement very useful for understanding test cases
+    - TDD natural for temporal code (understood requirements before)
+    - Tech-lead questions revealed missing rate-limiting
+    
+    ## What Caused Friction
+    - TOTP specification complex (timezone, tolerance window)
+    - Recovery codes added extra cycles
+    - Debugging Date() in tests was slow
+    
+    ## Hypothesis
+    "Maybe tech-lead review in the MIDDLE of implementation (after cycle 1)
+     would have saved time (wouldn't have implemented rate-limiting wrong)"
+    
+    ## Recommended Change
+    "Invoke the-grumpy-tech-lead after first RED→GREEN,
+```
+
+---
+
+### Step 5: Invoke the-grumpy-tech-lead (10-15 min)
 
 ```bash
 /harness-kit:the-grumpy-tech-lead
@@ -226,77 +299,6 @@ test('should block after 5 attempts in 60s', () => {
 - More robust code
 - Edge cases covered
 - **Know**: What are the systemic risks?
-
----
-
-### Step 5: End of Session (automatic)
-
-```bash
-[tdd-orchestrator ends]
-↓
-[automatic] /harness-kit:harness-tracer
-```
-
-**Tracer creates:**
-```
-docs/harness-history/traces/session-2026-05-22-001/
-├── metadata.md
-│   skill_used: tdd-orchestrator
-│   agent: developer-backend
-│   task_summary: Implement TOTP authentication
-│   duration: long (> 60 min)
-│
-├── steps.md
-│   # Skill Chain
-│   project-memory → scope-refinement → tdd-orchestrator → the-grumpy-tech-lead
-│
-│   # Action Sequence
-│   | 1 | Read docs/adr/ARCHITECTURE.md | Read | success |
-│   | 2 | Read docs/specs/mfa-totp/ | Read | success |
-│   | 3 | Wrote test 1 (happy path) | Write | success |
-│   | 4 | tdd-orchestrator invoked test-driven... | Chain | RED ✅ |
-│   | 5 | Implemented OTPValidator | Edit | success |
-│   | 6 | Cycle 1 passed | Bash | GREEN ✅ |
-│   | 7 | Refactored to classes | Edit | success |
-│   | 8 | Cycle 1 still passes | Bash | REFACTOR ✅ |
-│   | 9 | Wrote test 2 (previous period) | Write | success |
-│   | 10| Cycle 2: RED | Bash | RED ✅ |
-│   | 11| Implemented tolerance | Edit | success |
-│   | 12| Cycle 2: GREEN | Bash | GREEN ✅ |
-│   | ... | (more tests/cycles) | ... | ... |
-│   | 25| the-grumpy-tech-lead raised points | Eval | 5 points |
-│   | 26| Implemented rate-limiting | Edit | success |
-│   | 27| All cycles still pass | Bash | SUCCESS ✅ |
-│
-├── score.md
-│   tdd_cycles: 3              ← 3 times RED→GREEN→REFACTOR complete
-│   iterations_to_pass: 2      ← 2 test runs until 100%
-│   grumpy_open_points: 5      ← 5 points raised
-│   context_docs_read: 4       ← docs read
-│   skill_chain_length: 4      ← 4 skills invoked
-│   deviations: 0              ← no deviations
-│   blockers_hit: 0            ← no blockers
-│
-└── verdict.md
-    # Session Verdict
-    
-    ## What Worked Well
-    - Scope-refinement very useful for understanding test cases
-    - TDD natural for temporal code (understood requirements before)
-    - Tech-lead questions revealed missing rate-limiting
-    
-    ## What Caused Friction
-    - TOTP specification complex (timezone, tolerance window)
-    - Recovery codes added extra cycles
-    - Debugging Date() in tests was slow
-    
-    ## Hypothesis
-    "Maybe tech-lead review in the MIDDLE of implementation (after cycle 1)
-     would have saved time (wouldn't have implemented rate-limiting wrong)"
-    
-    ## Recommended Change
-    "Invoke the-grumpy-tech-lead after first RED→GREEN,
-```
 
 ---
 
@@ -499,5 +501,3 @@ STATUS: ✅ Complete in 65 minutes
 2. **Every 5–10 sessions**: Run harness-evaluator → meta-harness to improve
 3. **Each session**: harness-tracer automatically records everything
 4. **Result**: Skills evolve with real data, not guesswork
-
-**Next step**: Read USER-WORKFLOW.md for complete flow explanation.
