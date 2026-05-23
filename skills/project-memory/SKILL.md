@@ -58,6 +58,7 @@ Use this table to determine which rules file to read and which constraints apply
 | `docs/adr/TESTS.md` | `./references/TESTS-RULES.md` | Test strategies, standards, execution commands |
 | Any other ADR (e.g., `SECURITY.md`, `DATABASE.md`, `API-DESIGN.md`, `OBSERVABILITY.md`) | `./references/DOCUMENT-TEMPLATE.md` | OPTIONAL: Specific architectural decisions, standards, or guidelines. MUST only be created if explicitly requested/decided by a human |
 | Any feature document (e.g., `docs/feature/*.md`) | `./references/DOCUMENT-TEMPLATE.md` | One business domain or feature per file |
+| `docs/harness-history/**` | N/A | PROHIBITED: project-memory must never read, create, or modify any file under `docs/harness-history/`. This folder is managed exclusively by `harness-tracer`, `harness-evaluator`, and `meta-harness`. |
 
 ### Rules for document folders and organization
 
@@ -66,6 +67,7 @@ Use this table to determine which rules file to read and which constraints apply
 - REQUIRED: Save all feature and business domain documentation (such as specific features, modules) in the `docs/feature/` folder.
 - PROHIBITED: Creating documents directly under `docs/` other than `docs/README.md`.
 - PROHIBITED: Creating or manipulating any folders under `docs/` other than `docs/adr/` and `docs/feature/`.
+- PROHIBITED: Reading, creating, or modifying any file under `docs/harness-history/`. That folder is reserved for the harness optimization loop (`harness-tracer`, `harness-evaluator`, `meta-harness`) and must not be touched by `project-memory`.
 
 ### Rules for non-baseline documents
 

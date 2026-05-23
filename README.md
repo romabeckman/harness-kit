@@ -91,6 +91,9 @@ Follow this iterative process for maximum quality and safety:
 | **Scope Refinement** (`scope-refinement`) | DDD-based scope orchestrator. Maps Bounded Contexts, Aggregates, and Use Cases. Produces test scenarios before implementation starts. |
 | **TDD Orchestrator** (`tdd-orchestrator`) | Enforces RED → GREEN → REFACTOR. Coordinates the full test-driven development cycle, blocking implementation without a failing test first. |
 | **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Senior technical reviewer. Uses Socratic questioning to expose systemic risks (N+1, leaks, race conditions, SOLID violations) without providing ready-made solutions. |
+| **Harness Tracer** (`harness-tracer`) | Records structured execution traces after each session to `docs/harness-history/traces/`. Raw material for harness optimization. |
+| **Harness Evaluator** (`harness-evaluator`) | Aggregates traces, computes composite scores per skill chain, and updates the Pareto frontier of best harness configurations. |
+| **Meta-Harness** (`meta-harness`) | Proposer for the harness optimization loop. Reads history, diagnoses failure patterns, proposes targeted SKILL.md improvements, and guides semi-automatic evaluation. |
 
 ### 🤖 Expert Agents (`/agents`)
 
@@ -104,6 +107,43 @@ Pre-configured agent personas that embody specific engineering roles, designed t
 | **Developer Frontend** (`developer-frontend`) | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
 | **Developer Debugging** (`developer-debugging`) | Root Cause Specialist | Systematic bug investigation using the "5 Whys" methodology. |
 | **QA Engineer** (`qa`) | Quality Assurance | E2E testing strategy, automation, and full-flow validation. |
+| **Meta-Harness Agent** (`meta-harness-agent`) | Harness Optimizer | Reads harness history filesystem, diagnoses failure patterns, proposes targeted skill improvements. |
+
+---
+
+## Harness Optimization Loop
+
+After collecting sessions with the standard workflow, HarnessKit can automatically improve its own skills via the **Meta-Harness loop** — inspired by the [Meta-Harness paper](https://arxiv.org/abs/2506.01234).
+
+```
+Sessions (real work)
+       ↓
+ harness-tracer        ← records every session automatically
+       ↓
+ harness-evaluator     ← aggregates scores, updates Pareto frontier
+       ↓
+ meta-harness          ← diagnoses patterns, proposes skill improvement
+       ↓
+ Human review & approval
+       ↓
+ Apply candidate → collect sessions → evaluate → promote or discard
+       ↓
+ Loop repeats
+```
+
+**How to start a loop:**
+
+```bash
+# After ≥3 sessions have been recorded by harness-tracer:
+/harness-kit:harness-evaluator
+
+# After reviewing pareto-frontier.md:
+/harness-kit:meta-harness
+
+# After applying the candidate and collecting sessions:
+/harness-kit:harness-evaluator
+/harness-kit:meta-harness --promote v001
+```
 
 ---
 

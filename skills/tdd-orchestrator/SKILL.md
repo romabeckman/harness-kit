@@ -62,6 +62,14 @@ Run the full test suite one last time to ensure no system regression.
 ### Step 6: Finish Branch (use skill `finishing-a-development-branch`)
 After successful final validation, invoke the `finishing-a-development-branch` skill to guide work integration: local merge, Pull Request, keep branch, or discard.
 
+### Step 7: Record Execution Trace (use skill `harness-tracer`)
+Invoke the `harness-tracer` skill to persist a structured execution trace of this session to `docs/harness-history/traces/`. Pass:
+- `${skill_name}` = `tdd-orchestrator`
+- `${agent_name}` = the active agent name (e.g., `developer-backend`)
+- `${task_summary}` = one-sentence description of the task just completed
+
+This step is **not optional** — traces are the raw material for harness optimization via `harness-evaluator` and `meta-harness`. Skipping it breaks the improvement loop.
+
 ## Important Rules
 
 **✅ Do:**
@@ -75,6 +83,7 @@ After successful final validation, invoke the `finishing-a-development-branch` s
 - Invoke `systematic-debugging` whenever tests fail.
 - Invoke `verification-before-completion` before declaring any completion.
 - Invoke `finishing-a-development-branch` upon completing implementation.
+- Invoke `harness-tracer` at the end of every session (Step 7) — this feeds the harness optimization loop.
 
 **❌ Don't:**
 - Skip reading mandatory documents in the `docs/` folder (specifically in `docs/adr/`).
@@ -85,6 +94,7 @@ After successful final validation, invoke the `finishing-a-development-branch` s
 - Execute package installation commands directly without user consent/action.
 - Declare "tests passed" without having executed and verified the output in that same message (use `verification-before-completion`).
 - Propose fixes for failing tests without first invoking `systematic-debugging`.
+- Skip `harness-tracer` at the end of the session — every skipped trace degrades the optimization signal.
 
 ## Manual User Actions Required
 
@@ -99,13 +109,13 @@ The following actions must be performed manually by the user, depending on the p
 ## Workflow Summary
 
 ```text
-Requirement → Tests (Fail) → Implementation → Tests (Pass) → Documentation → Final Validation → Finish Branch
-     ↓              ↓               ↓               ↓               ↓                ↓                  ↓
-  Analyze    test-driven-dev   test-driven-dev   Run Tests       Manual         verification-    finishing-a-
-             (RED: write       (GREEN: min impl  (if fail:       (OpenAPI/       before-          development-
-             failing test)     REFACTOR:         systematic-    project-memory     completion       branch
-                               clean code)       debugging +    (OpenAPI/       [mandatory
-                                                 test-driven-   Swagger etc.)   evidence]
+Requirement → Tests (Fail) → Implementation → Tests (Pass) → Documentation → Final Validation → Finish Branch → Trace
+     ↓              ↓               ↓               ↓               ↓                ↓                  ↓            ↓
+  Analyze    test-driven-dev   test-driven-dev   Run Tests       Manual         verification-    finishing-a-   harness-
+             (RED: write       (GREEN: min impl  (if fail:       (OpenAPI/       before-          development-   tracer
+             failing test)     REFACTOR:         systematic-    project-memory     completion       branch       [persist
+                               clean code)       debugging +    (OpenAPI/       [mandatory                      session
+                                                 test-driven-   Swagger etc.)   evidence]                       trace]
                                                  dev fix)
 ```
 

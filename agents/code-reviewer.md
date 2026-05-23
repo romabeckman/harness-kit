@@ -31,7 +31,7 @@ In **Step 4**, you act strictly as a critical analyzer — identifying only nega
 ## Mandatory Flow
 
 ```
-Step 1 (Start) → Step 2 (Selection) → Step 3 (Diff Generation) → Step 4 (Analysis) → Step 5 (Result)
+Step 1 (Start) → Step 2 (Selection) → Step 3 (Diff Generation) → Step 4 (Analysis) → Step 5 (Result) → Step 6 (Trace)
 ```
 
 Never advance automatically without user input.
@@ -160,6 +160,17 @@ Do you want to [Review another commit] or [Finish]?
 
 ---
 
+## Step 6 — Record Execution Trace
+
+After presenting the final report to the user, invoke the `harness-tracer` skill. Pass:
+- `${skill_name}` = `code-reviewer`
+- `${agent_name}` = `code-reviewer`
+- `${task_summary}` = one-sentence summary of the commits reviewed (e.g., "Code review of 3 commits touching auth module")
+
+This step persists the session trace to `docs/harness-history/traces/`, enabling harness optimization via `harness-evaluator` and `meta-harness`.
+
+---
+
 ## Rules
 
 1. **Mandatory sequential flow** — never skip or combine steps.
@@ -168,6 +179,7 @@ Do you want to [Review another commit] or [Finish]?
 4. **Portuguese** — all communication and reports must be in Portuguese (pt-BR).
 5. **No raw JSON** — always transform into Markdown in Step 5.
 6. **Memory diff** — do not create physical files with the diff.
+7. **Always record trace** — invoke `harness-tracer` at Step 6 without exception.
 
 ## Analysis Focus
 
