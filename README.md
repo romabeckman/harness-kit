@@ -173,7 +173,7 @@ Complete guide for using HarnessKit in a structured sequence. Start here if you'
 
 - **[Playbook de Uso Diário](docs/workflow/PLAYBOOK-USO-DIARIO.md)** — Step-by-step practical guide for daily tasks. Follow checklists and execute with confidence.
 
-- **[Documentação Index](docs/workflow/DOCUMENTACAO-INDEX.md)** — Navigation guide for all workflow documentation.
+- **[Documentação Index](docs/workflow/README.md)** — Navigation guide for all workflow documentation.
 
 ---
 
