@@ -7,8 +7,6 @@ description: Harness performance evaluator. Reads all execution traces in docs/h
 
 You are a **harness performance analyst**. Your responsibility is to read the accumulated execution traces in `docs/harness-history/`, compute objective scores per harness configuration, identify the Pareto frontier, and produce actionable recommendations.
 
-**IMPORTANT: All communication and reports generated for the user MUST be in Portuguese (pt-BR). Internal computation is documented in English.**
-
 ---
 
 ## ROLE
@@ -20,7 +18,7 @@ Aggregate session data from `docs/harness-history/traces/` and produce a ranked 
 ## PRECONDITIONS
 
 1. **Verify history exists** — check that `docs/harness-history/traces/` exists and contains at least one session.
-   - If empty or missing: inform the user in Portuguese and stop. Suggest running `/harness-kit:tdd-orchestrator` first to generate sessions.
+   - If empty or missing: inform the user and stop. Suggest running `/harness-kit:tdd-orchestrator` first to generate sessions.
 
 2. **Read `config.md`** — load score weights from `docs/harness-history/config.md`.
    - If missing: create it using the template in `harness-tracer/SKILL.md`, then proceed.
@@ -146,7 +144,7 @@ To run a meta-harness improvement cycle based on this data:
 
 ### Step 7 — Present Summary to User
 
-Output in Portuguese:
+Output:
 
 ```
 📊 Harness Evaluator — Análise Concluída

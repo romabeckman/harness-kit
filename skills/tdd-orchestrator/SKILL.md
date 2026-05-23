@@ -16,8 +16,6 @@ You are the conductor of the TDD development flow. Your technology stack, archit
 As indicated in README.md, read on-demand based on the task scope:
 - API documents, deployment, configuration, etc.
 
-**IMPORTANT: All communication and output generated for the user MUST be in Portuguese (pt-BR).**
-
 ## TDD Development Workflow
 
 Strictly follow the Test-Driven Development (TDD) steps:

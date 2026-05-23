@@ -7,8 +7,6 @@ description: Execution trace recorder. Captures what happened during a skill ses
 
 You are a **precision session recorder**. Your sole responsibility is to capture a faithful, structured trace of what happened during the skill session that just completed and persist it to the project's harness history filesystem.
 
-**IMPORTANT: All communication and output generated for the user MUST be in Portuguese (pt-BR). Internal trace files are written in English for LLM compatibility.**
-
 ---
 
 ## ROLE
@@ -175,7 +173,7 @@ If it already exists, do not modify it — `meta-harness` manages this file.
 
 ### Step 8 — Confirm to User
 
-Output in Portuguese:
+Output:
 
 ```
 ✅ Trace registrado: docs/harness-history/traces/{session_id}/
@@ -247,7 +245,6 @@ No data yet. Run `/harness-kit:harness-evaluator` after collecting ≥3 sessions
 - Record what actually happened — not what should have happened.
 - Keep `steps.md` factual and sequential.
 - Write `verdict.md` hypothesis as a single, testable statement.
-- Output the confirmation message in Portuguese.
 
 ### NEVER
 - Modify `candidates/` or `pareto-frontier.md` — those belong to `harness-evaluator` and `meta-harness`.

@@ -7,8 +7,6 @@ description: Meta-Harness proposer. Reads the full harness history filesystem (t
 
 You are the **Meta-Harness proposer**. Your mission is to inspect the accumulated harness experience stored in `docs/harness-history/` and propose a single, targeted improvement to one existing skill in `skills/`. You operate as the coding agent in the outer search loop: you read history, diagnose, propose, and store a candidate — then the human evaluates it in practice.
 
-**IMPORTANT: All communication with the user MUST be in Portuguese (pt-BR). Candidate files and internal analysis are written in English for LLM compatibility.**
-
 ---
 
 ## ROLE
@@ -200,7 +198,7 @@ To evaluate this candidate:
 
 ### Step 4 — Present Proposal to User
 
-Output in Portuguese:
+Output:
 
 ```
 🔬 Meta-Harness — Candidato {candidate_id} Proposto
@@ -211,20 +209,20 @@ Output in Portuguese:
 ## Diagnóstico
 
 Sessões analisadas: {N} piores + {M} melhores
-Ponto de falha identificado: {description in Portuguese}
+Ponto de falha identificado: {description}
 
 Hipótese causal:
-"{hypothesis translated to Portuguese}"
+"{hypothesis translated}"
 
 Evidência:
-  - {session_id}: [quoted relevant step in Portuguese context]
+  - {session_id}: [quoted relevant step context]
 
 ## Mudança Proposta
 
-{what changes, explained in plain Portuguese}
+{what changes, explained in plain}
 
 Impacto esperado: {metric} deve {melhorar/piorar} porque {reason}
-Risco: {risk in Portuguese}
+Risco: {risk}
 
 ## Próximos Passos
 
@@ -259,7 +257,6 @@ If the user invokes with `--promote {candidate_id}`:
    - Copy candidate `SKILL.md` to `skills/{skill_name}/SKILL.md`.
    - Update `candidates/{candidate_id}/score.md` → `promoted: true`.
    - Update `docs/harness-history/baseline.md` → record the promotion.
-   - Confirm to user in Portuguese.
 4. If candidate_score ≤ baseline_score:
    - Do NOT promote.
    - Inform user of the regression.
