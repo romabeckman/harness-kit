@@ -69,7 +69,7 @@ HarnessKit is distributed as a Claude Code plugin via its own marketplace hosted
 
 Follow this iterative process for maximum quality and safety:
 
-1. **Harnessing (Preparation)** — Use `project-memory` to generate and maintain `docs/README.md`, `docs/ARCHITECTURE.md`, and `docs/TESTS.md`. These files are the agent's persistent memory.
+1. **Harnessing (Preparation)** — Use `project-memory` to generate and maintain `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md`. These files are the agent's persistent memory.
 
 2. **Direction (Feedforward)** — Run `scope-refinement` to map the domain using DDD (Bounded Contexts, Aggregates, Use Cases) and define acceptance scenarios *before* any code is written.
 
@@ -87,7 +87,7 @@ Follow this iterative process for maximum quality and safety:
 
 | Skill | Core Function |
 | :--- | :--- |
-| **Project Memory** (`project-memory`) | Generates and maintains persistent technical documentation (`docs/README.md`, `docs/ARCHITECTURE.md`, `docs/TESTS.md`). The agent's long-term memory. |
+| **Project Memory** (`project-memory`) | Generates and maintains persistent technical documentation (`docs/README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`). The agent's long-term memory. |
 | **Scope Refinement** (`scope-refinement`) | DDD-based scope orchestrator. Maps Bounded Contexts, Aggregates, and Use Cases. Produces test scenarios before implementation starts. |
 | **TDD Orchestrator** (`tdd-orchestrator`) | Enforces RED → GREEN → REFACTOR. Coordinates the full test-driven development cycle, blocking implementation without a failing test first. |
 | **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Senior technical reviewer. Uses Socratic questioning to expose systemic risks (N+1, leaks, race conditions, SOLID violations) without providing ready-made solutions. |
@@ -110,10 +110,6 @@ Pre-configured agent personas that embody specific engineering roles, designed t
 | **Meta-Harness Agent** (`meta-harness-agent`) | Harness Optimizer | Reads harness history filesystem, diagnoses failure patterns, proposes targeted skill improvements. |
 
 ---
-
-## Harness Optimization Loop
-
-After collecting sessions with the standard workflow, HarnessKit can automatically improve its own skills via the **Meta-Harness loop** — inspired by the [Meta-Harness paper](https://arxiv.org/abs/2506.01234).
 
 ```
 Sessions (real work)
@@ -156,14 +152,28 @@ The `docs/` folder acts as HarnessKit's **persistent memory** for your project. 
 | File | Function |
 | :--- | :--- |
 | `docs/README.md` | Summary and index. The agent's main map for navigating your project. |
-| `docs/ARCHITECTURE.md` | Architecture rules. Prevents design decisions inconsistent with the project. |
-| `docs/TESTS.md` | Quality protocol. Defines the testing framework and standards. |
+| `docs/adr/ARCHITECTURE.md` | Architecture rules. Prevents design decisions inconsistent with the project. |
+| `docs/adr/TESTS.md` | Quality protocol. Defines the testing framework and standards. |
 
 > **Tip:** Use `project-memory` to generate these automatically:
 > ```
 > /harness-kit:project-memory
 > ```
 > Then say: *"Generate base documentation for this project based on my current stack."*
+
+---
+
+## 📖 Workflow Documentation
+
+Complete guide for using HarnessKit in a structured sequence. Start here if you're new to the framework.
+
+- **[Guia de Sequência Lógica](docs/workflow/USUARIO-WORKFLOW.md)** — How developers use all skills in logical order. Learn the complete workflow with practical examples.
+
+- **[Arquitetura em 3 Camadas](docs/workflow/ARQUITETURA-3-CAMADAS.md)** — Visual architecture showing Developer, Skills, and Filesystem layers. Understand the system structure.
+
+- **[Playbook de Uso Diário](docs/workflow/PLAYBOOK-USO-DIARIO.md)** — Step-by-step practical guide for daily tasks. Follow checklists and execute with confidence.
+
+- **[Documentação Index](docs/workflow/DOCUMENTACAO-INDEX.md)** — Navigation guide for all workflow documentation.
 
 ---
 
