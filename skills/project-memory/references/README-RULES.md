@@ -34,14 +34,14 @@ REQUIRED: Reject any attempt to include the following content in this file.
 
 ## STRUCTURE RULES
 
-1. **Fixed sections:** REQUIRED: The document contains exactly three sections — introductory header, index table (`## Índice de Documentação`), and recommended reading order (`## Ordem de Leitura Recomendada`). PROHIBITED: Any additional section.
+1. **Fixed sections:** REQUIRED: The document contains exactly three sections — introductory header, index table (`## Documentation Index`), and recommended reading order (`## Recommended Reading Order`). PROHIBITED: Any additional section.
 
 2. **Introductory header:** Maximum 2 sentences. State only that this is a navigation index for the project documentation. PROHIBITED: Technical details.
 
 3. **Index table:** Three fixed columns:
-   - `Documento`: filename with relative link (e.g., `[**ARCHITECTURE.md**](./adr/ARCHITECTURE.md)`).
-   - `Descrição`: maximum **2 sentences**, purely objective — states *what the document is*, not *what it contains in detail*.
-   - `Leitura`: **`Obrigatória`** (bold) for structural and architectural documents; `Opcional` for specific guides.
+   - `Document`: filename with relative link (e.g., `[**ARCHITECTURE.md**](./adr/ARCHITECTURE.md)`).
+   - `Description`: maximum **2 sentences**, purely objective — states *what the document is*, not *what it contains in detail*.
+   - `Reading`: **`Mandatory`** (bold) for structural and architectural documents; `Optional` for specific guides.
 
 4. **Recommended reading order:** Numbered list suggesting logical sequence:
    - Foundational documents first (Architecture, Organization).
@@ -58,22 +58,22 @@ REQUIRED: Reject any attempt to include the following content in this file.
 REQUIRED: Use the exact structure below as literal output when generating or updating `docs/README.md`. Replace every `[placeholder]` with actual project content.
 
 ```markdown
-# Documentação do Projeto
+# Project Documentation
 
-Índice da documentação técnica do projeto **[Nome do Projeto/Serviço]**. Utilize os links abaixo para navegar pelos documentos disponíveis.
+Index of project technical documentation for **[Project/Service Name]**. Use the links below to navigate the available documents.
 
-## Índice de Documentação
+## Documentation Index
 
-| Documento | Descrição | Leitura |
-|-----------|-----------|---------|
-| [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Arquitetura, organização de pastas e padrões de código do projeto. | **Obrigatória** |
-| [**TESTS.md**](./adr/TESTS.md) | Estratégias de teste, padrões e comandos de execução. | **Obrigatória** |
+| Document | Description | Reading |
+|----------|-------------|----------|
+| [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Architecture, folder organization, and code patterns for the project. | **Mandatory** |
+| [**TESTS.md**](./adr/TESTS.md) | Testing strategies, patterns, and execution commands. | **Mandatory** |
 
-## Ordem de Leitura Recomendada
+## Recommended Reading Order
 
-1. **adr/ARCHITECTURE.md** — fundação técnica e organização do projeto.
-2. **adr/TESTS.md** — validação e qualidade do código.
-3. Demais documentos nas pastas adr/ ou feature/ conforme a necessidade da tarefa.
+1. **adr/ARCHITECTURE.md** — technical foundation and project organization.
+2. **adr/TESTS.md** — code validation and quality.
+3. Additional documents in adr/ or feature/ folders as needed for the task.
 ```
 
 > **Note:** The template above shows the minimum expected documents. Add new rows to the table and the reading list to reflect the actual documents present in `docs/`.

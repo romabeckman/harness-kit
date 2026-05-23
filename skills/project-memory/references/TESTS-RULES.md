@@ -35,28 +35,28 @@ PROHIBITED: Inventing commands or coverage thresholds not found in the repositor
 REQUIRED: Use the exact structure below as literal output when generating or updating `docs/adr/TESTS.md`. Replace every `[placeholder]` with actual project content — **never leave placeholder literals in the final file.**
 
 ```markdown
-# Protocolo de Testes
+# Testing Protocol
 
 ## OVERVIEW
 [Testing philosophy, main frameworks, and overall quality goal — maximum 3 lines.]
 
 ## COMMANDS
-| Tipo | Comando | Descrição |
-|------|---------|-----------|
-| Unitário | `[command]` | [What it runs] |
-| Integração | `[command]` | [What it runs] |
+| Type | Command | Description |
+|------|---------|-------------|
+| Unit | `[command]` | [What it runs] |
+| Integration | `[command]` | [What it runs] |
 | E2E | `[command]` | [What it runs] |
-| Cobertura | `[command]` | [What it generates] |
+| Coverage | `[command]` | [What it generates] |
 
 ## MINIMUM COVERAGE
 REQUIRED: Maintain the following minimum coverage levels:
 
-| Camada | Cobertura | Descrição |
-|--------|-----------|-----------|
-| Domínio / Core | [X]% | Lógica e invariantes de negócio |
-| Aplicação / Use Cases | [X]% | Orquestração e fluxos |
-| Infraestrutura / Adapters | [X]% | Integrações externas e persistência |
-| Global | [X]% | Cobertura total média |
+| Layer | Coverage | Description |
+|-------|----------|-------------|
+| Domain / Core | [X]% | Business logic and invariants |
+| Application / Use Cases | [X]% | Orchestration and flows |
+| Infrastructure / Adapters | [X]% | External integrations and persistence |
+| Global | [X]% | Average total coverage |
 
 ## PATTERNS & BEST PRACTICES
 REQUIRED: [e.g., AAA (Arrange, Act, Assert) — one assertion per test]

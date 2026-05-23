@@ -147,27 +147,28 @@ To run a meta-harness improvement cycle based on this data:
 Output:
 
 ```
-📊 Harness Evaluator — Análise Concluída
+Harness Evaluator — Analysis Completed
 
-Sessions analisadas: {N}
-Configurações comparadas: {K}
+Sessions analyzed: {N}
+Configurations compared: {K}
 
-🏆 Melhor configuração atual:
+Best current configuration:
   {best_skill_chain}
-  Score médio: {mean_score} | Melhor score: {best_score}
+  Average score: {mean_score} | Best score: {best_score}
 
-⚠️ Pontos de atenção:
+Points of attention:
   - {pattern_1}
   - {pattern_2}
 
-💡 Hipóteses mais frequentes para melhoria:
+Most frequent hypotheses for improvement:
   1. {hypothesis_1}
   2. {hypothesis_2}
 
-📁 Relatório completo: docs/harness-history/pareto-frontier.md
+Full report: docs/harness-history/pareto-frontier.md
 
-Próximo passo — ciclo de otimização automática:
+Next step — automatic optimization cycle:
   /harness-kit:meta-harness
+
 ```
 
 ---

@@ -167,13 +167,13 @@ The `docs/` folder acts as HarnessKit's **persistent memory** for your project. 
 
 Complete guide for using HarnessKit in a structured sequence. Start here if you're new to the framework.
 
-- **[Guia de Sequência Lógica](docs/workflow/USUARIO-WORKFLOW.md)** — How developers use all skills in logical order. Learn the complete workflow with practical examples.
+- **[User Workflow Guide](docs/workflow/USER-WORKFLOW.md)** — How developers use all skills in logical order. Learn the complete workflow with practical examples.
 
-- **[Arquitetura em 3 Camadas](docs/workflow/ARQUITETURA-3-CAMADAS.md)** — Visual architecture showing Developer, Skills, and Filesystem layers. Understand the system structure.
+- **[3-Layer Architecture](docs/workflow/ARCHITECTURE-3-LAYERS.md)** — Visual architecture showing Developer, Skills, and Filesystem layers. Understand the system structure.
 
-- **[Playbook de Uso Diário](docs/workflow/PLAYBOOK-USO-DIARIO.md)** — Step-by-step practical guide for daily tasks. Follow checklists and execute with confidence.
+- **[Daily Use Playbook](docs/workflow/PLAYBOOK-DAILY-USE.md)** — Step-by-step practical guide for daily tasks. Follow checklists and execute with confidence.
 
-- **[Documentação Index](docs/workflow/README.md)** — Navigation guide for all workflow documentation.
+- **[Workflow Index](docs/workflow/README-EN.md)** — Navigation guide for all workflow documentation.
 
 ---
 

@@ -201,46 +201,46 @@ To evaluate this candidate:
 Output:
 
 ```
-🔬 Meta-Harness — Candidato {candidate_id} Proposto
+🔬 Meta-Harness — Candidate {candidate_id} Proposed
 
-🎯 Skill alvo: {skill_name}
-📁 Candidato: docs/harness-history/candidates/{candidate_id}/
+🎯 Target skill: {skill_name}
+📁 Candidate: docs/harness-history/candidates/{candidate_id}/
 
-## Diagnóstico
+## Diagnosis
 
-Sessões analisadas: {N} piores + {M} melhores
-Ponto de falha identificado: {description}
+Sessions analyzed: {N} worst + {M} best
+Identified failure point: {description}
 
-Hipótese causal:
+Causal hypothesis:
 "{hypothesis translated}"
 
-Evidência:
+Evidence:
   - {session_id}: [quoted relevant step context]
 
-## Mudança Proposta
+## Proposed Change
 
 {what changes, explained in plain}
 
-Impacto esperado: {metric} deve {melhorar/piorar} porque {reason}
-Risco: {risk}
+Expected impact: {metric} should {improve/worsen} because {reason}
+Risk: {risk}
 
-## Próximos Passos
+## Next Steps
 
-Para avaliar este candidato:
+To evaluate this candidate:
 
-1. Revise o diff:
+1. Review the diff:
    docs/harness-history/candidates/{candidate_id}/diff.md
 
-2. Se aprovado, substitua a skill temporariamente:
+2. If approved, temporarily replace the skill:
    cp skills/{skill_name}/SKILL.md skills/{skill_name}/SKILL.md.baseline
    cp docs/harness-history/candidates/{candidate_id}/SKILL.md skills/{skill_name}/SKILL.md
 
-3. Execute ≥3 sessões normais usando a skill.
+3. Execute ≥3 normal sessions using the skill.
 
-4. Avalie os resultados:
+4. Evaluate the results:
    /harness-kit:harness-evaluator
 
-5. Se o score melhorou, promova o candidato:
+5. If the score improved, promote the candidate:
    /harness-kit:meta-harness --promote {candidate_id}
 
 6. Se regrediu, restaure o baseline:

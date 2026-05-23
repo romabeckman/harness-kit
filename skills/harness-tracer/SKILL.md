@@ -176,16 +176,16 @@ If it already exists, do not modify it — `meta-harness` manages this file.
 Output:
 
 ```
-✅ Trace registrado: docs/harness-history/traces/{session_id}/
+Trace registered: docs/harness-history/traces/{session_id}/
 
-Arquivos gerados:
-  - metadata.md  — contexto da sessão
-  - input.md     — entrada recebida
-  - steps.md     — sequência de ações executadas
-  - score.md     — métricas brutas (score calculado pelo harness-evaluator)
-  - verdict.md   — avaliação qualitativa
+Generated files:
+  - metadata.md  — session context
+  - input.md     — input received
+  - steps.md     — sequence of executed actions
+  - score.md     — raw metrics (score calculated by harness-evaluator)
+  - verdict.md   — qualitative assessment
 
-Para analisar o histórico acumulado, execute:
+To analyze the accumulated history, run:
   /harness-kit:harness-evaluator
 ```
 
