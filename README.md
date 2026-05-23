@@ -10,27 +10,7 @@ It gives your coding agent a set of composable expert skills and structured agen
 
 ---
 
-## Quickstart
-
-Install HarnessKit for [Claude Code](#claude-code).
-
----
-
-## How it works
-
-From the moment you start a task, HarnessKit changes how your agent thinks.
-
-Instead of jumping straight to writing code, it guides the agent to first understand the domain, model the problem with DDD, and define test scenarios before a single line is written.
-
-- **Feedforward (Guides):** `project-memory` and `scope-refinement` align the agent with your architecture and domain *before* execution.
-- **Feedback (Sensors):** `tdd-orchestrator` validates every implementation computationally (tests), while `the-grumpy-tech-lead` validates it semantically (Socratic review).
-- **Balance:** Computational validation (deterministic via tests) + Inferential validation (architectural judgment) working together.
-
-The skills activate when relevant. Your agent just has a Harness.
-
----
-
-## Installation
+## Installation & Quick Commands
 
 ### Claude Code
 
@@ -48,13 +28,10 @@ HarnessKit is distributed as a Claude Code plugin via its own marketplace hosted
 /plugin install harness-kit@harness-kit
 ```
 
-**Step 3 — Use a skill:**
+**Step 3 — Verify installation:**
 
 ```bash
-/harness-kit:tdd-orchestrator
-/harness-kit:scope-refinement
-/harness-kit:the-grumpy-tech-lead
-/harness-kit:project-memory
+/harness-kit:project-memory --help
 ```
 
 **Update later:**
@@ -65,7 +42,50 @@ HarnessKit is distributed as a Claude Code plugin via its own marketplace hosted
 
 ---
 
-## The Harness Workflow
+## Common Commands
+
+Once installed, use these commands in your Claude Code chat:
+
+```bash
+# Setup: Initialize project documentation
+/harness-kit:project-memory
+
+# Design: Map domain using DDD before coding
+/harness-kit:scope-refinement
+
+# Develop: Test-driven implementation (RED → GREEN → REFACTOR)
+/harness-kit:tdd-orchestrator
+
+# Review: Socratic code review for systemic risks
+/harness-kit:the-grumpy-tech-lead
+
+# Optimize: Record session execution
+/harness-kit:harness-tracer
+
+# Analyze: Evaluate harness performance across sessions
+/harness-kit:harness-evaluator
+
+# Improve: Propose targeted harness improvements
+/harness-kit:meta-harness
+```
+
+---
+
+## How It Works
+
+From the moment you start a task, HarnessKit changes how your agent thinks.
+
+Instead of jumping straight to writing code, it guides the agent to first understand the domain, model the problem with DDD, and define test scenarios before a single line is written.
+
+- **Feedforward (Guides):** `project-memory` and `scope-refinement` align the agent with your architecture and domain *before* execution.
+- **Feedback (Sensors):** `tdd-orchestrator` validates every implementation computationally (tests), while `the-grumpy-tech-lead` validates it semantically (Socratic review).
+- **Balance:** Computational validation (deterministic via tests) + Inferential validation (architectural judgment) working together.
+
+The skills activate when relevant. Your agent just has a Harness.
+
+---
+
+## The Harness Workflow: 5-Step Sequence
 
 Follow this iterative process for maximum quality and safety:
 
@@ -111,6 +131,10 @@ Pre-configured agent personas that embody specific engineering roles, designed t
 
 ---
 
+## Harness Optimization Loop
+
+Continuously improve your harness configuration based on execution data:
+
 ```
 Sessions (real work)
        ↓
@@ -127,7 +151,7 @@ Sessions (real work)
  Loop repeats
 ```
 
-**How to start a loop:**
+**How to start optimization:**
 
 ```bash
 # After ≥3 sessions have been recorded by harness-tracer:
@@ -165,15 +189,13 @@ The `docs/` folder acts as HarnessKit's **persistent memory** for your project. 
 
 ## 📖 Workflow Documentation
 
-Complete guide for using HarnessKit in a structured sequence. Start here if you're new to the framework.
+Complete guide for using HarnessKit in a structured, data-driven sequence. This serves as your entry point for understanding and executing the framework.
 
-- **[User Workflow Guide](docs/workflow/USER-WORKFLOW.md)** — How developers use all skills in logical order. Learn the complete workflow with practical examples.
+* **[Workflow Index](docs/workflow/README.md)** — Main navigation index for the minimized documentation layout.
 
-- **[3-Layer Architecture](docs/workflow/ARCHITECTURE-3-LAYERS.md)** — Visual architecture showing Developer, Skills, and Filesystem layers. Understand the system structure.
+* **[Conceptual & Architectural Foundation](docs/workflow/META-HARNESS.md)** — Combines the system's 3-layer architecture (Developer, Skills, Filesystem $\mathcal{D}$) and the continuous optimization loop. Built on the principles of the research paper [Meta-Harness: End-to-End Optimization of Model Harnesses](https://arxiv.org/abs/2603.28052).
 
-- **[Daily Use Playbook](docs/workflow/PLAYBOOK-DAILY-USE.md)** — Step-by-step practical guide for daily tasks. Follow checklists and execute with confidence.
-
-- **[Workflow Index](docs/workflow/README.md)** — Navigation guide for all workflow documentation.
+* **[Daily Use Playbook](docs/workflow/PLAYBOOK-DAILY-USE.md)** — Step-by-step tactical guide for daily tasks. Follow operational checklists, timelines, and command flows with confidence.
 
 ---
 
@@ -210,3 +232,6 @@ MIT License — see [LICENSE](LICENSE) file for details.
 
 - **Issues:** https://github.com/romabeckman/harness-kit/issues
 - **Author:** [Romario Beckman](https://github.com/romabeckman)
+
+## References
+- Lee, Y., Nair, R., Zhang, Q., Khattab, O., Finn, C., & Lee, K. (2026). *Meta-Harness: End-to-End Optimization of Model Harnesses*. Available at [arXiv:2603.28052](https://arxiv.org/abs/2603.28052).

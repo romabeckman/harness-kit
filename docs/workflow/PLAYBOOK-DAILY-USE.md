@@ -14,8 +14,6 @@ Practical step-by-step guide to run all skills in your daily workflow.
   - If NO: project-memory creates template, you fill it in
 - [ ] Is `docs/adr/TESTS.md` documented?
   - If NO: project-memory creates template with frameworks from your stack
-- [ ] Is `docs/harness-history/` initialized?
-  - It will be created automatically by the first harness-tracer execution
 
 ---
 
