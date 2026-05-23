@@ -1,182 +1,182 @@
-# 📖 HarnessKit: Documentação de Sequência de Uso
+# 📖 HarnessKit: Usage Sequence Documentation
 
-Este conjunto de documentos explica como você (desenvolvedor) usa todas as skills do HarnessKit em uma sequência lógica de otimização contínua.
-
----
-
-## 📚 Documentos Criados
-
-### 1. **[USUARIO-WORKFLOW.md](USUARIO-WORKFLOW.md)** — Guia Completo
-**O que é:** Explicação detalhada de como um desenvolvedor segue a sequência lógica do harness-kit.
-
-**Contém:**
-- ✅ Fluxo 1: Desenvolvimento Normal (dia a dia)
-  - Etapa 1: project-memory (contexto)
-  - Etapa 2: scope-refinement (DDD + design)
-  - Etapa 3: tdd-orchestrator (implementação)
-  - Etapa 4: the-grumpy-tech-lead (review)
-  - Etapa 5: harness-tracer (registro)
-- ✅ Fluxo 2: Otimização de Harness (meta-harness loop)
-- ✅ Exemplo prático: Registrar ADR e usar nas próximas sessões
-- ✅ Matriz de decisão: qual skill usar quando
-- ✅ Benefícios da sequência vs desenvolvimento ad-hoc
-
-**Leia quando:** Você quer entender o fluxo completo.
+This collection of documents explains how you (developer) use all HarnessKit skills in a logical continuous optimization sequence.
 
 ---
 
-### 2. **[ARQUITETURA-3-CAMADAS.md](ARQUITETURA-3-CAMADAS.md)** — Visão Arquitetural
-**O que é:** Diagrama em 3 camadas mostrando como Developer, Skills e Filesystem interagem.
+## 📚 Documents Created
 
-**Contém:**
-- ✅ Camada 1: Desenvolvedor (você)
-- ✅ Camada 2: Skills (módulos)
-- ✅ Camada 3: Filesystem 𝒟 (armazenamento)
-- ✅ Fluxo de retroalimentação (feedback loop visual)
-- ✅ Exemplo prático: Ciclo completo de 8 dias
-- ✅ Ganho: Com vs sem harness
+### 1. **[USER-WORKFLOW.md](USER-WORKFLOW.md)** — Complete Guide
+**What is it:** Detailed explanation of how a developer follows the logical harness-kit sequence.
 
-**Leia quando:** Você quer visualizar a arquitetura inteira.
+**Contains:**
+- ✅ Flow 1: Normal Development (daily)
+  - Stage 1: project-memory (context)
+  - Stage 2: scope-refinement (DDD + design)
+  - Stage 3: tdd-orchestrator (implementation)
+  - Stage 4: the-grumpy-tech-lead (review)
+  - Stage 5: harness-tracer (recording)
+- ✅ Flow 2: Harness Optimization (meta-harness loop)
+- ✅ Practical example: Register ADR and use in next sessions
+- ✅ Decision matrix: which skill to use when
+- ✅ Benefits of sequence vs ad-hoc development
+
+**Read when:** You want to understand the complete flow.
 
 ---
 
-### 3. **[PLAYBOOK-USO-DIARIO.md](PLAYBOOK-USO-DIARIO.md)** — Checklist Prático
-**O que é:** Passo-a-passo executável para cada tipo de tarefa.
+### 2. **[ARCHITECTURE-3-LAYERS.md](ARCHITECTURE-3-LAYERS.md)** — Architectural View
+**What is it:** 3-layer diagram showing how Developer, Skills, and Filesystem interact.
 
-**Contém:**
-- ✅ Checklist de preparação
-- ✅ Fluxo 1: Implementar feature nova (passo-a-passo com código)
-- ✅ Fluxo 2: Corrigir bug (passo-a-passo)
-- ✅ Fluxo 3: Otimizar harness (passo-a-passo)
-- ✅ Matriz de decisão rápida
-- ✅ Exemplo cronometrado (09:00 até 10:05)
+**Contains:**
+- ✅ Layer 1: Developer (you)
+- ✅ Layer 2: Skills (modules)
+- ✅ Layer 3: Filesystem 𝒟 (storage)
+- ✅ Feedback loop (feedback loop visual)
+- ✅ Practical example: Complete 8-day cycle
+- ✅ Gain: With vs without harness
+
+**Read when:** You want to visualize the entire architecture.
+
+---
+
+### 3. **[PLAYBOOK-DAILY-USE.md](PLAYBOOK-DAILY-USE.md)** — Practical Checklist
+**What is it:** Executable step-by-step guide for each task type.
+
+**Contains:**
+- ✅ Preparation checklist
+- ✅ Flow 1: Implement new feature (step-by-step with code)
+- ✅ Flow 2: Fix bug (step-by-step)
+- ✅ Flow 3: Optimize harness (step-by-step)
+- ✅ Quick decision matrix
+- ✅ Timed example (09:00 to 10:05)
 - ✅ Troubleshooting
 
-**Leia quando:** Você quer saber exatamente o que fazer agora.
+**Read when:** You want to know exactly what to do now.
 
 ---
 
-### 4. **[DOCUMENTACAO-INDEX.md](DOCUMENTACAO-INDEX.md)**
+### 4. **[README.md](README.md)**
 
-### Se você está começando:
+### If you're starting:
 ```
-1. Leia USUARIO-WORKFLOW.md (30-40 min)
-   → Entenda fluxo completo
+1. Read USER-WORKFLOW.md (30-40 min)
+   → Understand complete flow
    
-2. Leia PLAYBOOK-USO-DIARIO.md (10-15 min)
-   → Saiba como executar
+2. Read PLAYBOOK-DAILY-USE.md (10-15 min)
+   → Know how to execute
    
-3. Consulte ARQUITETURA-3-CAMADAS.md (5 min)
-   → Quando tiver dúvida visual
-```
-
-### Se você está implementando:
-```
-1. Leia PLAYBOOK-USO-DIARIO.md
-   → Siga passo-a-passo
-   
-2. Consulte USUARIO-WORKFLOW.md
-   → Para entender por que faz cada coisa
+3. Consult ARCHITECTURE-3-LAYERS.md (5 min)
+   → When you have visual questions
 ```
 
-### Se você quer ensinar outras pessoas:
+### If you're implementing:
 ```
-1. ARQUITETURA-3-CAMADAS.md (diagrama)
-2. USUARIO-WORKFLOW.md (fluxo lógico)
-3. PLAYBOOK-USO-DIARIO.md (como fazer)
+1. Read PLAYBOOK-DAILY-USE.md
+   → Follow step-by-step
+   
+2. Consult USER-WORKFLOW.md
+   → To understand why you do each thing
+```
+
+### If you want to teach others:
+```
+1. ARCHITECTURE-3-LAYERS.md (diagram)
+2. USER-WORKFLOW.md (logical flow)
+3. PLAYBOOK-DAILY-USE.md (how to execute)
 ```
 
 ---
 
-## 🔑 Conceitos-Chave
+## 🔑 Key Concepts
 
-### HarnessKit: Otimização Contínua
-**Princípio:** Otimizar "skills" (ferramentas que governam desenvolvimento) através de feedback de sessões.
+### HarnessKit: Continuous Optimization
+**Principle:** Optimize "skills" (tools that govern development) through feedback from sessions.
 
-**Componentes:**
-- meta-harness (proposer: lê histórico e propõe melhorias)
-- docs/harness-history/ (filesystem: histórico completo)
-- harness-tracer (registra cada sessão)
-- harness-evaluator (analisa padrões)
-- pareto-frontier.md (melhores configurações)
+**Components:**
+- meta-harness (proposer: reads history and proposes improvements)
+- docs/harness-history/ (filesystem: complete history)
+- harness-tracer (records each session)
+- harness-evaluator (analyzes patterns)
+- pareto-frontier.md (best configurations)
 
 ---
 
-## 📊 Fluxo em 1 Página
+## 📊 Flow in 1 Page
 
 ```
 ┌─────────────────────────────────────────────┐
-│ DIA 1-5: Desenvolvimento Normal (5 sessões) │
+│ DAY 1-5: Normal Development (5 sessions)    │
 ├─────────────────────────────────────────────┤
-│ Você: /harness-kit:project-memory          │
-│       /harness-kit:scope-refinement        │
-│       /harness-kit:tdd-orchestrator        │
-│       /harness-kit:the-grumpy-tech-lead    │
-│ [automático] harness-tracer                │
-│       ↓ (cada sessão cria session-*/     │
+│ You: /harness-kit:project-memory            │
+│       /harness-kit:scope-refinement         │
+│       /harness-kit:tdd-orchestrator         │
+│       /harness-kit:the-grumpy-tech-lead     │
+│ [automatic] harness-tracer                  │
+│       ↓ (each session creates session-*/  │
 └─────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────┐
-│ DIA 6: Análise de Padrões                   │
+│ DAY 6: Pattern Analysis                     │
 ├─────────────────────────────────────────────┤
-│ Você: /harness-kit:harness-evaluator       │
-│       (analisa 5 traces)                   │
-│       → pareto-frontier.md (melhores)      │
-│       → identifica "weak skill"            │
+│ You: /harness-kit:harness-evaluator         │
+│       (analyzes 5 traces)                   │
+│       → pareto-frontier.md (best)           │
+│       → identifies "weak skill"             │
 └─────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────┐
-│ DIA 7: Otimização (Loop de Melhoria)        │
+│ DAY 7: Optimization (Improvement Loop)      │
 ├─────────────────────────────────────────────┤
-│ Você: /harness-kit:meta-harness            │
-│       (lê 𝒟, diagnostica, propõe v001)   │
-│                                            │
-│ Você testa v001 em prática                │
-│       (executa skill modificada)           │
-│       /harness-kit:harness-tracer          │
-│                                            │
-│ Você valida:                               │
-│       /harness-kit:harness-evaluator       │
-│       (v001 melhorou? ✅ aprovado)        │
+│ You: /harness-kit:meta-harness              │
+│       (reads 𝒟, diagnoses, proposes v001) │
+│                                             │
+│ You test v001 in practice                  │
+│       (run modified skill)                  │
+│       /harness-kit:harness-tracer           │
+│                                             │
+│ You validate:                               │
+│       /harness-kit:harness-evaluator        │
+│       (v001 improved? ✅ approved)          │
 └─────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────┐
-│ DIA 8+: Usar Versão Melhorada               │
+│ DAY 8+: Use Improved Version                │
 ├─────────────────────────────────────────────┤
-│ skills/tdd-orchestrator/SKILL.md           │
-│   ← v001/SKILL.md (versão melhor)         │
-│                                            │
-│ Próximas sessões já usam versão melhorada  │
-│ (feedback loop automático)                 │
+│ skills/tdd-orchestrator/SKILL.md            │
+│   ← v001/SKILL.md (better version)          │
+│                                             │
+│ Next sessions already use improved version  │
+│ (automatic feedback loop)                   │
 └─────────────────────────────────────────────┘
 
-RESULTADO: Harness melhorou, score subiu 0.08 pontos
+RESULT: Harness improved, score increased 0.08 points
 ```
 
 ---
 
-## 🚀 Começar Agora
+## 🚀 Get Started Now
 
-### Passo 1: Leia USUARIO-WORKFLOW.md
+### Step 1: Read USER-WORKFLOW.md
 ```
-Tempo: 30-40 min
-Meta: Entender fluxo completo
-```
-
-### Passo 2: Leia PLAYBOOK-USO-DIARIO.md
-```
-Tempo: 10-15 min
-Meta: Saber como executar
+Time: 30-40 min
+Goal: Understand complete flow
 ```
 
-### Passo 3: Execute sua primeira sessão
+### Step 2: Read PLAYBOOK-DAILY-USE.md
+```
+Time: 10-15 min
+Goal: Know how to execute
+```
+
+### Step 3: Run your first session
 ```
 /harness-kit:project-memory
 /harness-kit:tdd-orchestrator
 /harness-kit:harness-tracer
 ```
 
-### Passo 4: Depois de 5 sessões
+### Step 4: After 5 sessions
 ```
 /harness-kit:harness-evaluator
 /harness-kit:meta-harness
@@ -184,42 +184,41 @@ Meta: Saber como executar
 
 ---
 
-## 📞 Dúvidas?
+## 📞 Questions?
 
-| Pergunta | Resposta em |
-|----------|-------------|
-| "Por onde começo?" | PLAYBOOK-USO-DIARIO.md |
-| "O que é cada skill?" | USUARIO-WORKFLOW.md |
-| "Qual skill usar agora?" | PLAYBOOK-USO-DIARIO.md (Matriz) |
-| "Como funciona meta-harness?" | USUARIO-WORKFLOW.md (Fluxo 2) |
-| "Quanto tempo leva?" | PLAYBOOK-USO-DIARIO.md (Cronômetro) |
-| "Qual é a arquitetura?" | ARQUITETURA-3-CAMADAS.md |
-| "Deu erro, como fixa?" | PLAYBOOK-USO-DIARIO.md (Troubleshooting) |
-
----
-
-## ✅ Checklist: Tudo Pronto?
-
-Seu HarnessKit está pronto para usar quando:
-
-- [ ] Você tem `docs/README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`
-- [ ] Você entendeu a diferença entre skills (tools) e chains (sequências)
-- [ ] Você sabe qual skill usar para sua próxima tarefa
-- [ ] Você entendeu como harness-tracer registra sessões
-- [ ] Você sabe o que é Pareto frontier
-- [ ] Você entendeu o ciclo: Develop → Trace → Evaluate → Optimize
-- [ ] Você leu pelo menos um dos 4 documentos acima
+| Question | Answer in |
+|----------|-----------|
+| "Where do I start?" | PLAYBOOK-DAILY-USE.md |
+| "What does each skill do?" | USER-WORKFLOW.md |
+| "Which skill to use now?" | PLAYBOOK-DAILY-USE.md (Matrix) |
+| "How does meta-harness work?" | USER-WORKFLOW.md (Flow 2) |
+| "How long does it take?" | PLAYBOOK-DAILY-USE.md (Timeline) |
+| "What's the architecture?" | ARCHITECTURE-3-LAYERS.md |
+| "Got an error, how to fix?" | PLAYBOOK-DAILY-USE.md (Troubleshooting) |
 
 ---
 
-## 🎓 Resumo em 2 Frases
+## ✅ Checklist: Ready to Go?
 
-1. **Fluxo**: Você executa skills (`project-memory` → `scope-refinement` → `tdd-orchestrator` → `the-grumpy-tech-lead`).
-2. **Loop**: Cada sessão é registrada (`harness-tracer` → `docs/harness-history/`). Após 5 sessões, `meta-harness` detecta padrões e propõe melhorias (`harness-evaluator` → `meta-harness` → `candidates/vXXX/`).
+Your HarnessKit is ready when:
 
-**Resultado**: Skills evoluem com dados, não por guesswork.
+- [ ] You have `docs/README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`
+- [ ] You understand the difference between skills (tools) and chains (sequences)
+- [ ] You know which skill to use for your next task
+- [ ] You understand how harness-tracer records sessions
+- [ ] You know what Pareto frontier is
+- [ ] You understand the cycle: Develop → Trace → Evaluate → Optimize
+- [ ] You've read at least one of the documents above
 
 ---
 
-**Data**: Maio 2026
+## 🎓 Summary in 2 Sentences
 
+1. **Flow**: You run skills (`project-memory` → `scope-refinement` → `tdd-orchestrator` → `the-grumpy-tech-lead`).
+2. **Loop**: Each session is recorded (`harness-tracer` → `docs/harness-history/`). After 5 sessions, `meta-harness` detects patterns and proposes improvements (`harness-evaluator` → `meta-harness` → `candidates/vXXX/`).
+
+**Result**: Skills evolve with data, not guesswork.
+
+---
+
+**Date**: May 2026
