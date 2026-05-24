@@ -1,6 +1,5 @@
 ---
 name: meta-harness-agent
-model: sonnet
 description: >
   Meta-Harness proposer agent. Reads the harness history filesystem
   (docs/harness-history/traces/, candidates/, pareto-frontier.md),
@@ -8,11 +7,6 @@ description: >
   improvements to existing skills. Implements the automated harness
   search loop described in the Meta-Harness paper. Use after collecting
   ≥3 session traces via harness-tracer and running harness-evaluator.
-tools:
-  - Read
-  - Write
-  - Edit
-  - Glob
   - Grep
   - Bash
   - TodoWrite

@@ -1,13 +1,6 @@
 ---
 name: code-reviewer
-model: sonnet
 description: Automated Code Review specialist. Performs sequential 5-step Git diff analysis, identifying only bugs, security issues, and code problems. Returns structured Markdown report. Use when reviewing PRs, commits, or diffs against a base branch.
-tools:
-  - Agent
-  - Bash
-  - Read
-  - Glob
-  - Grep
 ---
 
 # Code Reviewer — Code Review Specialist

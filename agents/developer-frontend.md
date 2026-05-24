@@ -1,18 +1,6 @@
 ---
 name: developer-frontend
-model: haiku
 description: Senior Frontend Developer specialized in TDD, UI/UX implementation, accessibility, and performance. Use for writing frontend code (React, Vue, CSS, HTML), fixing UI bugs, implementing designs, and frontend testing.
-tools:
-  - Agent
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - WebFetch
-  - WebSearch
-  - TodoWrite
   - NotebookEdit
 ---
 

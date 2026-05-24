@@ -20,57 +20,49 @@ It gives your coding agent a set of composable expert skills and structured agen
 
 HarnessKit is distributed as a Claude Code plugin via its own marketplace hosted on GitHub.
 
-**Step 1 — Register the marketplace:**
-
 ```bash
+# Register the marketplace
 /plugin marketplace add romabeckman/harness-kit
-```
 
-**Step 2 — Install the plugin:**
-
-```bash
+# Step 2 — Install the plugin
 /plugin install harness-kit@harness-kit
-```
 
-**Step 3 — Verify installation:**
-
-```bash
+# Step 3 — Verify installation
 /harness-kit:project-memory --help
-```
 
-**Update later:**
-
-```bash
+# Update later
 /plugin update harness-kit
 ```
 
----
+### GitHub Copilot CLI
 
-## Common Commands
+You can also manage HarnessKit plugins using the **GitHub Copilot CLI** from your terminal.
 
-Once installed, use these commands in your Claude Code chat:
+**Installation & Setup:**
 
 ```bash
-# Setup: Initialize project documentation
-/harness-kit:project-memory
+# Register the marketplace (one-time)
+copilot plugin marketplace add romabeckman/harness-kit
 
-# Design: Map domain using DDD before coding
-/harness-kit:scope-refinement
+# Install the plugin
+copilot plugin install harness-kit
 
-# Develop: Test-driven implementation (RED → GREEN → REFACTOR)
-/harness-kit:tdd-orchestrator
+# List installed plugins
+copilot plugin list
+```
 
-# Review: Socratic code review for systemic risks
-/harness-kit:the-grumpy-tech-lead
+### Gemini CLI
 
-# Optimize: Record session execution
-/harness-kit:harness-tracer
+You can also manage HarnessKit plugins using the **Gemini CLI** from your terminal.
 
-# Analyze: Evaluate harness performance across sessions
-/harness-kit:harness-evaluator
+**Installation & Setup:**
 
-# Improve: Propose targeted harness improvements
-/harness-kit:meta-harness
+```bash
+# Install the extension
+gemini extensions install https://github.com/romabeckman/harness-kit
+
+# Update
+gemini extensions update harness-kit
 ```
 
 ---
