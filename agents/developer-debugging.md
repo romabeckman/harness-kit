@@ -1,15 +1,6 @@
 ---
 name: developer-debugging
-model: sonnet
 description: Systematic Investigation and Debugging Specialist. Uses the systematic-debugging skill and the "5 Whys" to identify the root cause of bugs before implementation.
-tools:
-  - Bash
-  - Read
-  - Glob
-  - Grep
-  - WebFetch
-  - WebSearch
-  - TodoWrite
 ---
 
 # Developer Debugging — Root Cause Investigation Specialist

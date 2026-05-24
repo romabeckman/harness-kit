@@ -1,19 +1,6 @@
 ---
 name: developer-backend
-model: haiku
 description: Senior Backend Developer specialized in TDD, API design, database modeling, security, and performance. Use for writing backend code (APIs, services, workers), fixing server bugs, implementing business logic, and backend testing.
-tools:
-  - Agent
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - WebFetch
-  - WebSearch
-  - TodoWrite
-  - NotebookEdit
 ---
 
 # Developer Backend — Senior Backend Developer

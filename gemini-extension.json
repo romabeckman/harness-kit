@@ -1,0 +1,36 @@
+{
+  "name": "harness-kit",
+  "description": "Core skills library: TDD orchestration, meta-harness automation, debugging, collaboration patterns, and proven techniques for software engineering",
+  "version": "1.1.4",
+  "contextFileName": "GEMINI.md",
+  "author": "romabeckman",
+  "license": "MIT",
+  "keywords": [
+    "tdd",
+    "testing",
+    "debugging",
+    "harness",
+    "automation",
+    "code-review",
+    "scope-refinement",
+    "ddd"
+  ],
+  "skills": [
+    "tdd-orchestrator",
+    "harness-tracer",
+    "harness-evaluator",
+    "meta-harness",
+    "project-memory",
+    "scope-refinement",
+    "the-grumpy-tech-lead"
+  ],
+  "agents": [
+    "code-reviewer",
+    "developer-backend",
+    "developer-debugging",
+    "developer-frontend",
+    "meta-harness-agent",
+    "qa",
+    "software-architect"
+  ]
+}

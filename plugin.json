@@ -1,0 +1,27 @@
+{
+  "name": "harness-kit",
+  "description": "Core skills library: TDD orchestration, meta-harness automation, debugging, collaboration patterns, and proven techniques for software engineering",
+  "version": "1.1.4",
+  "author": {
+    "name": "Romário Beckman",
+    "email": "romabeckman@gmail.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "tdd",
+    "testing",
+    "debugging",
+    "harness",
+    "automation",
+    "code-review",
+    "scope-refinement",
+    "ddd"
+  ],
+  "agents": "agents/",
+  "skills": ["skills/"],
+  "homepage": "https://github.com/romabeckman/harness-kit",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/romabeckman/harness-kit.git"
+  }
+}

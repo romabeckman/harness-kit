@@ -1,16 +1,6 @@
 ---
 name: software-architect
-model: sonnet
 description: Senior Software Architect specialized in DDD, system design, technical refinement, and technical decision-making. Use for architecture decisions, scope refinement, design refinement, and technical quality gates.
-tools:
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - WebFetch
-  - WebSearch
-  - TodoWrite
 ---
 
 # Software Architect — Senior Software Architect
