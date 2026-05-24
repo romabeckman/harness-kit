@@ -40,20 +40,20 @@ Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Blo
 
 ### Phase A: Delegation of Planning
 1. **State Log:** Update `DEVELOPMENT-STATE.md` to `PLANNING` and `BACKLOG.md` to `IN_PROGRESS`.
-2. **Delegate:** Invoke the `scope-refinement` as subagent to analyze feature {ID} and generate `docs/specs/{ID}/*` documents.
+2. **Delegate:** Invoke the `software-architect` subagent to analyze feature {ID} and generate `docs/specs/{ID}/*` documents.
 3. **Verify:** Wait until all documents are generated and `MACHINE-READABLE.json` is available.
 4. **NO PAUSE:** Immediately proceed to Phase B without waiting for user input.
 
 ### Phase B: Delegation of Implementation
 1. **State Log:** Update `DEVELOPMENT-STATE.md` to `IMPLEMENTATION`.
-2. **Delegate:** Invoke the `tdd-orchestrator` as subagent to implement {ID}.
+2. **Delegate:** Invoke the `developer-backend`, `developer-frontend` or `developer-debugging` subagent to implement {ID} or debug the implementation.
 3. **Verify:** Wait until `TDD-OUTPUT.json` is generated.
 4. **NO PAUSE:** Immediately proceed to Phase C without waiting for user input.
 
 ### Phase C: Validation & Decision Gate
 1. **State Log:** Update `docs/product/DEVELOPMENT-STATE.md` setting `Current Phase` to `VALIDATION`.
-2. **Critique:** Invoke `@the-grumpy-tech-lead` subagent. Capture output and apply the *JSON Extraction Protocol* to parse Score A.
-3. **Attack:** Invoke `@adversarial-qa` subagent. Capture output and apply the *JSON Extraction Protocol* to parse Score B.
+2. **Critique:** Invoke `code-reviewer` subagent. Capture output and apply the *JSON Extraction Protocol* to parse Score A.
+3. **Attack:** Invoke `harness-kit:adversarial-qa` skill. Capture output and apply the *JSON Extraction Protocol* to parse Score B.
 4. **Verdict (Strict Disk-Persisted Logical Gate):**
    - **PASS:** If `Score A >= 0.80` AND `Score B >= 0.80`. Update `docs/product/BACKLOG.md` status to `COMPLETED`. Update `docs/product/DEVELOPMENT-STATE.md` row: set `Current Phase` to `-`, `Score (TL)` to Score A, `Score (Adv)` to Score B, and `Status` to `COMPLETED`. CRITICAL: Immediately loop back to process the next executable feature in the backlog.
    - **RETRY:** If (`Score A < 0.80` OR `Score B < 0.80`). Read current `Reworks` from `DEVELOPMENT-STATE.md`.
@@ -67,8 +67,8 @@ Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Blo
 5. **NO PAUSE:** After logging the verdict and updating states, immediately loop back to process the next executable feature in the backlog without waiting for user input.
 
 ### Phase D: State & Evolution
-1. **Trace:** Invoke `@harness-tracer` subagent to log session history.
-2. **Evolve:** If `BACKLOG.md` contains no more executable features, trigger `@harness-evaluator` and `@meta-harness` subagents to optimize skills.
+1. **Trace:** Invoke `harness-kit:harness-tracer` skill to log session history.
+2. **Evolve:** If `BACKLOG.md` contains no more executable features, trigger `harness-kit:harness-evaluator` and `harness-kit:meta-harness` to optimize skills.
 
 ---
 
