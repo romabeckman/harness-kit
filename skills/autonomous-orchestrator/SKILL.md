@@ -40,13 +40,13 @@ Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Blo
 
 ### Phase A: Delegation of Planning
 1. **State Log:** Update `DEVELOPMENT-STATE.md` to `PLANNING` and `BACKLOG.md` to `IN_PROGRESS`.
-2. **Delegate:** Invoke the `software-architect` subagent to analyze feature {ID} and generate `docs/specs/{ID}/*` documents.
+2. **Delegate:** Invoke the `harness-kit:scope-refinement` skill to analyze each feature {ID} and generate `docs/specs/{ID}/*` documents.
 3. **Verify:** Wait until all documents are generated and `MACHINE-READABLE.json` is available.
 4. **NO PAUSE:** Immediately proceed to Phase B without waiting for user input.
 
 ### Phase B: Delegation of Implementation
 1. **State Log:** Update `DEVELOPMENT-STATE.md` to `IMPLEMENTATION`.
-2. **Delegate:** Invoke the `developer-backend`, `developer-frontend` or `developer-debugging` subagent to implement {ID} or debug the implementation.
+2. **Delegate:** Invoke the `harness-kit:tdd-orchestrator` skill for implement {ID} or debug the implementation.
 3. **Verify:** Wait until `TDD-OUTPUT.json` is generated.
 4. **NO PAUSE:** Immediately proceed to Phase C without waiting for user input.
 
