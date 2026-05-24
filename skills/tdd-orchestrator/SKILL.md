@@ -65,6 +65,23 @@ Invoke the `harness-tracer` skill to persist a structured execution trace of thi
 
 This step is **not optional** — traces are the raw material for harness optimization via `harness-evaluator` and `meta-harness`. Skipping it breaks the improvement loop.
 
+### Step 7: Machine Readable Output
+
+Save a structured JSON file at `docs/specs/${domain_name}/TDD-OUTPUT.json` using this exact structure:
+```json
+{
+  "featureId": "string",
+  "status": "SUCCESS" | "FAILED",
+  "metrics": {
+    "totalTests": 0,
+    "passed": 0,
+    "failed": 0,
+    "coverage": 0.00
+  },
+  "reworksCount": 0
+}
+```
+
 ## Important Rules
 
 **✅ Do:**
@@ -110,6 +127,7 @@ The following actions must be performed manually by the user, depending on the p
 5. **Step 4: Final Validation** → Use `verification-before-completion` skill to verify all tests pass
 6. **Step 5: Update Documentation** → Use `project-memory` skill to update API specs, OpenAPI/Swagger
 7. **Step 6: Record Execution Trace** → Use `harness-tracer` skill to persist session trace
+8. **Step 7: Machine Readable Output** → Save a structured JSON file at `docs/specs/${domain_name}/TDD-OUTPUT.json`
 
 **Success Criteria:** 100% of tests pass with verified evidence before proceeding to next step.
 

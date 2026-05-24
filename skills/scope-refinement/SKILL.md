@@ -1,6 +1,6 @@
 ---
 name: scope-refinement
-description: DDD Scope Refinement Orchestrator — coordinates all Domain-Driven Design phases from business discovery to test scenario specification.
+description: DDD Scope Refinement Orchestrator — coordinates all Domain-Driven Design phases from business discovery to test scenario specification and machine-readable exports.
 ---
 
 # Scope Refinement Orchestrator
@@ -166,6 +166,30 @@ Confirm all generated documents with their paths to the user.
 
 ---
 
+## Phase 5 — Machine Readable Output
+
+Compile and generate a structured JSON file containing test cases, acceptance criteria, identified risks, and boundaries parsed from the previous phases. 
+
+The file must be saved precisely at `docs/specs/${dominio}/MACHINE-READABLE.json` using this exact template structure:
+
+```json
+{
+  "featureId": "F001",
+  "domain": "string",
+  "boundaries": [],
+  "scenarios": [
+    {
+      "id": "TC001",
+      "title": "string",
+      "gherkin": { "given": [], "when": [], "then": [] }
+    }
+  ],
+  "acceptanceCriteria": [],
+  "risks": []
+}
+
+---
+
 ## Final Summary
 
 Upon completing all phases, present to the user:
@@ -180,6 +204,7 @@ Upon completing all phases, present to the user:
 > | 002 | `002-context-map.md` | Bounded Contexts and Context Map |
 > | 003 | `003-*-tactical-design.md` | Tactical Design per project |
 > | 004 | `004-*-test-scenarios.md` | Test Scenarios per project |
+> | JSON | `MACHINE-READABLE.json` | Parsed test cases, acceptance criteria, and risks |
 >
 > **Suggested next steps:**
 > 1. Review all documents with the team
@@ -190,7 +215,7 @@ Upon completing all phases, present to the user:
 
 ## General Rules
 
-1. **Format**: Structured Markdown with hierarchical H2/H3 titles, lists, and tables.
+1. **Format**: Structured Markdown with hierarchical H2/H3 titles, lists, and tables. JSON format must strictly validate.
 2. **Ubiquitous Language**: Use glossary terms consistently across ALL documents.
 3. **LLM Optimization**: Maximize information density. No vague, colloquial, or redundant phrases.
 4. **Projects**: Always read `docs/README.md` and `docs/adr/ARCHITECTURE.md` of each project before analyzing.
