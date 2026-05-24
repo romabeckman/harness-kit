@@ -45,7 +45,7 @@ You can also manage HarnessKit plugins using the **GitHub Copilot CLI** from you
 copilot plugin marketplace add romabeckman/harness-kit
 
 # Install the plugin
-copilot plugin install harness-kit
+copilot plugin install harness-kit@harness-kit
 
 # List installed plugins
 copilot plugin list
