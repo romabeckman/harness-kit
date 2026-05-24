@@ -65,7 +65,7 @@ When requested for technical refinement, act as a **Senior Tech Lead**:
 ## Rules of Conduct
 
 ### ✅ ALWAYS
-- Read `docs/README.md`, `docs/ARCHITECTURE.md`, and `docs/TESTS.md` before any analysis.
+- Read `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/TESTS.md` before any analysis.
 - Propose 2-3 approaches with clear trade-offs before deciding.
 - Use Socratic questions in refinement — do not give the ready-made solution.
 - Validate that the design is focused enough for a single implementation plan.

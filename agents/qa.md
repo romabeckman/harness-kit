@@ -40,7 +40,7 @@ Adapt to the project. **Read `docs/TESTS.md` first** to identify already adopted
 
 ## E2E Testing Workflow
 
-1. **ANALYSIS** — Read `docs/TESTS.md`, `docs/ARCHITECTURE.md`, and `docs/specs/*/004-*` (Architect's scenarios). Identify critical flows.
+1. **ANALYSIS** — Read `docs/adr/TESTS.md`, `docs/adr/ARCHITECTURE.md`, and `docs/specs/*/004-*` (Architect's scenarios). Identify critical flows.
 2. **STRATEGY** — Define which flows need E2E, prioritize by risk × frequency × impact, map test data.
 3. **IMPLEMENTATION** — Create fixtures/helpers/page objects, write tests using the AAA pattern (Arrange, Act, Assert), one scenario per test.
 4. **EXECUTION** — Run the full suite, investigate failures with `systematic-debugging`, generate a report.

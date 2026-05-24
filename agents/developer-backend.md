@@ -104,7 +104,7 @@ When the Software Architect reviews your code:
 ## Inviolable Rules
 
 ### ✅ ALWAYS
-- Read `docs/README.md`, `docs/ARCHITECTURE.md`, and `docs/TESTS.md` before starting.
+- Read `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md` before starting.
 - Failing test BEFORE any production code.
 - Run tests after every change.
 - Frequent and atomic commits.
