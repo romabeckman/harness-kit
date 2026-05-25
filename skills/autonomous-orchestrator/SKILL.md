@@ -25,11 +25,13 @@ You are the Sovereign Orchestrator. Your mission is to drive the `BACKLOG.md` to
 ## 1. BOOTSTRAP (State Initialization)
 Before any execution, verify the workspace:
 1. **Scope Acquisition**: If `BACKLOG.md` is missing or empty, **ASK ONCE for the project scope/PRD, then NEVER ASK AGAIN**. 
-2. **Synthesis**: Analyze the provided scope to generate the initial `BACKLOG.md` table (ID, Title, Priority, Dependencies, Status).
-3. **File Creation**: Create/Initialize:
-   - `docs/product/BACKLOG.md` (Populated with synthesized items)
+2. **Project Paths Acquisition**: If project paths are not known, **ASK ONCE for the local paths of all projects involved**. Store as `${projectPaths}`. This value is reused in every Phase A invocation of scope-refinement.
+3. **Synthesis**: Analyze the provided scope to generate the initial `BACKLOG.md` table (ID, Title, Priority, Dependencies, Status). For each feature, derive a `domain` value in snake_case from the feature title (e.g., "User Authentication (JWT)" → `user_authentication`). Store the `domain` mapping in the BACKLOG table.
+4. **File Creation**: Create/Initialize:
+   - `docs/product/BACKLOG.md` (Populated with synthesized items — must include `Domain` column)
    - `docs/product/COMPLETION-CRITERIA.md`
    - `docs/product/DEVELOPMENT-STATE.md`
+   - `docs/product/DECISIONS.md` (Audit trail — initialized with header only)
 
 **⚠️ NO PAUSES AFTER SCOPE IS CONFIRMED.** Once files are created, proceed immediately to STEP 2.
 
@@ -39,36 +41,63 @@ Before any execution, verify the workspace:
 Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Block if dependencies are `BLOCKED`. Route valid features based on `DEVELOPMENT-STATE.md`:
 
 ### Phase A: Delegation of Planning
-1. **State Log:** Update `DEVELOPMENT-STATE.md` to `PLANNING` and `BACKLOG.md` to `IN_PROGRESS`.
-2. **Delegate:** Use the `harness-kit:scope-refinement` skill to analyze each feature {ID} and generate `docs/specs/{ID}/*` documents.
-3. **Verify:** Wait until all documents are generated and `MACHINE-READABLE.json` is available.
+1. **State Log:** Update `DEVELOPMENT-STATE.md` to `PLANNING` and `BACKLOG.md` to `IN_PROGRESS`. Log decision in `DECISIONS.md`: "Started planning for {ID}."
+2. **Delegate:** Invoke `harness-kit:scope-refinement` skill in **Autonomous Mode** passing:
+   - `${scope}` = feature Title + Description from `BACKLOG.md`
+   - `${projectPaths}` = project paths collected during BOOTSTRAP
+   - `${domain}` = Domain column value from `BACKLOG.md` for this feature
+   - `${rules}` = "No additional rules provided" (unless specific constraints exist)
+3. **Verify:** Wait until all documents are generated, confirmed by the presence of all `004-*-test-scenarios.md` files for each project in scope under `docs/specs/{domain}/`.
 4. **NO PAUSE:** Immediately proceed to Phase B without waiting for user input.
 
 ### Phase B: Delegation of Implementation
 1. **State Log:** Update `DEVELOPMENT-STATE.md` to `IMPLEMENTATION`.
-2. **Delegate:** Use the `harness-kit:tdd-orchestrator` skill for implement {ID} or debug the implementation.
-3. **Verify:** Wait until `TDD-OUTPUT.json` is generated.
+2. **Delegate:** Invoke `harness-kit:tdd-orchestrator` skill in **Autonomous Mode** passing:
+   - `${featureId}` = feature ID from `BACKLOG.md` (e.g., "F001")
+   - `${domain}` = Domain column value from `BACKLOG.md`
+   - `${projectPaths}` = project paths collected during BOOTSTRAP
+   - Implementation spec: `docs/specs/{domain}/003-*-tactical-design.md` (ordered development tasks)
+   - Test spec: `docs/specs/{domain}/004-*-test-scenarios.md` (scenarios for RED phase)
+   - If this is a RETRY after rework: also pass `docs/specs/{domain}/REWORK-LOG.md` with findings to fix
+3. **Verify:** Wait until `docs/specs/{domain}/TDD-OUTPUT.json` is generated.
 4. **NO PAUSE:** Immediately proceed to Phase C without waiting for user input.
 
 ### Phase C: Validation & Decision Gate
 1. **State Log:** Update `docs/product/DEVELOPMENT-STATE.md` setting `Current Phase` to `VALIDATION`.
-2. **Critique:** Use `code-reviewer` subagent. Capture output and apply the *JSON Extraction Protocol* to parse Score A.
-3. **Attack:** Use `harness-kit:adversarial-qa` skill. Capture output and apply the *JSON Extraction Protocol* to parse Score B.
+2. **Critique:** Invoke `harness-kit:the-grumpy-tech-lead` skill in **Autonomous Mode** passing:
+   - `${featureId}` = feature ID from `BACKLOG.md`
+   - `${domain}` = Domain column value from `BACKLOG.md`
+   - `${projectPaths}` = project paths collected during BOOTSTRAP
+   Capture output and apply the *JSON Extraction Protocol* to parse Score A from the `score` field.
+3. **Attack:** Invoke `harness-kit:adversarial-qa` skill in **Autonomous Mode** passing:
+   - `${featureId}` = feature ID from `BACKLOG.md`
+   - `${domain}` = Domain column value from `BACKLOG.md`
+   - `${projectPaths}` = project paths collected during BOOTSTRAP
+   Capture output and apply the *JSON Extraction Protocol* to parse Score B from the `score` field.
 4. **Verdict (Strict Disk-Persisted Logical Gate):**
-   - **PASS:** If `Score A >= 0.80` AND `Score B >= 0.80`. Update `docs/product/BACKLOG.md` status to `COMPLETED`. Update `docs/product/DEVELOPMENT-STATE.md` row: set `Current Phase` to `-`, `Score (TL)` to Score A, `Score (Adv)` to Score B, and `Status` to `COMPLETED`. CRITICAL: Immediately loop back to process the next executable feature in the backlog.
+   - **PASS:** If `Score A >= 0.80` AND `Score B >= 0.80`. Update `docs/product/BACKLOG.md` status to `COMPLETED`. Update `docs/product/DEVELOPMENT-STATE.md` row: set `Current Phase` to `-`, `Score (TL)` to Score A, `Score (Adv)` to Score B, and `Status` to `COMPLETED`. Log decision in `DECISIONS.md`: "Feature {ID} ACCEPTED — TL: {Score A}, Adv: {Score B}." CRITICAL: Immediately loop back to process the next executable feature in the backlog.
    - **RETRY:** If (`Score A < 0.80` OR `Score B < 0.80`). Read current `Reworks` from `DEVELOPMENT-STATE.md`.
      - If `Reworks < 3`: 
        1. Increment the count by 1.
-       2. Append findings to `docs/specs/{feature}/REWORK-LOG.md`.
-       3. **ATOMIC WRITE:** Overwrite `docs/product/DEVELOPMENT-STATE.md` logging the new `Reworks` value and setting `Current Phase` back to `IMPLEMENTATION`.
-       4. Force restart Phase B.
+       2. Append findings (openPoints from tech-lead + edgeCasesMissed from adversarial-qa) to `docs/specs/{domain}/REWORK-LOG.md`.
+       3. Log decision in `DECISIONS.md`: "Feature {ID} RETRY #{rework_count} — TL: {Score A}, Adv: {Score B}. Reason: {top finding}."
+       4. **ATOMIC WRITE:** Overwrite `docs/product/DEVELOPMENT-STATE.md` logging the new `Reworks` value and setting `Current Phase` back to `IMPLEMENTATION`.
+       5. Force restart Phase B.
      - If `Reworks >= 3`: Go to **BLOCK**.
-   - **BLOCK:** If `Reworks >= 3`. Update `docs/product/BACKLOG.md` status to `BLOCKED`. Update `docs/product/DEVELOPMENT-STATE.md` row: set `Current Phase` to `-` and `Status` to `BLOCKED`. Move to the next feature.
+   - **BLOCK:** If `Reworks >= 3`. Update `docs/product/BACKLOG.md` status to `BLOCKED`. Update `docs/product/DEVELOPMENT-STATE.md` row: set `Current Phase` to `-` and `Status` to `BLOCKED`. Log decision in `DECISIONS.md`: "Feature {ID} BLOCKED after 3 rework attempts." Move to the next feature.
 5. **NO PAUSE:** After logging the verdict and updating states, immediately loop back to process the next executable feature in the backlog without waiting for user input.
 
 ### Phase D: State & Evolution
-1. **Trace:** Use `harness-kit:harness-tracer` skill to log session history.
-2. **Evolve:** If `BACKLOG.md` contains no more executable features, trigger `harness-kit:harness-evaluator` and `harness-kit:meta-harness` to optimize skills.
+1. **Trace:** Invoke `harness-kit:harness-tracer` skill passing:
+   - `${skill_name}` = `autonomous-orchestrator`
+   - `${agent_name}` = the active agent name
+   - `${task_summary}` = "Autonomous loop: completed {N} features, {M} blocked, {K} remaining"
+2. **Completion Check:** Read `docs/product/COMPLETION-CRITERIA.md` and verify ALL criteria are met:
+   - All features in `BACKLOG.md` marked `COMPLETED` or `BLOCKED`
+   - For each `COMPLETED` feature: tech-lead score >= threshold AND adversarial-qa score >= threshold
+   - No critical vulnerabilities reported across adversarial-qa verdicts
+   If any criteria fail, log reason in `DECISIONS.md`.
+3. **Evolve:** If `BACKLOG.md` contains no more executable features (all `COMPLETED` or `BLOCKED`), trigger `harness-kit:harness-evaluator` and `harness-kit:meta-harness` to optimize skills.
 
 ---
 
@@ -91,20 +120,20 @@ When reading outputs from sub-agents to extract metrics:
 
 docs/product/BACKLOG.md:
 ```
-| ID | Title | Priority | Dependencies | Status |
-| --- | --- | --- | --- | --- |
-| **F001** | **ProductCatalog Microservice** | **CRITICAL** | None | `COMPLETED` |
-| **F002** | **UserAuth Service** | **HIGH** | F001 | `IN_PROGRESS` |
-| **F003** | **OrderManagement Service** | **MEDIUM** | F001, F002 | `NOT_STARTED` |
+| ID | Title | Domain | Priority | Dependencies | Status |
+| --- | --- | --- | --- | --- | --- |
+| **F001** | **ProductCatalog Microservice** | `product_catalog` | **CRITICAL** | None | `COMPLETED` |
+| **F002** | **UserAuth Service** | `user_auth` | **HIGH** | F001 | `IN_PROGRESS` |
+| **F003** | **OrderManagement Service** | `order_management` | **MEDIUM** | F001, F002 | `NOT_STARTED` |
 ```
 
-docs/product/DEVELOPMENT-STATE.md (Exemplo de reentrada após crash na fase de TDD):
+docs/product/DEVELOPMENT-STATE.md (re-entry example after crash during TDD phase):
 ```
-| Feature ID | Current Phase | Reworks | Score (TL) | Score (Adv) | Status |
-| --- | --- | --- | --- | --- | --- |
-| F001 | - | 0 | 0.85 | 0.90 | `COMPLETED` |
-| F002 | `IMPLEMENTATION` | 1 | - | - | `IN_PROGRESS` |
-| F003 | - | 0 | - | - | `NOT_STARTED` |
+| Feature ID | Domain | Current Phase | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| F001 | `product_catalog` | - | 0 | 0.85 | 0.90 | `COMPLETED` |
+| F002 | `user_auth` | `IMPLEMENTATION` | 1 | - | - | `IN_PROGRESS` |
+| F003 | `order_management` | - | 0 | - | - | `NOT_STARTED` |
 ```
 
 docs/product/COMPLETION-CRITERIA.md:
@@ -122,4 +151,14 @@ For a feature to be `COMPLETED`, the following must be true:
 For a feature to be `BLOCKED`, the following must be true:
 
 * `reworks >= 3`
+```
+
+docs/product/DECISIONS.md:
+```
+# Autonomous Decision Audit Trail
+
+| Timestamp | Feature | Decision | Scores | Rationale |
+| --- | --- | --- | --- | --- |
+| 2026-05-25 10:15 | F001 | ACCEPTED | TL: 0.85, Adv: 0.90 | Both scores above threshold |
+| 2026-05-25 12:30 | F002 | RETRY #1 | TL: 0.72, Adv: 0.85 | Tech lead flagged N+1 query in user search |
 ```
