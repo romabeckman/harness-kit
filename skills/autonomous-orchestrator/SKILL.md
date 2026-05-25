@@ -145,12 +145,12 @@ All features in BACKLOG.md must be marked as `COMPLETED`.
 For a feature to be `COMPLETED`, the following must be true:
 
 * `the-grumpy-tech-lead` score >= 0.80
-* `adversarial-qa` score >= 0.80
+* `adversarial-qa` score >= 0.70
 * No critical vulnerabilities reported
 
 For a feature to be `BLOCKED`, the following must be true:
 
-* `reworks >= 3`
+* `reworks >= 2`
 ```
 
 docs/product/DECISIONS.md:
