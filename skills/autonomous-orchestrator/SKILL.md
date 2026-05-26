@@ -27,9 +27,9 @@ Before any execution, verify the workspace:
 1. **Scope Acquisition**: If `BACKLOG.md` is missing or empty, **ASK ONCE for the project scope/PRD, then NEVER ASK AGAIN**. 
 2. **Project Paths Acquisition**: If project paths are not known, **ASK ONCE for the local paths of all projects involved**. Store as `${projectPaths}`. This value is reused in every Phase A invocation of scope-refinement.
 3. **Score Thresholds Acquisition**: **ASK ONCE for validation score thresholds** for:
-   - `the-grumpy-tech-lead` score threshold (default: 0.80, minimum: 0.00, maximum: 1.00). Store as `${scoreThresholdTL}`.
+   - `the-grumpy-tech-lead` score threshold (default: 0.70, minimum: 0.00, maximum: 1.00). Store as `${scoreThresholdTL}`.
    - `adversarial-qa` score threshold (default: 0.70, minimum: 0.00, maximum: 1.00). Store as `${scoreThresholdAdv}`.
-   - If user does not provide values, use defaults: `${scoreThresholdTL} = 0.80` and `${scoreThresholdAdv} = 0.70`.
+   - If user does not provide values, use defaults: `${scoreThresholdTL} = 0.70` and `${scoreThresholdAdv} = 0.70`.
    - **Store these values persistently** in `docs/product/BOOTSTRAP-CONFIG.md` for future reference and re-entry.
 4. **Synthesis**: Analyze the provided scope to generate the initial `BACKLOG.md` table (ID, Title, Priority, Dependencies, Status). For each feature, derive a `domain` value in snake_case from the feature title (e.g., "User Authentication (JWT)" → `user_authentication`). Store the `domain` mapping in the BACKLOG table.
 5. **File Creation**: Create/Initialize:
@@ -168,7 +168,7 @@ docs/product/BOOTSTRAP-CONFIG.md:
 
 | Skill | Threshold | User Provided |
 | --- | --- | --- |
-| `the-grumpy-tech-lead` | 0.80 | No (using default) |
+| `the-grumpy-tech-lead` | 0.70 | No (using default) |
 | `adversarial-qa` | 0.70 | No (using default) |
 
 > Note: These values are set during initial BOOTSTRAP and persist across re-entries. To change thresholds, modify this file directly or restart BOOTSTRAP with new values.
@@ -181,5 +181,5 @@ docs/product/DECISIONS.md:
 | Timestamp | Feature | Decision | Scores | Rationale |
 | --- | --- | --- | --- | --- |
 | 2026-05-25 10:15 | F001 | ACCEPTED | TL: 0.85, Adv: 0.90 | Both scores above threshold |
-| 2026-05-25 12:30 | F002 | RETRY #1 | TL: 0.72, Adv: 0.85 | Tech lead flagged N+1 query in user search |
+| 2026-05-25 12:30 | F002 | RETRY #1 | TL: 0.56, Adv: 0.85 | Tech lead flagged N+1 query in user search |
 ```
