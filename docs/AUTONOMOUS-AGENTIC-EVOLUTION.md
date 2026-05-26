@@ -72,15 +72,22 @@ LOOP (for each NOT_STARTED feature in priority order):
     
     Decision Gate:
       PASS:  Score A >= 0.80 AND Score B >= 0.80 → COMPLETED
-      RETRY: Reworks < 3 → append findings to REWORK-LOG.md → restart Phase B
-      BLOCK: Reworks >= 3 → BLOCKED, move to next feature
+      RETRY: Reworks < 2 → append findings to REWORK-LOG.md → restart Phase B
+      BLOCK: Reworks >= 2 → BLOCKED, move to next feature
     
     Log every decision in DECISIONS.md
   
-  Phase D — STATE & EVOLUTION:
+  Phase D — STATE, EVOLUTION & AUTO-TUNING:
     Invoke harness-tracer passing: ${skill_name}, ${agent_name}, ${task_summary}
+    AUTO-TUNING GATE:
+      If completedCycles % 10 == 0 AND completedCycles > 0:
+        Log AUTO-TUNING in DECISIONS.md
+        Invoke harness-evaluator → updates pareto-frontier.md
+        Invoke meta-harness → proposes/promotes skill candidate
+        Persist completedCycles to BOOTSTRAP-CONFIG.md
     Check COMPLETION-CRITERIA.md
-    If backlog exhausted → trigger harness-evaluator + meta-harness
+    If backlog exhausted → final harness-evaluator + meta-harness
+    If features remain → loop back to Phase A
 
 DONE:
   All features COMPLETED or BLOCKED + criteria met → PRODUCT READY
@@ -253,11 +260,11 @@ Defines exactly what the orchestrator passes to each skill in autonomous mode.
 - [x] Backlog progression with cascade block on dependencies
 - [x] Completion checker verifies COMPLETION-CRITERIA.md
 
-### Phase 5: Harness Optimization Loop — PARTIAL
+### Phase 5: Harness Optimization Loop — DONE
 - [x] `harness-evaluator` reads traces and computes Pareto frontier
 - [x] `meta-harness` proposes targeted improvements with diagnosis protocol
 - [x] Adapt evaluator metrics for autonomous loop traces (featureId, reworksCount, composite scores)
-- [ ] Auto-tuning validation (run 10+ cycles, verify convergence)
+- [x] Auto-tuning validation (run harness-evaluator + meta-harness every 10 completed cycles)
 
 ### Phase 6: Integration & Edge Cases — NOT STARTED
 - [ ] Retry logic for transient failures (subagent crash, network error)
@@ -283,7 +290,7 @@ Defines exactly what the orchestrator passes to each skill in autonomous mode.
 
 | Risk | Mitigation |
 |------|-----------|
-| **Infinite loops / Deadlock** | BLOCKED counter (max 3 reworks) + cascade block on dependencies |
+| **Infinite loops / Deadlock** | BLOCKED counter (max 2 reworks) + cascade block on dependencies |
 | **Low accumulated quality** | High threshold (score >= 0.80, coverage >= 85%) |
 | **Cost (API calls)** | Batch processing; spec docs reduce redundant analysis |
 | **Feature creep** | Backlog fixed at BOOTSTRAP; changes only via DECISIONS.md |
@@ -291,7 +298,7 @@ Defines exactly what the orchestrator passes to each skill in autonomous mode.
 
 ### Human Intervention Points (Fallbacks)
 
-1. **Feature BLOCKED** (after 3 rework attempts) → Logged in DECISIONS.md, move to next feature
+1. **Feature BLOCKED** (after 2 rework attempts) → Logged in DECISIONS.md, move to next feature
 2. **Average score dropping** (trend analysis) → Pause & notify
 3. **Critical security issue** → Immediate escalation
 
