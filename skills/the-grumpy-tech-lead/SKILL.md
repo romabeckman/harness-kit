@@ -46,8 +46,8 @@ When invoked in Autonomous Mode, your verdict feeds directly into **Phase C: Val
 | Score Range | Decision | Next Step |
 | --- | --- | --- |
 | `>= ${scoreThresholdTL}` | **PASS** — Architecture is robust | Feature progresses to `COMPLETED` status |
-| `< ${scoreThresholdTL}` | **RETRY** — Rework required | `openPoints` logged to `REWORK-LOG.md`; developer fixes issues; TDD phase restarts (max 3 retries) |
-| After 3 retries | **BLOCK** — Scope too complex | Feature marked `BLOCKED`; escalated for scope refinement |
+| `< ${scoreThresholdTL}` | **RETRY** — Rework required | `openPoints` logged to `REWORK-LOG.md`; developer fixes issues; TDD phase restarts (max 2 retries) |
+| After 2 retries | **BLOCK** — Scope too complex | Feature marked `BLOCKED`; escalated for scope refinement |
 
 **Critical Guidance:**
 - Be **rigorous but fair**. A score of 0.75 means there are real systemic risks that must be addressed.

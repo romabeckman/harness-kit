@@ -40,9 +40,9 @@ When invoked in Autonomous Mode, your verdict feeds directly into **Phase C: Val
 | Score Range | Vulnerabilities | Decision | Next Step |
 | --- | --- | --- | --- |
 | `>= ${scoreThresholdAdv}` | None (or LOW/MEDIUM only) | **PASS** — Adversarial tests passed | Feature progresses to `COMPLETED` status |
-| `< ${scoreThresholdAdv}` | Any severity | **RETRY** — Rework required | `vulnerabilities[]` and `edgeCasesMissed[]` logged to `REWORK-LOG.md`; developer fixes; testing phase restarts (max 3 retries) |
+| `< ${scoreThresholdAdv}` | Any severity | **RETRY** — Rework required | `vulnerabilities[]` and `edgeCasesMissed[]` logged to `REWORK-LOG.md`; developer fixes; testing phase restarts (max 2 retries) |
 | Any severity | **HIGH** or **CRITICAL** | **RETRY** (forced) | Regardless of score; escalates to senior QA review |
-| After 3 retries | Any | **BLOCK** — Quality gates failed | Feature marked `BLOCKED`; cannot proceed to production |
+| After 2 retries | Any | **BLOCK** — Quality gates failed | Feature marked `BLOCKED`; cannot proceed to production |
 
 **Critical Guidance:**
 - **Security first:** Any HIGH/CRITICAL vulnerability = automatic RETRY, non-negotiable.
