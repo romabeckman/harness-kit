@@ -1,7 +1,6 @@
 ---
 name: developer-frontend
 description: Senior Frontend Developer specialized in TDD, UI/UX implementation, accessibility, and performance. Use for writing frontend code (React, Vue, CSS, HTML), fixing UI bugs, implementing designs, and frontend testing.
-  - NotebookEdit
 ---
 
 # Developer Frontend — Senior Frontend Developer
