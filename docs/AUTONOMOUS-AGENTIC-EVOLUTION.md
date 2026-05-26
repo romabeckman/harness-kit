@@ -256,7 +256,7 @@ Defines exactly what the orchestrator passes to each skill in autonomous mode.
 ### Phase 5: Harness Optimization Loop — PARTIAL
 - [x] `harness-evaluator` reads traces and computes Pareto frontier
 - [x] `meta-harness` proposes targeted improvements with diagnosis protocol
-- [ ] Adapt evaluator metrics for autonomous loop traces (featureId, reworksCount, composite scores)
+- [x] Adapt evaluator metrics for autonomous loop traces (featureId, reworksCount, composite scores)
 - [ ] Auto-tuning validation (run 10+ cycles, verify convergence)
 
 ### Phase 6: Integration & Edge Cases — NOT STARTED
