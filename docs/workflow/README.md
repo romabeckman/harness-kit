@@ -21,16 +21,22 @@ Choose your entry point based on what you need right now:
 - Concrete terminal execution flows: introducing new features, managing bug fixes, and manual optimization loops.
 - Real-world timeline tracking examples, specific command syntaxes, expected outputs, and troubleshooting recipes.
 
+### **🤖 Autonomous Loop Orchestration**
+→ **[AUTONOMOUS-ORCHESTRATOR.md](AUTONOMOUS-ORCHESTRATOR.md)**
+- Step-by-step workflow for running the sovereign, fully automated execution loop.
+- Best practices on initializing project documentation and defining proper brainstorming contexts.
+
 ---
 
 ## 🗂️ The Core Documentation Architecture
 
-The workspace documentation is strictly minimized to two primary pillars to prevent overlap and redundancy:
+The workspace documentation is organized into three primary pillars to cover theoretical foundations, manual operations, and automated orchestration:
 
 | Document | Nature | Primary Objective | Key Target Focus |
 |:---|:---|:---|:---|
 | **META-HARNESS.md** | Conceptual & Analytical | Explains *why* and *how* the system evolves natively. | Core Architecture, Optimization Loop, Ecosystem State. |
 | **PLAYBOOK-DAILY-USE.md** | Practical & Operational | Provides immediate tactical guidance for day-to-day engineering. | Terminal Commands, Checklists, Metrics Tracking. |
+| **AUTONOMOUS-ORCHESTRATOR.md** | Automated Workflow | Guides the sovereign orchestration cycle and prerequisite setup. | Orchestration Loop, Project Memory, Context Brainstorming. |
 
 ---
 
@@ -42,6 +48,8 @@ The workspace documentation is strictly minimized to two primary pillars to prev
 | *"What does each skill do internally?"* | `META-HARNESS.md` | Layer 2: Skills |
 | *"Which skill should I invoke next?"* | `PLAYBOOK-DAILY-USE.md` | Flow 1 & Flow 2 |
 | *"How does the meta-harness improve code?"* | `META-HARNESS.md` | The Continuous Optimization Loop |
+| *"How do I run the sovereign automated loop?"* | `AUTONOMOUS-ORCHESTRATOR.md` | 🚀 How to Use the Skill |
+| *"What are the recommendations for project documentation?"* | `AUTONOMOUS-ORCHESTRATOR.md` | 💡 Best Practice Recommendations |
 | *"An execution error occurred, how do I solve it?"* | `PLAYBOOK-DAILY-USE.md` | Troubleshooting |
 
 ---

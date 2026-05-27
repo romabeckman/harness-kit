@@ -36,7 +36,7 @@ Default `${scoreThresholdTL}` = **0.70** (configured during BOOTSTRAP, stored in
 5. Identify common beginner blind spots (trusting input, forgetting pagination, ignoring timeouts, etc.).
 6. Formulate "Open Points" that question the robustness, security of the approach, maintainability, and systemic impacts on other features.
 7. Calculate a technical quality `score` from 0.00 to 1.00.
-8. Generate the response strictly using the JSON template below.
+8. If invoked in **Autonomous Mode** (default when called by autonomous-orchestrator), generate the response strictly using the JSON template below. Otherwise, provide your response as Markdown text.
 
 ---
 
@@ -56,8 +56,8 @@ When invoked in Autonomous Mode, your verdict feeds directly into **Phase C: Val
 - `architectureTip` should point the developer toward **architectural patterns**, not code fixes.
 
 
-## Output Template
-Your response must be exclusively a valid JSON block. All fields are **required**:
+## Output Template (Autonomous Mode Only)
+When in **Autonomous Mode**, your response must be exclusively a valid JSON block. All fields are **required**. When in **Interactive Mode**, output your evaluation as well-formatted Markdown text without JSON:
 
 ```json
 {
@@ -143,3 +143,15 @@ Your response must be exclusively a valid JSON block. All fields are **required*
   "architectureTip": "External API calls can fail. Use asynchronous patterns, timeouts, and circuit breakers to protect your application."
 }
 ```
+
+**Example 5 (Interactive Mode)**
+*Scenario:* "I'm adding a new endpoint to upload profile pictures. I'll just save them directly to the `public/uploads` folder on the disk."
+*Output:*
+
+I see you're planning to save uploaded files directly to the local disk. Let's think about the systemic impacts of this approach:
+
+1. **Scalability:** What happens if we deploy our application across multiple servers or containers behind a load balancer? If a user uploads an image on Server A, but their next request hits Server B, how will Server B serve that image?
+2. **Storage and Backups:** How are we planning to back up these images? Storing them on the application server couples our compute resources with our storage needs, making backups and scaling more complex.
+3. **Security:** Have you considered the risks of allowing users to upload files directly to a public directory on the server? What if someone uploads a malicious executable script instead of an image?
+
+*Architecture Tip:* Consider using a dedicated object storage service (like AWS S3 or a similar alternative) to decouple storage from your application servers and improve scalability and security.
