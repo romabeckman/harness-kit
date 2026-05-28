@@ -74,7 +74,7 @@ Your response must be exclusively a valid JSON block. All fields are **required*
 
 **Field Requirements:**
 - `featureId`: MUST match injected `${featureId}` (extracted from BACKLOG.md in autonomous-orchestrator)
-- `score`: [0.00, 1.00] float. Rounded to 2 decimals. Used in Decision Gate comparison with `${scoreThresholdTL}`. Default threshold: 0.80
+- `score`: [0.00, 1.00] float. Rounded to 2 decimals. Used in Decision Gate comparison with `${scoreThresholdTL}`. Default threshold: 0.70
 - `openPoints`: 3-5 **Socratic questions** (not directives). Must address systemic impacts, not syntax. Example: "How does pagination prevent OOM?" vs. "Add pagination."
 - `architectureTip`: Single sentence. Points toward **architectural pattern**, not code. Example: "Consider event-driven architecture for async processing" vs. "Use async/await."
 

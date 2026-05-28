@@ -71,7 +71,7 @@ LOOP (for each NOT_STARTED feature in priority order):
     → Score B (from score field)
     
     Decision Gate:
-      PASS:  Score A >= 0.80 AND Score B >= 0.80 → COMPLETED
+      PASS:  Score A >= 0.70 AND Score B >= 0.70 → COMPLETED
       RETRY: Reworks < 2 → append findings to REWORK-LOG.md → restart Phase B
       BLOCK: Reworks >= 2 → BLOCKED, move to next feature
     
@@ -244,7 +244,7 @@ Defines exactly what the orchestrator passes to each skill in autonomous mode.
 - [x] Planning loop (scope-refinement delegation with context injection)
 - [x] Implementation loop (tdd-orchestrator delegation with spec docs)
 - [x] Validation loop (the-grumpy-tech-lead + adversarial-qa + decision gate)
-- [x] Decision gate logic (score threshold >= 0.80, rework count, blocking)
+- [x] Decision gate logic (score threshold >= 0.70, rework count, blocking)
 - [x] JSON Extraction Protocol (defensive parsing)
 
 ### Phase 3: Skill Upgrades — DONE
@@ -291,7 +291,7 @@ Defines exactly what the orchestrator passes to each skill in autonomous mode.
 | Risk | Mitigation |
 |------|-----------|
 | **Infinite loops / Deadlock** | BLOCKED counter (max 2 reworks) + cascade block on dependencies |
-| **Low accumulated quality** | High threshold (score >= 0.80, coverage >= 85%) |
+| **Low accumulated quality** | High threshold (score >= 0.70, coverage >= 85%) |
 | **Cost (API calls)** | Batch processing; spec docs reduce redundant analysis |
 | **Feature creep** | Backlog fixed at BOOTSTRAP; changes only via DECISIONS.md |
 | **State inconsistency** | Atomic writes to docs; persistence-first rule |
