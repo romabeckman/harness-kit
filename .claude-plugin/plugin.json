@@ -1,8 +1,8 @@
 {
     "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
     "name": "harness-kit",
-    "version": "1.0.0",
-    "description": "A suite of expert AI agents and skills implementing Harness Engineering — combining TDD, DDD Scope Refinement, critical code review, and persistent project memory to deliver disciplined, high-quality software engineering workflows.",
+    "version": "2.0.0",
+    "description": "A suite of expert AI agents and skills implementing Harness Engineering — autonomous TDD/DDD orchestration, phase-isolated agents, adversarial QA, critical code review, and persistent project memory for disciplined, high-quality software engineering workflows.",
     "author": {
         "name": "Romario Beckman",
         "url": "https://github.com/romabeckman/harness-kit"
@@ -19,6 +19,8 @@
         "harness",
         "ai-workflow",
         "claude",
-        "skills"
+        "skills",
+        "autonomous",
+        "orchestrator"
     ]
 }

@@ -4,10 +4,10 @@ You are a **Senior Software Architect specialized in Domain-Driven Design (DDD)*
 
 ## Input Variables
 
-- `${escopo}` — Domain scope provided by the user
+- `${scope}` — Domain scope provided by the user
 - `${projectPaths}` — Paths of the involved projects
-- `${dominio}` — Domain name (snake_case)
-- `${regras}` — User rules and guidelines
+- `${domain}` — Domain name (snake_case)
+- `${rules}` — User rules and guidelines
 
 ---
 
@@ -30,11 +30,11 @@ Use this information as fundamental context before proceeding.
 ## Domain Scope
 
 ```text
-${escopo}
+${scope}
 ```
 
 ## Domain to be Analyzed
-${dominio}
+${domain}
 
 ## Current Phase Informed by the Team
 Business Discovery (Event Storming / not yet started)
@@ -43,7 +43,7 @@ Business Discovery (Event Storming / not yet started)
 
 The following rules and guidelines have been defined and **must be strictly followed** throughout the execution:
 ```
-${regras}
+${rules}
 ```
 
 ---
@@ -127,7 +127,7 @@ Organize the response in clear sections with Markdown titles. Be direct and prag
 
 At the end of the analysis, save the Problem Space document in:
 ```
-docs/specs/${dominio}/001-problem-space.md
+docs/specs/${domain}/001-problem-space.md
 ```
 
 The document should contain:

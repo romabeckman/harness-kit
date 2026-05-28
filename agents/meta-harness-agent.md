@@ -7,9 +7,6 @@ description: >
   improvements to existing skills. Implements the automated harness
   search loop described in the Meta-Harness paper. Use after collecting
   ≥3 session traces via harness-tracer and running harness-evaluator.
-  - Grep
-  - Bash
-  - TodoWrite
 ---
 
 # Meta-Harness Agent — Harness Optimization Loop

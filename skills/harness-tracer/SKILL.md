@@ -60,6 +60,7 @@ Capture the session header. Ask yourself these questions and record the answers:
 - **date:** {YYYY-MM-DD HH:MM}
 - **skill_used:** {skill_name}
 - **agent:** {agent_name}
+- **featureId:** {featureId} (if applicable)
 - **task_summary:** {task_summary}
 - **task_type:** [feature | bugfix | refactor | review | architecture | documentation]
 - **duration_estimate:** [short (<15 min) | medium (15-60 min) | long (>60 min)]
@@ -117,6 +118,7 @@ Calculate objective metrics by inspecting the action sequence:
 ## Raw Metrics
 - **tdd_cycles:** [count of RED→GREEN→REFACTOR full cycles completed]
 - **iterations_to_pass:** [how many test runs before all tests passed — 1 if first run passed]
+- **reworksCount:** [count of reworks during Phase C validation, or 0]
 - **grumpy_open_points:** [number of Open Points raised by the-grumpy-tech-lead, or 0 if not invoked]
 - **context_docs_read:** [total number of docs/ files read during session]
 - **skill_chain_length:** [number of skills in the chain]
@@ -204,18 +206,20 @@ Adjust based on what matters most for your project.
 
 | Metric | Weight | Direction | Description |
 |--------|--------|-----------|-------------|
-| tdd_cycles | 0.35 | lower is better | Fewer cycles = harness guides more precisely |
-| iterations_to_pass | 0.30 | lower is better | Fewer runs = faster convergence |
+| tdd_cycles | 0.25 | lower is better | Fewer cycles = harness guides more precisely |
+| iterations_to_pass | 0.20 | lower is better | Fewer runs = faster convergence |
+| reworksCount | 0.25 | lower is better | Fewer reworks = validation passed faster |
 | grumpy_open_points | 0.20 | higher is better | More points = deeper architectural review |
-| context_docs_read | 0.10 | moderate is better | Too low = missing context; too high = noise |
+| context_docs_read | 0.05 | moderate is better | Too low = missing context; too high = noise |
 | deviations | 0.05 | lower is better | Fewer deviations = harness is clearer |
 
 ## Composite Score Formula
-score = (1 / tdd_cycles) × 0.35
-      + (1 / iterations_to_pass) × 0.30
+score = (1 / max(tdd_cycles, 1)) × 0.25
+      + (1 / max(iterations_to_pass, 1)) × 0.20
+      + (1 / max(reworksCount + 1, 1)) × 0.25
       + (grumpy_open_points / 10) × 0.20
       + (1 / max(deviations, 1)) × 0.05
-      + context_score × 0.10
+      + context_score × 0.05
 
 context_score = 1.0 if 3 ≤ context_docs_read ≤ 8
               = 0.5 if context_docs_read < 3 or context_docs_read > 12

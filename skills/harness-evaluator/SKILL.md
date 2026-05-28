@@ -36,13 +36,13 @@ Execute steps in order. Do not skip steps.
 
 For each `session-*/` directory in `docs/harness-history/traces/`:
 
-1. Read `metadata.md` → extract: `skill_used`, `agent`, `task_type`, `date`
-2. Read `score.md` → extract all raw metrics
+1. Read `metadata.md` → extract: `skill_used`, `agent`, `task_type`, `date`, `featureId`
+2. Read `score.md` → extract all raw metrics (including `reworksCount`)
 3. Read `verdict.md` → extract `Hypothesis` and `Recommended Change`
 
 Store all data in memory as a table:
 ```
-session_id | skill_chain | task_type | tdd_cycles | iterations_to_pass | grumpy_open_points | context_docs_read | deviations
+session_id | featureId | skill_chain | task_type | tdd_cycles | iterations_to_pass | reworksCount | grumpy_open_points | context_docs_read | deviations
 ```
 
 ### Step 2 — Group by Skill Chain
@@ -66,6 +66,7 @@ Group: tdd-orchestrator → test-driven-development → systematic-debugging →
   Sessions: 7
   tdd_cycles:          mean=2.1, std=0.8
   iterations_to_pass:  mean=1.4, std=0.6
+  reworksCount:        mean=0.4, std=0.2
   grumpy_open_points:  mean=4.2, std=1.1
   context_docs_read:   mean=5.1, std=1.0
   deviations:          mean=0.3, std=0.5

@@ -1,7 +1,6 @@
 ---
 name: developer-frontend
 description: Senior Frontend Developer specialized in TDD, UI/UX implementation, accessibility, and performance. Use for writing frontend code (React, Vue, CSS, HTML), fixing UI bugs, implementing designs, and frontend testing.
-  - NotebookEdit
 ---
 
 # Developer Frontend — Senior Frontend Developer
@@ -95,7 +94,7 @@ When the Software Architect reviews your code:
 ## Inviolable Rules
 
 ### ✅ ALWAYS
-- Read `docs/README.md`, `docs/ARCHITECTURE.md`, and `docs/TESTS.md` before starting.
+- Read `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md` before starting.
 - Failing test BEFORE any production code.
 - Run tests after every change.
 - Frequent and atomic commits.

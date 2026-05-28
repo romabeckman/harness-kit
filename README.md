@@ -105,6 +105,7 @@ Follow this iterative process for maximum quality and safety:
 | :--- | :--- |
 | **Project Memory** (`project-memory`) | Generates and maintains persistent technical documentation (`docs/README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`). The agent's long-term memory. |
 | **Scope Refinement** (`scope-refinement`) | DDD-based scope orchestrator. Maps Bounded Contexts, Aggregates, and Use Cases. Produces test scenarios before implementation starts. |
+| **Autonomous Orchestrator** (`autonomous-orchestrator`) | Sovereign loop manager. Fully automates execution across planning, implementation, validation, and auto-tuning phases without user interruption. |
 | **TDD Orchestrator** (`tdd-orchestrator`) | Enforces RED → GREEN → REFACTOR. Coordinates the full test-driven development cycle, blocking implementation without a failing test first. |
 | **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Senior technical reviewer. Uses Socratic questioning to expose systemic risks (N+1, leaks, race conditions, SOLID violations) without providing ready-made solutions. |
 | **Harness Tracer** (`harness-tracer`) | Records structured execution traces after each session to `docs/harness-history/traces/`. Raw material for harness optimization. |
@@ -192,6 +193,8 @@ Complete guide for using HarnessKit in a structured, data-driven sequence. This 
 * **[Conceptual & Architectural Foundation](docs/workflow/META-HARNESS.md)** — Combines the system's 3-layer architecture (Developer, Skills, Filesystem $\mathcal{D}$) and the continuous optimization loop. Built on the principles of the research paper [Meta-Harness: End-to-End Optimization of Model Harnesses](https://arxiv.org/abs/2603.28052).
 
 * **[Daily Use Playbook](docs/workflow/PLAYBOOK-DAILY-USE.md)** — Step-by-step tactical guide for daily tasks. Follow operational checklists, timelines, and command flows with confidence.
+
+* **[Autonomous Loop Orchestration](docs/workflow/AUTONOMOUS-ORCHESTRATOR.md)** — Step-by-step workflow for running the sovereign, fully automated execution loop, including setup and context recommendations.
 
 ---
 

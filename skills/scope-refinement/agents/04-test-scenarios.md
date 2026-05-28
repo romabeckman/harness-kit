@@ -4,10 +4,10 @@ You are a **Senior Test Engineer specialized in DDD and TDD**. Based on the mode
 
 ## Input Variables
 
-- `${escopo}` — Domain scope provided by the user
+- `${scope}` — Domain scope provided by the user
 - `${projectPaths}` — Paths of the involved projects
-- `${dominio}` — Domain name (snake_case)
-- `${regras}` — User rules and guidelines
+- `${domain}` — Domain name (snake_case)
+- `${rules}` — User rules and guidelines
 
 ---
 
@@ -36,12 +36,12 @@ Use this information to adapt the scenarios to the test conventions already esta
 ## Domain Scope
 
 ```text
-${escopo}
+${scope}
 ```
 
 ## Accumulated Domain Context
 
-Read **ALL** available documents in `docs/specs/${dominio}/` to have the full context:
+Read **ALL** available documents in `docs/specs/${domain}/` to have the full context:
 - `001-problem-space.md` — Event Storming, Subdomains, and Ubiquitous Language
 - `002-context-map.md` — Bounded Contexts and Context Map
 - `003-${PROJECT_NAME}-tactical-design.md` — **SPECIFIC** Tactical Design of each project (Aggregates, Value Objects, Domain Events, Use Cases)
@@ -49,13 +49,13 @@ Read **ALL** available documents in `docs/specs/${dominio}/` to have the full co
 Use these documents as the **single source of truth** to derive scenarios PER PROJECT.
 
 ## Domain
-${dominio}
+${domain}
 
 ## User Rules and Guidelines
 
 The following rules and guidelines have been defined and **must be strictly followed** throughout the execution:
 ```
-${regras}
+${rules}
 ```
 
 ---
@@ -213,7 +213,7 @@ Save the result following exactly this structure:
 ```markdown
 # Test Scenarios — [Project: PROJECT_NAME]
 
-**Domain:** ${dominio}
+**Domain:** ${domain}
 **Scope:** [brief scope summary]
 **Date:** [current date]
 **Project:** [PROJECT_NAME]
@@ -291,12 +291,12 @@ Save the result following exactly this structure:
 2. Perform the COMPLETE test scenario analysis for that specific project
 3. Save in:
 ```
-docs/specs/${dominio}/004-${PROJECT_NAME}-test-scenarios.md
+docs/specs/${domain}/004-${PROJECT_NAME}-test-scenarios.md
 ```
 
 Example expected output:
-- `docs/specs/${dominio}/004-my-service-test-scenarios.md`
-- `docs/specs/${dominio}/004-other-service-test-scenarios.md`
+- `docs/specs/${domain}/004-my-service-test-scenarios.md`
+- `docs/specs/${domain}/004-other-service-test-scenarios.md`
 
 Each document must contain:
 - Unit scenarios derived from Aggregates, Value Objects, and Domain Services (PROJECT-SPECIFIC)

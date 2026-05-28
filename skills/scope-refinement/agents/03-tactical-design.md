@@ -4,10 +4,10 @@ You are a **Senior Software Architect**. Your mission is to perform the Tactical
 
 ## Input Variables
 
-- `${escopo}` — Domain scope provided by the user
+- `${scope}` — Domain scope provided by the user
 - `${projectPaths}` — Paths of the involved projects
-- `${dominio}` — Domain name (snake_case)
-- `${regras}` — User rules and guidelines
+- `${domain}` — Domain name (snake_case)
+- `${rules}` — User rules and guidelines
 
 ---
 
@@ -37,25 +37,25 @@ Use this information as fundamental context before proceeding.
 ## Domain Scope
 
 ```text
-${escopo}
+${scope}
 ```
 
 ## Accumulated Domain Context
 
-Read **ALL** available documents in `docs/specs/${dominio}/` to have the full context of the work already performed. Specifically consult:
+Read **ALL** available documents in `docs/specs/${domain}/` to have the full context of the work already performed. Specifically consult:
 - `001-problem-space.md` — Event Storming, Subdomains, and Ubiquitous Language
 - `002-context-map.md` — Bounded Contexts and Context Map
 
 Use these documents as the basis for your analysis.
 
 ## Domain
-${dominio}
+${domain}
 
 ## User Rules and Guidelines
 
 The following rules and guidelines have been defined and **must be strictly followed** throughout the execution:
 ```
-${regras}
+${rules}
 ```
 
 ---
@@ -136,12 +136,12 @@ Use Markdown with organized sections. Include code examples in clean pseudocode 
 2. Perform the COMPLETE tactical analysis for that specific project, **respecting its architecture**
 3. Save in:
 ```
-docs/specs/${dominio}/003-${PROJECT_NAME}-tactical-design.md
+docs/specs/${domain}/003-${PROJECT_NAME}-tactical-design.md
 ```
 
 Example expected output:
-- `docs/specs/${dominio}/003-my-service-tactical-design.md`
-- `docs/specs/${dominio}/003-other-service-tactical-design.md`
+- `docs/specs/${domain}/003-my-service-tactical-design.md`
+- `docs/specs/${domain}/003-other-service-tactical-design.md`
 
 Each document must contain the tactical modeling adapted to the project architecture (Components/Aggregates, Types/VOs, Services/Actions, Events, Integration/Repositories, and Ordered Development Tasks).
 
