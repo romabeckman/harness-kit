@@ -73,16 +73,17 @@ Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Blo
 3. **Verify:** Wait until `docs/specs/{domain}/TDD-OUTPUT.json` is generated.
 
 ### Phase C: Validation & Decision Gate
+
+> **IMPORTANT:** Steps 3 and 4 MUST be dispatched in parallel. Parse each response independently via *JSON Extraction Protocol*.
+
 1. **Load Score Thresholds:** At the start of Phase C (or on re-entry), load `${scoreThresholdTL}` and `${scoreThresholdAdv}` from `docs/product/BOOTSTRAP-CONFIG.md` if they are not already in memory. This ensures consistent validation across re-entries.
 2. **State Log:** Update `docs/product/DEVELOPMENT-STATE.md` setting `Current Phase` to `VALIDATION`.
 3. **Critique:** Invoke `harness-kit:the-grumpy-tech-lead` (using `harness-tech-lead` agent) in **Autonomous Mode** passing:
-   - `${skill}` = `harness-kit:the-grumpy-tech-lead`
    - `${featureId}` = feature ID from `BACKLOG.md`
    - `${domain}` = Domain column value from `BACKLOG.md`
    - `${projectPaths}` = project paths collected during BOOTSTRAP
    Capture output and apply the *JSON Extraction Protocol* to parse Score A from the `score` field.
 4. **Attack:** Invoke `harness-kit:adversarial-qa` (using `harness-qa` agent) skill in **Autonomous Mode** passing:
-   - `${skill}` = `harness-kit:adversarial-qa`
    - `${featureId}` = feature ID from `BACKLOG.md`
    - `${domain}` = Domain column value from `BACKLOG.md`
    - `${projectPaths}` = project paths collected during BOOTSTRAP
@@ -117,8 +118,6 @@ Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Blo
    4. Increment `${completedCycles}` by 1.
    5. Proceed to Phase D.
 
-Steps 3 and 4 MUST be dispatched in parallel. Parse each response independently via *JSON Extraction Protocol*.
-
 ### Phase D: State, Evolution & Auto-Tuning
 1. **Trace:** Invoke `harness-kit:harness-tracer` skill passing:
    - `${skill_name}` = `autonomous-orchestrator`
@@ -135,7 +134,7 @@ Steps 3 and 4 MUST be dispatched in parallel. Parse each response independently 
    - If FALSE: skip auto-tuning, continue to step 3.
 3. **Completion Check:** Read `docs/product/COMPLETION-CRITERIA.md` and verify ALL criteria are met:
    - All features in `BACKLOG.md` marked `COMPLETED` or `BLOCKED`
-   - For each `COMPLETED` feature: `harness-kit:tech-lead` score >= threshold AND `harness-kit:adversarial-qa` score >= threshold
+   - For each `COMPLETED` feature: `harness-kit:the-grumpy-tech-lead` score >= threshold AND `harness-kit:adversarial-qa` score >= threshold
    - No critical vulnerabilities reported across `harness-kit:adversarial-qa` verdicts
    If any criteria fail, log reason in `DECISIONS.md`.
 4. **Final Evolve:** If `BACKLOG.md` contains no more executable features (all `COMPLETED` or `BLOCKED`):
