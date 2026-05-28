@@ -33,7 +33,7 @@ You are the Sovereign Orchestrator. Your mission is to drive the `BACKLOG.md` to
 Before any execution, verify the workspace:
 1. **Scope Acquisition**: If `BACKLOG.md` is missing or empty, **ASK ONCE for the project scope/PRD, then NEVER ASK AGAIN**. 
 2. **Project Paths Acquisition**: If project paths are not known, **ASK ONCE for the local paths of all projects involved**. Store as `${projectPaths}`. This value is reused in every Phase A invocation of `harness-kit:scope-refinement`.
-3. **Score Thresholds Acquisition**: **ASK ONCE for validation score thresholds** for:
+3. **Score Thresholds Acquisition**: Load `${scoreThresholdTL}` and `${scoreThresholdAdv}` from runtime context if injected by a parent process and skip to step 4. If not present, ASK ONCE from the user:
    - `harness-kit:the-grumpy-tech-lead` (using `harness-tech-lead` agent) score threshold (default: 0.70, minimum: 0.00, maximum: 1.00). Store as `${scoreThresholdTL}`.
    - `harness-kit:adversarial-qa` (using `harness-qa` agent) score threshold (default: 0.70, minimum: 0.00, maximum: 1.00). Store as `${scoreThresholdAdv}`.
    - If user does not provide values, use defaults: `${scoreThresholdTL} = 0.70` and `${scoreThresholdAdv} = 0.70`.
@@ -74,10 +74,11 @@ Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Blo
 
 ### Phase C: Validation & Decision Gate
 
-> **IMPORTANT:** Steps 3 and 4 MUST be dispatched in parallel. Parse each response independently via *JSON Extraction Protocol*.
-
 1. **Load Score Thresholds:** At the start of Phase C (or on re-entry), load `${scoreThresholdTL}` and `${scoreThresholdAdv}` from `docs/product/BOOTSTRAP-CONFIG.md` if they are not already in memory. This ensures consistent validation across re-entries.
 2. **State Log:** Update `docs/product/DEVELOPMENT-STATE.md` setting `Current Phase` to `VALIDATION`.
+
+> **IMPORTANT:** Steps 3 and 4 MUST be dispatched in parallel. Parse each response independently via *JSON Extraction Protocol*.
+
 3. **Critique:** Invoke `harness-kit:the-grumpy-tech-lead` (using `harness-tech-lead` agent) in **Autonomous Mode** passing:
    - `${featureId}` = feature ID from `BACKLOG.md`
    - `${domain}` = Domain column value from `BACKLOG.md`
@@ -100,7 +101,7 @@ Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Blo
    4. Increment `${completedCycles}` by 1.
    5. Proceed to Phase D.
 
-   #### RETRY — Score below threshold AND `Reworks < 2`
+   #### RETRY — (`Score A < ${scoreThresholdTL}` OR `Score B < ${scoreThresholdAdv}` OR any HIGH/CRITICAL vulnerability reported) AND `Reworks < 2`
    1. Increment `Reworks` count by 1.
    2. Append findings to `docs/specs/{domain}/REWORK-LOG.md`:
       - `openPoints` from `harness-kit:the-grumpy-tech-lead`
@@ -109,7 +110,7 @@ Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Blo
    4. **ATOMIC WRITE:** Update `docs/product/DEVELOPMENT-STATE.md` with new `Reworks` value and `Current Phase` → `IMPLEMENTATION`.
    5. Restart Phase B.
 
-   #### BLOCK — `Reworks >= 2`
+   #### BLOCK — (`Score A < ${scoreThresholdTL}` OR `Score B < ${scoreThresholdAdv}` OR any HIGH/CRITICAL vulnerability reported) AND `Reworks >= 2`
    1. Update `docs/product/BACKLOG.md` status → `BLOCKED`.
    2. Update `docs/product/DEVELOPMENT-STATE.md` row:
       - `Current Phase` → `-`
@@ -140,7 +141,7 @@ Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Blo
 4. **Final Evolve:** If `BACKLOG.md` contains no more executable features (all `COMPLETED` or `BLOCKED`):
    - If auto-tuning was NOT already triggered in this cycle, trigger `harness-kit:harness-evaluator` and `harness-kit:meta-harness` for a final optimization pass.
    - Log in `DECISIONS.md`: "BACKLOG EXHAUSTED — final harness optimization triggered."
-5. **Loop:** If executable features remain in `BACKLOG.md`, immediately loop back to Phase A for the next feature.
+5. **Loop:** If executable features remain in `BACKLOG.md`, immediately loop back to Phase A for the next feature. If a feature is `IN_PROGRESS`, read `DEVELOPMENT-STATE.md` to determine the last completed phase and resume from that point — do not restart from Phase A.
 
 ---
 
