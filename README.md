@@ -97,6 +97,28 @@ Follow this iterative process for maximum quality and safety:
 
 ---
 
+## 🔍 Socratic Code Review Example
+
+To prevent systemic risks (such as N+1 queries, memory leaks, security vulnerabilities, or database connection exhaustion), HarnessKit employs a **Socratic Code Review** model. Instead of providing copy-paste code solutions, **The Grumpy Tech Lead** acts as an inferential validation gate by asking deep architectural questions that challenge the implementation's resilience.
+
+Below is a visual example of how this interactive code review occurs in practice:
+
+![Socratic Code Review Example](docs/assets/code-review.png)
+
+---
+
+## 🤖 Autonomous State Machine
+
+HarnessKit's autonomous mode is driven by a robust **Product State Machine** (Layer 1 of the architecture). It tracks feature backlogs, development phases, and dynamic transition gates—ensuring that a feature only progresses when all quality criteria (such as passing tests and receiving high architectural review scores) are fully satisfied.
+
+Below is a diagram illustrating the lifecycle and state transitions within the autonomous execution loop:
+
+![Autonomous State Machine](docs/assets/update-state-machine.png)
+
+---
+
+
+
 ## What's Inside
 
 ### 🛠️ Skills (`/skills`)
