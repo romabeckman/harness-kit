@@ -144,19 +144,19 @@ Below is a diagram illustrating the lifecycle and state transitions within the a
 | **Harness Evaluator** (`harness-evaluator`) | Aggregates traces, computes composite scores per skill chain, and updates the Pareto frontier of best harness configurations. |
 | **Meta-Harness** (`meta-harness`) | Proposer for the harness optimization loop. Reads history, diagnoses failure patterns, proposes targeted SKILL.md improvements, and guides semi-automatic evaluation. |
 
-### 🤖 Expert Agents (`/agents`)
+### 🤖 Expert Agents (`./agents`)
 
 Pre-configured agent personas that embody specific engineering roles, designed to work with the skills above.
 
 | Agent | Role | Focus |
 | :--- | :--- | :--- |
-| **Software Architect** (`software-architect`) | System Design & Refinement | DDD modeling, architectural decisions, and implementation planning. |
-| **Code Reviewer** (`code-reviewer`) | Automated Audit | Sequential Git diff analysis focused on bugs, security, and performance. |
-| **Developer Backend** (`developer-backend`) | Backend Engineering | Robust APIs, database modeling, and server-side logic with TDD. |
-| **Developer Frontend** (`developer-frontend`) | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
-| **Developer Debugging** (`developer-debugging`) | Root Cause Specialist | Systematic bug investigation using the "5 Whys" methodology. |
-| **QA Engineer** (`qa`) | Quality Assurance | E2E testing strategy, automation, and full-flow validation. |
-| **Meta-Harness Agent** (`meta-harness-agent`) | Harness Optimizer | Reads harness history filesystem, diagnoses failure patterns, proposes targeted skill improvements. |
+| **[Software Architect](./agents/software-architect.md)** | System Design & Refinement | DDD modeling, architectural decisions, and implementation planning. |
+| **[Harness Tech Lead](./agents/harness-tech-lead.md)** | Automated Code Review | Evaluates systemic risks, scalability, security, and design patterns. |
+| **[Developer Backend](./agents/developer-backend.md)** | Backend Engineering | Robust APIs, database modeling, and server-side logic with TDD. |
+| **[Developer Frontend](./agents/developer-frontend.md)** | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
+| **[Developer Debugging](./agents/developer-debugging.md)** | Root Cause Specialist | Systematic bug investigation using the "5 Whys" methodology. |
+| **[QA Engineer](./agents/harness-qa.md)** | Quality Assurance | E2E testing strategy, automation, security validation, and QA testing. |
+| **[Meta-Harness Agent](./agents/meta-harness-agent.md)** | Harness Optimizer | Reads harness history filesystem, diagnoses failure patterns, proposes targeted skill improvements. |
 
 ---
 
