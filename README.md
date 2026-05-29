@@ -74,13 +74,13 @@ From the moment you start a task, HarnessKit changes how your agent thinks.
 Instead of jumping straight to writing code, it guides the agent to first understand the domain, model the problem with DDD, and define test scenarios before a single line is written.
 
 - **Feedforward (Guides):** `project-memory` and `scope-refinement` align the agent with your architecture and domain *before* execution.
-- **Feedback (Sensors):** `tdd-orchestrator` validates every implementation computationally (tests), while `the-grumpy-tech-lead` validates it semantically (Socratic review).
+- **Feedback (Sensors):** `tdd-orchestrator` validates every implementation computationally (tests), while `the-grumpy-tech-lead` (executed by the **`harness-tech-lead`** agent) and `adversarial-qa` (executed by the **`harness-qa`** agent) validate it semantically via Socratic review and protect against edge cases and vulnerabilities.
 - **Balance:** Computational validation (deterministic via tests) + Inferential validation (architectural judgment) working together.
 
 > ### 👑 Sovereign Automation: `autonomous-orchestrator`
 > HarnessKit features a fully automated, hands-off execution cycle powered by the **`autonomous-orchestrator`** skill. Once you provide the initial project scope and requirements, it runs an atomic execution loop without pausing or asking questions. It manages feature planning, test-driven implementation, parallel validation gates (Socratic review + adversarial QA), and auto-tuning optimization dynamically.
 > 
-> To learn how to prepare your workspace and start this autonomous loop safely, check out the **[Daily Use Playbook](docs/workflow/PLAYBOOK-DAILY-USE.md)**.
+> To learn how to prepare your workspace and start this autonomous loop safely, check out the **[Autonomous Orchestrator Workflow](docs/workflow/AUTONOMOUS-ORCHESTRATOR.md)**.
 
 The skills activate when relevant. Your agent just has a Harness.
 
@@ -114,11 +114,16 @@ Below is a visual example of how this interactive code review occurs in practice
 
 ## 🤖 Autonomous State Machine
 
-HarnessKit's autonomous mode is driven by a robust **Product State Machine** (Layer 1 of the architecture), which is executed, managed, and progressed by the **`autonomous-orchestrator`** skill. It tracks feature backlogs, development phases, and dynamic transition gates—ensuring that a feature only progresses when all quality criteria (such as passing tests and receiving high architectural review scores) are fully satisfied.
+HarnessKit's autonomous mode is driven by a robust **Product State Machine** (Layer 1 of the architecture), which is executed, managed, and progressed by the **`autonomous-orchestrator`** skill. It tracks feature backlogs, development phases, and dynamic transition gates—ensuring that a feature only progresses when all quality criteria (such as passing tests and receiving validation scores above the non-negotiable **0.70 threshold**) are fully satisfied.
 
 Below is a diagram illustrating the lifecycle and state transitions within the autonomous execution loop:
 
 ![Autonomous State Machine](docs/assets/update-state-machine.png)
+
+> ### 🛡️ The 0.70 Quality Gate: A Grade "7 out of 10" for Production
+> Think of the **0.70 score threshold** as a **grade of 7 out of 10** required for both architectural resilience (audited by **Grumpy Tech Lead**) and edge-case security (audited by **Adversarial QA**). 
+> 
+> If the implementation has fully working code but contains scalability risks or minor security oversights (e.g., scoring `0.65`), the orchestrator immediately blocks completion, compiles the feedback into a `REWORK-LOG.md`, and sends the agent back to code again—guaranteeing elite software quality without human oversight.
 
 ---
 
