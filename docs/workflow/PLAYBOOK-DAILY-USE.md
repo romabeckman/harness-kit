@@ -2,6 +2,12 @@
 
 Practical step-by-step guide to run all skills in your daily workflow.
 
+> ### ⚡ Sovereign Loop: `autonomous-orchestrator`
+> HarnessKit supports fully automated, sovereign execution via the **`autonomous-orchestrator`** skill. Once it boots and acquires the initial project scope, **it executes the entire development cycle atomically without pausing, prompting, or waiting for user confirmation**.
+>
+> ⚠️ **Why the Checklist is Absolutely Critical:**
+> Because the orchestrator runs completely hands-off, **any gaps, missing files, or poorly defined architectural boundaries will cause the agent to work on wrong assumptions**. You must complete the **Checklist: Before Starting a Project** below with absolute diligence. A poorly prepared harness leads to incorrect domain models, mismatched test suites, and expensive rework loop retries. Ensuring your persistent memory (`docs/`) is robust before launching the loop is your primary safety mechanism.
+
 ---
 
 ## 📋 Checklist: Before Starting a Project

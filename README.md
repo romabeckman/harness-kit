@@ -77,6 +77,11 @@ Instead of jumping straight to writing code, it guides the agent to first unders
 - **Feedback (Sensors):** `tdd-orchestrator` validates every implementation computationally (tests), while `the-grumpy-tech-lead` validates it semantically (Socratic review).
 - **Balance:** Computational validation (deterministic via tests) + Inferential validation (architectural judgment) working together.
 
+> ### 👑 Sovereign Automation: `autonomous-orchestrator`
+> HarnessKit features a fully automated, hands-off execution cycle powered by the **`autonomous-orchestrator`** skill. Once you provide the initial project scope and requirements, it runs an atomic execution loop without pausing or asking questions. It manages feature planning, test-driven implementation, parallel validation gates (Socratic review + adversarial QA), and auto-tuning optimization dynamically.
+> 
+> To learn how to prepare your workspace and start this autonomous loop safely, check out the **[Daily Use Playbook](docs/workflow/PLAYBOOK-DAILY-USE.md)**.
+
 The skills activate when relevant. Your agent just has a Harness.
 
 ---
