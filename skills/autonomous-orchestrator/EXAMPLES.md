@@ -19,7 +19,9 @@ The orchestrator creates these files during BOOTSTRAP and updates them throughou
 
 ## docs/product/DEVELOPMENT-STATE.md
 
-Re-entry example after crash during TDD phase:
+Re-entry example after crash during TDD phase (F002/T001 in progress, F002/T002 not started yet):
+
+> **Phase C Rule:** The orchestrator only enters Phase C (VALIDATION) for a feature when **ALL tasks** of that `Feature ID` have `Status = COMPLETED` from Phase B. Individual tasks are implemented sequentially within Phase B; validation runs once at the end for the whole feature.
 
 ```
 | Feature ID | Task ID | Description | Domain | Current Phase | Reworks | Score (TL) | Score (Adv) | Status |
@@ -30,6 +32,17 @@ Re-entry example after crash during TDD phase:
 | F002 | T002 | Add middleware for authentication | `user_auth` | - | 0 | - | - | `NOT_STARTED` |
 | F003 | T001 | Setup order state machine | `order_management` | - | 0 | - | - | `NOT_STARTED` |
 ```
+
+Example of F002 **ready for Phase C** (all tasks completed, before validation runs):
+
+```
+| Feature ID | Task ID | Description | Domain | Current Phase | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| F002 | T001 | Implement JWT token generation | `user_auth` | `VALIDATION` | 1 | - | - | `IN_PROGRESS` |
+| F002 | T002 | Add middleware for authentication | `user_auth` | `VALIDATION` | 0 | - | - | `IN_PROGRESS` |
+```
+
+> Both tasks show `VALIDATION` simultaneously — Phase C runs once for the entire feature, not per task.
 
 ---
 

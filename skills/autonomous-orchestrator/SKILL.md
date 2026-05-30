@@ -75,8 +75,10 @@ Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Blo
 
 ### Phase C: Validation & Decision Gate
 
+> **GATE:** Phase C MUST NOT begin until **ALL tasks** for the current feature (same `Feature ID`) in `DEVELOPMENT-STATE.md` have `Status = COMPLETED` from their individual Phase B cycles. If any task still has `Status = IN_PROGRESS` or `NOT_STARTED`, remain in Phase B until all tasks are done.
+
 1. **Load Score Thresholds:** At the start of Phase C (or on re-entry), load `${scoreThresholdTL}` and `${scoreThresholdAdv}` from `docs/product/BOOTSTRAP-CONFIG.json` if they are not already in memory. This ensures consistent validation across re-entries.
-2. **State Log:** Update the corresponding task row(s) in `docs/product/DEVELOPMENT-STATE.md` setting `Current Phase` to `VALIDATION`.
+2. **State Log:** Update **all** task rows for this feature in `docs/product/DEVELOPMENT-STATE.md` setting `Current Phase` to `VALIDATION`.
 
 > **IMPORTANT:** Steps 3 and 4 MUST be dispatched in parallel. Parse each response independently via *JSON Extraction Protocol*.
 
