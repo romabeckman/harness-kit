@@ -36,6 +36,9 @@ graph TD
     I -- Yes --> J[Final Auto-Tuning & Completion Check]
 ```
 
+Autonomous Development Cycle:
+![Autonomous Development Cycle](../assets/running.png)
+
 ---
 
 ## 🚀 Execution Phases in Detail
