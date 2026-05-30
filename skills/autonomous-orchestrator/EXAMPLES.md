@@ -8,41 +8,44 @@ The orchestrator creates these files during BOOTSTRAP and updates them throughou
 ## docs/product/BACKLOG.md
 
 ```
-| ID | Title | Domain | Priority | Dependencies | Status |
-| --- | --- | --- | --- | --- | --- |
-| **F001** | **ProductCatalog Microservice** | `product_catalog` | **CRITICAL** | None | `COMPLETED` |
-| **F002** | **UserAuth Service** | `user_auth` | **HIGH** | F001 | `IN_PROGRESS` |
-| **F003** | **OrderManagement Service** | `order_management` | **MEDIUM** | F001, F002 | `NOT_STARTED` |
+| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **F001** | **ProductCatalog Microservice** | `product_catalog` | **CRITICAL** | None | 0 | 0.85 | 0.90 | `COMPLETED` |
+| **F002** | **UserAuth Service** | `user_auth` | **HIGH** | F001 | 1 | - | - | `IN_PROGRESS` |
+| **F003** | **OrderManagement Service** | `order_management` | **MEDIUM** | F001, F002 | 0 | - | - | `NOT_STARTED` |
 ```
 
 ---
 
 ## docs/product/DEVELOPMENT-STATE.md
 
-Re-entry example after crash during TDD phase (F002/T001 in progress, F002/T002 not started yet):
+> **Purpose:** Task-level tracking only. Columns: `Feature ID`, `Task ID`, `Description`, `Domain`, `Current Phase`, `Status`.  
+> `Reworks`, `Score (TL)`, and `Score (Adv)` are **feature-level** and live in `BACKLOG.md`.
 
-> **Phase C Rule:** The orchestrator only enters Phase C (VALIDATION) for a feature when **ALL tasks** of that `Feature ID` have `Status = COMPLETED` from Phase B. Individual tasks are implemented sequentially within Phase B; validation runs once at the end for the whole feature.
+> **Phase C Rule:** Phase C (VALIDATION) only starts when **ALL tasks** for the same `Feature ID` have `Status = COMPLETED`. Validation runs once per feature, not per task.
 
-```
-| Feature ID | Task ID | Description | Domain | Current Phase | Reworks | Score (TL) | Score (Adv) | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| F001 | T001 | Setup database connection pool | `product_catalog` | - | 0 | 0.85 | 0.90 | `COMPLETED` |
-| F001 | T002 | Implement CRUD operations for products | `product_catalog` | - | 0 | 0.88 | 0.92 | `COMPLETED` |
-| F002 | T001 | Implement JWT token generation | `user_auth` | `IMPLEMENTATION` | 1 | - | - | `IN_PROGRESS` |
-| F002 | T002 | Add middleware for authentication | `user_auth` | - | 0 | - | - | `NOT_STARTED` |
-| F003 | T001 | Setup order state machine | `order_management` | - | 0 | - | - | `NOT_STARTED` |
-```
-
-Example of F002 **ready for Phase C** (all tasks completed, before validation runs):
+Re-entry example — F002/T001 in progress, F002/T002 not started yet:
 
 ```
-| Feature ID | Task ID | Description | Domain | Current Phase | Reworks | Score (TL) | Score (Adv) | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| F002 | T001 | Implement JWT token generation | `user_auth` | `VALIDATION` | 1 | - | - | `IN_PROGRESS` |
-| F002 | T002 | Add middleware for authentication | `user_auth` | `VALIDATION` | 0 | - | - | `IN_PROGRESS` |
+| Feature ID | Task ID | Description | Domain | Current Phase | Status |
+| --- | --- | --- | --- | --- | --- |
+| F001 | T001 | Setup database connection pool | `product_catalog` | - | `COMPLETED` |
+| F001 | T002 | Implement CRUD operations for products | `product_catalog` | - | `COMPLETED` |
+| F002 | T001 | Implement JWT token generation | `user_auth` | `IMPLEMENTATION` | `IN_PROGRESS` |
+| F002 | T002 | Add middleware for authentication | `user_auth` | - | `NOT_STARTED` |
+| F003 | T001 | Setup order state machine | `order_management` | - | `NOT_STARTED` |
 ```
 
-> Both tasks show `VALIDATION` simultaneously — Phase C runs once for the entire feature, not per task.
+Example of F002 **ready for Phase C** — all tasks completed, validation about to run:
+
+```
+| Feature ID | Task ID | Description | Domain | Current Phase | Status |
+| --- | --- | --- | --- | --- | --- |
+| F002 | T001 | Implement JWT token generation | `user_auth` | `VALIDATION` | `IN_PROGRESS` |
+| F002 | T002 | Add middleware for authentication | `user_auth` | `VALIDATION` | `IN_PROGRESS` |
+```
+
+> Both tasks enter `VALIDATION` simultaneously. After Phase C PASS, both become `COMPLETED` and scores are written to `BACKLOG.md`.
 
 ---
 
