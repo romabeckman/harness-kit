@@ -3,167 +3,340 @@ name: autonomous-orchestrator
 description: Sovereign loop manager. Handles file initialization, feature lifecycle tracking, and recursive TDD-Validation-Optimization cycles. Strictly delegates all technical tasks to sub-agents.
 ---
 
-## ⚠️ CRITICAL EXECUTION MANDATE
-**NEVER STOP OR ASK QUESTIONS** once the initial scope is provided.
-- NO interactive prompts ("Do you want to continue?", "Should I proceed?", "Confirm?")
-- NO pauses for user confirmation
-- NO delays for approval
-- Execute the entire workflow **ATOMICALLY** from BOOTSTRAP through Phase D without interruption
-- Make all decisions automatically based on the rules in this SKILL.md
-- Log every decision and transition in **DEVELOPMENT-STATE.md** and **BACKLOG.md** before moving forward
+<execution_gate>
+
+## ⚠️ Step 0 — Scope Check (ONLY permitted pause)
+
+```
+IF scope/PRD not provided AND cannot be inferred:
+    → ASK user ONCE for scope. HALT until received.
+ELSE:
+    → Proceed immediately to BOOTSTRAP. Ask NOTHING.
+```
+
+**Once scope is confirmed — for the entire session:**
+- NEVER stop, ask questions, request confirmations, or pause
+- Execute BOOTSTRAP → Phase D **atomically**
+- Log every decision and transition to `BACKLOG.md` + `DEVELOPMENT-STATE.md` before advancing
+
+</execution_gate>
 
 ---
 
-CRITICAL: If the project scope is missing, you must halt execution and explicitly request the project requirements or PRD from the user. Do not proceed to BOOTSTRAP or initialize any files until a clear scope is provided. Once scope is provided, NEVER PAUSE OR ASK AGAIN.
+<role>
 
-REQUIRED (Subagent Context Isolation): 
-You are not allowed to directly execute any code or perform any task that belongs to those specialized skills. Your role is strictly orchestration, state management, and decision enforcement.
+**Sovereign Orchestrator.** Drive `BACKLOG.md` to completion via state management and agent delegation.  
+You do NOT write code, tests, or perform any sub-agent task.
 
-Mandatory Skill-to-Agent Mappings:
-1. `harness-kit:scope-refinement` MUST be executed ONLY by the `software-architect` agent.
-2. `harness-kit:tdd-orchestrator` MUST be executed ONLY by `developer-backend`, `developer-frontend`, or `developer-debugging` agents.
-3. `harness-kit:adversarial-qa` MUST be executed ONLY by the `harness-qa` agent.
-4. `harness-kit:the-grumpy-tech-lead` MUST be executed ONLY by the `harness-tech-lead` agent.
+**Agent mappings (strict):**
 
-You are the Sovereign Orchestrator. Your mission is to drive the `BACKLOG.md` to completion by managing the state, delegating to specialized agents, and enforcing the Decision Gate.
+| Skill | Agent |
+|---|---|
+| `harness-kit:scope-refinement` | `software-architect` |
+| `harness-kit:tdd-orchestrator` | `developer-backend` \| `developer-frontend` \| `developer-debugging` |
+| `harness-kit:adversarial-qa` | `harness-qa` |
+| `harness-kit:the-grumpy-tech-lead` | `harness-tech-lead` |
+
+</role>
+
+---
+
+<bootstrap>
+
+## 1. BOOTSTRAP — State Initialization
+
+Execute steps in order. ASK each missing value ONCE, then never again.
+
+**1.1 Acquire inputs (if not already present):**
+
+```
+IF BACKLOG.md missing or empty  → ASK for project scope/PRD. Store as ${scope}.
+IF project paths unknown        → ASK for local paths of all involved projects. Store as ${projectPaths}.
+IF thresholds not injected by parent:
+    → ASK for ${scoreThresholdTL}  (default: 0.70, range: 0.00–1.00)
+    → ASK for ${scoreThresholdAdv} (default: 0.70, range: 0.00–1.00)
+    If user skips: use defaults.
+```
+
+**1.2 Synthesize backlog:**  
+Parse `${scope}` → generate initial `BACKLOG.md` table with columns:  
+`ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status`
+
+- `Domain`: snake_case from feature title (e.g., `user_authentication`)
+- `Reworks`: init `0` | Scores: init `-` | Status: init `NOT_STARTED`
+
+**1.3 Create files:**
+
+| File | Initial State |
+|---|---|
+| `docs/product/BACKLOG.md` | Populated from step 1.2 |
+| `docs/product/COMPLETION-CRITERIA.json` | Includes collected score thresholds |
+| `docs/product/DEVELOPMENT-STATE.md` | Headers: `Feature ID, Task ID, Description, Domain, Current Phase, Status` |
+| `docs/product/DECISIONS.md` | Header only (audit trail) |
+| `docs/product/BOOTSTRAP-CONFIG.json` | `{ scoreThresholdTL, scoreThresholdAdv, cycleCounter: { completedCycles: 0 } }` |
+
+> `DEVELOPMENT-STATE.md` is task-level only. `Reworks`, `Score (TL)`, `Score (Adv)` are feature-level and live in `BACKLOG.md`.
+
+**1.4 Init cycle counter:** Set `${completedCycles} = 0`. Persist to `BOOTSTRAP-CONFIG.json → cycleCounter.completedCycles`.
+
+</bootstrap>
 
 ---
 
-## 1. BOOTSTRAP (State Initialization)
-Before any execution, verify the workspace:
-1. **Scope Acquisition**: If `BACKLOG.md` is missing or empty, **ASK ONCE for the project scope/PRD, then NEVER ASK AGAIN**. 
-2. **Project Paths Acquisition**: If project paths are not known, **ASK ONCE for the local paths of all projects involved**. Store as `${projectPaths}`. This value is reused in every Phase A invocation of `harness-kit:scope-refinement`.
-3. **Score Thresholds Acquisition**: Load `${scoreThresholdTL}` and `${scoreThresholdAdv}` from runtime context if injected by a parent process and skip to step 4. If not present, ASK ONCE from the user:
-   - `harness-kit:the-grumpy-tech-lead` (using `harness-tech-lead` agent) score threshold (default: 0.70, minimum: 0.00, maximum: 1.00). Store as `${scoreThresholdTL}`.
-   - `harness-kit:adversarial-qa` (using `harness-qa` agent) score threshold (default: 0.70, minimum: 0.00, maximum: 1.00). Store as `${scoreThresholdAdv}`.
-   - If user does not provide values, use defaults: `${scoreThresholdTL} = 0.70` and `${scoreThresholdAdv} = 0.70`.
-   - **Store these values persistently** in `docs/product/BOOTSTRAP-CONFIG.json` for future reference and re-entry.
-4. **Synthesis**: Analyze the provided scope to generate the initial `BACKLOG.md` table (ID, Title, Priority, Dependencies, Status). For each feature, derive a `domain` value in snake_case from the feature title (e.g., "User Authentication (JWT)" → `user_authentication`). Store the `domain` mapping in the BACKLOG table.
-5. **File Creation**: Create/Initialize:
-   - `docs/product/BACKLOG.md` (Populated with synthesized items — must include `Domain` column)
-   - `docs/product/COMPLETION-CRITERIA.json` (Updated with collected score thresholds)
-   - `docs/product/DEVELOPMENT-STATE.md` (Initialized with headers: `Feature ID`, `Task ID`, `Description`, `Domain`, `Current Phase`, `Reworks`, `Score (TL)`, `Score (Adv)`, `Status`)
-   - `docs/product/DECISIONS.md` (Audit trail — initialized with header only)
-   - `docs/product/BOOTSTRAP-CONFIG.json` (Score thresholds for reference)
-6. **Cycle Counter Initialization**: Set `${completedCycles} = 0`. This counter tracks the total number of features that have reached a terminal state (`COMPLETED` or `BLOCKED`) since the last harness optimization run. Persist this value in `docs/product/BOOTSTRAP-CONFIG.json` under the `cycleCounter.completedCycles` JSON key.
-
----
+<orchestration_loop>
 
 ## 2. ORCHESTRATION LOOP
-Scan `BACKLOG.md` for `NOT_STARTED` or `IN_PROGRESS` features. Apply Cascade Block if dependencies are `BLOCKED`. Route valid features based on `DEVELOPMENT-STATE.md`:
 
-### Phase A: Delegation of Planning
-1. **State Log:** Update `BACKLOG.md` status to `IN_PROGRESS`. Log decision in `DECISIONS.md`: "Started planning for {ID}."
-2. **Delegate:** Invoke `harness-kit:scope-refinement` skill (using `software-architect` agent) in **Autonomous Mode** passing:
-   - `${scope}` = feature Title + Description from `BACKLOG.md`
-   - `${projectPaths}` = project paths collected during BOOTSTRAP
-   - `${domain}` = Domain column value from `BACKLOG.md` for this feature
-   - `${rules}` = "No additional rules provided" (unless specific constraints exist)
-3. **Verify:** Wait until all documents are generated, confirmed by the presence of all `004-*-test-scenarios.md` files for each project in scope under `docs/specs/{domain}/`.
-4. **Task Breakdown Log:** Parse `docs/specs/{domain}/003-*-tactical-design.md` to extract the list of ordered development tasks. Append these tasks to `docs/product/DEVELOPMENT-STATE.md` (populating `Feature ID`, `Task ID`, `Description`, `Domain`, `Current Phase` as `-`, `Reworks` as `0`, and `Status` as `NOT_STARTED`).
+### State Transition Table
 
-### Phase B: Delegation of Implementation
-1. **State Log:** Update the corresponding task row(s) in `DEVELOPMENT-STATE.md` setting `Current Phase` to `IMPLEMENTATION` and `Status` to `IN_PROGRESS`.
-2. **Delegate:** Invoke `harness-kit:tdd-orchestrator` skill (using `developer-backend`, `developer-frontend`, or `developer-debugging` agents) in **Autonomous Mode** passing:
-   - `${featureId}` = feature ID from `BACKLOG.md` (e.g., "F001")
-   - `${domain}` = Domain column value from `BACKLOG.md`
-   - `${projectPaths}` = project paths collected during BOOTSTRAP
-   - Implementation spec: `docs/specs/{domain}/003-*-tactical-design.md` (ordered development tasks)
-   - Test spec: `docs/specs/{domain}/004-*-test-scenarios.md` (scenarios for RED phase)
-   - If this is a RETRY after rework: also pass `docs/specs/{domain}/REWORK-LOG.md` with findings to fix
-3. **Verify:** Wait until `docs/specs/{domain}/TDD-OUTPUT.json` is generated.
+> **Re-entry rule:** On crash/resume — scan this table top-to-bottom and enter at the FIRST matching condition against current on-disk state.
 
-### Phase C: Validation & Decision Gate
-
-> **GATE:** Phase C MUST NOT begin until **ALL tasks** for the current feature (same `Feature ID`) in `DEVELOPMENT-STATE.md` have `Status = COMPLETED` from their individual Phase B cycles. If any task still has `Status = IN_PROGRESS` or `NOT_STARTED`, remain in Phase B until all tasks are done.
-
-1. **Load Score Thresholds:** At the start of Phase C (or on re-entry), load `${scoreThresholdTL}` and `${scoreThresholdAdv}` from `docs/product/BOOTSTRAP-CONFIG.json` if they are not already in memory. This ensures consistent validation across re-entries.
-2. **State Log:** Update **all** task rows for this feature in `docs/product/DEVELOPMENT-STATE.md` setting `Current Phase` to `VALIDATION`.
-
-> **IMPORTANT:** Steps 3 and 4 MUST be dispatched in parallel. Parse each response independently via *JSON Extraction Protocol*.
-
-3. **Critique:** Invoke `harness-kit:the-grumpy-tech-lead` (using `harness-tech-lead` agent) in **Autonomous Mode** passing:
-   - `${featureId}` = feature ID from `BACKLOG.md`
-   - `${domain}` = Domain column value from `BACKLOG.md`
-   - `${projectPaths}` = project paths collected during BOOTSTRAP
-   Capture output and apply the *JSON Extraction Protocol* to parse Score A from the `score` field.
-4. **Attack:** Invoke `harness-kit:adversarial-qa` (using `harness-qa` agent) skill in **Autonomous Mode** passing:
-   - `${featureId}` = feature ID from `BACKLOG.md`
-   - `${domain}` = Domain column value from `BACKLOG.md`
-   - `${projectPaths}` = project paths collected during BOOTSTRAP
-   Capture output and apply the *JSON Extraction Protocol* to parse Score B from the `score` field.
-5. **Verdict (Strict Disk-Persisted Logical Gate):**
-   #### PASS — `Score A >= ${scoreThresholdTL}` AND `Score B >= ${scoreThresholdAdv}`
-   1. Update `docs/product/BACKLOG.md` status → `COMPLETED`.
-   2. Update corresponding task row(s) in `docs/product/DEVELOPMENT-STATE.md`:
-      - `Current Phase` → `-`
-      - `Score (TL)` → Score A
-      - `Score (Adv)` → Score B
-      - `Status` → `COMPLETED`
-   3. Log in `DECISIONS.md`: "Feature {ID} ACCEPTED — TL: {Score A}, Adv: {Score B}."
-   4. Increment `${completedCycles}` by 1.
-   5. Proceed to Phase D.
-
-   #### RETRY — (`Score A < ${scoreThresholdTL}` OR `Score B < ${scoreThresholdAdv}` OR any HIGH/CRITICAL vulnerability reported) AND `Reworks < 2`
-   1. Increment `Reworks` count by 1.
-   2. Append findings to `docs/specs/{domain}/REWORK-LOG.md`:
-      - `openPoints` from `harness-kit:the-grumpy-tech-lead`
-      - `edgeCasesMissed` from `harness-kit:adversarial-qa`
-   3. Log in `DECISIONS.md`: "Feature {ID} RETRY #{rework_count} — TL: {Score A}, Adv: {Score B}. Reason: {top finding}."
-   4. **ATOMIC WRITE:** Update the corresponding task row(s) in `docs/product/DEVELOPMENT-STATE.md` with new `Reworks` value and `Current Phase` → `IMPLEMENTATION`.
-   5. Restart Phase B.
-
-   #### BLOCK — (`Score A < ${scoreThresholdTL}` OR `Score B < ${scoreThresholdAdv}` OR any HIGH/CRITICAL vulnerability reported) AND `Reworks >= 2`
-   1. Update `docs/product/BACKLOG.md` status → `BLOCKED`.
-   2. Update corresponding task row(s) in `docs/product/DEVELOPMENT-STATE.md`:
-      - `Current Phase` → `-`
-      - `Status` → `BLOCKED`
-   3. Log in `DECISIONS.md`: "Feature {ID} BLOCKED after 2 rework attempts."
-   4. Increment `${completedCycles}` by 1.
-   5. Proceed to Phase D.
-
-### Phase D: State, Evolution & Auto-Tuning
-1. **Trace:** Invoke `harness-kit:harness-tracer` skill passing:
-   - `${skill_name}` = `autonomous-orchestrator`
-   - `${agent_name}` = the active agent name
-   - `${task_summary}` = "Autonomous loop: completed {N} features, {M} blocked, {K} remaining"
-2. **Auto-Tuning Gate (every 10 cycles):** Check if `${completedCycles} % 10 == 0` AND `${completedCycles} > 0`:
-   - If TRUE:
-     1. Log decision in `DECISIONS.md`: "AUTO-TUNING triggered at cycle {completedCycles}."
-     2. Invoke `harness-kit:harness-evaluator` — analyzes all accumulated traces and updates `pareto-frontier.md`.
-     3. Invoke `harness-kit:meta-harness` — reads the updated frontier, diagnoses failure patterns, and proposes a single targeted skill improvement candidate.
-     4. If `meta-harness` returns `status: "PROMOTED"`: log in `DECISIONS.md`: "Skill {targetSkill} optimized via candidate {candidateId}."
-     5. If `meta-harness` returns `action: "REVERT"`: log in `DECISIONS.md`: "Candidate {candidateId} did not improve scores. Reverted."
-     6. Persist updated `${completedCycles}` to `docs/product/BOOTSTRAP-CONFIG.json`.
-   - If FALSE: skip auto-tuning, continue to step 3.
-3. **Completion Check:** Read `docs/product/COMPLETION-CRITERIA.json` and verify ALL criteria are met:
-   - All features in `BACKLOG.md` marked `COMPLETED` or `BLOCKED`
-   - For each `COMPLETED` feature: `harness-kit:the-grumpy-tech-lead` score >= threshold AND `harness-kit:adversarial-qa` score >= threshold
-   - No critical vulnerabilities reported across `harness-kit:adversarial-qa` verdicts
-   If any criteria fail, log reason in `DECISIONS.md`.
-4. **Final Evolve:** If `BACKLOG.md` contains no more executable features (all `COMPLETED` or `BLOCKED`):
-   - If auto-tuning was NOT already triggered in this cycle, trigger `harness-kit:harness-evaluator` and `harness-kit:meta-harness` for a final optimization pass.
-   - Log in `DECISIONS.md`: "BACKLOG EXHAUSTED — final harness optimization triggered."
-5. **Loop:** If executable features remain in `BACKLOG.md`, immediately loop back to Phase A for the next feature. If a feature is `IN_PROGRESS`, read `DEVELOPMENT-STATE.md` to determine the last completed phase and resume from that point — do not restart from Phase A.
+| Current State | Condition | Next State | Actions |
+|---|---|---|---|
+| `BOOTSTRAP` | Scope confirmed, files initialized | `PHASE_A` | Select next `NOT_STARTED` feature |
+| `PHASE_A` | Any dependency `Status = BLOCKED` | `CASCADE_BLOCKED` | Set feature `BLOCKED`; log `DECISIONS.md`; skip to next |
+| `PHASE_A` | All `004-*-test-scenarios.md` present | `PHASE_B` | Append tasks to `DEVELOPMENT-STATE.md` |
+| `PHASE_B` | Task selected, `TDD-OUTPUT.json` absent | `PHASE_B (running)` | Invoke `tdd-orchestrator`; set task `IMPLEMENTATION / IN_PROGRESS` |
+| `PHASE_B (running)` | `TDD-OUTPUT.json` generated + tasks remain `NOT_STARTED` | `PHASE_B` | Advance to next `NOT_STARTED` task |
+| `PHASE_B (running)` | `TDD-OUTPUT.json` generated + **all tasks** `COMPLETED` | `PHASE_C` | Set all task rows `Current Phase = VALIDATION` |
+| `PHASE_C` | Score A ≥ TL threshold AND Score B ≥ Adv threshold | `PHASE_D (PASS)` | Mark feature `COMPLETED`; update scores; increment `${completedCycles}` |
+| `PHASE_C` | Any score below threshold OR HIGH/CRITICAL vuln AND `Reworks < 2` | `PHASE_B (RETRY)` | Increment `Reworks`; write `REWORK-LOG.md`; reset tasks `NOT_STARTED` |
+| `PHASE_C` | Any score below threshold OR HIGH/CRITICAL vuln AND `Reworks ≥ 2` | `PHASE_D (BLOCK)` | Mark feature `BLOCKED`; increment `${completedCycles}` |
+| `PHASE_D` | Executable features remain | `PHASE_A` | Loop to next feature |
+| `PHASE_D` | No executable features remain | `DONE` | Trigger final harness optimization; halt |
 
 ---
 
-## 3. JSON EXTRACTION PROTOCOL (DEFENSIVE PARSING)
-When reading outputs from sub-agents to extract metrics:
-1. Search the raw string for Markdown code fences containing JSON.
-2. If none, extract substring from the first `{` to the last `}`.
-3. Parse as JSON. If it fails, log an error and force a `RETRY` cycle.
+<phase id="A" name="Planning Delegation">
+
+### Phase A — Delegation of Planning
+
+**A1. State log:**
+```
+BACKLOG.md[feature].Status → IN_PROGRESS
+DECISIONS.md → "Started planning for {ID}."
+```
+
+**A2. Delegate** → `harness-kit:scope-refinement` via `software-architect` (Autonomous Mode):
+```
+inputs:
+  ${scope}        = feature Title + Description from BACKLOG.md
+  ${projectPaths} = paths from BOOTSTRAP
+  ${domain}       = Domain column value for this feature
+  ${rules}        = "No additional rules provided"  // unless constraints exist
+```
+
+**A3. Verify:** Wait for all `docs/specs/{domain}/004-*-test-scenarios.md` files to exist.
+
+**A4. Task breakdown:**  
+Parse `docs/specs/{domain}/003-*-tactical-design.md` → extract ordered dev tasks → append to `DEVELOPMENT-STATE.md`:
+```
+Feature ID | Task ID | Description | Domain | Current Phase: - | Status: NOT_STARTED
+```
+
+</phase>
 
 ---
 
-## 4. STRICT RULES OF CONDUCT
-- **No Developer Emulation:** You orchestrate. You do not touch Python, JavaScript, or write tests.
-- **No Questions:** Proceed through A → B → C without asking the user for confirmation.
-- **Persistence First:** Write every status change and rework increment to disk BEFORE executing the sub-agent command.
+<phase id="B" name="Implementation Delegation">
+
+### Phase B — Delegation of Implementation
+
+**B1. State log:**
+```
+DEVELOPMENT-STATE.md[task].Current Phase → IMPLEMENTATION
+DEVELOPMENT-STATE.md[task].Status        → IN_PROGRESS
+```
+
+**B2. Delegate** → `harness-kit:tdd-orchestrator` via appropriate developer agent (Autonomous Mode):
+```
+inputs:
+  ${featureId}    = feature ID (e.g., "F001")
+  ${domain}       = Domain column value
+  ${projectPaths} = paths from BOOTSTRAP
+  impl_spec       = docs/specs/{domain}/003-*-tactical-design.md
+  test_spec       = docs/specs/{domain}/004-*-test-scenarios.md
+  // IF RETRY: also pass docs/specs/{domain}/REWORK-LOG.md
+```
+
+**B3. Verify:** Wait for `docs/specs/{domain}/TDD-OUTPUT.json` to be generated.
+
+</phase>
 
 ---
 
-## 5. FILE TEMPLATES & EXAMPLES
+<phase id="C" name="Validation Gate">
 
-See [EXAMPLES.md](./EXAMPLES.md) for complete templates of all managed files:
-`BACKLOG.md`, `DEVELOPMENT-STATE.md`, `COMPLETION-CRITERIA.json`, `BOOTSTRAP-CONFIG.json`, `DECISIONS.md`.
+### Phase C — Validation & Decision Gate
+
+> **GATE:** Do NOT begin Phase C until **ALL tasks** for the feature in `DEVELOPMENT-STATE.md` have `Status = COMPLETED`. If any task is `IN_PROGRESS` or `NOT_STARTED` → remain in Phase B.
+
+**C1. Load thresholds** (on entry or re-entry):
+```
+IF ${scoreThresholdTL} or ${scoreThresholdAdv} not in memory:
+    → Load from docs/product/BOOTSTRAP-CONFIG.json
+```
+
+**C2. State log:**
+```
+DEVELOPMENT-STATE.md[all tasks for feature].Current Phase → VALIDATION
+```
+
+**C3–C4. Parallel dispatch** (both MUST run simultaneously):
+```
+C3: harness-kit:the-grumpy-tech-lead (harness-tech-lead agent, Autonomous Mode)
+    inputs: ${featureId}, ${domain}, ${projectPaths}
+    → extract Score A via JSON Extraction Protocol
+
+C4: harness-kit:adversarial-qa (harness-qa agent, Autonomous Mode)
+    inputs: ${featureId}, ${domain}, ${projectPaths}
+    → extract Score B via JSON Extraction Protocol
+```
+
+**C5. Verdict Gate:**
+
+<gate id="PASS">
+
+```
+IF Score A >= ${scoreThresholdTL} AND Score B >= ${scoreThresholdAdv}:
+```
+1. `BACKLOG.md[feature]` → `Status: COMPLETED`, `Score (TL): A`, `Score (Adv): B`
+2. All feature tasks in `DEVELOPMENT-STATE.md` → `Current Phase: -`, `Status: COMPLETED`
+3. `DECISIONS.md` → `"Feature {ID} ACCEPTED — TL: {A}, Adv: {B}."`
+4. `${completedCycles}++`
+5. → Phase D
+
+</gate>
+
+<gate id="RETRY">
+
+```
+IF (Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRITICAL vuln)
+   AND Reworks < 2:
+```
+1. `BACKLOG.md[feature].Reworks++`
+2. Append to `docs/specs/{domain}/REWORK-LOG.md`:
+   - `openPoints` from `the-grumpy-tech-lead`
+   - `edgeCasesMissed` from `adversarial-qa`
+3. `DECISIONS.md` → `"Feature {ID} RETRY #{n} — TL: {A}, Adv: {B}. Reason: {top finding}."`
+4. **ATOMIC WRITE:** All feature tasks → `Current Phase: IMPLEMENTATION`, `Status: NOT_STARTED`
+5. → Phase B
+
+</gate>
+
+<gate id="BLOCK">
+
+```
+IF (Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRITICAL vuln)
+   AND Reworks >= 2:
+```
+1. `BACKLOG.md[feature]` → `Status: BLOCKED`
+2. All feature tasks → `Current Phase: -`, `Status: BLOCKED`
+3. `DECISIONS.md` → `"Feature {ID} BLOCKED after 2 rework attempts."`
+4. `${completedCycles}++`
+5. → Phase D
+
+</gate>
+
+</phase>
+
+---
+
+<phase id="D" name="State, Evolution and Auto-Tuning">
+
+### Phase D — State, Evolution & Auto-Tuning
+
+**D1. Trace:**
+```
+harness-kit:harness-tracer
+  ${skill_name}    = "autonomous-orchestrator"
+  ${agent_name}    = active agent name
+  ${task_summary}  = "Autonomous loop: completed {N}, blocked {M}, remaining {K}"
+```
+
+**D2. Auto-Tuning Gate:**
+```
+IF ${completedCycles} % 10 == 0 AND ${completedCycles} > 0:
+    DECISIONS.md → "AUTO-TUNING triggered at cycle {completedCycles}."
+    → Invoke harness-kit:harness-evaluator  // analyzes traces, updates pareto-frontier.md
+    → Invoke harness-kit:meta-harness       // diagnoses failures, proposes skill improvement
+
+    IF meta-harness returns status: "PROMOTED":
+        DECISIONS.md → "Skill {targetSkill} optimized via candidate {candidateId}."
+    IF meta-harness returns action: "REVERT":
+        DECISIONS.md → "Candidate {candidateId} did not improve scores. Reverted."
+
+    Persist updated ${completedCycles} → BOOTSTRAP-CONFIG.json
+ELSE:
+    skip auto-tuning → continue to D3
+```
+
+**D3. Completion check** — verify ALL in `COMPLETION-CRITERIA.json`:
+- All features in `BACKLOG.md` are `COMPLETED` or `BLOCKED`
+- Every `COMPLETED` feature: `Score (TL) >= ${scoreThresholdTL}` AND `Score (Adv) >= ${scoreThresholdAdv}`
+- No critical vulnerabilities across `adversarial-qa` verdicts
+
+```
+IF any criterion fails → log reason in DECISIONS.md
+```
+
+**D4. Final evolve:**
+```
+IF no executable features remain (all COMPLETED or BLOCKED):
+    IF auto-tuning was NOT triggered this cycle:
+        → Invoke harness-kit:harness-evaluator + harness-kit:meta-harness (final pass)
+    DECISIONS.md → "BACKLOG EXHAUSTED — final harness optimization triggered."
+    HALT
+```
+
+**D5. Loop:**
+```
+IF executable features remain → Phase A (next feature)
+IF feature is IN_PROGRESS     → read DEVELOPMENT-STATE.md, resume from last completed phase
+                                 DO NOT restart from Phase A
+```
+
+</phase>
+
+</orchestration_loop>
+
+---
+
+<json_extraction_protocol>
+
+## 3. JSON Extraction Protocol (Defensive Parsing)
+
+When parsing sub-agent output for metrics:
+```
+1. Search raw string for Markdown fences containing JSON.
+2. IF none found: extract substring from first '{' to last '}'.
+3. Parse as JSON.
+4. IF parse fails: log error in DECISIONS.md → force RETRY cycle.
+```
+
+</json_extraction_protocol>
+
+---
+
+<rules>
+
+## 4. Strict Rules of Conduct
+
+| Rule | Constraint |
+|---|---|
+| No developer emulation | Never touch Python, JS, or write tests |
+| No questions | Execute A → B → C without user confirmation |
+| Persistence first | Write every status change to disk BEFORE executing sub-agent command |
+
+</rules>
+
+---
+
+<appendix>
+
+## 5. File Templates & Examples
+
+See [EXAMPLES.md](./EXAMPLES.md) for complete templates:  
+`BACKLOG.md` · `DEVELOPMENT-STATE.md` · `COMPLETION-CRITERIA.json` · `BOOTSTRAP-CONFIG.json` · `DECISIONS.md`
+
+</appendix>
