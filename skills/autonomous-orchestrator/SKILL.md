@@ -16,7 +16,7 @@ ELSE:
 
 **Once scope is confirmed — for the entire session:**
 - NEVER stop, ask questions, request confirmations, or pause
-- Execute BOOTSTRAP → Phase D **atomically**
+- Execute BOOTSTRAP → Phase E **atomically**
 - Log every decision and transition to `BACKLOG.md` + `DEVELOPMENT-STATE.md` before advancing
 
 </execution_gate>
@@ -36,6 +36,7 @@ You do NOT write code, tests, or perform any sub-agent task.
 | `harness-kit:tdd-orchestrator` | `developer-backend` \| `developer-frontend` \| `developer-debugging` |
 | `harness-kit:adversarial-qa` | `harness-qa` |
 | `harness-kit:the-grumpy-tech-lead` | `harness-tech-lead` |
+| `project-memory` | orchestrator (self — Phase E only) |
 
 </role>
 
@@ -102,8 +103,8 @@ Parse `${scope}` → generate initial `BACKLOG.md` table with columns:
 | `PHASE_C` | Score A ≥ TL threshold AND Score B ≥ Adv threshold | `PHASE_D (PASS)` | Mark feature `COMPLETED`; update scores; increment `${completedCycles}` |
 | `PHASE_C` | Any score below threshold OR HIGH/CRITICAL vuln AND `Reworks < 2` | `PHASE_B (RETRY)` | Increment `Reworks`; write `REWORK-LOG.md`; reset tasks `NOT_STARTED` |
 | `PHASE_C` | Any score below threshold OR HIGH/CRITICAL vuln AND `Reworks ≥ 2` | `PHASE_D (BLOCK)` | Mark feature `BLOCKED`; increment `${completedCycles}` |
-| `PHASE_D` | Executable features remain | `PHASE_A` | Loop to next feature |
-| `PHASE_D` | No executable features remain | `DONE` | Trigger final harness optimization; halt |
+| `PHASE_D` | Executable features remain | `PHASE_E` | Save memory then loop to next feature |
+| `PHASE_D` | No executable features remain | `PHASE_E` | Save memory; trigger final harness optimization; halt |
 
 ---
 
@@ -286,14 +287,46 @@ IF no executable features remain (all COMPLETED or BLOCKED):
     IF auto-tuning was NOT triggered this cycle:
         → Invoke harness-kit:harness-evaluator + harness-kit:meta-harness (final pass)
     DECISIONS.md → "BACKLOG EXHAUSTED — final harness optimization triggered."
-    HALT
 ```
 
 **D5. Loop:**
 ```
-IF executable features remain → Phase A (next feature)
+IF executable features remain → Phase E (save memory, then Phase A next feature)
 IF feature is IN_PROGRESS     → read DEVELOPMENT-STATE.md, resume from last completed phase
                                  DO NOT restart from Phase A
+→ Always pass through Phase E before transitioning
+```
+
+</phase>
+
+---
+
+<phase id="E" name="Memory Persistence">
+
+### Phase E — Memory Persistence
+
+> **Trigger:** After every Phase D (both mid-loop and final HALT). Ensures project memory reflects current state before any loop or termination.
+
+**E1. State log:**
+```
+DECISIONS.md → "Phase E: persisting project memory."
+```
+
+**E2. Invoke `project-memory` skill:**
+```
+inputs:
+  context = summary of changes made in completed cycle:
+    - Feature IDs processed (COMPLETED, BLOCKED, or RETRY'd)
+    - Final scores (TL + Adv) for each COMPLETED feature
+    - Key decisions logged in DECISIONS.md this cycle
+    - Current ${completedCycles} value
+    - Any skill optimizations triggered (from D2 auto-tuning)
+```
+
+**E3. Transition:**
+```
+IF executable features remain → Phase A (next feature)
+IF no executable features remain → HALT
 ```
 
 </phase>
