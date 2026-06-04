@@ -310,7 +310,19 @@ test('should block after 5 attempts in 60s', () => {
 
 ## 🤖 Flow 2: Optimize Harness
 
-**When to run**: Every 5–10 development sessions.
+**When to run**: Automatically triggered by the **`meta-harness-agent`** routing logic. Manually invoke when needed.
+
+### Agent Routing Rules (`meta-harness-agent`)
+
+The `meta-harness-agent` selects which skill to run based on the following rules:
+
+| Trigger | Skill | Rule |
+|:---|:---|:---|
+| **Default** | `harness-tracer` | Always — records the session trace after every development cycle |
+| **Count % 5 == 0** | `harness-evaluator` | When the number of session folders in `docs/harness-history/traces/` is a multiple of 5 (5, 10, 15, …) |
+| **Explicit request** | `meta-harness` | Only when the user explicitly asks for an optimization candidate or promotion |
+
+> To know if `harness-evaluator` has already run for the current trace count, check whether `pareto-frontier.md` has a timestamp matching the latest session. If the trace count is a multiple of 5 but the frontier is outdated, re-run manually.
 
 ### Step 1: Analyze History (harness-evaluator)
 
@@ -496,14 +508,18 @@ STATUS: ✅ Complete in 65 minutes
 | "docs/ folder doesn't exist" | Run `/harness-kit:project-memory` first |
 | "Tests take forever to run" | Check `docs/adr/TESTS.md` — too many integration tests? |
 | "Tech-lead raises too many points" | That's good! Means code needs hardening. Focus on highest-risk items. |
-| "Meta-harness gives no suggestions" | Need more traces. Run 5-10 sessions before analyzing. |
+| "Meta-harness gives no suggestions" | Ensure at least 5 session folders exist in `docs/harness-history/traces/` before `harness-evaluator` triggers. |
 | "Score went down after change" | Revert candidate. Data might be noisy. Collect more samples. |
+| "Feature is BLOCKED — what now?" | `BLOCKED` means the failure causes a crash or breaks core functionality. Must be resolved before project completion. |
+| "Feature is FAILED — can I continue?" | Yes. `FAILED` means a non-blocking issue (e.g., minor bug or security advisory). Development continues to other features. |
+| "harness-evaluator didn't run at session 5" | Count folders in `docs/harness-history/traces/`. If count is a multiple of 5, invoke `meta-harness-agent` manually. |
 
 ---
 
 ## 🎓 Summary
 
 1. **Daily**: Use project-memory → scope-refinement → tdd-orchestrator → the-grumpy-tech-lead
-2. **Every 5–10 sessions**: Run harness-evaluator → meta-harness to improve
-3. **Each session**: harness-tracer automatically records everything
-4. **Result**: Skills evolve with real data, not guesswork
+2. **Every session**: `meta-harness-agent` automatically runs `harness-tracer` to record execution traces
+3. **Every 5th trace** (count % 5 == 0): `harness-evaluator` runs automatically to update the Pareto frontier
+4. **On explicit request**: Invoke `meta-harness` to search for optimization candidates and propose skill improvements
+5. **Result**: Skills evolve with real data, not guesswork

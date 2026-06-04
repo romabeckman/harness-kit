@@ -78,8 +78,10 @@ Instead of jumping straight to writing code, it guides the agent to first unders
 - **Balance:** Computational validation (deterministic via tests) + Inferential validation (architectural judgment) working together.
 
 > ### 👑 Sovereign Automation: `autonomous-orchestrator`
-> HarnessKit features a fully automated, hands-off execution cycle powered by the **`autonomous-orchestrator`** skill. Once you provide the initial project scope and requirements, it runs an atomic execution loop without pausing or asking questions. It manages feature planning, test-driven implementation, parallel validation gates (Socratic review + adversarial QA), and auto-tuning optimization dynamically.
-> 
+> HarnessKit features a fully automated, hands-off execution cycle powered by the **`autonomous-orchestrator`** skill. Once you provide the initial project scope and requirements, it runs an atomic execution loop without pausing or asking questions. It manages feature planning, test-driven implementation, parallel validation gates (Socratic review + adversarial QA), and dynamic threshold enforcement loaded from configuration files.
+>
+> The loop supports four terminal statuses: `COMPLETED` (pass), `RETRY` (active rework), `BLOCKED` (crash/critical break), and `FAILED` (non-blocking issue — development continues).
+>
 > To learn how to prepare your workspace and start this autonomous loop safely, check out the **[Autonomous Orchestrator Workflow](docs/workflow/AUTONOMOUS-ORCHESTRATOR.md)**.
 
 The skills activate when relevant. Your agent just has a Harness.
@@ -114,15 +116,17 @@ Below is a visual example of how this interactive code review occurs in practice
 
 ## 🤖 Autonomous State Machine
 
-HarnessKit's autonomous mode is driven by a robust **Product State Machine** (Layer 1 of the architecture), which is executed, managed, and progressed by the **`autonomous-orchestrator`** skill. It tracks feature backlogs, development phases, and dynamic transition gates—ensuring that a feature only progresses when all quality criteria (such as passing tests and receiving validation scores above the non-negotiable **0.70 threshold**) are fully satisfied.
+HarnessKit's autonomous mode is driven by a robust **Product State Machine** (Layer 1 of the architecture), which is executed, managed, and progressed by the **`autonomous-orchestrator`** skill. It tracks feature backlogs, development phases, and dynamic transition gates—ensuring that a feature only progresses when all quality criteria (such as passing tests and receiving validation scores above the configurable threshold, default **0.70**) are fully satisfied. Features that exhaust retries are marked `BLOCKED` (crash risk) or `FAILED` (non-blocking, development continues).
 
 Below is a diagram illustrating the lifecycle and state transitions within the autonomous execution loop:
 
 ![Autonomous State Machine](docs/assets/update-state-machine.png)
 
-> ### 🛡️ The 0.70 Quality Gate: A Grade "7 out of 10" for Production
-> Think of the **0.70 score threshold** as a **grade of 7 out of 10** required for both architectural resilience (audited by **Grumpy Tech Lead**) and edge-case security (audited by **Adversarial QA**). 
-> 
+> ### 🛡️ Dynamic Quality Gates: Configurable Thresholds
+> The **score thresholds** (`scoreThresholdTL` and `scoreThresholdAdv`, default `0.70`) are loaded automatically from `docs/product/BOOTSTRAP-CONFIG.json` on each validation phase. They are **never asked interactively** — only configured once during bootstrap and readable per-project.
+>
+> Think of the **0.70 score threshold** as a **grade of 7 out of 10** required for both architectural resilience (audited by **Grumpy Tech Lead**) and edge-case security (audited by **Adversarial QA**).
+>
 > If the implementation has fully working code but contains scalability risks or minor security oversights (e.g., scoring `0.65`), the orchestrator immediately blocks completion, compiles the feedback into a `REWORK-LOG.md`, and sends the agent back to code again—guaranteeing elite software quality without human oversight.
 
 ---
@@ -167,11 +171,11 @@ Continuously improve your harness configuration based on execution data:
 ```
 Sessions (real work)
        ↓
- harness-tracer        ← records every session automatically
+ meta-harness-agent    ← always runs harness-tracer (every session)
        ↓
- harness-evaluator     ← aggregates scores, updates Pareto frontier
+ harness-evaluator     ← auto-triggered when trace count is a multiple of 5
        ↓
- meta-harness          ← diagnoses patterns, proposes skill improvement
+ meta-harness          ← only on explicit user request
        ↓
  Human review & approval
        ↓

@@ -52,10 +52,9 @@ Represents the entry point where execution triggers and control commands are fir
 The physical structure that centralizes acquired knowledge and generated variations:
 ```text
 docs/harness-history/
-├── config.md               ← Score weights and criteria
-├── baseline.md             ← Current active skill configuration
-├── /traces/                ← Execution history grouped by temporal sessions
-│   └── session-YYYY-MM-DD/
+├── pareto-frontier.md      ← Ranked best configurations (updated by harness-evaluator)
+├── /traces/                ← Execution history (one folder per session — count drives routing)
+│   └── session-YYYY-MM-DD-NNN/
 │       ├── metadata.md     ← Skill identifiers and agent profile
 │       ├── input.md        ← Original task scope
 │       ├── steps.md        ← Chronological action log
@@ -84,12 +83,12 @@ The standard routine used to build new features driven by tests:
 
 ### FLOW 2: Harness Optimization Loop (Meta-Optimization Session)
 
-The phase where the system analytically evolves its own instructions (executed every 5–10 sessions):
+The phase where the system analytically evolves its own instructions. Routing is **automatic** based on trace count:
 
-1. **Pattern Analysis:** The developer invokes `harness-evaluator`, which computes aggregated metrics and consolidates the Pareto frontier. The report highlights correlations (e.g., *"Late reviews from Tech Lead cause rework and drop the average score"*).
-2. **Meta-Harness Proposal:** `meta-harness` reads the diagnostics, isolates the underperforming skill, and creates a variant (e.g., `candidates/v001/SKILL.md`), modifying instructions to mitigate the bottleneck.
-3. **Empirical Validation:** The developer runs subsequent sessions configured to use the test candidate. `harness-tracer` computes the new empirical score.
-4. **Promotion or Rejection:** If the candidate's score consistently beats the baseline, the modified file is promoted to the active skills directory (`SKILL.md.baseline`). Otherwise, the change is discarded.
+1. **Recording (default — every session):** The **`meta-harness-agent`** always executes `harness-tracer` to record structured traces under `docs/harness-history/traces/`.
+2. **Pattern Analysis (every multiple of 5 traces):** When the trace folder count is a multiple of 5 (5, 10, 15, …), the agent automatically executes `harness-evaluator`. It computes aggregated metrics and consolidates the Pareto frontier (e.g., *"Late reviews from Tech Lead cause rework and drop the average score"*).
+3. **Meta-Harness Proposal (explicit request only):** `meta-harness` is invoked only when the user explicitly requests an optimization search. It reads the diagnostics, isolates the underperforming skill, and creates a variant (e.g., `candidates/v001/SKILL.md`), modifying instructions to mitigate the bottleneck.
+4. **Promotion or Rejection:** If the candidate's score consistently beats the baseline, the modified file is promoted to the active skills directory. Otherwise, the change is discarded.
 
 ---
 
