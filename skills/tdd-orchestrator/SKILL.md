@@ -122,22 +122,7 @@ When applicable, invoke `project-memory` to update:
 
 </step>
 
-<step id="6" name="Record Execution Trace" skill="harness-tracer">
-
-Invoke `harness-tracer` — **not optional**. Skipping breaks the harness optimization loop.
-
-```
-inputs:
-  ${skill_name}   = "tdd-orchestrator"
-  ${agent_name}   = active agent name (e.g., "developer-backend")
-  ${task_summary} = one-sentence description of completed task
-output:
-  → persisted to docs/harness-history/traces/
-```
-
-</step>
-
-<step id="7" name="Machine-Readable Output">
+<step id="6" name="Machine-Readable Output">
 
 Save structured JSON at `docs/specs/${domain}/TDD-OUTPUT.json`:
 
@@ -172,7 +157,6 @@ Save structured JSON at `docs/specs/${domain}/TDD-OUTPUT.json`:
 - Fix production code — never alter correct tests to force passing
 - Invoke `verification-before-completion` before declaring completion
 - Invoke `project-memory` for new/changed API endpoints
-- Invoke `harness-tracer` at end of every session (Step 6)
 
 **❌ Don't:**
 - Skip mandatory docs in `docs/adr/`
@@ -181,7 +165,6 @@ Save structured JSON at `docs/specs/${domain}/TDD-OUTPUT.json`:
 - Run package installation commands automatically — always instruct the user
 - Declare "tests passed" without executed, verified output in the same message
 - Propose fixes for failing tests without first invoking `systematic-debugging`
-- Skip `harness-tracer` — every missing trace degrades the optimization signal
 
 </rules>
 
@@ -235,8 +218,8 @@ At each step, emit a status block:
 📋 Step 5: Updating Documentation (project-memory)
 ✅ API contracts updated
 
-📋 Step 6: Recording Execution Trace (harness-tracer)
-✅ Trace persisted to docs/harness-history/traces/
+📋 Step 6: Machine-Readable Output
+✅ JSON report generated
 ```
 
 </communication_protocol>

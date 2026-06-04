@@ -53,10 +53,8 @@ Execute steps in order. ASK each missing value ONCE, then never again.
 ```
 IF BACKLOG.md missing or empty  → ASK for project scope/PRD. Store as ${scope}.
 IF project paths unknown        → ASK for local paths of all involved projects. Store as ${projectPaths}.
-IF thresholds not injected by parent:
-    → ASK for ${scoreThresholdTL}  (default: 0.70, range: 0.00–1.00)
-    → ASK for ${scoreThresholdAdv} (default: 0.70, range: 0.00–1.00)
-    If user skips: use defaults.
+
+Thresholds (${scoreThresholdTL} and ${scoreThresholdAdv}) are loaded from BOOTSTRAP-CONFIG.json (default 0.70).
 ```
 
 **1.2 Synthesize backlog:**  
@@ -66,15 +64,17 @@ Parse `${scope}` → generate initial `BACKLOG.md` table with columns:
 - `Domain`: snake_case from feature title (e.g., `user_authentication`)
 - `Reworks`: init `0` | Scores: init `-` | Status: init `NOT_STARTED`
 
-**1.3 Create files:**
+**1.3 Create files (Initialize by copying templates):**
 
-| File | Initial State |
+For each required product file in `docs/product/`, if it does not already exist, copy it from the template model located in `skills/autonomous-orchestrator/models/`:
+
+| File | Initial State & Copy Source |
 |---|---|
-| `docs/product/BACKLOG.md` | Populated from step 1.2 |
-| `docs/product/COMPLETION-CRITERIA.json` | Includes collected score thresholds |
-| `docs/product/DEVELOPMENT-STATE.md` | Headers: `Feature ID, Task ID, Description, Domain, Current Phase, Status` |
-| `docs/product/DECISIONS.md` | Header only (audit trail) |
-| `docs/product/BOOTSTRAP-CONFIG.json` | `{ scoreThresholdTL, scoreThresholdAdv, cycleCounter: { completedCycles: 0 } }` |
+| `docs/product/BACKLOG.md` | Copy from `skills/autonomous-orchestrator/models/BACKLOG.md` (then populate with features from step 1.2) |
+| `docs/product/COMPLETION-CRITERIA.json` | Copy from `skills/autonomous-orchestrator/models/COMPLETION-CRITERIA.json` (substituting the collected score thresholds) |
+| `docs/product/DEVELOPMENT-STATE.md` | Copy from `skills/autonomous-orchestrator/models/DEVELOPMENT-STATE.md` |
+| `docs/product/DECISIONS.md` | Copy from `skills/autonomous-orchestrator/models/DECISIONS.md` |
+| `docs/product/BOOTSTRAP-CONFIG.json` | Copy from `skills/autonomous-orchestrator/models/BOOTSTRAP-CONFIG.json` (substituting collected thresholds) |
 
 > `DEVELOPMENT-STATE.md` is task-level only. `Reworks`, `Score (TL)`, `Score (Adv)` are feature-level and live in `BACKLOG.md`.
 
@@ -99,12 +99,13 @@ Parse `${scope}` → generate initial `BACKLOG.md` table with columns:
 | `PHASE_A` | All `004-*-test-scenarios.md` present | `PHASE_B` | Append tasks to `DEVELOPMENT-STATE.md` |
 | `PHASE_B` | Task selected, `TDD-OUTPUT.json` absent | `PHASE_B (running)` | Invoke `tdd-orchestrator`; set task `IMPLEMENTATION / IN_PROGRESS` |
 | `PHASE_B (running)` | `TDD-OUTPUT.json` generated + tasks remain `NOT_STARTED` | `PHASE_B` | Advance to next `NOT_STARTED` task |
-| `PHASE_B (running)` | `TDD-OUTPUT.json` generated + **all tasks** `COMPLETED` | `PHASE_C` | Set all task rows `Current Phase = VALIDATION` |
-| `PHASE_C` | Score A ≥ TL threshold AND Score B ≥ Adv threshold | `PHASE_D (PASS)` | Mark feature `COMPLETED`; update scores; increment `${completedCycles}` |
-| `PHASE_C` | Any score below threshold OR HIGH/CRITICAL vuln AND `Reworks < 2` | `PHASE_B (RETRY)` | Increment `Reworks`; write `REWORK-LOG.md`; reset tasks `NOT_STARTED` |
-| `PHASE_C` | Any score below threshold OR HIGH/CRITICAL vuln AND `Reworks ≥ 2` | `PHASE_D (BLOCK)` | Mark feature `BLOCKED`; increment `${completedCycles}` |
+| PHASE_B (running) | `TDD-OUTPUT.json` generated + **all tasks** `COMPLETED` | `PHASE_C` | Set all task rows `Current Phase = VALIDATION` |
+| PHASE_C | Feature's Score A ≥ TL threshold AND Score B ≥ Adv threshold | PHASE_D | Mark feature `COMPLETED` in `BACKLOG.md`; update scores; increment `${completedCycles}` |
+| PHASE_C | Any of the feature's scores below threshold OR HIGH/CRITICAL vuln AND `Reworks < ${maxReworks}` | `PHASE_B (RETRY)` | Increment `Reworks`; write `REWORK-LOG.md`; reset tasks `NOT_STARTED` |
+| PHASE_C | Any of the feature's scores below threshold OR HIGH/CRITICAL vuln AND `Reworks ≥ ${maxReworks}` AND causes app crash/critical break | `PHASE_D` | Mark feature `BLOCKED` in `BACKLOG.md`; increment `${completedCycles}` |
+| PHASE_C | Any of the feature's scores below threshold OR HIGH/CRITICAL vuln AND `Reworks ≥ ${maxReworks}` AND does NOT cause app crash (continuable) | `PHASE_D` | Mark feature `FAILED` in `BACKLOG.md`; increment `${completedCycles}` |
 | `PHASE_D` | Executable features remain | `PHASE_E` | Save memory then loop to next feature |
-| `PHASE_D` | No executable features remain | `PHASE_E` | Save memory; trigger final harness optimization; halt |
+| `PHASE_D` | No executable features remain | `PHASE_E` | Save memory; halt |
 
 ---
 
@@ -172,10 +173,12 @@ inputs:
 
 > **GATE:** Do NOT begin Phase C until **ALL tasks** for the feature in `DEVELOPMENT-STATE.md` have `Status = COMPLETED`. If any task is `IN_PROGRESS` or `NOT_STARTED` → remain in Phase B.
 
-**C1. Load thresholds** (on entry or re-entry):
+**C1. Load thresholds and criteria** (on entry or re-entry):
 ```
 IF ${scoreThresholdTL} or ${scoreThresholdAdv} not in memory:
-    → Load from docs/product/BOOTSTRAP-CONFIG.json
+    → Load from docs/product/BOOTSTRAP-CONFIG.json -> scoreThresholds.theGrumpyTechLead.threshold / scoreThresholds.adversarialQA.threshold
+IF ${maxReworks} not in memory:
+    → Load from docs/product/COMPLETION-CRITERIA.json -> blockedCriteria.maxReworks
 ```
 
 **C2. State log:**
@@ -199,9 +202,9 @@ C4: harness-kit:adversarial-qa (harness-qa agent, Autonomous Mode)
 <gate id="PASS">
 
 ```
-IF Score A >= ${scoreThresholdTL} AND Score B >= ${scoreThresholdAdv}:
+IF feature's Score A >= ${scoreThresholdTL} AND Score B >= ${scoreThresholdAdv}:
 ```
-1. `BACKLOG.md[feature]` → `Status: COMPLETED`, `Score (TL): A`, `Score (Adv): B`
+1. `BACKLOG.md[feature]` (the active feature in backlog) → `Status: COMPLETED`, `Score (TL): A`, `Score (Adv): B`
 2. All feature tasks in `DEVELOPMENT-STATE.md` → `Current Phase: -`, `Status: COMPLETED`
 3. `DECISIONS.md` → `"Feature {ID} ACCEPTED — TL: {A}, Adv: {B}."`
 4. `${completedCycles}++`
@@ -212,10 +215,10 @@ IF Score A >= ${scoreThresholdTL} AND Score B >= ${scoreThresholdAdv}:
 <gate id="RETRY">
 
 ```
-IF (Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRITICAL vuln)
-   AND Reworks < 2:
+IF (feature's Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRITICAL vuln)
+   AND Reworks < ${maxReworks}:
 ```
-1. `BACKLOG.md[feature].Reworks++`
+1. `BACKLOG.md[feature].Reworks++` (for the active feature in backlog)
 2. Append to `docs/specs/{domain}/REWORK-LOG.md`:
    - `openPoints` from `the-grumpy-tech-lead`
    - `edgeCasesMissed` from `adversarial-qa`
@@ -228,12 +231,28 @@ IF (Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRIT
 <gate id="BLOCK">
 
 ```
-IF (Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRITICAL vuln)
-   AND Reworks >= 2:
+IF (feature's Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRITICAL vuln)
+   AND Reworks >= ${maxReworks}
+   AND (failure causes application crash or breaks core functionality):
 ```
-1. `BACKLOG.md[feature]` → `Status: BLOCKED`
+1. `BACKLOG.md[feature]` (the active feature in backlog) → `Status: BLOCKED`
 2. All feature tasks → `Current Phase: -`, `Status: BLOCKED`
-3. `DECISIONS.md` → `"Feature {ID} BLOCKED after 2 rework attempts."`
+3. `DECISIONS.md` → `"Feature {ID} BLOCKED after {maxReworks} attempts. Rationale: crash/critical break."`
+4. `${completedCycles}++`
+5. → Phase D
+
+</gate>
+
+<gate id="FAIL">
+
+```
+IF (feature's Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRITICAL vuln)
+   AND Reworks >= ${maxReworks}
+   AND (failure does NOT cause a crash and development can continue, e.g., security vulnerability or minor bugs):
+```
+1. `BACKLOG.md[feature]` (the active feature in backlog) → `Status: FAILED`
+2. All feature tasks → `Current Phase: -`, `Status: FAILED`
+3. `DECISIONS.md` → `"Feature {ID} FAILED after {maxReworks} attempts. Rationale: non-blocking issue, continuing development."`
 4. `${completedCycles}++`
 5. → Phase D
 
@@ -243,53 +262,20 @@ IF (Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRIT
 
 ---
 
-<phase id="D" name="State, Evolution and Auto-Tuning">
+<phase id="D" name="State and Completion Check">
 
-### Phase D — State, Evolution & Auto-Tuning
+### Phase D — State & Completion Check
 
-**D1. Trace:**
-```
-harness-kit:harness-tracer
-  ${skill_name}    = "autonomous-orchestrator"
-  ${agent_name}    = active agent name
-  ${task_summary}  = "Autonomous loop: completed {N}, blocked {M}, remaining {K}"
-```
-
-**D2. Auto-Tuning Gate:**
-```
-IF ${completedCycles} % 10 == 0 AND ${completedCycles} > 0:
-    DECISIONS.md → "AUTO-TUNING triggered at cycle {completedCycles}."
-    → Invoke harness-kit:harness-evaluator  // analyzes traces, updates pareto-frontier.md
-    → Invoke harness-kit:meta-harness       // diagnoses failures, proposes skill improvement
-
-    IF meta-harness returns status: "PROMOTED":
-        DECISIONS.md → "Skill {targetSkill} optimized via candidate {candidateId}."
-    IF meta-harness returns action: "REVERT":
-        DECISIONS.md → "Candidate {candidateId} did not improve scores. Reverted."
-
-    Persist updated ${completedCycles} → BOOTSTRAP-CONFIG.json
-ELSE:
-    skip auto-tuning → continue to D3
-```
-
-**D3. Completion check** — verify ALL in `COMPLETION-CRITERIA.json`:
-- All features in `BACKLOG.md` are `COMPLETED` or `BLOCKED`
+**D1. Completion check** — verify ALL in `COMPLETION-CRITERIA.json`:
+- All features in `BACKLOG.md` are `COMPLETED`, `BLOCKED`, or `FAILED`
 - Every `COMPLETED` feature: `Score (TL) >= ${scoreThresholdTL}` AND `Score (Adv) >= ${scoreThresholdAdv}`
-- No critical vulnerabilities across `adversarial-qa` verdicts
+- No critical vulnerabilities across `adversarial-qa` verdicts (unless the feature was marked as FAILED)
 
 ```
 IF any criterion fails → log reason in DECISIONS.md
 ```
 
-**D4. Final evolve:**
-```
-IF no executable features remain (all COMPLETED or BLOCKED):
-    IF auto-tuning was NOT triggered this cycle:
-        → Invoke harness-kit:harness-evaluator + harness-kit:meta-harness (final pass)
-    DECISIONS.md → "BACKLOG EXHAUSTED — final harness optimization triggered."
-```
-
-**D5. Loop:**
+**D2. Loop:**
 ```
 IF executable features remain → Phase E (save memory, then Phase A next feature)
 IF feature is IN_PROGRESS     → read DEVELOPMENT-STATE.md, resume from last completed phase
@@ -316,11 +302,10 @@ DECISIONS.md → "Phase E: persisting project memory."
 ```
 inputs:
   context = summary of changes made in completed cycle:
-    - Feature IDs processed (COMPLETED, BLOCKED, or RETRY'd)
+    - Feature IDs processed (COMPLETED, BLOCKED, FAILED, or RETRY'd)
     - Final scores (TL + Adv) for each COMPLETED feature
     - Key decisions logged in DECISIONS.md this cycle
     - Current ${completedCycles} value
-    - Any skill optimizations triggered (from D2 auto-tuning)
 ```
 
 **E3. Transition:**
@@ -369,7 +354,6 @@ When parsing sub-agent output for metrics:
 
 ## 5. File Templates & Examples
 
-See [EXAMPLES.md](./EXAMPLES.md) for complete templates:  
-`BACKLOG.md` · `DEVELOPMENT-STATE.md` · `COMPLETION-CRITERIA.json` · `BOOTSTRAP-CONFIG.json` · `DECISIONS.md`
+See [EXAMPLES.md](./EXAMPLES.md) for complete templates: `BACKLOG.md`, `DEVELOPMENT-STATE.md` and `DECISIONS.md`
 
 </appendix>
