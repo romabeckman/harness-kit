@@ -7,14 +7,26 @@ description: Sovereign loop manager. Handles file initialization, feature lifecy
 
 ## ⚠️ Step 0 — Scope Check (ONLY permitted pause)
 
+ASK the user ONCE with the following options and HALT until answered:
+
+> **What would you like to do?**
+> - **`resume`** — continue from where the previous session stopped (`docs/product/` is preserved as-is)
+> - **`reset <new scope>`** — discard current `docs/product/` and start a new cycle with the provided scope
+> - **`start <scope>`** — first run, no existing state
+
 ```
-IF scope/PRD not provided AND cannot be inferred:
-    → ASK user ONCE for scope. HALT until received.
-ELSE:
-    → Proceed immediately to BOOTSTRAP. Ask NOTHING.
+IF user answers "resume":
+    → SKIP BOOTSTRAP. Apply re-entry rule from Orchestration Loop State Transition Table.
+
+IF user answers "reset <new scope>":
+    → Delete all files under docs/product/.
+    → Store <new scope> as ${scope}. Proceed to BOOTSTRAP.
+
+IF user answers "start <scope>":
+    → Store <scope> as ${scope}. Proceed to BOOTSTRAP.
 ```
 
-**Once scope is confirmed — for the entire session:**
+**Once this step is resolved — for the entire session:**
 - NEVER stop, ask questions, request confirmations, or pause
 - Execute BOOTSTRAP → Phase E **atomically**
 - Log every decision and transition to `BACKLOG.md` + `DEVELOPMENT-STATE.md` before advancing
@@ -63,6 +75,7 @@ Parse `${scope}` → generate initial `BACKLOG.md` table with columns:
 
 - `Domain`: snake_case from feature title (e.g., `user_authentication`)
 - `Reworks`: init `0` | Scores: init `-` | Status: init `NOT_STARTED`
+- **Granularity rule:** each row is one deliverable chunk — typically one project per feature, or one meaningful part of a large project if splitting is necessary. Never mix multiple unrelated projects in a single row.
 
 **1.3 Create files (Initialize by copying templates):**
 
@@ -131,10 +144,11 @@ inputs:
 **A3. Verify:** Wait for all `docs/specs/{domain}/004-*-test-scenarios.md` files to exist.
 
 **A4. Task breakdown:**  
-Parse `docs/specs/{domain}/003-*-tactical-design.md` → extract ordered dev tasks → append to `DEVELOPMENT-STATE.md`:
+For each `docs/specs/{domain}/003-*-tactical-design.md` file (one per project in `${projectPaths}`) → extract ordered dev tasks from Section 6 → append to `DEVELOPMENT-STATE.md`:
 ```
-Feature ID | Task ID | Description | Domain | Current Phase: - | Status: NOT_STARTED
+Feature ID | Task ID | Project | Description | Domain | Current Phase: - | Status: NOT_STARTED
 ```
+`Project` = root folder name of the source project (e.g., `order-service`, `checkout-ui`).
 
 </phase>
 
