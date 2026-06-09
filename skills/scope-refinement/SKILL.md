@@ -140,25 +140,10 @@ output: docs/specs/${domain}/002-context-map.md
 
 ```
 inputs: ${scope}, ${projectPaths}, ${domain}, ${rules}
+output: one document PER project in ${projectPaths}
+        → docs/specs/${domain}/003-${PROJECT_NAME}-tactical-design.md
+           where ${PROJECT_NAME} = root folder name of each project
 ```
-
-<output_strategy>
-
-```
-IF len(${projectPaths}) > 1:
-    → one document PER project
-    → docs/specs/${domain}/003-${PROJECT_NAME}-tactical-design.md
-       where ${PROJECT_NAME} = root folder name of each project
-
-IF len(${projectPaths}) == 1:
-    → one document PER task (extracted from the tactical design breakdown)
-    → docs/specs/${domain}/003-task-${TASK_ID}-tactical-design.md
-       where ${TASK_ID} = zero-padded sequence (e.g., 01, 02, 03...)
-    → each document covers: task description, aggregates, value objects,
-      domain services, and persistence interfaces for that task only
-```
-
-</output_strategy>
 
 </phase>
 
@@ -172,7 +157,7 @@ IF len(${projectPaths}) == 1:
 inputs: ${scope}, ${projectPaths}, ${domain}, ${rules}
 output: one document PER project in ${projectPaths}
         → docs/specs/${domain}/004-${PROJECT_NAME}-test-scenarios.md
-        where ${PROJECT_NAME} = root folder name of each project
+           where ${PROJECT_NAME} = root folder name of each project
 ```
 
 </phase>
