@@ -12,7 +12,7 @@
             "source": {
                 "source": "github",
                 "repo": "romabeckman/harness-kit",
-                "ref": "1.2.10"
+                "ref": "v1.2.10"
             },
             "description": "Expert AI agents (Architect, Backend, Frontend, QA, Code Reviewer, Debugger) and skills (TDD Orchestrator, Scope Refinement, Grumpy Tech Lead, Project Memory) implementing Harness Engineering for disciplined software development.",
             "author": {
