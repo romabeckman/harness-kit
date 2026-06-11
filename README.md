@@ -74,8 +74,11 @@ copilot plugin install harness-kit@harness-kit
 ### Gemini CLI
 
 ```bash
-gemini extensions install [https://github.com/romabeckman/harness-kit](https://github.com/romabeckman/harness-kit)
+# Install the extension
+gemini extensions install https://github.com/romabeckman/harness-kit
 
+# Update
+gemini extensions update harness-kit
 ```
 
 ---
