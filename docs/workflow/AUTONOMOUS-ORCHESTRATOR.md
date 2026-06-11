@@ -1,141 +1,125 @@
 # 🤖 Autonomous Orchestrator Workflow
 
-This document describes the workflow for using the **Autonomous Orchestrator** skill (`skills/autonomous-orchestrator/SKILL.md`). It acts as a sovereign loop manager to coordinate the entire lifecycle of software features—from planning and TDD-driven development to validation and continuous optimization.
+This document describes the operational workflow for the **Autonomous Orchestrator** skill (`skills/autonomous-orchestrator/SKILL.md`). It operates as a continuous, streaming execution loop that automates feature planning, implementation, and quality gate validation—while giving the human developer live telemetry and real-time interception capabilities.
 
 ---
 
-## 🏗️ The 4-Layer Architecture
+## 🏛️ The 4-Layer Architecture with Live Telemetry
 
-The autonomous development cycle operates on a robust **4-layer architectural model**:
+The autonomous cycle executes across a 4-layer model, while the human developer operates concurrently as a **Live Auditor** through modern coding agents (e.g., Claude Code, Cursor, OpenCode, Antigravity):
 
 | Layer | Component | Description | Managed Artifacts |
-| :--- | :--- | :--- | :--- |
-| **Layer 1** | **Product State Machine** | Stores development state, prioritization, and completion criteria. | `BACKLOG.md`, `DEVELOPMENT-STATE.md`, `COMPLETION-CRITERIA.json`, `DECISIONS.md` |
-| **Layer 2** | **Autonomous Orchestrator** | Coordinates the main execution loop and enforces the decision gate. | `autonomous-orchestrator` / `BOOTSTRAP-CONFIG.json` |
-| **Layer 3** | **Contextual Expert Skills** | Specialized skills delegated strictly to isolated agent personas. | `scope-refinement`, `tdd-orchestrator`, `the-grumpy-tech-lead`, `adversarial-qa` |
-| **Layer 4** | **Filesystem Database $\mathcal{D}$** | Long-term memory, specifications, and execution history files. | `docs/README.md`, `docs/adr/`, `docs/specs/`, `docs/harness-history/` |
+| --- | --- | --- | --- |
+| **Control** | **Live Human Auditor** | **Hot-Interception Vector.** Watches the live streaming execution and can forcefully halt, hot-patch specs, or override configuration mid-loop. | User Terminal / Config Overrides |
+| **Layer 1** | **Product State Machine** | Stores development state, prioritization, and completion criteria.
+
+ | `BACKLOG.md`, `DEVELOPMENT-STATE.md`, `COMPLETION-CRITERIA.json`<br> |
+| **Layer 2** | **Autonomous Orchestrator** | Coordinates the main execution loop and enforces the decision gate.
+
+ | `autonomous-orchestrator` / `BOOTSTRAP-CONFIG.json`<br> |
+| **Layer 3** | **Contextual Expert Skills** | Specialized skills delegated strictly to isolated agent personas.
+
+ | `scope-refinement`, `tdd-orchestrator`, `the-grumpy-tech-lead`<br> |
+| **Layer 4** | **Filesystem Database $\mathcal{D}$** | Long-term memory, specifications, and execution history files.
+
+ | `docs/README.md`, `docs/adr/`, `docs/specs/`<br> |
 
 ---
 
-## 🔄 The Autonomous Execution Loop
+## 🔄 The Continuous Execution Loop & Interception Flow
+
+The orchestrator adheres to an **Uninterrupted Execution Mandate**: once started, it moves from phase to phase atomically without pausing to ask for permission. It only stops if it completes the backlog, hits a terminal blocker, or if **you** intercept it.
 
 ```mermaid
 graph TD
-    A[BOOTSTRAP: Scope & Paths] --> B(Phase A: Planning <br/> scope-refinement via software-architect)
+    Start[Provide Scope] --> B(Phase A: Planning <br/> scope-refinement via software-architect)
     B --> C(Phase B: Implementation <br/> tdd-orchestrator via developer-*)
-    C --> D(Phase C: Parallel Validation <br/> the-grumpy-tech-lead & adversarial-qa)
+    C --> D(Phase C: Parallel Validation <br/> tech-lead & adversarial-qa)
     D --> E{Decision Gate Verdict}
-    E -- PASS --> F(Phase D: State & Completion Check)
+    E -- PASS --> F(Phase D: State Check)
     E -- "RETRY (Reworks < maxReworks)" --> C
-    E -- "BLOCKED (crash/critical break)" --> F
-    E -- "FAILED (non-blocking, continuable)" --> F
+    E -- "BLOCKED / FAILED" --> F
     F --> G(Phase E: Memory Persistence)
-    G --> H{Executable Features Remain?}
+    G --> H{Features Remain?}
     H -- Yes --> B
-    H -- No --> I[HALT]
-```
+    H -- No --> End[HALT]
 
-Autonomous Development Cycle:
-![Autonomous Development Cycle](../assets/running.png)
+    %% Live Human Interception Layer
+    subgraph Live Monitoring Panel [Claude Code / Cursor / OpenCode Terminal]
+        Human((Human Auditor)) -.->|Hot Intercept / Force Stop / Adjust Config| B
+        Human -.->|Inject Feedback / Tweak Scores| C
+        Human -.->|Override Thresholds| D
+    end
+
+```
 
 ---
 
-## 🚀 Execution Phases in Detail
+## 🚀 Execution Phases & Live Auditing in Practice
 
-Once started, the orchestrator adheres to a **CRITICAL EXECUTION MANDATE**: once initial scope is provided, **never stop or ask questions**. It executes all phases atomically.
+### 1. BOOTSTRAP (Unattended Initialization)
 
-### 1. BOOTSTRAP (State Initialization)
+* **Action:** The orchestrator acquires the initial scope, reads `docs/product/BOOTSTRAP-CONFIG.json`, and synthesizes the `docs/product/BACKLOG.md` table.
 
-Before starting, the orchestrator performs workspace verification:
 
-* **Scope Acquisition**: If `BACKLOG.md` is missing, it **asks once** for the project scope/PRD, then never again.
-* **Project Paths**: Collects the absolute local directories involved (`${projectPaths}`).
-* **Score Thresholds**: Loaded **automatically** from `docs/product/BOOTSTRAP-CONFIG.json`:
-  * **Grumpy Tech Lead Score** (`${scoreThresholdTL}`, default: `0.70`)
-  * **Adversarial QA Score** (`${scoreThresholdAdv}`, default: `0.70`)
-  * **Max Reworks** (`${maxReworks}`): loaded from `docs/product/COMPLETION-CRITERIA.json`
+* **Live Telemetry:** The developer sees the backlog being generated in real-time. If the AI misinterprets a requirement, the developer doesn't need to wait—they can immediately halt the loop or hot-patch the file.
 
-  > Thresholds are **never asked interactively**. They are read from config files on every Phase C entry or re-entry.
-
-* **File Initialization**: For each required product file in `docs/product/`, if it does not already exist, copies it from the template model in `skills/autonomous-orchestrator/models/`.
-* **Synthesis**: Synthesizes the initial `docs/product/BACKLOG.md` table and initializes `docs/product/DEVELOPMENT-STATE.md`, `COMPLETION-CRITERIA.json`, `DECISIONS.json`, and the Cycle Counter.
-
-### 2. THE RUNTIME CYCLE
+### 2. THE RUNTIME CYCLE (Streaming Execution)
 
 #### 📋 Phase A: Delegation of Planning
-* **State Change:** Logs `IN_PROGRESS` in `BACKLOG.md` and records to `DECISIONS.md`.
-* **Delegation:** Invokes `scope-refinement` strictly mapped to the **`software-architect`** agent.
-* **Verification:** Waits until all domain specs and test scenario documents (`004-*-test-scenarios.md`) are successfully generated under `docs/specs/{domain}/`.
+
+* **Action:** Automatically invokes `scope-refinement` via the **`software-architect`** persona to generate DDD specs and Gherkin test scenarios under `docs/specs/{domain}/`.
+
+
 
 #### 💻 Phase B: Delegation of Implementation
-* **State Change:** Logs `IMPLEMENTATION / IN_PROGRESS` in `DEVELOPMENT-STATE.md`.
-* **Delegation:** Invokes `tdd-orchestrator` strictly mapped to the **`developer-backend`**, **`developer-frontend`**, or **`developer-debugging`** agents.
-* **Rework Injection:** If this is a RETRY, automatically injects the compiled `REWORK-LOG.md` containing preceding validation issues.
-* **Verification:** Waits until `docs/specs/{domain}/TDD-OUTPUT.json` is generated.
+
+* **Action:** Instantly transitions into invoking `tdd-orchestrator` to execute the `RED ➔ GREEN ➔ REFACTOR` cycle.
+
+
+* **Rework Injection:** If the cycle is a `RETRY`, it seamlessly feeds the `REWORK-LOG.md` back into the coding agent.
+
+
 
 #### 🛡️ Phase C: Validation & Decision Gate
 
-> **GATE:** Phase C only begins when **ALL tasks** for the feature in `DEVELOPMENT-STATE.md` have `Status = COMPLETED`.
+* **Action:** Runs `the-grumpy-tech-lead` and `adversarial-qa` in parallel to audit architectural and security resilience.
 
-* **Threshold Loading (on every entry):** Reads `${scoreThresholdTL}`, `${scoreThresholdAdv}` from `BOOTSTRAP-CONFIG.json` and `${maxReworks}` from `COMPLETION-CRITERIA.json`.
-* **State Change:** Logs `VALIDATION` phase in `DEVELOPMENT-STATE.md`.
-* **Parallel Dispatch:** Dispatches both validation sensors simultaneously:
-  1. **Critique:** Invokes `the-grumpy-tech-lead` via the **`harness-tech-lead`** agent.
-  2. **Attack:** Invokes `adversarial-qa` via the **`harness-qa`** agent.
-* **JSON Extraction Protocol:** Parses validation outputs defensively by searching code fences or extracting text between `{` and `}`.
-* **Decision Gate Verdict:**
 
-| Verdict | Condition | Action |
-|:---|:---|:---|
-| **`PASS`** | Both scores ≥ thresholds | Sets backlog status `COMPLETED`; logs decision; increments cycle counter; → Phase D |
-| **`RETRY`** | Any score < threshold AND `Reworks < ${maxReworks}` | Increments `Reworks`; writes findings to `REWORK-LOG.md`; → Phase B |
-| **`BLOCKED`** | Any score < threshold AND `Reworks ≥ ${maxReworks}` AND failure causes crash/critical break | Sets status `BLOCKED`; logs decision; increments cycle counter; → Phase D |
-| **`FAILED`** | Any score < threshold AND `Reworks ≥ ${maxReworks}` AND failure is non-blocking (development can continue) | Sets status `FAILED`; logs decision; increments cycle counter; → Phase D |
+* **Automated Decision:** Compares outputs against `scoreThresholdTL` and `scoreThresholdAdv` (default `0.70`).
 
-> **`FAILED` vs `BLOCKED`:** `FAILED` means the feature has a non-blocking issue (e.g., a minor bug or security vulnerability that does not crash the application). Development continues. `BLOCKED` means the feature failure causes an application crash or breaks core functionality—it must be resolved before proceeding.
 
-Below is a visual example of how this Socratic code review occurs during autonomous validation:
-
-![Socratic Code Review Example](../assets/code-review.png)
-
-> ### 🎯 Understanding Dynamic Quality Thresholds
->
-> The `${scoreThresholdTL}` and `${scoreThresholdAdv}` values (default `0.70`) are loaded from `docs/product/BOOTSTRAP-CONFIG.json` on each Phase C entry. This means thresholds can be updated per-project without modifying the skill itself.
->
-> * **Why is this threshold so important?**
->   1. **Goes Beyond Simple Tests:** Unit tests verify the code *works*. The `0.70` gate checks if it is *production-ready*—auditing for N+1 queries, memory leaks, race conditions, and security exposures.
->   2. **Automates Uncompromising Standards:** A feature scoring `0.65` is automatically retried or failed. The orchestrator writes the critique to `REWORK-LOG.md` and cycles back—no human intervention needed.
->   3. **Balancing Rigor and Progress:** The `0.70` bar ensures high-quality software while preventing the agent from getting stuck on harmless style details.
-
-#### 📈 Phase D: State & Completion Check
-* **Completion check:** Verifies all features in `BACKLOG.md` are `COMPLETED`, `BLOCKED`, or `FAILED`.
-* **Loop decision:** If executable features remain → Phase E → Phase A (next feature). Otherwise → Phase E → HALT.
-
-#### 💾 Phase E: Memory Persistence
-* **Trigger:** After every Phase D (both mid-loop and final HALT).
-* **Action:** Invokes `project-memory` skill to update documentation with the cycle summary (feature IDs processed, final scores, key decisions, current cycle count).
 
 ---
 
-## 🛡️ Strict Conduct Rules for the Orchestrator
+## ⚡ Hot-Interception: The Ultimate Human Control
 
-To ensure clean execution, the orchestrator strictly enforces these boundaries:
+Because the orchestrator outputs everything to the console and filesystem transparently, you have complete control over the running engine. You can execute the following overrides **while the loop is running or between subagent transitions**:
 
-1. **No Developer Emulation:** The orchestrator coordinates, manages state, and delegates. It never writes source code, edits tests, or modifies implementation files directly.
-2. **Subagent Context Isolation:** Technical skills must only run inside their designated agent personas (e.g. `scope-refinement` inside `software-architect`).
-3. **Persistence First:** State updates, rework increments, and backlog status changes are saved to disk *before* triggering the next subagent command.
-4. **Defensive Parsing:** Employs strict JSON extraction to handle raw LLM responses.
+### 🛑 1. Force Halt & Course Correction
+
+If you read the streaming terminal output and realize the agent is building an architectural pattern you dislike, you can manually kill the process (`Ctrl+C`). You can then append new constraints directly to `docs/adr/ARCHITECTURE.md` and restart the orchestrator—it will pick up exactly where it left off but with updated knowledge.
+
+### 🎛️ 2. Dynamic Threshold Calibrations
+
+Are the automated quality gates too strict or too loose for this specific feature? You can open `docs/product/BOOTSTRAP-CONFIG.json` or `COMPLETION-CRITERIA.json` and change the parameters live:
+
+* **Lower the Score:** Change `0.70` to `0.60` to let a working feature pass even with minor style debts.
+* **Increase Max Reworks:** Change `maxReworks` from `3` to `5` if you notice the problem space is highly volatile and requires deeper iterative cycles.
+
+
+
+### 📝 3. Live Scope & Refinement Injector
+
+If a new business requirement emerges while the agent is coding in Phase B, you can append it directly into the domain specification files under `docs/specs/{domain}/`. On its next cycle or validation entry, the orchestrator will read the updated filesystem database $\mathcal{D}$ and dynamically realign its execution targets.
 
 ---
 
-## 💡 Best Practice Recommendations
+## 🛡️ Operational States: FAILED vs BLOCKED
 
-### 📋 1. Initialize Documentation with `project-memory`
-> **Use the `project-memory` skill** to establish your baseline project documentation in ADR (Architectural Decision Record) and Feature specification format before initiating development. Starting with a clear documentation memory prevents architectural drift and ensures the Autonomous Orchestrator works with high-fidelity, standardized rules.
->
-> A meticulously prepared **Checklist: Before Starting a Project** (defined in the [Daily Use Playbook](PLAYBOOK-DAILY-USE.md)) is crucial because the orchestrator will not stop to ask questions or resolve missing specifications.
+When a feature exhausts its maximum retry limits (`maxReworks`), the orchestrator categorizes the exit criteria without human intervention, updating the logs for your final audit:
 
-### 🧠 2. Establish High-Fidelity Context with Brainstorming
-> For the Autonomous Orchestrator to work effectively, it requires a highly defined context of what to develop.
-> - If your project scope, constraints, or technical strategies are underspecified, **conduct an interactive exploration of the problem space first**.
-> - Ensure your context is fully structured and solid before kicking off the autonomous execution loop.
+* **`FAILED` (Continuable Debt):** The feature works and passes all functional tests, but its architectural score remains below the required threshold (e.g., minor security warnings or suboptimal queries). The orchestrator logs the state and **moves forward to the next feature**, leaving the human to audit the technical debt later.
+
+
+* **`BLOCKED` (Critical Circuit Breaker):** The implementation causes application crashes, compilation errors, or core test failures that prevent further progress. The orchestrator stops the pipeline entirely and triggers an alert, waiting for the human engineer to resolve the core blocker.

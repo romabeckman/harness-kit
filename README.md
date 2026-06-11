@@ -2,173 +2,133 @@
 
 ![HarnessKit - 5-Step Engineering Cycle](docs/assets/harness-cycle-banner.png)
 
-> **Harness Engineering**: A reliable agent is defined as **Model (AI) + Harness (Controls)**. [1]
+> **Harness Engineering**: A reliable AI agent is not just a raw model. It is defined as: 
+> $$\text{Reliable Agent} = \text{Model (AI)} + \text{Harness (Controls)} + \text{Human Auditor}$$
 
-> **IMPORTANT!**
-> This project requires the [Superpowers](https://github.com/obra/superpowers) skill. Install it using the command:
-> `/plugin install superpowers@claude-plugins-official`
+HarnessKit is a complete AI-assisted software engineering methodology built on **Harness Engineering**—the principle that true reliability comes from enclosing generative models inside structured execution scaffolds and human-driven governance loops.
 
-HarnessKit is a complete AI-assisted software engineering methodology built on **Harness Engineering** — the principle that a reliable agent is defined as **Model (AI) + Harness (Controls)**.
+---
 
-It gives your coding agent a set of composable expert skills and structured agent personas that enforce discipline, consistency, and quality across the full development lifecycle: from domain modeling to TDD implementation, critical code review, and persistent project memory.
+## 👑 The Core Engine: Autonomous Orchestration & Live Auditing
+
+At the heart of HarnessKit is the **`autonomous-orchestrator`** skill. Once provided with the initial task scope, it runs an atomic, continuous execution cycle without stopping, pausing, or asking redundant questions—fully automating domain planning, TDD execution, and multi-agent code reviews.
+
+**However, the human engineer is never replaced: your role evolves into Live Auditing.**
+
+While the orchestrator executes continuously, you act as the **Human Auditor** in the cockpit, tracking the live stream through your coding workspace (Claude Code, Cursor, OpenCode, Gemini, Copilot, etc.). The AI moves with sovereignty, but you maintain continuous telemetry and oversight.
+
+### ⚡ Hot-Interception: Absolute Human Command
+Because the engine runs seamlessly without waiting for permissions at every step, you use this live observability to dynamically intercept the loop when necessary:
+* **Pull the Emergency Brake:** Forcefully kill the execution (`Ctrl+C`) the moment you notice the AI has adopted an incorrect architectural premise.
+* **Live In-Flight Injections:** Hot-patch the active backlog, append newly uncovered constraints, or update domain specifications while the loop is running.
+* **Dynamic Parameter Tweaking:** Modify configuration thresholds on the fly—lower the validation score target (default **0.70**) to accept a minor style debt, or increase `maxReworks` directly inside the configuration files.
+
+### 🔍 Socratic Code Review in Action
+To prevent systemic risks (such as N+1 queries, memory leaks, security vulnerabilities, or database connection exhaustion), HarnessKit employs a **Socratic Code Review** model. The orchestrator invokes the **`the-grumpy-tech-lead`** to validate the code inferentially by asking deep architectural questions rather than providing copy-paste solutions.
+
+Below is a visual example of how this interactive code review occurs under your watch:
+
+![Socratic Code Review Example](docs/assets/code-review.png)
+
+### 🤖 Autonomous State Machine
+The loop is driven by a robust **Product State Machine**. It tracks feature backlogs and dynamic transition gates, ensuring that a feature only progresses when quality criteria are fully satisfied. 
+
+![Autonomous State Machine](docs/assets/update-state-machine.png)
+
+Based on gate scores, the orchestrator updates the project state machine into four terminal statuses:
+* **`COMPLETED`**: Approved and ready for your final PR review.
+* **`RETRY`**: Scores fell short; the engine compiles a `REWORK-LOG.md` and loops back to code automatically.
+* **`BLOCKED`**: Critical crash/break—the engine triggers a circuit breaker and halts for immediate human intervention.
+* **`FAILED`**: Non-blocking tech debt—the pipeline logs the issue and moves to the next feature, leaving the debt for you to audit later.
 
 ---
 
 ## Installation & Quick Commands
 
+HarnessKit is distributed as a command-line plugin compatible with major AI developer ecosystems.
+
+> **⚠️ IMPORTANT!**
+> This project requires the [Superpowers](https://github.com/obra/superpowers) skill. Install it before initializing HarnessKit:
+> `/plugin install superpowers@claude-plugins-official`
+
 ### Claude Code
-
-HarnessKit is distributed as a Claude Code plugin via its own marketplace hosted on GitHub.
-
 ```bash
-# Register the marketplace
 /plugin marketplace add romabeckman/harness-kit
-
-# Step 2 — Install the plugin
 /plugin install harness-kit@harness-kit
-
-# Step 3 — Verify installation
 /harness-kit:project-memory --help
 
-# Update later
-/plugin update harness-kit
 ```
 
 ### GitHub Copilot CLI
 
-You can also manage HarnessKit plugins using the **GitHub Copilot CLI** from your terminal.
-
-**Installation & Setup:**
-
 ```bash
-# Register the marketplace (one-time)
 copilot plugin marketplace add romabeckman/harness-kit
-
-# Install the plugin
 copilot plugin install harness-kit@harness-kit
 
-# List installed plugins
-copilot plugin list
 ```
 
 ### Gemini CLI
 
-You can also manage HarnessKit plugins using the **Gemini CLI** from your terminal.
-
-**Installation & Setup:**
-
 ```bash
-# Install the extension
-gemini extensions install https://github.com/romabeckman/harness-kit
+gemini extensions install [https://github.com/romabeckman/harness-kit](https://github.com/romabeckman/harness-kit)
 
-# Update
-gemini extensions update harness-kit
 ```
 
 ---
 
-## How It Works
-
-From the moment you start a task, HarnessKit changes how your agent thinks.
-
-Instead of jumping straight to writing code, it guides the agent to first understand the domain, model the problem with DDD, and define test scenarios before a single line is written.
-
-- **Feedforward (Guides):** `project-memory` and `scope-refinement` align the agent with your architecture and domain *before* execution.
-- **Feedback (Sensors):** `tdd-orchestrator` validates every implementation computationally (tests), while `the-grumpy-tech-lead` (executed by the **`harness-tech-lead`** agent) and `adversarial-qa` (executed by the **`harness-qa`** agent) validate it semantically via Socratic review and protect against edge cases and vulnerabilities.
-- **Balance:** Computational validation (deterministic via tests) + Inferential validation (architectural judgment) working together.
-
-> ### 👑 Sovereign Automation: `autonomous-orchestrator`
-> HarnessKit features a fully automated, hands-off execution cycle powered by the **`autonomous-orchestrator`** skill. Once you provide the initial project scope and requirements, it runs an atomic execution loop without pausing or asking questions. It manages feature planning, test-driven implementation, parallel validation gates (Socratic review + adversarial QA), and dynamic threshold enforcement loaded from configuration files.
->
-> The loop supports four terminal statuses: `COMPLETED` (pass), `RETRY` (active rework), `BLOCKED` (crash/critical break), and `FAILED` (non-blocking issue — development continues).
->
-> To learn how to prepare your workspace and start this autonomous loop safely, check out the **[Autonomous Orchestrator Workflow](docs/workflow/AUTONOMOUS-ORCHESTRATOR.md)**.
-
-The skills activate when relevant. Your agent just has a Harness.
-
----
-
-## The Harness Workflow: 5-Step Sequence
-
-Follow this iterative process for maximum quality and safety:
-
-1. **Harnessing (Preparation)** — Use `project-memory` to generate and maintain `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md`. These files are the agent's persistent memory.
-
-2. **Direction (Feedforward)** — Run `scope-refinement` to map the domain using DDD (Bounded Contexts, Aggregates, Use Cases) and define acceptance scenarios *before* any code is written.
-
-3. **Controlled Execution (Feedback)** — Implement via `tdd-orchestrator`, enforcing RED → GREEN → REFACTOR. Every line of code is validated by a test before it's considered done.
-
-4. **Semantic Review (Inferential)** — Use `the-grumpy-tech-lead` to review the implementation for systemic risks: N+1 queries, memory leaks, race conditions, SOLID violations, and architectural drift.
-
-5. **Persistence** — Close by updating documentation with `project-memory` so the knowledge is inherited by future sessions.
-
----
-
-## 🔍 Socratic Code Review Example
-
-To prevent systemic risks (such as N+1 queries, memory leaks, security vulnerabilities, or database connection exhaustion), HarnessKit employs a **Socratic Code Review** model. In autonomous mode, this review is fully executed and coordinated by the **`autonomous-orchestrator`** skill, which invokes **`the-grumpy-tech-lead`** to validate the code. Instead of providing copy-paste code solutions, the engine acts as an inferential validation gate by asking deep architectural questions that challenge the implementation's resilience.
-
-Below is a visual example of how this interactive code review occurs in practice:
-
-![Socratic Code Review Example](docs/assets/code-review.png)
-
----
-
-## 🤖 Autonomous State Machine
-
-HarnessKit's autonomous mode is driven by a robust **Product State Machine** (Layer 1 of the architecture), which is executed, managed, and progressed by the **`autonomous-orchestrator`** skill. It tracks feature backlogs, development phases, and dynamic transition gates—ensuring that a feature only progresses when all quality criteria (such as passing tests and receiving validation scores above the configurable threshold, default **0.70**) are fully satisfied. Features that exhaust retries are marked `BLOCKED` (crash risk) or `FAILED` (non-blocking, development continues).
-
-Below is a diagram illustrating the lifecycle and state transitions within the autonomous execution loop:
-
-![Autonomous State Machine](docs/assets/update-state-machine.png)
-
-> ### 🛡️ Dynamic Quality Gates: Configurable Thresholds
-> The **score thresholds** (`scoreThresholdTL` and `scoreThresholdAdv`, default `0.70`) are loaded automatically from `docs/product/BOOTSTRAP-CONFIG.json` on each validation phase. They are **never asked interactively** — only configured once during bootstrap and readable per-project.
->
-> Think of the **0.70 score threshold** as a **grade of 7 out of 10** required for both architectural resilience (audited by **Grumpy Tech Lead**) and edge-case security (audited by **Adversarial QA**).
->
-> If the implementation has fully working code but contains scalability risks or minor security oversights (e.g., scoring `0.65`), the orchestrator immediately blocks completion, compiles the feedback into a `REWORK-LOG.md`, and sends the agent back to code again—guaranteeing elite software quality without human oversight.
-
----
-
-
-
 ## What's Inside
+
+To prevent role contamination, the orchestrator isolates operational contexts by dispatching highly specialized agent personas equipped with dedicated skills.
 
 ### 🛠️ Skills (`/skills`)
 
 | Skill | Core Function |
-| :--- | :--- |
+| --- | --- |
 | **Project Memory** (`project-memory`) | Generates and maintains persistent technical documentation (`docs/README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`). The agent's long-term memory. |
 | **Scope Refinement** (`scope-refinement`) | DDD-based scope orchestrator. Maps Bounded Contexts, Aggregates, and Use Cases. Produces test scenarios before implementation starts. |
 | **Autonomous Orchestrator** (`autonomous-orchestrator`) | Sovereign loop manager. Fully automates execution across planning, implementation, validation, and auto-tuning phases without user interruption. |
 | **TDD Orchestrator** (`tdd-orchestrator`) | Enforces RED → GREEN → REFACTOR. Coordinates the full test-driven development cycle, blocking implementation without a failing test first. |
-| **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Senior technical reviewer. Uses Socratic questioning to expose systemic risks (N+1, leaks, race conditions, SOLID violations) without providing ready-made solutions. |
+| **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Senior technical reviewer. Uses Socratic questioning to expose systemic risks (N+1, leaks, race conditions, SOLID violations). |
 | **Harness Tracer** (`harness-tracer`) | Records structured execution traces after each session to `docs/harness-history/traces/`. Raw material for harness optimization. |
 | **Harness Evaluator** (`harness-evaluator`) | Aggregates traces, computes composite scores per skill chain, and updates the Pareto frontier of best harness configurations. |
-| **Meta-Harness** (`meta-harness`) | Proposer for the harness optimization loop. Reads history, diagnoses failure patterns, proposes targeted SKILL.md improvements, and guides semi-automatic evaluation. |
+| **Meta-Harness** (`meta-harness`) | Proposer for the harness optimization loop. Reads history, diagnoses failure patterns, and proposes targeted SKILL.md improvements. |
 
 ### 🤖 Expert Agents (`./agents`)
 
-Pre-configured agent personas that embody specific engineering roles, designed to work with the skills above.
-
 | Agent | Role | Focus |
-| :--- | :--- | :--- |
-| **[Software Architect](./agents/software-architect.md)** | System Design & Refinement | DDD modeling, architectural decisions, and implementation planning. |
-| **[Harness Tech Lead](./agents/harness-tech-lead.md)** | Automated Code Review | Evaluates systemic risks, scalability, security, and design patterns. |
-| **[Developer Backend](./agents/developer-backend.md)** | Backend Engineering | Robust APIs, database modeling, and server-side logic with TDD. |
-| **[Developer Frontend](./agents/developer-frontend.md)** | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
-| **[Developer Debugging](./agents/developer-debugging.md)** | Root Cause Specialist | Systematic bug investigation using the "5 Whys" methodology. |
-| **[QA Engineer](./agents/harness-qa.md)** | Quality Assurance | E2E testing strategy, automation, security validation, and QA testing. |
-| **[Meta-Harness Agent](./agents/meta-harness-agent.md)** | Harness Optimizer | Reads harness history filesystem, diagnoses failure patterns, proposes targeted skill improvements. |
+| --- | --- | --- |
+| **[Software Architect](https://www.google.com/search?q=./agents/software-architect.md)** | System Design & Refinement | DDD modeling, architectural decisions, and implementation planning. |
+| **[Harness Tech Lead](https://www.google.com/search?q=./agents/harness-tech-lead.md)** | Automated Code Review | Evaluates systemic risks, scalability, security, and design patterns. |
+| **[Developer Backend](https://www.google.com/search?q=./agents/developer-backend.md)** | Backend Engineering | Robust APIs, database modeling, and server-side logic with TDD. |
+| **[Developer Frontend](https://www.google.com/search?q=./agents/developer-frontend.md)** | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
+| **[Developer Debugging](https://www.google.com/search?q=./agents/developer-debugging.md)** | Root Cause Specialist | Systematic bug investigation using the "5 Whys" methodology. |
+| **[QA Engineer](https://www.google.com/search?q=./agents/harness-qa.md)** | Quality Assurance | E2E testing strategy, automation, security validation, and adversarial QA testing. |
+| **[Meta-Harness Agent](https://www.google.com/search?q=./agents/meta-harness-agent.md)** | Harness Optimizer | Reads harness history filesystem, diagnoses failure patterns, proposes targeted skill improvements. |
+
+---
+
+## Project Documentation Setup
+
+The `docs/` folder acts as HarnessKit's **persistent memory** for your project. It centralizes the technical knowledge that allows agents to operate autonomously and accurately across sessions.
+
+### Required files
+
+| File | Function |
+| --- | --- |
+| `docs/README.md` | Summary and index. The agent's main map for navigating your project. |
+| `docs/adr/ARCHITECTURE.md` | Architecture rules. Prevents design decisions inconsistent with the project. |
+| `docs/adr/TESTS.md` | Quality protocol. Defines the testing framework and standards. |
+
+> **Tip:** Use `project-memory` to generate these automatically before running the orchestrator:
+> `/harness-kit:project-memory`
 
 ---
 
 ## Harness Optimization Loop
 
-Continuously improve your harness configuration based on execution data:
+The toolkit isn't rigid—it learns and evolves based on real execution telemetry saved right into your repository:
 
-```
+```text
 Sessions (real work)
        ↓
  meta-harness-agent    ← always runs harness-tracer (every session)
@@ -177,14 +137,15 @@ Sessions (real work)
        ↓
  meta-harness          ← only on explicit user request
        ↓
- Human review & approval
+ Human review & approval (Live Auditing)
        ↓
  Apply candidate → collect sessions → evaluate → promote or discard
        ↓
  Loop repeats
+
 ```
 
-**How to start optimization:**
+**How to start optimization manually:**
 
 ```bash
 # After ≥3 sessions have been recorded by harness-tracer:
@@ -196,57 +157,35 @@ Sessions (real work)
 # After applying the candidate and collecting sessions:
 /harness-kit:harness-evaluator
 /harness-kit:meta-harness --promote v001
+
 ```
 
 ---
 
-## Project Documentation Setup
+## 📖 Deep-Dive Documentation
 
-The `docs/` folder acts as HarnessKit's **persistent memory** for your project. It centralizes the technical knowledge that allows agents to operate autonomously and accurately across sessions.
+Explore the complete knowledge base inside the `docs/workflow/` directory. This serves as your entry point for understanding and executing the framework.
 
-### Required files
-
-| File | Function |
-| :--- | :--- |
-| `docs/README.md` | Summary and index. The agent's main map for navigating your project. |
-| `docs/adr/ARCHITECTURE.md` | Architecture rules. Prevents design decisions inconsistent with the project. |
-| `docs/adr/TESTS.md` | Quality protocol. Defines the testing framework and standards. |
-
-> **Tip:** Use `project-memory` to generate these automatically:
-> ```
-> /harness-kit:project-memory
-> ```
-> Then say: *"Generate base documentation for this project based on my current stack."*
-
----
-
-## 📖 Workflow Documentation
-
-Complete guide for using HarnessKit in a structured, data-driven sequence. This serves as your entry point for understanding and executing the framework.
-
-* **[Workflow Index](docs/workflow/README.md)** — Main navigation index for the minimized documentation layout.
-
-* **[Conceptual & Architectural Foundation](docs/workflow/META-HARNESS.md)** — Combines the system's 3-layer architecture (Developer, Skills, Filesystem $\mathcal{D}$) and the continuous optimization loop. Built on the principles of the research paper [Meta-Harness: End-to-End Optimization of Model Harnesses](https://arxiv.org/abs/2603.28052).
-
-* **[Daily Use Playbook](docs/workflow/PLAYBOOK-DAILY-USE.md)** — Step-by-step tactical guide for daily tasks. Follow operational checklists, timelines, and command flows with confidence.
-
-* **[Autonomous Loop Orchestration](docs/workflow/AUTONOMOUS-ORCHESTRATOR.md)** — Step-by-step workflow for running the sovereign, fully automated execution loop, including setup and context recommendations.
+* **[Workflow Index](https://www.google.com/search?q=docs%2Fworkflow%2FREADME.md)** — Main navigation index for the minimized documentation layout.
+* **[Autonomous Loop Orchestration](https://www.google.com/search?q=docs%2Fworkflow%2FAUTONOMOUS-ORCHESTRATOR.md)** — Step-by-step workflow for running the sovereign execution loop, including setup, thresholds, and hot-interception.
+* **[Conceptual & Architectural Foundation](https://www.google.com/search?q=docs%2Fworkflow%2FMETA-HARNESS.md)** — Combines the system's 3-layer architecture and the continuous optimization loop. Built on the principles of the research paper *Meta-Harness*.
+* **[Daily Use Playbook](https://www.google.com/search?q=docs%2Fworkflow%2FPLAYBOOK-DAILY-USE.md)** — Step-by-step tactical guide for daily tasks. Follow operational checklists and command flows for manual execution.
 
 ---
 
 ## Philosophy
 
-- **Harness Engineering** — Reliability comes from controls, not just capability. An agent without a harness is unpredictable.
-- **Test-Driven Development** — Write tests first. Always. No exceptions.
-- **Domain-Driven Design** — Model the problem before solving it.
-- **Socratic over Prescriptive** — The Grumpy Tech Lead asks questions that force the engineer to think, rather than providing ready-made answers.
-- **Computational + Inferential** — Tests validate correctness. Reviews validate judgment.
+* **Harness Engineering** — Reliability comes from controls, not just capability. An agent without a harness is unpredictable.
+* **Test-Driven Development** — Write tests first. Always. No exceptions.
+* **Domain-Driven Design** — Model the problem before solving it.
+* **Socratic over Prescriptive** — The Grumpy Tech Lead asks questions that force the engineer to think, rather than providing ready-made answers.
+* **Computational + Inferential** — Tests validate correctness. Reviews validate judgment.
 
 ---
 
 ## Integration with Superpowers
 
-HarnessKit is designed to complement [Superpowers Skills](https://github.com/obra/superpowers). While HarnessKit defines the *strategy and discipline* (what to build and how to validate it), Superpowers provides the low-level *execution tools* (Git worktrees, parallel agents, etc.).
+HarnessKit is designed to complement [Superpowers Skills](https://www.google.com/search?q=https%3A%2F%2Fgithub.com%2Fobra%2Fsuperpowers). While HarnessKit defines the *strategy and discipline* (what to build and how to validate it), Superpowers provides the low-level *execution tools* (Git worktrees, parallel agents, etc.).
 
 ---
 
@@ -261,12 +200,13 @@ HarnessKit is designed to complement [Superpowers Skills](https://github.com/obr
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
 
 ## Issues & Feedback
 
-- **Issues:** https://github.com/romabeckman/harness-kit/issues
-- **Author:** [Romario Beckman](https://github.com/romabeckman)
+* **Issues:** https://github.com/romabeckman/harness-kit/issues
+* **Author:** [Romario Beckman](https://www.google.com/search?q=https%3A%2F%2Fgithub.com%2Fromabeckman)
 
 ## References
-- Lee, Y., Nair, R., Zhang, Q., Khattab, O., Finn, C., & Lee, K. (2026). *Meta-Harness: End-to-End Optimization of Model Harnesses*. Available at [arXiv:2603.28052](https://arxiv.org/abs/2603.28052).
+
+* Lee, Y., Nair, R., Zhang, Q., Khattab, O., Finn, C., & Lee, K. (2026). *Meta-Harness: End-to-End Optimization of Model Harnesses*. Available at [arXiv:2603.28052](https://www.google.com/search?q=https%3A%2F%2Farxiv.org%2Fabs%2F2603.28052).
