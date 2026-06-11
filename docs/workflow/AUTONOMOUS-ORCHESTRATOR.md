@@ -11,18 +11,10 @@ The autonomous cycle executes across a 4-layer model, while the human developer 
 | Layer | Component | Description | Managed Artifacts |
 | --- | --- | --- | --- |
 | **Control** | **Live Human Auditor** | **Hot-Interception Vector.** Watches the live streaming execution and can forcefully halt, hot-patch specs, or override configuration mid-loop. | User Terminal / Config Overrides |
-| **Layer 1** | **Product State Machine** | Stores development state, prioritization, and completion criteria.
-
- | `BACKLOG.md`, `DEVELOPMENT-STATE.md`, `COMPLETION-CRITERIA.json`<br> |
-| **Layer 2** | **Autonomous Orchestrator** | Coordinates the main execution loop and enforces the decision gate.
-
- | `autonomous-orchestrator` / `BOOTSTRAP-CONFIG.json`<br> |
-| **Layer 3** | **Contextual Expert Skills** | Specialized skills delegated strictly to isolated agent personas.
-
- | `scope-refinement`, `tdd-orchestrator`, `the-grumpy-tech-lead`<br> |
-| **Layer 4** | **Filesystem Database $\mathcal{D}$** | Long-term memory, specifications, and execution history files.
-
- | `docs/README.md`, `docs/adr/`, `docs/specs/`<br> |
+| **Layer 1** | **Product State Machine** | Stores development state, prioritization, and completion criteria. | `BACKLOG.md`, `DEVELOPMENT-STATE.md`, `COMPLETION-CRITERIA.json` |
+| **Layer 2** | **Autonomous Orchestrator** | Coordinates the main execution loop and enforces the decision gate. | `autonomous-orchestrator` / `BOOTSTRAP-CONFIG.json` |
+| **Layer 3** | **Contextual Expert Skills** | Specialized skills delegated strictly to isolated agent personas. | `scope-refinement`, `tdd-orchestrator`, `the-grumpy-tech-lead` |
+| **Layer 4** | **Filesystem Database $\mathcal{D}$** | Long-term memory, specifications, and execution history files. | `docs/README.md`, `docs/adr/`, `docs/specs/` |
 
 ---
 

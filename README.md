@@ -49,7 +49,11 @@ HarnessKit is distributed as a command-line plugin compatible with major AI deve
 
 > **⚠️ IMPORTANT!**
 > This project requires the [Superpowers](https://github.com/obra/superpowers) skill. Install it before initializing HarnessKit:
-> `/plugin install superpowers@claude-plugins-official`
+
+```bash
+/plugin install superpowers@claude-plugins-official
+```
+
 
 ### Claude Code
 ```bash
@@ -97,13 +101,13 @@ To prevent role contamination, the orchestrator isolates operational contexts by
 
 | Agent | Role | Focus |
 | --- | --- | --- |
-| **[Software Architect](https://www.google.com/search?q=./agents/software-architect.md)** | System Design & Refinement | DDD modeling, architectural decisions, and implementation planning. |
-| **[Harness Tech Lead](https://www.google.com/search?q=./agents/harness-tech-lead.md)** | Automated Code Review | Evaluates systemic risks, scalability, security, and design patterns. |
-| **[Developer Backend](https://www.google.com/search?q=./agents/developer-backend.md)** | Backend Engineering | Robust APIs, database modeling, and server-side logic with TDD. |
-| **[Developer Frontend](https://www.google.com/search?q=./agents/developer-frontend.md)** | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
-| **[Developer Debugging](https://www.google.com/search?q=./agents/developer-debugging.md)** | Root Cause Specialist | Systematic bug investigation using the "5 Whys" methodology. |
-| **[QA Engineer](https://www.google.com/search?q=./agents/harness-qa.md)** | Quality Assurance | E2E testing strategy, automation, security validation, and adversarial QA testing. |
-| **[Meta-Harness Agent](https://www.google.com/search?q=./agents/meta-harness-agent.md)** | Harness Optimizer | Reads harness history filesystem, diagnoses failure patterns, proposes targeted skill improvements. |
+| **[Software Architect](agents/software-architect.md)** | System Design & Refinement | DDD modeling, architectural decisions, and implementation planning. |
+| **[Harness Tech Lead](agents/harness-tech-lead.md)** | Automated Code Review | Evaluates systemic risks, scalability, security, and design patterns. |
+| **[Developer Backend](agents/developer-backend.md)** | Backend Engineering | Robust APIs, database modeling, and server-side logic with TDD. |
+| **[Developer Frontend](agents/developer-frontend.md)** | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
+| **[Developer Debugging](agents/developer-debugging.md)** | Root Cause Specialist | Systematic bug investigation using the "5 Whys" methodology. |
+| **[QA Engineer](agents/harness-qa.md)** | Quality Assurance | E2E testing strategy, automation, security validation, and adversarial QA testing. |
+| **[Meta-Harness Agent](agents/meta-harness-agent.md)** | Harness Optimizer | Reads harness history filesystem, diagnoses failure patterns, proposes targeted skill improvements. |
 
 ---
 
@@ -166,10 +170,10 @@ Sessions (real work)
 
 Explore the complete knowledge base inside the `docs/workflow/` directory. This serves as your entry point for understanding and executing the framework.
 
-* **[Workflow Index](https://www.google.com/search?q=docs%2Fworkflow%2FREADME.md)** — Main navigation index for the minimized documentation layout.
-* **[Autonomous Loop Orchestration](https://www.google.com/search?q=docs%2Fworkflow%2FAUTONOMOUS-ORCHESTRATOR.md)** — Step-by-step workflow for running the sovereign execution loop, including setup, thresholds, and hot-interception.
-* **[Conceptual & Architectural Foundation](https://www.google.com/search?q=docs%2Fworkflow%2FMETA-HARNESS.md)** — Combines the system's 3-layer architecture and the continuous optimization loop. Built on the principles of the research paper *Meta-Harness*.
-* **[Daily Use Playbook](https://www.google.com/search?q=docs%2Fworkflow%2FPLAYBOOK-DAILY-USE.md)** — Step-by-step tactical guide for daily tasks. Follow operational checklists and command flows for manual execution.
+* **[Workflow Index](docs/workflow/README.md)** — Main navigation index for the minimized documentation layout.
+* **[Autonomous Loop Orchestration](docs/workflow/AUTONOMOUS-ORCHESTRATOR.md)** — Step-by-step workflow for running the sovereign execution loop, including setup, thresholds, and hot-interception.
+* **[Conceptual & Architectural Foundation](docs/workflow/META-HARNESS.md)** — Combines the system's 3-layer architecture and the continuous optimization loop. Built on the principles of the research paper *Meta-Harness*.
+* **[Daily Use Playbook](docs/workflow/PLAYBOOK-DAILY-USE.md)** — Step-by-step tactical guide for daily tasks. Follow operational checklists and command flows for manual execution.
 
 ---
 
@@ -185,7 +189,7 @@ Explore the complete knowledge base inside the `docs/workflow/` directory. This 
 
 ## Integration with Superpowers
 
-HarnessKit is designed to complement [Superpowers Skills](https://www.google.com/search?q=https%3A%2F%2Fgithub.com%2Fobra%2Fsuperpowers). While HarnessKit defines the *strategy and discipline* (what to build and how to validate it), Superpowers provides the low-level *execution tools* (Git worktrees, parallel agents, etc.).
+HarnessKit is designed to complement [Superpowers Skills](https://github.com/obra/superpowers). While HarnessKit defines the *strategy and discipline* (what to build and how to validate it), Superpowers provides the low-level *execution tools* (Git worktrees, parallel agents, etc.).
 
 ---
 
@@ -200,13 +204,13 @@ HarnessKit is designed to complement [Superpowers Skills](https://www.google.com
 
 ## License
 
-MIT License — see [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) file for details.
 
 ## Issues & Feedback
 
 * **Issues:** https://github.com/romabeckman/harness-kit/issues
-* **Author:** [Romario Beckman](https://www.google.com/search?q=https%3A%2F%2Fgithub.com%2Fromabeckman)
+* **Author:** [Romario Beckman](https://www.linkedin.com/in/romabeckman/)
 
 ## References
 
-* Lee, Y., Nair, R., Zhang, Q., Khattab, O., Finn, C., & Lee, K. (2026). *Meta-Harness: End-to-End Optimization of Model Harnesses*. Available at [arXiv:2603.28052](https://www.google.com/search?q=https%3A%2F%2Farxiv.org%2Fabs%2F2603.28052).
+- Lee, Y., Nair, R., Zhang, Q., Khattab, O., Finn, C., & Lee, K. (2026). *Meta-Harness: End-to-End Optimization of Model Harnesses*. Available at [arXiv:2603.28052](https://arxiv.org/abs/2603.28052).
