@@ -1,7 +1,7 @@
 {
   "name": "harness-kit",
   "description": "Core skills library: TDD orchestration, meta-harness automation, debugging, collaboration patterns, and proven techniques for software engineering",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "contextFileName": "GEMINI.md",
   "author": "romabeckman",
   "license": "MIT",

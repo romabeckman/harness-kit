@@ -117,6 +117,7 @@ Task is COMPLETE only when: 100% tests pass WITH verified output evidence
 When applicable, invoke `project-memory` to update:
 - OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs
 - Input/Output schemas, descriptions, HTTP status codes
+- The `docs/feature/{FEATURE_NAME}.md` file must be updated whenever a feature is created or updated.
 
 > `project-memory` auto-creates baseline docs (`README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) if missing.
 
@@ -124,7 +125,9 @@ When applicable, invoke `project-memory` to update:
 
 <step id="6" name="Machine-Readable Output">
 
-Save structured JSON at `docs/specs/${domain}/TDD-OUTPUT.json`:
+Only necessary for INTERACTIVE mode. If using AUTONOMOUS mode, skip this step. 
+
+In the case of INTERACTIVE, save the structured JSON in `docs/specs/${domain}/TDD-OUTPUT.json`:
 
 ```json
 {
@@ -156,7 +159,7 @@ Save structured JSON at `docs/specs/${domain}/TDD-OUTPUT.json`:
 - Run tests after every change
 - Fix production code — never alter correct tests to force passing
 - Invoke `verification-before-completion` before declaring completion
-- Invoke `project-memory` for new/changed API endpoints
+- Invoke `project-memory` for new or changes in the project
 
 **❌ Don't:**
 - Skip mandatory docs in `docs/adr/`
