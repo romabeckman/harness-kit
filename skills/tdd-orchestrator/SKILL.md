@@ -125,9 +125,9 @@ When applicable, invoke `project-memory` to update:
 
 <step id="6" name="Machine-Readable Output">
 
-Only necessary for INTERACTIVE mode. If using AUTONOMOUS mode, skip this step. 
+Only necessary for AUTONOMOUS mode. If using INTERACTIVE mode, skip this step. 
 
-In the case of INTERACTIVE, save the structured JSON in `docs/specs/${domain}/TDD-OUTPUT.json`:
+In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD-OUTPUT.json`:
 
 ```json
 {
