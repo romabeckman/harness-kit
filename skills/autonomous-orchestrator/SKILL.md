@@ -309,10 +309,10 @@ IF feature is IN_PROGRESS     → read DEVELOPMENT-STATE.md, resume from last co
 
 **E1. State log:**
 ```
-DECISIONS.md → "Phase E: persisting project memory."
+DECISIONS.md → "Phase E: persisting project memory in `docs/feature/{domain}.md`."
 ```
 
-**E2. Invoke `project-memory` skill:**
+**E2. MANDATORY — Invoke `project-memory` skill (no exceptions, no skipping):**
 ```
 inputs:
   context = summary of changes made in completed cycle:
@@ -320,6 +320,10 @@ inputs:
     - Final scores (TL + Adv) for each COMPLETED feature
     - Key decisions logged in DECISIONS.md this cycle
     - Current ${completedCycles} value
+  instructions:
+    - REQUIRED: Document the developed feature under `docs/feature/{domain}.md` (create if missing, update if it already exists)
+    - IF the cycle introduced architectural changes (new layers, patterns, integrations, test strategy changes) → update the corresponding `docs/adr/*.md` file (e.g., `ARCHITECTURE.md`, `TESTS.md`, or another existing ADR)
+    - PROHIBITED: Creating a new ADR file during this step unless explicitly requested/decided by a human
 ```
 
 **E3. Transition:**
