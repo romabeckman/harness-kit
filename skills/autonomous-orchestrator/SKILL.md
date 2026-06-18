@@ -317,12 +317,16 @@ DECISIONS.md → "Phase E: persisting project memory in `docs/feature/{domain}.m
 inputs:
   context = summary of changes made in completed cycle:
     - Feature IDs processed (COMPLETED, BLOCKED, FAILED, or RETRY'd)
-    - Final scores (TL + Adv) for each COMPLETED feature
+    - For each COMPLETED feature: ${domain}, scope description (Title + Description from BACKLOG.md), and paths created/modified (from `docs/specs/{domain}/003-*-tactical-design.md` or `TDD-OUTPUT.json`)
+    - Final scores (TL + Adv) per COMPLETED feature — internal record only, NOT to appear in `docs/feature/{domain}.md`
     - Key decisions logged in DECISIONS.md this cycle
     - Current ${completedCycles} value
   instructions:
-    - REQUIRED: Document the developed feature under `docs/feature/{domain}.md` (create if missing, update if it already exists)
-    - IF the cycle introduced architectural changes (new layers, patterns, integrations, test strategy changes) → update the corresponding `docs/adr/*.md` file (e.g., `ARCHITECTURE.md`, `TESTS.md`, or another existing ADR)
+    - REQUIRED: Document the developed feature under `docs/feature/{domain}.md` (create if missing, update if it already exists), following `./references/DOCUMENT-TEMPLATE.md` strictly
+    - REQUIRED: `FOLDER STRUCTURE` section → reflect the module's current relevant structure, incorporating paths added or modified this cycle (do not drop paths documented in prior cycles)
+    - REQUIRED: Keep all content direct and minimal — enough for a future LLM to orient itself in the codebase without re-reading source files
+    - PROHIBITED: Narrative explanations, justifications, or process history (no TDD/validation/score details — those belong in `DECISIONS.md`, not in feature docs)
+    - IF the cycle introduced architectural changes (new layers, patterns, integrations, test strategy changes) → update the corresponding `docs/adr/*.md` file, following `./references/ARCHITECTURE-RULES.md` (for `ARCHITECTURE.md`), `./references/TESTS-RULES.md` (for `TESTS.md`), or `./references/DOCUMENT-TEMPLATE.md` (for any other existing ADR)
     - PROHIBITED: Creating a new ADR file during this step unless explicitly requested/decided by a human
 ```
 
