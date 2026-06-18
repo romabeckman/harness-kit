@@ -9,6 +9,10 @@
       "userProvided": false
     }
   },
+  "completionCriteria": {
+    "maxReworks": 2,
+    "userProvided": false
+  },
   "cycleCounter": {
     "completedCycles": 0,
     "lastAutoTuningAt": null

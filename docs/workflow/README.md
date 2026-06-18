@@ -64,6 +64,6 @@ The workspace documentation is organized into three primary pillars to cover the
 Your HarnessKit environment is fully operational when:
 - [ ] The core workspace contains `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md`.
 - [ ] You understand the **agent routing rules**: `harness-tracer` (default), `harness-evaluator` (multiples of 5 traces), `meta-harness` (explicit request only).
-- [ ] You know that score thresholds (`scoreThresholdTL`, `scoreThresholdAdv`) and `maxReworks` are loaded from `docs/product/BOOTSTRAP-CONFIG.json` and `COMPLETION-CRITERIA.json` — never asked interactively.
+- [ ] You know that score thresholds (`scoreThresholdTL`, `scoreThresholdAdv`) and `maxReworks` are loaded from `docs/product/BOOTSTRAP-CONFIG.json` — never asked interactively.
 - [ ] You understand the four terminal statuses: `COMPLETED` (pass), `RETRY` (in-progress rework), `FAILED` (non-blocking issue, dev continues), `BLOCKED` (crash/critical break, must be resolved).
 - [ ] You understand the lifecycle pipeline: **Develop → Trace → Evaluate (every 5 traces) → Optimize (explicit)**.

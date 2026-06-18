@@ -66,7 +66,7 @@ Execute steps in order. ASK each missing value ONCE, then never again.
 IF BACKLOG.md missing or empty  → ASK for project scope/PRD. Store as ${scope}.
 IF project paths unknown        → ASK for local paths of all involved projects. Store as ${projectPaths}.
 
-Thresholds (${scoreThresholdTL} and ${scoreThresholdAdv}) are loaded from BOOTSTRAP-CONFIG.json (default 0.70).
+Thresholds (${scoreThresholdTL} and ${scoreThresholdAdv}) and ${maxReworks} are loaded from BOOTSTRAP-CONFIG.json (default 0.70 and 2, respectively).
 ```
 
 **1.2 Synthesize backlog:**  
@@ -84,12 +84,12 @@ For each required product file in `docs/product/`, if it does not already exist,
 | File | Initial State & Copy Source |
 |---|---|
 | `docs/product/BACKLOG.md` | Copy from `skills/autonomous-orchestrator/models/BACKLOG.md` (then populate with features from step 1.2) |
-| `docs/product/COMPLETION-CRITERIA.json` | Copy from `skills/autonomous-orchestrator/models/COMPLETION-CRITERIA.json` (substituting the collected score thresholds) |
 | `docs/product/DEVELOPMENT-STATE.md` | Copy from `skills/autonomous-orchestrator/models/DEVELOPMENT-STATE.md` |
 | `docs/product/DECISIONS.md` | Copy from `skills/autonomous-orchestrator/models/DECISIONS.md` |
-| `docs/product/BOOTSTRAP-CONFIG.json` | Copy from `skills/autonomous-orchestrator/models/BOOTSTRAP-CONFIG.json` (substituting collected thresholds) |
+| `docs/product/BOOTSTRAP-CONFIG.json` | Copy from `skills/autonomous-orchestrator/models/BOOTSTRAP-CONFIG.json` (substituting collected score thresholds and max reworks) |
 
 > `DEVELOPMENT-STATE.md` is task-level only. `Reworks`, `Score (TL)`, `Score (Adv)` are feature-level and live in `BACKLOG.md`.
+> `BOOTSTRAP-CONFIG.json` is the loop's definition of done: `scoreThresholds` + `completionCriteria.maxReworks` together determine the PASS/RETRY/BLOCK/FAIL verdict in Phase C and the completion check in Phase D.
 
 **1.4 Init cycle counter:** Set `${completedCycles} = 0`. Persist to `BOOTSTRAP-CONFIG.json → cycleCounter.completedCycles`.
 
@@ -192,7 +192,7 @@ inputs:
 IF ${scoreThresholdTL} or ${scoreThresholdAdv} not in memory:
     → Load from docs/product/BOOTSTRAP-CONFIG.json -> scoreThresholds.theGrumpyTechLead.threshold / scoreThresholds.adversarialQA.threshold
 IF ${maxReworks} not in memory:
-    → Load from docs/product/COMPLETION-CRITERIA.json -> blockedCriteria.maxReworks
+    → Load from docs/product/BOOTSTRAP-CONFIG.json -> completionCriteria.maxReworks
 ```
 
 **C2. State log:**
@@ -280,9 +280,10 @@ IF (feature's Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR
 
 ### Phase D — State & Completion Check
 
-**D1. Completion check** — verify ALL in `COMPLETION-CRITERIA.json`:
+**D1. Completion check** — verify ALL of the following against `BACKLOG.md`:
 - All features in `BACKLOG.md` are `COMPLETED`, `BLOCKED`, or `FAILED`
 - Every `COMPLETED` feature: `Score (TL) >= ${scoreThresholdTL}` AND `Score (Adv) >= ${scoreThresholdAdv}`
+- Every `BLOCKED` or `FAILED` feature: `Reworks >= ${maxReworks}`
 - No critical vulnerabilities across `adversarial-qa` verdicts (unless the feature was marked as FAILED)
 
 ```
@@ -312,7 +313,7 @@ IF feature is IN_PROGRESS     → read DEVELOPMENT-STATE.md, resume from last co
 DECISIONS.md → "Phase E: persisting project memory in `docs/feature/{domain}.md`."
 ```
 
-**E2. MANDATORY — Invoke `project-memory` skill (no exceptions, no skipping):**
+**E2. MANDATORY — Delegate `project-memory` skill to `software-architect` agent (Autonomous Mode, no exceptions, no skipping):**
 ```
 inputs:
   context = summary of changes made in completed cycle:
