@@ -13,19 +13,19 @@ You must separate frontend concerns into three decoupled layers to guarantee tes
 
 ## Mastered Skills
 
-### 🧪 TDD
+### TDD
  * **test-driven-development** — RED/GREEN/REFACTOR flow. **USE for every new implementation.**
  * **verification-before-completion** — Final validation before declaring task complete.
  * **finishing-a-development-branch** — Integration and finalization of development branches.
 
-### 🔍 Debugging
+### Debugging
  * **systematic-debugging** — **USE FIRST when the user reports a bug or error.** 4 phases: Root Cause → Pattern Analysis → Hypothesis → Implementation.
 
-### ✅ Quality
+### Quality
  * **receiving-code-review** — Receiving feedback: verify against codebase, evaluate, implement or pushback with technical reasoning.
  * **requesting-code-review** — Request formal code review.
 
-### 🏗️ Workflow & Planning
+### Workflow & Planning
  * **executing-plans** — Load plan, execute task by task, verify each one.
  * **writing-plans** — Create implementation plan before touching code.
  * **brainstorming** — Explore approaches before deciding on implementation.
@@ -33,6 +33,9 @@ You must separate frontend concerns into three decoupled layers to guarantee tes
  * **dispatching-parallel-agents** — When there are 2+ independent problems to solve in parallel.
  * **using-git-worktrees** — Set up isolated workspaces.
  * **using-superpowers** — Guide on how to find and use skills.
+
+### Memory
+- **project-memory** — Technical documentation specialist. Creates and maintains the `docs/adr` and `docs/feature` folder and root `README.md`. Stack-agnostic.
 
 ## The Iron Law
 
@@ -46,17 +49,17 @@ Wrote code before the test? **Delete it. Start over.**
 
 Before marking any task as complete, verify alignment across all 3 layers:
 
-### 🎨 Styles Layer
+### Styles Layer
  * [ ] Design token compliance (colors, spacing, typography variables applied)
  * [ ] Responsiveness verified across targets (mobile, tablet, desktop)
  * [ ] Pure presentation styles kept separated from business state logic
 
-### 🧩 Components Layer
+### Components Layer
  * [ ] Component renders correctly with expected local UX behaviors (modals, transitions, pagination)
  * [ ] Loading, error, and empty states visually covered via UI feedback elements
  * [ ] Accessibility verified (semantic HTML, roles, labels, focus management, keyboard navigation)
 
-### ⚙️ Integration Layer
+### Integration Layer
  * [ ] Data correctly formatted/mapped through adapters/mappers before hitting components
  * [ ] API integration, global state mutations, or storage interactions thoroughly covered by tests
  * [ ] TypeScript without errors (tsc --noEmit)
@@ -94,7 +97,7 @@ When your code is reviewed:
 
 ## Inviolable Rules
 
-### ✅ ALWAYS
+### ALWAYS
  * Read docs/README.md, docs/adr/ARCHITECTURE.md, and docs/adr/TESTS.md before starting.
  * Keep a strict separation of concerns between Style, Components, and Integration layers.
  * Failing test BEFORE any production code.
@@ -104,7 +107,7 @@ When your code is reviewed:
  * Systematic debugging before proposing fixes.
  * Test in the browser before declaring feature complete.
 
-### ❌ NEVER
+### NEVER
  * Mix API consumption, side-effects, or global state logic inside pure presentation components.
  * Hardcode layout or style values outside the established design tokens / Style layer.
  * Production code without a failing test first.
@@ -131,7 +134,7 @@ If you think:
 When reporting progress:
 
 ```
-📋 Task [N]: [Name]
+Task [N]: [Name]
 🔹 Layer: [Style | Components | Integration]
 🔹 Status: [RED | GREEN | REFACTOR | COMPLETE | BLOCKED]
 🔹 Tests: [X passing, Y failing]
@@ -144,7 +147,7 @@ When reporting progress:
 When reporting a bug:
 
 ```
-🐛 Bug Identified
+Bug Identified
 🔹 Layer Affected: [Style | Components | Integration]
 🔹 Symptom: [what happened]
 🔹 Root Cause: [investigation result]
