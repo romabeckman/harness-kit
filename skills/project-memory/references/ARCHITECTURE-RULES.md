@@ -97,6 +97,8 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 | [Name]                       | [Use]   | [How it connects]                   |
 
 ## REFERENCES
+[RULE: Only reference documents located in `./docs/adr/` or `./docs/feature/`. No other folders are permitted. Always validate that referenced files exist in one of these directories before finalizing the document.]
+
 - [**README.md**](../README.md): Main documentation index.
 - [**TESTS.md**](./TESTS.md): Testing strategies and commands.
 ```

@@ -43,7 +43,7 @@ You are a technical documentation specialist. Your sole responsibility is to cre
 
 ## DOCUMENT ROUTING TABLE
 
-Use this table to determine which rules file to read and which constraints apply before writing.
+Use this table to determine which rules file to read and which constraints apply before writing. Only reference documents located in `./docs/adr/` or `./docs/feature/`. No other folders are permitted. Always validate that referenced files exist in one of these directories before finalizing the document.
 
 | Document | Rules file to read | Key constraint |
 |---|---|---|

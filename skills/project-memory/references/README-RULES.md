@@ -63,6 +63,7 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 Index of project technical documentation for **[Project/Service Name]**. Use the links below to navigate the available documents.
 
 ## Documentation Index
+**RULE:** Only reference documents located in `./docs/adr/` or `./docs/feature/`. No other folders are permitted. Always validate that referenced files exist in one of these directories before finalizing the document.
 
 | Document | Description | Reading |
 |----------|-------------|----------|

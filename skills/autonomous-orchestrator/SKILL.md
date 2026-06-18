@@ -322,6 +322,7 @@ inputs:
     - Key decisions logged in DECISIONS.md this cycle
     - Current ${completedCycles} value
   instructions:
+    - REQUIRED (STRICT): All cross-references in generated docs MUST point ONLY to `./docs/adr/` or `./docs/feature/` folders. NO other folder paths are permitted. Validate every reference before finalizing.
     - REQUIRED: Document the developed feature under `docs/feature/{domain}.md` (create if missing, update if it already exists), following `./references/DOCUMENT-TEMPLATE.md` strictly
     - REQUIRED: `FOLDER STRUCTURE` section → reflect the module's current relevant structure, incorporating paths added or modified this cycle (do not drop paths documented in prior cycles)
     - REQUIRED: Keep all content direct and minimal — enough for a future LLM to orient itself in the codebase without re-reading source files
