@@ -512,7 +512,7 @@ STATUS: ✅ Complete in 65 minutes
 | "Score went down after change" | Revert candidate. Data might be noisy. Collect more samples. |
 | "Feature is BLOCKED — what now?" | `BLOCKED` means the failure causes a crash or breaks core functionality. Must be resolved before project completion. |
 | "Feature is FAILED — can I continue?" | Yes. `FAILED` means a non-blocking issue (e.g., minor bug or security advisory). Development continues to other features. |
-| "harness-evaluator didn't run at session 5" | Count folders in `docs/harness-history/traces/`. If count is a multiple of 5, invoke `meta-harness-agent` manually. |
+| "harness-evaluator didn't run at session 5" | Count folders in `docs/harness-history/traces/`. If count is a multiple of 5, invoke `/harness-kit:harness-evaluator` skill manually. |
 
 ---
 

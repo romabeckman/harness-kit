@@ -13,7 +13,7 @@ The autonomous cycle executes across a 4-layer model, while the human developer 
 | **Control** | **Live Human Auditor** | **Hot-Interception Vector.** Watches the live streaming execution and can forcefully halt, hot-patch specs, or override configuration mid-loop. | User Terminal / Config Overrides |
 | **Layer 1** | **Product State Machine** | Stores development state, prioritization, and completion criteria. | `BACKLOG.md`, `DEVELOPMENT-STATE.md` |
 | **Layer 2** | **Autonomous Orchestrator** | Coordinates the main execution loop and enforces the decision gate. | `autonomous-orchestrator` / `BOOTSTRAP-CONFIG.json` |
-| **Layer 3** | **Contextual Expert Skills** | Specialized skills delegated strictly to isolated agent personas. | `scope-refinement`, `tdd-orchestrator`, `the-grumpy-tech-lead` |
+| **Layer 3** | **Contextual Expert Skills** | Specialized skills delegated strictly to isolated agent personas. | `scope-refinement`, `tdd-orchestrator`, `adversarial-qa`, `the-grumpy-tech-lead` |
 | **Layer 4** | **Filesystem Database $\mathcal{D}$** | Long-term memory, specifications, and execution history files. | `docs/README.md`, `docs/adr/`, `docs/specs/` |
 
 ---
@@ -66,7 +66,7 @@ graph TD
 
 #### 💻 Phase B: Delegation of Implementation
 
-* **Action:** Instantly transitions into invoking `tdd-orchestrator` to execute the `RED ➔ GREEN ➔ REFACTOR` cycle.
+* **Action:** Instantly transitions into invoking `tdd-orchestrator` (delegated to `developer-backend`, `developer-frontend`, or `developer-debugging` agents) to execute the `RED ➔ GREEN ➔ REFACTOR` cycle.
 
 
 * **Rework Injection:** If the cycle is a `RETRY`, it seamlessly feeds the `REWORK-LOG.md` back into the coding agent.
@@ -75,7 +75,7 @@ graph TD
 
 #### 🛡️ Phase C: Validation & Decision Gate
 
-* **Action:** Runs `the-grumpy-tech-lead` and `adversarial-qa` in parallel to audit architectural and security resilience.
+* **Action:** Runs `the-grumpy-tech-lead` (delegated to `harness-tech-lead` agent) and `adversarial-qa` (delegated to `harness-qa` agent) in parallel to audit architectural and security resilience.
 
 
 * **Automated Decision:** Compares outputs against `scoreThresholdTL` and `scoreThresholdAdv` (default `0.70`).

@@ -20,7 +20,7 @@ Choose your entry point based on what you need right now:
 - Actionable checklists and step-by-step instructions for daily engineering routines.
 - Concrete terminal execution flows: introducing new features, managing bug fixes, and harness optimization loops.
 - Real-world timeline tracking examples, specific command syntaxes, expected outputs, and troubleshooting recipes.
-- Agent routing rules for `harness-tracer`, `harness-evaluator`, and `meta-harness`.
+- Skill routing rules under the `meta-harness-agent` for `harness-tracer`, `harness-evaluator`, and `meta-harness`.
 
 ### **🤖 Autonomous Loop Orchestration**
 → **[AUTONOMOUS-ORCHESTRATOR.md](AUTONOMOUS-ORCHESTRATOR.md)**
@@ -63,7 +63,7 @@ The workspace documentation is organized into three primary pillars to cover the
 
 Your HarnessKit environment is fully operational when:
 - [ ] The core workspace contains `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md`.
-- [ ] You understand the **agent routing rules**: `harness-tracer` (default), `harness-evaluator` (multiples of 5 traces), `meta-harness` (explicit request only).
+- [ ] You understand the **`meta-harness-agent` skill routing rules**: `harness-tracer` (default), `harness-evaluator` (multiples of 5 traces), `meta-harness` (explicit request only).
 - [ ] You know that score thresholds (`scoreThresholdTL`, `scoreThresholdAdv`) and `maxReworks` are loaded from `docs/product/BOOTSTRAP-CONFIG.json` — never asked interactively.
 - [ ] You understand the four terminal statuses: `COMPLETED` (pass), `RETRY` (in-progress rework), `FAILED` (non-blocking issue, dev continues), `BLOCKED` (crash/critical break, must be resolved).
 - [ ] You understand the lifecycle pipeline: **Develop → Trace → Evaluate (every 5 traces) → Optimize (explicit)**.

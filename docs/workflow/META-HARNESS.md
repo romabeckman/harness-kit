@@ -44,6 +44,8 @@ Represents the entry point where execution triggers and control commands are fir
 * **`scope-refinement`:** Applies Domain-Driven Design (DDD) phases to break down the problem (Problem Space, Context Map, Tactical Design, and Test Scenarios) before writing code.
 * **`tdd-orchestrator`:** Coordinates the strict Test-Driven Development cycle (RED → GREEN → REFACTOR).
 * **`the-grumpy-tech-lead`:** Acts socratically by raising open points, performance risks, and SOLID violations without giving ready-made answers.
+* **`adversarial-qa`:** Audits implementations for edge cases, boundary faults, and security vulnerabilities.
+* **`autonomous-orchestrator`:** Sovereign manager of the entire feature backlog and continuous development cycle.
 * **`harness-tracer`:** Automated component that runs transparently at the end of sessions to save execution traces and telemetry.
 * **`harness-evaluator`:** Aggregates history, computes composite metrics, and ranks the most successful execution chains on the Pareto frontier.
 * **`meta-harness`:** The analytical optimization engine that reads the full history, diagnoses skill bottlenecks, and proposes target prompt instruction changes.
