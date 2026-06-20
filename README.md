@@ -2,7 +2,7 @@
 
 ![HarnessKit - 5-Step Engineering Cycle](docs/assets/harness-cycle-banner.png)
 
-> **Harness Engineering**: A reliable AI agent is not just a raw model. It is defined as: 
+> **Harness Engineering**: A reliable AI agent is not just a raw model. It is defined as:
 > $$\text{Reliable Agent} = \text{Model (AI)} + \text{Harness (Controls)} + \text{Human Auditor}$$
 
 HarnessKit is a complete AI-assisted software engineering methodology built on **Harness Engineering**—the principle that true reliability comes from enclosing generative models inside structured execution scaffolds and human-driven governance loops.
@@ -18,12 +18,15 @@ At the heart of HarnessKit is the **`autonomous-orchestrator`** skill. Once prov
 While the orchestrator executes continuously, you act as the **Human Auditor** in the cockpit, tracking the live stream through your coding workspace (Claude Code, Cursor, OpenCode, Gemini, Copilot, etc.). The AI moves with sovereignty, but you maintain continuous telemetry and oversight.
 
 ### ⚡ Hot-Interception: Absolute Human Command
+
 Because the engine runs seamlessly without waiting for permissions at every step, you use this live observability to dynamically intercept the loop when necessary:
+
 * **Pull the Emergency Brake:** Forcefully kill the execution (`Ctrl+C`) the moment you notice the AI has adopted an incorrect architectural premise.
 * **Live In-Flight Injections:** Hot-patch the active backlog, append newly uncovered constraints, or update domain specifications while the loop is running.
 * **Dynamic Parameter Tweaking:** Modify configuration thresholds on the fly—lower the validation score target (default **0.70**) to accept a minor style debt, or increase `maxReworks` directly inside the configuration files.
 
 ### 🔍 Socratic Code Review in Action
+
 To prevent systemic risks (such as N+1 queries, memory leaks, security vulnerabilities, or database connection exhaustion), HarnessKit employs a **Socratic Code Review** model. The orchestrator invokes the **`the-grumpy-tech-lead`** to validate the code inferentially by asking deep architectural questions rather than providing copy-paste solutions.
 
 Below is a visual example of how this interactive code review occurs under your watch:
@@ -31,11 +34,13 @@ Below is a visual example of how this interactive code review occurs under your 
 ![Socratic Code Review Example](docs/assets/code-review.png)
 
 ### 🤖 Autonomous State Machine
-The loop is driven by a robust **Product State Machine**. It tracks feature backlogs and dynamic transition gates, ensuring that a feature only progresses when quality criteria are fully satisfied. 
+
+The loop is driven by a robust **Product State Machine**. It tracks feature backlogs and dynamic transition gates, ensuring that a feature only progresses when quality criteria are fully satisfied.
 
 ![Autonomous State Machine](docs/assets/update-state-machine.png)
 
 Based on gate scores, the orchestrator updates the project state machine into four terminal statuses:
+
 * **`COMPLETED`**: Approved and ready for your final PR review.
 * **`RETRY`**: Scores fell short; the engine compiles a `REWORK-LOG.md` and loops back to code automatically.
 * **`BLOCKED`**: Critical crash/break—the engine triggers a circuit breaker and halts for immediate human intervention.
@@ -54,8 +59,8 @@ HarnessKit is distributed as a command-line plugin compatible with major AI deve
 /plugin install superpowers@claude-plugins-official
 ```
 
-
 ### Claude Code
+
 ```bash
 /plugin marketplace add romabeckman/harness-kit
 /plugin install harness-kit@harness-kit
@@ -75,10 +80,7 @@ copilot plugin install harness-kit@harness-kit
 
 ```bash
 # Install the extension
-gemini extensions install https://github.com/romabeckman/harness-kit
-
-# Update
-gemini extensions update harness-kit
+agy plugin install https://github.com/romabeckman/harness-kit
 ```
 
 ---
@@ -211,10 +213,10 @@ MIT License — see [LICENSE](LICENSE) file for details.
 
 ## Issues & Feedback
 
-* **Issues:** https://github.com/romabeckman/harness-kit/issues
+* **Issues:** <https://github.com/romabeckman/harness-kit/issues>
 * **Author:** [Romario Beckman](https://www.linkedin.com/in/romabeckman/)
 
 ## References
 
-- Lee, Y., Nair, R., Zhang, Q., Khattab, O., Finn, C., & Lee, K. (2026). *Meta-Harness: End-to-End Optimization of Model Harnesses*. Available at [arXiv:2603.28052](https://arxiv.org/abs/2603.28052).
-- Birgitta Böckeler (2026). [Harness engineering for coding agent users](https://martinfowler.com/articles/harness-engineering.html).
+* Lee, Y., Nair, R., Zhang, Q., Khattab, O., Finn, C., & Lee, K. (2026). *Meta-Harness: End-to-End Optimization of Model Harnesses*. Available at [arXiv:2603.28052](https://arxiv.org/abs/2603.28052).
+* Birgitta Böckeler (2026). [Harness engineering for coding agent users](https://martinfowler.com/articles/harness-engineering.html).
