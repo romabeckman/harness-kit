@@ -4,14 +4,17 @@ This document references the core skills and supporting documentation for the ha
 
 ## Core Skills
 
-### TDD Orchestrator
-@./skills/tdd-orchestrator/SKILL.md
+### Adversarial QA
+@./skills/adversarial-qa/SKILL.md
 
-### Harness Tracer
-@./skills/harness-tracer/SKILL.md
+### Autonomous Orchestrator
+@./skills/autonomous-orchestrator/SKILL.md
 
 ### Harness Evaluator
 @./skills/harness-evaluator/SKILL.md
+
+### Harness Tracer
+@./skills/harness-tracer/SKILL.md
 
 ### Meta-Harness
 @./skills/meta-harness/SKILL.md
@@ -30,17 +33,21 @@ This document references the core skills and supporting documentation for the ha
 @./skills/scope-refinement/agents/03-tactical-design.md
 @./skills/scope-refinement/agents/04-test-scenarios.md
 
+### TDD Orchestrator
+@./skills/tdd-orchestrator/SKILL.md
+
 ### The Grumpy Tech Lead
 @./skills/the-grumpy-tech-lead/SKILL.md
 
 ## Agents
 
-- Code Reviewer (@./agents/code-reviewer.md)
+- CTO (@./agents/cto.md)
 - Developer Backend (@./agents/developer-backend.md)
 - Developer Debugging (@./agents/developer-debugging.md)
 - Developer Frontend (@./agents/developer-frontend.md)
+- Harness QA (@./agents/harness-qa.md)
+- Harness Tech Lead / Code Reviewer (@./agents/harness-tech-lead.md)
 - Meta-Harness Agent (@./agents/meta-harness-agent.md)
-- QA (@./agents/qa.md)
 - Software Architect (@./agents/software-architect.md)
 
 ## Documentation
