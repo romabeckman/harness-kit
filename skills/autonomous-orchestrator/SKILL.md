@@ -7,27 +7,29 @@ description: Sovereign loop manager. Handles file initialization, feature lifecy
 
 ## ⚠️ Step 0 — Scope Check (ONLY permitted pause)
 
-ASK the user ONCE with the following options and HALT until answered:
+**Step 0a — Action selection.** ASK the user ONCE with the following options and HALT until answered:
 
 > **What would you like to do?**
 >
 > - **`resume`** — continue from where the previous session stopped (`docs/product/` is preserved as-is)
-> - **`reset <new scope>`** — discard current `docs/product/` and start a new cycle with the provided scope
-> - **`start <scope>`** — first run, no existing state
+> - **`reset`** — discard current `docs/product/` and start a new cycle (scope will be collected next)
+
+**Step 0b — Scope collection (only when action is `reset`).** After the user picks `reset`, ASK for the scope as plain text:
+
+> **Please describe the project scope or paste the PRD:**
+
+Store the text answer as `${scope}`.
 
 ```
-IF user answers "resume":
+IF user answered "resume" in Step 0a:
     → SKIP BOOTSTRAP. Apply re-entry rule from Orchestration Loop State Transition Table.
 
-IF user answers "reset <new scope>":
-    → Delete all files under docs/product/.
-    → Store <new scope> as ${scope}. Proceed to BOOTSTRAP.
-
-IF user answers "start <scope>":
-    → Store <scope> as ${scope}. Proceed to BOOTSTRAP.
+IF user answered "reset" in Step 0a:
+    → Delete all files under `docs/product/` and `docs/specs/`.
+    → Use ${scope} collected in Step 0b. Proceed to BOOTSTRAP.
 ```
 
-**Once this step is resolved — for the entire session:**
+**Once Step 0 is fully resolved — for the entire session:**
 
 - NEVER stop, ask questions, request confirmations, or pause
 - Execute BOOTSTRAP → Phase E **atomically**
@@ -50,7 +52,7 @@ You do NOT write code, tests, or perform any sub-agent task.
 | `harness-kit:tdd-orchestrator` | `developer-backend` / `developer-frontend` / `developer-debugging` |
 | `harness-kit:adversarial-qa` | `harness-qa` |
 | `harness-kit:the-grumpy-tech-lead` | `harness-tech-lead` |
-| `project-memory` | orchestrator (self — Phase E only) |
+| `harness-kit:project-memory` | orchestrator (self — Phase E only) |
 
 </role>
 

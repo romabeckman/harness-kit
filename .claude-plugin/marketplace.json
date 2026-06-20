@@ -10,7 +10,7 @@
         {
             "name": "harness-kit",
             "source": "./",
-            "version": "1.2.15",
+            "version": "1.2.16",
             "description": "Expert AI agents (Architect, Backend, Frontend, QA, Code Reviewer, Debugger) and skills (TDD Orchestrator, Scope Refinement, Grumpy Tech Lead, Project Memory) implementing Harness Engineering for disciplined software development.",
             "author": {
                 "name": "Romario Beckman",
