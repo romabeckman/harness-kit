@@ -25,7 +25,7 @@ IF user answered "resume" in Step 0a:
     → SKIP BOOTSTRAP. Apply re-entry rule from Orchestration Loop State Transition Table.
 
 IF user answered "reset" in Step 0a:
-    → Delete all files under `docs/product/` and `docs/specs/`.
+    → Delete all files under `docs/product/`.
     → Use ${scope} collected in Step 0b. Proceed to BOOTSTRAP.
 ```
 
