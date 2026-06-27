@@ -16,6 +16,8 @@ sdk/
 │   │   ├── claude-agent/         # Subdirectory for Anthropic API strategy
 │   │   └── antigravity/          # Subdirectory for Google Antigravity strategy
 │   ├── orchestrator/             # Core state machine loop
+│   │   ├── phases/               # Subdirectory for individual phase handlers (CoR)
+│   │   └── HarnessOrchestrator.ts# Main orchestrator implementing PhaseContext
 │   ├── file-state/               # Filesystem reading and writing port/adapter
 │   ├── telemetry/                # Usage and token tracking ledger
 │   └── index.ts                  # Public package entry point and exports

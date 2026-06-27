@@ -1,0 +1,38 @@
+import { Phase } from '../types'
+import type { OrchestratorConfig, OrchestratorState } from '../types'
+import type { IFileStateManager } from '../../file-state/FileStateManager'
+import type { Feature } from '../../file-state/types'
+import type { AgentInvocation, AgentOutput } from '../../agent-runner/types'
+
+export interface PhaseContext {
+  readonly config: OrchestratorConfig
+  readonly workingDir: string
+  readonly fsm: IFileStateManager
+  readonly state: OrchestratorState
+  updateState(state: Partial<OrchestratorState>): void
+  invokeAgent(invocation: AgentInvocation): Promise<AgentOutput>
+  getActiveFeature(features: Feature[]): Feature | null
+  checkSpecFilesPresent(domain: string): boolean
+  extractTasksFromTacticalDesign(domain: string): Array<{ taskId: string; description: string }>
+}
+
+export interface IPhaseHandler {
+  setNext(handler: IPhaseHandler): IPhaseHandler
+  handle(phase: Phase, context: PhaseContext): Promise<Phase | null>
+}
+
+export abstract class AbstractPhaseHandler implements IPhaseHandler {
+  private nextHandler?: IPhaseHandler
+
+  setNext(handler: IPhaseHandler): IPhaseHandler {
+    this.nextHandler = handler
+    return handler
+  }
+
+  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+    if (this.nextHandler) {
+      return this.nextHandler.handle(phase, context)
+    }
+    return null
+  }
+}
