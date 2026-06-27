@@ -51,7 +51,7 @@ npm install -g .
 Then from any project directory:
 
 ```bash
-@romabeckman/hk run
+hk run
 ```
 
 ---
@@ -129,10 +129,10 @@ By default, the SDK auto-selects a runner:
 Select agent strategy via CLI flags:
 ```bash
 # Run with Google Antigravity CLI
-@romabeckman/hk run --agent antigravity
+hk run --agent antigravity
 
 # Run with Copilot
-@romabeckman/hk run --copilot
+hk run --copilot
 ```
 
 Detailed runner architectural specifications are located in [**sdk_agent_runner.md**](./docs/feature/sdk_agent_runner.md).
