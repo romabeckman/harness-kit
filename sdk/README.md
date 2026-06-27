@@ -112,21 +112,31 @@ TOTAL                input: 40,550  cost: $0.16
 
 ---
 
-## Agent runner — how authentication works
+## Agent runner — pluggable strategies
 
-No API key needed for local use. The SDK uses your Claude Code session automatically.
+The SDK supports multiple built-in coding agents:
+- **Claude Code CLI** (`claude-code`)
+- **Anthropic API** (`claude-agent`)
+- **Google Antigravity** (`antigravity`)
+
+By default, the SDK auto-selects a runner:
 
 | Condition | Runner used |
 |---|---|
-| `ANTHROPIC_API_KEY` set in environment | `ClaudeAgentRunner` (direct API) |
-| No API key | `ClaudeCodeRunner` (local `claude` CLI) |
+| `ANTHROPIC_API_KEY` set in environment | `claude-agent` (direct API) |
+| No API key | `claude-code` (local `claude` CLI) |
 
-For CI/CD environments without Claude Code:
-
+Select agent strategy via CLI flags:
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-@romabeckman/hk run
+# Run with Google Antigravity CLI
+@romabeckman/hk run --agent antigravity
+
+# Run with Copilot
+@romabeckman/hk run --copilot
 ```
+
+Detailed runner architectural specifications are located in [**sdk_agent_runner.md**](./docs/feature/sdk_agent_runner.md).
+
 
 ---
 
@@ -184,6 +194,23 @@ const orchestrator = new HarnessOrchestrator({
 })
 ```
 
+### Pluggable agent strategies
+
+Instantiate any registered runner (e.g. Antigravity) via the Factory:
+
+```typescript
+import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hk'
+
+const orchestrator = new HarnessOrchestrator({
+  scope: 'my project',
+  projectPaths: ['/path/to/project'],
+  agentRunner: AgentRunnerFactory.create({
+    type: 'antigravity',
+    model: 'gemini-2.5-pro',
+  })
+})
+```
+
 ### Read backlog state
 
 ```typescript
@@ -199,15 +226,16 @@ const nextTask = state.getNextTask('F001')
 ### CI/CD with API key
 
 ```typescript
-import { HarnessOrchestrator, ClaudeAgentRunner } from '@romabeckman/hk'
+import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hk'
 
 const orchestrator = new HarnessOrchestrator({
   scope: 'my project',
   projectPaths: ['/path/to/project'],
-  agentRunner: new ClaudeAgentRunner(), // reads ANTHROPIC_API_KEY from env
+  agentRunner: AgentRunnerFactory.create({ type: 'claude-agent' }), // reads ANTHROPIC_API_KEY from env
 })
 
 await orchestrator.run()
+```
 ```
 
 ---

@@ -39,7 +39,14 @@ sdk/src/agent-runner/
 - **claude-agent**: API-based execution invoking Anthropic Messages client.
 - **antigravity**: CLI-based execution spawning Google `agy` subprocesses.
 
+## CLI OPTIONS
+REQUIRED: Pass agent selection flags when running orchestration command:
+- `hk run --copilot` — Instructs factory to resolve `'copilot'` runner.
+- `hk run --gemini` — Instructs factory to resolve `'gemini'` runner.
+- `hk run --agent <type>` / `hk run -a <type>` — Instructs factory to resolve custom strategy named `<type>`.
+
 ## REFERENCES
 - [**README.md**](../README.md): Main documentation index.
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Arch patterns and integrations.
 - [**TESTS.md**](../adr/TESTS.md): Testing guidelines.
+

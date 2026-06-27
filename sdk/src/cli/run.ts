@@ -3,6 +3,7 @@ import { input, select, editor } from '@inquirer/prompts'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { HarnessOrchestrator } from '../orchestrator/HarnessOrchestrator'
+import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
 
 const HELP = `
 @romabeckman/hk — harness-kit autonomous orchestrator
@@ -34,7 +35,11 @@ function printVersion(): void {
   console.log(`@romabeckman/hk v${pkg.version}`)
 }
 
-async function cmdRun(cwd: string): Promise<void> {
+interface RunOptions {
+  agentType?: string
+}
+
+async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
   const productDir = join(cwd, 'docs', 'product')
   const backlogPath = join(productDir, 'BACKLOG.md')
   const hasExistingSession = existsSync(backlogPath)
@@ -94,7 +99,16 @@ async function cmdRun(cwd: string): Promise<void> {
     rmSync(productDir, { recursive: true, force: true })
   }
 
-  const orchestrator = new HarnessOrchestrator({ scope: scope || '(resume)', projectPaths, productDir })
+  const agentRunner = options.agentType
+    ? AgentRunnerFactory.create({ type: options.agentType })
+    : undefined
+
+  const orchestrator = new HarnessOrchestrator({
+    scope: scope || '(resume)',
+    projectPaths,
+    productDir,
+    agentRunner,
+  })
   await orchestrator.run()
   console.log('\n✓ All features completed.')
   orchestrator.tokenReport()
@@ -122,7 +136,21 @@ async function main(): Promise<void> {
   }
 
   if (cmd === 'run') {
-    await cmdRun(cwd)
+    const runArgs = args.slice(1)
+    const options: RunOptions = {}
+
+    for (let i = 0; i < runArgs.length; i++) {
+      const arg = runArgs[i]
+      if (arg === '--copilot') {
+        options.agentType = 'copilot'
+      } else if (arg === '--gemini') {
+        options.agentType = 'gemini'
+      } else if (arg === '--agent' || arg === '-a') {
+        options.agentType = runArgs[++i]
+      }
+    }
+
+    await cmdRun(cwd, options)
     return
   }
 
