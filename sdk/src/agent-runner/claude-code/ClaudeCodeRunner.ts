@@ -94,7 +94,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
           child.kill()
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.TIMEOUT,
-            skill: invocation.skill,
+            skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `claude CLI timed out after ${this.#config.timeoutMs}ms`,
           }))
@@ -137,9 +137,9 @@ export class ClaudeCodeRunner implements IAgentRunner {
           for (const block of content) {
             const b = block as Record<string, unknown>
             if (b.type === 'text' && typeof b.text === 'string') {
-              onProgress({ agent: invocation.agent, skill: invocation.skill, type: 'text', text: b.text })
+              onProgress({ agent: invocation.agent, skill: invocation.skill ?? 'unknown', type: 'text', text: b.text })
             } else if (b.type === 'tool_use' && typeof b.name === 'string') {
-              onProgress({ agent: invocation.agent, skill: invocation.skill, type: 'tool_use', toolName: b.name })
+              onProgress({ agent: invocation.agent, skill: invocation.skill ?? 'unknown', type: 'tool_use', toolName: b.name })
             }
           }
         }
@@ -167,7 +167,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
             }
           }
 
-          onProgress({ agent: invocation.agent, skill: invocation.skill, type: 'result', isError: isFinalError })
+          onProgress({ agent: invocation.agent, skill: invocation.skill ?? 'unknown', type: 'result', isError: isFinalError })
         }
       })
 
@@ -176,7 +176,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
         if (err.code === 'ENOENT') {
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.NETWORK_ERROR,
-            skill: invocation.skill,
+            skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `claude CLI not found — is Claude Code installed? (looked for: ${this.#config.claudeBin})`,
             cause: err,
@@ -184,7 +184,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
         } else {
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.API_ERROR,
-            skill: invocation.skill,
+            skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `claude CLI error: ${err.message}`,
             cause: err,
@@ -197,7 +197,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
         if (isFinalError) {
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.API_ERROR,
-            skill: invocation.skill,
+            skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `agent returned error: ${finalResult.slice(0, 200)}`,
           }))
@@ -206,7 +206,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
         if (code !== 0 && !finalResult) {
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.API_ERROR,
-            skill: invocation.skill,
+            skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `claude CLI exited with code ${code} and no result`,
           }))
@@ -236,7 +236,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
   #buildPrompt(invocation: AgentInvocation): string {
     if (invocation.prompt) return invocation.prompt
     return [
-      `Skill: ${invocation.skill}`,
+      `Skill: ${invocation.skill ?? 'unknown'}`,
       `Mode: ${invocation.mode}`,
       '',
       JSON.stringify(invocation.payload, null, 2),

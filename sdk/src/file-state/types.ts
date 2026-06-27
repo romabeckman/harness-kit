@@ -55,4 +55,5 @@ export interface BootstrapConfig {
     completedCycles: number
   }
   currentPhase?: string
+  steeringRules?: string[]
 }

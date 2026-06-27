@@ -14,12 +14,16 @@ export class ContextAssembler {
   /**
    * Phase A: scope refinement — only scope, domain, projectPaths
    */
-  static buildPhaseAPayload(feature: Feature, projectPaths: string[]): PhaseAPayload {
-    return {
+  static buildPhaseAPayload(feature: Feature, projectPaths: string[], steeringRules?: string[]): PhaseAPayload {
+    const payload: PhaseAPayload = {
       scope: feature.id,
       domain: feature.domain,
       projectPaths,
     }
+    if (steeringRules && steeringRules.length > 0) {
+      payload.steeringRules = steeringRules
+    }
+    return payload
   }
 
   /**
@@ -29,7 +33,8 @@ export class ContextAssembler {
     feature: Feature,
     tasks: Task[],
     projectPaths: string[],
-    isRetry: boolean
+    isRetry: boolean,
+    steeringRules?: string[]
   ): PhaseBPayload {
     const payload: PhaseBPayload = {
       featureId: feature.id,
@@ -41,18 +46,25 @@ export class ContextAssembler {
     if (isRetry) {
       payload.reworkLogPath = join('docs', 'specs', feature.domain, 'REWORK-LOG.md')
     }
+    if (steeringRules && steeringRules.length > 0) {
+      payload.steeringRules = steeringRules
+    }
     return payload
   }
 
   /**
    * Phase C: validation — featureId, domain, projectPaths only
    */
-  static buildPhaseCPayload(feature: Feature, projectPaths: string[]): PhaseCPayload {
-    return {
+  static buildPhaseCPayload(feature: Feature, projectPaths: string[], steeringRules?: string[]): PhaseCPayload {
+    const payload: PhaseCPayload = {
       featureId: feature.id,
       domain: feature.domain,
       projectPaths,
     }
+    if (steeringRules && steeringRules.length > 0) {
+      payload.steeringRules = steeringRules
+    }
+    return payload
   }
 
   /**
@@ -61,13 +73,18 @@ export class ContextAssembler {
   static buildPhaseEPayload(
     feature: Feature,
     completedCycles: number,
-    decisions: string[]
+    decisions: string[],
+    steeringRules?: string[]
   ): PhaseEPayload {
-    return {
+    const payload: PhaseEPayload = {
       domain: feature.domain,
       scopeDescription: feature.title,
       completedCycles,
       recentDecisions: decisions,
     }
+    if (steeringRules && steeringRules.length > 0) {
+      payload.steeringRules = steeringRules
+    }
+    return payload
   }
 }

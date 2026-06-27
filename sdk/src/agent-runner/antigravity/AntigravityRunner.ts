@@ -23,7 +23,7 @@ export class AntigravityRunner implements IAgentRunner {
 
   async run(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput> {
     const prompt = invocation.prompt || [
-      `Skill: ${invocation.skill}`,
+      `Skill: ${invocation.skill ?? 'unknown'}`,
       `Mode: ${invocation.mode}`,
       '',
       JSON.stringify(invocation.payload, null, 2),
@@ -73,7 +73,7 @@ export class AntigravityRunner implements IAgentRunner {
           killProcessGroup()
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.TIMEOUT,
-            skill: invocation.skill,
+            skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `Antigravity runner timed out after ${this.#config.timeoutMs}ms`,
           }))
@@ -108,7 +108,7 @@ export class AntigravityRunner implements IAgentRunner {
         if (err.code === 'ENOENT') {
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.NETWORK_ERROR,
-            skill: invocation.skill,
+            skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `Antigravity CLI not found — is agy installed? (looked for: ${this.#config.agyBin})`,
             cause: err,
@@ -116,7 +116,7 @@ export class AntigravityRunner implements IAgentRunner {
         } else {
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.API_ERROR,
-            skill: invocation.skill,
+            skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `Antigravity CLI error: ${err.message}`,
             cause: err,
@@ -129,7 +129,7 @@ export class AntigravityRunner implements IAgentRunner {
         if (code !== 0) {
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.API_ERROR,
-            skill: invocation.skill,
+            skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `Antigravity CLI exited with code ${code}`,
           }))

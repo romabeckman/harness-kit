@@ -17,7 +17,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
 
     const config = context.fsm.loadBootstrapConfig()
 
-    const payloadC = ContextAssembler.buildPhaseCPayload(activeFeature, context.config.projectPaths)
+    const payloadC = ContextAssembler.buildPhaseCPayload(activeFeature, context.config.projectPaths, config.steeringRules)
     const tlOutput = await context.invokeAgent({
       skill: 'the-grumpy-tech-lead',
       agent: 'harness-code-reviewer',

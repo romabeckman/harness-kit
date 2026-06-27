@@ -177,7 +177,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
       if (controller.signal.aborted) {
         throw new AgentRunnerError({
           code: AgentRunnerErrorCode.TIMEOUT,
-          skill: invocation.skill,
+          skill: invocation.skill ?? 'unknown',
           phase: 'dispatch',
           message: `Agent invocation timed out after ${this.#config.timeoutMs}ms`,
           cause: err as Error,
@@ -187,7 +187,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
       if (isConnectionError(err)) {
         throw new AgentRunnerError({
           code: AgentRunnerErrorCode.NETWORK_ERROR,
-          skill: invocation.skill,
+          skill: invocation.skill ?? 'unknown',
           phase: 'dispatch',
           message: `Network failure during agent invocation: ${(err as Error).message}`,
           cause: err as Error,
@@ -197,7 +197,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
       if (isApiStatusError(err)) {
         throw new AgentRunnerError({
           code: AgentRunnerErrorCode.API_ERROR,
-          skill: invocation.skill,
+          skill: invocation.skill ?? 'unknown',
           phase: 'dispatch',
           message: `Anthropic API returned an error status: ${(err as { message: string }).message}`,
           cause: err as Error,
@@ -206,7 +206,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
 
       throw new AgentRunnerError({
         code: AgentRunnerErrorCode.NETWORK_ERROR,
-        skill: invocation.skill,
+        skill: invocation.skill ?? 'unknown',
         phase: 'dispatch',
         message: `Network failure during agent invocation: ${(err as Error).message}`,
         cause: err as Error,
@@ -224,7 +224,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
 
   #buildUserMessage(invocation: AgentInvocation): string {
     return [
-      `Skill: ${invocation.skill}`,
+      `Skill: ${invocation.skill ?? 'unknown'}`,
       `Agent: ${invocation.agent}`,
       '',
       JSON.stringify(invocation.payload, null, 2),

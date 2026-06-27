@@ -22,6 +22,11 @@ export class BootstrapConfigParser {
     if (typeof raw.currentPhase === 'string') {
       result.currentPhase = raw.currentPhase
     }
+    if (Array.isArray(raw.steeringRules)) {
+      result.steeringRules = raw.steeringRules.filter((r: unknown) => typeof r === 'string')
+    } else {
+      result.steeringRules = []
+    }
     return result
   }
 }

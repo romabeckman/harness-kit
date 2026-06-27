@@ -125,6 +125,60 @@ export class HarnessOrchestrator implements PhaseContext {
     this.state = { ...this.state, ...state }
   }
 
+  public applySteeringActions(actions: import('./SteeringAnalyzer').SteeringAction[]): void {
+    const config = this.fsm.loadBootstrapConfig()
+    if (!config.steeringRules) {
+      config.steeringRules = []
+    }
+    for (const action of actions) {
+      if (action.type === 'add_rule') {
+        config.steeringRules.push(action.rule)
+        this.fsm.appendDecision({
+          featureId: null,
+          decision: `Steering override: Added development rule: "${action.rule}"`
+        })
+      } else if (action.type === 'rollback') {
+        const target = action.targetPhase as Phase
+        this.state.currentPhase = target
+        config.currentPhase = target
+        this.fsm.appendDecision({
+          featureId: null,
+          decision: `Steering override: State rollback to phase ${target}`
+        })
+        if (target === Phase.PHASE_B || target === Phase.PHASE_A) {
+          const features = this.fsm.loadBacklog()
+          const active = this.getActiveFeature(features)
+          if (active) {
+            const tasks = this.fsm.loadDevelopmentState()
+            for (const t of tasks) {
+              if (t.featureId === active.id) {
+                this.fsm.updateTaskStatus(active.id, t.taskId, '-', 'NOT_STARTED')
+              }
+            }
+          }
+        }
+      } else if (action.type === 'override_score') {
+        const features = this.fsm.loadBacklog()
+        const active = this.getActiveFeature(features)
+        if (active) {
+          this.fsm.updateFeatureStatus(
+            active.id,
+            active.status,
+            {
+              tl: action.tl ?? active.scoreTL ?? 100,
+              adv: action.adv ?? active.scoreAdv ?? 100
+            }
+          )
+          this.fsm.appendDecision({
+            featureId: active.id,
+            decision: `Steering override: Manual QA scores set to (TL: ${action.tl}, ADV: ${action.adv})`
+          })
+        }
+      }
+    }
+    this.fsm.saveBootstrapConfig(config)
+  }
+
   public invokeAgent(invocation: import('../agent-runner/types').AgentInvocation): Promise<import('../agent-runner/types').AgentOutput> {
     return this.invokeAgentInternal(invocation)
   }
@@ -143,7 +197,7 @@ export class HarnessOrchestrator implements PhaseContext {
     try {
       const output = await this.agentRunner.run(invocation, { signal: controller.signal })
       if (output.usage) {
-        this.ledger.record(invocation.skill, invocation.agent, output.usage)
+        this.ledger.record(invocation.skill ?? 'unknown', invocation.agent, output.usage)
       }
       return output
     } finally {

@@ -17,7 +17,8 @@ export class PhaseEHandler extends AbstractPhaseHandler {
     const payload = ContextAssembler.buildPhaseEPayload(
       activeFeature,
       config.cycleCounter.completedCycles,
-      decisions
+      decisions,
+      config.steeringRules
     )
 
     await context.invokeAgent({

@@ -58,6 +58,14 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
       })
     : 'reset'
 
+  let steeringMessage = ''
+  if (action === 'resume') {
+    steeringMessage = await input({
+      message: 'Steering rules or state overrides (optional):',
+      default: '',
+    })
+  }
+
   let scope = ''
   if (action === 'reset') {
     const inputMethod = await select({
@@ -111,6 +119,19 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     productDir,
     agentRunner,
   })
+
+  if (action === 'resume' && steeringMessage.trim() && agentRunner) {
+    console.log('\nAnalyzing steering message...')
+    const { SteeringAnalyzer } = require('../orchestrator/SteeringAnalyzer') as typeof import('../orchestrator/SteeringAnalyzer')
+    const actions = await SteeringAnalyzer.analyze(steeringMessage, agentRunner)
+    if (actions.length > 0) {
+      console.log(`Applying ${actions.length} steering actions...`)
+      orchestrator.applySteeringActions(actions)
+    } else {
+      console.log('No actionable steering instructions detected.\n')
+    }
+  }
+
   await orchestrator.run()
   console.log('\n✓ All features completed.')
   orchestrator.tokenReport()

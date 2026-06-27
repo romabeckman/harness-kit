@@ -34,11 +34,13 @@ export class PhaseBHandler extends AbstractPhaseHandler {
     }
 
     const isRetry = activeFeature.reworks > 0
+    const config = context.fsm.loadBootstrapConfig()
     const payload = ContextAssembler.buildPhaseBPayload(
       activeFeature,
       tasks,
       context.config.projectPaths,
-      isRetry
+      isRetry,
+      config.steeringRules
     )
     await context.invokeAgent({
       skill: 'tdd-orchestrator',

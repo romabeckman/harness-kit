@@ -10,6 +10,8 @@ export type {
   OrchestratorState,
   PhaseTransition,
 } from './orchestrator/types'
+export { SteeringAnalyzer } from './orchestrator/SteeringAnalyzer'
+export type { SteeringAction } from './orchestrator/SteeringAnalyzer'
 
 // Agent runner interface and null implementation
 export type { IAgentRunner } from './agent-runner/IAgentRunner'
