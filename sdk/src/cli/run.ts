@@ -20,10 +20,8 @@ COMMANDS
   help      Show this help message
 
 RUN OPTIONS
-  --agent, -a <type>  Specify agent type (e.g., 'copilot', 'gemini')
+  --agent, -a <type>  Specify agent type (e.g., 'copilot', 'antigravity', 'opencode')
   --model, -m <name>  Specify model name for the agent
-  --copilot           Shortcut for --agent copilot
-  --gemini            Shortcut for --agent gemini
 
 OPTIONS
   --help, -h          Show this help message
