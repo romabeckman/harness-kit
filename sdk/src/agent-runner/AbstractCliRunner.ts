@@ -14,6 +14,22 @@ export abstract class AbstractCliRunner implements IAgentRunner {
 
   protected abstract buildArgs(prompt: string, invocation: AgentInvocation): string[]
 
+  protected get writePromptToStdin(): boolean {
+    return false
+  }
+
+  protected getModelName(invocation: AgentInvocation): string | undefined {
+    return undefined
+  }
+
+  protected parseOutput(
+    stdout: string,
+    stderr: string,
+    invocation: AgentInvocation,
+  ): Partial<AgentOutput> {
+    return {}
+  }
+
   protected buildPrompt(invocation: AgentInvocation): string {
     return [
       `Skill: ${invocation.skill ?? 'unknown'}`,
@@ -29,10 +45,11 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   ): Promise<AgentOutput> {
     const prompt = invocation.prompt ?? this.buildPrompt(invocation)
     const args = this.buildArgs(prompt, invocation)
-    return this.spawnAndCollect(args, invocation, options)
+    return this.spawnAndCollect(prompt, args, invocation, options)
   }
 
   private spawnAndCollect(
+    prompt: string,
     args: string[],
     invocation: AgentInvocation,
     options?: { signal?: AbortSignal },
@@ -124,21 +141,29 @@ export abstract class AbstractCliRunner implements IAgentRunner {
           return
         }
 
+        const parsed = this.parseOutput(stdout, stderr, invocation)
+
         resolve({
           success: true,
           stdout,
           stderr,
-          raw: stdout,
+          raw: parsed.raw ?? stdout,
+          artefacts: parsed.artefacts,
           usage: {
-            inputTokens: 0,
-            outputTokens: 0,
-            cacheCreationTokens: 0,
-            cacheReadTokens: 0,
-            costUsd: 0,
+            inputTokens: parsed.usage?.inputTokens ?? 0,
+            outputTokens: parsed.usage?.outputTokens ?? 0,
+            cacheCreationTokens: parsed.usage?.cacheCreationTokens ?? 0,
+            cacheReadTokens: parsed.usage?.cacheReadTokens ?? 0,
+            costUsd: parsed.usage?.costUsd ?? 0,
+            model: parsed.usage?.model ?? this.getModelName(invocation),
+            effort: parsed.usage?.effort,
           },
         })
       })
 
+      if (this.writePromptToStdin && child.stdin) {
+        child.stdin.write(prompt, 'utf8')
+      }
       child.stdin?.end()
     })
   }

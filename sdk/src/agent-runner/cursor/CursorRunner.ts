@@ -7,22 +7,29 @@ export interface CursorRunnerConfig {
   readonly cursorBin?: string
   readonly outputFormat?: 'text' | 'json'
   readonly timeoutMs?: number
+  readonly model?: string
 }
 
 export class CursorRunner extends AbstractCliRunner {
   readonly #cursorBin: string
   readonly #outputFormat: 'text' | 'json'
   readonly timeoutMs: number
+  readonly #model: string | undefined
 
   constructor(config?: Partial<CursorRunnerConfig>) {
     super()
     this.#cursorBin = config?.cursorBin ?? 'cursor-agent'
     this.#outputFormat = config?.outputFormat ?? 'json'
     this.timeoutMs = config?.timeoutMs ?? 0
+    this.#model = config?.model
   }
 
   protected get binaryName(): string {
     return this.#cursorBin
+  }
+
+  protected getModelName(_invocation: AgentInvocation): string | undefined {
+    return this.#model ?? 'cursor-agent-default'
   }
 
   protected buildArgs(prompt: string, _invocation: AgentInvocation): string[] {

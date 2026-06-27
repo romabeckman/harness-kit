@@ -66,6 +66,14 @@ export class CopilotRunner implements IAgentRunner {
         stdout: 'Copilot session executed successfully',
         stderr: '',
         raw: 'Copilot session executed successfully',
+        usage: {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheCreationTokens: 0,
+          cacheReadTokens: 0,
+          costUsd: 0,
+          model: this.config.model,
+        },
       }
     } catch (err: any) {
       clearTimeout(timer)

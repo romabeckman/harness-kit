@@ -145,6 +145,8 @@ export class ClaudeAgentRunner implements IAgentRunner {
     const timer = setTimeout(() => controller.abort(), this.#config.timeoutMs)
 
     let result: AgentResult
+    let usage: import('../types').TokenUsage | undefined
+
     try {
       // Pass signal in options (second parameter), not in the params object
       const response = await Promise.race([
@@ -170,6 +172,15 @@ export class ClaudeAgentRunner implements IAgentRunner {
       result = {
         rawOutput,
         extractedJson: extractJson(rawOutput),
+      }
+
+      usage = {
+        inputTokens: response.usage?.input_tokens ?? 0,
+        outputTokens: response.usage?.output_tokens ?? 0,
+        cacheCreationTokens: (response.usage as any)?.cache_creation_input_tokens ?? 0,
+        cacheReadTokens: (response.usage as any)?.cache_read_input_tokens ?? 0,
+        costUsd: 0,
+        model: this.#config.model,
       }
     } catch (err) {
       clearTimeout(timer)
@@ -219,6 +230,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
       stderr: '',
       raw: result.rawOutput,
       artefacts: isStringRecord(result.extractedJson) ? result.extractedJson : undefined,
+      usage,
     }
   }
 
