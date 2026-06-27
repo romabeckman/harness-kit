@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // ─── Mock @opencode-ai/sdk before any imports ─────────────────────────────────
 // Must be declared at top level for vi.mock hoisting
-const mockServerStop = vi.fn().mockResolvedValue(undefined)
-const mockServer = { url: 'http://localhost:9999', stop: mockServerStop }
-const mockSessionCreate = vi.fn().mockResolvedValue({ data: { id: 'session-abc-123' } })
-const mockSessionPrompt = vi.fn().mockResolvedValue({ data: { output: 'opencode agent response' } })
+const mockServerClose = vi.fn().mockResolvedValue(undefined)
+const mockServer = { url: 'http://localhost:9999', close: mockServerClose }
+const mockSessionCreate = vi.fn().mockResolvedValue({ id: 'session-abc-123' })
+const mockSessionPrompt = vi.fn().mockResolvedValue({ parts: [{ type: 'text', text: 'opencode agent response' }] })
 const mockClient = { session: { create: mockSessionCreate, prompt: mockSessionPrompt } }
-const mockCreateOpencode = vi.fn().mockResolvedValue({ server: mockServer })
+const mockCreateOpencode = vi.fn().mockResolvedValue({ server: mockServer, client: mockClient })
 const mockCreateOpencodeClient = vi.fn().mockReturnValue(mockClient)
 
 vi.mock('@opencode-ai/sdk', () => ({
@@ -19,11 +19,11 @@ describe('OpenCodeRunner — TC-OC', () => {
   beforeEach(async () => {
     // Reset all mock call counts between tests
     vi.clearAllMocks()
-    mockCreateOpencode.mockResolvedValue({ server: mockServer })
+    mockCreateOpencode.mockResolvedValue({ server: mockServer, client: mockClient })
     mockCreateOpencodeClient.mockReturnValue(mockClient)
-    mockSessionCreate.mockResolvedValue({ data: { id: 'session-abc-123' } })
-    mockSessionPrompt.mockResolvedValue({ data: { output: 'opencode agent response' } })
-    mockServerStop.mockResolvedValue(undefined)
+    mockSessionCreate.mockResolvedValue({ id: 'session-abc-123' })
+    mockSessionPrompt.mockResolvedValue({ parts: [{ type: 'text', text: 'opencode agent response' }] })
+    mockServerClose.mockResolvedValue(undefined)
 
     // Ensure OpenCodeRunner is imported and registered
     await import('../../src/agent-runner/opencode/OpenCodeRunner')
@@ -54,10 +54,8 @@ describe('OpenCodeRunner — TC-OC', () => {
     // createOpencode called to start local server
     expect(mockCreateOpencode).toHaveBeenCalled()
 
-    // createOpencodeClient called with server URL
-    expect(mockCreateOpencodeClient).toHaveBeenCalledWith(
-      expect.objectContaining({ baseUrl: 'http://localhost:9999' }),
-    )
+    // createOpencodeClient not called since we use client from createOpencode directly
+    expect(mockCreateOpencodeClient).not.toHaveBeenCalled()
 
     // session.create() called
     expect(mockSessionCreate).toHaveBeenCalled()
@@ -90,7 +88,7 @@ describe('OpenCodeRunner — TC-OC', () => {
       prompt: 'write tests',
     })
 
-    expect(mockServerStop).toHaveBeenCalled()
+    expect(mockServerClose).toHaveBeenCalled()
   })
 
   it('TC-OC-01b: builds prompt from payload when prompt is not explicit', async () => {
@@ -132,7 +130,7 @@ describe('OpenCodeRunner — TC-OC', () => {
     )
 
     await expect(runPromise).rejects.toThrow()
-    expect(mockServerStop).toHaveBeenCalled()
+    expect(mockServerClose).toHaveBeenCalled()
   })
 
   it('TC-OC-validateConfig: no API key required by SDK runner (no validateConfig)', async () => {
@@ -141,5 +139,27 @@ describe('OpenCodeRunner — TC-OC', () => {
     const reg = AgentRunnerRegistry.get('opencode')
     expect(reg).toBeDefined()
     expect(reg!.validateConfig).toBeUndefined()
+  })
+
+  it('TC-OC-01c: uses pre-started server URL when provided', async () => {
+    const { OpenCodeRunner } = await import('../../src/agent-runner/opencode/OpenCodeRunner')
+
+    const runner = new OpenCodeRunner({ serverUrl: 'http://localhost:8888' })
+    const output = await runner.run({
+      agent: 'software-architect',
+      mode: 'autonomous',
+      payload: {},
+      prompt: 'explain codebase',
+    })
+
+    // createOpencode not called since we provided serverUrl
+    expect(mockCreateOpencode).not.toHaveBeenCalled()
+
+    // createOpencodeClient called with the provided server URL
+    expect(mockCreateOpencodeClient).toHaveBeenCalledWith(
+      expect.objectContaining({ baseUrl: 'http://localhost:8888' }),
+    )
+
+    expect(output.success).toBe(true)
   })
 })

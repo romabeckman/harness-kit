@@ -71,24 +71,33 @@ export class OpenCodeRunner implements IAgentRunner {
 
     const workPromise = (async () => {
       // Use pre-started server URL if provided, otherwise start one
-      let baseUrl: string
+      let client: any
       if (this.#serverUrl) {
-        baseUrl = this.#serverUrl
+        client = createOpencodeClient({ baseUrl: this.#serverUrl })
       } else {
         const opencodeApp = await createOpencode({
           config: this.#model ? { model: this.#model } : {},
         })
         server = opencodeApp.server
-        baseUrl = opencodeApp.server.url
+        client = opencodeApp.client
       }
 
-      const client = createOpencodeClient({ baseUrl })
-      const sessionResult = await client.session.create()
-      const sessionId = sessionResult.data.id
+      const session = await client.session.create({
+        body: { title: 'hk-session' },
+      })
+      const sessionId = session.id
+
+      // Parse model if specified (provider/model format)
+      let modelConfig: any = undefined
+      if (this.#model && this.#model.includes('/')) {
+        const [providerID, modelID] = this.#model.split('/')
+        modelConfig = { providerID, modelID }
+      }
 
       const promptResult = await client.session.prompt({
         path: { id: sessionId },
         body: {
+          model: modelConfig,
           parts: [{ type: 'text', text: prompt }],
         },
       })
@@ -116,7 +125,7 @@ export class OpenCodeRunner implements IAgentRunner {
     } finally {
       if (server) {
         try {
-          await server.stop()
+          await server.close()
         } catch { /* best-effort cleanup */ }
       }
     }
@@ -132,7 +141,17 @@ export class OpenCodeRunner implements IAgentRunner {
   }
 
   #extractRaw(result: any): string {
-    // Attempt to extract text from common SDK response shapes
+    // Attempt to extract text from parts list
+    const parts = result?.parts || result?.data?.parts
+    if (Array.isArray(parts)) {
+      const text = parts
+        .filter((p: any) => p.type === 'text' && typeof p.text === 'string')
+        .map((p: any) => p.text)
+        .join('\n')
+      if (text) return text
+    }
+
+    // Fallbacks for other structures
     if (typeof result?.data?.output === 'string') return result.data.output
     if (typeof result?.data?.text === 'string') return result.data.text
     if (typeof result?.output === 'string') return result.output

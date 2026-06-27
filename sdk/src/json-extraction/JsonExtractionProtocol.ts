@@ -1,6 +1,6 @@
 import type { ExtractionOutcome, ExtractionResult, ExtractionError } from './types'
 
-const FENCE_REGEX = /```(?:json)?\s*\n([\s\S]*?)\n\s*```/g
+const FENCE_REGEX = /```(?:json)?\s*([\s\S]*?)\s*```/g
 
 export class JsonExtractionProtocol {
   /**
@@ -12,26 +12,29 @@ export class JsonExtractionProtocol {
    */
   static extract(raw: string): ExtractionOutcome {
     try {
+      // Strip ANSI escape codes
+      const cleanRaw = raw.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, '')
+
       // Step 1: search for Markdown fences
       FENCE_REGEX.lastIndex = 0
-      const fenceMatch = FENCE_REGEX.exec(raw)
+      const fenceMatch = FENCE_REGEX.exec(cleanRaw)
       if (fenceMatch) {
         const candidate = fenceMatch[1].trim()
         return JsonExtractionProtocol.tryParse(candidate, raw)
       }
 
       // Step 2: fallback — first '{' or '[' to last matching '}' or ']'
-      const firstBrace = raw.indexOf('{')
-      const firstBracket = raw.indexOf('[')
+      const firstBrace = cleanRaw.indexOf('{')
+      const firstBracket = cleanRaw.indexOf('[')
       const firstPos = firstBrace === -1 ? firstBracket
         : firstBracket === -1 ? firstBrace
         : Math.min(firstBrace, firstBracket)
       const isArray = firstPos === firstBracket && (firstBrace === -1 || firstBracket < firstBrace)
-      const lastPos = isArray ? raw.lastIndexOf(']') : raw.lastIndexOf('}')
+      const lastPos = isArray ? cleanRaw.lastIndexOf(']') : cleanRaw.lastIndexOf('}')
       if (firstPos === -1 || lastPos === -1 || lastPos <= firstPos) {
         return { error: 'No JSON-like content found', raw } as ExtractionError
       }
-      const candidate = raw.substring(firstPos, lastPos + 1)
+      const candidate = cleanRaw.substring(firstPos, lastPos + 1)
       return JsonExtractionProtocol.tryParse(candidate, raw)
     } catch {
       return { error: 'Unexpected error during extraction', raw } as ExtractionError

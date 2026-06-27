@@ -131,17 +131,24 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
   }
 
   if (action === 'resume' && steeringMessage.trim()) {
-    console.log('\nAnalyzing steering message...')
-    const { SteeringAnalyzer } = require('../orchestrator/SteeringAnalyzer') as typeof import('../orchestrator/SteeringAnalyzer')
-    // Use explicit agentRunner or fall back to a default runner for steering analysis
-    const steeringRunner = agentRunner ?? AgentRunnerFactory.create({ type: 'claude-code' })
-    const actions = await SteeringAnalyzer.analyze(steeringMessage, steeringRunner)
-    if (actions.length > 0) {
-      console.log(`${AnsiHelpers.green('✓')} Applying ${actions.length} steering action(s)...`)
+    if (options.agentType === 'antigravity') {
+      console.log(`\n${AnsiHelpers.green('✓')} Applying steering rule directly for antigravity...`)
+      const actions = [{ type: 'add_rule' as const, rule: steeringMessage }]
       orchestrator.applySteeringActions(actions)
       console.log()
     } else {
-      console.log('No actionable steering instructions detected.\n')
+      console.log('\nAnalyzing steering message...')
+      const { SteeringAnalyzer } = require('../orchestrator/SteeringAnalyzer') as typeof import('../orchestrator/SteeringAnalyzer')
+      // Use explicit agentRunner or fall back to a default runner for steering analysis
+      const steeringRunner = agentRunner ?? AgentRunnerFactory.create({ type: 'claude-code' })
+      const actions = await SteeringAnalyzer.analyze(steeringMessage, steeringRunner)
+      if (actions.length > 0) {
+        console.log(`${AnsiHelpers.green('✓')} Applying ${actions.length} steering action(s)...`)
+        orchestrator.applySteeringActions(actions)
+        console.log()
+      } else {
+        console.log('No actionable steering instructions detected.\n')
+      }
     }
   }
 
