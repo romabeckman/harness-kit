@@ -1,6 +1,6 @@
 # @romabeckman/hrns
 
-![alpha](https://img.shields.io/badge/status-alpha-orange)
+![beta](https://img.shields.io/badge/status-beta-blue)
 
 Runs the [harness-kit](https://github.com/romabeckman/harness-kit) autonomous orchestrator programmatically. Instead of typing `/autonomous-orchestrator` in Claude Code, you run a single command and the full TDD loop executes unattended — scope in, backlog built, agents delegated, validation scored, memory persisted.
 
