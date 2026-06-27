@@ -12,6 +12,8 @@ import { isExtractionResult } from '../json-extraction/types'
 import type { Feature, Task } from '../file-state/types'
 import { ClaudeCodeRunner } from '../agent-runner/ClaudeCodeRunner'
 import { ClaudeAgentRunner } from '../agent-runner/ClaudeAgentRunner'
+import { AntigravityRunner } from '../agent-runner/AntigravityRunner'
+import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
 import { TokenLedger } from '../telemetry/TokenLedger'
 
 export interface HarnessOrchestratorOptions {
@@ -28,7 +30,9 @@ export class HarnessOrchestrator {
 
   constructor(config: OrchestratorConfig, options: HarnessOrchestratorOptions = {}) {
     this.agentRunner = config.agentRunner
-      ?? (process.env.ANTHROPIC_API_KEY ? new ClaudeAgentRunner() : new ClaudeCodeRunner())
+      ?? (process.env.ANTHROPIC_API_KEY
+        ? AgentRunnerFactory.create({ type: 'claude-agent' })
+        : AgentRunnerFactory.create({ type: 'claude-code' }))
     this.config = config
     this.workingDir = options.workingDir ?? process.cwd()
     const productDir = config.productDir ?? join(this.workingDir, 'docs', 'product')
@@ -58,11 +62,25 @@ export class HarnessOrchestrator {
   // ─── Agent invocation with telemetry ─────────────────────────────────────
 
   private async invokeAgent(invocation: import('../agent-runner/types').AgentInvocation): Promise<import('../agent-runner/types').AgentOutput> {
-    const output = await this.agentRunner.run(invocation)
-    if (output.usage) {
-      this.ledger.record(invocation.skill, invocation.agent, output.usage)
+    const controller = new AbortController()
+    const timeoutMs = (this.config as any).timeoutMs ?? 300_000
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        controller.abort()
+      }, timeoutMs)
     }
-    return output
+
+    try {
+      const output = await this.agentRunner.run(invocation, { signal: controller.signal })
+      if (output.usage) {
+        this.ledger.record(invocation.skill, invocation.agent, output.usage)
+      }
+      return output
+    } finally {
+      if (timer) clearTimeout(timer)
+    }
   }
 
   // ─── Public run loop ──────────────────────────────────────────────────────

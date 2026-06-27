@@ -1,5 +1,5 @@
 import type { AgentInvocation, AgentOutput } from './types'
 
 export interface IAgentRunner {
-  run(invocation: AgentInvocation): Promise<AgentOutput>
+  run(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput>
 }

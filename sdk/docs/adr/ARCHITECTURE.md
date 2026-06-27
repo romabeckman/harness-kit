@@ -1,67 +1,68 @@
-# Architecture — harness-kit
+# Arquitetura do Projeto
 
-## What this project is
+## OVERVIEW
+TypeScript SDK implementing an autonomous TDD orchestration loop using Ports-and-Adapters structure. Uses static registry and factory to decouple agent execution strategies.
 
-`harness-kit` is a meta-harness: a TypeScript SDK and a set of Claude Code skill definitions that together implement an autonomous TDD orchestration loop. The SDK drives agents through a fixed state machine; the skill definitions tell Claude Code how to invoke those agents.
+## FOLDER STRUCTURE
+<folder_structure>
+sdk/
+├── src/                          # Main SDK source directory
+│   ├── agent-runner/             # Agent runner port and built-in strategies
+│   │   ├── __tests__/            # Runner unit and modular integration tests
+│   │   ├── IAgentRunner.ts       # Outbound port interface for agent invocation
+│   │   ├── AgentRunnerRegistry.ts# Registry for strategy registrations
+│   │   ├── AgentRunnerFactory.ts # Factory to instantiate runner strategies
+│   │   ├── ClaudeCodeRunner.ts   # Local Claude CLI runner adapter
+│   │   ├── ClaudeAgentRunner.ts  # Anthropic SDK agent runner adapter
+│   │   └── AntigravityRunner.ts  # Google Antigravity CLI runner adapter
+│   ├── orchestrator/             # Core state machine loop
+│   ├── file-state/               # Filesystem reading and writing port/adapter
+│   ├── telemetry/                # Usage and token tracking ledger
+│   └── index.ts                  # Public package entry point and exports
+└── docs/                         # Technical documentation folder
+    ├── adr/                      # Architectural Decisions Records
+    └── feature/                  # Feature orientations and specs
+</folder_structure>
 
----
+## LAYERS
+- **Domain Core**: Owns the orchestrator state machine, transition logic, and phase definitions. Has zero external dependencies.
+- **Inbound Port**: `IFileStateManager` abstracts all filesystem mutations.
+- **Outbound Port**: `IAgentRunner` abstracts agent invocation with timeout AbortSignal propagation.
+- **Strategies / Adapters**: Implements concrete execution clients (CLI, API) for target LLM agents.
 
-## Repository Layout
+## MODULES
+| Module | Responsibility | Location |
+|--------|-----------------|-------------|
+| `AgentRunnerRegistry` | Singleton registry storing strategies constructors and validator functions. | `src/agent-runner/` |
+| `AgentRunnerFactory` | Instantiates runners and executes strategy validations. | `src/agent-runner/` |
+| `StateMachine` | Core phase transitions. | `src/orchestrator/` |
+| `FileStateManager` | Atomic file reads and writes. | `src/file-state/` |
 
-```
-sdk/                  # npm package — harness-kit-sdk (TypeScript, Vitest)
-docs/
-  adr/                # Architecture Decision Records (this folder)
-  feature/            # One file per completed feature — module-level orientation docs
-  specs/              # DDD design artefacts per domain (problem space, context map, etc.)
-  workflow/           # Operator-facing runbooks and playbooks
-  product/            # Live orchestration state files (BACKLOG.md, DEVELOPMENT-STATE.md, etc.)
-agents/               # Agent persona definition files
-skills/               # Claude Code skill definitions
-```
+## PATTERNS
+REQUIRED: Use Constructor Dependency Injection to decouple ports from adapters.
+REQUIRED: Spelled-out registration of new runner strategies via AgentRunnerRegistry.
+REQUIRED: Propagate AbortSignal downwards to child process groups or API requests to prevent leaks.
+FORBIDDEN: Direct dependency of orchestrator core on concrete runner implementations.
 
----
+<code_patterns>
+# REQUIRED: Strategy self-registration
+AgentRunnerRegistry.register({
+  type: 'custom-runner',
+  constructor: CustomRunner
+})
 
-## SDK Architecture — Ports-and-Adapters
+# FORBIDDEN: Direct strategy instantiation in core logic
+const runner = new ClaudeCodeRunner() // Hard-coded instantiation
+</code_patterns>
 
-The `sdk/` package follows a strict Ports-and-Adapters (Hexagonal) structure.
+## INTEGRATIONS
+| External Service / Component | Purpose | Connection / Authentication Method |
+|------------------------------|---------|-------------------------------------|
+| Anthropic API | Execution of Claude Agent | API Key environment variable |
+| Claude Code CLI | Local terminal coding agent | Spawn subprocess using local CLI auth |
+| Antigravity CLI | Execution of Google coding agent | Spawn subprocess using agy binary |
 
-**Domain core** (`sdk/src/orchestrator/`) has zero runtime dependencies outside the Node standard library. It owns the state machine and all transition logic.
-
-**Inbound port** — `IFileStateManager` — abstracts all filesystem reads and writes. The default adapter is `FileStateManager`. Tests inject `FakeFileStateManager`.
-
-**Outbound port** — `IAgentRunner` — abstracts agent invocation. Callers inject their own implementation. `NullAgentRunner` is the no-op stub; `ClaudeAgentRunner` is the production implementation backed by `@anthropic-ai/sdk`.
-
-**Supporting modules** (no external deps, pure functions or thin adapters):
-
-| Module | Role |
-|---|---|
-| `StateMachine` | Pure phase transition function |
-| `ReentryResolver` | Ordered predicate table — first match wins |
-| `ValidationGate` | Pure `evaluate(scores)` → `Verdict` |
-| `JsonExtractionProtocol` | Never-throws JSON parser returning an outcome union |
-| `ContextAssembler` | Builds per-phase `ContextPayload` from `OrchestratorState` |
-| `FileStateManager` | Atomic markdown/JSON read-write adapter |
-
----
-
-## Key Conventions
-
-- **Atomic writes** — all file mutations go through write-to-temp-then-rename. Crash leaves a `.tmp` orphan, not a corrupt file.
-- **Never-throws extraction** — `JsonExtractionProtocol` returns `ExtractionResult | ExtractionError`. Callers use type guards; they never catch.
-- **Phase persistence** — `currentPhase` is written to `BOOTSTRAP-CONFIG.json` after every transition for crash recovery.
-- **Domain parameter guard** — `writeReworkLog` validates its `domain` argument with `^[a-zA-Z0-9_-]+$` before constructing paths (path traversal mitigation).
-- **Error discrimination via `err.name`** — SDK error classes (e.g., Anthropic's `APIStatusError`, `APIConnectionError`) are identified by checking `err.name` as a string, not with `instanceof`. This is required for Vitest compatibility: mocks constructed in test files cannot replicate the SDK prototype chain across module boundaries, so `instanceof` always returns `false` against mocks.
-- **Runner auto-detection** — `HarnessOrchestrator` selects a runner by priority: explicit `agentRunner` config > `ANTHROPIC_API_KEY` present → `ClaudeAgentRunner` > `ClaudeCodeRunner`. See `./docs/feature/sdk_agent_runner.md`.
-- **External dependency scope** — `@anthropic-ai/sdk` is the only third-party runtime dependency in `sdk/`. It is consumed exclusively by `ClaudeAgentRunner`. `ClaudeCodeRunner` has no third-party deps — it shells out to the local `claude` CLI. All orchestrator domain logic remains dependency-free.
-- **Dual JSON extraction paths** — `JsonExtractionProtocol` (orchestrator) and `ClaudeAgentRunner`'s internal `extractJson` are intentionally separate. The former serves Phase C metric parsing; the latter populates `AgentOutput.artefacts`. Merging them would couple the agent runner to the orchestrator's extraction utility without benefit.
-- **CJS-only exports boundary** — `package.json` defines a single `"."` exports entry with only a `"require"` condition. No `"import"` (ESM) condition exists. Adding ESM later is additive; omitting it now avoids dual-build complexity at v1.0.0.
-- **Publication surface via `files` whitelist** — The npm tarball includes only `dist/` and `README.md`. Source files, test suites, and spec documents are excluded from the published package. This boundary is enforced by the `files` field in `package.json`, not by `.npmignore`.
-- **Publication gate** — `prepublishOnly` runs `npm run build && npm test` before every `npm publish`. A broken build or failing test suite blocks publication automatically.
-
----
-
-## Cross-References
-
-- Module detail: `./docs/feature/` (one file per completed feature)
-- DDD design artefacts: `./docs/specs/` (problem space, context map, tactical design, test scenarios per domain)
+## REFERENCES
+- [**README.md**](../README.md): Main documentation index.
+- [**TESTS.md**](./TESTS.md): Testing strategies and commands.
+- [**sdk_agent_runner.md**](../feature/sdk_agent_runner.md): Implementation details of ClaudeAgentRunner and ClaudeCodeRunner.

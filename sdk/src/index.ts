@@ -25,6 +25,12 @@ export { ClaudeAgentRunner } from './agent-runner/ClaudeAgentRunner'
 export { AgentRunnerError, AgentRunnerErrorCode } from './agent-runner/AgentRunnerError'
 export type { AgentRunnerConfig } from './agent-runner/AgentRunnerConfig'
 
+// Modular runner registry & factory, and AntigravityRunner
+export { AgentRunnerRegistry } from './agent-runner/AgentRunnerRegistry'
+export type { RunnerRegistration } from './agent-runner/AgentRunnerRegistry'
+export { AgentRunnerFactory } from './agent-runner/AgentRunnerFactory'
+export { AntigravityRunner } from './agent-runner/AntigravityRunner'
+
 // File state types
 export type {
   Feature,

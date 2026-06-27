@@ -1,15 +1,27 @@
+export interface BaseRunnerConfig {
+  readonly type: string
+  readonly timeoutMs?: number
+}
+
+export type RunnerConfig = BaseRunnerConfig & Record<string, any>
+
 export interface AgentInvocation {
-  skill: string
-  agent: string
-  mode: 'autonomous'
-  payload: ContextPayload
-  prompt?: string  // explicit prompt override (takes precedence over payload serialization)
+  readonly skill: string
+  readonly agent: string
+  readonly mode: 'autonomous'
+  readonly payload: ContextPayload
+  readonly prompt?: string  // explicit prompt override (takes precedence over payload serialization)
+  readonly workspacePath?: string
+  readonly env?: Record<string, string>
 }
 
 export interface AgentOutput {
-  raw: string
-  artefacts?: Record<string, string>
-  usage?: TokenUsage
+  readonly success: boolean
+  readonly stdout: string
+  readonly stderr: string
+  readonly raw: string
+  readonly artefacts?: Record<string, string>
+  readonly usage?: TokenUsage
 }
 
 export interface TokenUsage {
@@ -23,3 +35,4 @@ export interface TokenUsage {
 }
 
 export type ContextPayload = Record<string, unknown>
+

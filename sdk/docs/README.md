@@ -1,0 +1,21 @@
+# Project Documentation
+
+Index of project technical documentation for **harness-kit SDK**. Use the links below to navigate the available documents.
+
+## Documentation Index
+**RULE:** Only reference documents located in `./docs/adr/` or `./docs/feature/`. No other folders are permitted. Always validate that referenced files exist in one of these directories before finalizing the document.
+
+| Document | Description | Reading |
+|----------|-------------|----------|
+| [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Architecture, folder organization, and code patterns for the project. | **Mandatory** |
+| [**TESTS.md**](./adr/TESTS.md) | Testing strategies, patterns, and execution commands. | **Mandatory** |
+| [**sdk_agent_runner.md**](./feature/sdk_agent_runner.md) | Implementation details of ClaudeAgentRunner and ClaudeCodeRunner. | Optional |
+| [**sdk_core.md**](./feature/sdk_core.md) | Architectural details of core SDK ports and adapters. | Optional |
+| [**sdk_package.md**](./feature/sdk_package.md) | SDK package build and release configuration. | Optional |
+| [**sdk_state.md**](./feature/sdk_state.md) | SDK state persistence and recovery logic. | Optional |
+
+## Recommended Reading Order
+
+1. **adr/ARCHITECTURE.md** — technical foundation and project organization.
+2. **adr/TESTS.md** — code validation and quality.
+3. Additional documents in adr/ or feature/ folders as needed for the task.

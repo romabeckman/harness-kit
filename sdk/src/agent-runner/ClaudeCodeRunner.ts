@@ -3,6 +3,7 @@ import { createInterface } from 'node:readline'
 import type { IAgentRunner } from './IAgentRunner'
 import type { AgentInvocation, AgentOutput } from './types'
 import { AgentRunnerError, AgentRunnerErrorCode } from './AgentRunnerError'
+import { AgentRunnerRegistry } from './AgentRunnerRegistry'
 
 export interface ClaudeCodeRunnerConfig {
   readonly timeoutMs: number
@@ -66,7 +67,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
     }
   }
 
-  async run(invocation: AgentInvocation): Promise<AgentOutput> {
+  async run(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput> {
     const prompt = this.#buildPrompt(invocation)
     const onProgress = this.#config.onProgress
 
@@ -101,6 +102,20 @@ export class ClaudeCodeRunner implements IAgentRunner {
       }
 
       const clearTimer = () => { if (timer) clearTimeout(timer) }
+
+      if (options?.signal) {
+        if (options.signal.aborted) {
+          clearTimer()
+          child.kill()
+          reject(new Error('aborted'))
+          return
+        }
+        options.signal.addEventListener('abort', () => {
+          clearTimer()
+          child.kill()
+          reject(new Error('aborted'))
+        })
+      }
 
       let finalResult = ''
       let isFinalError = false
@@ -197,7 +212,10 @@ export class ClaudeCodeRunner implements IAgentRunner {
           }))
           return
         }
-        resolve({
+         resolve({
+          success: !isFinalError,
+          stdout: finalResult,
+          stderr: '',
           raw: finalResult,
           usage: finalUsage,
           artefacts: (() => {
@@ -225,3 +243,8 @@ export class ClaudeCodeRunner implements IAgentRunner {
     ].join('\n')
   }
 }
+
+AgentRunnerRegistry.register({
+  type: 'claude-code',
+  constructor: ClaudeCodeRunner,
+})

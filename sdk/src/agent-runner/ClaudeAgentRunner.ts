@@ -3,6 +3,7 @@ import type { IAgentRunner } from './IAgentRunner'
 import type { AgentInvocation, AgentOutput } from './types'
 import { type AgentRunnerConfig, DEFAULT_AGENT_RUNNER_CONFIG } from './AgentRunnerConfig'
 import { AgentRunnerError, AgentRunnerErrorCode } from './AgentRunnerError'
+import { AgentRunnerRegistry } from './AgentRunnerRegistry'
 
 // ─── Internal value object ────────────────────────────────────────────────────
 interface AgentResult {
@@ -120,8 +121,17 @@ export class ClaudeAgentRunner implements IAgentRunner {
     this.#client = new Anthropic({ apiKey })
   }
 
-  async run(invocation: AgentInvocation): Promise<AgentOutput> {
+  async run(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput> {
     const controller = new AbortController()
+
+    if (options?.signal) {
+      if (options.signal.aborted) {
+        controller.abort()
+      }
+      options.signal.addEventListener('abort', () => {
+        controller.abort()
+      })
+    }
 
     // Race the API call against an abort-triggered rejection so tests with
     // fake timers can observe the timeout without the mock needing to handle
@@ -204,6 +214,9 @@ export class ClaudeAgentRunner implements IAgentRunner {
     }
 
     return {
+      success: true,
+      stdout: result.rawOutput,
+      stderr: '',
       raw: result.rawOutput,
       artefacts: isStringRecord(result.extractedJson) ? result.extractedJson : undefined,
     }
@@ -218,3 +231,8 @@ export class ClaudeAgentRunner implements IAgentRunner {
     ].join('\n')
   }
 }
+
+AgentRunnerRegistry.register({
+  type: 'claude-agent',
+  constructor: ClaudeAgentRunner,
+})
