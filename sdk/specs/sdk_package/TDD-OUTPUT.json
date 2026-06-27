@@ -1,9 +1,0 @@
-{
-  "featureId": "F004",
-  "domain": "sdk_package",
-  "tasksCompleted": 8,
-  "buildPasses": true,
-  "testsPassing": 225,
-  "npmPackDryRunPasses": true,
-  "summary": "F004 complete. tsconfig.build.json verified correct and updated to exclude src/**/__tests__ (colocated tests were being compiled into dist/). package.json bumped to 1.0.0 with license, exports, files, and prepublishOnly fields added. Clean build produces dist/index.js, index.d.ts, index.js.map, index.d.ts.map. npm pack --dry-run includes only dist/ and README.md — no src/, tests/, tsconfig*.json, or docs/. All 225 Vitest tests pass. README.md created with install command, HarnessOrchestrator usage example, ANTHROPIC_API_KEY note, and NullAgentRunner injection guidance."
-}
