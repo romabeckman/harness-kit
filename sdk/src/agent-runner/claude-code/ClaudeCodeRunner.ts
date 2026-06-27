@@ -119,7 +119,10 @@ export class ClaudeCodeRunner implements IAgentRunner {
 
       let finalResult = ''
       let isFinalError = false
+      let cliStderr = ''
       let finalUsage: import('../types').TokenUsage | undefined
+
+      child.stderr?.on('data', (chunk: Buffer) => { cliStderr += chunk.toString() })
 
       const rl = createInterface({ input: child.stdout, crlfDelay: Infinity })
 
@@ -205,8 +208,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
           return
         }
         if (code !== 0 && !finalResult) {
-          const stderrText = stderr ?? ''
-          const isQuota = /rate.?limit|quota|overloaded/i.test(stderrText)
+          const isQuota = /rate.?limit|quota|overloaded/i.test(cliStderr)
           reject(new AgentRunnerError({
             code: isQuota ? AgentRunnerErrorCode.QUOTA_EXCEEDED : AgentRunnerErrorCode.UNKNOWN_ERROR,
             skill: invocation.skill ?? 'unknown',
