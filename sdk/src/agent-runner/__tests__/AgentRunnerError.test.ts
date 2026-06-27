@@ -17,6 +17,51 @@ describe('AgentRunnerErrorCode', () => {
   it('has NETWORK_ERROR value', () => {
     expect(AgentRunnerErrorCode.NETWORK_ERROR).toBe('NETWORK_ERROR')
   })
+
+  it('has QUOTA_EXCEEDED value', () => {
+    expect(AgentRunnerErrorCode.QUOTA_EXCEEDED).toBe('QUOTA_EXCEEDED')
+  })
+
+  it('has UNKNOWN_ERROR value', () => {
+    expect(AgentRunnerErrorCode.UNKNOWN_ERROR).toBe('UNKNOWN_ERROR')
+  })
+})
+
+describe('AgentRunnerError — new error codes', () => {
+  it('sets code to QUOTA_EXCEEDED', () => {
+    const err = new AgentRunnerError({
+      code: AgentRunnerErrorCode.QUOTA_EXCEEDED,
+      skill: 'scope-refinement',
+      phase: 'dispatch',
+      message: 'API quota exceeded: rate_limit_error',
+    })
+    expect(err.code).toBe(AgentRunnerErrorCode.QUOTA_EXCEEDED)
+    expect(err.name).toBe('AgentRunnerError')
+    expect(err.skill).toBe('scope-refinement')
+  })
+
+  it('sets code to UNKNOWN_ERROR', () => {
+    const err = new AgentRunnerError({
+      code: AgentRunnerErrorCode.UNKNOWN_ERROR,
+      skill: 'tdd-orchestrator',
+      phase: 'dispatch',
+      message: 'Unexpected error occurred',
+    })
+    expect(err.code).toBe(AgentRunnerErrorCode.UNKNOWN_ERROR)
+    expect(err.name).toBe('AgentRunnerError')
+  })
+
+  it('QUOTA_EXCEEDED preserves cause', () => {
+    const cause = new Error('upstream 429')
+    const err = new AgentRunnerError({
+      code: AgentRunnerErrorCode.QUOTA_EXCEEDED,
+      skill: 'unknown',
+      phase: 'dispatch',
+      message: 'rate limit hit',
+      cause,
+    })
+    expect(err.cause).toBe(cause)
+  })
 })
 
 describe('AgentRunnerError', () => {

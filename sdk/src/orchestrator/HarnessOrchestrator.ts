@@ -7,6 +7,7 @@ import { FileStateManager } from '../file-state/FileStateManager'
 import type { IFileStateManager } from '../file-state/FileStateManager'
 import type { Feature, Task } from '../file-state/types'
 import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
+import { AgentRunnerError, AgentRunnerErrorCode } from '../agent-runner/AgentRunnerError'
 import { TokenLedger } from '../telemetry/TokenLedger'
 import { AnsiHelpers } from '../ui/AnsiHelpers'
 import { TerminalProgress } from '../ui/TerminalProgress'
@@ -91,7 +92,22 @@ export class HarnessOrchestrator implements PhaseContext {
       // Persist current phase before executing
       this.persistPhase()
 
-      const next = await this.dispatch(this.state.currentPhase)
+      let next: Phase
+      try {
+        next = await this.dispatch(this.state.currentPhase)
+      } catch (err) {
+        if (err instanceof AgentRunnerError && err.code === AgentRunnerErrorCode.QUOTA_EXCEEDED) {
+          process.stderr.write(
+            `\n${AnsiHelpers.yellow('⚠')} ${AnsiHelpers.dim('Quota / rate-limit reached.')} ` +
+            `Phase ${AnsiHelpers.cyan(this.getPhaseDescription(this.state.currentPhase))} persisted.\n` +
+            `  Resume: ${AnsiHelpers.dim('hrns run')} → select "resume"\n\n`
+          )
+          this.state = { ...this.state, currentPhase: Phase.HALTED }
+          return
+        }
+        throw err
+      }
+
       if (next !== this.state.currentPhase) {
         const transitionMsg = `Phase transition: ${this.getPhaseDescription(this.state.currentPhase)} → ${this.getPhaseDescription(next)}`
         this.fsm.appendDecision({

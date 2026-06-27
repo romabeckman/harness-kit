@@ -44,6 +44,16 @@ function isConnectionError(err: unknown): boolean {
   return name === 'APIConnectionError' || name === 'APIConnectionTimeoutError'
 }
 
+function isQuotaError(err: unknown): boolean {
+  if (err === null || typeof err !== 'object') return false
+  const status = (err as { status?: unknown }).status
+  const msg = ((err as { message?: string }).message ?? '').toLowerCase()
+  return status === 429
+    || msg.includes('rate_limit')
+    || msg.includes('overloaded_error')
+    || msg.includes('quota')
+}
+
 // ─── JSON extraction ──────────────────────────────────────────────────────────
 function extractJson(raw: string): unknown | null {
   // Strategy 1: markdown code fence ```json ... ```
@@ -205,6 +215,16 @@ export class ClaudeAgentRunner implements IAgentRunner {
         })
       }
 
+      if (isQuotaError(err)) {
+        throw new AgentRunnerError({
+          code: AgentRunnerErrorCode.QUOTA_EXCEEDED,
+          skill: invocation.skill ?? 'unknown',
+          phase: 'dispatch',
+          message: `API quota or rate limit exceeded: ${(err as Error).message}`,
+          cause: err as Error,
+        })
+      }
+
       if (isApiStatusError(err)) {
         throw new AgentRunnerError({
           code: AgentRunnerErrorCode.API_ERROR,
@@ -216,10 +236,10 @@ export class ClaudeAgentRunner implements IAgentRunner {
       }
 
       throw new AgentRunnerError({
-        code: AgentRunnerErrorCode.NETWORK_ERROR,
+        code: AgentRunnerErrorCode.UNKNOWN_ERROR,
         skill: invocation.skill ?? 'unknown',
         phase: 'dispatch',
-        message: `Network failure during agent invocation: ${(err as Error).message}`,
+        message: `Unexpected error during agent invocation: ${(err as Error).message}`,
         cause: err as Error,
       })
     }

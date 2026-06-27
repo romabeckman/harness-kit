@@ -68,3 +68,31 @@ REQUIRED: Pass agent selection flags when running orchestration command:
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Arch patterns and integrations.
 - [**TESTS.md**](../adr/TESTS.md): Testing guidelines.
 
+## ERROR HANDLING
+
+All runners throw `AgentRunnerError` on failure. The `code` field distinguishes the failure category:
+
+| Code | Meaning | Typical Cause |
+|---|---|---|
+| `MISSING_API_KEY` | Required env var absent | `ANTHROPIC_API_KEY` not set |
+| `TIMEOUT` | Orchestrator-level timeout fired | `timeoutMs` exceeded |
+| `NETWORK_ERROR` | Connection-level failure | `ENOENT`, `ECONNREFUSED`, `APIConnectionError` |
+| `API_ERROR` | Semantic 4xx from the provider | HTTP 401, 403, 400 — not 429 |
+| `QUOTA_EXCEEDED` | Rate limit or quota exhausted | HTTP 429, `rate_limit_error`, `overloaded_error` |
+| `UNKNOWN_ERROR` | Unrecognised failure | JS exceptions, unhandled exit codes |
+
+### Quota Detection
+
+`ClaudeAgentRunner` detects quota errors **before** the generic `isApiStatusError` guard:
+- HTTP status `429`
+- Message containing `rate_limit`, `overloaded_error`, or `quota`
+
+`ClaudeCodeRunner` and `AbstractCliRunner` apply a regex `/rate.?limit|quota|overloaded/i` against the CLI output / stderr.
+
+### Orchestrator Behaviour on `QUOTA_EXCEEDED`
+
+When a `QUOTA_EXCEEDED` error propagates to `HarnessOrchestrator.run()`:
+1. The current phase is **persisted** to `BOOTSTRAP-CONFIG.json` (via `persistPhase()` which already runs before dispatch, so state is safe).
+2. A warning with resume instructions is written to **stderr**.
+3. The orchestrator transitions to `Phase.HALTED` — no crash, no stack trace.
+4. The user resumes with `hrns run` → select **"resume"**.

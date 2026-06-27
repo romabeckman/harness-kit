@@ -312,6 +312,97 @@ describe('ClaudeAgentRunner.run() — network failure (TS09)', () => {
   })
 })
 
+// ─── T10b: Quota / rate-limit errors ─────────────────────────────────────────
+describe('ClaudeAgentRunner.run() — quota and rate-limit errors', () => {
+  beforeEach(() => {
+    process.env.ANTHROPIC_API_KEY = 'test-api-key'
+    mockMessagesCreate.mockReset()
+  })
+
+  afterEach(() => {
+    delete process.env.ANTHROPIC_API_KEY
+  })
+
+  it('throws QUOTA_EXCEEDED for HTTP 429 status', async () => {
+    const sdk = await import('@anthropic-ai/sdk') as unknown as {
+      APIStatusError: new (status: number, body: unknown, message: string, headers: unknown) => Error & { status: number }
+    }
+    const err429 = new sdk.APIStatusError(429, { error: 'rate_limit_error' }, 'Too Many Requests', {})
+    mockMessagesCreate.mockRejectedValue(err429)
+    const runner = new ClaudeAgentRunner()
+    await expect(runner.run(fakeInvocation)).rejects.toMatchObject({
+      code: AgentRunnerErrorCode.QUOTA_EXCEEDED,
+      phase: 'dispatch',
+    })
+  })
+
+  it('throws QUOTA_EXCEEDED when error message contains "rate_limit"', async () => {
+    const err = new Error('rate_limit_error: exceeded quota')
+    ;(err as any).status = 429
+    ;(err as any).name = 'APIStatusError'
+    mockMessagesCreate.mockRejectedValue(err)
+    const runner = new ClaudeAgentRunner()
+    await expect(runner.run(fakeInvocation)).rejects.toMatchObject({
+      code: AgentRunnerErrorCode.QUOTA_EXCEEDED,
+    })
+  })
+
+  it('throws QUOTA_EXCEEDED when error message contains "overloaded_error"', async () => {
+    const sdk = await import('@anthropic-ai/sdk') as unknown as {
+      APIStatusError: new (status: number, body: unknown, message: string, headers: unknown) => Error & { status: number }
+    }
+    const overloadedErr = new sdk.APIStatusError(529, {}, 'overloaded_error: server is temporarily overloaded', {})
+    mockMessagesCreate.mockRejectedValue(overloadedErr)
+    const runner = new ClaudeAgentRunner()
+    await expect(runner.run(fakeInvocation)).rejects.toMatchObject({
+      code: AgentRunnerErrorCode.QUOTA_EXCEEDED,
+    })
+  })
+
+  it('QUOTA_EXCEEDED preserves original error as cause', async () => {
+    const sdk = await import('@anthropic-ai/sdk') as unknown as {
+      APIStatusError: new (status: number, body: unknown, message: string, headers: unknown) => Error & { status: number }
+    }
+    const err429 = new sdk.APIStatusError(429, {}, 'rate limit', {})
+    mockMessagesCreate.mockRejectedValue(err429)
+    const runner = new ClaudeAgentRunner()
+    let caught: AgentRunnerError | undefined
+    try { await runner.run(fakeInvocation) } catch (e) { caught = e as AgentRunnerError }
+    expect(caught?.cause).toBe(err429)
+  })
+})
+
+// ─── T10c: Unknown / generic errors ──────────────────────────────────────────
+describe('ClaudeAgentRunner.run() — unknown errors', () => {
+  beforeEach(() => {
+    process.env.ANTHROPIC_API_KEY = 'test-api-key'
+    mockMessagesCreate.mockReset()
+  })
+
+  afterEach(() => {
+    delete process.env.ANTHROPIC_API_KEY
+  })
+
+  it('throws UNKNOWN_ERROR for unrecognised plain Error', async () => {
+    const unknownErr = new Error('something unexpected happened')
+    mockMessagesCreate.mockRejectedValue(unknownErr)
+    const runner = new ClaudeAgentRunner()
+    await expect(runner.run(fakeInvocation)).rejects.toMatchObject({
+      code: AgentRunnerErrorCode.UNKNOWN_ERROR,
+      phase: 'dispatch',
+    })
+  })
+
+  it('UNKNOWN_ERROR preserves original error as cause', async () => {
+    const unknownErr = new Error('weird failure')
+    mockMessagesCreate.mockRejectedValue(unknownErr)
+    const runner = new ClaudeAgentRunner()
+    let caught: AgentRunnerError | undefined
+    try { await runner.run(fakeInvocation) } catch (e) { caught = e as AgentRunnerError }
+    expect(caught?.cause).toBe(unknownErr)
+  })
+})
+
 // ─── T11: Custom model config (TS10) ─────────────────────────────────────────
 describe('ClaudeAgentRunner.run() — custom model config (TS10)', () => {
   beforeEach(() => {
@@ -413,7 +504,7 @@ describe('AgentRunnerError fields completeness (TS13)', () => {
 
   it('TS13-B: API_ERROR has all required fields', async () => {
     const sdk = await import('@anthropic-ai/sdk') as unknown as { APIStatusError: new (status: number, body: unknown, message: string, headers: unknown) => Error & { status: number } }
-    const apiError = new sdk.APIStatusError(429, {}, 'Too Many Requests', {})
+    const apiError = new sdk.APIStatusError(401, {}, 'Unauthorized', {})
     mockMessagesCreate.mockRejectedValue(apiError)
     const runner = new ClaudeAgentRunner()
 

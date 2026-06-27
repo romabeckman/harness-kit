@@ -154,7 +154,7 @@ describe('CursorRunner — TC-CU', () => {
     expect((caught as InstanceType<typeof AgentRunnerError>).code).toBe(AgentRunnerErrorCode.NETWORK_ERROR)
   })
 
-  it('TC-ACR-03: exit code ≠ 0 throws AgentRunnerError(API_ERROR)', async () => {
+  it('TC-ACR-03: exit code ≠ 0 throws AgentRunnerError(UNKNOWN_ERROR)', async () => {
     const { spawn } = await import('node:child_process')
     const spawnMock = spawn as unknown as ReturnType<typeof vi.fn>
     spawnMock.mockReturnValue(makeMockChild({ exitCode: 1 }))
@@ -168,7 +168,7 @@ describe('CursorRunner — TC-CU', () => {
     catch (e) { caught = e }
 
     expect(caught).toBeInstanceOf(AgentRunnerError)
-    expect((caught as InstanceType<typeof AgentRunnerError>).code).toBe(AgentRunnerErrorCode.API_ERROR)
+    expect((caught as InstanceType<typeof AgentRunnerError>).code).toBe(AgentRunnerErrorCode.UNKNOWN_ERROR)
   })
 
   it('TC-ACR-04: AbortSignal rejects run()', async () => {

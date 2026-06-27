@@ -195,8 +195,9 @@ export class ClaudeCodeRunner implements IAgentRunner {
       child.on('close', (code) => {
         clearTimer()
         if (isFinalError) {
+          const isQuota = /rate.?limit|quota|overloaded/i.test(finalResult)
           reject(new AgentRunnerError({
-            code: AgentRunnerErrorCode.API_ERROR,
+            code: isQuota ? AgentRunnerErrorCode.QUOTA_EXCEEDED : AgentRunnerErrorCode.API_ERROR,
             skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `agent returned error: ${finalResult.slice(0, 200)}`,
@@ -204,8 +205,10 @@ export class ClaudeCodeRunner implements IAgentRunner {
           return
         }
         if (code !== 0 && !finalResult) {
+          const stderrText = stderr ?? ''
+          const isQuota = /rate.?limit|quota|overloaded/i.test(stderrText)
           reject(new AgentRunnerError({
-            code: AgentRunnerErrorCode.API_ERROR,
+            code: isQuota ? AgentRunnerErrorCode.QUOTA_EXCEEDED : AgentRunnerErrorCode.UNKNOWN_ERROR,
             skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `claude CLI exited with code ${code} and no result`,

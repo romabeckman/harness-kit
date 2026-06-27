@@ -1,8 +1,10 @@
 export enum AgentRunnerErrorCode {
   MISSING_API_KEY = 'MISSING_API_KEY',
   TIMEOUT         = 'TIMEOUT',
-  API_ERROR       = 'API_ERROR',
-  NETWORK_ERROR   = 'NETWORK_ERROR',
+  API_ERROR       = 'API_ERROR',      // 4xx semantic errors (except 429)
+  NETWORK_ERROR   = 'NETWORK_ERROR',  // connection failures (ENOENT, ECONNREFUSED)
+  QUOTA_EXCEEDED  = 'QUOTA_EXCEEDED', // 429 / rate-limit / quota exhaustion
+  UNKNOWN_ERROR   = 'UNKNOWN_ERROR',  // fallback for unrecognised errors
 }
 
 export class AgentRunnerError extends Error {

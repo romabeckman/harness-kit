@@ -132,8 +132,9 @@ export abstract class AbstractCliRunner implements IAgentRunner {
       child.on('close', (code) => {
         clearTimer()
         if (code !== 0) {
+          const isQuota = /rate.?limit|quota|overloaded/i.test(stderr)
           reject(new AgentRunnerError({
-            code: AgentRunnerErrorCode.API_ERROR,
+            code: isQuota ? AgentRunnerErrorCode.QUOTA_EXCEEDED : AgentRunnerErrorCode.UNKNOWN_ERROR,
             skill: invocation.skill ?? 'unknown',
             phase: 'dispatch',
             message: `${this.binaryName} CLI exited with code ${code}`,
