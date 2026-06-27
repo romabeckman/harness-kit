@@ -6,16 +6,20 @@ export class TerminalProgress {
   private static currentMessage = ''
   private static currentPhase = ''
 
+  /**
+   * Writes spinner to stderr so it never collides with subprocess stdout output
+   * (e.g. agy / claude writing directly to the terminal TTY).
+   */
   static startSpinner(phase: string, message: string) {
     if (this.spinnerTimer) this.stopSpinner()
     this.currentPhase = phase
     this.currentMessage = message
     let frame = 0
-    process.stdout.write(AnsiHelpers.hideCursor())
+    process.stderr.write(AnsiHelpers.hideCursor())
     this.spinnerTimer = setInterval(() => {
       const sp = AnsiHelpers.cyan(this.spinnerFrames[frame])
       const text = `\r${AnsiHelpers.clearLine()}${sp} [${AnsiHelpers.blue(this.currentPhase)}] ${this.currentMessage}`
-      process.stdout.write(text)
+      process.stderr.write(text)
       frame = (frame + 1) % this.spinnerFrames.length
     }, 80)
   }
@@ -25,7 +29,7 @@ export class TerminalProgress {
       clearInterval(this.spinnerTimer)
       this.spinnerTimer = null
     }
-    process.stdout.write('\r' + AnsiHelpers.clearLine() + AnsiHelpers.showCursor() + '\n')
+    process.stderr.write('\r' + AnsiHelpers.clearLine() + AnsiHelpers.showCursor() + '\n')
   }
 
   static drawProgressBar(phase: string, total: number, current: number, message: string) {
@@ -35,7 +39,7 @@ export class TerminalProgress {
     const empty = width - filled
     const bar = AnsiHelpers.green('█'.repeat(filled)) + AnsiHelpers.dim('░'.repeat(empty))
     const percent = Math.round(ratio * 100)
-    
+
     process.stdout.write(`\r${AnsiHelpers.clearLine()}[${AnsiHelpers.blue(phase)}] ${bar} ${percent}% | ${message}\n`)
   }
 }
