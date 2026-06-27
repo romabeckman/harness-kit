@@ -54,6 +54,8 @@ Then from any project directory:
 hrns run
 ```
 
+> To uninstall: `npm uninstall -g @romabeckman/hrns`
+
 ---
 
 ### Option C — run directly without installing
