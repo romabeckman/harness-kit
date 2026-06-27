@@ -505,3 +505,104 @@ describe('F002 — getNextTask', () => {
     })
   })
 })
+
+// ─── 8. Bold-markdown ID stripping ────────────────────────────────────────────
+
+describe('F002 REWORK — bold-markdown ID stripping', () => {
+  describe('8.1 updateFeatureStatus with bold ID in BACKLOG.md', () => {
+    it('succeeds when BACKLOG.md stores ID as **F002** but caller passes plain F002', () => {
+      writeBacklog([
+        '| **F001** | Feature One | core | 1 | - | 0 | - | - | COMPLETED |',
+        '| **F002** | Feature Two | core | 2 | F001 | 0 | - | - | NOT_STARTED |',
+      ])
+      expect(() => mgr.updateFeatureStatus('F002', 'IN_PROGRESS', { tl: 0.75, adv: 0.80 })).not.toThrow()
+      const features = mgr.loadBacklog()
+      const f002 = features.find(f => f.id === 'F002')!
+      expect(f002.status).toBe('IN_PROGRESS')
+      expect(f002.scoreTL).toBe(0.75)
+    })
+  })
+
+  describe('8.2 incrementReworks with bold ID in BACKLOG.md', () => {
+    it('increments reworks when BACKLOG.md stores ID as **F002**', () => {
+      writeBacklog([
+        '| **F002** | Feature Two | core | 2 | - | 0 | - | - | NOT_STARTED |',
+      ])
+      expect(() => mgr.incrementReworks('F002')).not.toThrow()
+      const features = mgr.loadBacklog()
+      expect(features.find(f => f.id === 'F002')!.reworks).toBe(1)
+    })
+  })
+
+  describe('8.3 getExecutableFeatures with bold IDs in BACKLOG.md', () => {
+    it('resolves dependency match when IDs stored as **F001** in ID col and plain F001 in deps col', () => {
+      writeBacklog([
+        '| **F001** | Feature One | core | 1 | - | 0 | - | - | COMPLETED |',
+        '| **F002** | Feature Two | core | 2 | F001 | 0 | - | - | NOT_STARTED |',
+      ])
+      const result = mgr.getExecutableFeatures()
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('F002')
+    })
+  })
+
+  describe('8.4 getNextTask with bold featureId in DEVELOPMENT-STATE.md', () => {
+    it('returns task when DEVELOPMENT-STATE.md stores featureId as **F001** but caller passes plain F001', () => {
+      writeDevState([
+        '| **F001** | T01 | sdk | task one | core | - | NOT_STARTED |',
+        '| **F001** | T02 | sdk | task two | core | - | NOT_STARTED |',
+      ])
+      const task = mgr.getNextTask('F001')
+      expect(task).not.toBeNull()
+      expect(task!.taskId).toBe('T01')
+    })
+  })
+})
+
+// ─── 9. Pipe injection in appendDecision ──────────────────────────────────────
+
+describe('F002 REWORK — pipe injection in appendDecision', () => {
+  describe('9.1 Pipe in decision field escaped — row has exactly 5 cells', () => {
+    it('row has exactly 5 pipe-delimited cells when decision contains |', () => {
+      writeDecisions()
+      mgr.appendDecision({
+        featureId: 'F001',
+        decision: 'Score above | threshold',
+        rationale: 'TL: 0.78, score above | threshold',
+      })
+      const content = readFileSync(join(productDir, 'DECISIONS.md'), 'utf-8')
+      const rows = content.split('\n').filter(l => l.includes('threshold') && l.startsWith('|'))
+      expect(rows).toHaveLength(1)
+      const cells = rows[0].split('|').slice(1, -1)
+      expect(cells).toHaveLength(5)
+    })
+  })
+
+  describe('9.2 Pipe in rationale field escaped — row has exactly 5 cells', () => {
+    it('row has exactly 5 cells when rationale contains |', () => {
+      writeDecisions()
+      mgr.appendDecision({
+        featureId: 'F002',
+        decision: 'Proceed',
+        scores: { tl: 0.8, adv: 0.9 },
+        rationale: 'condition A | condition B met',
+      })
+      const content = readFileSync(join(productDir, 'DECISIONS.md'), 'utf-8')
+      const rows = content.split('\n').filter(l => l.includes('condition A') && l.startsWith('|'))
+      expect(rows).toHaveLength(1)
+      const cells = rows[0].split('|').slice(1, -1)
+      expect(cells).toHaveLength(5)
+    })
+  })
+})
+
+// ─── 10. existsSync guard in updateAllFeatureTasks ────────────────────────────
+
+describe('F002 REWORK — existsSync guard in resetTasksForRetry', () => {
+  describe('10.1 resetTasksForRetry no-op when DEVELOPMENT-STATE.md absent', () => {
+    it('does not throw when DEVELOPMENT-STATE.md does not exist', () => {
+      // productDir exists but DEVELOPMENT-STATE.md was never created
+      expect(() => mgr.resetTasksForRetry('F001')).not.toThrow()
+    })
+  })
+})

@@ -52,8 +52,12 @@ The `sdk/` package follows a strict Ports-and-Adapters (Hexagonal) structure.
 - **Phase persistence** — `currentPhase` is written to `BOOTSTRAP-CONFIG.json` after every transition for crash recovery.
 - **Domain parameter guard** — `writeReworkLog` validates its `domain` argument with `^[a-zA-Z0-9_-]+$` before constructing paths (path traversal mitigation).
 - **Error discrimination via `err.name`** — SDK error classes (e.g., Anthropic's `APIStatusError`, `APIConnectionError`) are identified by checking `err.name` as a string, not with `instanceof`. This is required for Vitest compatibility: mocks constructed in test files cannot replicate the SDK prototype chain across module boundaries, so `instanceof` always returns `false` against mocks.
-- **External dependency scope** — `@anthropic-ai/sdk` is the only third-party runtime dependency in `sdk/`. It is consumed exclusively by `ClaudeAgentRunner`. All orchestrator domain logic remains dependency-free.
+- **Runner auto-detection** — `HarnessOrchestrator` selects a runner by priority: explicit `agentRunner` config > `ANTHROPIC_API_KEY` present → `ClaudeAgentRunner` > `ClaudeCodeRunner`. See `./docs/feature/sdk_agent_runner.md`.
+- **External dependency scope** — `@anthropic-ai/sdk` is the only third-party runtime dependency in `sdk/`. It is consumed exclusively by `ClaudeAgentRunner`. `ClaudeCodeRunner` has no third-party deps — it shells out to the local `claude` CLI. All orchestrator domain logic remains dependency-free.
 - **Dual JSON extraction paths** — `JsonExtractionProtocol` (orchestrator) and `ClaudeAgentRunner`'s internal `extractJson` are intentionally separate. The former serves Phase C metric parsing; the latter populates `AgentOutput.artefacts`. Merging them would couple the agent runner to the orchestrator's extraction utility without benefit.
+- **CJS-only exports boundary** — `package.json` defines a single `"."` exports entry with only a `"require"` condition. No `"import"` (ESM) condition exists. Adding ESM later is additive; omitting it now avoids dual-build complexity at v1.0.0.
+- **Publication surface via `files` whitelist** — The npm tarball includes only `dist/` and `README.md`. Source files, test suites, and spec documents are excluded from the published package. This boundary is enforced by the `files` field in `package.json`, not by `.npmignore`.
+- **Publication gate** — `prepublishOnly` runs `npm run build && npm test` before every `npm publish`. A broken build or failing test suite blocks publication automatically.
 
 ---
 

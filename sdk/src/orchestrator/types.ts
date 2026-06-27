@@ -4,7 +4,7 @@ import type { Feature, Task, BootstrapConfig } from '../file-state/types'
 export interface OrchestratorConfig {
   scope: string
   projectPaths: string[]
-  agentRunner: IAgentRunner
+  agentRunner?: IAgentRunner  // defaults to ClaudeCodeRunner
   productDir?: string
 }
 

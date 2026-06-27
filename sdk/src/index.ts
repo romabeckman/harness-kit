@@ -16,7 +16,11 @@ export type { IAgentRunner } from './agent-runner/IAgentRunner'
 export { NullAgentRunner } from './agent-runner/NullAgentRunner'
 export type { AgentInvocation, AgentOutput, ContextPayload } from './agent-runner/types'
 
-// Agent runner — ClaudeAgentRunner (F003)
+// Agent runner — ClaudeCodeRunner (default, uses local claude CLI)
+export { ClaudeCodeRunner } from './agent-runner/ClaudeCodeRunner'
+export type { ClaudeCodeRunnerConfig } from './agent-runner/ClaudeCodeRunner'
+
+// Agent runner — ClaudeAgentRunner (CI/CD, requires ANTHROPIC_API_KEY)
 export { ClaudeAgentRunner } from './agent-runner/ClaudeAgentRunner'
 export { AgentRunnerError, AgentRunnerErrorCode } from './agent-runner/AgentRunnerError'
 export type { AgentRunnerConfig } from './agent-runner/AgentRunnerConfig'
@@ -45,6 +49,11 @@ export type { ValidationScores, VerdictResult } from './validation-gate/types'
 export { JsonExtractionProtocol } from './json-extraction/JsonExtractionProtocol'
 export { isExtractionError, isExtractionResult } from './json-extraction/types'
 export type { ExtractionResult, ExtractionError, ExtractionOutcome } from './json-extraction/types'
+
+// Telemetry
+export { TokenLedger } from './telemetry/TokenLedger'
+export type { TokenEntry, TokenReport } from './telemetry/TokenLedger'
+export type { TokenUsage } from './agent-runner/types'
 
 // Context assembler
 export { ContextAssembler } from './context-assembler/ContextAssembler'

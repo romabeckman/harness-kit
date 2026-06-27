@@ -5,10 +5,10 @@ import { describe, it, expect } from 'vitest'
 // TS-U-03: Feature with populated scores
 // TS-U-04: Task default phase value
 // TS-U-05: BootstrapConfig default thresholds
-// TS-U-06: OrchestratorConfig requires IAgentRunner (compile-time — verified via tsc)
+// TS-U-06: OrchestratorConfig.agentRunner is optional (compile-time — verified via tsc)
 
 import type { FeatureStatus, Feature, Task, BootstrapConfig } from '../../src/file-state/types'
-import type { AgentOutput } from '../../src/agent-runner/types'
+import type { AgentOutput, AgentInvocation, TokenUsage } from '../../src/agent-runner/types'
 import type { ExtractionResult, ExtractionError } from '../../src/json-extraction/types'
 import { Phase } from '../../src/orchestrator/types'
 import { Verdict } from '../../src/validation-gate/types'
@@ -115,6 +115,60 @@ describe('T02 — Shared type definitions', () => {
       const out: AgentOutput = { raw: 'some output' }
       expect(out.raw).toBe('some output')
       expect(out.artefacts).toBeUndefined()
+    })
+
+    it('AgentOutput accepts usage field', () => {
+      const usage: TokenUsage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheCreationTokens: 5,
+        cacheReadTokens: 10,
+        costUsd: 0.003,
+      }
+      const out: AgentOutput = { raw: 'output', usage }
+      expect(out.usage).toBeDefined()
+      expect(out.usage!.costUsd).toBe(0.003)
+    })
+  })
+
+  describe('TokenUsage shape', () => {
+    it('TokenUsage has all 5 required fields', () => {
+      const u: TokenUsage = {
+        inputTokens: 10,
+        outputTokens: 5,
+        cacheCreationTokens: 0,
+        cacheReadTokens: 0,
+        costUsd: 0.001,
+      }
+      expect(Object.keys(u)).toHaveLength(5)
+      expect(u).toHaveProperty('inputTokens')
+      expect(u).toHaveProperty('outputTokens')
+      expect(u).toHaveProperty('cacheCreationTokens')
+      expect(u).toHaveProperty('cacheReadTokens')
+      expect(u).toHaveProperty('costUsd')
+    })
+  })
+
+  describe('AgentInvocation.prompt optional field', () => {
+    it('AgentInvocation is valid without prompt field', () => {
+      const inv: AgentInvocation = {
+        skill: 'tdd-orchestrator',
+        agent: 'developer-backend',
+        mode: 'autonomous',
+        payload: { foo: 'bar' },
+      }
+      expect(inv.prompt).toBeUndefined()
+    })
+
+    it('AgentInvocation accepts explicit prompt override', () => {
+      const inv: AgentInvocation = {
+        skill: 'tdd-orchestrator',
+        agent: 'developer-backend',
+        mode: 'autonomous',
+        payload: {},
+        prompt: 'explicit override text',
+      }
+      expect(inv.prompt).toBe('explicit override text')
     })
   })
 

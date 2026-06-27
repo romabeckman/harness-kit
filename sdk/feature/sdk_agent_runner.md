@@ -1,6 +1,6 @@
-# sdk_agent_runner — ClaudeAgentRunner
+# sdk_agent_runner — ClaudeAgentRunner / ClaudeCodeRunner
 
-The `sdk_agent_runner` module provides the production implementation of the `IAgentRunner` outbound port defined in `sdk_core`. It wraps `@anthropic-ai/sdk` to invoke Claude models and converts all SDK errors into typed `AgentRunnerError` instances.
+The `sdk_agent_runner` module provides production implementations of the `IAgentRunner` outbound port defined in `sdk_core`. Two implementations are available: `ClaudeAgentRunner` (wraps `@anthropic-ai/sdk`) and `ClaudeCodeRunner` (wraps the local `claude` CLI). Both convert all errors into typed `AgentRunnerError` instances.
 
 ---
 
@@ -8,8 +8,11 @@ The `sdk_agent_runner` module provides the production implementation of the `IAg
 
 | Export | Kind | Description |
 |---|---|---|
-| `ClaudeAgentRunner` | class | Production `IAgentRunner`. Requires `ANTHROPIC_API_KEY` env var at construction time. |
-| `AgentRunnerError` | class | Typed error wrapper for all Anthropic SDK failures. Carries `code`, `skill`, `phase`, `cause`. |
+| `ClaudeAgentRunner` | class | `IAgentRunner` backed by `@anthropic-ai/sdk`. Requires `ANTHROPIC_API_KEY` env var at construction time. |
+| `ClaudeCodeRunner` | class | `IAgentRunner` backed by the local `claude` CLI via `execFile`. No API key needed — inherits Claude Code local auth. **New default runner.** |
+| `ClaudeCodeRunnerConfig` | type | `{ timeoutMs: number; claudeBin: string; onProgress?: (line: ProgressLine) => void }` |
+| `ProgressLine` | type | `{ agent: string; skill: string; type: 'text' \| 'tool_use' \| 'tool_result' \| 'result'; text?: string; toolName?: string; isError?: boolean }` |
+| `AgentRunnerError` | class | Typed error wrapper for all runner failures. Carries `code`, `skill`, `phase`, `cause`. |
 | `AgentRunnerErrorCode` | enum | `MISSING_API_KEY \| TIMEOUT \| API_ERROR \| NETWORK_ERROR` |
 | `AgentRunnerConfig` | type | `{ model: string; timeoutMs: number }` |
 
@@ -22,20 +25,53 @@ The `sdk_agent_runner` module provides the production implementation of the `IAg
 ```
 sdk/
   src/
-    index.ts                                    # Exports ClaudeAgentRunner, AgentRunnerError, AgentRunnerErrorCode, AgentRunnerConfig
+    index.ts                                    # Exports ClaudeAgentRunner, ClaudeCodeRunner, ClaudeCodeRunnerConfig, AgentRunnerError, AgentRunnerErrorCode, AgentRunnerConfig
     agent-runner/
       IAgentRunner.ts                           # Outbound port interface (sdk_core)
       NullAgentRunner.ts                        # No-op stub (sdk_core)
       types.ts                                  # AgentInvocation, AgentOutput, ContextPayload (sdk_core)
       AgentRunnerConfig.ts                      # Config interface + DEFAULT_AGENT_RUNNER_CONFIG
       AgentRunnerError.ts                       # AgentRunnerErrorCode enum + AgentRunnerError class
-      ClaudeAgentRunner.ts                      # IAgentRunner production implementation
+      ClaudeAgentRunner.ts                      # IAgentRunner backed by @anthropic-ai/sdk
+      ClaudeCodeRunner.ts                       # IAgentRunner backed by local claude CLI (new default)
       __tests__/
         AgentRunnerConfig.test.ts
         AgentRunnerError.test.ts
         ClaudeAgentRunner.test.ts
   package.json                                  # Added @anthropic-ai/sdk dependency
 ```
+
+---
+
+## ClaudeCodeRunner
+
+Invokes the local `claude` CLI with flags: `--print --output-format stream-json --verbose --input-format text --dangerously-skip-permissions`.
+
+Reads newline-delimited JSON events from stdout. Default timeout: `0` (no timeout — agents can run for hours). Set `timeoutMs > 0` to enable a hard limit.
+
+Error codes:
+- `TIMEOUT` — `setTimeout` fires, `child.kill()` is called, promise rejects with `TIMEOUT` error. Not triggered by an `ETIMEDOUT` string check.
+- `NETWORK_ERROR` — `ENOENT` (CLI binary not found)
+- `API_ERROR` — `is_error` flag in the CLI `result` event, or non-zero exit code with no result produced
+
+`ClaudeCodeRunnerConfig` fields:
+- `timeoutMs` (number) — `0` disables timeout
+- `claudeBin` (string) — path to the `claude` binary
+- `onProgress?` ((line: ProgressLine) => void) — called for each streamed event; defaults to printing a summary to stderr
+
+---
+
+## HarnessOrchestrator — Runner Auto-Detection
+
+`OrchestratorConfig.agentRunner` is optional. When omitted, `HarnessOrchestrator` selects a runner at construction time:
+
+```
+explicit config  →  use it
+ANTHROPIC_API_KEY present  →  ClaudeAgentRunner
+otherwise  →  ClaudeCodeRunner
+```
+
+Priority: explicit > `ANTHROPIC_API_KEY` → `ClaudeAgentRunner` > `ClaudeCodeRunner`.
 
 ---
 

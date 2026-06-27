@@ -4,6 +4,10 @@ function parseCell(cell: string): string {
   return cell.trim()
 }
 
+function normalizeId(cell: string): string {
+  return cell.trim().replace(/\*\*/g, '').replace(/`/g, '')
+}
+
 function parseNumber(cell: string): number {
   return parseInt(cell.trim(), 10)
 }
@@ -48,7 +52,7 @@ export class BacklogParser {
       try {
         const cells = line.split('|').slice(1, -1)
         if (cells.length < 9) continue
-        const id = parseCell(cells[0])
+        const id = normalizeId(cells[0])
         if (!id || id === '---') continue
         const status = parseCell(cells[8])
         features.push({

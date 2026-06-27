@@ -1,0 +1,24 @@
+{
+  "featureId": "F001",
+  "domain": "sdk_core",
+  "tasksCompleted": 15,
+  "testSuites": [
+    { "file": "tests/unit/t01-scaffold.test.ts", "tests": 5, "task": "T01" },
+    { "file": "tests/unit/t02-types.test.ts", "tests": 10, "task": "T02" },
+    { "file": "tests/unit/t03-agent-runner.test.ts", "tests": 3, "task": "T03" },
+    { "file": "tests/unit/t04-json-extraction.test.ts", "tests": 9, "task": "T04" },
+    { "file": "tests/unit/t05-validation-gate.test.ts", "tests": 12, "task": "T05" },
+    { "file": "tests/unit/t06-parsers.test.ts", "tests": 10, "task": "T06" },
+    { "file": "tests/integration/t07-file-state-manager.test.ts", "tests": 27, "task": "T07" },
+    { "file": "tests/unit/t08-context-assembler.test.ts", "tests": 8, "task": "T08" },
+    { "file": "tests/unit/t09-reentry-resolver.test.ts", "tests": 8, "task": "T09" },
+    { "file": "tests/unit/t10-state-machine.test.ts", "tests": 12, "task": "T10" },
+    { "file": "tests/integration/t11-orchestrator-bootstrap-phasea.test.ts", "tests": 6, "task": "T11" },
+    { "file": "tests/integration/t12-orchestrator-phaseb.test.ts", "tests": 4, "task": "T12" },
+    { "file": "tests/integration/t13-orchestrator-phasec.test.ts", "tests": 7, "task": "T13" },
+    { "file": "tests/integration/t14-orchestrator-phased-e.test.ts", "tests": 4, "task": "T14" },
+    { "file": "tests/unit/t15-public-api.test.ts", "tests": 11, "task": "T15" }
+  ],
+  "buildPasses": true,
+  "summary": "F001 REWORK #1 complete. All fixes applied. Rework: path traversal fix in writeReworkLog (domain regex validation), isCrashing/hasHighCriticalVuln extraction from adversarial-qa AgentOutput in runPhaseC, runPhaseB guard throws on missing TDD-OUTPUT.json, persistPhase now writes currentPhase to BOOTSTRAP-CONFIG.json, runPhaseE loads recent decisions from DECISIONS.md via loadRecentDecisions(), updateTaskStatus scoped by featureId to prevent cross-feature row corruption, saveFeatureStatus/incrementFeatureReworks throw on missing ID, OnDiskState removed from public API, activeFeature null guard with explicit error in dispatch."
+}

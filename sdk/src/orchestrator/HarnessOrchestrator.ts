@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { Phase } from './types'
 import type { OrchestratorConfig, OrchestratorState, OnDiskState } from './types'
@@ -11,6 +11,9 @@ import { ValidationGate } from '../validation-gate/ValidationGate'
 import { JsonExtractionProtocol } from '../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../json-extraction/types'
 import type { Feature, Task } from '../file-state/types'
+import { ClaudeCodeRunner } from '../agent-runner/ClaudeCodeRunner'
+import { ClaudeAgentRunner } from '../agent-runner/ClaudeAgentRunner'
+import { TokenLedger } from '../telemetry/TokenLedger'
 
 export interface HarnessOrchestratorOptions {
   workingDir?: string
@@ -18,17 +21,23 @@ export interface HarnessOrchestratorOptions {
 
 export class HarnessOrchestrator {
   private readonly config: OrchestratorConfig
+  private readonly agentRunner: import('../agent-runner/IAgentRunner').IAgentRunner
   private readonly fsm: IFileStateManager
+  private readonly ledger: TokenLedger
   private readonly workingDir: string
   private state: OrchestratorState
 
   constructor(config: OrchestratorConfig, options: HarnessOrchestratorOptions = {}) {
+    this.agentRunner = config.agentRunner
+      ?? (process.env.ANTHROPIC_API_KEY ? new ClaudeAgentRunner() : new ClaudeCodeRunner())
     this.config = config
     this.workingDir = options.workingDir ?? process.cwd()
+    const productDir = config.productDir ?? join(this.workingDir, 'docs', 'product')
     this.fsm = new FileStateManager({
-      productDir: config.productDir ?? join(this.workingDir, 'docs', 'product'),
+      productDir,
       workingDir: this.workingDir,
     })
+    this.ledger = new TokenLedger(join(productDir, 'tokens.jsonl'))
     // Determine initial phase via re-entry resolver
     const onDisk = this.readOnDiskState()
     const entryPhase = ReentryResolver.resolve(onDisk)
@@ -41,6 +50,20 @@ export class HarnessOrchestrator {
 
   getState(): OrchestratorState {
     return { ...this.state }
+  }
+
+  tokenReport(): void {
+    this.ledger.printReport()
+  }
+
+  // ─── Agent invocation with telemetry ─────────────────────────────────────
+
+  private async invokeAgent(invocation: import('../agent-runner/types').AgentInvocation): Promise<import('../agent-runner/types').AgentOutput> {
+    const output = await this.agentRunner.run(invocation)
+    if (output.usage) {
+      this.ledger.record(invocation.skill, invocation.agent, output.usage)
+    }
+    return output
   }
 
   // ─── Public run loop ──────────────────────────────────────────────────────
@@ -56,7 +79,9 @@ export class HarnessOrchestrator {
       this.persistPhase()
 
       const next = await this.dispatch(this.state.currentPhase)
-      this.fsm.appendDecision({ featureId: null, decision: `Phase transition: ${this.state.currentPhase} → ${next}` })
+      if (next !== this.state.currentPhase) {
+        this.fsm.appendDecision({ featureId: null, decision: `Phase transition: ${this.state.currentPhase} → ${next}` })
+      }
       this.state = { ...this.state, currentPhase: next }
     }
   }
@@ -73,6 +98,10 @@ export class HarnessOrchestrator {
   // ─── Phase dispatch ───────────────────────────────────────────────────────
 
   private async dispatch(phase: Phase): Promise<Phase> {
+    if (phase === Phase.BOOTSTRAP) {
+      return this.runBootstrap()
+    }
+
     const features = this.fsm.loadBacklog()
     const activeFeature = this.getActiveFeature(features)
 
@@ -82,9 +111,6 @@ export class HarnessOrchestrator {
     }
 
     switch (phase) {
-      case Phase.BOOTSTRAP:
-        return this.runBootstrap()
-
       case Phase.PHASE_A:
         return this.runPhaseA(activeFeature, features)
 
@@ -112,6 +138,49 @@ export class HarnessOrchestrator {
 
   private async runBootstrap(): Promise<Phase> {
     this.fsm.ensureProductFiles()
+
+    // Skip backlog generation if already populated (resume path)
+    const existing = this.fsm.loadBacklog()
+    if (existing.length > 0) return Phase.PHASE_A
+
+    // Generate backlog from scope via software-architect agent
+    const productDir = this.config.productDir ?? join(this.workingDir, 'docs', 'product')
+    const backlogPath = join(productDir, 'BACKLOG.md')
+
+    const prompt = [
+      `You are the autonomous orchestrator bootstrap agent.`,
+      ``,
+      `Parse the project scope below and generate a BACKLOG.md table. Write it to: ${backlogPath}`,
+      ``,
+      `Table columns (exact):`,
+      `| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |`,
+      ``,
+      `Rules:`,
+      `- ID: F001, F002, ... (sequential)`,
+      `- Domain: snake_case of feature title`,
+      `- Priority: CRITICAL, HIGH, MEDIUM, or LOW`,
+      `- Dependencies: comma-separated IDs, or None`,
+      `- Reworks: 0`,
+      `- Score (TL) and Score (Adv): -`,
+      `- Status: NOT_STARTED`,
+      `- Each row is one deliverable feature`,
+      `- Bold ID and Title: **F001** and **Feature Name**`,
+      ``,
+      `Project paths: ${this.config.projectPaths.join(', ')}`,
+      ``,
+      `## Scope`,
+      ``,
+      this.config.scope,
+    ].join('\n')
+
+    await this.invokeAgent({
+      skill: 'harness-kit:autonomous-orchestrator:bootstrap',
+      agent: 'software-architect',
+      mode: 'autonomous',
+      payload: {},
+      prompt,
+    })
+
     return Phase.PHASE_A
   }
 
@@ -135,7 +204,7 @@ export class HarnessOrchestrator {
 
     // Invoke scope-refinement agent
     const payload = ContextAssembler.buildPhaseAPayload(activeFeature, this.config.projectPaths)
-    await this.config.agentRunner.run({
+    await this.invokeAgent({
       skill: 'scope-refinement',
       agent: 'software-architect',
       mode: 'autonomous',
@@ -144,53 +213,112 @@ export class HarnessOrchestrator {
 
     // Check if spec files were created by the agent
     const specFilesPresent = this.checkSpecFilesPresent(activeFeature.domain)
-    if (specFilesPresent) return Phase.PHASE_B
+    if (!specFilesPresent) return Phase.PHASE_A
 
-    return Phase.PHASE_A
+    // A4: extract tasks from Section 6 of 003-*-tactical-design.md
+    const existingTasks = this.fsm.loadDevelopmentState()
+      .filter(t => t.featureId === activeFeature.id)
+    if (existingTasks.length === 0) {
+      const extracted = this.extractTasksFromTacticalDesign(activeFeature.domain)
+      const projectName = this.config.projectPaths[0]?.split('/').pop() ?? 'project'
+      const tasks = extracted.map(t => ({
+        featureId: activeFeature.id,
+        taskId: t.taskId,
+        project: projectName,
+        description: t.description,
+        domain: activeFeature.domain,
+        currentPhase: '-' as const,
+        status: 'NOT_STARTED' as const,
+      }))
+      if (tasks.length > 0) this.fsm.appendTasks(tasks)
+    }
+
+    return Phase.PHASE_B
+  }
+
+  private extractTasksFromTacticalDesign(domain: string): Array<{ taskId: string; description: string }> {
+    const specsDir = join(this.workingDir, 'docs', 'specs', domain)
+    const files = existsSync(specsDir)
+      ? readdirSync(specsDir).filter(f => f.match(/^003-.*tactical-design.*\.md$/i))
+      : []
+
+    if (files.length === 0) return []
+
+    const content = readFileSync(join(specsDir, files[0]), 'utf8')
+
+    // Find Section 6
+    const section6Match = content.match(/## Section 6[^\n]*\n([\s\S]*?)(?=\n## |$)/i)
+    if (!section6Match) return []
+
+    const section = section6Match[1]
+    const tasks: Array<{ taskId: string; description: string }> = []
+
+    // Parse Task ID / Description blocks (fenced or plain)
+    const taskBlocks = section.split(/(?=Task ID\s*:)/i).filter(b => b.trim())
+
+    for (const block of taskBlocks) {
+      const idMatch = block.match(/Task ID\s*:\s*(\S+)/i)
+      const descMatch = block.match(/Description\s*:\s*(.+)/i)
+      if (idMatch && descMatch) {
+        const rawId = idMatch[1].replace(/[^a-zA-Z0-9]/g, '')
+        tasks.push({
+          taskId: `T${rawId.padStart(2, '0')}`,
+          description: descMatch[1].trim(),
+        })
+      }
+    }
+
+    return tasks
   }
 
   // ─── PHASE_B ──────────────────────────────────────────────────────────────
 
   private async runPhaseB(activeFeature: Feature): Promise<Phase> {
-    const tasks = this.fsm.loadDevelopmentState()
-        .filter(t => t.featureId === activeFeature.id)
+    const tddOutputPath = join(this.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
 
-    const notStarted = tasks.filter(t => t.status === 'NOT_STARTED' || t.status === 'IN_PROGRESS')
+    // If TDD-OUTPUT.json already exists, all tasks are done — advance
+    if (existsSync(tddOutputPath)) {
+      const allTasks = this.fsm.loadDevelopmentState().filter(t => t.featureId === activeFeature.id)
+      for (const task of allTasks) {
+        if (task.status !== 'COMPLETED') {
+          this.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
+        }
+      }
+      return Phase.PHASE_C
+    }
 
-    for (const task of notStarted) {
-      this.fsm.updateTaskStatus(activeFeature.id, task.taskId, 'IMPLEMENTATION', 'IN_PROGRESS')
-
-      const isRetry = activeFeature.reworks > 0
-      const payload = ContextAssembler.buildPhaseBPayload(
-        activeFeature,
-        tasks,
-        this.config.projectPaths,
-        isRetry
-      )
-      await this.config.agentRunner.run({
-        skill: 'tdd-orchestrator',
-        agent: 'developer-backend',
-        mode: 'autonomous',
-        payload,
-      })
-
-      // Verify TDD-OUTPUT.json presence
-      const tddOutputPath = join(this.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
-      if (existsSync(tddOutputPath)) {
-        this.fsm.updateTaskStatus(activeFeature.id, task.taskId, 'IMPLEMENTATION', 'COMPLETED')
-      } else {
-        throw new Error('TDD-OUTPUT.json not generated by agent — task cannot be marked COMPLETED')
+    // Mark all tasks IN_PROGRESS then invoke tdd-orchestrator once for the whole feature
+    const tasks = this.fsm.loadDevelopmentState().filter(t => t.featureId === activeFeature.id)
+    for (const task of tasks) {
+      if (task.status === 'NOT_STARTED') {
+        this.fsm.updateTaskStatus(activeFeature.id, task.taskId, 'IMPLEMENTATION', 'IN_PROGRESS')
       }
     }
 
-    // Check if all tasks completed
-    const allTasks = this.fsm.loadDevelopmentState().filter(t => t.featureId === activeFeature.id)
-    const allCompleted = allTasks.length > 0 && allTasks.every(t => t.status === 'COMPLETED')
-    const tddOutputPresent = existsSync(
-      join(this.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
+    const isRetry = activeFeature.reworks > 0
+    const payload = ContextAssembler.buildPhaseBPayload(
+      activeFeature,
+      tasks,
+      this.config.projectPaths,
+      isRetry
     )
+    await this.invokeAgent({
+      skill: 'tdd-orchestrator',
+      agent: 'developer-backend',
+      mode: 'autonomous',
+      payload,
+    })
 
-    if (allCompleted && tddOutputPresent) return Phase.PHASE_C
+    // Check if TDD-OUTPUT.json was generated
+    if (existsSync(tddOutputPath)) {
+      const allTasks = this.fsm.loadDevelopmentState().filter(t => t.featureId === activeFeature.id)
+      for (const task of allTasks) {
+        this.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
+      }
+      return Phase.PHASE_C
+    }
+
+    // Agent ran but didn't produce TDD-OUTPUT.json — retry Phase B
     return Phase.PHASE_B
   }
 
@@ -201,7 +329,7 @@ export class HarnessOrchestrator {
 
     // Invoke the-grumpy-tech-lead
     const payloadC = ContextAssembler.buildPhaseCPayload(activeFeature, this.config.projectPaths)
-    const tlOutput = await this.config.agentRunner.run({
+    const tlOutput = await this.invokeAgent({
       skill: 'the-grumpy-tech-lead',
       agent: 'harness-code-reviewer',
       mode: 'autonomous',
@@ -209,7 +337,7 @@ export class HarnessOrchestrator {
     })
 
     // Invoke adversarial-qa
-    const advOutput = await this.config.agentRunner.run({
+    const advOutput = await this.invokeAgent({
       skill: 'adversarial-qa',
       agent: 'harness-qa',
       mode: 'autonomous',
@@ -301,7 +429,7 @@ export class HarnessOrchestrator {
       decisions
     )
 
-    await this.config.agentRunner.run({
+    await this.invokeAgent({
       skill: 'project-memory',
       agent: 'developer-backend',
       mode: 'autonomous',

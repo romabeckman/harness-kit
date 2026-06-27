@@ -67,4 +67,63 @@ describe('T15 — Public API (src/index.ts)', () => {
     const mod = await import('../../src/index') as Record<string, unknown>
     expect(mod['OnDiskState']).toBeUndefined()
   })
+
+  it('ClaudeCodeRunner is exported from index', async () => {
+    const mod = await import('../../src/index')
+    expect(mod.ClaudeCodeRunner).toBeDefined()
+    expect(typeof mod.ClaudeCodeRunner).toBe('function')
+  })
+
+  it('TokenLedger is exported from index', async () => {
+    const mod = await import('../../src/index')
+    expect(mod.TokenLedger).toBeDefined()
+    expect(typeof mod.TokenLedger).toBe('function')
+  })
+
+  it('TokenEntry type is accessible via runtime object shape (has ts, skill, agent + TokenUsage fields)', async () => {
+    const mod = await import('../../src/index')
+    // TokenEntry is a type — verify by constructing a conforming object and using TokenLedger to produce one
+    const os = await import('node:os')
+    const path = await import('node:path')
+    const fs = await import('node:fs')
+    const tmpPath = path.join(os.tmpdir(), `token-entry-test-${Date.now()}.jsonl`)
+    const ledger = new mod.TokenLedger(tmpPath)
+    ledger.record('test-skill', 'test-agent', {
+      inputTokens: 1, outputTokens: 2, cacheCreationTokens: 0, cacheReadTokens: 0, costUsd: 0.001,
+    })
+    const report = ledger.report()
+    expect(report.entries).toHaveLength(1)
+    const entry = report.entries[0]
+    // TokenEntry shape: ts, skill, agent, inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens, costUsd
+    expect(entry).toHaveProperty('ts')
+    expect(entry).toHaveProperty('skill', 'test-skill')
+    expect(entry).toHaveProperty('agent', 'test-agent')
+    expect(entry).toHaveProperty('inputTokens', 1)
+    expect(entry).toHaveProperty('outputTokens', 2)
+    expect(entry).toHaveProperty('cacheCreationTokens', 0)
+    expect(entry).toHaveProperty('cacheReadTokens', 0)
+    expect(entry).toHaveProperty('costUsd', 0.001)
+    fs.rmSync(tmpPath, { force: true })
+  })
+
+  it('TokenReport type is accessible via runtime object shape (entries, totals, bySkill)', async () => {
+    const mod = await import('../../src/index')
+    const os = await import('node:os')
+    const path = await import('node:path')
+    const fs = await import('node:fs')
+    const tmpPath = path.join(os.tmpdir(), `token-report-test-${Date.now()}.jsonl`)
+    const ledger = new mod.TokenLedger(tmpPath)
+    const report = ledger.report()
+    // TokenReport shape: entries[], totals (TokenUsage), bySkill (Record<string, TokenUsage>)
+    expect(report).toHaveProperty('entries')
+    expect(Array.isArray(report.entries)).toBe(true)
+    expect(report).toHaveProperty('totals')
+    expect(report.totals).toHaveProperty('inputTokens')
+    expect(report.totals).toHaveProperty('outputTokens')
+    expect(report.totals).toHaveProperty('cacheCreationTokens')
+    expect(report.totals).toHaveProperty('cacheReadTokens')
+    expect(report.totals).toHaveProperty('costUsd')
+    expect(report).toHaveProperty('bySkill')
+    fs.rmSync(tmpPath, { force: true })
+  })
 })

@@ -1,0 +1,36 @@
+{
+  "scoreThresholds": {
+    "theGrumpyTechLead": {
+      "threshold": 0.70,
+      "userProvided": false
+    },
+    "adversarialQA": {
+      "threshold": 0.70,
+      "userProvided": false
+    }
+  },
+  "completionCriteria": {
+    "maxReworks": 2,
+    "userProvided": false
+  },
+  "cycleCounter": {
+    "completedCycles": 4,
+    "lastAutoTuningAt": null
+  },
+  "statusDefinitions": {
+    "featureStatuses": {
+      "NOT_STARTED": "Feature is in the backlog but execution has not started.",
+      "IN_PROGRESS": "Feature is currently in the planning, implementation, or validation phase.",
+      "COMPLETED": "Feature successfully passed all validation score gates.",
+      "BLOCKED": "Feature failed validation and exceeded maximum rework attempts, or a dependency is blocked.",
+      "FAILED": "Feature did not reach score thresholds after maximum reworks, but did not crash the application."
+    },
+    "taskStatuses": {
+      "NOT_STARTED": "Task is defined but implementation has not yet begun.",
+      "IN_PROGRESS": "Task is currently being executed by the development agent.",
+      "COMPLETED": "Task implementation is complete and all tests pass.",
+      "BLOCKED": "Task cannot be completed because its parent feature is blocked.",
+      "FAILED": "Task failed validation and acceptance criteria along with its parent feature."
+    }
+  }
+}

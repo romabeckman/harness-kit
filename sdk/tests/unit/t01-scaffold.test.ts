@@ -3,9 +3,9 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
 describe('T01 — SDK scaffold', () => {
-  it('package.json has name harness-kit-sdk', () => {
+  it('package.json has correct name', () => {
     const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf-8'))
-    expect(pkg.name).toBe('harness-kit-sdk')
+    expect(pkg.name).toBe('@romabeckman/hk')
   })
 
   it('package.json has vitest as devDependency', () => {

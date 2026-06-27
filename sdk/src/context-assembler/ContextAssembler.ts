@@ -1,8 +1,16 @@
 import { join } from 'path'
 import type { Feature, Task } from '../file-state/types'
-import type { PhaseAPayload, PhaseBPayload, PhaseCPayload, PhaseEPayload } from './types'
+import type { BootstrapPayload, PhaseAPayload, PhaseBPayload, PhaseCPayload, PhaseEPayload } from './types'
 
 export class ContextAssembler {
+  static buildBootstrapPayload(scope: string, projectPaths: string[], productDir: string): BootstrapPayload {
+    return {
+      scope,
+      projectPaths,
+      backlogPath: join(productDir, 'BACKLOG.md'),
+    }
+  }
+
   /**
    * Phase A: scope refinement — only scope, domain, projectPaths
    */

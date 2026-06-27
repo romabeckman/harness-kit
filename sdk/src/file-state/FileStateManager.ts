@@ -130,7 +130,7 @@ export class FileStateManager implements IFileStateManager {
       if (!line.startsWith('|')) return line
       const cells = line.split('|').slice(1, -1)
       if (cells.length < 9) return line
-      const rowId = cells[0].trim()
+      const rowId = cells[0].trim().replace(/\*\*/g, '').replace(/`/g, '')
       if (rowId !== featureId) return line
       found = true
       // Update: Status (col 8), Score (TL) (col 6), Score (Adv) (col 7)
@@ -155,7 +155,7 @@ export class FileStateManager implements IFileStateManager {
       if (!line.startsWith('|')) return line
       const cells = line.split('|').slice(1, -1)
       if (cells.length < 9) return line
-      const rowId = cells[0].trim()
+      const rowId = cells[0].trim().replace(/\*\*/g, '').replace(/`/g, '')
       if (rowId !== featureId) return line
       found = true
       const newCells = [...cells]
@@ -192,8 +192,8 @@ export class FileStateManager implements IFileStateManager {
       if (!line.startsWith('|')) return line
       const cells = line.split('|').slice(1, -1)
       if (cells.length < 7) return line
-      const rowFeatureId = cells[0].trim()
-      const rowTaskId = cells[1].trim()
+      const rowFeatureId = cells[0].trim().replace(/\*\*/g, '').replace(/`/g, '')
+      const rowTaskId = cells[1].trim().replace(/\*\*/g, '').replace(/`/g, '')
       if (rowFeatureId !== featureId || rowTaskId !== taskId) return line
       const newCells = [...cells]
       newCells[5] = ` ${phase} `
@@ -205,13 +205,14 @@ export class FileStateManager implements IFileStateManager {
 
   updateAllFeatureTasks(featureId: string, phase: CurrentPhase, status: TaskStatus): void {
     const path = join(this.productDir, 'DEVELOPMENT-STATE.md')
+    if (!existsSync(path)) return
     const content = readFileSync(path, 'utf-8')
     const lines = content.split('\n')
     const updated = lines.map(line => {
       if (!line.startsWith('|')) return line
       const cells = line.split('|').slice(1, -1)
       if (cells.length < 7) return line
-      const rowFeatureId = cells[0].trim()
+      const rowFeatureId = cells[0].trim().replace(/\*\*/g, '').replace(/`/g, '')
       if (rowFeatureId !== featureId) return line
       const newCells = [...cells]
       newCells[5] = ` ${phase} `
@@ -250,8 +251,9 @@ export class FileStateManager implements IFileStateManager {
     const timestamp = new Date().toISOString()
     const feature = entry.featureId ?? 'GLOBAL'
     const scores = entry.scores ? `TL:${entry.scores.tl}, Adv:${entry.scores.adv}` : '-'
-    const rationale = entry.rationale ?? '-'
-    const row = `| ${timestamp} | ${feature} | ${entry.decision} | ${scores} | ${rationale} |`
+    const decision = entry.decision.replace(/\|/g, '&#124;')
+    const rationale = (entry.rationale ?? '-').replace(/\|/g, '&#124;')
+    const row = `| ${timestamp} | ${feature} | ${decision} | ${scores} | ${rationale} |`
     const trimmed = existing.trimEnd()
     atomicWrite(path, trimmed + '\n' + row + '\n')
   }

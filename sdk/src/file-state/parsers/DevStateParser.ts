@@ -4,6 +4,10 @@ function parseCell(cell: string): string {
   return cell.trim()
 }
 
+function normalizeId(cell: string): string {
+  return cell.trim().replace(/\*\*/g, '').replace(/`/g, '')
+}
+
 function isCurrentPhase(s: string): s is CurrentPhase {
   return ['IMPLEMENTATION', 'VALIDATION', '-'].includes(s)
 }
@@ -34,13 +38,13 @@ export class DevStateParser {
       try {
         const cells = line.split('|').slice(1, -1)
         if (cells.length < 7) continue
-        const featureId = parseCell(cells[0])
+        const featureId = normalizeId(cells[0])
         if (!featureId || featureId === '---') continue
         const currentPhase = parseCell(cells[5])
         const status = parseCell(cells[6])
         tasks.push({
           featureId,
-          taskId: parseCell(cells[1]),
+          taskId: normalizeId(cells[1]),
           project: parseCell(cells[2]),
           description: parseCell(cells[3]),
           domain: parseCell(cells[4]),

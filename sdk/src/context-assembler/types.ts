@@ -1,6 +1,12 @@
 import type { Feature, Task } from '../file-state/types'
 import type { ContextPayload } from '../agent-runner/types'
 
+export interface BootstrapPayload extends ContextPayload {
+  scope: string
+  projectPaths: string[]
+  backlogPath: string
+}
+
 export interface PhaseAPayload extends ContextPayload {
   scope: string
   domain: string

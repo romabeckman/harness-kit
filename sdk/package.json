@@ -1,14 +1,29 @@
 {
-  "name": "harness-kit-sdk",
-  "version": "0.1.0",
-  "description": "SDK for autonomous TDD orchestration",
+  "name": "@romabeckman/hk",
+  "version": "1.0.0",
+  "description": "CLI and SDK for harness-kit autonomous TDD orchestration",
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "hk": "dist/cli/run.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node -e \"const fs=require('fs');const f='dist/cli/run.js';const c=fs.readFileSync(f,'utf8');if(!c.startsWith('#!/usr/bin/env node')){fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c);fs.chmodSync(f,'755')}\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
   },
   "devDependencies": {
     "@types/node": "^26.0.1",
@@ -16,6 +31,7 @@
     "vitest": "^1.6.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.106.0"
+    "@anthropic-ai/sdk": "^0.106.0",
+    "@inquirer/prompts": "^8.5.2"
   }
 }

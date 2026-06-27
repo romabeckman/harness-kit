@@ -10,10 +10,10 @@ The `sdk_core` module is a TypeScript npm package (`harness-kit-sdk`) that imple
 
 | Export | Kind | Description |
 |---|---|---|
-| `HarnessOrchestrator` | class | Main entry point. Drives the state machine loop. |
+| `HarnessOrchestrator` | class | Main entry point. Drives the state machine loop. Methods: `run()`, `getState()`, `tokenReport()`. |
 | `HarnessOrchestratorOptions` | type | Constructor options for `HarnessOrchestrator`. |
 | `Phase` | enum | `BOOTSTRAP \| PHASE_A \| PHASE_B \| PHASE_C \| PHASE_D \| PHASE_E \| CASCADE_BLOCKED \| HALTED` |
-| `OrchestratorConfig` | type | `scope`, `projectPaths`, `agentRunner`, `productDir?` |
+| `OrchestratorConfig` | type | `scope`, `projectPaths`, `agentRunner?` (optional — auto-detected), `productDir?` |
 | `OrchestratorState` | type | `currentPhase`, `activeFeatureId`, `completedCycles` |
 | `PhaseTransition` | type | `from`, `condition`, `to` |
 
@@ -23,9 +23,16 @@ The `sdk_core` module is a TypeScript npm package (`harness-kit-sdk`) that imple
 |---|---|---|
 | `IAgentRunner` | interface | Outbound port. Callers inject a concrete implementation. |
 | `NullAgentRunner` | class | No-op stub; returns empty output. Intended for F003 to replace. |
-| `AgentInvocation` | type | Input to `IAgentRunner.run()`. |
-| `AgentOutput` | type | Output from `IAgentRunner.run()`. |
+| `AgentInvocation` | type | Input to `IAgentRunner.run()`. Fields: `skill`, `agent`, `mode`, `payload`, `prompt?` (explicit prompt override — takes precedence over payload serialization). |
+| `AgentOutput` | type | Output from `IAgentRunner.run()`. Fields: `raw`, `artefacts?`, `usage?: TokenUsage`. |
 | `ContextPayload` | type | Structured payload passed to the agent. |
+| `TokenUsage` | type | `{ inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens, costUsd }` — token consumption for a single agent invocation. |
+
+### Telemetry
+
+| Export | Kind | Description |
+|---|---|---|
+| `TokenLedger` | class | Appends `TokenUsage` entries to a JSONL file. Methods: `record(skill, agent, usage)`, `report()`, `printReport()`. |
 
 ### File State (inbound port + default adapter)
 
@@ -83,7 +90,7 @@ sdk/
     agent-runner/
       IAgentRunner.ts                 # Outbound port interface
       NullAgentRunner.ts              # No-op stub
-      types.ts                        # AgentInvocation, AgentOutput, ContextPayload
+      types.ts                        # AgentInvocation, AgentOutput, TokenUsage, ContextPayload
     validation-gate/
       ValidationGate.ts              # Pure evaluate() function
       types.ts                        # ValidationScores, VerdictResult, Verdict
@@ -93,6 +100,8 @@ sdk/
     json-extraction/
       JsonExtractionProtocol.ts      # Defensive JSON parser
       types.ts                        # ExtractionResult, ExtractionError, type guards
+    telemetry/
+      TokenLedger.ts                  # JSONL-backed token usage recorder; exposes report() and printReport()
   tests/
     helpers/
       FakeAgentRunner.ts             # Test double for IAgentRunner

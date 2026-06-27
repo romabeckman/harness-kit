@@ -1,0 +1,31 @@
+{
+  "featureId": "F002",
+  "domain": "sdk_state",
+  "reworkNumber": 1,
+  "tasks": [
+    { "taskId": "T01", "status": "COMPLETED", "testsAdded": 0 },
+    { "taskId": "T02", "status": "COMPLETED", "testsAdded": 8 },
+    { "taskId": "T03", "status": "COMPLETED", "testsAdded": 0 },
+    { "taskId": "T04", "status": "COMPLETED", "testsAdded": 4 },
+    { "taskId": "T05", "status": "COMPLETED", "testsAdded": 0 },
+    { "taskId": "T06", "status": "COMPLETED", "testsAdded": 5 },
+    { "taskId": "T07", "status": "COMPLETED", "testsAdded": 0 },
+    { "taskId": "T08", "status": "COMPLETED", "testsAdded": 4 },
+    { "taskId": "T09", "status": "COMPLETED", "testsAdded": 0 },
+    { "taskId": "T10", "status": "COMPLETED", "testsAdded": 9 },
+    { "taskId": "T11", "status": "COMPLETED", "testsAdded": 0 },
+    { "taskId": "T12", "status": "COMPLETED", "testsAdded": 6 },
+    { "taskId": "T13", "status": "COMPLETED", "testsAdded": 0 },
+    { "taskId": "T14", "status": "COMPLETED", "testsAdded": 0 },
+    { "taskId": "REWORK-T01", "status": "COMPLETED", "testsAdded": 3, "description": "Bold ID stripping: BacklogParser + DevStateParser normalizeId; updateFeatureStatus/incrementReworks/updateAllFeatureTasks/updateTaskStatus rowId strip **" },
+    { "taskId": "REWORK-T02", "status": "COMPLETED", "testsAdded": 2, "description": "Pipe escaping in appendDecision: decision and rationale replace | with &#124;" },
+    { "taskId": "REWORK-T03", "status": "COMPLETED", "testsAdded": 1, "description": "existsSync guard in updateAllFeatureTasks: return early if DEVELOPMENT-STATE.md absent" },
+    { "taskId": "REWORK-T04", "status": "COMPLETED", "testsAdded": 1, "description": "getNextTask bold ID: DevStateParser normalizeId on featureId and taskId" }
+  ],
+  "totalTestsAfter": 225,
+  "newTestsAdded": 43,
+  "reworkTestsAdded": 7,
+  "buildPasses": true,
+  "allPreviousTestsPass": true,
+  "completedAt": "2026-06-27T00:33:30.000Z"
+}
