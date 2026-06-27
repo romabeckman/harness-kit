@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { HarnessOrchestrator } from '../orchestrator/HarnessOrchestrator'
 import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
+import { StartupBanner } from '../ui/StartupBanner'
 
 const HELP = `
 @romabeckman/hk — harness-kit autonomous orchestrator
@@ -45,7 +46,7 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
   const backlogPath = join(productDir, 'BACKLOG.md')
   const hasExistingSession = existsSync(backlogPath)
 
-  console.log('\n@romabeckman/hk — autonomous orchestrator\n')
+  console.log('\n' + StartupBanner.render(process.stdout.columns || 80) + '\n')
 
   const action = hasExistingSession
     ? await select({
