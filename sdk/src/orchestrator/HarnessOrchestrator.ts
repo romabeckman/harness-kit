@@ -3,7 +3,6 @@ import { join } from 'path'
 import { Phase } from './types'
 import type { OrchestratorConfig, OrchestratorState, OnDiskState } from './types'
 import { ReentryResolver } from './ReentryResolver'
-import { StateMachine } from './StateMachine'
 import { FileStateManager } from '../file-state/FileStateManager'
 import type { IFileStateManager } from '../file-state/FileStateManager'
 import { ContextAssembler } from '../context-assembler/ContextAssembler'
@@ -356,13 +355,13 @@ export class HarnessOrchestrator {
     if (isExtractionResult(tlExtraction)) {
       const data = tlExtraction.data as Record<string, unknown>
       scoreTL = typeof data['scoreTL'] === 'number' ? data['scoreTL'] :
-                typeof data['score'] === 'number' ? data['score'] : 0
+        typeof data['score'] === 'number' ? data['score'] : 0
     }
 
     if (isExtractionResult(advExtraction)) {
       const data = advExtraction.data as Record<string, unknown>
       scoreAdv = typeof data['scoreAdv'] === 'number' ? data['scoreAdv'] :
-                 typeof data['score'] === 'number' ? data['score'] : 0
+        typeof data['score'] === 'number' ? data['score'] : 0
       hasHighCriticalVuln = data['hasHighCriticalVuln'] === true
       isCrashing = data['isCrashing'] === true
     }

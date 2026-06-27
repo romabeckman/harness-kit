@@ -235,6 +235,7 @@ describe('ClaudeAgentRunner.run() — timeout (TS05)', () => {
 
     vi.useFakeTimers()
     const runPromise = runner.run(fakeInvocation)
+    runPromise.catch(() => {}) // prevent unhandled promise rejection warning
     await vi.advanceTimersByTimeAsync(100)
     vi.useRealTimers()
 
@@ -391,6 +392,7 @@ describe('AgentRunnerError fields completeness (TS13)', () => {
 
     vi.useFakeTimers()
     const runPromise = runner.run(fakeInvocation)
+    runPromise.catch(() => {}) // prevent unhandled promise rejection warning
     await vi.advanceTimersByTimeAsync(100)
     vi.useRealTimers()
 
