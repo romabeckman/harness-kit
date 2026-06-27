@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
-import type { IAgentRunner } from './IAgentRunner'
-import type { AgentInvocation, AgentOutput } from './types'
-import { AgentRunnerError, AgentRunnerErrorCode } from './AgentRunnerError'
-import { AgentRunnerRegistry } from './AgentRunnerRegistry'
+import type { IAgentRunner } from '../IAgentRunner'
+import type { AgentInvocation, AgentOutput } from '../types'
+import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
+import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 
 export interface ClaudeCodeRunnerConfig {
   readonly timeoutMs: number
@@ -119,7 +119,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
 
       let finalResult = ''
       let isFinalError = false
-      let finalUsage: import('./types').TokenUsage | undefined
+      let finalUsage: import('../types').TokenUsage | undefined
 
       const rl = createInterface({ input: child.stdout, crlfDelay: Infinity })
 

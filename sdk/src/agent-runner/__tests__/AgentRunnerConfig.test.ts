@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { DEFAULT_AGENT_RUNNER_CONFIG } from '../AgentRunnerConfig'
-import type { AgentRunnerConfig } from '../AgentRunnerConfig'
+import { DEFAULT_AGENT_RUNNER_CONFIG } from '../claude-agent/AgentRunnerConfig'
+import type { AgentRunnerConfig } from '../claude-agent/AgentRunnerConfig'
 
 describe('AgentRunnerConfig', () => {
   describe('DEFAULT_AGENT_RUNNER_CONFIG', () => {

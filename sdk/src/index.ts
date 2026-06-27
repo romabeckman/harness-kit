@@ -17,19 +17,19 @@ export { NullAgentRunner } from './agent-runner/NullAgentRunner'
 export type { AgentInvocation, AgentOutput, ContextPayload } from './agent-runner/types'
 
 // Agent runner — ClaudeCodeRunner (default, uses local claude CLI)
-export { ClaudeCodeRunner } from './agent-runner/ClaudeCodeRunner'
-export type { ClaudeCodeRunnerConfig } from './agent-runner/ClaudeCodeRunner'
+export { ClaudeCodeRunner } from './agent-runner/claude-code/ClaudeCodeRunner'
+export type { ClaudeCodeRunnerConfig } from './agent-runner/claude-code/ClaudeCodeRunner'
 
 // Agent runner — ClaudeAgentRunner (CI/CD, requires ANTHROPIC_API_KEY)
-export { ClaudeAgentRunner } from './agent-runner/ClaudeAgentRunner'
+export { ClaudeAgentRunner } from './agent-runner/claude-agent/ClaudeAgentRunner'
 export { AgentRunnerError, AgentRunnerErrorCode } from './agent-runner/AgentRunnerError'
-export type { AgentRunnerConfig } from './agent-runner/AgentRunnerConfig'
+export type { AgentRunnerConfig } from './agent-runner/claude-agent/AgentRunnerConfig'
 
 // Modular runner registry & factory, and AntigravityRunner
 export { AgentRunnerRegistry } from './agent-runner/AgentRunnerRegistry'
 export type { RunnerRegistration } from './agent-runner/AgentRunnerRegistry'
 export { AgentRunnerFactory } from './agent-runner/AgentRunnerFactory'
-export { AntigravityRunner } from './agent-runner/AntigravityRunner'
+export { AntigravityRunner } from './agent-runner/antigravity/AntigravityRunner'
 
 // File state types
 export type {

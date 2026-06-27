@@ -57,7 +57,7 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     // Access private config via constructor — just verify it constructs without throwing
     const runner = new ClaudeCodeRunner()
     expect(runner).toBeDefined()
@@ -75,7 +75,7 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     const { spawn } = await import('node:child_process')
     const runner = new ClaudeCodeRunner()
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
@@ -93,7 +93,7 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     const { spawn } = await import('node:child_process')
     const runner = new ClaudeCodeRunner()
     await runner.run({ skill: 's', agent: 'developer-backend', mode: 'autonomous', payload: {} })
@@ -111,7 +111,7 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     const onProgress = vi.fn()
     const runner = new ClaudeCodeRunner({ onProgress })
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
@@ -128,7 +128,7 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     const onProgress = vi.fn()
     const runner = new ClaudeCodeRunner({ onProgress })
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
@@ -148,7 +148,7 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     const runner = new ClaudeCodeRunner({ onProgress: vi.fn() })
     const out = await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     expect(out.raw).toBe('final output')
@@ -166,7 +166,7 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     const runner = new ClaudeCodeRunner({ onProgress: vi.fn() })
     const out = await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     expect(out.usage).toEqual({
@@ -187,7 +187,7 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     const { AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
     const runner = new ClaudeCodeRunner({ onProgress: vi.fn() })
     await expect(
@@ -208,7 +208,7 @@ describe('T03 — ClaudeCodeRunner', () => {
         return child
       }),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     const { AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
     const runner = new ClaudeCodeRunner({ onProgress: vi.fn() })
     await expect(
@@ -237,7 +237,7 @@ describe('T03 — ClaudeCodeRunner', () => {
         return child
       }),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     const runner = new ClaudeCodeRunner({ onProgress: vi.fn() })
     await runner.run({
       skill: 's',
@@ -257,7 +257,7 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/ClaudeCodeRunner')
+    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
     const onProgress = vi.fn()
     const runner = new ClaudeCodeRunner({ onProgress })
     await runner.run({ skill: 'my-skill', agent: 'my-agent', mode: 'autonomous', payload: {} })

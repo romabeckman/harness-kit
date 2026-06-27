@@ -26,7 +26,7 @@ vi.mock('@anthropic-ai/sdk', () => {
   }
 })
 
-import { ClaudeAgentRunner } from '../ClaudeAgentRunner'
+import { ClaudeAgentRunner } from '../claude-agent/ClaudeAgentRunner'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 
 // ─── Fixture ──────────────────────────────────────────────────────────────────

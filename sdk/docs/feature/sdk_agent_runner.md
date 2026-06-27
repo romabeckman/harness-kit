@@ -11,9 +11,9 @@ sdk/src/agent-runner/
 ├── types.ts                  # Shared types and config schemas
 ├── AgentRunnerRegistry.ts    # Static registry of strategy classes
 ├── AgentRunnerFactory.ts     # Instantiation factory executing validations
-├── ClaudeCodeRunner.ts       # Adapter for local Claude Code CLI execution
-├── ClaudeAgentRunner.ts      # Adapter for Anthropic SDK API calls
-├── AntigravityRunner.ts      # Adapter for Google's agy CLI execution
+├── claude-code/              # Subdirectory for local Claude Code CLI execution
+├── claude-agent/             # Subdirectory for Anthropic SDK API calls
+├── antigravity/              # Subdirectory for Google's agy CLI execution
 └── README.md                 # Blueprint for custom runner plugins
 </folder_structure>
 

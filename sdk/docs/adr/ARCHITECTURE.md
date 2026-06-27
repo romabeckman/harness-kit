@@ -12,9 +12,9 @@ sdk/
 │   │   ├── IAgentRunner.ts       # Outbound port interface for agent invocation
 │   │   ├── AgentRunnerRegistry.ts# Registry for strategy registrations
 │   │   ├── AgentRunnerFactory.ts # Factory to instantiate runner strategies
-│   │   ├── ClaudeCodeRunner.ts   # Local Claude CLI runner adapter
-│   │   ├── ClaudeAgentRunner.ts  # Anthropic SDK agent runner adapter
-│   │   └── AntigravityRunner.ts  # Google Antigravity CLI runner adapter
+│   │   ├── claude-code/          # Subdirectory for Claude CLI strategy
+│   │   ├── claude-agent/         # Subdirectory for Anthropic API strategy
+│   │   └── antigravity/          # Subdirectory for Google Antigravity strategy
 │   ├── orchestrator/             # Core state machine loop
 │   ├── file-state/               # Filesystem reading and writing port/adapter
 │   ├── telemetry/                # Usage and token tracking ledger

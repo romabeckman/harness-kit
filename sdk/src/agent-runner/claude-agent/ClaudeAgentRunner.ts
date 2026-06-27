@@ -1,9 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { IAgentRunner } from './IAgentRunner'
-import type { AgentInvocation, AgentOutput } from './types'
+import type { IAgentRunner } from '../IAgentRunner'
+import type { AgentInvocation, AgentOutput } from '../types'
 import { type AgentRunnerConfig, DEFAULT_AGENT_RUNNER_CONFIG } from './AgentRunnerConfig'
-import { AgentRunnerError, AgentRunnerErrorCode } from './AgentRunnerError'
-import { AgentRunnerRegistry } from './AgentRunnerRegistry'
+import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
+import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 
 // ─── Internal value object ────────────────────────────────────────────────────
 interface AgentResult {

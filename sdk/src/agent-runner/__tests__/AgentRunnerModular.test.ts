@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerFactory } from '../AgentRunnerFactory'
-import { AntigravityRunner } from '../AntigravityRunner'
+import { AntigravityRunner } from '../antigravity/AntigravityRunner'
 import type { IAgentRunner } from '../IAgentRunner'
 import type { AgentInvocation, AgentOutput } from '../types'
 import { spawn } from 'node:child_process'

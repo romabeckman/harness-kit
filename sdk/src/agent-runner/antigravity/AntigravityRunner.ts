@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process'
-import type { IAgentRunner } from './IAgentRunner'
-import type { AgentInvocation, AgentOutput } from './types'
-import { AgentRunnerRegistry } from './AgentRunnerRegistry'
-import { AgentRunnerError, AgentRunnerErrorCode } from './AgentRunnerError'
+import type { IAgentRunner } from '../IAgentRunner'
+import type { AgentInvocation, AgentOutput } from '../types'
+import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
+import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 
 export interface AntigravityRunnerConfig {
   readonly timeoutMs?: number
