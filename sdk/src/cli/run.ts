@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path'
 import { HarnessOrchestrator } from '../orchestrator/HarnessOrchestrator'
 import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
 import { StartupBanner } from '../ui/StartupBanner'
+import { AnsiHelpers } from '../ui/AnsiHelpers'
 
 const HELP = `
 @romabeckman/hk — harness-kit autonomous orchestrator
@@ -119,6 +120,15 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     productDir,
     agentRunner,
   })
+
+  if (action === 'resume') {
+    const state = orchestrator.getState()
+    const phaseDesc = orchestrator.getPhaseDescription(state.currentPhase)
+    console.log(`\n${AnsiHelpers.blue('►')} ${AnsiHelpers.dim('Current State:')} ${AnsiHelpers.cyan(phaseDesc)}`)
+    if (state.activeFeatureId) {
+      console.log(`  ${AnsiHelpers.dim('Active Feature:')} ${state.activeFeatureId}`)
+    }
+  }
 
   if (action === 'resume' && steeringMessage.trim() && agentRunner) {
     console.log('\nAnalyzing steering message...')

@@ -8,6 +8,8 @@ import type { IFileStateManager } from '../file-state/FileStateManager'
 import type { Feature, Task } from '../file-state/types'
 import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
 import { TokenLedger } from '../telemetry/TokenLedger'
+import { AnsiHelpers } from '../ui/AnsiHelpers'
+import { TerminalProgress } from '../ui/TerminalProgress'
 import {
   IPhaseHandler,
   PhaseContext,
@@ -91,10 +93,12 @@ export class HarnessOrchestrator implements PhaseContext {
 
       const next = await this.dispatch(this.state.currentPhase)
       if (next !== this.state.currentPhase) {
+        const transitionMsg = `Phase transition: ${this.getPhaseDescription(this.state.currentPhase)} → ${this.getPhaseDescription(next)}`
         this.fsm.appendDecision({
           featureId: null,
-          decision: `Phase transition: ${this.getPhaseDescription(this.state.currentPhase)} → ${this.getPhaseDescription(next)}`
+          decision: transitionMsg
         })
+        console.log(`\n${AnsiHelpers.blue('⟳')} ${AnsiHelpers.dim('State Transition:')} ${AnsiHelpers.cyan(this.getPhaseDescription(this.state.currentPhase))} → ${AnsiHelpers.cyan(this.getPhaseDescription(next))}`)
       }
       this.state = { ...this.state, currentPhase: next }
     }
@@ -194,6 +198,8 @@ export class HarnessOrchestrator implements PhaseContext {
       }, timeoutMs)
     }
 
+    TerminalProgress.startSpinner(this.getPhaseDescription(this.state.currentPhase), `Running agent: ${invocation.agent}`)
+
     try {
       const output = await this.agentRunner.run(invocation, { signal: controller.signal })
       if (output.usage) {
@@ -202,6 +208,7 @@ export class HarnessOrchestrator implements PhaseContext {
       return output
     } finally {
       if (timer) clearTimeout(timer)
+      TerminalProgress.stopSpinner()
     }
   }
 
@@ -328,7 +335,7 @@ export class HarnessOrchestrator implements PhaseContext {
     }
   }
 
-  private getPhaseDescription(phase: Phase): string {
+  public getPhaseDescription(phase: Phase): string {
     switch (phase) {
       case Phase.BOOTSTRAP: return 'BOOTSTRAP (Initialization)'
       case Phase.PHASE_A: return 'PHASE_A (Scope Refinement)'
