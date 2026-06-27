@@ -10,12 +10,14 @@ The `sdk_core` module is a TypeScript npm package (`harness-kit-sdk`) that imple
 
 | Export | Kind | Description |
 |---|---|---|
-| `HarnessOrchestrator` | class | Main entry point. Drives the state machine loop. Methods: `run()`, `getState()`, `tokenReport()`. |
+| `HarnessOrchestrator` | class | Main entry point. Drives the state machine loop. Methods: `run()`, `getState()`, `tokenReport()`, `applySteeringActions(actions)`, `getPhaseDescription(phase)`. |
 | `HarnessOrchestratorOptions` | type | Constructor options for `HarnessOrchestrator`. |
 | `Phase` | enum | `BOOTSTRAP \| PHASE_A \| PHASE_B \| PHASE_C \| PHASE_D \| PHASE_E \| CASCADE_BLOCKED \| HALTED` |
 | `OrchestratorConfig` | type | `scope`, `projectPaths`, `agentRunner?` (optional — auto-detected), `productDir?` |
 | `OrchestratorState` | type | `currentPhase`, `activeFeatureId`, `completedCycles` |
 | `PhaseTransition` | type | `from`, `condition`, `to` |
+| `SteeringAnalyzer` | class | Translates developer steering text into `SteeringAction[]` via LLM. Static method: `analyze(msg, runner)`. |
+| `SteeringAction` | type | Union: `{ type: 'add_rule'; rule: string }` \| `{ type: 'rollback'; targetPhase: string }` \| `{ type: 'override_score'; tl?: number; adv?: number }` |
 
 ### Agent Runner (outbound port)
 
@@ -23,7 +25,7 @@ The `sdk_core` module is a TypeScript npm package (`harness-kit-sdk`) that imple
 |---|---|---|
 | `IAgentRunner` | interface | Outbound port. Callers inject a concrete implementation. |
 | `NullAgentRunner` | class | No-op stub; returns empty output. Intended for F003 to replace. |
-| `AgentInvocation` | type | Input to `IAgentRunner.run()`. Fields: `skill`, `agent`, `mode`, `payload`, `prompt?` (explicit prompt override — takes precedence over payload serialization). |
+| `AgentInvocation` | type | Input to `IAgentRunner.run()`. Fields: `skill?` (**optional** — if omitted no skill folder is looked up), `agent`, `mode`, `payload`, `prompt?` (explicit prompt override — takes precedence over payload serialization). |
 | `AgentOutput` | type | Output from `IAgentRunner.run()`. Fields: `raw`, `artefacts?`, `usage?: TokenUsage`. |
 | `ContextPayload` | type | Structured payload passed to the agent. |
 | `TokenUsage` | type | `{ inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens, costUsd }` — token consumption for a single agent invocation. |
@@ -41,7 +43,7 @@ The `sdk_core` module is a TypeScript npm package (`harness-kit-sdk`) that imple
 | `IFileStateManager` | interface | All file I/O operations the orchestrator needs. |
 | `FileStateManager` | class | Default adapter — reads/writes markdown files atomically. |
 | `FileStateManagerOptions` | type | `productDir`, `workingDir?` |
-| `Feature`, `Task`, `BootstrapConfig` | types | Core domain value objects. |
+| `Feature`, `Task`, `BootstrapConfig` | types | Core domain value objects. `BootstrapConfig` includes `steeringRules?: string[]` for persisted developer directives. |
 | `FeatureStatus`, `TaskStatus`, `CurrentPhase` | types | Enumeration strings for status fields. |
 
 ### Validation Gate
@@ -102,6 +104,16 @@ sdk/
       types.ts                        # ExtractionResult, ExtractionError, type guards
     telemetry/
       TokenLedger.ts                  # JSONL-backed token usage recorder; exposes report() and printReport()
+    ui/
+      StartupBanner.ts                # ASCII welcome banner rendered at CLI startup
+      AnsiHelpers.ts                  # ANSI escape helpers — colors, cursor control, line clearing
+      TerminalProgress.ts             # Animated braille spinner and one-shot progress bar
+    orchestrator/
+      SteeringAnalyzer.ts             # LLM-based classifier: text → SteeringAction[]
+    context-assembler/
+      ContextAssembler.ts             # Per-phase payload builders; injects steeringRules into all payloads
+    json-extraction/
+      JsonExtractionProtocol.ts       # Supports top-level objects AND arrays (Step 2 fixed)
   tests/
     helpers/
       FakeAgentRunner.ts             # Test double for IAgentRunner

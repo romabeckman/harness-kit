@@ -130,13 +130,16 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     }
   }
 
-  if (action === 'resume' && steeringMessage.trim() && agentRunner) {
+  if (action === 'resume' && steeringMessage.trim()) {
     console.log('\nAnalyzing steering message...')
     const { SteeringAnalyzer } = require('../orchestrator/SteeringAnalyzer') as typeof import('../orchestrator/SteeringAnalyzer')
-    const actions = await SteeringAnalyzer.analyze(steeringMessage, agentRunner)
+    // Use explicit agentRunner or fall back to a default runner for steering analysis
+    const steeringRunner = agentRunner ?? AgentRunnerFactory.create({ type: 'claude-code' })
+    const actions = await SteeringAnalyzer.analyze(steeringMessage, steeringRunner)
     if (actions.length > 0) {
-      console.log(`Applying ${actions.length} steering actions...`)
+      console.log(`${AnsiHelpers.green('✓')} Applying ${actions.length} steering action(s)...`)
       orchestrator.applySteeringActions(actions)
+      console.log()
     } else {
       console.log('No actionable steering instructions detected.\n')
     }

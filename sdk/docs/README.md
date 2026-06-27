@@ -9,10 +9,12 @@ Index of project technical documentation for **harness-kit SDK**. Use the links 
 |----------|-------------|----------|
 | [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Architecture, folder organization, and code patterns for the project. | **Mandatory** |
 | [**TESTS.md**](./adr/TESTS.md) | Testing strategies, patterns, and execution commands. | **Mandatory** |
-| [**sdk_agent_runner.md**](./feature/sdk_agent_runner.md) | Implementation details of ClaudeAgentRunner and ClaudeCodeRunner. | Optional |
-| [**sdk_core.md**](./feature/sdk_core.md) | Architectural details of core SDK ports and adapters. | Optional |
+| [**sdk_agent_runner.md**](./feature/sdk_agent_runner.md) | Agent runner strategies, CLI flags (`--agent`, `--model`), and `AgentInvocation` interface. | Optional |
+| [**sdk_core.md**](./feature/sdk_core.md) | Architectural details of core SDK ports and adapters, and full public API table. | Optional |
 | [**sdk_package.md**](./feature/sdk_package.md) | SDK package build and release configuration. | Optional |
 | [**sdk_state.md**](./feature/sdk_state.md) | SDK state persistence and recovery logic. | Optional |
+| [**sdk_steering.md**](./feature/sdk_steering.md) | Session steering: `SteeringAnalyzer`, `steeringRules` config, and rollback/rule actions. | Optional |
+| [**sdk_terminal_ui.md**](./feature/sdk_terminal_ui.md) | Terminal progress spinner, progress bar, and ANSI color helpers. | Optional |
 
 ## Recommended Reading Order
 

@@ -22,6 +22,16 @@ sdk/src/agent-runner/
 - **Factory & Registry Pattern**: Decouples orchestrator from concrete implementations. The orchestrator requests a runner via `AgentRunnerFactory.create({ type: 'antigravity' })`.
 - **AbortSignal Propagation**: Run methods accept an `AbortSignal` in options. Concrete runners monitor this signal and terminate subprocess trees or API connection handles if triggered.
 
+```typescript
+export interface AgentInvocation {
+  agent: string         // Agent role name (e.g., 'developer-backend')
+  mode: 'autonomous' | 'interactive'
+  payload: ContextPayload
+  skill?: string        // OPTIONAL — if omitted, no skill folder lookup is performed
+  prompt?: string       // Explicit prompt override; takes precedence over payload serialization
+}
+```
+
 ## REGISTRY CONTRACTS
 | Method | Description |
 |---|---|
@@ -35,15 +45,23 @@ sdk/src/agent-runner/
 | `AgentRunnerFactory.create(config)` | Resolves type, executes `validateConfig` function, and returns concrete instance. |
 
 ## BUILT-IN RUNNERS
-- **claude-code**: CLI-based execution spawning `claude` subprocesses. Default runner option.
-- **claude-agent**: API-based execution invoking Anthropic Messages client.
-- **antigravity**: CLI-based execution spawning Google `agy` subprocesses.
+
+| Runner | CLI Flag | Binary | Default Model | Description |
+|---|---|---|---|---|
+| `claude-code` | *(none)* | `claude` | — | CLI subprocess spawn; default when no flag is passed. |
+| `claude-agent` | *(auto, env)* | — | Anthropic API | Used when `ANTHROPIC_API_KEY` is set and no explicit runner is given. |
+| `antigravity` | `--agent antigravity` | `agy` | `gemini-2.5-flash` | Google Antigravity CLI subprocess. Default model is `gemini-2.5-flash`. |
+| `copilot` | `--copilot` | `copilot` | — | GitHub Copilot CLI subprocess. |
 
 ## CLI OPTIONS
 REQUIRED: Pass agent selection flags when running orchestration command:
-- `hk run --copilot` — Instructs factory to resolve `'copilot'` runner.
-- `hk run --gemini` — Instructs factory to resolve `'gemini'` runner.
-- `hk run --agent <type>` / `hk run -a <type>` — Instructs factory to resolve custom strategy named `<type>`.
+
+| Flag | Description |
+|---|---|
+| `hk run --copilot` | Resolves `copilot` runner. |
+| `hk run --gemini` | Resolves `gemini` runner. |
+| `hk run --agent <type>` / `hk run -a <type>` | Resolves custom strategy named `<type>`. |
+| `hk run --model <name>` / `hk run -m <name>` | Overrides the default model for the selected runner. |
 
 ## REFERENCES
 - [**README.md**](../README.md): Main documentation index.

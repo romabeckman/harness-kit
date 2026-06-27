@@ -20,13 +20,18 @@ export class JsonExtractionProtocol {
         return JsonExtractionProtocol.tryParse(candidate, raw)
       }
 
-      // Step 2: fallback — first '{' to last '}'
+      // Step 2: fallback — first '{' or '[' to last matching '}' or ']'
       const firstBrace = raw.indexOf('{')
-      const lastBrace = raw.lastIndexOf('}')
-      if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+      const firstBracket = raw.indexOf('[')
+      const firstPos = firstBrace === -1 ? firstBracket
+        : firstBracket === -1 ? firstBrace
+        : Math.min(firstBrace, firstBracket)
+      const isArray = firstPos === firstBracket && (firstBrace === -1 || firstBracket < firstBrace)
+      const lastPos = isArray ? raw.lastIndexOf(']') : raw.lastIndexOf('}')
+      if (firstPos === -1 || lastPos === -1 || lastPos <= firstPos) {
         return { error: 'No JSON-like content found', raw } as ExtractionError
       }
-      const candidate = raw.substring(firstBrace, lastBrace + 1)
+      const candidate = raw.substring(firstPos, lastPos + 1)
       return JsonExtractionProtocol.tryParse(candidate, raw)
     } catch {
       return { error: 'Unexpected error during extraction', raw } as ExtractionError
