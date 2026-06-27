@@ -10,9 +10,6 @@
     "url": "git+https://github.com/romabeckman/harness-kit.git",
     "directory": "sdk"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "exports": {
     ".": {
       "require": "./dist/index.js",
