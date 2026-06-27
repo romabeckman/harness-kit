@@ -1,0 +1,148 @@
+import type { IAgentRunner } from '../IAgentRunner'
+import type { AgentInvocation, AgentOutput } from '../types'
+import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
+import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
+
+export interface OpenCodeRunnerConfig {
+  readonly model?: string
+  readonly serverUrl?: string   // override for pre-started server; skips createOpencode()
+  readonly timeoutMs?: number
+}
+
+/**
+ * SDK-based runner for OpenCode (opencode.ai).
+ * Uses @opencode-ai/sdk (peerDependency — consumer must install it).
+ *
+ * Flow:
+ *  1. createOpencode() — starts local opencode server
+ *  2. createOpencodeClient({ baseUrl }) — creates HTTP client
+ *  3. session.create() → session.prompt({ text }) → raw output
+ *  4. server.stop() in finally — always cleanup
+ */
+export class OpenCodeRunner implements IAgentRunner {
+  readonly #model: string | undefined
+  readonly #serverUrl: string | undefined
+  readonly #timeoutMs: number
+
+  constructor(config?: Partial<OpenCodeRunnerConfig>) {
+    this.#model = config?.model
+    this.#serverUrl = config?.serverUrl
+    this.#timeoutMs = config?.timeoutMs ?? 0
+  }
+
+  async run(
+    invocation: AgentInvocation,
+    options?: { signal?: AbortSignal },
+  ): Promise<AgentOutput> {
+    // Lazy import — @opencode-ai/sdk is a peerDependency
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let sdk: any
+    try {
+      // Use dynamic variable to prevent compile-time resolution of optional peer dependency
+      const sdkName = '@opencode-ai/sdk'
+      sdk = await import(sdkName)
+    } catch {
+      throw new AgentRunnerError({
+        code: AgentRunnerErrorCode.NETWORK_ERROR,
+        skill: invocation.skill ?? 'unknown',
+        phase: 'dispatch',
+        message: 'OpenCodeRunner requires @opencode-ai/sdk — run: npm install @opencode-ai/sdk',
+      })
+    }
+
+    const { createOpencode, createOpencodeClient } = sdk
+
+    const prompt = invocation.prompt ?? this.#buildPrompt(invocation)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let server: any = null
+
+    const abortPromise = new Promise<never>((_, reject) => {
+      if (options?.signal) {
+        if (options.signal.aborted) {
+          reject(new Error('aborted'))
+          return
+        }
+        options.signal.addEventListener('abort', () => {
+          reject(new Error('aborted'))
+        })
+      }
+    })
+
+    const workPromise = (async () => {
+      // Use pre-started server URL if provided, otherwise start one
+      let baseUrl: string
+      if (this.#serverUrl) {
+        baseUrl = this.#serverUrl
+      } else {
+        const opencodeApp = await createOpencode({
+          config: this.#model ? { model: this.#model } : {},
+        })
+        server = opencodeApp.server
+        baseUrl = opencodeApp.server.url
+      }
+
+      const client = createOpencodeClient({ baseUrl })
+      const sessionResult = await client.session.create()
+      const sessionId = sessionResult.data.id
+
+      const promptResult = await client.session.prompt({
+        path: { id: sessionId },
+        body: {
+          parts: [{ type: 'text', text: prompt }],
+        },
+      })
+
+      const raw = this.#extractRaw(promptResult)
+
+      return {
+        success: true,
+        stdout: raw,
+        stderr: '',
+        raw,
+        usage: {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheCreationTokens: 0,
+          cacheReadTokens: 0,
+          costUsd: 0,
+          model: this.#model,
+        },
+      }
+    })()
+
+    try {
+      return await Promise.race([workPromise, abortPromise])
+    } finally {
+      if (server) {
+        try {
+          await server.stop()
+        } catch { /* best-effort cleanup */ }
+      }
+    }
+  }
+
+  #buildPrompt(invocation: AgentInvocation): string {
+    return [
+      `Skill: ${invocation.skill ?? 'unknown'}`,
+      `Mode: ${invocation.mode}`,
+      '',
+      JSON.stringify(invocation.payload, null, 2),
+    ].join('\n')
+  }
+
+  #extractRaw(result: any): string {
+    // Attempt to extract text from common SDK response shapes
+    if (typeof result?.data?.output === 'string') return result.data.output
+    if (typeof result?.data?.text === 'string') return result.data.text
+    if (typeof result?.output === 'string') return result.output
+    if (typeof result === 'string') return result
+    return JSON.stringify(result)
+  }
+}
+
+AgentRunnerRegistry.register({
+  type: 'opencode',
+  constructor: OpenCodeRunner,
+  // No validateConfig — OpenCode reads env vars (ANTHROPIC_API_KEY etc.) itself
+})
