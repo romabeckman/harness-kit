@@ -11,21 +11,29 @@ const HELP = `
 @romabeckman/harness-kit — autonomous orchestrator
 
 USAGE
-  hrns <command> (or harness-kit <command>)
+  hrns <command> [options]
 
 COMMANDS
   run       Start or resume an orchestration session (interactive)
   report    Print token usage report for the current session
+  version   Show version
   help      Show this help message
 
+RUN OPTIONS
+  --agent, -a <type>  Specify agent type (e.g., 'copilot', 'gemini')
+  --model, -m <name>  Specify model name for the agent
+  --copilot           Shortcut for --agent copilot
+  --gemini            Shortcut for --agent gemini
+
 OPTIONS
-  --help, -h    Show this help message
-  --version, -v Show version
+  --help, -h          Show this help message
+  --version, -v       Show version
 
 EXAMPLES
   hrns run
+  hrns run --agent copilot --model gpt-4o
   hrns report
-  npx @romabeckman/hrns run
+  npx @romabeckman/hrns run --gemini
 
 DOCS
   https://github.com/romabeckman/harness-kit
