@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
+    "@github/copilot-sdk": "^1.0.4",
     "@inquirer/prompts": "^8.5.2"
   }
 }
