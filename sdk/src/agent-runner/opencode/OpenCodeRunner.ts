@@ -83,7 +83,7 @@ export class OpenCodeRunner implements IAgentRunner {
       }
 
       const session = await client.session.create({
-        body: { title: 'hk-session' },
+        body: { title: 'hrns-session' },
       })
       const sessionId = session.id
 

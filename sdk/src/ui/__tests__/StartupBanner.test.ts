@@ -12,7 +12,7 @@ describe('StartupBanner', () => {
 
   it('renders simple text fallback on small viewports', () => {
     const banner = StartupBanner.render(30)
-    expect(banner).toContain('HK')
+    expect(banner).toContain('Harness')
     expect(banner).not.toContain('█')
     expect(banner).toContain('v1.0.0')
   })

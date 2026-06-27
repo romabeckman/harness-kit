@@ -5,7 +5,7 @@ import { resolve } from 'path'
 describe('T01 — SDK scaffold', () => {
   it('package.json has correct name', () => {
     const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf-8'))
-    expect(pkg.name).toBe('@romabeckman/hk')
+    expect(pkg.name).toBe('@romabeckman/hrns')
   })
 
   it('package.json has vitest as devDependency', () => {

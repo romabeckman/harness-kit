@@ -20,7 +20,7 @@ export class StartupBanner {
     if (width < 40) {
       return [
         `+---------------------------------+`,
-        `|  [HK Pipeline v${version}]      |`,
+        `|  [Harness Pipeline v${version}] |`,
         `+---------------------------------+`,
         `| [A] Refinement -> (S-Arch)      |`,
         `| [B] Impl       -> (BE|FE, TDD)  |`,

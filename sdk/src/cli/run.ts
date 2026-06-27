@@ -25,7 +25,7 @@ OPTIONS
 EXAMPLES
   hrns run
   hrns report
-  npx @romabeckman/hk run
+  npx @romabeckman/hrns run
 
 DOCS
   https://github.com/romabeckman/harness-kit
@@ -34,7 +34,7 @@ DOCS
 function printVersion(): void {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const pkg = require('../../package.json') as { version: string }
-  console.log(`@romabeckman/hk v${pkg.version}`)
+  console.log(`@romabeckman/hrns v${pkg.version}`)
 }
 
 interface RunOptions {
@@ -51,12 +51,12 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
 
   const action = hasExistingSession
     ? await select({
-        message: 'What would you like to do?',
-        choices: [
-          { name: 'resume — continue from last session', value: 'resume' },
-          { name: 'reset  — discard current session and start a new cycle', value: 'reset' },
-        ],
-      })
+      message: 'What would you like to do?',
+      choices: [
+        { name: 'resume — continue from last session', value: 'resume' },
+        { name: 'reset  — discard current session and start a new cycle', value: 'reset' },
+      ],
+    })
     : 'reset'
 
   let steeringMessage = ''
@@ -79,13 +79,13 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
 
     scope = inputMethod === 'type'
       ? await input({
-          message: 'Project scope:',
-          validate: (v) => v.trim().length > 0 || 'Scope cannot be empty.',
-        })
+        message: 'Project scope:',
+        validate: (v) => v.trim().length > 0 || 'Scope cannot be empty.',
+      })
       : await editor({
-          message: 'Paste or write your PRD (save and close to continue):',
-          validate: (v) => v.trim().length > 0 || 'Scope cannot be empty.',
-        })
+        message: 'Paste or write your PRD (save and close to continue):',
+        validate: (v) => v.trim().length > 0 || 'Scope cannot be empty.',
+      })
   }
 
   const pathsInput = await input({
@@ -204,7 +204,7 @@ async function main(): Promise<void> {
     return
   }
 
-  console.error(`Unknown command: ${cmd}\nRun "hk help" for usage.`)
+  console.error(`Unknown command: ${cmd}\nRun "hrns help" for usage.`)
   process.exit(1)
 }
 

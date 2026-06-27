@@ -1,4 +1,4 @@
-# @romabeckman/hk
+# @romabeckman/hrns
 
 ![alpha](https://img.shields.io/badge/status-alpha-orange)
 
@@ -29,7 +29,7 @@ claude --version
 ### Option A — npx (no install, always latest)
 
 ```bash
-npx @romabeckman/hk run
+npx @romabeckman/hrns run
 ```
 
 > If the package is not yet published to npm, use Option B or C below.
@@ -145,7 +145,7 @@ Detailed runner architectural specifications are located in [**sdk_agent_runner.
 Install as a dependency in your project:
 
 ```bash
-npm install @romabeckman/hk
+npm install @romabeckman/hrns
 # or, before publishing:
 npm install /path/to/harness-kit/sdk
 ```
@@ -153,7 +153,7 @@ npm install /path/to/harness-kit/sdk
 Basic usage:
 
 ```typescript
-import { HarnessOrchestrator } from '@romabeckman/hk'
+import { HarnessOrchestrator } from '@romabeckman/hrns'
 
 const orchestrator = new HarnessOrchestrator({
   scope: 'REST API with JWT auth and PostgreSQL',
@@ -179,8 +179,8 @@ await orchestrator.run()
 ### Custom progress output
 
 ```typescript
-import { HarnessOrchestrator, ClaudeCodeRunner } from '@romabeckman/hk'
-import type { ProgressLine } from '@romabeckman/hk'
+import { HarnessOrchestrator, ClaudeCodeRunner } from '@romabeckman/hrns'
+import type { ProgressLine } from '@romabeckman/hrns'
 
 const orchestrator = new HarnessOrchestrator({
   scope: 'my project',
@@ -199,7 +199,7 @@ const orchestrator = new HarnessOrchestrator({
 Instantiate any registered runner (e.g. Antigravity) via the Factory:
 
 ```typescript
-import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hk'
+import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hrns'
 
 const orchestrator = new HarnessOrchestrator({
   scope: 'my project',
@@ -214,7 +214,7 @@ const orchestrator = new HarnessOrchestrator({
 ### Read backlog state
 
 ```typescript
-import { FileStateManager } from '@romabeckman/hk'
+import { FileStateManager } from '@romabeckman/hrns'
 
 const state = new FileStateManager({ productDir: './docs/product' })
 
@@ -226,7 +226,7 @@ const nextTask = state.getNextTask('F001')
 ### CI/CD with API key
 
 ```typescript
-import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hk'
+import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hrns'
 
 const orchestrator = new HarnessOrchestrator({
   scope: 'my project',
