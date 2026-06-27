@@ -1,214 +1,8 @@
-# 🔧 HarnessKit
+# @romabeckman/hk
 
-![HarnessKit - 5-Step Engineering Cycle](docs/assets/harness-cycle-banner.png)
+![alpha](https://img.shields.io/badge/status-alpha-orange)
 
-> **Harness Engineering**: A reliable AI agent is not just a raw model. It is defined as:
-> $$\text{Reliable Agent} = \text{Model (AI)} + \text{Harness (Controls)} + \text{Human Auditor}$$
-
-HarnessKit is a complete AI-assisted software engineering methodology built on **Harness Engineering**—the principle that true reliability comes from enclosing generative models inside structured execution scaffolds and human-driven governance loops.
-
----
-
-## 👑 The Core Engine: Autonomous Orchestration & Live Auditing
-
-At the heart of HarnessKit is the **`autonomous-orchestrator`** skill. Once provided with the initial task scope, it runs an atomic, continuous execution cycle without stopping, pausing, or asking redundant questions—fully automating domain planning, TDD execution, and multi-agent code reviews.
-
-**However, the human engineer is never replaced: your role evolves into Live Auditing.**
-
-While the orchestrator executes continuously, you act as the **Human Auditor** in the cockpit, tracking the live stream through your coding workspace (Claude Code, Cursor, OpenCode, Gemini, Copilot, etc.). The AI moves with sovereignty, but you maintain continuous telemetry and oversight.
-
-### ⚡ Hot-Interception: Absolute Human Command
-
-Because the engine runs seamlessly without waiting for permissions at every step, you use this live observability to dynamically intercept the loop when necessary:
-
-* **Pull the Emergency Brake:** Forcefully kill the execution (`Ctrl+C`) the moment you notice the AI has adopted an incorrect architectural premise.
-* **Live In-Flight Injections:** Hot-patch the active backlog, append newly uncovered constraints, or update domain specifications while the loop is running.
-* **Dynamic Parameter Tweaking:** Modify configuration thresholds on the fly—lower the validation score target (default **0.70**) to accept a minor style debt, or increase `maxReworks` directly inside the configuration files.
-
-### 🔍 Socratic Code Review in Action
-
-To prevent systemic risks (such as N+1 queries, memory leaks, security vulnerabilities, or database connection exhaustion), HarnessKit employs a **Socratic Code Review** model. The orchestrator invokes the **`the-grumpy-tech-lead`** to validate the code inferentially by asking deep architectural questions rather than providing copy-paste solutions.
-
-Below is a visual example of how this interactive code review occurs under your watch:
-
-![Socratic Code Review Example](docs/assets/code-review.png)
-
-### 🤖 Autonomous State Machine
-
-The loop is driven by a robust **Product State Machine**. It tracks feature backlogs and dynamic transition gates, ensuring that a feature only progresses when quality criteria are fully satisfied.
-
-![Autonomous State Machine](docs/assets/update-state-machine.png)
-
-Based on gate scores, the orchestrator updates the project state machine into four terminal statuses:
-
-* **`COMPLETED`**: Approved and ready for your final PR review.
-* **`RETRY`**: Scores fell short; the engine compiles a `REWORK-LOG.md` and loops back to code automatically.
-* **`BLOCKED`**: Critical crash/break—the engine triggers a circuit breaker and halts for immediate human intervention.
-* **`FAILED`**: Non-blocking tech debt—the pipeline logs the issue and moves to the next feature, leaving the debt for you to audit later.
-
----
-
-## Installation & Quick Commands
-
-HarnessKit is distributed as a command-line plugin compatible with major AI developer ecosystems.
-
-> **⚠️ IMPORTANT!**
-> This project requires the [Superpowers](https://github.com/obra/superpowers) skill. Install it before initializing HarnessKit:
-
-```bash
-/plugin install superpowers@claude-plugins-official
-```
-
-### Claude Code
-
-```bash
-/plugin marketplace add romabeckman/harness-kit
-/plugin install harness-kit@harness-kit
-/harness-kit:project-memory --help
-
-```
-
-### GitHub Copilot CLI
-
-```bash
-copilot plugin marketplace add romabeckman/harness-kit
-copilot plugin install harness-kit@harness-kit
-
-```
-
-### Gemini CLI
-
-```bash
-# Install the extension
-agy plugin install https://github.com/romabeckman/harness-kit
-```
-
----
-
-## SDK — Run the orchestrator programmatically
-
-`@romabeckman/hk` is the CLI and SDK that drives the autonomous orchestrator from the terminal — no interactive Claude Code session required.
-
-```bash
-# install once
-npm install -g @romabeckman/hk
-
-# start or resume a session
-hk run
-```
-
-Useful for CI/CD pipelines, scripted workflows, or developers who prefer a terminal-first experience over the Claude Code UI.
-
-→ Full documentation: [sdk/README.md](sdk/README.md)
-
----
-
-## What's Inside
-
-To prevent role contamination, the orchestrator isolates operational contexts by dispatching highly specialized agent personas equipped with dedicated skills.
-
-### 🛠️ Skills (`/skills`)
-
-| Skill | Core Function |
-| --- | --- |
-| **Project Memory** (`project-memory`) | Generates and maintains persistent technical documentation (`docs/README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`). The agent's long-term memory. |
-| **Scope Refinement** (`scope-refinement`) | DDD-based scope orchestrator. Maps Bounded Contexts, Aggregates, and Use Cases. Produces test scenarios before implementation starts. |
-| **Autonomous Orchestrator** (`autonomous-orchestrator`) | Sovereign loop manager. Fully automates execution across planning, implementation, validation, and auto-tuning phases without user interruption. |
-| **TDD Orchestrator** (`tdd-orchestrator`) | Enforces RED → GREEN → REFACTOR. Coordinates the full test-driven development cycle, blocking implementation without a failing test first. |
-| **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Senior technical reviewer. Uses Socratic questioning to expose systemic risks (N+1, leaks, race conditions, SOLID violations). |
-| **Harness Tracer** (`harness-tracer`) | Records structured execution traces after each session to `docs/harness-history/traces/`. Raw material for harness optimization. |
-| **Harness Evaluator** (`harness-evaluator`) | Aggregates traces, computes composite scores per skill chain, and updates the Pareto frontier of best harness configurations. |
-| **Meta-Harness** (`meta-harness`) | Proposer for the harness optimization loop. Reads history, diagnoses failure patterns, and proposes targeted SKILL.md improvements. |
-
-### 🤖 Expert Agents (`./agents`)
-
-| Agent | Role | Focus |
-| --- | --- | --- |
-| **[Software Architect](agents/software-architect.md)** | System Design & Refinement | DDD modeling, architectural decisions, and implementation planning. |
-| **[Harness Tech Lead](agents/harness-tech-lead.md)** | Automated Code Review | Evaluates systemic risks, scalability, security, and design patterns. |
-| **[Developer Backend](agents/developer-backend.md)** | Backend Engineering | Robust APIs, database modeling, and server-side logic with TDD. |
-| **[Developer Frontend](agents/developer-frontend.md)** | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
-| **[Developer Debugging](agents/developer-debugging.md)** | Root Cause Specialist | Systematic bug investigation using the "5 Whys" methodology. |
-| **[QA Engineer](agents/harness-qa.md)** | Quality Assurance | E2E testing strategy, automation, security validation, and adversarial QA testing. |
-| **[Meta-Harness Agent](agents/meta-harness-agent.md)** | Harness Optimizer | Reads harness history filesystem, diagnoses failure patterns, proposes targeted skill improvements. |
-
----
-
-## Project Documentation Setup
-
-The `docs/` folder acts as HarnessKit's **persistent memory** for your project. It centralizes the technical knowledge that allows agents to operate autonomously and accurately across sessions.
-
-### Required files
-
-| File | Function |
-| --- | --- |
-| `docs/README.md` | Summary and index. The agent's main map for navigating your project. |
-| `docs/adr/ARCHITECTURE.md` | Architecture rules. Prevents design decisions inconsistent with the project. |
-| `docs/adr/TESTS.md` | Quality protocol. Defines the testing framework and standards. |
-
-> **Tip:** Use `project-memory` to generate these automatically before running the orchestrator:
-> `/harness-kit:project-memory`
-
----
-
-## Harness Optimization Loop
-
-The toolkit isn't rigid—it learns and evolves based on real execution telemetry saved right into your repository:
-
-```text
-Sessions (real work)
-       ↓
- meta-harness-agent    ← always runs harness-tracer (every session)
-       ↓
- harness-evaluator     ← auto-triggered when trace count is a multiple of 5
-       ↓
- meta-harness          ← only on explicit user request
-       ↓
- Human review & approval (Live Auditing)
-       ↓
- Apply candidate → collect sessions → evaluate → promote or discard
-       ↓
- Loop repeats
-
-```
-
-**How to start optimization manually:**
-
-```bash
-# After ≥3 sessions have been recorded by harness-tracer:
-/harness-kit:harness-evaluator
-
-# After reviewing pareto-frontier.md:
-/harness-kit:meta-harness
-
-# After applying the candidate and collecting sessions:
-/harness-kit:harness-evaluator
-/harness-kit:meta-harness --promote v001
-
-```
-
----
-
-## 📖 Deep-Dive Documentation
-
-Explore the complete knowledge base inside the `docs/workflow/` directory. This serves as your entry point for understanding and executing the framework.
-
-* **[Workflow Index](docs/workflow/README.md)** — Main navigation index for the minimized documentation layout.
-* **[Autonomous Loop Orchestration](docs/workflow/AUTONOMOUS-ORCHESTRATOR.md)** — Step-by-step workflow for running the sovereign execution loop, including setup, thresholds, and hot-interception.
-* **[Conceptual & Architectural Foundation](docs/workflow/META-HARNESS.md)** — Combines the system's 3-layer architecture and the continuous optimization loop. Built on the principles of the research paper *Meta-Harness*.
-* **[Daily Use Playbook](docs/workflow/PLAYBOOK-DAILY-USE.md)** — Step-by-step tactical guide for daily tasks. Follow operational checklists and command flows for manual execution.
-
----
-
-## Philosophy
-
-* **Harness Engineering** — Reliability comes from controls, not just capability. An agent without a harness is unpredictable.
-* **Test-Driven Development** — Write tests first. Always. No exceptions.
-* **Domain-Driven Design** — Model the problem before solving it.
-* **Socratic over Prescriptive** — The Grumpy Tech Lead asks questions that force the engineer to think, rather than providing ready-made answers.
-* **Computational + Inferential** — Tests validate correctness. Reviews validate judgment.
-
----
+Runs the [harness-kit](https://github.com/romabeckman/harness-kit) autonomous orchestrator programmatically. Instead of typing `/autonomous-orchestrator` in Claude Code, you run a single command and the full TDD loop executes unattended — scope in, backlog built, agents delegated, validation scored, memory persisted.
 
 ## Integration with Superpowers
 
@@ -216,25 +10,248 @@ HarnessKit is designed to complement [Superpowers Skills](https://github.com/obr
 
 ---
 
-## Contributing
+## Prerequisites
 
-1. Fork the repository: `https://github.com/romabeckman/harness-kit`
-2. Create a branch for your changes
-3. Follow the skill conventions in `skills/*/SKILL.md`
-4. Submit a PR with a clear description of what changed and why
+Before anything else:
+
+```bash
+# 1. Claude Code CLI installed and authenticated
+claude --version
+
+# 2. harness-kit plugin installed
+/plugin marketplace add romabeckman/harness-kit
+```
 
 ---
 
-## License
+## How to run
 
-MIT License — see [LICENSE](LICENSE) file for details.
+### Option A — npx (no install, always latest)
 
-## Issues & Feedback
+```bash
+npx @romabeckman/hk run
+```
 
-* **Issues:** <https://github.com/romabeckman/harness-kit/issues>
-* **Author:** [Romario Beckman](https://www.linkedin.com/in/romabeckman/)
+> If the package is not yet published to npm, use Option B or C below.
 
-## References
+---
 
-* Lee, Y., Nair, R., Zhang, Q., Khattab, O., Finn, C., & Lee, K. (2026). *Meta-Harness: End-to-End Optimization of Model Harnesses*. Available at [arXiv:2603.28052](https://arxiv.org/abs/2603.28052).
-* Birgitta Böckeler (2026). [Harness engineering for coding agent users](https://martinfowler.com/articles/harness-engineering.html).
+### Option B — install globally (run from anywhere)
+
+Build from source and install globally once:
+
+```bash
+git clone https://github.com/romabeckman/harness-kit.git
+cd harness-kit/sdk
+npm install
+npm run build
+npm install -g .
+```
+
+Then from any project directory:
+
+```bash
+@romabeckman/hk run
+```
+
+---
+
+### Option C — run directly without installing
+
+```bash
+git clone https://github.com/romabeckman/harness-kit.git
+cd harness-kit/sdk
+npm install && npm run build
+node dist/cli/run.js
+```
+
+---
+
+## What happens when you run it
+
+An interactive form collects the required info:
+
+```
+@romabeckman/hk — autonomous orchestrator
+
+? What would you like to do?
+  ❯ resume — continue from last session
+    reset  — discard current session and start a new cycle
+
+? How would you like to provide the project scope?
+  ❯ type   — enter a short description
+    editor — open editor for a longer PRD
+
+? Project scope: REST API with JWT auth and PostgreSQL
+
+? Project paths (comma-separated): /home/user/my-api
+
+── Starting orchestration ──────────────────────────────
+  scope:  REST API with JWT auth and PostgreSQL
+  paths:  /home/user/my-api
+────────────────────────────────────────────────────────
+[scope-refinement] → Skill
+[scope-refinement] → Write
+[scope-refinement] ✓ done
+[tdd-orchestrator] → Bash
+...
+✓ All features completed.
+
+@romabeckman/hk — token report
+────────────────────────────────────────
+scope-refinement     input: 12,450  cost: $0.04
+tdd-orchestrator     input: 28,100  cost: $0.12
+────────────────────────────────────────
+TOTAL                input: 40,550  cost: $0.16
+```
+
+- Real-time progress logged to the terminal as agents work
+- `docs/product/BACKLOG.md`, `DEVELOPMENT-STATE.md`, `DECISIONS.md` updated continuously
+- If interrupted, run the same command again and choose **resume** — it picks up exactly where it stopped
+- Ctrl+C cancels cleanly at any prompt
+
+---
+
+## Agent runner — how authentication works
+
+No API key needed for local use. The SDK uses your Claude Code session automatically.
+
+| Condition | Runner used |
+|---|---|
+| `ANTHROPIC_API_KEY` set in environment | `ClaudeAgentRunner` (direct API) |
+| No API key | `ClaudeCodeRunner` (local `claude` CLI) |
+
+For CI/CD environments without Claude Code:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+@romabeckman/hk run
+```
+
+---
+
+## Using the SDK programmatically
+
+Install as a dependency in your project:
+
+```bash
+npm install @romabeckman/hk
+# or, before publishing:
+npm install /path/to/harness-kit/sdk
+```
+
+Basic usage:
+
+```typescript
+import { HarnessOrchestrator } from '@romabeckman/hk'
+
+const orchestrator = new HarnessOrchestrator({
+  scope: 'REST API with JWT auth and PostgreSQL',
+  projectPaths: ['/path/to/my-api'],
+})
+
+await orchestrator.run()
+orchestrator.tokenReport() // print token + cost breakdown
+```
+
+### Resume a previous session
+
+```typescript
+// same config + same projectPaths → resumes automatically
+const orchestrator = new HarnessOrchestrator({
+  scope: 'my project',       // ignored when backlog already exists on disk
+  projectPaths: ['/path/to/api'],
+})
+
+await orchestrator.run()
+```
+
+### Custom progress output
+
+```typescript
+import { HarnessOrchestrator, ClaudeCodeRunner } from '@romabeckman/hk'
+import type { ProgressLine } from '@romabeckman/hk'
+
+const orchestrator = new HarnessOrchestrator({
+  scope: 'my project',
+  projectPaths: ['/path/to/project'],
+  agentRunner: new ClaudeCodeRunner({
+    onProgress: (line: ProgressLine) => {
+      if (line.type === 'tool_use') console.log(`[${line.skill}] → ${line.toolName}`)
+      if (line.type === 'result')   console.log(`[${line.skill}] done`)
+    },
+  }),
+})
+```
+
+### Read backlog state
+
+```typescript
+import { FileStateManager } from '@romabeckman/hk'
+
+const state = new FileStateManager({ productDir: './docs/product' })
+
+const features = state.loadBacklog()
+const executable = state.getExecutableFeatures()
+const nextTask = state.getNextTask('F001')
+```
+
+### CI/CD with API key
+
+```typescript
+import { HarnessOrchestrator, ClaudeAgentRunner } from '@romabeckman/hk'
+
+const orchestrator = new HarnessOrchestrator({
+  scope: 'my project',
+  projectPaths: ['/path/to/project'],
+  agentRunner: new ClaudeAgentRunner(), // reads ANTHROPIC_API_KEY from env
+})
+
+await orchestrator.run()
+```
+
+---
+
+## Token report
+
+After each run, `docs/product/tokens.jsonl` is written with one entry per agent invocation.
+Call `tokenReport()` to print a summary:
+
+```typescript
+orchestrator.tokenReport()
+```
+
+```
+harness-kit-sdk — token report
+  model:  anthropic.claude-4-6-sonnet, anthropic.claude-4-5-haiku
+────────────────────────────────────────────────────────────────────
+skill                           input   output  cache_r  cost
+────────────────────────────────────────────────────────────────────
+harness-kit:autonomous-orchestrator:bootstrap        5      586   81,124  $0.2267
+scope-refinement                2,759   14,806  793,672  $2.9909
+tdd-orchestrator                1,274   16,776 1,962,417  $2.8600
+the-grumpy-tech-lead               57    3,372  287,236  $0.5543
+adversarial-qa                     57    3,323  323,149  $0.3755
+project-memory                     13    4,684  240,743  $0.7567
+────────────────────────────────────────────────────────────────────
+TOTAL                           4,165   43,547 3,688,341  $7.7640
+  cache_read saved ~$11.0650
+```
+
+---
+
+## Build from source
+
+```bash
+cd harness-kit/sdk
+npm install
+npm run build      # compiles TypeScript → dist/
+npm test           # runs Vitest (250+ tests)
+npm run typecheck  # zero-error type check
+```
+
+---
+
+## Repository
+
+[github.com/romabeckman/harness-kit](https://github.com/romabeckman/harness-kit)
