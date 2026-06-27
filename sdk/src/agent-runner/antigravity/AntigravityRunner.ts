@@ -17,7 +17,7 @@ export class AntigravityRunner implements IAgentRunner {
     this.#config = {
       timeoutMs: config?.timeoutMs ?? 0,
       agyBin: config?.agyBin ?? 'agy',
-      model: config?.model ?? 'gemini-2.5-pro',
+      model: config?.model ?? 'gemini-3.5-flash',
     }
   }
 

@@ -37,6 +37,7 @@ function printVersion(): void {
 
 interface RunOptions {
   agentType?: string
+  model?: string
 }
 
 async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
@@ -100,7 +101,7 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
   }
 
   const agentRunner = options.agentType
-    ? AgentRunnerFactory.create({ type: options.agentType })
+    ? AgentRunnerFactory.create({ type: options.agentType, model: options.model })
     : undefined
 
   const orchestrator = new HarnessOrchestrator({
@@ -147,6 +148,8 @@ async function main(): Promise<void> {
         options.agentType = 'gemini'
       } else if (arg === '--agent' || arg === '-a') {
         options.agentType = runArgs[++i]
+      } else if (arg === '--model' || arg === '-m') {
+        options.model = runArgs[++i]
       }
     }
 
