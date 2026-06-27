@@ -91,7 +91,10 @@ export class HarnessOrchestrator implements PhaseContext {
 
       const next = await this.dispatch(this.state.currentPhase)
       if (next !== this.state.currentPhase) {
-        this.fsm.appendDecision({ featureId: null, decision: `Phase transition: ${this.state.currentPhase} → ${next}` })
+        this.fsm.appendDecision({
+          featureId: null,
+          decision: `Phase transition: ${this.getPhaseDescription(this.state.currentPhase)} → ${this.getPhaseDescription(next)}`
+        })
       }
       this.state = { ...this.state, currentPhase: next }
     }
@@ -268,6 +271,20 @@ export class HarnessOrchestrator implements PhaseContext {
       this.fsm.saveBootstrapConfig(config)
     } catch {
       // ignore if bootstrap config not yet written
+    }
+  }
+
+  private getPhaseDescription(phase: Phase): string {
+    switch (phase) {
+      case Phase.BOOTSTRAP: return 'BOOTSTRAP (Initialization)'
+      case Phase.PHASE_A: return 'PHASE_A (Scope Refinement)'
+      case Phase.PHASE_B: return 'PHASE_B (TDD Implementation)'
+      case Phase.PHASE_C: return 'PHASE_C (Validation & Review)'
+      case Phase.PHASE_D: return 'PHASE_D (Completion Check)'
+      case Phase.PHASE_E: return 'PHASE_E (Documentation & Memory)'
+      case Phase.CASCADE_BLOCKED: return 'CASCADE_BLOCKED (Dependency Blocked)'
+      case Phase.HALTED: return 'HALTED (Execution Halted)'
+      default: return phase
     }
   }
 }
