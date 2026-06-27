@@ -45,7 +45,7 @@ interface BootstrapConfig {
 ## FLOW
 
 ```
-hk run --agent antigravity
+hrns run --agent antigravity
   → user selects: resume
   → user types: "todo código em português"
   → SteeringAnalyzer.analyze(message, runner)

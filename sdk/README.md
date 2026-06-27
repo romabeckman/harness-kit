@@ -51,7 +51,7 @@ npm install -g .
 Then from any project directory:
 
 ```bash
-hk run
+hrns run
 ```
 
 ---
@@ -72,7 +72,7 @@ node dist/cli/run.js
 An interactive form collects the required info:
 
 ```
-@romabeckman/hk — autonomous orchestrator
+harness-kit — autonomous orchestrator
 
 ? What would you like to do?
   ❯ resume — continue from last session
@@ -97,7 +97,7 @@ An interactive form collects the required info:
 ...
 ✓ All features completed.
 
-@romabeckman/hk — token report
+harness-kit — token report
 ────────────────────────────────────────
 scope-refinement     input: 12,450  cost: $0.04
 tdd-orchestrator     input: 28,100  cost: $0.12
@@ -129,10 +129,10 @@ By default, the SDK auto-selects a runner:
 Select agent strategy via CLI flags:
 ```bash
 # Run with Google Antigravity CLI
-hk run --agent antigravity
+hrns run --agent antigravity
 
 # Run with Copilot
-hk run --copilot
+hrns run --copilot
 ```
 
 Detailed runner architectural specifications are located in [**sdk_agent_runner.md**](./docs/feature/sdk_agent_runner.md).

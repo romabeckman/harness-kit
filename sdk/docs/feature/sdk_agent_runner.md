@@ -58,10 +58,10 @@ REQUIRED: Pass agent selection flags when running orchestration command:
 
 | Flag | Description |
 |---|---|
-| `hk run --copilot` | Resolves `copilot` runner. |
-| `hk run --gemini` | Resolves `gemini` runner. |
-| `hk run --agent <type>` / `hk run -a <type>` | Resolves custom strategy named `<type>`. |
-| `hk run --model <name>` / `hk run -m <name>` | Overrides the default model for the selected runner. |
+| `hrns run --copilot` | Resolves `copilot` runner. |
+| `hrns run --gemini` | Resolves `gemini` runner. |
+| `hrns run --agent <type>` / `hrns -a <type>` | Resolves custom strategy named `<type>`. |
+| `hrns run --model <name>` / `hrns -m <name>` | Overrides the default model for the selected runner. |
 
 ## REFERENCES
 - [**README.md**](../README.md): Main documentation index.

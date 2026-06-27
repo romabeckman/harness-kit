@@ -20,7 +20,8 @@
     }
   },
   "bin": {
-    "hk": "dist/cli/run.js"
+    "hrns": "dist/cli/run.js",
+    "harness-kit": "dist/cli/run.js"
   },
   "files": [
     "dist",

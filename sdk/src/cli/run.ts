@@ -8,10 +8,10 @@ import { StartupBanner } from '../ui/StartupBanner'
 import { AnsiHelpers } from '../ui/AnsiHelpers'
 
 const HELP = `
-@romabeckman/hk — harness-kit autonomous orchestrator
+@romabeckman/harness-kit — autonomous orchestrator
 
 USAGE
-  hk <command>
+  hrns <command> (or harness-kit <command>)
 
 COMMANDS
   run       Start or resume an orchestration session (interactive)
@@ -23,8 +23,8 @@ OPTIONS
   --version, -v Show version
 
 EXAMPLES
-  hk run
-  hk report
+  hrns run
+  hrns report
   npx @romabeckman/hk run
 
 DOCS
