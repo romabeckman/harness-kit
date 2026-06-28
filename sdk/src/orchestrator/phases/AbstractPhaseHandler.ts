@@ -14,6 +14,7 @@ export interface PhaseContext {
   getActiveFeature(features: Feature[]): Feature | null
   checkSpecFilesPresent(domain: string): boolean
   extractTasksFromTacticalDesign(domain: string): Array<{ taskId: string; description: string }>
+  onFeatureTransition?(completed: Feature, next: Feature | null, cycle: number): void
 }
 
 export interface IPhaseHandler {

@@ -425,6 +425,60 @@ export class HarnessOrchestrator implements PhaseContext {
     }
   }
 
+  public onFeatureTransition(completed: Feature, next: Feature | null, cycle: number): void {
+    const width = 60
+    const hr = '╠' + '═'.repeat(width - 2) + '╣'
+    const top = '╔' + '═'.repeat(width - 2) + '╗'
+    const bot = '╚' + '═'.repeat(width - 2) + '╝'
+
+    const padLine = (content: string): string => {
+      const cleanContent = content.replace(/\x1b\[[0-9;]*m/g, '')
+      const padLen = width - 6 - cleanContent.length
+      return `║  ${content}${' '.repeat(Math.max(0, padLen))}  ║`
+    }
+
+    const titleStr = next 
+      ? `✔  FEATURE COMPLETED` 
+      : `✔  ALL FEATURES COMPLETED`
+    const cycleStr = `[ Cycle ${cycle} ]`
+    const headerContent = `${AnsiHelpers.green(titleStr)}${' '.repeat(width - 6 - titleStr.length - cycleStr.length)}${AnsiHelpers.blue(cycleStr)}`
+
+    console.log(`\n${AnsiHelpers.blue(top)}`)
+    console.log(padLine(headerContent))
+    console.log(AnsiHelpers.blue(hr))
+    console.log(padLine(`${AnsiHelpers.cyan(completed.id)}  ${completed.title}`))
+    
+    const scoreTLStr = completed.scoreTL !== null ? completed.scoreTL.toString() : '-'
+    const scoreAdvStr = completed.scoreAdv !== null ? completed.scoreAdv.toString() : '-'
+    
+    console.log(
+      padLine(
+        `${AnsiHelpers.dim('Score TL:')} ${AnsiHelpers.yellow(scoreTLStr)}  │  ` +
+        `${AnsiHelpers.dim('Score Adv:')} ${AnsiHelpers.yellow(scoreAdvStr)}  │  ` +
+        `${AnsiHelpers.dim('Status:')} ${completed.status === 'COMPLETED' ? AnsiHelpers.green(completed.status) : AnsiHelpers.red(completed.status)}`
+      )
+    )
+
+    if (next) {
+      console.log(AnsiHelpers.blue(hr))
+      console.log(padLine(`${AnsiHelpers.blue('⟶')}  ${AnsiHelpers.dim('NEXT FEATURE')}`))
+      const priorityVal = next.priority
+      const priorityStr = (priorityVal !== undefined && priorityVal !== null && !isNaN(priorityVal)) 
+        ? priorityVal.toString() 
+        : '-'
+      console.log(
+        padLine(
+          `${AnsiHelpers.cyan(next.id)}  ${next.title}  ` +
+          `[${AnsiHelpers.dim('Priority:')} ${AnsiHelpers.yellow(priorityStr)}]`
+        )
+      )
+    } else {
+      console.log(AnsiHelpers.blue(hr))
+      console.log(padLine(AnsiHelpers.dim('All backlog items processed — pipeline halting.')))
+    }
+    console.log(`${AnsiHelpers.blue(bot)}\n`)
+  }
+
   public getPhaseDescription(phase: Phase): string {
     switch (phase) {
       case Phase.BOOTSTRAP: return 'BOOTSTRAP (Initialization)'

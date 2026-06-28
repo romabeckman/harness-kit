@@ -33,6 +33,10 @@ export class PhaseEHandler extends AbstractPhaseHandler {
     context.updateState({ completedCycles: config.cycleCounter.completedCycles })
 
     const nextFeature = features.find(f => f.status === 'NOT_STARTED')
+    if (context.onFeatureTransition) {
+      context.onFeatureTransition(activeFeature, nextFeature ?? null, config.cycleCounter.completedCycles)
+    }
+
     if (nextFeature) {
       context.updateState({ activeFeatureId: nextFeature.id })
       return Phase.PHASE_A

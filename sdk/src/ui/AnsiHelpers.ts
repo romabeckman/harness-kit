@@ -38,4 +38,8 @@ export class AnsiHelpers {
   static yellow(text: string): string {
     return `\x1b[33m${text}\x1b[0m`
   }
+
+  static red(text: string): string {
+    return `\x1b[31m${text}\x1b[0m`
+  }
 }
