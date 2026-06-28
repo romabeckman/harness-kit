@@ -22,7 +22,10 @@ export class CopilotRunner implements IAgentRunner {
   }
 
   async run(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput> {
-    const client = new CopilotClient()
+    const client = new CopilotClient({
+      workingDirectory: invocation.workspacePath ?? process.cwd(),
+      env: invocation.env,
+    })
     await client.start()
 
     const controller = new AbortController()
@@ -43,7 +46,6 @@ export class CopilotRunner implements IAgentRunner {
     try {
       session = await client.createSession({
         model: this.config.model,
-        workingDirectory: invocation.workspacePath ?? process.cwd(),
         onPermissionRequest: approveAll,
       })
 
@@ -96,7 +98,7 @@ export class CopilotRunner implements IAgentRunner {
     } finally {
       if (session) {
         try {
-          await session.destroy()
+          await session.disconnect()
         } catch {
           // ignore
         }
