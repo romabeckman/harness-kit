@@ -1,8 +1,8 @@
 # sdk_settings — Phase-Specific Model and Effort Settings
 
 ## OVERVIEW
-The settings module allows developers to configure models and effort parameters per orchestration phase and agent runner.
-On the first execution of `hrns run`, a default settings file is exported to a global configuration location. Developers can also define project-level configuration files to override global settings.
+Use the settings module to configure models and effort parameters per orchestration phase and agent runner. 
+Export a default settings file to a global configuration location on the first execution of `hrns run`. Define project-level configuration files to override global settings.
 
 ## DIRECTORY STRUCTURE
 <folder_structure>
@@ -13,9 +13,10 @@ sdk/src/settings/
 </folder_structure>
 
 ## SCHEMA DEFINITION
-Settings are structured in a nested object, where the first level represents the runner type and the second level defines the phase configurations:
+Structure settings in a nested object. Use the first level for the runner type and the second level for the phase configurations:
 
-```json
+```jsonc
+// # CORRECT: Valid settings schema structure
 {
   "claude-code": {
     "phases": {
@@ -44,21 +45,20 @@ Settings are structured in a nested object, where the first level represents the
 - `phase_e`: Project Memory/Documentation Handler
 
 ## PLATFORM-SPECIFIC SETTINGS PATHS
-Global configuration is saved automatically to the filesystem depending on the operating system:
-- **Linux/macOS**: Resolves to `$XDG_CONFIG_HOME/harness-kit/settings.json` (falls back to `~/.config/harness-kit/settings.json`).
-- **Windows**: Resolves to `%APPDATA%\harness-kit\settings.json` (falls back to `~/.config/harness-kit/settings.json` if `%APPDATA%` environment variable is not defined).
+Resolve global configurations automatically depending on the operating system environment variables:
+- **Linux/macOS/Windows**: Resolve to `$XDG_CONFIG_HOME/harness-kit/settings.json` (fall back to `~/.config/harness-kit/settings.json`).
 
-Project-specific configuration path:
+Resolve project-specific configurations using:
 - `[project path]/.harness-kit/settings.json`
 
 ## PRECEDENCE RULES
-When resolving settings for an agent invocation, values are merged with the following precedence order:
+Resolve settings using the following precedence order:
 1. **Project settings file** (highest priority)
 2. **Global settings file**
 3. **Internal Default settings** (fallback)
 
 ## INTEGRATION IN ORCHESTRATOR
-During invocation, `HarnessOrchestrator` calls `settings.resolve(runnerType, phaseKey)`. If the configuration contains `model` or `effort` overrides, they are injected directly into the `AgentInvocation` parameters. Agent runners apply these parameters to override their default options.
+Call `settings.resolve(runnerType, phaseKey)` during `HarnessOrchestrator` invocation. Inject `model` or `effort` overrides directly into the `AgentInvocation` parameters. Apply these parameters inside agent runners to override default options.
 
 ## REFERENCES
 - [**README.md**](../README.md): Main documentation index.
