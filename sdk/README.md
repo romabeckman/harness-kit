@@ -69,6 +69,25 @@ node dist/cli/run.js
 
 ---
 
+## CLI Reference
+
+| Command / Option | Description | Example |
+|---|---|---|
+| `hrns run` | Start or resume an orchestration session (interactive). | `hrns run` |
+| `hrns run --agent <type>` / `-a <type>` | Specify the agent type (e.g., `copilot`, `antigravity`, `opencode`). | `hrns run --agent copilot` |
+| `hrns run --model <name>` / `-m <name>` | Specify the model name for the agent. | `hrns run --model gpt-4o` |
+| `hrns run --copilot` | Run with the Copilot agent. | `hrns run --copilot` |
+| `hrns run --gemini` | Run with the Gemini agent. | `hrns run --gemini` |
+| `hrns report` | Print token usage report for the current session. | `hrns report` |
+| `hrns version` / `--version` / `-v` | Show version. | `hrns version` |
+| `hrns help` / `--help` / `-h` | Show help message. | `hrns help` |
+
+> [!NOTE]
+> The model specified via `--model` depends on what is supported by the chosen agent. Verify compatibility beforehand.
+
+---
+
+
 ## What happens when you run it
 
 An interactive form collects the required info:
