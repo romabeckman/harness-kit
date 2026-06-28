@@ -43,12 +43,12 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   },
   'cursor': {
     phases: {
-      bootstrap: { model: 'gpt-5.3-codex' },
-      phase_a: { model: 'claude-sonnet-4-6' },
-      phase_b: { model: 'gpt-5.3-codex' },
-      phase_c_tl: { model: 'gpt-5.3-codex' },
-      phase_c_adv: { model: 'gpt-5.3-codex' },
-      phase_e: { model: 'gpt-5.3-codex' },
+      bootstrap: { model: 'gpt-5.3-codex', effort: 'low' },
+      phase_a: { model: 'claude-sonnet-4-6', effort: 'high' },
+      phase_b: { model: 'gpt-5.3-codex', effort: 'medium' },
+      phase_c_tl: { model: 'gpt-5.3-codex', effort: 'low' },
+      phase_c_adv: { model: 'gpt-5.3-codex', effort: 'low' },
+      phase_e: { model: 'gpt-5.3-codex', effort: 'low' },
     }
   },
   'opencode': {

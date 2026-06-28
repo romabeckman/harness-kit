@@ -1,53 +1,36 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { EventEmitter } from 'node:events'
 
-// ─── spawn mock helpers ───────────────────────────────────────────────────────
-function makeMockChild(opts: {
-  stdout?: string
-  stderr?: string
-  exitCode?: number
-  errorCode?: string
-  delay?: number
-}) {
-  const child = new EventEmitter() as any
-  child.stdin = { write: vi.fn(), end: vi.fn() }
-  child.stdout = new EventEmitter()
-  child.stderr = new EventEmitter()
-  child.pid = 12345
-  child.kill = vi.fn()
+const mockWait = vi.fn()
+const mockSend = vi.fn()
+const mockClose = vi.fn()
+const mockAgentCreate = vi.fn()
 
-  setImmediate(() => {
-    if (opts.errorCode) {
-      const err: any = new Error('spawn error')
-      err.code = opts.errorCode
-      child.emit('error', err)
-      return
-    }
-    if (opts.stdout) child.stdout.emit('data', Buffer.from(opts.stdout))
-    if (opts.stderr) child.stderr.emit('data', Buffer.from(opts.stderr))
-    setTimeout(() => {
-      child.emit('close', opts.exitCode ?? 0)
-    }, opts.delay ?? 0)
-  })
-
-  return child
-}
-
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn(),
+vi.mock('@cursor/sdk', () => ({
+  Agent: {
+    create: (...args: any[]) => mockAgentCreate(...args),
+  },
 }))
 
 describe('CursorRunner — TC-CU', () => {
-  // Import registrations and classes inside beforeEach after clearing registry
-  // to avoid cross-test registry pollution from singleton state.
-
   beforeEach(async () => {
-    // Import spawn mock and reset call history
-    const { spawn } = await import('node:child_process')
-    const spawnMock = spawn as unknown as ReturnType<typeof vi.fn>
-    spawnMock.mockReset()
+    mockWait.mockReset()
+    mockSend.mockReset()
+    mockClose.mockReset()
+    mockAgentCreate.mockReset()
 
-    // Ensure CursorRunner is imported and registered
+    mockWait.mockResolvedValue({
+      status: 'finished',
+      result: 'cursor response text',
+    })
+    mockSend.mockResolvedValue({
+      wait: mockWait,
+      cancel: vi.fn(),
+    })
+    mockAgentCreate.mockResolvedValue({
+      send: mockSend,
+      close: mockClose,
+    })
+
     await import('../../src/agent-runner/cursor/CursorRunner')
   })
 
@@ -55,55 +38,79 @@ describe('CursorRunner — TC-CU', () => {
     vi.clearAllMocks()
   })
 
-  // TC-CU-03: self-registers as 'cursor'
   it('TC-CU-03: self-registers as "cursor" on import', async () => {
     const { AgentRunnerRegistry } = await import('../../src/agent-runner/AgentRunnerRegistry')
     expect(AgentRunnerRegistry.has('cursor')).toBe(true)
   })
 
-  // TC-CU-01: correct args constructed (json output)
-  it('TC-CU-01: correct args constructed with json output format', async () => {
-    const { spawn } = await import('node:child_process')
-    const spawnMock = spawn as unknown as ReturnType<typeof vi.fn>
-    spawnMock.mockReturnValue(makeMockChild({ stdout: 'agent output' }))
-
+  it('TC-CU-01: correct configuration passed to Agent.create', async () => {
     const { CursorRunner } = await import('../../src/agent-runner/cursor/CursorRunner')
-    const runner = new CursorRunner({ outputFormat: 'json' })
-    await runner.run({
-      agent: 'developer-backend',
-      mode: 'autonomous',
-      payload: {},
-      prompt: 'refactor auth module',
-    })
+    const original = process.env.CURSOR_API_KEY
+    process.env.CURSOR_API_KEY = 'test-cursor-key'
 
-    expect(spawnMock).toHaveBeenCalledWith(
-      'cursor-agent',
-      ['refactor auth module', '--print', '--force', '--approve-mcps', '--output-format', 'json'],
-      expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'] }),
-    )
+    try {
+      const runner = new CursorRunner()
+      const output = await runner.run({
+        agent: 'developer-backend',
+        mode: 'autonomous',
+        payload: { test: true },
+        prompt: 'refactor auth module',
+      })
+
+      expect(mockAgentCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          apiKey: 'test-cursor-key',
+          model: {
+            id: 'composer-2.5',
+            params: [],
+          },
+          local: {
+            cwd: process.cwd(),
+          },
+        })
+      )
+
+      expect(mockSend).toHaveBeenCalledWith('refactor auth module')
+      expect(output.success).toBe(true)
+      expect(output.raw).toBe('cursor response text')
+      expect(output.stdout).toBe('cursor response text')
+      expect(mockClose).toHaveBeenCalled()
+    } finally {
+      if (original !== undefined) process.env.CURSOR_API_KEY = original
+      else delete process.env.CURSOR_API_KEY
+    }
   })
 
-  it('TC-CU-01b: returns AgentOutput with raw = stdout', async () => {
-    const { spawn } = await import('node:child_process')
-    const spawnMock = spawn as unknown as ReturnType<typeof vi.fn>
-    spawnMock.mockReturnValue(makeMockChild({ stdout: 'cursor response text' }))
-
+  it('TC-CU-01b: forwards reasoning-effort parameter to Agent.create model params', async () => {
     const { CursorRunner } = await import('../../src/agent-runner/cursor/CursorRunner')
-    const runner = new CursorRunner()
-    const output = await runner.run({
-      agent: 'developer-backend',
-      mode: 'autonomous',
-      payload: {},
-      prompt: 'write docs',
-    })
+    const original = process.env.CURSOR_API_KEY
+    process.env.CURSOR_API_KEY = 'test-cursor-key'
 
-    expect(output.raw).toBe('cursor response text')
-    expect(output.success).toBe(true)
+    try {
+      const runner = new CursorRunner()
+      await runner.run({
+        agent: 'developer-backend',
+        mode: 'autonomous',
+        payload: {},
+        prompt: 'task',
+        effort: 'high',
+      })
+
+      expect(mockAgentCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: {
+            id: 'composer-2.5',
+            params: [{ id: 'reasoning-effort', value: 'high' }],
+          },
+        })
+      )
+    } finally {
+      if (original !== undefined) process.env.CURSOR_API_KEY = original
+      else delete process.env.CURSOR_API_KEY
+    }
   })
 
-  // TC-CU-02: validateConfig throws when CURSOR_API_KEY absent
   it('TC-CU-02: validateConfig throws MISSING_API_KEY when CURSOR_API_KEY absent', async () => {
-    // Import Factory AFTER runner is registered (runner already imported in beforeEach)
     const { AgentRunnerFactory } = await import('../../src/agent-runner/AgentRunnerFactory')
     const { AgentRunnerError, AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
 
@@ -117,7 +124,6 @@ describe('CursorRunner — TC-CU', () => {
 
       expect(caught).toBeInstanceOf(AgentRunnerError)
       expect((caught as InstanceType<typeof AgentRunnerError>).code).toBe(AgentRunnerErrorCode.MISSING_API_KEY)
-      expect((caught as InstanceType<typeof AgentRunnerError>).message).toContain('CURSOR_API_KEY')
     } finally {
       if (original !== undefined) process.env.CURSOR_API_KEY = original
     }
@@ -136,55 +142,97 @@ describe('CursorRunner — TC-CU', () => {
     }
   })
 
-  // AbstractCliRunner shared behaviour via CursorRunner
-  it('TC-ACR-02: ENOENT throws AgentRunnerError(NETWORK_ERROR)', async () => {
-    const { spawn } = await import('node:child_process')
-    const spawnMock = spawn as unknown as ReturnType<typeof vi.fn>
-    spawnMock.mockReturnValue(makeMockChild({ errorCode: 'ENOENT' }))
-
+  it('TC-CU-04: throws AgentRunnerError(UNKNOWN_ERROR) when run status is error', async () => {
     const { CursorRunner } = await import('../../src/agent-runner/cursor/CursorRunner')
     const { AgentRunnerError, AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
 
-    const runner = new CursorRunner()
-    let caught: unknown
-    try { await runner.run({ agent: 'dev', mode: 'autonomous', payload: {}, prompt: 'task' }) }
-    catch (e) { caught = e }
+    mockWait.mockResolvedValue({
+      status: 'error',
+    })
 
-    expect(caught).toBeInstanceOf(AgentRunnerError)
-    expect((caught as InstanceType<typeof AgentRunnerError>).code).toBe(AgentRunnerErrorCode.NETWORK_ERROR)
+    const original = process.env.CURSOR_API_KEY
+    process.env.CURSOR_API_KEY = 'test-cursor-key'
+
+    try {
+      const runner = new CursorRunner()
+      let caught: unknown
+      try {
+        await runner.run({
+          agent: 'developer-backend',
+          mode: 'autonomous',
+          payload: {},
+          prompt: 'task',
+        })
+      } catch (e) {
+        caught = e
+      }
+
+      expect(caught).toBeInstanceOf(AgentRunnerError)
+      expect((caught as InstanceType<typeof AgentRunnerError>).code).toBe(AgentRunnerErrorCode.UNKNOWN_ERROR)
+    } finally {
+      if (original !== undefined) process.env.CURSOR_API_KEY = original
+      else delete process.env.CURSOR_API_KEY
+    }
   })
 
-  it('TC-ACR-03: exit code ≠ 0 throws AgentRunnerError(UNKNOWN_ERROR)', async () => {
-    const { spawn } = await import('node:child_process')
-    const spawnMock = spawn as unknown as ReturnType<typeof vi.fn>
-    spawnMock.mockReturnValue(makeMockChild({ exitCode: 1 }))
-
+  it('TC-CU-05: timeout throws AgentRunnerError(TIMEOUT)', async () => {
     const { CursorRunner } = await import('../../src/agent-runner/cursor/CursorRunner')
     const { AgentRunnerError, AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
 
-    const runner = new CursorRunner()
-    let caught: unknown
-    try { await runner.run({ agent: 'dev', mode: 'autonomous', payload: {}, prompt: 'task' }) }
-    catch (e) { caught = e }
+    mockWait.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ status: 'finished', result: 'done' }), 200)))
 
-    expect(caught).toBeInstanceOf(AgentRunnerError)
-    expect((caught as InstanceType<typeof AgentRunnerError>).code).toBe(AgentRunnerErrorCode.UNKNOWN_ERROR)
+    const original = process.env.CURSOR_API_KEY
+    process.env.CURSOR_API_KEY = 'test-cursor-key'
+
+    try {
+      const runner = new CursorRunner({ timeoutMs: 50 })
+      let caught: unknown
+      try {
+        await runner.run({
+          agent: 'developer-backend',
+          mode: 'autonomous',
+          payload: {},
+          prompt: 'task',
+        })
+      } catch (e) {
+        caught = e
+      }
+
+      expect(caught).toBeInstanceOf(AgentRunnerError)
+      expect((caught as InstanceType<typeof AgentRunnerError>).code).toBe(AgentRunnerErrorCode.TIMEOUT)
+    } finally {
+      if (original !== undefined) process.env.CURSOR_API_KEY = original
+      else delete process.env.CURSOR_API_KEY
+    }
   })
 
-  it('TC-ACR-04: AbortSignal rejects run()', async () => {
-    const { spawn } = await import('node:child_process')
-    const spawnMock = spawn as unknown as ReturnType<typeof vi.fn>
-    spawnMock.mockReturnValue(makeMockChild({ delay: 5000 }))
-
+  it('TC-CU-06: AbortSignal rejects run() and cancels the run', async () => {
     const { CursorRunner } = await import('../../src/agent-runner/cursor/CursorRunner')
-    const runner = new CursorRunner()
-    const controller = new AbortController()
-    const runPromise = runner.run(
-      { agent: 'dev', mode: 'autonomous', payload: {}, prompt: 'task' },
-      { signal: controller.signal },
-    )
+    const original = process.env.CURSOR_API_KEY
+    process.env.CURSOR_API_KEY = 'test-cursor-key'
 
-    setImmediate(() => controller.abort())
-    await expect(runPromise).rejects.toThrow('aborted')
+    const mockCancel = vi.fn().mockResolvedValue(undefined)
+    mockSend.mockResolvedValue({
+      wait: () => new Promise((resolve) => setTimeout(() => resolve({ status: 'finished', result: 'done' }), 200)),
+      cancel: mockCancel,
+    })
+
+    try {
+      const runner = new CursorRunner()
+      const controller = new AbortController()
+
+      const runPromise = runner.run(
+        { agent: 'dev', mode: 'autonomous', payload: {}, prompt: 'task' },
+        { signal: controller.signal },
+      )
+
+      setTimeout(() => controller.abort(), 20)
+
+      await expect(runPromise).rejects.toThrow('aborted')
+      expect(mockCancel).toHaveBeenCalled()
+    } finally {
+      if (original !== undefined) process.env.CURSOR_API_KEY = original
+      else delete process.env.CURSOR_API_KEY
+    }
   })
 })
