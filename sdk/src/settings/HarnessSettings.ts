@@ -16,14 +16,6 @@ export class HarnessSettings {
       return join(process.env.XDG_CONFIG_HOME, 'harness-kit', 'settings.json')
     }
     
-
-    if (process.platform === 'win32') {
-      const appData = process.env.APPDATA
-      if (appData) {
-        return join(appData, 'harness-kit', 'settings.json')
-      }
-    }
-
     return join(homedir(), '.config', 'harness-kit', 'settings.json')
   }
 
@@ -35,8 +27,11 @@ export class HarnessSettings {
       try {
         mkdirSync(dirname(globalPath), { recursive: true })
         writeFileSync(globalPath, JSON.stringify(DEFAULT_SETTINGS, null, 2), 'utf-8')
-      } catch (err) {
-        throw new Error(`Não foi possível criar o arquivo de configurações em ${globalPath}. Crie-o manualmente.`)
+      } catch (err: any) {
+        // If another process/test created it concurrently, ignore the error
+        if (!existsSync(globalPath)) {
+          throw new Error(`Não foi possível criar o arquivo de configurações em ${globalPath}. Crie-o manualmente. Erro: ${err.message || err}`)
+        }
       }
     }
 
