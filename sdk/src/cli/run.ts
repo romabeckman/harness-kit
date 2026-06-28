@@ -50,6 +50,7 @@ interface RunOptions {
 }
 
 async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
+  const settings = HarnessSettings.load(cwd)
   const productDir = join(cwd, 'docs', 'product')
   const backlogPath = join(productDir, 'BACKLOG.md')
   const hasExistingSession = existsSync(backlogPath)
@@ -120,8 +121,6 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
   const agentRunner = options.agentType
     ? AgentRunnerFactory.create({ type: options.agentType, model: options.model })
     : undefined
-
-  const settings = HarnessSettings.load(cwd)
 
   const orchestrator = new HarnessOrchestrator({
     scope: scope || '(resume)',
