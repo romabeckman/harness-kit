@@ -157,9 +157,10 @@ hrns run --copilot
 ```
 
 Detailed runner architectural specifications are located in [**sdk_agent_runner.md**](./docs/feature/sdk_agent_runner.md).
-
+Detailed specifications for agent invocations during orchestration are in [**AGENTS.md**](./AGENTS.md).
 
 ---
+
 
 ## Using the SDK programmatically
 

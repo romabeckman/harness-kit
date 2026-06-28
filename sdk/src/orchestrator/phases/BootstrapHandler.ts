@@ -43,7 +43,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     ].join('\n')
 
     await context.invokeAgent({
-      skill: 'harness-kit:autonomous-orchestrator:bootstrap',
+      skill: 'autonomous-orchestrator:bootstrap',
       agent: 'software-architect',
       mode: 'autonomous',
       payload: {},
