@@ -16,7 +16,7 @@ export class ContextAssembler {
    */
   static buildPhaseAPayload(feature: Feature, projectPaths: string[], steeringRules?: string[]): PhaseAPayload {
     const payload: PhaseAPayload = {
-      scope: feature.id,
+      scope: feature.title,
       domain: feature.domain,
       projectPaths,
     }
@@ -38,6 +38,7 @@ export class ContextAssembler {
   ): PhaseBPayload {
     const payload: PhaseBPayload = {
       featureId: feature.id,
+      featureTitle: feature.title,
       domain: feature.domain,
       projectPaths,
       tasks: tasks.map(t => ({ taskId: t.taskId, description: t.description })),

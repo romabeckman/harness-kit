@@ -16,6 +16,7 @@ export interface PhaseAPayload extends ContextPayload {
 
 export interface PhaseBPayload extends ContextPayload {
   featureId: string
+  featureTitle: string
   domain: string
   projectPaths: string[]
   tasks: Array<{ taskId: string; description: string }>

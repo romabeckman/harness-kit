@@ -8,6 +8,7 @@ export interface OrchestratorConfig {
   agentRunner?: IAgentRunner  // defaults to ClaudeCodeRunner
   productDir?: string
   settings?: HarnessSettings
+  timeoutMs?: number
 }
 
 export enum Phase {

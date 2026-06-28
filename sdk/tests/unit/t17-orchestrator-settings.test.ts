@@ -56,4 +56,73 @@ describe('T17 — Orchestrator Settings Overrides', () => {
     expect(bootstrapCalls[0]).toHaveProperty('model', 'overridden-bootstrap-model')
     expect(bootstrapCalls[0]).toHaveProperty('effort', 'low')
   })
+
+  it('applies custom timeoutMs configuration and aborts when timeout expires', async () => {
+    const fakeRunner = new FakeAgentRunner()
+    Object.defineProperty(fakeRunner, 'type', { value: 'claude-code', writable: true })
+    
+    // Stub runner to simulate a long running task that checks abort signal
+    fakeRunner.run = async (invocation, options) => {
+      fakeRunner.invocations.push(invocation)
+      return new Promise((_, reject) => {
+        const check = () => {
+          if (options?.signal?.aborted) {
+            reject(new Error('aborted'))
+          } else {
+            setTimeout(check, 2)
+          }
+        }
+        check()
+      })
+    }
+
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'test-scope',
+      projectPaths: [tmpDir],
+      agentRunner: fakeRunner,
+      productDir: join(tmpDir, 'docs', 'product'),
+      timeoutMs: 10, // 10ms timeout via orchestrator config
+    }, { workingDir: tmpDir })
+
+    await expect(orchestrator.runBootstrapOnly()).rejects.toThrow('aborted')
+  })
+
+  it('reads timeoutMs from phase settings', async () => {
+    const fakeRunner = new FakeAgentRunner()
+    Object.defineProperty(fakeRunner, 'type', { value: 'claude-code', writable: true })
+    
+    fakeRunner.run = async (invocation, options) => {
+      fakeRunner.invocations.push(invocation)
+      return { success: true, stdout: 'mock', stderr: '', raw: '{}' }
+    }
+
+    const globalDir = join(tmpDir, 'global-config-timeout')
+    const globalFile = join(globalDir, 'harness-kit', 'settings.json')
+    vi.spyOn(HarnessSettings as any, 'getGlobalSettingsPath').mockReturnValue(globalFile)
+
+    mkdirSync(join(globalDir, 'harness-kit'), { recursive: true })
+    writeFileSync(globalFile, JSON.stringify({
+      'claude-code': {
+        phases: {
+          bootstrap: { timeoutMs: 9999 }
+        }
+      }
+    }))
+
+    const settings = HarnessSettings.load(tmpDir)
+
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'test-scope',
+      projectPaths: [tmpDir],
+      agentRunner: fakeRunner,
+      productDir: join(tmpDir, 'docs', 'product'),
+      settings,
+    }, { workingDir: tmpDir })
+
+    const spy = vi.spyOn(global, 'setTimeout')
+    
+    await orchestrator.runBootstrapOnly()
+    
+    expect(spy).toHaveBeenCalledWith(expect.any(Function), 9999)
+  })
 })

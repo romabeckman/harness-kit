@@ -34,9 +34,9 @@ describe('T08 — ContextAssembler', () => {
       expect(Object.keys(payload)).toHaveLength(3)
     })
 
-    it('scope comes from feature.id, domain from feature.domain', () => {
+    it('scope comes from feature.title, domain from feature.domain', () => {
       const payload = ContextAssembler.buildPhaseAPayload(feature, ['/path/to/project'])
-      expect(payload.scope).toBe('F001')
+      expect(payload.scope).toBe('SDK Core')
       expect(payload.domain).toBe('sdk_core')
       expect(payload.projectPaths).toEqual(['/path/to/project'])
     })
@@ -47,6 +47,7 @@ describe('T08 — ContextAssembler', () => {
       const retryFeature = { ...feature, reworks: 1 }
       const payload = ContextAssembler.buildPhaseBPayload(retryFeature, tasks, ['/path'], true)
       expect(payload.isRetry).toBe(true)
+      expect(payload.featureTitle).toBe('SDK Core')
       expect(payload).toHaveProperty('reworkLogPath')
       expect((payload.reworkLogPath as string)).toContain('sdk_core')
       expect((payload.reworkLogPath as string)).toContain('REWORK-LOG.md')

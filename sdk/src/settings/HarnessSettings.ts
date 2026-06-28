@@ -71,6 +71,20 @@ export class HarnessSettings {
     return runner.phases[phaseKey] ?? {}
   }
 
+  getTimeoutMs(runnerType: string, phaseKey?: string): number | undefined {
+    const runner = this.settings[runnerType]
+    if (!runner) return undefined
+    
+    if (phaseKey && runner.phases && runner.phases[phaseKey]) {
+      const phaseTimeout = runner.phases[phaseKey].timeoutMs
+      if (phaseTimeout !== undefined) {
+        return phaseTimeout
+      }
+    }
+    
+    return runner.timeoutMs
+  }
+
   private static mergeMaps(base: HarnessSettingsMap, override: HarnessSettingsMap): HarnessSettingsMap {
     const result: HarnessSettingsMap = {}
     
@@ -95,6 +109,7 @@ export class HarnessSettings {
       }
       
       result[runner] = {
+        timeoutMs: overrideRunner.timeoutMs !== undefined ? overrideRunner.timeoutMs : baseRunner.timeoutMs,
         phases: mergedPhases
       }
     }

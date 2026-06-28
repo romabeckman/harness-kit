@@ -221,15 +221,8 @@ export class HarnessOrchestrator implements PhaseContext {
 
   private async invokeAgentInternal(invocation: import('../agent-runner/types').AgentInvocation): Promise<import('../agent-runner/types').AgentOutput> {
     const controller = new AbortController()
-    const timeoutMs = (this.config as any).timeoutMs ?? 300_000
-    let timer: ReturnType<typeof setTimeout> | undefined
 
-    if (timeoutMs > 0) {
-      timer = setTimeout(() => {
-        controller.abort()
-      }, timeoutMs)
-    }
-
+    const runnerType = this.agentRunner.type ?? ''
     const phaseKey = invocation.phaseKey ?? (() => {
       switch (this.state.currentPhase) {
         case Phase.BOOTSTRAP: return 'bootstrap'
@@ -241,7 +234,21 @@ export class HarnessOrchestrator implements PhaseContext {
       }
     })()
 
-    const runnerType = this.agentRunner.type ?? ''
+    let timeoutMs = this.config.timeoutMs
+    if (timeoutMs === undefined && runnerType) {
+      timeoutMs = this.settings.getTimeoutMs(runnerType, phaseKey)
+    }
+    if (timeoutMs === undefined) {
+      timeoutMs = 300_000
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        controller.abort()
+      }, timeoutMs)
+    }
+
     let finalInvocation = invocation
     if (runnerType && phaseKey) {
       const overrides = this.settings.resolve(runnerType, phaseKey)
