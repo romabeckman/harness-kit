@@ -21,23 +21,33 @@ const tasks: Task[] = [
 
 describe('T08 — ContextAssembler', () => {
   describe('TS-U-33: Phase A payload contains only required fields', () => {
-    it('payload has scope, domain, projectPaths and nothing else', () => {
+    it('payload has scope, domain, featureTitle, projectPaths and nothing else', () => {
       const payload = ContextAssembler.buildPhaseAPayload(feature, ['/path/to/project'])
       expect(payload).toHaveProperty('scope')
       expect(payload).toHaveProperty('domain')
+      expect(payload).toHaveProperty('featureTitle')
       expect(payload).toHaveProperty('projectPaths')
       expect(payload).not.toHaveProperty('scoreTL')
       expect(payload).not.toHaveProperty('scoreAdv')
       expect(payload).not.toHaveProperty('tasks')
       expect(payload).not.toHaveProperty('reworks')
-      // exactly 3 keys
-      expect(Object.keys(payload)).toHaveLength(3)
+      // exactly 4 keys
+      expect(Object.keys(payload)).toHaveLength(4)
     })
 
-    it('scope comes from feature.title, domain from feature.domain', () => {
+    it('scope comes from feature.title when originalScope is not provided, domain from feature.domain', () => {
       const payload = ContextAssembler.buildPhaseAPayload(feature, ['/path/to/project'])
       expect(payload.scope).toBe('SDK Core')
       expect(payload.domain).toBe('sdk_core')
+      expect(payload.featureTitle).toBe('SDK Core')
+      expect(payload.projectPaths).toEqual(['/path/to/project'])
+    })
+
+    it('scope comes from originalScope when provided', () => {
+      const payload = ContextAssembler.buildPhaseAPayload(feature, ['/path/to/project'], 'My Original Scope')
+      expect(payload.scope).toBe('My Original Scope')
+      expect(payload.domain).toBe('sdk_core')
+      expect(payload.featureTitle).toBe('SDK Core')
       expect(payload.projectPaths).toEqual(['/path/to/project'])
     })
   })
@@ -62,20 +72,22 @@ describe('T08 — ContextAssembler', () => {
     })
   })
 
-  describe('TS-U-36: Phase C payload contains featureId, domain, projectPaths only', () => {
-    it('payload has exactly featureId, domain, projectPaths', () => {
+  describe('TS-U-36: Phase C payload contains featureId, featureTitle, domain, projectPaths', () => {
+    it('payload has featureId, featureTitle, domain, projectPaths', () => {
       const payload = ContextAssembler.buildPhaseCPayload(feature, ['/path/to/project'])
       expect(payload).toHaveProperty('featureId')
+      expect(payload).toHaveProperty('featureTitle')
       expect(payload).toHaveProperty('domain')
       expect(payload).toHaveProperty('projectPaths')
       expect(payload).not.toHaveProperty('tasks')
       expect(payload).not.toHaveProperty('scoreTL')
-      expect(Object.keys(payload)).toHaveLength(3)
+      expect(Object.keys(payload)).toHaveLength(4)
     })
 
-    it('featureId is feature.id', () => {
+    it('featureId is feature.id and featureTitle is feature.title', () => {
       const payload = ContextAssembler.buildPhaseCPayload(feature, ['/path'])
       expect(payload.featureId).toBe('F001')
+      expect(payload.featureTitle).toBe('SDK Core')
     })
   })
 

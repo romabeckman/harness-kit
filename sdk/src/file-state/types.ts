@@ -56,4 +56,5 @@ export interface BootstrapConfig {
   }
   currentPhase?: string
   steeringRules?: string[]
+  originalScope?: string
 }

@@ -10,6 +10,7 @@ export interface BootstrapPayload extends ContextPayload {
 export interface PhaseAPayload extends ContextPayload {
   scope: string
   domain: string
+  featureTitle: string
   projectPaths: string[]
   steeringRules?: string[]
 }
@@ -27,6 +28,7 @@ export interface PhaseBPayload extends ContextPayload {
 
 export interface PhaseCPayload extends ContextPayload {
   featureId: string
+  featureTitle: string
   domain: string
   projectPaths: string[]
   steeringRules?: string[]

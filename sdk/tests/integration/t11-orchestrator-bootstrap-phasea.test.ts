@@ -371,4 +371,33 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     // printReport outputs the header line
     expect(logCalls.some(line => line.includes('harness-kit-sdk') || line.includes('token report') || line.includes('─'))).toBe(true)
   })
+
+  it('saves and restores original scope across bootstrap and resume', async () => {
+    // 1. Run bootstrap with a specific scope
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'my-custom-original-project-scope',
+      projectPaths: [tmpDir],
+      agentRunner: fake,
+      productDir,
+    }, { workingDir: tmpDir })
+
+    await orchestrator.runBootstrapOnly()
+
+    // Verify it is saved in BOOTSTRAP-CONFIG.json
+    const { FileStateManager } = await import('../../src/file-state/FileStateManager')
+    const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
+    const cfg = fsm.loadBootstrapConfig()
+    expect(cfg.originalScope).toBe('my-custom-original-project-scope')
+
+    // 2. Re-create the orchestrator with an empty scope (simulating resume)
+    const resumedOrchestrator = new HarnessOrchestrator({
+      scope: '',
+      projectPaths: [tmpDir],
+      agentRunner: fake,
+      productDir,
+    }, { workingDir: tmpDir })
+
+    // Verify it restored the scope in resumedOrchestrator.config.scope
+    expect(resumedOrchestrator.config.scope).toBe('my-custom-original-project-scope')
+  })
 })

@@ -114,5 +114,18 @@ describe('T06 — FileStateManager parsers', () => {
     it('throws on invalid JSON', () => {
       expect(() => BootstrapConfigParser.parse('not json')).toThrow()
     })
+
+    it('sanitizes maxReworks: 0 to minimum 1 to prevent immediate FAIL', () => {
+      const json = JSON.stringify({
+        scoreThresholds: {
+          theGrumpyTechLead: { threshold: 0.70 },
+          adversarialQA: { threshold: 0.70 },
+        },
+        completionCriteria: { maxReworks: 0 },
+        cycleCounter: { completedCycles: 0 },
+      })
+      const cfg = BootstrapConfigParser.parse(json)
+      expect(cfg.completionCriteria.maxReworks).toBe(1)
+    })
   })
 })

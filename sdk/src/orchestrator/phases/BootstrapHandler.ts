@@ -10,6 +10,16 @@ export class BootstrapHandler extends AbstractPhaseHandler {
 
     context.fsm.ensureProductFiles()
 
+    if (context.config.scope) {
+      try {
+        const bootConfig = context.fsm.loadBootstrapConfig()
+        bootConfig.originalScope = context.config.scope
+        context.fsm.saveBootstrapConfig(bootConfig)
+      } catch {
+        // ignore
+      }
+    }
+
     const existing = context.fsm.loadBacklog()
     if (existing.length > 0) return Phase.PHASE_A
 
@@ -17,29 +27,34 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     const backlogPath = join(productDir, 'BACKLOG.md')
 
     const prompt = [
+      `# ROLE`,
       `You are the autonomous orchestrator bootstrap agent.`,
       ``,
-      `Parse the project scope below and generate a BACKLOG.md table. Write it to: ${backlogPath}`,
+      `# OBJECTIVE`,
+      `Parse the project scope below and generate a \`BACKLOG.md\` table. Write it to: \`${backlogPath}\``,
       ``,
+      `# OUTPUT FORMAT`,
       `Table columns (exact):`,
       `| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |`,
       ``,
-      `Rules:`,
-      `- ID: F001, F002, ... (sequential)`,
-      `- Domain: snake_case of feature title`,
-      `- Priority: CRITICAL, HIGH, MEDIUM, or LOW`,
-      `- Dependencies: comma-separated IDs, or None`,
-      `- Reworks: 0`,
-      `- Score (TL) and Score (Adv): -`,
-      `- Status: NOT_STARTED`,
-      `- Each row is one deliverable feature`,
-      `- Bold ID and Title: **F001** and **Feature Name**`,
+      `# CONSTRAINTS & RULES`,
+      `- **ID**: F001, F002, ... (sequential, bolded: **F001**)`,
+      `- **Title**: Bolded: **Feature Name**`,
+      `- **Domain**: snake_case of feature title`,
+      `- **Priority**: CRITICAL, HIGH, MEDIUM, or LOW`,
+      `- **Dependencies**: comma-separated IDs, or None`,
+      `- **Reworks**: 0`,
+      `- **Score (TL)** & **Score (Adv)**: -`,
+      `- **Status**: NOT_STARTED`,
+      `- Each row must represent exactly one deliverable feature.`,
       ``,
+      `<context>`,
       `Project paths: ${context.config.projectPaths.join(', ')}`,
+      `</context>`,
       ``,
-      `## Scope`,
-      ``,
+      `<scope>`,
       context.config.scope,
+      `</scope>`,
     ].join('\n')
 
     await context.invokeAgent({

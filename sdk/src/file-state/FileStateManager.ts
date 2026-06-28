@@ -40,14 +40,6 @@ export interface FileStateManagerOptions {
   workingDir?: string
 }
 
-// Actual template path — the autonomous-orchestrator models
-const SKILL_MODELS_DIR = resolve(
-  process.env['HARNESS_MODELS_DIR'] ?? join(
-    process.env['HOME'] ?? '/root',
-    '.claude/skills/autonomous-orchestrator/models'
-  )
-)
-
 function atomicWrite(filePath: string, content: string): void {
   const tmpPath = `${filePath}.tmp`
   writeFileSync(tmpPath, content, 'utf-8')
@@ -71,13 +63,7 @@ export class FileStateManager implements IFileStateManager {
     for (const file of files) {
       const dest = join(this.productDir, file)
       if (!existsSync(dest)) {
-        const src = join(SKILL_MODELS_DIR, file)
-        if (existsSync(src)) {
-          copyFileSync(src, dest)
-        } else {
-          // Fallback: write minimal defaults if models dir not available
-          writeFileSync(dest, this.defaultContent(file), 'utf-8')
-        }
+        writeFileSync(dest, this.defaultContent(file), 'utf-8')
       }
     }
   }

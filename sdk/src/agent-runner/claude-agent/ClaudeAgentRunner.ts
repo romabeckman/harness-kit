@@ -165,7 +165,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
         this.#client.messages.create(
           {
             model: model,
-            max_tokens: 8192,
+            max_tokens: this.#config.max_output_token,
             messages: [{ role: 'user', content: this.#buildUserMessage(invocation) }],
           },
           { signal: controller.signal }

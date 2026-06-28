@@ -24,7 +24,12 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS')
 
     const config = context.fsm.loadBootstrapConfig()
-    const payload = ContextAssembler.buildPhaseAPayload(activeFeature, context.config.projectPaths, config.steeringRules)
+    const payload = ContextAssembler.buildPhaseAPayload(
+      activeFeature,
+      context.config.projectPaths,
+      context.config.scope,
+      config.steeringRules
+    )
     await context.invokeAgent({
       skill: 'scope-refinement',
       agent: 'software-architect',

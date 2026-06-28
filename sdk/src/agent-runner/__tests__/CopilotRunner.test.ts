@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { CopilotRunner } from '../copilot/CopilotRunner'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerFactory } from '../AgentRunnerFactory'
+import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 
 const { mockStart, mockStop, mockDestroy, mockSendAndWait, mockCreateSession } = vi.hoisted(() => {
   const mockStart = vi.fn().mockResolvedValue(undefined)
@@ -61,11 +62,10 @@ describe('CopilotRunner', () => {
       model: 'test-model',
       onPermissionRequest: expect.any(Function),
     })
+    // Signal forwarded — NOT a raw ms number (that was the bug)
     expect(mockSendAndWait).toHaveBeenCalledWith(
-      {
-        prompt: expect.stringContaining('test-skill'),
-      },
-      600_000
+      { prompt: expect.stringContaining('test-skill') },
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
     expect(mockDestroy).toHaveBeenCalled()
     expect(mockStop).toHaveBeenCalled()
@@ -88,5 +88,76 @@ describe('CopilotRunner', () => {
       reasoningEffort: 'high',
     })
     expect(out.success).toBe(true)
+  })
+
+  it('throws TIMEOUT error and does NOT pass raw ms to sendAndWait', async () => {
+    vi.useFakeTimers()
+
+    // Simulate sendAndWait hanging forever
+    mockSendAndWait.mockImplementation(
+      (_msg: unknown, opts: { signal?: AbortSignal }) =>
+        new Promise<void>((_resolve, reject) => {
+          if (opts?.signal?.aborted) {
+            reject(new Error('AbortError'))
+          } else {
+            opts?.signal?.addEventListener('abort', () => reject(new Error('AbortError')))
+          }
+        })
+    )
+    mockCreateSession.mockResolvedValue({
+      sendAndWait: mockSendAndWait,
+      destroy: mockDestroy,
+      disconnect: mockDestroy,
+    })
+
+    const runner = new CopilotRunner({ model: 'test-model', timeoutMs: 5_000 })
+    const promise = runner.run({
+      skill: 'test-skill',
+      agent: 'test-agent',
+      mode: 'autonomous',
+      payload: {},
+    })
+    promise.catch(() => {}) // Suppress unhandled rejection warning
+
+    // Advance clock past timeout
+    await vi.advanceTimersByTimeAsync(5_001)
+
+    await expect(promise).rejects.toThrow(
+      expect.objectContaining({ code: AgentRunnerErrorCode.TIMEOUT })
+    )
+
+    vi.useRealTimers()
+  })
+
+  it('propagates external AbortSignal and cancels the SDK call', async () => {
+    const controller = new AbortController()
+
+    mockSendAndWait.mockImplementation(
+      (_msg: unknown, opts: { signal?: AbortSignal }) =>
+        new Promise<void>((_resolve, reject) => {
+          if (opts?.signal?.aborted) {
+            reject(new Error('AbortError'))
+          } else {
+            opts?.signal?.addEventListener('abort', () => reject(new Error('AbortError')))
+          }
+        })
+    )
+    mockCreateSession.mockResolvedValue({
+      sendAndWait: mockSendAndWait,
+      destroy: mockDestroy,
+      disconnect: mockDestroy,
+    })
+
+    const runner = new CopilotRunner({ model: 'test-model', timeoutMs: 60_000 })
+    const promise = runner.run(
+      { skill: 'test-skill', agent: 'test-agent', mode: 'autonomous', payload: {} },
+      { signal: controller.signal }
+    )
+
+    controller.abort()
+
+    await expect(promise).rejects.toThrow(
+      expect.objectContaining({ code: AgentRunnerErrorCode.TIMEOUT })
+    )
   })
 })

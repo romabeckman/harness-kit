@@ -55,22 +55,26 @@ export class OpenCodeRunner implements IAgentRunner {
 
     const prompt = invocation.prompt ?? this.#buildPrompt(invocation)
 
+    // Single AbortController: drives both external signal and internal timeout.
+    const controller = new AbortController()
+
+    if (options?.signal) {
+      if (options.signal.aborted) {
+        controller.abort()
+      } else {
+        options.signal.addEventListener('abort', () => controller.abort(), { once: true })
+      }
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined
+    if (this.#timeoutMs > 0) {
+      timer = setTimeout(() => controller.abort(), this.#timeoutMs)
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let server: any = null
 
-    const abortPromise = new Promise<never>((_, reject) => {
-      if (options?.signal) {
-        if (options.signal.aborted) {
-          reject(new Error('aborted'))
-          return
-        }
-        options.signal.addEventListener('abort', () => {
-          reject(new Error('aborted'))
-        })
-      }
-    })
-
-    const workPromise = (async () => {
+    try {
       const model = invocation.model ?? this.#model
       // Use pre-started server URL if provided, otherwise start one
       let client: any
@@ -96,13 +100,21 @@ export class OpenCodeRunner implements IAgentRunner {
         modelConfig = { providerID, modelID }
       }
 
-      const promptResult = await client.session.prompt({
-        path: { id: sessionId },
-        body: {
-          model: modelConfig,
-          parts: [{ type: 'text', text: prompt }],
+      // Forward signal so the SDK can cancel the underlying HTTP request.
+      // If the SDK does not accept signal, the abort controller will still
+      // reject via the controller.signal 'abort' event below.
+      const promptResult = await client.session.prompt(
+        {
+          path: { id: sessionId },
+          body: {
+            model: modelConfig,
+            parts: [{ type: 'text', text: prompt }],
+          },
         },
-      })
+        { signal: controller.signal }
+      )
+
+      clearTimeout(timer)
 
       const raw = this.#extractRaw(promptResult)
 
@@ -120,10 +132,24 @@ export class OpenCodeRunner implements IAgentRunner {
           model,
         },
       }
-    })()
-
-    try {
-      return await Promise.race([workPromise, abortPromise])
+    } catch (err: any) {
+      clearTimeout(timer)
+      if (controller.signal.aborted) {
+        throw new AgentRunnerError({
+          code: AgentRunnerErrorCode.TIMEOUT,
+          skill: invocation.skill ?? 'unknown',
+          phase: 'dispatch',
+          message: `OpenCode runner timed out or was aborted after ${this.#timeoutMs}ms`,
+          cause: err as Error,
+        })
+      }
+      throw new AgentRunnerError({
+        code: AgentRunnerErrorCode.UNKNOWN_ERROR,
+        skill: invocation.skill ?? 'unknown',
+        phase: 'dispatch',
+        message: `OpenCode SDK error: ${err.message || String(err)}`,
+        cause: err as Error,
+      })
     } finally {
       if (server) {
         try {

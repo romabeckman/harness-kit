@@ -220,7 +220,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
           }))
           return
         }
-         resolve({
+        resolve({
           success: !isFinalError,
           stdout: finalResult,
           stderr: '',

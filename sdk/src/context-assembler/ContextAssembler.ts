@@ -12,12 +12,18 @@ export class ContextAssembler {
   }
 
   /**
-   * Phase A: scope refinement — only scope, domain, projectPaths
+   * Phase A: scope refinement — scope, domain, projectPaths, featureTitle
    */
-  static buildPhaseAPayload(feature: Feature, projectPaths: string[], steeringRules?: string[]): PhaseAPayload {
+  static buildPhaseAPayload(
+    feature: Feature,
+    projectPaths: string[],
+    originalScope?: string,
+    steeringRules?: string[]
+  ): PhaseAPayload {
     const payload: PhaseAPayload = {
-      scope: feature.title,
+      scope: originalScope || feature.title,
       domain: feature.domain,
+      featureTitle: feature.title,
       projectPaths,
     }
     if (steeringRules && steeringRules.length > 0) {
@@ -59,6 +65,7 @@ export class ContextAssembler {
   static buildPhaseCPayload(feature: Feature, projectPaths: string[], steeringRules?: string[]): PhaseCPayload {
     const payload: PhaseCPayload = {
       featureId: feature.id,
+      featureTitle: feature.title,
       domain: feature.domain,
       projectPaths,
     }

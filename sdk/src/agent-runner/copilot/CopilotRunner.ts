@@ -55,15 +55,9 @@ export class CopilotRunner implements IAgentRunner {
 
       const prompt = this.buildPrompt(invocation)
 
-      const runPromise = session.sendAndWait({ prompt }, this.config.timeoutMs)
-      const abortPromise = new Promise<never>((_, reject) => {
-        controller.signal.addEventListener('abort', () => {
-          reject(new Error('AbortError'))
-        })
-      })
-
-      // Race execution
-      await Promise.race([runPromise, abortPromise])
+      // Forward the single AbortController signal to the SDK so it can cancel
+      // the underlying HTTP request natively. No redundant Promise.race needed.
+      await session.sendAndWait({ prompt }, { signal: controller.signal })
       clearTimeout(timer)
 
       // Get output from session or stdout. Since copilot runs in place, we can return success

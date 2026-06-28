@@ -88,11 +88,11 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     scope = inputMethod === 'type'
       ? await input({
         message: 'Project scope:',
-        validate: (v) => v.trim().length > 0 || 'Scope cannot be empty.',
+        validate: validateScope,
       })
       : await editor({
         message: 'Paste or write your PRD (save and close to continue):',
-        validate: (v) => v.trim().length > 0 || 'Scope cannot be empty.',
+        validate: validateScope,
       })
   }
 
@@ -122,8 +122,13 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     ? AgentRunnerFactory.create({ type: options.agentType, model: options.model })
     : undefined
 
+  if (!agentRunner) {
+    console.log(AnsiHelpers.red('✗ Agent is incorrect or not configured properly.'));
+    return
+  }
+
   const orchestrator = new HarnessOrchestrator({
-    scope: scope || '(resume)',
+    scope: scope,
     projectPaths,
     productDir,
     agentRunner,
@@ -170,6 +175,20 @@ function cmdReport(cwd: string): void {
   const { TokenLedger } = require('../telemetry/TokenLedger') as typeof import('../telemetry/TokenLedger')
   const ledger = new TokenLedger(join(cwd, 'docs', 'product', 'tokens.jsonl'))
   ledger.printReport()
+}
+
+function validateScope(scope: string): boolean {
+  if (scope.trim() === '') {
+    console.log(AnsiHelpers.red('✗ Scope cannot be empty.'));
+    return false;
+  }
+
+  if (scope.length < 20) {
+    console.log(AnsiHelpers.red('✗ Scope is too short. Please provide a more detailed description of the project.'));
+    return false;
+  }
+
+  return true;
 }
 
 async function main(): Promise<void> {

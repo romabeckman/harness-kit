@@ -51,6 +51,16 @@ export class HarnessOrchestrator implements PhaseContext {
       productDir,
       workingDir: this.workingDir,
     })
+    if (!this.config.scope) {
+      try {
+        const bootConfig = this.fsm.loadBootstrapConfig()
+        if (bootConfig.originalScope) {
+          this.config.scope = bootConfig.originalScope
+        }
+      } catch {
+        // ignore
+      }
+    }
     this.ledger = new TokenLedger(join(productDir, 'tokens.jsonl'))
     // Determine initial phase via re-entry resolver
     const onDisk = this.readOnDiskState()

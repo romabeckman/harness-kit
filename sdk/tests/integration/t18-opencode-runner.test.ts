@@ -70,6 +70,7 @@ describe('OpenCodeRunner — TC-OC', () => {
           ]),
         }),
       }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     )
 
     expect(output.raw).toContain('opencode agent response')
@@ -114,10 +115,14 @@ describe('OpenCodeRunner — TC-OC', () => {
     const controller = new AbortController()
 
     // Make session.prompt trigger the abort and then hang
-    mockSessionPrompt.mockImplementation(() => {
+    mockSessionPrompt.mockImplementation((_body: unknown, opts?: { signal?: AbortSignal }) => {
       controller.abort()
-      return new Promise((_resolve, _reject) => {
-        // deliberately hangs — will be aborted
+      return new Promise((_resolve, reject) => {
+        if (opts?.signal?.aborted) {
+          reject(new Error('AbortError'))
+        } else {
+          opts?.signal?.addEventListener('abort', () => reject(new Error('AbortError')))
+        }
       })
     })
 

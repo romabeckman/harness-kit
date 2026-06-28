@@ -34,8 +34,13 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       phaseKey: 'phase_c_adv',
     })
 
-    const tlExtraction = JsonExtractionProtocol.extract(tlOutput.raw)
-    const advExtraction = JsonExtractionProtocol.extract(advOutput.raw)
+    // Prefer artefacts (already extracted by the runner) before re-parsing raw
+    const tlExtraction = tlOutput.artefacts && Object.keys(tlOutput.artefacts).length > 0
+      ? { data: tlOutput.artefacts }
+      : JsonExtractionProtocol.extract(tlOutput.raw)
+    const advExtraction = advOutput.artefacts && Object.keys(advOutput.artefacts).length > 0
+      ? { data: advOutput.artefacts }
+      : JsonExtractionProtocol.extract(advOutput.raw)
 
     let scoreTL = 0
     let scoreAdv = 0
@@ -46,6 +51,8 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       const data = tlExtraction.data as Record<string, unknown>
       scoreTL = typeof data['scoreTL'] === 'number' ? data['scoreTL'] :
         typeof data['score'] === 'number' ? data['score'] : 0
+    } else {
+      process.stderr.write(`[phase_c_tl] JSON extraction failed: ${tlExtraction.error}\nRaw output (first 500 chars): ${tlOutput.raw.slice(0, 500)}\n`)
     }
 
     if (isExtractionResult(advExtraction)) {
@@ -54,6 +61,8 @@ export class PhaseCHandler extends AbstractPhaseHandler {
         typeof data['score'] === 'number' ? data['score'] : 0
       hasHighCriticalVuln = data['hasHighCriticalVuln'] === true
       isCrashing = data['isCrashing'] === true
+    } else {
+      process.stderr.write(`[phase_c_adv] JSON extraction failed: ${advExtraction.error}\nRaw output (first 500 chars): ${advOutput.raw.slice(0, 500)}\n`)
     }
 
     const result = ValidationGate.evaluate(

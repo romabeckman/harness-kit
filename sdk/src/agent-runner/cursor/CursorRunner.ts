@@ -66,6 +66,10 @@ export class CursorRunner implements IAgentRunner {
     let isTimeout = false
 
     const abortPromise = new Promise<never>((_, reject) => {
+      if (controller.signal.aborted) {
+        reject(new Error('aborted'))
+        return
+      }
       controller.signal.addEventListener('abort', () => {
         if (!isTimeout) {
           reject(new Error('aborted'))
