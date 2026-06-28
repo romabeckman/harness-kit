@@ -38,11 +38,11 @@ export class BacklogParser {
     const lines = markdown.split('\n').map(l => l.trim())
     const dataLines = lines.filter(l => {
       if (!l.startsWith('|')) return false
-      if (l.replace(/\|/g, '').replace(/-/g, '').trim() === '') return false
+      if (l.replace(/\|/g, '').replace(/-/g, '').replace(/:/g, '').trim() === '') return false
       const cells = l.split('|').filter((_, i) => i > 0 && i < l.split('|').length - 1)
       if (cells.length < 2) return false
       // skip header and separator
-      const first = cells[0].trim()
+      const first = cells[0].trim().replace(/:/g, '')
       if (first === 'ID' || first === '---') return false
       return true
     })
