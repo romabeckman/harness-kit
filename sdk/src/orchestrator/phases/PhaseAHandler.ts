@@ -30,6 +30,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       agent: 'software-architect',
       mode: 'autonomous',
       payload,
+      phaseKey: 'phase_a',
     })
 
     const specFilesPresent = context.checkSpecFilesPresent(activeFeature.domain)

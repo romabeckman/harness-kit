@@ -146,3 +146,4 @@ vite.config.ts.timestamp-*
 docs/product
 docs/specs
 .claude/
+docs/superpowers

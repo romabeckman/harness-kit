@@ -48,6 +48,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       mode: 'autonomous',
       payload: {},
       prompt,
+      phaseKey: 'bootstrap',
     })
 
     return Phase.PHASE_A

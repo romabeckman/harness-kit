@@ -47,6 +47,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       agent: 'developer-backend',
       mode: 'autonomous',
       payload,
+      phaseKey: 'phase_b',
     })
 
     if (existsSync(tddOutputPath)) {

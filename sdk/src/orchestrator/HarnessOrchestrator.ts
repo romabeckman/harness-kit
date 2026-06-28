@@ -5,6 +5,7 @@ import type { OrchestratorConfig, OrchestratorState, OnDiskState } from './types
 import { ReentryResolver } from './ReentryResolver'
 import { FileStateManager } from '../file-state/FileStateManager'
 import type { IFileStateManager } from '../file-state/FileStateManager'
+import { HarnessSettings } from '../settings/HarnessSettings'
 import type { Feature, Task } from '../file-state/types'
 import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../agent-runner/AgentRunnerError'
@@ -35,6 +36,7 @@ export class HarnessOrchestrator implements PhaseContext {
   private readonly agentRunner: import('../agent-runner/IAgentRunner').IAgentRunner
   private readonly ledger: TokenLedger
   private readonly chain: IPhaseHandler
+  private readonly settings: HarnessSettings
 
   constructor(config: OrchestratorConfig, options: HarnessOrchestratorOptions = {}) {
     this.agentRunner = config.agentRunner
@@ -43,6 +45,7 @@ export class HarnessOrchestrator implements PhaseContext {
         : AgentRunnerFactory.create({ type: 'claude-code' }))
     this.config = config
     this.workingDir = options.workingDir ?? process.cwd()
+    this.settings = config.settings ?? HarnessSettings.load(this.workingDir)
     const productDir = config.productDir ?? join(this.workingDir, 'docs', 'product')
     this.fsm = new FileStateManager({
       productDir,
@@ -227,19 +230,43 @@ export class HarnessOrchestrator implements PhaseContext {
       }, timeoutMs)
     }
 
-    TerminalProgress.startSpinner(this.getPhaseDescription(this.state.currentPhase), `Running agent: ${invocation.agent}`)
+    const phaseKey = invocation.phaseKey ?? (() => {
+      switch (this.state.currentPhase) {
+        case Phase.BOOTSTRAP: return 'bootstrap'
+        case Phase.PHASE_A: return 'phase_a'
+        case Phase.PHASE_B: return 'phase_b'
+        case Phase.PHASE_C: return 'phase_c_tl'
+        case Phase.PHASE_E: return 'phase_e'
+        default: return ''
+      }
+    })()
+
+    const runnerType = this.agentRunner.type ?? ''
+    let finalInvocation = invocation
+    if (runnerType && phaseKey) {
+      const overrides = this.settings.resolve(runnerType, phaseKey)
+      if (overrides.model || overrides.effort) {
+        finalInvocation = {
+          ...invocation,
+          model: overrides.model ?? invocation.model,
+          effort: overrides.effort ?? invocation.effort,
+        }
+      }
+    }
+
+    TerminalProgress.startSpinner(this.getPhaseDescription(this.state.currentPhase), `Running agent: ${finalInvocation.agent}`)
 
     const startTime = Date.now()
     try {
-      const output = await this.agentRunner.run(invocation, { signal: controller.signal })
+      const output = await this.agentRunner.run(finalInvocation, { signal: controller.signal })
       if (output.usage) {
-        this.ledger.record(invocation.skill ?? 'unknown', invocation.agent, output.usage)
+        this.ledger.record(finalInvocation.skill ?? 'unknown', finalInvocation.agent, output.usage)
         const elapsedMs = Date.now() - startTime
         const durationStr = this.formatDuration(elapsedMs)
         const { inputTokens, outputTokens } = output.usage
         const total = inputTokens + outputTokens
         console.log(
-          `\n  ${AnsiHelpers.green('✔')} ${AnsiHelpers.cyan(invocation.agent)} finished in ${AnsiHelpers.yellow(durationStr)}`
+          `\n  ${AnsiHelpers.green('✔')} ${AnsiHelpers.cyan(finalInvocation.agent)} finished in ${AnsiHelpers.yellow(durationStr)}`
         )
         console.log(
           `  ${AnsiHelpers.dim('🪙')} ${AnsiHelpers.dim(' Tokens:')} ` +

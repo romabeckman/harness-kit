@@ -26,6 +26,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
       agent: 'developer-backend',
       mode: 'autonomous',
       payload,
+      phaseKey: 'phase_e',
     })
 
     config.cycleCounter.completedCycles += 1

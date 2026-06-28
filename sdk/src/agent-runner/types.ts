@@ -13,6 +13,9 @@ export interface AgentInvocation {
   readonly prompt?: string  // explicit prompt override (takes precedence over payload serialization)
   readonly workspacePath?: string
   readonly env?: Record<string, string>
+  readonly model?: string
+  readonly effort?: string
+  readonly phaseKey?: string
 }
 
 export interface AgentOutput {

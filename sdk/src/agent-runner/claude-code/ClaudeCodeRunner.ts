@@ -57,6 +57,7 @@ function extractJson(raw: string): unknown | null {
 }
 
 export class ClaudeCodeRunner implements IAgentRunner {
+  readonly type = 'claude-code'
   readonly #config: ClaudeCodeRunnerConfig & { onProgress: (line: ProgressLine) => void }
 
   constructor(config?: Partial<ClaudeCodeRunnerConfig>) {
@@ -79,8 +80,10 @@ export class ClaudeCodeRunner implements IAgentRunner {
       '--dangerously-skip-permissions',
     ]
 
-    if (this.#config.model) args.push('--model', this.#config.model)
-    if (this.#config.effort) args.push('--effort', this.#config.effort)
+    const model = invocation.model ?? this.#config.model
+    const effort = invocation.effort ?? this.#config.effort
+    if (model) args.push('--model', model)
+    if (effort) args.push('--effort', effort)
     if (invocation.agent) args.push('--agent', invocation.agent)
 
     return new Promise<AgentOutput>((resolve, reject) => {

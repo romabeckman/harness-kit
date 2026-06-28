@@ -112,6 +112,7 @@ function extractJson(raw: string): unknown | null {
 
 // ─── ClaudeAgentRunner ────────────────────────────────────────────────────────
 export class ClaudeAgentRunner implements IAgentRunner {
+  readonly type = 'claude-agent'
   readonly #config: AgentRunnerConfig
   readonly #client: Anthropic
 
@@ -133,6 +134,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
 
   async run(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput> {
     const controller = new AbortController()
+    const model = invocation.model ?? this.#config.model
 
     if (options?.signal) {
       if (options.signal.aborted) {
@@ -162,7 +164,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
       const response = await Promise.race([
         this.#client.messages.create(
           {
-            model: this.#config.model,
+            model: model,
             max_tokens: 8192,
             messages: [{ role: 'user', content: this.#buildUserMessage(invocation) }],
           },
@@ -190,7 +192,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
         cacheCreationTokens: (response.usage as any)?.cache_creation_input_tokens ?? 0,
         cacheReadTokens: (response.usage as any)?.cache_read_input_tokens ?? 0,
         costUsd: 0,
-        model: this.#config.model,
+        model: model,
       }
     } catch (err) {
       clearTimeout(timer)

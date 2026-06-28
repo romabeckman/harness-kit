@@ -23,6 +23,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       agent: 'harness-code-reviewer',
       mode: 'autonomous',
       payload: payloadC,
+      phaseKey: 'phase_c_tl',
     })
 
     const advOutput = await context.invokeAgent({
@@ -30,6 +31,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       agent: 'harness-qa',
       mode: 'autonomous',
       payload: payloadC,
+      phaseKey: 'phase_c_adv',
     })
 
     const tlExtraction = JsonExtractionProtocol.extract(tlOutput.raw)

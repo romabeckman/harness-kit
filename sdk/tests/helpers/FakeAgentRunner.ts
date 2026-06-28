@@ -5,6 +5,8 @@ export interface FakeInvocationRecord {
   skill: string
   agent: string
   payload: Record<string, unknown>
+  model?: string
+  effort?: string
 }
 
 export class FakeAgentRunner implements IAgentRunner {
@@ -42,6 +44,8 @@ export class FakeAgentRunner implements IAgentRunner {
       skill: invocation.skill,
       agent: invocation.agent,
       payload: invocation.payload,
+      model: invocation.model,
+      effort: invocation.effort,
     })
 
     // Check queue first

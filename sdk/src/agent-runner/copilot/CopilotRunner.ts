@@ -11,6 +11,7 @@ export interface CopilotRunnerConfig {
 }
 
 export class CopilotRunner implements IAgentRunner {
+  readonly type = 'copilot'
   private readonly config: CopilotRunnerConfig
 
   constructor(config?: Partial<CopilotRunnerConfig>) {
@@ -42,11 +43,14 @@ export class CopilotRunner implements IAgentRunner {
       controller.abort()
     }, this.config.timeoutMs)
 
+    const model = invocation.model ?? this.config.model
+    const reasoningEffort = invocation.effort as 'low' | 'medium' | 'high' | 'xhigh' | undefined
     let session: any
     try {
       session = await client.createSession({
-        model: this.config.model,
+        model,
         onPermissionRequest: approveAll,
+        ...(reasoningEffort ? { reasoningEffort } : {}),
       })
 
       const prompt = this.buildPrompt(invocation)
@@ -74,7 +78,7 @@ export class CopilotRunner implements IAgentRunner {
           cacheCreationTokens: 0,
           cacheReadTokens: 0,
           costUsd: 0,
-          model: this.config.model,
+          model,
         },
       }
     } catch (err: any) {

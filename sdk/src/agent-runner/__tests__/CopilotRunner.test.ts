@@ -11,6 +11,7 @@ const { mockStart, mockStop, mockDestroy, mockSendAndWait, mockCreateSession } =
   const mockCreateSession = vi.fn().mockResolvedValue({
     sendAndWait: mockSendAndWait,
     destroy: mockDestroy,
+    disconnect: mockDestroy,
   })
   return { mockStart, mockStop, mockDestroy, mockSendAndWait, mockCreateSession }
 })
@@ -36,6 +37,7 @@ describe('CopilotRunner', () => {
     mockCreateSession.mockResolvedValue({
       sendAndWait: mockSendAndWait,
       destroy: mockDestroy,
+      disconnect: mockDestroy,
     })
   })
 
@@ -57,7 +59,6 @@ describe('CopilotRunner', () => {
     expect(mockStart).toHaveBeenCalled()
     expect(mockCreateSession).toHaveBeenCalledWith({
       model: 'test-model',
-      workingDirectory: process.cwd(),
       onPermissionRequest: expect.any(Function),
     })
     expect(mockSendAndWait).toHaveBeenCalledWith(
@@ -68,6 +69,24 @@ describe('CopilotRunner', () => {
     )
     expect(mockDestroy).toHaveBeenCalled()
     expect(mockStop).toHaveBeenCalled()
+    expect(out.success).toBe(true)
+  })
+
+  it('forwards reasoningEffort parameter to CopilotClient createSession', async () => {
+    const runner = new CopilotRunner({ model: 'test-model' })
+    const out = await runner.run({
+      skill: 'test-skill',
+      agent: 'test-agent',
+      mode: 'autonomous',
+      payload: { some: 'payload' },
+      effort: 'high',
+    })
+
+    expect(mockCreateSession).toHaveBeenCalledWith({
+      model: 'test-model',
+      onPermissionRequest: expect.any(Function),
+      reasoningEffort: 'high',
+    })
     expect(out.success).toBe(true)
   })
 })

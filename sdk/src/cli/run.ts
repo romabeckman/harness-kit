@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { HarnessOrchestrator } from '../orchestrator/HarnessOrchestrator'
 import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
+import { HarnessSettings } from '../settings/HarnessSettings'
 import { StartupBanner } from '../ui/StartupBanner'
 import { AnsiHelpers } from '../ui/AnsiHelpers'
 
@@ -120,11 +121,14 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     ? AgentRunnerFactory.create({ type: options.agentType, model: options.model })
     : undefined
 
+  const settings = HarnessSettings.load(cwd)
+
   const orchestrator = new HarnessOrchestrator({
     scope: scope || '(resume)',
     projectPaths,
     productDir,
     agentRunner,
+    settings,
   })
 
   if (action === 'resume') {

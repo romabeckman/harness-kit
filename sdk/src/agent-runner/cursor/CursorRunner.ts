@@ -11,6 +11,7 @@ export interface CursorRunnerConfig {
 }
 
 export class CursorRunner extends AbstractCliRunner {
+  readonly type = 'cursor'
   readonly #cursorBin: string
   readonly #outputFormat: 'text' | 'json'
   readonly timeoutMs: number
@@ -28,8 +29,8 @@ export class CursorRunner extends AbstractCliRunner {
     return this.#cursorBin
   }
 
-  protected getModelName(_invocation: AgentInvocation): string | undefined {
-    return this.#model ?? 'cursor-agent-default'
+  protected getModelName(invocation: AgentInvocation): string | undefined {
+    return invocation.model ?? this.#model ?? 'cursor-agent-default'
   }
 
   protected buildArgs(prompt: string, _invocation: AgentInvocation): string[] {

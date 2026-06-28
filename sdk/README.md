@@ -228,7 +228,7 @@ const orchestrator = new HarnessOrchestrator({
   projectPaths: ['/path/to/project'],
   agentRunner: AgentRunnerFactory.create({
     type: 'antigravity',
-    model: 'gemini-2.5-pro',
+    model: 'gemini-3.5-flash',
   })
 })
 ```

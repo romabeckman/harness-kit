@@ -9,6 +9,7 @@ export interface AntigravityRunnerConfig {
 }
 
 export class AntigravityRunner extends AbstractCliRunner {
+  readonly type = 'antigravity'
   readonly #config: Required<AntigravityRunnerConfig>
 
   constructor(config?: Partial<AntigravityRunnerConfig>) {
@@ -32,14 +33,15 @@ export class AntigravityRunner extends AbstractCliRunner {
     return true
   }
 
-  protected getModelName(_invocation: AgentInvocation): string | undefined {
-    return this.#config.model
+  protected getModelName(invocation: AgentInvocation): string | undefined {
+    return invocation.model ?? this.#config.model
   }
 
-  protected buildArgs(prompt: string, _invocation: AgentInvocation): string[] {
+  protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
     const args = ['--prompt', prompt]
-    if (this.#config.model) {
-      args.push('--model', this.#config.model)
+    const model = invocation.model ?? this.#config.model
+    if (model) {
+      args.push('--model', model)
     }
     return args
   }

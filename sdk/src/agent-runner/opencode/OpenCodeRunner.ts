@@ -20,6 +20,7 @@ export interface OpenCodeRunnerConfig {
  *  4. server.stop() in finally — always cleanup
  */
 export class OpenCodeRunner implements IAgentRunner {
+  readonly type = 'opencode'
   readonly #model: string | undefined
   readonly #serverUrl: string | undefined
   readonly #timeoutMs: number
@@ -70,13 +71,14 @@ export class OpenCodeRunner implements IAgentRunner {
     })
 
     const workPromise = (async () => {
+      const model = invocation.model ?? this.#model
       // Use pre-started server URL if provided, otherwise start one
       let client: any
       if (this.#serverUrl) {
         client = createOpencodeClient({ baseUrl: this.#serverUrl })
       } else {
         const opencodeApp = await createOpencode({
-          config: this.#model ? { model: this.#model } : {},
+          config: model ? { model } : {},
         })
         server = opencodeApp.server
         client = opencodeApp.client
@@ -89,8 +91,8 @@ export class OpenCodeRunner implements IAgentRunner {
 
       // Parse model if specified (provider/model format)
       let modelConfig: any = undefined
-      if (this.#model && this.#model.includes('/')) {
-        const [providerID, modelID] = this.#model.split('/')
+      if (model && model.includes('/')) {
+        const [providerID, modelID] = model.split('/')
         modelConfig = { providerID, modelID }
       }
 
@@ -115,7 +117,7 @@ export class OpenCodeRunner implements IAgentRunner {
           cacheCreationTokens: 0,
           cacheReadTokens: 0,
           costUsd: 0,
-          model: this.#model,
+          model,
         },
       }
     })()
