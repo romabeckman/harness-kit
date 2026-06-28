@@ -15,10 +15,13 @@ export class TerminalProgress {
     this.currentPhase = phase
     this.currentMessage = message
     let frame = 0
+    const startTime = Date.now()
     process.stderr.write(AnsiHelpers.hideCursor())
     this.spinnerTimer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000)
       const sp = AnsiHelpers.cyan(this.spinnerFrames[frame])
-      const text = `\r${AnsiHelpers.clearLine()}${sp} [${AnsiHelpers.blue(this.currentPhase)}] ${this.currentMessage}`
+      const timeStr = AnsiHelpers.dim(`(${elapsed}s)`)
+      const text = `\r${AnsiHelpers.clearLine()}${sp} [${AnsiHelpers.blue(this.currentPhase)}] ${this.currentMessage} ${timeStr}`
       process.stderr.write(text)
       frame = (frame + 1) % this.spinnerFrames.length
     }, 80)

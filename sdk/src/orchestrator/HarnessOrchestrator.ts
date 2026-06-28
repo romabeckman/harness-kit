@@ -85,13 +85,22 @@ export class HarnessOrchestrator implements PhaseContext {
   async run(): Promise<void> {
     let iterations = 0
     const MAX_ITERATIONS = 500 // guard against infinite loops
+    let lastPrintedPhase: Phase | null = null
+
     while (this.state.currentPhase !== Phase.HALTED) {
       if (++iterations > MAX_ITERATIONS) {
         throw new Error(`HarnessOrchestrator: exceeded ${MAX_ITERATIONS} iterations — possible infinite loop at phase ${this.state.currentPhase}`)
       }
+
+      if (this.state.currentPhase !== lastPrintedPhase) {
+        this.printPipelineHeader(this.state.currentPhase)
+        lastPrintedPhase = this.state.currentPhase
+      }
+
       // Persist current phase before executing
       this.persistPhase()
 
+      const phaseStartTime = Date.now()
       let next: Phase
       try {
         next = await this.dispatch(this.state.currentPhase)
@@ -108,13 +117,17 @@ export class HarnessOrchestrator implements PhaseContext {
         throw err
       }
 
+      const elapsedMs = Date.now() - phaseStartTime
+      const durationStr = this.formatDuration(elapsedMs)
+
       if (next !== this.state.currentPhase) {
         const transitionMsg = `Phase transition: ${this.getPhaseDescription(this.state.currentPhase)} → ${this.getPhaseDescription(next)}`
         this.fsm.appendDecision({
           featureId: null,
           decision: transitionMsg
         })
-        console.log(`\n${AnsiHelpers.blue('⟳')} ${AnsiHelpers.dim('State Transition:')} ${AnsiHelpers.cyan(this.getPhaseDescription(this.state.currentPhase))} → ${AnsiHelpers.cyan(this.getPhaseDescription(next))}`)
+        console.log(`\n${AnsiHelpers.green('✔')} ${AnsiHelpers.cyan(this.getPhaseDescription(this.state.currentPhase))} completed in ${AnsiHelpers.yellow(durationStr)}`)
+        console.log(`${AnsiHelpers.blue('⟳')} ${AnsiHelpers.dim('Transitioning to:')} ${AnsiHelpers.cyan(this.getPhaseDescription(next))}`)
       }
       this.state = { ...this.state, currentPhase: next }
     }
@@ -216,16 +229,77 @@ export class HarnessOrchestrator implements PhaseContext {
 
     TerminalProgress.startSpinner(this.getPhaseDescription(this.state.currentPhase), `Running agent: ${invocation.agent}`)
 
+    const startTime = Date.now()
     try {
       const output = await this.agentRunner.run(invocation, { signal: controller.signal })
       if (output.usage) {
         this.ledger.record(invocation.skill ?? 'unknown', invocation.agent, output.usage)
+        const elapsedMs = Date.now() - startTime
+        const durationStr = this.formatDuration(elapsedMs)
+        const { inputTokens, outputTokens } = output.usage
+        const total = inputTokens + outputTokens
+        console.log(
+          `\n  ${AnsiHelpers.green('✔')} ${AnsiHelpers.cyan(invocation.agent)} finished in ${AnsiHelpers.yellow(durationStr)}`
+        )
+        console.log(
+          `  ${AnsiHelpers.dim('🪙')} ${AnsiHelpers.dim('Tokens:')} ` +
+          `${AnsiHelpers.cyan(inputTokens.toLocaleString())} prompt | ` +
+          `${AnsiHelpers.cyan(outputTokens.toLocaleString())} completion | ` +
+          `total: ${AnsiHelpers.yellow(total.toLocaleString())}\n`
+        )
       }
       return output
     } finally {
       if (timer) clearTimeout(timer)
       TerminalProgress.stopSpinner()
     }
+  }
+
+  private formatDuration(ms: number): string {
+    const seconds = Math.floor(ms / 1000)
+    if (seconds < 60) {
+      return `${seconds}s`
+    }
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}m ${remainingSeconds}s`
+  }
+
+  private printPipelineHeader(current: Phase) {
+    const phases = [
+      Phase.BOOTSTRAP,
+      Phase.PHASE_A,
+      Phase.PHASE_B,
+      Phase.PHASE_C,
+      Phase.PHASE_D,
+      Phase.PHASE_E,
+    ]
+    const shortNames: Record<Phase, string> = {
+      [Phase.BOOTSTRAP]: 'BOOT',
+      [Phase.PHASE_A]: 'REFINE',
+      [Phase.PHASE_B]: 'IMPLEMENT',
+      [Phase.PHASE_C]: 'VALIDATE',
+      [Phase.PHASE_D]: 'TUNING',
+      [Phase.PHASE_E]: 'MEMORY',
+      [Phase.CASCADE_BLOCKED]: 'BLOCKED',
+      [Phase.HALTED]: 'HALTED',
+    }
+
+    const currentIndex = phases.indexOf(current)
+    const line = phases
+      .map((p, idx) => {
+        const name = shortNames[p] || p
+        if (idx < currentIndex) {
+          return AnsiHelpers.green(`✔ ${name}`)
+        } else if (idx === currentIndex) {
+          return AnsiHelpers.cyan(`● ${name}`)
+        } else {
+          return AnsiHelpers.dim(`  ${name}`)
+        }
+      })
+      .join(AnsiHelpers.dim(' → '))
+
+    console.log(`\n${AnsiHelpers.blue('──')} ${AnsiHelpers.dim('Pipeline State:')} [${line}] ${AnsiHelpers.blue('──')}\n`)
   }
 
   public getActiveFeature(features: Feature[]): Feature | null {
