@@ -242,7 +242,7 @@ export class HarnessOrchestrator implements PhaseContext {
           `\n  ${AnsiHelpers.green('✔')} ${AnsiHelpers.cyan(invocation.agent)} finished in ${AnsiHelpers.yellow(durationStr)}`
         )
         console.log(
-          `  ${AnsiHelpers.dim('🪙')} ${AnsiHelpers.dim('Tokens:')} ` +
+          `  ${AnsiHelpers.dim('🪙')} ${AnsiHelpers.dim(' Tokens:')} ` +
           `${AnsiHelpers.cyan(inputTokens.toLocaleString())} prompt | ` +
           `${AnsiHelpers.cyan(outputTokens.toLocaleString())} completion | ` +
           `total: ${AnsiHelpers.yellow(total.toLocaleString())}\n`
