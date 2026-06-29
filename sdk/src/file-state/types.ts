@@ -72,8 +72,8 @@ export function createDefaultSteeringRules(): SteeringRulesConfig {
   return {
     user: [],
     bootstrap: [],
-    phase_a: [],
-    phase_b: ['Limit of 5 tasks for feature'],
+    phase_a: ['Limit of 5 tasks for feature'],
+    phase_b: [],
     phase_c: [],
     phase_e: []
   }

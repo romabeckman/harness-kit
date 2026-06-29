@@ -56,12 +56,6 @@ export class BootstrapConfigParser {
         phase_c: parseRuleArray(raw.steeringRules.phase_c),
         phase_e: parseRuleArray(raw.steeringRules.phase_e),
       }
-      if (!result.steeringRules.phase_b) {
-        result.steeringRules.phase_b = []
-      }
-      if (!result.steeringRules.phase_b.includes('Limit of 5 tasks for feature')) {
-        result.steeringRules.phase_b.push('Limit of 5 tasks for feature')
-      }
     } else {
       result.steeringRules = createDefaultSteeringRules()
     }

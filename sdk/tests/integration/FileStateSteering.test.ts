@@ -16,7 +16,7 @@ describe('FileStateSteering', () => {
 
   it('defaults steeringRules to empty array if missing from config json', () => {
     const fsm = new FileStateManager({ workingDir: tmpDir, productDir: tmpDir })
-    
+
     // Write bootstrap config without steeringRules key
     const configPath = join(tmpDir, 'BOOTSTRAP-CONFIG.json')
     writeFileSync(configPath, JSON.stringify({
@@ -34,8 +34,8 @@ describe('FileStateSteering', () => {
     expect(config.steeringRules).toEqual({
       user: [],
       bootstrap: [],
-      phase_a: [],
-      phase_b: ['Limit of 5 tasks for feature'],
+      phase_a: ['Limit of 5 tasks for feature'],
+      phase_b: [],
       phase_c: [],
       phase_e: []
     })
@@ -43,7 +43,7 @@ describe('FileStateSteering', () => {
 
   it('loads existing steeringRules from config json successfully', () => {
     const fsm = new FileStateManager({ workingDir: tmpDir, productDir: tmpDir })
-    
+
     const configPath = join(tmpDir, 'BOOTSTRAP-CONFIG.json')
     writeFileSync(configPath, JSON.stringify({
       scoreThresholds: {
@@ -60,8 +60,8 @@ describe('FileStateSteering', () => {
     expect(config.steeringRules).toEqual({
       user: ['rule1', 'rule2'],
       bootstrap: [],
-      phase_a: [],
-      phase_b: ['Limit of 5 tasks for feature'],
+      phase_a: ['Limit of 5 tasks for feature'],
+      phase_b: [],
       phase_c: [],
       phase_e: []
     })
