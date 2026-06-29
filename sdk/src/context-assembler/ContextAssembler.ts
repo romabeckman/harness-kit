@@ -43,6 +43,7 @@ export class ContextAssembler {
     tasks: Task[],
     projectPaths: string[],
     isRetry: boolean,
+    reworks: number,
     steeringRules?: SteeringRulesConfig
   ): PhaseBPayload {
     const payload: PhaseBPayload = {
@@ -52,6 +53,7 @@ export class ContextAssembler {
       projectPaths,
       tasks: tasks.map(t => ({ taskId: t.taskId, description: t.description })),
       isRetry,
+      reworks: reworks ? reworks : 0,
     }
     if (isRetry) {
       payload.reworkLogPath = join('docs', 'specs', feature.domain, 'REWORK-LOG.md')

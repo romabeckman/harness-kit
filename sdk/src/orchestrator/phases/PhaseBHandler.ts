@@ -121,6 +121,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       chunkTasks,
       context.config.projectPaths,
       isRetry,
+      activeFeature.reworks,
       config.steeringRules
     )
 
@@ -199,7 +200,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `  "status": "SUCCESS" | "FAILED",`,
       `  "metrics": { "totalTests": 0, "passed": 0, "failed": 0, "coverage": 0.00 },`,
       `  "modifiedFiles": ["relative/path/to/file"],`,
-      `  "reworksCount": ${payload.isRetry ? 1 : 0}`,
+      `  "reworksCount": ${payload.reworks}`,
       `}`,
       `\`\`\``,
       `</expected_output>`,

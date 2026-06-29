@@ -28,7 +28,7 @@ describe('Steering Rules Injection', () => {
     expect(payloadA.steeringRules).toContain('User Rule 1')
     expect(payloadA.steeringRules).toContain('User Rule 2')
 
-    const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, rules)
+    const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, 0, rules)
     expect(payloadB.steeringRules).toContain('User Rule 1')
     expect(payloadB.steeringRules).toContain('User Rule 2')
 
@@ -46,7 +46,7 @@ describe('Steering Rules Injection', () => {
       user: ['User Rule 1'],
       phase_b: ['Limit of 5 tasks for feature']
     }
-    const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, rules)
+    const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, 0, rules)
     expect(payloadB.steeringRules).toEqual([
       'Limit of 5 tasks for feature',
       'User Rule 1'
@@ -57,7 +57,7 @@ describe('Steering Rules Injection', () => {
     const rules: SteeringRulesConfig = {
       phase_b: ['Phase B: Limit of 5 tasks for feature']
     }
-    const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, rules)
+    const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, 0, rules)
     expect(payloadB.steeringRules).toEqual([
       'Phase B: Limit of 5 tasks for feature'
     ])
