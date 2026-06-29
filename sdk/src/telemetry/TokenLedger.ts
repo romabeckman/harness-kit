@@ -81,6 +81,20 @@ export class TokenLedger {
     const models = [...new Set(entries.map(e => e.model).filter(Boolean))]
     const efforts = [...new Set(entries.map(e => e.effort).filter(e => e && e !== 'default'))]
 
+    // cache_read rate per token by tier (source: Anthropic, OpenAI, Google pricing Jun 2026)
+    // large  ~$0.50/MTok: Fable5 $1.00, Opus $0.50, gpt-5.5 $0.50, gpt-5.4 $0.25, Gemini3.1Pro $0.20
+    // medium ~$0.48/MTok: Sonnet $0.30, gpt-4o $1.25, gpt-4.1 $0.50, gpt-5.2 $0.175, Gemini3.5Flash $0.15
+    // fast   ~$0.065/MTok: Haiku $0.10, gpt-4o-mini $0.075, gpt-4.1-mini $0.10, gpt-5-mini $0.025, GeminiFlashLite $0.025
+    const RATE_LARGE  = 0.0000005
+    const RATE_MEDIUM = 0.00000048
+    const RATE_FAST   = 0.000000065
+    const isLargeModel = (m: string) => /opus|fable|mythos|gpt-5\.[45](?!-(?:mini|nano))|(?:^|-)o[13](?:-pro)?(?:$|-(?!mini))/i.test(m)
+    const isFastModel  = (m: string) => /haiku|mini|nano|flash-lite/i.test(m)
+    const tierRates = models.map(m => isLargeModel(m) ? RATE_LARGE : isFastModel(m) ? RATE_FAST : RATE_MEDIUM)
+    const cacheReadRate = tierRates.length > 0
+      ? tierRates.reduce((a, b) => a + b, 0) / tierRates.length
+      : RATE_MEDIUM
+
     console.log('\nharness-kit-sdk — token report')
     if (models.length) console.log(`  model:  ${models.join(', ')}`)
     if (efforts.length) console.log(`  effort: ${efforts.join(', ')}`)
@@ -99,7 +113,7 @@ export class TokenLedger {
       `${'TOTAL'.padEnd(28)} ${fmt(totals.inputTokens)} ${fmt(totals.outputTokens)} ${fmt(totals.cacheReadTokens)}  ${usd(totals.costUsd)}`
     )
     const cacheSaved = totals.cacheReadTokens > 0
-      ? `  cache_read saved ~${usd(totals.cacheReadTokens * 0.000003)}`
+      ? `  cache_read saved ~${usd(totals.cacheReadTokens * cacheReadRate)}`
       : ''
     if (cacheSaved) console.log(cacheSaved)
     console.log()
