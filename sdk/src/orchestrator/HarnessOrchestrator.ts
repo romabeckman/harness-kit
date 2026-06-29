@@ -1,20 +1,16 @@
-import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
-import { createInterface } from 'node:readline'
 import { Phase } from './types'
 import type { OrchestratorConfig, OrchestratorState, OnDiskState } from './types'
 import { ReentryResolver } from './ReentryResolver'
 import { FileStateManager } from '../file-state/FileStateManager'
 import type { IFileStateManager } from '../file-state/FileStateManager'
 import { HarnessSettings } from '../settings/HarnessSettings'
-import { DEFAULT_PHASE_TIMEOUT_MS } from '../settings/DefaultSettings'
-import type { Feature, Task } from '../file-state/types'
+import type { Feature } from '../file-state/types'
 import { createDefaultSteeringRules } from '../file-state/types'
 import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../agent-runner/AgentRunnerError'
 import { TokenLedger } from '../telemetry/TokenLedger'
 import { AnsiHelpers } from '../ui/AnsiHelpers'
-import { TerminalProgress } from '../ui/TerminalProgress'
 import {
   IPhaseHandler,
   PhaseContext,
@@ -27,6 +23,9 @@ import {
   PhaseFHandler,
   CascadeBlockedHandler
 } from './phases'
+import { OrchestratorFormatter } from './utils/OrchestratorFormatter'
+import { ProjectStateService } from './services/ProjectStateService'
+import { AgentInvocationService } from './services/AgentInvocationService'
 
 export interface HarnessOrchestratorOptions {
   workingDir?: string
@@ -41,6 +40,8 @@ export class HarnessOrchestrator implements PhaseContext {
   private readonly ledger: TokenLedger
   private readonly chain: IPhaseHandler
   private readonly settings: HarnessSettings
+  private readonly projectStateService: ProjectStateService
+  private readonly agentInvocationService: AgentInvocationService
 
   constructor(config: OrchestratorConfig, options: HarnessOrchestratorOptions = {}) {
     this.agentRunner = config.agentRunner
@@ -55,6 +56,11 @@ export class HarnessOrchestrator implements PhaseContext {
       productDir,
       workingDir: this.workingDir,
     })
+
+    this.projectStateService = new ProjectStateService(this.workingDir)
+    this.ledger = new TokenLedger(join(productDir, 'tokens.jsonl'))
+    this.agentInvocationService = new AgentInvocationService(this.agentRunner, this.ledger)
+
     // When user resumes execution, we need to use the same scope as the original execution
     if (!this.config.scope) {
       try {
@@ -66,7 +72,7 @@ export class HarnessOrchestrator implements PhaseContext {
         // ignore
       }
     }
-    this.ledger = new TokenLedger(join(productDir, 'tokens.jsonl'))
+
     // Determine initial phase via re-entry resolver
     const onDisk = this.readOnDiskState()
     const entryPhase = ReentryResolver.resolve(onDisk)
@@ -96,8 +102,6 @@ export class HarnessOrchestrator implements PhaseContext {
   tokenReport(): void {
     this.ledger.printReport()
   }
-
-
 
   // ─── Public run loop ──────────────────────────────────────────────────────
 
@@ -152,7 +156,7 @@ export class HarnessOrchestrator implements PhaseContext {
       }
 
       if (this.state.currentPhase !== lastPrintedPhase) {
-        this.printPipelineHeader(this.state.currentPhase)
+        OrchestratorFormatter.printPipelineHeader(this.state.currentPhase)
         lastPrintedPhase = this.state.currentPhase
       }
 
@@ -177,7 +181,7 @@ export class HarnessOrchestrator implements PhaseContext {
       }
 
       const elapsedMs = Date.now() - phaseStartTime
-      const durationStr = this.formatDuration(elapsedMs)
+      const durationStr = OrchestratorFormatter.formatDuration(elapsedMs)
 
       if (next !== this.state.currentPhase) {
         const transitionMsg = `Phase transition: ${this.getPhaseDescription(this.state.currentPhase)} → ${this.getPhaseDescription(next)}`
@@ -277,182 +281,7 @@ export class HarnessOrchestrator implements PhaseContext {
   }
 
   public invokeAgent(invocation: import('../agent-runner/types').AgentInvocation): Promise<import('../agent-runner/types').AgentOutput> {
-    return this.invokeAgentInternal(invocation)
-  }
-
-  private async invokeAgentInternal(invocation: import('../agent-runner/types').AgentInvocation): Promise<import('../agent-runner/types').AgentOutput> {
-    const controller = new AbortController()
-
-    const runnerType = this.agentRunner.type ?? ''
-    const phaseKey = invocation.phaseKey ?? (() => {
-      switch (this.state.currentPhase) {
-        case Phase.BOOTSTRAP: return 'bootstrap'
-        case Phase.PHASE_A: return 'phase_a'
-        case Phase.PHASE_B: return 'phase_b'
-        case Phase.PHASE_C: return 'phase_c_tl'
-        case Phase.PHASE_E: return 'phase_e'
-        default: return ''
-      }
-    })()
-
-    let timeoutMs = this.config.timeoutMs
-    if (timeoutMs === undefined && runnerType) {
-      timeoutMs = this.settings.getTimeoutMs(runnerType, phaseKey)
-    }
-    if (timeoutMs === undefined) {
-      timeoutMs = DEFAULT_PHASE_TIMEOUT_MS
-    }
-
-    let finalInvocation = invocation
-    if (runnerType && phaseKey) {
-      const overrides = this.settings.resolve(runnerType, phaseKey)
-      if (overrides.model || overrides.effort) {
-        finalInvocation = {
-          ...invocation,
-          model: overrides.model ?? invocation.model,
-          effort: overrides.effort ?? invocation.effort,
-        }
-      }
-    }
-
-    const phaseDesc = this.getPhaseDescription(this.state.currentPhase)
-    const agentLabel = finalInvocation.agent
-
-    /**
-     * Schedules a timeout that, when it fires, stops the spinner and asks the
-     * user interactively whether to extend the timeout or abort the agent.
-     * Choosing "continue" restarts a fresh timeout with the same duration.
-     * Choosing "abort" calls controller.abort() to kill the child process.
-     *
-     * @param elapsedMs - total elapsed time so far (for display only)
-     * @returns a cancel function that clears the pending timer
-     */
-    const scheduleTimeout = (elapsedMs: number): (() => void) => {
-      if (timeoutMs! <= 0) return () => { /* no-op: timeout disabled */ }
-
-      let cancelled = false
-      let cancel: () => void = () => { cancelled = true }
-
-      const timer = setTimeout(async () => {
-        if (cancelled || controller.signal.aborted) return
-
-        TerminalProgress.stopSpinner()
-
-        const elapsedStr = this.formatDuration(elapsedMs + timeoutMs!)
-        console.error(
-          `\n  ${AnsiHelpers.yellow('⏱')}  ${AnsiHelpers.yellow(`Timeout atingido após ${elapsedStr}`)} ` +
-          `${AnsiHelpers.dim(`(agent: ${agentLabel})`)}`
-        )
-        console.error(`  ${AnsiHelpers.dim('O agente ainda pode estar trabalhando.')}\n`)
-        console.error(`  ${AnsiHelpers.cyan('[C]')} Continuar por mais ${this.formatDuration(timeoutMs!)}`)
-        console.error(`  ${AnsiHelpers.red('[E]')} Encerrar e abortar o agente\n`)
-
-        const answer = await new Promise<string>(resolve => {
-          const rl = createInterface({ input: process.stdin, output: process.stderr })
-          rl.question(`  ${AnsiHelpers.dim('Escolha [C/E]:')} `, ans => {
-            rl.close()
-            resolve(ans.trim().toUpperCase())
-          })
-        })
-
-        if (cancelled || controller.signal.aborted) return
-
-        if (answer === 'E') {
-          console.error(`\n  ${AnsiHelpers.red('✖')} Agente abortado pelo usuário.\n`)
-          controller.abort()
-          return
-        }
-
-        // Any other key (including 'C' or Enter) → extend
-        console.error(`\n  ${AnsiHelpers.green('✔')} Timeout renovado. Aguardando agente...\n`)
-        TerminalProgress.startSpinner(phaseDesc, `Running agent: ${agentLabel}`)
-        cancel = scheduleTimeout(elapsedMs + timeoutMs!)
-      }, timeoutMs!)
-
-      cancel = () => {
-        cancelled = true
-        clearTimeout(timer)
-      }
-
-      return () => cancel()
-    }
-
-    TerminalProgress.startSpinner(phaseDesc, `Running agent: ${agentLabel}`)
-
-    const startTime = Date.now()
-    let cancelTimeout = scheduleTimeout(0)
-    try {
-      const output = await this.agentRunner.run(finalInvocation, { signal: controller.signal })
-      if (output.usage) {
-        this.ledger.record(finalInvocation.skill ?? 'unknown', finalInvocation.agent, output.usage)
-        const elapsedMs = Date.now() - startTime
-        const durationStr = this.formatDuration(elapsedMs)
-        const { inputTokens, outputTokens } = output.usage
-        const total = inputTokens + outputTokens
-        console.log(
-          `\n  ${AnsiHelpers.green('✔')} ${AnsiHelpers.cyan(finalInvocation.agent)} finished in ${AnsiHelpers.yellow(durationStr)}`
-        )
-        console.log(
-          `  ${AnsiHelpers.dim('🪙')} ${AnsiHelpers.dim(' Tokens:')} ` +
-          `${AnsiHelpers.cyan(inputTokens.toLocaleString())} prompt | ` +
-          `${AnsiHelpers.cyan(outputTokens.toLocaleString())} completion | ` +
-          `total: ${AnsiHelpers.yellow(total.toLocaleString())}\n`
-        )
-      }
-      return output
-    } finally {
-      cancelTimeout()
-      TerminalProgress.stopSpinner()
-    }
-  }
-
-  private formatDuration(ms: number): string {
-    const seconds = Math.floor(ms / 1000)
-    if (seconds < 60) {
-      return `${seconds}s`
-    }
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}m ${remainingSeconds}s`
-  }
-
-  private printPipelineHeader(current: Phase) {
-    const phases = [
-      Phase.BOOTSTRAP,
-      Phase.PHASE_A,
-      Phase.PHASE_B,
-      Phase.PHASE_C,
-      Phase.PHASE_D,
-      Phase.PHASE_E,
-      Phase.PHASE_F,
-    ]
-    const shortNames: Record<Phase, string> = {
-      [Phase.BOOTSTRAP]: 'BOOT',
-      [Phase.PHASE_A]: 'REFINE',
-      [Phase.PHASE_B]: 'IMPLEMENT',
-      [Phase.PHASE_C]: 'VALIDATE',
-      [Phase.PHASE_D]: 'TUNING',
-      [Phase.PHASE_E]: 'MEMORY',
-      [Phase.PHASE_F]: 'DECIDE',
-      [Phase.CASCADE_BLOCKED]: 'BLOCKED',
-      [Phase.HALTED]: 'HALTED',
-    }
-
-    const currentIndex = phases.indexOf(current)
-    const line = phases
-      .map((p, idx) => {
-        const name = shortNames[p] || p
-        if (idx < currentIndex) {
-          return AnsiHelpers.green(`✔ ${name}`)
-        } else if (idx === currentIndex) {
-          return AnsiHelpers.cyan(`● ${name}`)
-        } else {
-          return AnsiHelpers.dim(`  ${name}`)
-        }
-      })
-      .join(AnsiHelpers.dim(' → '))
-
-    console.log(`\n${AnsiHelpers.blue('──')} ${AnsiHelpers.dim('Pipeline State:')} [${line}] ${AnsiHelpers.blue('──')}\n`)
+    return this.agentInvocationService.invokeAgent(invocation, this.state.currentPhase, this.config, this.settings)
   }
 
   public getActiveFeature(features: Feature[]): Feature | null {
@@ -466,100 +295,16 @@ export class HarnessOrchestrator implements PhaseContext {
   }
 
   public checkSpecFilesPresent(domain: string): boolean {
-    const specsDir = join(this.workingDir, 'docs', 'specs', domain)
-    return existsSync(specsDir)
+    return this.projectStateService.checkSpecFilesPresent(domain)
   }
 
   public extractTasksFromTacticalDesign(domain: string): Array<{ taskId: string; description: string }> {
-    const specsDir = join(this.workingDir, 'docs', 'specs', domain)
-    const files = existsSync(specsDir)
-      ? readdirSync(specsDir).filter(f => f.match(/^003-.*tactical-design.*\.md$/i))
-      : []
-
-    if (files.length === 0) return []
-
-    const content = readFileSync(join(specsDir, files[0]), 'utf8')
-
-    // Find Section 6
-    const section6Match = content.match(/## Section 6[^\n]*\n([\s\S]*?)(?=\n## |$)/i)
-    if (!section6Match) return []
-
-    const section = section6Match[1]
-    const tasks: Array<{ taskId: string; description: string }> = []
-
-    // Parse Task ID / Description blocks (fenced or plain)
-    const taskBlocks = section.split(/(?=Task ID\s*:)/i).filter(b => b.trim())
-
-    for (const block of taskBlocks) {
-      const idMatch = block.match(/Task ID\s*:\s*(\S+)/i)
-      const descMatch = block.match(/Description\s*:\s*(.+)/i)
-      if (idMatch && descMatch) {
-        const rawId = idMatch[1].replace(/[^a-zA-Z0-9]/g, '')
-        tasks.push({
-          taskId: `T${rawId.padStart(2, '0')}`,
-          description: descMatch[1].trim(),
-        })
-      }
-    }
-
-    return tasks
+    return this.projectStateService.extractTasksFromTacticalDesign(domain)
   }
-
-
 
   private readOnDiskState(): OnDiskState {
     const productDir = this.config.productDir ?? join(this.workingDir, 'docs', 'product')
-    const productFilesExist =
-      existsSync(join(productDir, 'BACKLOG.md')) &&
-      existsSync(join(productDir, 'DEVELOPMENT-STATE.md')) &&
-      existsSync(join(productDir, 'DECISIONS.md')) &&
-      existsSync(join(productDir, 'BOOTSTRAP-CONFIG.json'))
-
-    if (!productFilesExist) {
-      return {
-        productFilesExist: false,
-        features: [],
-        tasks: [],
-        config: null,
-        activeFeature: null,
-        specFilesPresent: false,
-        tddOutputPresent: false,
-        allTasksCompleted: false,
-      }
-    }
-
-    const features = this.fsm.loadBacklog()
-    const tasks = this.fsm.loadDevelopmentState()
-    const config = this.fsm.loadBootstrapConfig()
-
-    const activeFeature =
-      features.find(f => f.status === 'IN_PROGRESS') ??
-      features.find(f => f.status === 'NOT_STARTED') ??
-      null
-
-    const domain = activeFeature?.domain ?? ''
-    const specFilesPresent = domain ? this.checkSpecFilesPresent(domain) : false
-    const tddOutputPath = domain
-      ? join(this.workingDir, 'docs', 'specs', domain, 'TDD-OUTPUT.json')
-      : ''
-    const tddOutputPresent = tddOutputPath ? existsSync(tddOutputPath) : false
-
-    const featureTasks = activeFeature
-      ? tasks.filter(t => t.featureId === activeFeature.id)
-      : []
-    const allTasksCompleted =
-      featureTasks.length > 0 && featureTasks.every(t => t.status === 'COMPLETED')
-
-    return {
-      productFilesExist: true,
-      features,
-      tasks,
-      config,
-      activeFeature,
-      specFilesPresent,
-      tddOutputPresent,
-      allTasksCompleted,
-    }
+    return this.projectStateService.readOnDiskState(this.fsm, productDir)
   }
 
   private persistPhase(): void {
@@ -574,71 +319,10 @@ export class HarnessOrchestrator implements PhaseContext {
   }
 
   public onFeatureTransition(completed: Feature, next: Feature | null, cycle: number): void {
-    const width = 60
-    const hr = '╠' + '═'.repeat(width - 2) + '╣'
-    const top = '╔' + '═'.repeat(width - 2) + '╗'
-    const bot = '╚' + '═'.repeat(width - 2) + '╝'
-
-    const padLine = (content: string): string => {
-      const cleanContent = content.replace(/\x1b\[[0-9;]*m/g, '')
-      const padLen = width - 6 - cleanContent.length
-      return `║  ${content}${' '.repeat(Math.max(0, padLen))}  ║`
-    }
-
-    const titleStr = next
-      ? `✔  FEATURE COMPLETED`
-      : `✔  ALL FEATURES COMPLETED`
-    const cycleStr = `[ Cycle ${cycle} ]`
-    const headerContent = `${AnsiHelpers.green(titleStr)}${' '.repeat(width - 6 - titleStr.length - cycleStr.length)}${AnsiHelpers.blue(cycleStr)}`
-
-    console.log(`\n${AnsiHelpers.blue(top)}`)
-    console.log(padLine(headerContent))
-    console.log(AnsiHelpers.blue(hr))
-    console.log(padLine(`${AnsiHelpers.cyan(completed.id)}  ${completed.title}`))
-
-    const scoreTLStr = completed.scoreTL !== null ? completed.scoreTL.toString() : '-'
-    const scoreAdvStr = completed.scoreAdv !== null ? completed.scoreAdv.toString() : '-'
-
-    console.log(
-      padLine(
-        `${AnsiHelpers.dim('Score TL:')} ${AnsiHelpers.yellow(scoreTLStr)}  │  ` +
-        `${AnsiHelpers.dim('Score Adv:')} ${AnsiHelpers.yellow(scoreAdvStr)}  │  ` +
-        `${AnsiHelpers.dim('Status:')} ${completed.status === 'COMPLETED' ? AnsiHelpers.green(completed.status) : AnsiHelpers.red(completed.status)}`
-      )
-    )
-
-    if (next) {
-      console.log(AnsiHelpers.blue(hr))
-      console.log(padLine(`${AnsiHelpers.blue('⟶')}  ${AnsiHelpers.dim('NEXT FEATURE')}`))
-      const priorityVal = next.priority
-      const priorityStr = (priorityVal !== undefined && priorityVal !== null && !isNaN(priorityVal))
-        ? priorityVal.toString()
-        : '-'
-      console.log(
-        padLine(
-          `${AnsiHelpers.cyan(next.id)}  ${next.title}  ` +
-          `[${AnsiHelpers.dim('Priority:')} ${AnsiHelpers.yellow(priorityStr)}]`
-        )
-      )
-    } else {
-      console.log(AnsiHelpers.blue(hr))
-      console.log(padLine(AnsiHelpers.dim('All backlog items processed — pipeline halting.')))
-    }
-    console.log(`${AnsiHelpers.blue(bot)}\n`)
+    OrchestratorFormatter.onFeatureTransition(completed, next, cycle)
   }
 
   public getPhaseDescription(phase: Phase): string {
-    switch (phase) {
-      case Phase.BOOTSTRAP: return 'BOOTSTRAP (Initialization)'
-      case Phase.PHASE_A: return 'PHASE_A (Scope Refinement)'
-      case Phase.PHASE_B: return 'PHASE_B (TDD Implementation)'
-      case Phase.PHASE_C: return 'PHASE_C (Validation & Review)'
-      case Phase.PHASE_D: return 'PHASE_D (Completion Check)'
-      case Phase.PHASE_E: return 'PHASE_E (Documentation & Memory)'
-      case Phase.PHASE_F: return 'PHASE_F (Feature Transition & Decision)'
-      case Phase.CASCADE_BLOCKED: return 'CASCADE_BLOCKED (Dependency Blocked)'
-      case Phase.HALTED: return 'HALTED (Execution Halted)'
-      default: return phase
-    }
+    return OrchestratorFormatter.getPhaseDescription(phase)
   }
 }
