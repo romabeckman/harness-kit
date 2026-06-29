@@ -6,9 +6,9 @@ Maintain high reliability of the SDK orchestrator core and runner strategies usi
 ## COMMANDS
 | Type | Command | Description |
 |------|---------|-------------|
-| Unit & Integration | `npm test` | Runs the full Vitest suite. |
-| Type Check | `npm run typecheck` | Checks TypeScript compilation. |
-| Build Check | `npm run build` | Compiles and builds source code. |
+| Unit & Integration | `rtk npm test` | Runs the full Vitest suite via RTK proxy. |
+| Type Check | `rtk npm run typecheck` | Checks TypeScript compilation via RTK. |
+| Build Check | `rtk npm run build` | Compiles and builds source code via RTK. |
 
 ## MINIMUM COVERAGE
 REQUIRED: Maintain the following minimum coverage levels:
@@ -23,6 +23,7 @@ REQUIRED: Maintain the following minimum coverage levels:
 ## PATTERNS & BEST PRACTICES
 REQUIRED: Follow AAA (Arrange, Act, Assert) pattern.
 REQUIRED: Mock external boundaries like CLI spawn and remote API calls.
+REQUIRED: Execute all test and build operations through the Rust Token Killer (RTK) proxy to optimize and track token savings.
 FORBIDDEN: Testing using real external APIs in unit tests.
 FORBIDDEN: Test suites that share state or depend on execution order.
 
@@ -35,4 +36,4 @@ FORBIDDEN: Test suites that share state or depend on execution order.
 
 ## TROUBLESHOOTING
 - **Flaky tests:** Reset mock states using beforeEach and restoreAllMocks.
-- **Debug mode:** Run `npx vitest` to watch and interactively debug tests.
+- **Debug mode:** Run `rtk npx vitest` to watch and interactively debug tests.

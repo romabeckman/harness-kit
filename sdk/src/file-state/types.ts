@@ -73,8 +73,11 @@ export interface SteeringRulesConfig {
 export function createDefaultSteeringRules(initialRules?: string): SteeringRulesConfig {
   return {
     user: initialRules ? [initialRules] : [],
-    bootstrap: [],
-    phase_a: ['Minimal of 1 and maximal of 10 tasks for each feature in `BACKLOG.md`'],
+    bootstrap: [
+      "Minimal of 1 feature",
+      "Plan each feature to have a maximum of 12 tasks"
+    ],
+    phase_a: ['Minimal of 1 and maximal of 12 tasks for each feature in `BACKLOG.md`'],
     phase_b: [
       "If exist, read `docs/specs/${domain}/TL.json` and `docs/specs/${domain}/QA.json` for fixes details"
     ],

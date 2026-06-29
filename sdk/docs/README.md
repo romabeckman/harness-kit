@@ -9,6 +9,10 @@ Index of project technical documentation for **harness-kit SDK**. Use the links 
 |----------|-------------|----------|
 | [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Architecture, folder organization, and code patterns for the project. | **Mandatory** |
 | [**TESTS.md**](./adr/TESTS.md) | Testing strategies, patterns, and execution commands. | **Mandatory** |
+| [**STEERING.md**](./adr/STEERING.md) | Session steering overrides and state machine rollbacks. | Optional |
+| [**AGENT-RUNNERS.md**](./adr/AGENT-RUNNERS.md) | Outbound LLM runner strategies and dynamic registries. | Optional |
+| [**TELEMETRY.md**](./adr/TELEMETRY.md) | Token ledger tracking, cost auditing, and rate limit halts. | Optional |
+| [**STATE-PERSISTENCE.md**](./adr/STATE-PERSISTENCE.md) | FileState atomic writes and Markdown/JSON parsing. | Optional |
 | [**sdk_agent_runner.md**](./feature/sdk_agent_runner.md) | Agent runner strategies, CLI flags (`--agent`, `--model`), and `AgentInvocation` interface. | Optional |
 | [**sdk_settings.md**](./feature/sdk_settings.md) | Phase-specific model and effort settings per runner with OS-aware loading. | Optional |
 | [**sdk_core.md**](./feature/sdk_core.md) | Architectural details of core SDK ports and adapters, and full public API table. | Optional |
