@@ -65,6 +65,7 @@ INTERACTIVE → analyze requirement and identify what needs to be tested
 - Create test structure (unit / integration / functional)
 - Write tests following AAA pattern (Arrange, Act, Assert)
 - Include positive and negative scenarios
+- **REWORK (if `REWORK-LOG.md` present)**: translate each vulnerability and missed edge case from `REWORK-LOG.md` into new failing test cases to ensure regression protection
 - **IRON LAW: verify test FAILS before proceeding**
 
 </step>
@@ -77,6 +78,7 @@ INTERACTIVE → analyze newly created tests to understand exact requirements
 ```
 
 - Implement **minimum code** to make tests pass — no over-engineering
+- **REWORK (if `REWORK-LOG.md` present)**: address all architectural questions, vulnerabilities, and open points listed in `REWORK-LOG.md` alongside tactical tasks
 - After GREEN: refactor to remove duplication and improve readability
 - Keep tests green throughout refactor
 - Follow SOLID principles and conventions from `docs/adr/ARCHITECTURE.md`

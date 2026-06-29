@@ -24,7 +24,7 @@ Read from runtime context:
 - `${featureId}` — Feature ID from `BACKLOG.md` (e.g., `F001`)
 - `${domain}` — Snake_case domain (e.g., `user_authentication`)
 - `${projectPaths}` — Absolute paths of all projects in scope
-- `${scoreThresholdTL}` — Pass threshold from `docs/product/BOOTSTRAP-CONFIG.md`
+- `${scoreThresholdTL}` — Pass threshold from `docs/product/BOOTSTRAP-CONFIG.json` if exists
 
 **No confirmations. No pauses. Execute atomically.**
 

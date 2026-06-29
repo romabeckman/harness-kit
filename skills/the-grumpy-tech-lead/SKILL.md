@@ -17,7 +17,7 @@ Before executing, detect how you were invoked:
 - **`score >= ${scoreThresholdTL}`** → Feature **PASSES** validation and progresses to production
 - **`score < ${scoreThresholdTL}`** → Feature **RETRIES**: Findings from `openPoints` are logged to `docs/specs/${domain}/REWORK-LOG.md` for developer rework
 
-Default `${scoreThresholdTL}` = **0.70** (configured during BOOTSTRAP, stored in `docs/product/BOOTSTRAP-CONFIG.md`). Your score must be in **[0.00, 1.00]** range.
+Default `${scoreThresholdTL}` = **0.70** (configured during BOOTSTRAP, stored in `docs/product/BOOTSTRAP-CONFIG.json`). Your score must be in **[0.00, 1.00]** range.
 
 ---
 
