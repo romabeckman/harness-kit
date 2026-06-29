@@ -8,8 +8,8 @@ describe('AgentRunnerConfig', () => {
       expect(DEFAULT_AGENT_RUNNER_CONFIG.model).toBe('claude-sonnet-4-6')
     })
 
-    it('has timeoutMs set to 300000', () => {
-      expect(DEFAULT_AGENT_RUNNER_CONFIG.timeoutMs).toBe(300_000)
+    it('has timeoutMs set to 900000', () => {
+      expect(DEFAULT_AGENT_RUNNER_CONFIG.timeoutMs).toBe(900_000)
     })
 
     it('is frozen — mutation throws in strict mode', () => {

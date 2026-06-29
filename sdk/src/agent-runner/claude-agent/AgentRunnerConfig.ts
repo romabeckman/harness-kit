@@ -6,6 +6,6 @@ export interface AgentRunnerConfig {
 
 export const DEFAULT_AGENT_RUNNER_CONFIG: AgentRunnerConfig = Object.freeze({
   model: 'claude-sonnet-4-6',
-  timeoutMs: 300_000,
+  timeoutMs: 900_000,
   max_output_token: 8192
 })

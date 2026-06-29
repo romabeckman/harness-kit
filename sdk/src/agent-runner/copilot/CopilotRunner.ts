@@ -18,7 +18,7 @@ export class CopilotRunner implements IAgentRunner {
     this.config = {
       type: 'copilot',
       model: config?.model ?? 'gpt-5.3-codex',
-      timeoutMs: config?.timeoutMs ?? 600_000,
+      timeoutMs: config?.timeoutMs ?? 900_000,
     }
   }
 
