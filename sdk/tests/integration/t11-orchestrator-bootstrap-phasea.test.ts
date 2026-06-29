@@ -146,9 +146,9 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
 
     const phaseACalls = fake.getInvocationsForSkill('scope-refinement')
     expect(phaseACalls.length).toBeGreaterThanOrEqual(1)
-    expect(phaseACalls[0].payload).toHaveProperty('scope')
-    expect(phaseACalls[0].payload).toHaveProperty('domain')
-    expect(phaseACalls[0].payload).toHaveProperty('projectPaths')
+    expect(typeof phaseACalls[0].prompt).toBe('string')
+    expect(phaseACalls[0].prompt).toContain('sdk_core')
+    expect(phaseACalls[0].prompt).toContain(tmpDir)
   })
 
   it('persistPhase writes currentPhase to BOOTSTRAP-CONFIG.json before executing phase', async () => {

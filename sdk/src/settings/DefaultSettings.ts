@@ -16,12 +16,12 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   },
   'claude-agent': {
     phases: {
-      bootstrap: { model: 'claude-sonnet-4-6' },
-      phase_a: { model: 'claude-sonnet-4-6' },
-      phase_b: { model: 'claude-sonnet-4-6' },
-      phase_c_tl: { model: 'claude-sonnet-4-6' },
-      phase_c_adv: { model: 'claude-sonnet-4-6' },
-      phase_e: { model: 'claude-sonnet-4-6' },
+      bootstrap: { model: 'claude-sonnet-4-6', effort: 'low' },
+      phase_a: { model: 'claude-sonnet-4-6', effort: 'high' },
+      phase_b: { model: 'claude-sonnet-4-6', effort: 'medium' },
+      phase_c_tl: { model: 'claude-sonnet-4-6', effort: 'low' },
+      phase_c_adv: { model: 'claude-sonnet-4-6', effort: 'low' },
+      phase_e: { model: 'claude-sonnet-4-6', effort: 'low' },
     }
   },
   'antigravity': {

@@ -86,7 +86,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       skill: 'autonomous-orchestrator:bootstrap',
       agent: 'software-architect',
       mode: 'autonomous',
-      payload: {},
       prompt,
       phaseKey: 'bootstrap',
     })

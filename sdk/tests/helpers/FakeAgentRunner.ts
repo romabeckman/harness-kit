@@ -4,7 +4,8 @@ import type { AgentInvocation, AgentOutput } from '../../src/agent-runner/types'
 export interface FakeInvocationRecord {
   skill: string
   agent: string
-  payload: Record<string, unknown>
+  payload?: Record<string, unknown>
+  prompt?: string
   model?: string
   effort?: string
 }
@@ -44,6 +45,7 @@ export class FakeAgentRunner implements IAgentRunner {
       skill: invocation.skill,
       agent: invocation.agent,
       payload: invocation.payload,
+      prompt: invocation.prompt,
       model: invocation.model,
       effort: invocation.effort,
     })

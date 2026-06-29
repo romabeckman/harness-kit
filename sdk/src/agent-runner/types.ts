@@ -9,7 +9,7 @@ export interface AgentInvocation {
   readonly skill?: string
   readonly agent: string
   readonly mode: 'autonomous'
-  readonly payload: ContextPayload
+  readonly payload?: ContextPayload
   readonly prompt?: string  // explicit prompt override (takes precedence over payload serialization)
   readonly workspacePath?: string
   readonly env?: Record<string, string>

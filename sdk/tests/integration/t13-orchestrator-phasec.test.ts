@@ -256,23 +256,19 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
 
       const phaseACalls = fake.getInvocationsForSkill('scope-refinement')
       if (phaseACalls.length > 0) {
-        const payload = phaseACalls[0].payload
-        expect(Object.keys(payload)).toHaveLength(4)
-        expect(payload).toHaveProperty('scope')
-        expect(payload).toHaveProperty('domain')
-        expect(payload).toHaveProperty('featureTitle')
-        expect(payload).toHaveProperty('projectPaths')
+        const prompt = phaseACalls[0].prompt
+        expect(typeof prompt).toBe('string')
+        expect(prompt).toContain('sdk_core')
+        expect(prompt).toContain(tmpDir)
       }
 
       const phaseCCalls = fake.getInvocationsForSkill('the-grumpy-tech-lead')
       if (phaseCCalls.length > 0) {
-        const payload = phaseCCalls[0].payload
-        expect(payload).toHaveProperty('featureId')
-        expect(payload).toHaveProperty('featureTitle')
-        expect(payload).toHaveProperty('domain')
-        expect(payload).toHaveProperty('projectPaths')
-        expect(payload).toHaveProperty('steeringRules')
-        expect(Object.keys(payload)).toHaveLength(5)
+        const prompt = phaseCCalls[0].prompt
+        expect(typeof prompt).toBe('string')
+        expect(prompt).toContain('F001')
+        expect(prompt).toContain('sdk_core')
+        expect(prompt).toContain(tmpDir)
       }
     })
   })

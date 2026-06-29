@@ -166,7 +166,7 @@ export class ClaudeAgentRunner implements IAgentRunner {
           {
             model: model,
             max_tokens: this.#config.max_output_token,
-            messages: [{ role: 'user', content: this.#buildUserMessage(invocation) }],
+            messages: [{ role: 'user', content: this.#buildPrompt(invocation) }],
           },
           { signal: controller.signal }
         ),
@@ -256,7 +256,8 @@ export class ClaudeAgentRunner implements IAgentRunner {
     }
   }
 
-  #buildUserMessage(invocation: AgentInvocation): string {
+  #buildPrompt(invocation: AgentInvocation): string {
+    if (invocation.prompt) return invocation.prompt
     return [
       `Skill: ${invocation.skill ?? 'unknown'}`,
       `Agent: ${invocation.agent}`,

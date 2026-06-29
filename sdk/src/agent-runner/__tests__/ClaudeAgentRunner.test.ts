@@ -6,9 +6,9 @@ const mockMessagesCreate = vi.fn()
 
 vi.mock('@anthropic-ai/sdk', () => {
   return {
-    default: vi.fn().mockImplementation(() => ({
-      messages: { create: mockMessagesCreate },
-    })),
+    default: vi.fn().mockImplementation(function () {
+      return { messages: { create: mockMessagesCreate } }
+    }),
     APIStatusError: class APIStatusError extends Error {
       status: number
       constructor(status: number, _body: unknown, message: string, _headers: unknown) {

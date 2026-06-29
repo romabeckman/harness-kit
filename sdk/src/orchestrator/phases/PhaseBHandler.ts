@@ -4,6 +4,7 @@ import { Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
 import type { Feature, Task } from '../../file-state/types'
+import type { PhaseBPayload } from '../../context-assembler/types'
 
 export class PhaseBHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
@@ -123,13 +124,91 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       config.steeringRules
     )
 
+    const prompt = this.buildTddOrchestratorPrompt(payload)
+
     await context.invokeAgent({
       skill: 'tdd-orchestrator',
       agent: 'developer-backend',
       mode: 'autonomous',
-      payload,
+      prompt,
       phaseKey: 'phase_b',
     })
+  }
+
+  private buildTddOrchestratorPrompt(payload: PhaseBPayload): string {
+    const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
+    const tasksList = payload.tasks.map(t => `- [${t.taskId}] ${t.description}`).join('\n')
+    const rulesSection =
+      payload.steeringRules && payload.steeringRules.length > 0
+        ? payload.steeringRules.map(r => `- ${r}`).join('\n')
+        : '- No additional rules provided'
+
+    const reworkSection = payload.isRetry
+      ? [
+          ``,
+          `<rework>`,
+          `This is a RETRY run. Read \`docs/specs/${payload.domain}/REWORK-LOG.md\` before starting.`,
+          `- Translate every vulnerability and missed edge case from REWORK-LOG.md into new failing test cases`,
+          `- Address all architectural questions and open points listed there alongside the tactical tasks`,
+          `</rework>`,
+        ].join('\n')
+      : ''
+
+    return [
+      `## Objective`,
+      `Execute the TDD workflow for the tasks listed below. Follow steps 1–6 of the tdd-orchestrator skill sequentially without pausing.`,
+      ``,
+      `<inputs>`,
+      ``,
+      `<feature>`,
+      `Feature ID: ${payload.featureId}`,
+      `Title: ${payload.featureTitle}`,
+      `Domain: ${payload.domain}`,
+      `</feature>`,
+      ``,
+      `<tasks>`,
+      tasksList,
+      `</tasks>`,
+      ``,
+      `<project_paths>`,
+      projectPathsList,
+      `</project_paths>`,
+      ``,
+      `<spec_sources>`,
+      `- Implementation blueprint: \`docs/specs/${payload.domain}/003-*-tactical-design.md\``,
+      `- Test scenarios (drives RED phase): \`docs/specs/${payload.domain}/004-*-test-scenarios.md\``,
+      `</spec_sources>`,
+      ``,
+      `<rules>`,
+      rulesSection,
+      `</rules>`,
+      ``,
+      `</inputs>`,
+      reworkSection,
+      ``,
+      `<expected_output>`,
+      `Write \`docs/specs/${payload.domain}/TDD-OUTPUT.json\` upon completion:`,
+      `\`\`\`json`,
+      `{`,
+      `  "featureId": "${payload.featureId}",`,
+      `  "status": "SUCCESS" | "FAILED",`,
+      `  "metrics": { "totalTests": 0, "passed": 0, "failed": 0, "coverage": 0.00 },`,
+      `  "modifiedFiles": ["relative/path/to/file"],`,
+      `  "reworksCount": ${payload.isRetry ? 1 : 0}`,
+      `}`,
+      `\`\`\``,
+      `</expected_output>`,
+      ``,
+      `<strict_rules>`,
+      `- Read \`docs/README.md\`, \`docs/adr/ARCHITECTURE.md\`, and \`docs/adr/TESTS.md\` before writing any code`,
+      `- Invoke test-driven-development skill before any production code — verify tests FAIL first`,
+      `- Invoke verification-before-completion before declaring any task complete`,
+      `- Invoke systematic-debugging before attempting any fix on failing tests`,
+      `- Never change correct tests to force passing`,
+      `- Never run package installation commands automatically — instruct the user instead`,
+      `- Execute autonomously without pausing or asking for confirmation`,
+      `</strict_rules>`,
+    ].join('\n')
   }
 
   private completeChunk(activeFeature: Feature, chunkTasks: Task[], tddOutputPath: string, context: PhaseContext): boolean {

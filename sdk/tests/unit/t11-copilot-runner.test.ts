@@ -12,7 +12,7 @@ const mockClientConstructor = vi.fn()
 
 vi.mock('@github/copilot-sdk', () => {
   return {
-    CopilotClient: vi.fn().mockImplementation((options) => {
+    CopilotClient: vi.fn().mockImplementation(function (options) {
       mockClientConstructor(options)
       return {
         start: startMock,

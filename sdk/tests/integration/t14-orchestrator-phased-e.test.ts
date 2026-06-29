@@ -50,10 +50,11 @@ function makeFullRunFake(specDir: string): void {
   const tacticalDesignContent = [
     '# Tactical Design',
     '',
-    '## Section 6 — Task Breakdown',
+    '## Section 6 — Ordered Development Tasks',
     '',
-    'Task ID: T01',
-    'Description: Implement core functionality',
+    '```json',
+    JSON.stringify([{ id: '1', title: 'Implement core functionality' }]),
+    '```',
   ].join('\n')
   const origRun = fake.run.bind(fake)
   fake.run = async (inv) => {
