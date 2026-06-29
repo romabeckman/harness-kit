@@ -12,6 +12,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     const activeFeature = context.getActiveFeature(features)
 
     if (!activeFeature) {
+      console.error('\n✗ Error: No active feature found in backlog to process.')
       return Phase.HALTED
     }
 
