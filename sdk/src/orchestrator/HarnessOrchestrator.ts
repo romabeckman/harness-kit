@@ -405,13 +405,7 @@ export class HarnessOrchestrator implements PhaseContext {
 
   public checkSpecFilesPresent(domain: string): boolean {
     const specsDir = join(this.workingDir, 'docs', 'specs', domain)
-    if (!existsSync(specsDir)) return false
-    try {
-      const files = readdirSync(specsDir)
-      return files.some((f: string) => f.includes('test-scenarios') || f.startsWith('004-'))
-    } catch {
-      return false
-    }
+    return existsSync(specsDir)
   }
 
   public extractTasksFromTacticalDesign(domain: string): Array<{ taskId: string; description: string }> {
