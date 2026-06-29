@@ -94,6 +94,7 @@ const payload = ContextAssembler.buildPhaseAPayload(feature, paths)
 
 REQUIRED: Keep steering rules concise and imperative — the LLM reads them verbatim as constraints.
 REQUIRED: After applying a rollback action, the orchestrator resets all in-progress tasks to `NOT_STARTED` automatically. Do not manually reset tasks after a rollback.
+REQUIRED: Use steering rules to configure phase-specific behavior constraints (e.g., "Phase A: Limit of 5 tasks per feature") to avoid introducing runtime code complexity in phase handlers.
 FORBIDDEN: Do not add duplicate rules — `applySteeringActions` does not deduplicate; check `steeringRules` in `BOOTSTRAP-CONFIG.json` before adding if idempotency is required.
 
 ---
