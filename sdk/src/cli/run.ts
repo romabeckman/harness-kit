@@ -132,11 +132,6 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     ? AgentRunnerFactory.create({ type: options.agentType, model: options.model })
     : undefined
 
-  if (!agentRunner) {
-    console.log(AnsiHelpers.red('✗ Agent is incorrect or not configured properly.'));
-    return
-  }
-
   const orchestrator = new HarnessOrchestrator({
     scope: scope,
     projectPaths,
