@@ -107,30 +107,21 @@ export class ContextAssembler {
     const rules: string[] = []
 
     let phaseRules: string[] | undefined
-    let phasePrefix = ''
 
     if (phase === Phase.BOOTSTRAP) {
       phaseRules = configRules.bootstrap
-      phasePrefix = 'Bootstrap: '
     } else if (phase === Phase.PHASE_A) {
       phaseRules = configRules.phase_a
-      phasePrefix = 'Phase A: '
     } else if (phase === Phase.PHASE_B) {
       phaseRules = configRules.phase_b
-      phasePrefix = 'Phase B: '
     } else if (phase === Phase.PHASE_C) {
       phaseRules = configRules.phase_c
-      phasePrefix = 'Phase C: '
     } else if (phase === Phase.PHASE_E) {
       phaseRules = configRules.phase_e
-      phasePrefix = 'Phase E: '
     }
 
     if (phaseRules && phaseRules.length > 0) {
-      for (const r of phaseRules) {
-        const formatted = r.toLowerCase().startsWith('phase') ? r : `${phasePrefix}${r}`
-        rules.push(formatted)
-      }
+      rules.push(...phaseRules)
     }
 
     if (configRules.user && configRules.user.length > 0) {

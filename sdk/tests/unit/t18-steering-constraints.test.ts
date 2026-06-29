@@ -41,19 +41,19 @@ describe('Steering Rules Injection', () => {
     expect(payloadE.steeringRules).toContain('User Rule 2')
   })
 
-  it('should automatically prepend Phase B default rule "Phase B: Limit of 5 tasks for feature" to Phase B payload rules list', () => {
+  it('should include Phase B specific rule in Phase B payload rules list', () => {
     const rules: SteeringRulesConfig = {
       user: ['User Rule 1'],
       phase_b: ['Limit of 5 tasks for feature']
     }
     const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, rules)
     expect(payloadB.steeringRules).toEqual([
-      'Phase B: Limit of 5 tasks for feature',
+      'Limit of 5 tasks for feature',
       'User Rule 1'
     ])
   })
 
-  it('should format phase-specific rule with prefix only if not already prefixed', () => {
+  it('should include phase-specific rules without formatting or prefixing', () => {
     const rules: SteeringRulesConfig = {
       phase_b: ['Phase B: Limit of 5 tasks for feature']
     }
@@ -77,7 +77,7 @@ describe('Steering Rules Injection', () => {
     expect(payloadE.steeringRules).toBeUndefined()
   })
 
-  it('should format bootstrap-specific rule in flattenRules', () => {
+  it('should include bootstrap-specific rule in flattenRules', () => {
     const rules: SteeringRulesConfig = {
       bootstrap: ['Limit features generated'],
       user: ['Global Rule']
@@ -85,7 +85,7 @@ describe('Steering Rules Injection', () => {
     // @ts-expect-error - flattenRules is private but we test it via buildPhaseAPayload with custom mapping or directly via reflection
     const flattened = ContextAssembler['flattenRules']('BOOTSTRAP', rules)
     expect(flattened).toEqual([
-      'Bootstrap: Limit features generated',
+      'Limit features generated',
       'Global Rule'
     ])
   })
