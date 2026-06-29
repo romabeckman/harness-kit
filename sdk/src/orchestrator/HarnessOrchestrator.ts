@@ -1,11 +1,13 @@
 import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { createInterface } from 'node:readline'
 import { Phase } from './types'
 import type { OrchestratorConfig, OrchestratorState, OnDiskState } from './types'
 import { ReentryResolver } from './ReentryResolver'
 import { FileStateManager } from '../file-state/FileStateManager'
 import type { IFileStateManager } from '../file-state/FileStateManager'
 import { HarnessSettings } from '../settings/HarnessSettings'
+import { DEFAULT_PHASE_TIMEOUT_MS } from '../settings/DefaultSettings'
 import type { Feature, Task } from '../file-state/types'
 import { createDefaultSteeringRules } from '../file-state/types'
 import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
@@ -298,14 +300,7 @@ export class HarnessOrchestrator implements PhaseContext {
       timeoutMs = this.settings.getTimeoutMs(runnerType, phaseKey)
     }
     if (timeoutMs === undefined) {
-      timeoutMs = 300_000
-    }
-
-    let timer: ReturnType<typeof setTimeout> | undefined
-    if (timeoutMs > 0) {
-      timer = setTimeout(() => {
-        controller.abort()
-      }, timeoutMs)
+      timeoutMs = DEFAULT_PHASE_TIMEOUT_MS
     }
 
     let finalInvocation = invocation
@@ -320,9 +315,72 @@ export class HarnessOrchestrator implements PhaseContext {
       }
     }
 
-    TerminalProgress.startSpinner(this.getPhaseDescription(this.state.currentPhase), `Running agent: ${finalInvocation.agent}`)
+    const phaseDesc = this.getPhaseDescription(this.state.currentPhase)
+    const agentLabel = finalInvocation.agent
+
+    /**
+     * Schedules a timeout that, when it fires, stops the spinner and asks the
+     * user interactively whether to extend the timeout or abort the agent.
+     * Choosing "continue" restarts a fresh timeout with the same duration.
+     * Choosing "abort" calls controller.abort() to kill the child process.
+     *
+     * @param elapsedMs - total elapsed time so far (for display only)
+     * @returns a cancel function that clears the pending timer
+     */
+    const scheduleTimeout = (elapsedMs: number): (() => void) => {
+      if (timeoutMs! <= 0) return () => { /* no-op: timeout disabled */ }
+
+      let cancelled = false
+      let cancel: () => void = () => { cancelled = true }
+
+      const timer = setTimeout(async () => {
+        if (cancelled || controller.signal.aborted) return
+
+        TerminalProgress.stopSpinner()
+
+        const elapsedStr = this.formatDuration(elapsedMs + timeoutMs!)
+        console.error(
+          `\n  ${AnsiHelpers.yellow('⏱')}  ${AnsiHelpers.yellow(`Timeout atingido após ${elapsedStr}`)} ` +
+          `${AnsiHelpers.dim(`(agent: ${agentLabel})`)}`
+        )
+        console.error(`  ${AnsiHelpers.dim('O agente ainda pode estar trabalhando.')}\n`)
+        console.error(`  ${AnsiHelpers.cyan('[C]')} Continuar por mais ${this.formatDuration(timeoutMs!)}`)
+        console.error(`  ${AnsiHelpers.red('[E]')} Encerrar e abortar o agente\n`)
+
+        const answer = await new Promise<string>(resolve => {
+          const rl = createInterface({ input: process.stdin, output: process.stderr })
+          rl.question(`  ${AnsiHelpers.dim('Escolha [C/E]:')} `, ans => {
+            rl.close()
+            resolve(ans.trim().toUpperCase())
+          })
+        })
+
+        if (cancelled || controller.signal.aborted) return
+
+        if (answer === 'E') {
+          console.error(`\n  ${AnsiHelpers.red('✖')} Agente abortado pelo usuário.\n`)
+          controller.abort()
+          return
+        }
+
+        // Any other key (including 'C' or Enter) → extend
+        console.error(`\n  ${AnsiHelpers.green('✔')} Timeout renovado. Aguardando agente...\n`)
+        TerminalProgress.startSpinner(phaseDesc, `Running agent: ${agentLabel}`)
+        cancel = scheduleTimeout(elapsedMs + timeoutMs!)
+      }, timeoutMs!)
+
+      cancel = () => {
+        cancelled = true
+        clearTimeout(timer)
+      }
+
+      return () => cancel()
+    }
+
+    TerminalProgress.startSpinner(phaseDesc, `Running agent: ${agentLabel}`)
 
     const startTime = Date.now()
+    let cancelTimeout = scheduleTimeout(0)
     try {
       const output = await this.agentRunner.run(finalInvocation, { signal: controller.signal })
       if (output.usage) {
@@ -343,7 +401,7 @@ export class HarnessOrchestrator implements PhaseContext {
       }
       return output
     } finally {
-      if (timer) clearTimeout(timer)
+      cancelTimeout()
       TerminalProgress.stopSpinner()
     }
   }
