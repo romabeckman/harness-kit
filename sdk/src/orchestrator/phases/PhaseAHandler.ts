@@ -48,6 +48,9 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       .filter(t => t.featureId === activeFeature.id)
     if (existingTasks.length === 0) {
       const extracted = context.extractTasksFromTacticalDesign(activeFeature.domain)
+      if (extracted.length === 0) {
+        throw new Error(`No tasks were created/extracted in Phase A for feature ${activeFeature.id} in domain '${activeFeature.domain}'. Please ensure the tactical design spec contains tasks under Section 6.`)
+      }
       const projectName = context.config.projectPaths[0]?.split('/').pop() ?? 'project'
       const tasks = extracted.map(t => ({
         featureId: activeFeature.id,
@@ -58,7 +61,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
         currentPhase: '-' as const,
         status: 'NOT_STARTED' as const,
       }))
-      if (tasks.length > 0) context.fsm.appendTasks(tasks)
+      context.fsm.appendTasks(tasks)
     }
 
     return Phase.PHASE_B

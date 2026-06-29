@@ -271,7 +271,8 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         expect(payload).toHaveProperty('featureTitle')
         expect(payload).toHaveProperty('domain')
         expect(payload).toHaveProperty('projectPaths')
-        expect(Object.keys(payload)).toHaveLength(4)
+        expect(payload).toHaveProperty('steeringRules')
+        expect(Object.keys(payload)).toHaveLength(5)
       }
     })
   })

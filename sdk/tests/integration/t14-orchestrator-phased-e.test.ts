@@ -46,20 +46,23 @@ function setupTwoFeatures(f2Dependencies: string[] = []): void {
 }
 
 function makeFullRunFake(specDir: string): void {
-  let phaseACount = 0
   let tddCallCount = 0
+  const tacticalDesignContent = [
+    '# Tactical Design',
+    '',
+    '## Section 6 — Task Breakdown',
+    '',
+    'Task ID: T01',
+    'Description: Implement core functionality',
+  ].join('\n')
   const origRun = fake.run.bind(fake)
   fake.run = async (inv) => {
     if (inv.skill === 'scope-refinement') {
-      phaseACount++
-      // Create spec files for the current feature
+      // Create spec files for the current feature, including a proper tactical design
+      // with Section 6 tasks so PhaseAHandler can extract tasks correctly.
       mkdirSync(specDir, { recursive: true })
+      writeFileSync(join(specDir, '003-sdk_core-tactical-design.md'), tacticalDesignContent)
       writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
-      // Create one task in dev state for the current feature
-      const featId = (inv.payload as Record<string, unknown>)['scope'] as string
-      const existing = readFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), 'utf-8').trimEnd()
-      writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'),
-        existing + `\n| ${featId} | T01 | sdk | task | sdk_core | - | NOT_STARTED |`)
     }
     if (inv.skill === 'tdd-orchestrator') {
       tddCallCount++

@@ -426,4 +426,39 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     // This will fail with the old implementation because the dir is empty.
     expect(orchestrator.getState().currentPhase).toBe(Phase.PHASE_B)
   })
+
+  it('PHASE_A throws an error if no tasks are extracted and no existing tasks exist', async () => {
+    setupProductFiles()
+
+    const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
+    fake.setResponse('scope-refinement', {
+      raw: JSON.stringify({ specFilesCreated: true }),
+    })
+
+    // Simulate scope-refinement agent creating spec files, but NO tasks in them
+    const origRun = fake.run.bind(fake)
+    fake.run = async (inv) => {
+      if (inv.skill === 'scope-refinement') {
+        mkdirSync(specDir, { recursive: true })
+        // Write the spec file but without "## Section 6" or tasks
+        writeFileSync(
+          join(specDir, '003-sdk_core-tactical-design.md'),
+          '# Tactical Design\nNo tasks here.'
+        )
+      }
+      return origRun(inv)
+    }
+
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'test-scope',
+      projectPaths: [tmpDir],
+      agentRunner: fake,
+      productDir,
+    }, { workingDir: tmpDir })
+
+    // Expect the orchestrator run to throw an error
+    await expect(orchestrator.run()).rejects.toThrow(
+      /No tasks were created\/extracted in Phase A/
+    )
+  })
 })
