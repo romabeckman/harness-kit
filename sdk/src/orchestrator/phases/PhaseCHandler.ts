@@ -1,3 +1,5 @@
+import { existsSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
@@ -88,6 +90,16 @@ export class PhaseCHandler extends AbstractPhaseHandler {
         context.fsm.incrementReworks(activeFeature.id)
         context.fsm.writeReworkLog(activeFeature.domain, result.reason)
         context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'NOT_STARTED')
+        
+        // Invalidate TDD-OUTPUT.json artifact to prevent infinite loop on re-entry to Phase B
+        const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
+        if (existsSync(tddOutputPath)) {
+          try {
+            rmSync(tddOutputPath, { force: true })
+          } catch {
+            // ignore
+          }
+        }
         return Phase.PHASE_B
 
       case 'BLOCK':

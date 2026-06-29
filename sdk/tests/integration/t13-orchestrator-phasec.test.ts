@@ -257,9 +257,10 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
       const phaseACalls = fake.getInvocationsForSkill('scope-refinement')
       if (phaseACalls.length > 0) {
         const payload = phaseACalls[0].payload
-        expect(Object.keys(payload)).toHaveLength(3)
+        expect(Object.keys(payload)).toHaveLength(4)
         expect(payload).toHaveProperty('scope')
         expect(payload).toHaveProperty('domain')
+        expect(payload).toHaveProperty('featureTitle')
         expect(payload).toHaveProperty('projectPaths')
       }
 
@@ -272,6 +273,41 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         expect(payload).toHaveProperty('projectPaths')
         expect(Object.keys(payload)).toHaveLength(4)
       }
+    })
+  })
+
+  describe('RETRY scenario invalidates TDD-OUTPUT.json', () => {
+    it('deletes TDD-OUTPUT.json when verdict is RETRY', async () => {
+      setupFullRun({ reworks: 0, maxReworks: 2 })
+      fake.setResponse('the-grumpy-tech-lead', { raw: '```json\n{"scoreTL": 0.50}\n```' })
+      fake.setResponse('adversarial-qa', { raw: '```json\n{"scoreAdv": 0.50}\n```' })
+      fake.setResponse('tdd-orchestrator', { raw: 'done' })
+      fake.setResponse('project-memory', { raw: 'done' })
+
+      const orchestrator = new HarnessOrchestrator({
+        scope: 'sdk_core',
+        projectPaths: [tmpDir],
+        agentRunner: fake,
+        productDir,
+      }, { workingDir: tmpDir })
+
+      const tddOutputPath = join(tmpDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      expect(existsSync(tddOutputPath)).toBe(true)
+
+      let tddOutputDeleted = false
+      const origRun = fake.run.bind(fake)
+      fake.run = async (inv) => {
+        if (inv.skill === 'tdd-orchestrator') {
+          if (!existsSync(tddOutputPath)) {
+            tddOutputDeleted = true
+          }
+          writeFileSync(tddOutputPath, JSON.stringify({ featureId: 'F001' }))
+        }
+        return origRun(inv)
+      }
+
+      await orchestrator.run()
+      expect(tddOutputDeleted).toBe(true)
     })
   })
 })
