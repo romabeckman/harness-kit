@@ -107,7 +107,7 @@ export class HarnessOrchestrator implements PhaseContext {
 
   async run(): Promise<void> {
     const MAX_ITERATIONS = 500 // guard against infinite loops
-    const MAX_PHASE_ITERATIONS = 5
+    const MAX_PHASE_ITERATIONS = 3
     let iterations = 0
     let consecutivePhaseIterations = 0
     let lastPrintedPhase: Phase | null = null
