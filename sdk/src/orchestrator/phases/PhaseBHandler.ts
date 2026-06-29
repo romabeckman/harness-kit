@@ -24,9 +24,11 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       return Phase.PHASE_C
     }
 
-    // Clean stale temp file if starting a fresh run (no tasks are IN_PROGRESS)
+    // Clean stale temp file only if starting a completely fresh run (no tasks COMPLETED)
     const allTasks = context.fsm.loadDevelopmentState().filter(t => t.featureId === activeFeature.id)
-    const inProgressTasks = allTasks.filter(t => t.status === 'IN_PROGRESS')
+    const inProgressTasks = allTasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'NOT_STARTED')
+
+    // If no tasks are completed or in progress, it's safe to clean up temp files from a previous crashed run.
     if (inProgressTasks.length === 0 && existsSync(tempJsonlPath)) {
       rmSync(tempJsonlPath)
     }

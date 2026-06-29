@@ -17,6 +17,11 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const activeFeature = context.getActiveFeature(features)
     if (!activeFeature) throw new Error(`Illegal state: phase PHASE_C requires an active feature but none is set`)
 
+    const tempJsonlPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT-TEMP.jsonl')
+    if (existsSync(tempJsonlPath)) {
+      rmSync(tempJsonlPath)
+    }
+
     const config = context.fsm.loadBootstrapConfig()
 
     const payloadC = ContextAssembler.buildPhaseCPayload(activeFeature, context.config.projectPaths, config.steeringRules)
