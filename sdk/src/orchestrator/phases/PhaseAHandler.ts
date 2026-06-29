@@ -1,6 +1,7 @@
 import { Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
+import type { Feature } from '../../file-state/types'
 
 export class PhaseAHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
@@ -18,20 +19,35 @@ export class PhaseAHandler extends AbstractPhaseHandler {
 
     context.updateState({ activeFeatureId: activeFeature.id })
 
-    const blocked = activeFeature.dependencies.some(depId => {
-      const dep = features.find(f => f.id === depId)
+    if (this.hasCascadeBlock(activeFeature, features)) return Phase.CASCADE_BLOCKED
+
+    await this.runScopeRefinement(activeFeature, context)
+
+    if (!context.checkSpecFilesPresent(activeFeature.domain)) return Phase.PHASE_A
+
+    await this.ensureTasksAppended(activeFeature, context)
+
+    return Phase.PHASE_B
+  }
+
+  // Returns true when any direct dependency is BLOCKED, triggering a cascade.
+  private hasCascadeBlock(feature: Feature, allFeatures: Feature[]): boolean {
+    return feature.dependencies.some(depId => {
+      const dep = allFeatures.find(f => f.id === depId)
       return dep?.status === 'BLOCKED'
     })
-    if (blocked) return Phase.CASCADE_BLOCKED
+  }
 
-    context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS')
+  // Delegates scope-refinement to the software-architect agent and marks the feature IN_PROGRESS.
+  private async runScopeRefinement(feature: Feature, context: PhaseContext): Promise<void> {
+    context.fsm.updateFeatureStatus(feature.id, 'IN_PROGRESS')
 
     const config = context.fsm.loadBootstrapConfig()
     const payload = ContextAssembler.buildPhaseAPayload(
-      activeFeature,
+      feature,
       context.config.projectPaths,
       context.config.scope,
-      config.steeringRules
+      config.steeringRules,
     )
     await context.invokeAgent({
       skill: 'scope-refinement',
@@ -40,30 +56,62 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       payload,
       phaseKey: 'phase_a',
     })
+  }
 
-    const specFilesPresent = context.checkSpecFilesPresent(activeFeature.domain)
-    if (!specFilesPresent) return Phase.PHASE_A
+  // Appends dev tasks to DEVELOPMENT-STATE.md, falling back to a targeted agent call
+  // if the tactical-design file was written but the JSON block is unreadable by the parser.
+  private async ensureTasksAppended(feature: Feature, context: PhaseContext): Promise<void> {
+    const existing = context.fsm.loadDevelopmentState().filter(t => t.featureId === feature.id)
+    if (existing.length > 0) return
 
-    const existingTasks = context.fsm.loadDevelopmentState()
-      .filter(t => t.featureId === activeFeature.id)
-    if (existingTasks.length === 0) {
-      const extracted = context.extractTasksFromTacticalDesign(activeFeature.domain)
-      if (extracted.length === 0) {
-        throw new Error(`No tasks were created/extracted in Phase A for feature ${activeFeature.id} in domain '${activeFeature.domain}'. Please ensure the tactical design spec contains tasks under Section 6.`)
-      }
-      const projectName = context.config.projectPaths[0]?.split('/').pop() ?? 'project'
-      const tasks = extracted.map(t => ({
-        featureId: activeFeature.id,
+    let extracted = context.extractTasksFromTacticalDesign(feature.domain)
+
+    if (extracted.length === 0) {
+      extracted = await this.recoverTasksViaAgent(feature, context)
+    }
+
+    if (extracted.length === 0) {
+      throw new Error(
+        `Phase A failed: no tasks extracted for feature ${feature.id} (domain '${feature.domain}'). ` +
+          `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array under "## Section 6 — Ordered Development Tasks".`,
+      )
+    }
+
+    const projectName = context.config.projectPaths[0]?.split('/').pop() ?? 'project'
+    context.fsm.appendTasks(
+      extracted.map(t => ({
+        featureId: feature.id,
         taskId: t.taskId,
         project: projectName,
         description: t.description,
-        domain: activeFeature.domain,
+        domain: feature.domain,
         currentPhase: '-' as const,
         status: 'NOT_STARTED' as const,
-      }))
-      context.fsm.appendTasks(tasks)
-    }
+      })),
+    )
+  }
 
-    return Phase.PHASE_B
+  // Last-resort recovery: asks the agent to read the 003 doc and write the missing rows
+  // directly into DEVELOPMENT-STATE.md, then re-runs the local parser.
+  private async recoverTasksViaAgent(
+    feature: Feature,
+    context: PhaseContext,
+  ): Promise<Array<{ taskId: string; description: string }>> {
+    const projectName = context.config.projectPaths[0]?.split('/').pop() ?? 'project'
+    await context.invokeAgent({
+      agent: 'software-architect',
+      mode: 'autonomous',
+      phaseKey: 'phase_a_task_extraction',
+      payload: {},
+      prompt: [
+        `Read docs/specs/${feature.domain}/003-*-tactical-design.md.`,
+        `Locate "## Section 6 — Ordered Development Tasks" and parse the JSON array in the fenced code block immediately following it.`,
+        `For each task object, append a row to docs/product/DEVELOPMENT-STATE.md using this format:`,
+        `| ${feature.id} | T<zero-padded id> | <project> | <title> | ${feature.domain} | - | NOT_STARTED |`,
+        `where <project> is the last folder segment of the project path: ${projectName}.`,
+        `Do not output anything else.`,
+      ].join(' '),
+    })
+    return context.extractTasksFromTacticalDesign(feature.domain)
   }
 }

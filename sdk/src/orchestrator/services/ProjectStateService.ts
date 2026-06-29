@@ -21,29 +21,36 @@ export class ProjectStateService {
 
     const content = readFileSync(join(specsDir, files[0]), 'utf8')
 
-    // Find Section 6
     const section6Match = content.match(/## Section 6[^\n]*\n([\s\S]*?)(?=\n## |$)/i)
     if (!section6Match) return []
 
     const section = section6Match[1]
-    const tasks: Array<{ taskId: string; description: string }> = []
 
-    // Parse Task ID / Description blocks (fenced or plain)
-    const taskBlocks = section.split(/(?=Task ID\s*:)/i).filter(b => b.trim())
+    // Extract JSON array from fenced code block (```json ... ``` or ``` ... ```)
+    const fenceMatch = section.match(/```(?:json)?\s*([\s\S]*?)```/i)
+    const rawJson = fenceMatch ? fenceMatch[1].trim() : section.trim()
 
-    for (const block of taskBlocks) {
-      const idMatch = block.match(/Task ID\s*:\s*(\S+)/i)
-      const descMatch = block.match(/Description\s*:\s*(.+)/i)
-      if (idMatch && descMatch) {
-        const rawId = idMatch[1].replace(/[^a-zA-Z0-9]/g, '')
-        tasks.push({
-          taskId: `T${rawId.padStart(2, '0')}`,
-          description: descMatch[1].trim(),
-        })
-      }
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(rawJson)
+    } catch {
+      return []
     }
 
-    return tasks
+    if (!Array.isArray(parsed)) return []
+
+    return parsed
+      .filter(
+        (item): item is { id: string; title: string } =>
+          typeof item === 'object' &&
+          item !== null &&
+          typeof (item as Record<string, unknown>).id === 'string' &&
+          typeof (item as Record<string, unknown>).title === 'string',
+      )
+      .map(item => ({
+        taskId: `T${item.id.replace(/\D/g, '').padStart(2, '0')}`,
+        description: item.title,
+      }))
   }
 
   readOnDiskState(fsm: IFileStateManager, productDir: string): OnDiskState {

@@ -150,13 +150,17 @@ inputs:
 **A3. Verify:** Wait for all `docs/specs/{domain}/004-*-test-scenarios.md` files to exist.
 
 **A4. Task breakdown:**  
-For each `docs/specs/{domain}/003-*-tactical-design.md` file (one per project in `${projectPaths}`) → extract ordered dev tasks from Section 6 → append to `DEVELOPMENT-STATE.md`:
+For each `docs/specs/{domain}/003-*-tactical-design.md` file (one per project in `${projectPaths}`) → locate `## Section 6 — Ordered Development Tasks` → parse the JSON array in the fenced code block immediately following → append one row per task to `DEVELOPMENT-STATE.md`:
 
 ```
 Feature ID | Task ID | Project | Description | Domain | Current Phase: - | Status: NOT_STARTED
 ```
 
-`Project` = root folder name of the source project (e.g., `order-service`, `checkout-ui`).
+- `Task ID` = `id` field from JSON (e.g., `"01"`)
+- `Description` = `title` field from JSON
+- `Project` = root folder name of the source project (e.g., `order-service`, `checkout-ui`)
+
+**Parsing rule:** extract JSON with the defensive protocol in §3. On parse failure → log error in `DECISIONS.md` and halt Phase A for that feature.
 
 </phase>
 

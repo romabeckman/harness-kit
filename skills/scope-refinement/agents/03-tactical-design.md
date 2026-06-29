@@ -142,21 +142,35 @@ For each project in ${projectPaths}, execute sections 1–6 **adapted to that pr
 </section>
 
 <section id="6" name="Ordered Development Tasks">
-  Produce a sequentially ordered task list.
+  Produce a sequentially ordered task list as a **JSON array** inside a fenced code block.
 
   **Granularity rule:** each task must be implementable in a single working session (≈ 2–4h).
   If a task would exceed that, split it. If two tasks are too small to justify isolation, merge them.
 
-  For each task:
+  Do NOT rename, renumber, or alter this heading. The orchestrator parses it by exact match.
 
+  **Output format — JSON array immediately after the heading:**
+
+  ```json
+  [
+    {
+      "id": "<zero-padded sequence, e.g., \"01\">",
+      "title": "<imperative verb + noun, e.g., \"Implement OrderId Value Object\">",
+      "description": "<one sentence — what gets built and why it matters to the domain>",
+      "scope": ["<file, type, or interface directly touched>"],
+      "acceptance": ["<observable, testable outcome a reviewer can verify>"],
+      "depends_on": null
+    }
+  ]
   ```
-  Task ID    : <zero-padded sequence, e.g., 01>
-  Title      : <imperative verb + noun, e.g., "Implement OrderId Value Object">
-  Description: <one sentence — what gets built and why it matters to the domain>
-  Scope      : <2–4 bullet points — files, types, or interfaces directly touched>
-  Acceptance : <1–3 bullet criteria — observable, testable outcomes a reviewer can verify>
-  Depends on : <Task ID or "none">
-  ```
+
+  **Field rules:**
+  - `id`: zero-padded string (`"01"`, `"02"`, …)
+  - `title`: imperative verb + noun
+  - `description`: one sentence
+  - `scope`: 2–4 items — files, types, or interfaces directly touched
+  - `acceptance`: 1–3 items — observable, testable outcomes a reviewer can verify
+  - `depends_on`: predecessor task `id` string or `null`
 
   Ordering rules:
   <backend>
@@ -173,8 +187,8 @@ For each project in ${projectPaths}, execute sections 1–6 **adapted to that pr
   3. Integration Layer (API contracts, Global Store/Hooks, data storage, full event wiring)
   </frontend>
 
-  **Split signal:** if Scope exceeds 4 bullets or Acceptance exceeds 3 criteria, the task is too large — split it.
-  **Merge signal:** if two consecutive tasks share the same Scope files and neither has dependents, merge them.
+  **Split signal:** if `scope` exceeds 4 items or `acceptance` exceeds 3 items, the task is too large — split it.
+  **Merge signal:** if two consecutive tasks share the same `scope` files and neither has dependents, merge them.
 </section>
 
 </mission>
@@ -271,28 +285,37 @@ interface OrderRepository:
 ```
 
 ## Section 6 — Ordered Development Tasks
-```
-Task ID    : 01
-Title      : Implement OrderId Value Object
-Description: Creates the OrderId type that uniquely identifies an Order.
-Scope      :
-  - src/domain/value-objects/OrderId.ts
-  - src/domain/value-objects/__tests__/OrderId.spec.ts
-Acceptance :
-  - Rejects null or empty values
-  - Two instances with same UUID are considered equal
-Depends on : none
-
-Task ID    : 02
-Title      : Implement Order Aggregate
-Description: Creates the Order aggregate root enforcing item and total invariants.
-Scope      :
-  - src/domain/aggregates/Order.ts
-  - src/domain/aggregates/__tests__/Order.spec.ts
-Acceptance :
-  - Cannot be created without at least one item
-  - confirm() transitions to CONFIRMED only if total > 0
-Depends on : 01
+```json
+[
+  {
+    "id": "01",
+    "title": "Implement OrderId Value Object",
+    "description": "Creates the OrderId type that uniquely identifies an Order.",
+    "scope": [
+      "src/domain/value-objects/OrderId.ts",
+      "src/domain/value-objects/__tests__/OrderId.spec.ts"
+    ],
+    "acceptance": [
+      "Rejects null or empty values",
+      "Two instances with same UUID are considered equal"
+    ],
+    "depends_on": null
+  },
+  {
+    "id": "02",
+    "title": "Implement Order Aggregate",
+    "description": "Creates the Order aggregate root enforcing item and total invariants.",
+    "scope": [
+      "src/domain/aggregates/Order.ts",
+      "src/domain/aggregates/__tests__/Order.spec.ts"
+    ],
+    "acceptance": [
+      "Cannot be created without at least one item",
+      "confirm() transitions to CONFIRMED only if total > 0"
+    ],
+    "depends_on": "01"
+  }
+]
 ```
 
 ---
@@ -367,27 +390,36 @@ interface CheckoutApiClient:
 ```
 
 ## Section 6 — Ordered Development Tasks
-```
-Task ID    : 01
-Title      : Setup Checkout Design Tokens
-Description: Defines base styling variables scoped to the checkout feature.
-Scope      :
-  - src/styles/checkout.tokens.css
-Acceptance :
-  - All tokens defined and documented
-  - No hardcoded values in any checkout component
-Depends on : none
-
-Task ID    : 02
-Title      : Implement useCheckout Hook
-Description: Orchestrates cart state management and order submission flow.
-Scope      :
-  - src/integration/hooks/useCheckout.ts
-  - src/integration/hooks/__tests__/useCheckout.spec.ts
-Acceptance :
-  - Dispatches openLoadingModal before API call
-  - Emits OrderSubmitted with orderId on 201 response
-Depends on : 01
+```json
+[
+  {
+    "id": "01",
+    "title": "Setup Checkout Design Tokens",
+    "description": "Defines base styling variables scoped to the checkout feature.",
+    "scope": [
+      "src/styles/checkout.tokens.css"
+    ],
+    "acceptance": [
+      "All tokens defined and documented",
+      "No hardcoded values in any checkout component"
+    ],
+    "depends_on": null
+  },
+  {
+    "id": "02",
+    "title": "Implement useCheckout Hook",
+    "description": "Orchestrates cart state management and order submission flow.",
+    "scope": [
+      "src/integration/hooks/useCheckout.ts",
+      "src/integration/hooks/__tests__/useCheckout.spec.ts"
+    ],
+    "acceptance": [
+      "Dispatches openLoadingModal before API call",
+      "Emits OrderSubmitted with orderId on 201 response"
+    ],
+    "depends_on": "01"
+  }
+]
 ```
 
 </output_example>
