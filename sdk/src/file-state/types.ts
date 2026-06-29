@@ -75,8 +75,13 @@ export function createDefaultSteeringRules(initialRules?: string): SteeringRules
     user: initialRules ? [initialRules] : [],
     bootstrap: [],
     phase_a: ['Limit of 5 tasks for feature'],
-    phase_b: [],
-    phase_c: [],
+    phase_b: [
+      "If exist, read `docs/specs/${domain}/TL.json` and `docs/specs/${domain}/QA.json` for fixes details"
+    ],
+    phase_c: [
+      "If you are running as `harness-code-reviewer` you MUST write (overwrite) your review json in a file `docs/specs/${domain}/TL.json`",
+      "If you are running as `harness-qa` you MUST write (overwrite) your review json in a file `docs/specs/${domain}/QA.json`"
+    ],
     phase_e: []
   }
 }
