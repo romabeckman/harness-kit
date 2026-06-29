@@ -7,6 +7,7 @@ import { FileStateManager } from '../file-state/FileStateManager'
 import type { IFileStateManager } from '../file-state/FileStateManager'
 import { HarnessSettings } from '../settings/HarnessSettings'
 import type { Feature, Task } from '../file-state/types'
+import { createDefaultSteeringRules } from '../file-state/types'
 import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../agent-runner/AgentRunnerError'
 import { TokenLedger } from '../telemetry/TokenLedger'
@@ -214,11 +215,14 @@ export class HarnessOrchestrator implements PhaseContext {
   public applySteeringActions(actions: import('./SteeringAnalyzer').SteeringAction[]): void {
     const config = this.fsm.loadBootstrapConfig()
     if (!config.steeringRules) {
-      config.steeringRules = []
+      config.steeringRules = createDefaultSteeringRules()
+    }
+    if (!config.steeringRules.user) {
+      config.steeringRules.user = []
     }
     for (const action of actions) {
       if (action.type === 'add_rule') {
-        config.steeringRules.push(action.rule)
+        config.steeringRules.user.push(action.rule)
         this.fsm.appendDecision({
           featureId: null,
           decision: `Steering override: Added development rule: "${action.rule}"`

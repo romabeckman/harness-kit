@@ -31,7 +31,14 @@ describe('FileStateSteering', () => {
 
     const config = fsm.loadBootstrapConfig()
     expect(config.steeringRules).toBeDefined()
-    expect(config.steeringRules).toEqual([])
+    expect(config.steeringRules).toEqual({
+      user: [],
+      bootstrap: [],
+      phase_a: [],
+      phase_b: ['Limit of 5 tasks for feature'],
+      phase_c: [],
+      phase_e: []
+    })
   })
 
   it('loads existing steeringRules from config json successfully', () => {
@@ -50,6 +57,13 @@ describe('FileStateSteering', () => {
     }))
 
     const config = fsm.loadBootstrapConfig()
-    expect(config.steeringRules).toEqual(['rule1', 'rule2'])
+    expect(config.steeringRules).toEqual({
+      user: ['rule1', 'rule2'],
+      bootstrap: [],
+      phase_a: [],
+      phase_b: ['Limit of 5 tasks for feature'],
+      phase_c: [],
+      phase_e: []
+    })
   })
 })

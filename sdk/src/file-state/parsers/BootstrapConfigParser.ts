@@ -1,4 +1,5 @@
 import type { BootstrapConfig } from '../types'
+import { createDefaultSteeringRules } from '../types'
 
 /**
  * Parses BOOTSTRAP-CONFIG.json into BootstrapConfig.
@@ -36,9 +37,33 @@ export class BootstrapConfigParser {
       result.originalScope = raw.originalScope
     }
     if (Array.isArray(raw.steeringRules)) {
-      result.steeringRules = raw.steeringRules.filter((r: unknown) => typeof r === 'string')
+      result.steeringRules = createDefaultSteeringRules()
+      if (raw.steeringRules && Array.isArray(raw.steeringRules)) {
+        result.steeringRules.user = raw.steeringRules.filter((r: unknown) => typeof r === 'string')
+      }
+    } else if (raw.steeringRules && typeof raw.steeringRules === 'object') {
+      const parseRuleArray = (arr: unknown): string[] => {
+        if (Array.isArray(arr)) {
+          return arr.filter((r: unknown) => typeof r === 'string')
+        }
+        return []
+      }
+      result.steeringRules = {
+        user: parseRuleArray(raw.steeringRules.user),
+        bootstrap: parseRuleArray(raw.steeringRules.bootstrap),
+        phase_a: parseRuleArray(raw.steeringRules.phase_a),
+        phase_b: parseRuleArray(raw.steeringRules.phase_b),
+        phase_c: parseRuleArray(raw.steeringRules.phase_c),
+        phase_e: parseRuleArray(raw.steeringRules.phase_e),
+      }
+      if (!result.steeringRules.phase_b) {
+        result.steeringRules.phase_b = []
+      }
+      if (!result.steeringRules.phase_b.includes('Limit of 5 tasks for feature')) {
+        result.steeringRules.phase_b.push('Limit of 5 tasks for feature')
+      }
     } else {
-      result.steeringRules = []
+      result.steeringRules = createDefaultSteeringRules()
     }
     return result
   }

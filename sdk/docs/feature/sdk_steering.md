@@ -88,6 +88,11 @@ const payload = ContextAssembler.buildPhaseAPayload(feature, paths, steeringRule
 const payload = ContextAssembler.buildPhaseAPayload(feature, paths)
 ```
 
+### Default Phase Rules
+
+By default, the `ContextAssembler` appends specific constraints automatically to phase payloads:
+- **Phase B (TDD Implementation):** Automatically appends `"Phase B: Limit of 5 tasks for feature"` to the `steeringRules` array (avoiding duplicates if it is already present).
+
 ---
 
 ## BEST PRACTICES

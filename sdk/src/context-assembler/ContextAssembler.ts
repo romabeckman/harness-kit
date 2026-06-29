@@ -1,6 +1,8 @@
 import { join } from 'path'
-import type { Feature, Task } from '../file-state/types'
+import type { Feature, Task, SteeringRulesConfig } from '../file-state/types'
 import type { BootstrapPayload, PhaseAPayload, PhaseBPayload, PhaseCPayload, PhaseEPayload } from './types'
+import { Phase } from '../orchestrator/types'
+
 
 export class ContextAssembler {
   static buildBootstrapPayload(scope: string, projectPaths: string[], productDir: string): BootstrapPayload {
@@ -18,7 +20,7 @@ export class ContextAssembler {
     feature: Feature,
     projectPaths: string[],
     originalScope?: string,
-    steeringRules?: string[]
+    steeringRules?: SteeringRulesConfig
   ): PhaseAPayload {
     const payload: PhaseAPayload = {
       scope: originalScope || feature.title,
@@ -26,8 +28,9 @@ export class ContextAssembler {
       featureTitle: feature.title,
       projectPaths,
     }
-    if (steeringRules && steeringRules.length > 0) {
-      payload.steeringRules = steeringRules
+    const flattened = this.flattenRules(Phase.PHASE_A, steeringRules)
+    if (flattened) {
+      payload.steeringRules = flattened
     }
     return payload
   }
@@ -40,7 +43,7 @@ export class ContextAssembler {
     tasks: Task[],
     projectPaths: string[],
     isRetry: boolean,
-    steeringRules?: string[]
+    steeringRules?: SteeringRulesConfig
   ): PhaseBPayload {
     const payload: PhaseBPayload = {
       featureId: feature.id,
@@ -53,8 +56,9 @@ export class ContextAssembler {
     if (isRetry) {
       payload.reworkLogPath = join('docs', 'specs', feature.domain, 'REWORK-LOG.md')
     }
-    if (steeringRules && steeringRules.length > 0) {
-      payload.steeringRules = steeringRules
+    const flattened = this.flattenRules(Phase.PHASE_B, steeringRules)
+    if (flattened) {
+      payload.steeringRules = flattened
     }
     return payload
   }
@@ -62,15 +66,16 @@ export class ContextAssembler {
   /**
    * Phase C: validation — featureId, domain, projectPaths only
    */
-  static buildPhaseCPayload(feature: Feature, projectPaths: string[], steeringRules?: string[]): PhaseCPayload {
+  static buildPhaseCPayload(feature: Feature, projectPaths: string[], steeringRules?: SteeringRulesConfig): PhaseCPayload {
     const payload: PhaseCPayload = {
       featureId: feature.id,
       featureTitle: feature.title,
       domain: feature.domain,
       projectPaths,
     }
-    if (steeringRules && steeringRules.length > 0) {
-      payload.steeringRules = steeringRules
+    const flattened = this.flattenRules(Phase.PHASE_C, steeringRules)
+    if (flattened) {
+      payload.steeringRules = flattened
     }
     return payload
   }
@@ -82,7 +87,7 @@ export class ContextAssembler {
     feature: Feature,
     completedCycles: number,
     decisions: string[],
-    steeringRules?: string[]
+    steeringRules?: SteeringRulesConfig
   ): PhaseEPayload {
     const payload: PhaseEPayload = {
       domain: feature.domain,
@@ -90,9 +95,48 @@ export class ContextAssembler {
       completedCycles,
       recentDecisions: decisions,
     }
-    if (steeringRules && steeringRules.length > 0) {
-      payload.steeringRules = steeringRules
+    const flattened = this.flattenRules(Phase.PHASE_E, steeringRules)
+    if (flattened) {
+      payload.steeringRules = flattened
     }
     return payload
+  }
+
+  private static flattenRules(phase: Phase, configRules?: SteeringRulesConfig): string[] | undefined {
+    if (!configRules) return undefined
+    const rules: string[] = []
+
+    let phaseRules: string[] | undefined
+    let phasePrefix = ''
+
+    if (phase === Phase.BOOTSTRAP) {
+      phaseRules = configRules.bootstrap
+      phasePrefix = 'Bootstrap: '
+    } else if (phase === Phase.PHASE_A) {
+      phaseRules = configRules.phase_a
+      phasePrefix = 'Phase A: '
+    } else if (phase === Phase.PHASE_B) {
+      phaseRules = configRules.phase_b
+      phasePrefix = 'Phase B: '
+    } else if (phase === Phase.PHASE_C) {
+      phaseRules = configRules.phase_c
+      phasePrefix = 'Phase C: '
+    } else if (phase === Phase.PHASE_E) {
+      phaseRules = configRules.phase_e
+      phasePrefix = 'Phase E: '
+    }
+
+    if (phaseRules && phaseRules.length > 0) {
+      for (const r of phaseRules) {
+        const formatted = r.toLowerCase().startsWith('phase') ? r : `${phasePrefix}${r}`
+        rules.push(formatted)
+      }
+    }
+
+    if (configRules.user && configRules.user.length > 0) {
+      rules.push(...configRules.user)
+    }
+
+    return rules.length > 0 ? rules : undefined
   }
 }

@@ -1,9 +1,10 @@
-import { readFileSync, writeFileSync, existsSync, copyFileSync, mkdirSync, renameSync } from 'fs'
-import { join, resolve } from 'path'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'fs'
+import { join } from 'path'
 import { BacklogParser } from './parsers/BacklogParser'
 import { DevStateParser } from './parsers/DevStateParser'
 import { BootstrapConfigParser } from './parsers/BootstrapConfigParser'
 import type { Feature, Task, BootstrapConfig, FeatureStatus, TaskStatus, CurrentPhase, DecisionEntry } from './types'
+import { createDefaultSteeringRules } from './types'
 
 export interface IFileStateManager {
   // ─── Bootstrap ──────────────────────────────────────────────────────────
@@ -84,6 +85,7 @@ export class FileStateManager implements IFileStateManager {
           },
           completionCriteria: { maxReworks: 2 },
           cycleCounter: { completedCycles: 0 },
+          steeringRules: createDefaultSteeringRules()
         }, null, 2)
       default:
         return ''

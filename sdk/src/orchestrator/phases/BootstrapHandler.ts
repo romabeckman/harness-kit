@@ -10,9 +10,9 @@ export class BootstrapHandler extends AbstractPhaseHandler {
 
     context.fsm.ensureProductFiles()
 
+    const bootConfig = context.fsm.loadBootstrapConfig()
     if (context.config.scope) {
       try {
-        const bootConfig = context.fsm.loadBootstrapConfig()
         bootConfig.originalScope = context.config.scope
         context.fsm.saveBootstrapConfig(bootConfig)
       } catch {
@@ -26,7 +26,20 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
     const backlogPath = join(productDir, 'BACKLOG.md')
 
-    const prompt = [
+    const rulesList: string[] = []
+    if (bootConfig && bootConfig.steeringRules) {
+      const configRules = bootConfig.steeringRules
+      if (configRules.bootstrap && configRules.bootstrap.length > 0) {
+        for (const r of configRules.bootstrap) {
+          rulesList.push(r.toLowerCase().startsWith('bootstrap') ? r : `Bootstrap: ${r}`)
+        }
+      }
+      if (configRules.user && configRules.user.length > 0) {
+        rulesList.push(...configRules.user)
+      }
+    }
+
+    const promptLines = [
       `# ROLE`,
       `You are the autonomous orchestrator bootstrap agent.`,
       ``,
@@ -47,6 +60,17 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `- **Score (TL)** & **Score (Adv)**: -`,
       `- **Status**: NOT_STARTED`,
       `- Each row must represent exactly one deliverable feature.`,
+    ]
+
+    if (rulesList.length > 0) {
+      promptLines.push(
+        ``,
+        `# STEERING RULES`,
+        ...rulesList.map(r => `- ${r}`)
+      )
+    }
+
+    promptLines.push(
       ``,
       `<context>`,
       `Project paths: ${context.config.projectPaths.join(', ')}`,
@@ -54,8 +78,9 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       ``,
       `<scope>`,
       context.config.scope,
-      `</scope>`,
-    ].join('\n')
+      `</scope>`
+    )
+    const prompt = promptLines.join('\n')
 
     await context.invokeAgent({
       skill: 'autonomous-orchestrator:bootstrap',

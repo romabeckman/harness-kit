@@ -55,6 +55,26 @@ export interface BootstrapConfig {
     completedCycles: number
   }
   currentPhase?: string
-  steeringRules?: string[]
+  steeringRules?: SteeringRulesConfig
   originalScope?: string
+}
+
+export interface SteeringRulesConfig {
+  user?: string[]
+  bootstrap?: string[]
+  phase_a?: string[]
+  phase_b?: string[]
+  phase_c?: string[]
+  phase_e?: string[]
+}
+
+export function createDefaultSteeringRules(): SteeringRulesConfig {
+  return {
+    user: [],
+    bootstrap: [],
+    phase_a: [],
+    phase_b: ['Limit of 5 tasks for feature'],
+    phase_c: [],
+    phase_e: []
+  }
 }
