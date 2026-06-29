@@ -23,8 +23,9 @@ export class StateMachine {
     { from: Phase.PHASE_C,      condition: 'PASS/BLOCK/FAIL → feature terminal', to: Phase.PHASE_D },
     { from: Phase.PHASE_C,      condition: 'RETRY → tasks reset',              to: Phase.PHASE_B },
     { from: Phase.PHASE_D,      condition: 'completion check done',            to: Phase.PHASE_E },
-    { from: Phase.PHASE_E,      condition: 'features remain',                  to: Phase.PHASE_A },
-    { from: Phase.PHASE_E,      condition: 'no features remain',               to: Phase.HALTED },
+    { from: Phase.PHASE_E,      condition: 'memory saved',                     to: Phase.PHASE_F },
+    { from: Phase.PHASE_F,      condition: 'features remain',                  to: Phase.PHASE_A },
+    { from: Phase.PHASE_F,      condition: 'no features remain',               to: Phase.HALTED },
   ]
 
   static next(current: Phase, state: OnDiskState): Phase {
@@ -59,6 +60,9 @@ export class StateMachine {
         if (!state.activeFeature) return Phase.PHASE_D
         const { status } = state.activeFeature
         // PASS/BLOCK/FAIL → terminal → PHASE_D
+        if (state.config?.pendingStatus) {
+          return Phase.PHASE_D
+        }
         if (status === 'COMPLETED' || status === 'BLOCKED' || status === 'FAILED') {
           return Phase.PHASE_D
         }
@@ -67,11 +71,12 @@ export class StateMachine {
       }
 
       case Phase.PHASE_D:
-        // Always go to PHASE_E; HALTED is decided inside runPhaseE
         return Phase.PHASE_E
 
       case Phase.PHASE_E:
-        // runPhaseE sets the next phase; this is a fallback
+        return Phase.PHASE_F
+
+      case Phase.PHASE_F:
         return Phase.HALTED
 
       case Phase.CASCADE_BLOCKED:

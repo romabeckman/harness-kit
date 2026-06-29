@@ -140,13 +140,27 @@ describe('T10 — StateMachine', () => {
   })
 
   describe('TS-U-17: PHASE_D → PHASE_E when no executable features remain', () => {
-    it('returns PHASE_E (halted is set inside runPhaseE)', () => {
+    it('returns PHASE_E', () => {
       const features = [
         { ...baseFeature, id: 'F001', status: 'COMPLETED' as const },
         { ...baseFeature, id: 'F002', status: 'FAILED' as const },
       ]
       const state = makeState({ features })
       expect(StateMachine.next(Phase.PHASE_D, state)).toBe(Phase.PHASE_E)
+    })
+  })
+
+  describe('TS-U-17b: PHASE_E → PHASE_F', () => {
+    it('returns PHASE_F', () => {
+      const state = makeState({})
+      expect(StateMachine.next(Phase.PHASE_E, state)).toBe(Phase.PHASE_F)
+    })
+  })
+
+  describe('TS-U-17c: PHASE_F → HALTED', () => {
+    it('returns HALTED', () => {
+      const state = makeState({})
+      expect(StateMachine.next(Phase.PHASE_F, state)).toBe(Phase.HALTED)
     })
   })
 

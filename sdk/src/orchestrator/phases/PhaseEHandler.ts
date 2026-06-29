@@ -29,20 +29,6 @@ export class PhaseEHandler extends AbstractPhaseHandler {
       phaseKey: 'phase_e',
     })
 
-    config.cycleCounter.completedCycles += 1
-    context.fsm.saveBootstrapConfig(config)
-    context.updateState({ completedCycles: config.cycleCounter.completedCycles })
-
-    const nextFeature = features.find(f => f.status === 'NOT_STARTED')
-    if (context.onFeatureTransition) {
-      context.onFeatureTransition(activeFeature, nextFeature ?? null, config.cycleCounter.completedCycles)
-    }
-
-    if (nextFeature) {
-      context.updateState({ activeFeatureId: nextFeature.id })
-      return Phase.PHASE_A
-    }
-
-    return Phase.HALTED
+    return Phase.PHASE_F
   }
 }

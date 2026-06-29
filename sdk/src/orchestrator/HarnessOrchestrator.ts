@@ -22,6 +22,7 @@ import {
   PhaseCHandler,
   PhaseDHandler,
   PhaseEHandler,
+  PhaseFHandler,
   CascadeBlockedHandler
 } from './phases'
 
@@ -69,7 +70,7 @@ export class HarnessOrchestrator implements PhaseContext {
     const entryPhase = ReentryResolver.resolve(onDisk)
     this.state = {
       currentPhase: entryPhase,
-      activeFeatureId: onDisk.activeFeature?.id ?? null,
+      activeFeatureId: onDisk.config?.activeFeatureId ?? onDisk.activeFeature?.id ?? null,
       completedCycles: onDisk.config?.cycleCounter.completedCycles ?? 0,
     }
 
@@ -81,6 +82,7 @@ export class HarnessOrchestrator implements PhaseContext {
       .setNext(new PhaseCHandler())
       .setNext(new PhaseDHandler())
       .setNext(new PhaseEHandler())
+      .setNext(new PhaseFHandler())
       .setNext(new CascadeBlockedHandler())
     this.chain = bootstrap
   }
@@ -364,6 +366,7 @@ export class HarnessOrchestrator implements PhaseContext {
       Phase.PHASE_C,
       Phase.PHASE_D,
       Phase.PHASE_E,
+      Phase.PHASE_F,
     ]
     const shortNames: Record<Phase, string> = {
       [Phase.BOOTSTRAP]: 'BOOT',
@@ -372,6 +375,7 @@ export class HarnessOrchestrator implements PhaseContext {
       [Phase.PHASE_C]: 'VALIDATE',
       [Phase.PHASE_D]: 'TUNING',
       [Phase.PHASE_E]: 'MEMORY',
+      [Phase.PHASE_F]: 'DECIDE',
       [Phase.CASCADE_BLOCKED]: 'BLOCKED',
       [Phase.HALTED]: 'HALTED',
     }
@@ -510,6 +514,7 @@ export class HarnessOrchestrator implements PhaseContext {
     try {
       const config = this.fsm.loadBootstrapConfig()
       config.currentPhase = this.state.currentPhase
+      config.activeFeatureId = this.state.activeFeatureId
       this.fsm.saveBootstrapConfig(config)
     } catch {
       // ignore if bootstrap config not yet written
@@ -578,6 +583,7 @@ export class HarnessOrchestrator implements PhaseContext {
       case Phase.PHASE_C: return 'PHASE_C (Validation & Review)'
       case Phase.PHASE_D: return 'PHASE_D (Completion Check)'
       case Phase.PHASE_E: return 'PHASE_E (Documentation & Memory)'
+      case Phase.PHASE_F: return 'PHASE_F (Feature Transition & Decision)'
       case Phase.CASCADE_BLOCKED: return 'CASCADE_BLOCKED (Dependency Blocked)'
       case Phase.HALTED: return 'HALTED (Execution Halted)'
       default: return phase

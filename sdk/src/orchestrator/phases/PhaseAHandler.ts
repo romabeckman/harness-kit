@@ -16,6 +16,8 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       return Phase.HALTED
     }
 
+    context.updateState({ activeFeatureId: activeFeature.id })
+
     const blocked = activeFeature.dependencies.some(depId => {
       const dep = features.find(f => f.id === depId)
       return dep?.status === 'BLOCKED'

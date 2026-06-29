@@ -116,7 +116,9 @@ export class PhaseCHandler extends AbstractPhaseHandler {
 
     switch (result.verdict) {
       case 'PASS':
-        context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED', { tl: scoreTL, adv: scoreAdv })
+        config.pendingStatus = 'COMPLETED'
+        context.fsm.saveBootstrapConfig(config)
+        context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS', { tl: scoreTL, adv: scoreAdv })
         return Phase.PHASE_D
 
       case 'RETRY':
@@ -136,11 +138,15 @@ export class PhaseCHandler extends AbstractPhaseHandler {
         return Phase.PHASE_B
 
       case 'BLOCK':
-        context.fsm.updateFeatureStatus(activeFeature.id, 'BLOCKED', { tl: scoreTL, adv: scoreAdv })
+        config.pendingStatus = 'BLOCKED'
+        context.fsm.saveBootstrapConfig(config)
+        context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS', { tl: scoreTL, adv: scoreAdv })
         return Phase.PHASE_D
 
       case 'FAIL':
-        context.fsm.updateFeatureStatus(activeFeature.id, 'FAILED', { tl: scoreTL, adv: scoreAdv })
+        config.pendingStatus = 'FAILED'
+        context.fsm.saveBootstrapConfig(config)
+        context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS', { tl: scoreTL, adv: scoreAdv })
         return Phase.PHASE_D
 
       default:

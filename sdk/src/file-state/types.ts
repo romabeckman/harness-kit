@@ -55,6 +55,8 @@ export interface BootstrapConfig {
     completedCycles: number
   }
   currentPhase?: string
+  activeFeatureId?: string | null
+  pendingStatus?: FeatureStatus
   steeringRules?: SteeringRulesConfig
   originalScope?: string
 }

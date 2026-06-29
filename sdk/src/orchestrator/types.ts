@@ -19,6 +19,7 @@ export enum Phase {
   PHASE_C = 'PHASE_C',
   PHASE_D = 'PHASE_D',
   PHASE_E = 'PHASE_E',
+  PHASE_F = 'PHASE_F',
   CASCADE_BLOCKED = 'CASCADE_BLOCKED',
   HALTED = 'HALTED',
 }

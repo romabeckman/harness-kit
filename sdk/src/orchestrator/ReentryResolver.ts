@@ -16,6 +16,14 @@ import type { OnDiskState } from './types'
  */
 export class ReentryResolver {
   static resolve(state: OnDiskState): Phase {
+    // 0. If currentPhase is explicitly saved in config, respect it!
+    if (state.config?.currentPhase) {
+      const persistedPhase = state.config.currentPhase as Phase
+      if (Object.values(Phase).includes(persistedPhase) && persistedPhase !== Phase.HALTED) {
+        return persistedPhase
+      }
+    }
+
     // 1. No product files → BOOTSTRAP
     if (!state.productFilesExist) {
       return Phase.BOOTSTRAP
