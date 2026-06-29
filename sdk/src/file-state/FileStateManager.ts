@@ -5,10 +5,11 @@ import { DevStateParser } from './parsers/DevStateParser'
 import { BootstrapConfigParser } from './parsers/BootstrapConfigParser'
 import type { Feature, Task, BootstrapConfig, FeatureStatus, TaskStatus, CurrentPhase, DecisionEntry } from './types'
 import { createDefaultSteeringRules } from './types'
+import { OrchestratorConfig } from '../orchestrator/types'
 
 export interface IFileStateManager {
   // ─── Bootstrap ──────────────────────────────────────────────────────────
-  ensureProductFiles(): void
+  ensureProductFiles(config?: OrchestratorConfig): void
   loadBootstrapConfig(): BootstrapConfig
   saveBootstrapConfig(config: BootstrapConfig): void
 
@@ -58,18 +59,18 @@ export class FileStateManager implements IFileStateManager {
 
   // ─── Bootstrap ────────────────────────────────────────────────────────────
 
-  ensureProductFiles(): void {
+  ensureProductFiles(config?: OrchestratorConfig): void {
     mkdirSync(this.productDir, { recursive: true })
     const files = ['BACKLOG.md', 'DEVELOPMENT-STATE.md', 'DECISIONS.md', 'BOOTSTRAP-CONFIG.json']
     for (const file of files) {
       const dest = join(this.productDir, file)
       if (!existsSync(dest)) {
-        writeFileSync(dest, this.defaultContent(file), 'utf-8')
+        writeFileSync(dest, this.defaultContent(file, config), 'utf-8')
       }
     }
   }
 
-  private defaultContent(file: string): string {
+  private defaultContent(file: string, config?: OrchestratorConfig): string {
     switch (file) {
       case 'BACKLOG.md':
         return '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n'
@@ -85,7 +86,7 @@ export class FileStateManager implements IFileStateManager {
           },
           completionCriteria: { maxReworks: 2 },
           cycleCounter: { completedCycles: 0 },
-          steeringRules: createDefaultSteeringRules()
+          steeringRules: createDefaultSteeringRules(config?.initialRules)
         }, null, 2)
       default:
         return ''

@@ -8,7 +8,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       return super.handle(phase, context)
     }
 
-    context.fsm.ensureProductFiles()
+    context.fsm.ensureProductFiles(context.config)
 
     const bootConfig = context.fsm.loadBootstrapConfig()
     if (context.config.scope) {

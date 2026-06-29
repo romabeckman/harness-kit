@@ -104,6 +104,13 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
 
   const projectPaths = pathsInput.split(',').map((p) => resolve(p.trim())).filter(Boolean)
 
+  if (action === 'reset') {
+    steeringMessage = await input({
+      message: 'Are there any additional rules for the process (optional)?',
+      default: '',
+    })
+  }
+
   console.log('\n── Starting orchestration ──────────────────────────────')
   if (action === 'reset') {
     console.log(`  scope:  ${scope.slice(0, 80)}${scope.length > 80 ? '…' : ''}`)
@@ -111,6 +118,9 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     console.log('  resuming from existing session')
   }
   console.log(`  paths:  ${projectPaths.join(', ')}`)
+  if (steeringMessage) {
+    console.log(`  steering:  ${steeringMessage.slice(0, 80)}${steeringMessage.length > 80 ? '…' : ''}`)
+  }
   console.log('────────────────────────────────────────────────────────\n')
 
   if (action === 'reset' && existsSync(productDir)) {
@@ -133,6 +143,7 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     productDir,
     agentRunner,
     settings,
+    initialRules: steeringMessage.length > 0 ? steeringMessage : undefined,
   })
 
   if (action === 'resume') {

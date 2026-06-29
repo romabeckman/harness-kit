@@ -68,9 +68,9 @@ export interface SteeringRulesConfig {
   phase_e?: string[]
 }
 
-export function createDefaultSteeringRules(): SteeringRulesConfig {
+export function createDefaultSteeringRules(initialRules?: string): SteeringRulesConfig {
   return {
-    user: [],
+    user: initialRules ? [initialRules] : [],
     bootstrap: [],
     phase_a: ['Limit of 5 tasks for feature'],
     phase_b: [],

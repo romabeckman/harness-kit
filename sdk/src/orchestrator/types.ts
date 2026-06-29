@@ -9,17 +9,18 @@ export interface OrchestratorConfig {
   productDir?: string
   settings?: HarnessSettings
   timeoutMs?: number
+  initialRules?: string
 }
 
 export enum Phase {
-  BOOTSTRAP       = 'BOOTSTRAP',
-  PHASE_A         = 'PHASE_A',
-  PHASE_B         = 'PHASE_B',
-  PHASE_C         = 'PHASE_C',
-  PHASE_D         = 'PHASE_D',
-  PHASE_E         = 'PHASE_E',
+  BOOTSTRAP = 'BOOTSTRAP',
+  PHASE_A = 'PHASE_A',
+  PHASE_B = 'PHASE_B',
+  PHASE_C = 'PHASE_C',
+  PHASE_D = 'PHASE_D',
+  PHASE_E = 'PHASE_E',
   CASCADE_BLOCKED = 'CASCADE_BLOCKED',
-  HALTED          = 'HALTED',
+  HALTED = 'HALTED',
 }
 
 export interface OrchestratorState {

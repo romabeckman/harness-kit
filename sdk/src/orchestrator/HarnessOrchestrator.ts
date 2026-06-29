@@ -52,6 +52,7 @@ export class HarnessOrchestrator implements PhaseContext {
       productDir,
       workingDir: this.workingDir,
     })
+    // When user resumes execution, we need to use the same scope as the original execution
     if (!this.config.scope) {
       try {
         const bootConfig = this.fsm.loadBootstrapConfig()
@@ -212,6 +213,8 @@ export class HarnessOrchestrator implements PhaseContext {
     this.state = { ...this.state, ...state }
   }
 
+  // When user resumes execution, we need to apply the steering actions
+  // to the steering rules. This function is called from the CLI
   public applySteeringActions(actions: import('./SteeringAnalyzer').SteeringAction[]): void {
     const config = this.fsm.loadBootstrapConfig()
     if (!config.steeringRules) {
