@@ -310,4 +310,34 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
       expect(tddOutputDeleted).toBe(true)
     })
   })
+
+  describe('Reads validation reports from TL.json and QA.json files', () => {
+    it('uses scores from TL.json and QA.json if present', async () => {
+      setupFullRun()
+      // Setup fake agent responses that would fail if we only used their stdout,
+      // but write TL.json and QA.json with passing scores
+      fake.setResponse('the-grumpy-tech-lead', { raw: '```json\n{"scoreTL": 0.10}\n```' })
+      fake.setResponse('adversarial-qa', { raw: '```json\n{"scoreAdv": 0.10}\n```' })
+      fake.setResponse('project-memory', { raw: 'done' })
+
+      const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
+      writeFileSync(join(specDir, 'TL.json'), JSON.stringify({ featureId: 'F001', score: 0.95 }))
+      writeFileSync(join(specDir, 'QA.json'), JSON.stringify({ featureId: 'F001', score: 0.90 }))
+
+      const orchestrator = new HarnessOrchestrator({
+        scope: 'sdk_core',
+        projectPaths: [tmpDir],
+        agentRunner: fake,
+        productDir,
+      }, { workingDir: tmpDir })
+
+      await orchestrator.run()
+
+      const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
+      const features = fsm.loadBacklog()
+      expect(features.find(f => f.id === 'F001')?.status).toBe('COMPLETED')
+      expect(features.find(f => f.id === 'F001')?.scoreTL).toBe(0.95)
+      expect(features.find(f => f.id === 'F001')?.scoreAdv).toBe(0.90)
+    })
+  })
 })

@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, rmSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
@@ -36,13 +36,46 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       phaseKey: 'phase_c_adv',
     })
 
-    // Prefer artefacts (already extracted by the runner) before re-parsing raw
-    const tlExtraction = tlOutput.artefacts && Object.keys(tlOutput.artefacts).length > 0
-      ? { data: tlOutput.artefacts }
-      : JsonExtractionProtocol.extract(tlOutput.raw)
-    const advExtraction = advOutput.artefacts && Object.keys(advOutput.artefacts).length > 0
-      ? { data: advOutput.artefacts }
-      : JsonExtractionProtocol.extract(advOutput.raw)
+    // Prefer files docs/specs/${domain}/TL.json and docs/specs/${domain}/QA.json if they exist.
+    // Otherwise, fall back to runner-extracted/raw output.
+    const specsDir = join(context.workingDir, 'docs', 'specs', activeFeature.domain)
+    const tlJsonPath = join(specsDir, 'TL.json')
+    const qaJsonPath = join(specsDir, 'QA.json')
+
+    let tlExtraction: any
+    let advExtraction: any
+
+    if (existsSync(tlJsonPath)) {
+      try {
+        const content = readFileSync(tlJsonPath, 'utf8')
+        tlExtraction = { data: JSON.parse(content) }
+      } catch (err: any) {
+        process.stderr.write(`[phase_c_tl] Failed to parse TL.json: ${err.message}\n`)
+        tlExtraction = tlOutput.artefacts && Object.keys(tlOutput.artefacts).length > 0
+          ? { data: tlOutput.artefacts }
+          : JsonExtractionProtocol.extract(tlOutput.raw)
+      }
+    } else {
+      tlExtraction = tlOutput.artefacts && Object.keys(tlOutput.artefacts).length > 0
+        ? { data: tlOutput.artefacts }
+        : JsonExtractionProtocol.extract(tlOutput.raw)
+    }
+
+    if (existsSync(qaJsonPath)) {
+      try {
+        const content = readFileSync(qaJsonPath, 'utf8')
+        advExtraction = { data: JSON.parse(content) }
+      } catch (err: any) {
+        process.stderr.write(`[phase_c_adv] Failed to parse QA.json: ${err.message}\n`)
+        advExtraction = advOutput.artefacts && Object.keys(advOutput.artefacts).length > 0
+          ? { data: advOutput.artefacts }
+          : JsonExtractionProtocol.extract(advOutput.raw)
+      }
+    } else {
+      advExtraction = advOutput.artefacts && Object.keys(advOutput.artefacts).length > 0
+        ? { data: advOutput.artefacts }
+        : JsonExtractionProtocol.extract(advOutput.raw)
+    }
 
     let scoreTL = 0
     let scoreAdv = 0

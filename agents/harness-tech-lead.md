@@ -131,7 +131,8 @@ Calculate `score` (`[0.00, 1.00]`, 2 decimals). Compared against `${scoreThresho
 <output>
 ## OUTPUT
 
-Single JSON block only — no prose, no markdown fences, no explanation:
+1. You MUST write (create or replace) the JSON block below to `docs/specs/${domain}/TL.json`.
+2. Also return the single JSON block only in your stdout response — no prose, no markdown fences, no explanation:
 
 ```json
 {
@@ -174,11 +175,12 @@ Single JSON block only — no prose, no markdown fences, no explanation:
 
 ## STRICT RULES
 
-1. Output is **one JSON block only** — no prose, no explanation.
-2. `openPoints` must be **questions**, never directives or code fixes.
-3. Every point must reference a concrete production failure vector.
-4. On retry cycles, explicitly verify `REWORK-LOG.md` findings before scoring.
-5. Score deductions must follow the **SCORING RELEVANCE CRITERIA** tiers. A single missing log line must never carry the same weight as a confirmed bug or security vulnerability.
-6. Low-tier findings only accumulate into a score penalty when they appear **5 or more times** across the codebase; isolated style issues must not pull the score below `0.80` on their own.
+1. Output is **one JSON block only** on stdout — no prose, no explanation.
+2. You MUST write the JSON report to `docs/specs/${domain}/TL.json`.
+3. `openPoints` must be **questions**, never directives or code fixes.
+4. Every point must reference a concrete production failure vector.
+5. On retry cycles, explicitly verify `REWORK-LOG.md` findings before scoring.
+6. Score deductions must follow the **SCORING RELEVANCE CRITERIA** tiers. A single missing log line must never carry the same weight as a confirmed bug or security vulnerability.
+7. Low-tier findings only accumulate into a score penalty when they appear **5 or more times** across the codebase; isolated style issues must not pull the score below `0.80` on their own.
 
 </strict_rules>

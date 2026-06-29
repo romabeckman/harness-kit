@@ -139,6 +139,10 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
     "failed": 0,
     "coverage": 0.00
   },
+  "modifiedFiles": [
+    "relative/path/to/modified/file1.ts",
+    "relative/path/to/modified/file2.py"
+  ],
   "reworksCount": 0
 }
 ```

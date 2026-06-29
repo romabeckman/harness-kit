@@ -217,14 +217,17 @@ DEVELOPMENT-STATE.md[all tasks for feature].Current Phase → VALIDATION
 ```
 C3: harness-kit:the-grumpy-tech-lead (harness-tech-lead agent, Autonomous Mode)
     inputs: ${featureId}, ${domain}, ${projectPaths}
-    → extract Score A via JSON Extraction Protocol
+    → Writes report to docs/specs/${domain}/TL.json
 
 C4: harness-kit:adversarial-qa (harness-qa agent, Autonomous Mode)
     inputs: ${featureId}, ${domain}, ${projectPaths}
-    → extract Score B via JSON Extraction Protocol
+    → Writes report to docs/specs/${domain}/QA.json
 ```
 
-**C5. Verdict Gate:**
+**C5. Read JSON Reports:**
+Read `docs/specs/${domain}/TL.json` (Score A) and `docs/specs/${domain}/QA.json` (Score B). If a file is missing or corrupt, fallback to parsing stdout extraction.
+
+**C6. Verdict Gate & DECISIONS.md update:**
 
 <gate id="PASS">
 
