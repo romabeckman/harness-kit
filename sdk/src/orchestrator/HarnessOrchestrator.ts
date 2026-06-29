@@ -96,13 +96,53 @@ export class HarnessOrchestrator implements PhaseContext {
   // ─── Public run loop ──────────────────────────────────────────────────────
 
   async run(): Promise<void> {
-    let iterations = 0
     const MAX_ITERATIONS = 500 // guard against infinite loops
+    const MAX_PHASE_ITERATIONS = 5
+    let iterations = 0
+    let consecutivePhaseIterations = 0
     let lastPrintedPhase: Phase | null = null
+    let lastPhaseTracker: Phase | null = null
+
+    const shouldContinuePrompt = async (message: string): Promise<boolean> => {
+      const isInteractive = process.stdout.isTTY && process.stdin.isTTY && process.env.NODE_ENV !== 'test'
+      if (!isInteractive) {
+        return false
+      }
+      try {
+        const { confirm } = await import('@inquirer/prompts')
+        return await confirm({
+          message,
+          default: true
+        })
+      } catch {
+        return false
+      }
+    }
 
     while (this.state.currentPhase !== Phase.HALTED) {
       if (++iterations > MAX_ITERATIONS) {
-        throw new Error(`HarnessOrchestrator: exceeded ${MAX_ITERATIONS} iterations — possible infinite loop at phase ${this.state.currentPhase}`)
+        const message = `HarnessOrchestrator: exceeded ${MAX_ITERATIONS} iterations — possible infinite loop at phase ${this.state.currentPhase}. Do you want to continue anyway?`
+        if (await shouldContinuePrompt(message)) {
+          iterations = 0
+        } else {
+          throw new Error(`HarnessOrchestrator: exceeded ${MAX_ITERATIONS} iterations — possible infinite loop at phase ${this.state.currentPhase}`)
+        }
+      }
+
+      if (this.state.currentPhase === lastPhaseTracker) {
+        consecutivePhaseIterations++
+      } else {
+        consecutivePhaseIterations = 0
+        lastPhaseTracker = this.state.currentPhase
+      }
+
+      if (consecutivePhaseIterations > MAX_PHASE_ITERATIONS) {
+        const message = `HarnessOrchestrator: exceeded consecutive iteration limit of ${MAX_PHASE_ITERATIONS} at phase ${this.state.currentPhase} — possible infinite loop. Do you want to continue anyway?`
+        if (await shouldContinuePrompt(message)) {
+          consecutivePhaseIterations = 0
+        } else {
+          throw new Error(`HarnessOrchestrator: exceeded consecutive iteration limit of ${MAX_PHASE_ITERATIONS} at phase ${this.state.currentPhase} — possible infinite loop.`)
+        }
       }
 
       if (this.state.currentPhase !== lastPrintedPhase) {
@@ -481,8 +521,8 @@ export class HarnessOrchestrator implements PhaseContext {
       return `║  ${content}${' '.repeat(Math.max(0, padLen))}  ║`
     }
 
-    const titleStr = next 
-      ? `✔  FEATURE COMPLETED` 
+    const titleStr = next
+      ? `✔  FEATURE COMPLETED`
       : `✔  ALL FEATURES COMPLETED`
     const cycleStr = `[ Cycle ${cycle} ]`
     const headerContent = `${AnsiHelpers.green(titleStr)}${' '.repeat(width - 6 - titleStr.length - cycleStr.length)}${AnsiHelpers.blue(cycleStr)}`
@@ -491,10 +531,10 @@ export class HarnessOrchestrator implements PhaseContext {
     console.log(padLine(headerContent))
     console.log(AnsiHelpers.blue(hr))
     console.log(padLine(`${AnsiHelpers.cyan(completed.id)}  ${completed.title}`))
-    
+
     const scoreTLStr = completed.scoreTL !== null ? completed.scoreTL.toString() : '-'
     const scoreAdvStr = completed.scoreAdv !== null ? completed.scoreAdv.toString() : '-'
-    
+
     console.log(
       padLine(
         `${AnsiHelpers.dim('Score TL:')} ${AnsiHelpers.yellow(scoreTLStr)}  │  ` +
@@ -507,8 +547,8 @@ export class HarnessOrchestrator implements PhaseContext {
       console.log(AnsiHelpers.blue(hr))
       console.log(padLine(`${AnsiHelpers.blue('⟶')}  ${AnsiHelpers.dim('NEXT FEATURE')}`))
       const priorityVal = next.priority
-      const priorityStr = (priorityVal !== undefined && priorityVal !== null && !isNaN(priorityVal)) 
-        ? priorityVal.toString() 
+      const priorityStr = (priorityVal !== undefined && priorityVal !== null && !isNaN(priorityVal))
+        ? priorityVal.toString()
         : '-'
       console.log(
         padLine(

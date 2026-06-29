@@ -60,17 +60,30 @@ sdk/
 REQUIRED: Use Constructor Dependency Injection to decouple ports from adapters.
 REQUIRED: Spelled-out registration of new runner strategies via AgentRunnerRegistry.
 REQUIRED: Propagate AbortSignal downwards to child process groups or API requests to prevent leaks.
+REQUIRED: Extract numeric thresholds, limits, and configurations into named constants or configuration modules to avoid magic numbers.
 FORBIDDEN: Direct dependency of orchestrator core on concrete runner implementations.
+FORBIDDEN: Hardcoding inline numeric literals directly in business logic, loop limits, or configuration blocks.
 
 <code_patterns>
-# REQUIRED: Strategy self-registration
+# CORRECT: Strategy self-registration
 AgentRunnerRegistry.register({
   type: 'custom-runner',
   constructor: CustomRunner
 })
 
-# FORBIDDEN: Direct strategy instantiation in core logic
+# WRONG: Direct strategy instantiation in core logic
 const runner = new ClaudeCodeRunner() // Hard-coded instantiation
+
+# CORRECT: Constants for boundaries and configurations
+const MAX_BATCH_SIZE = 5
+const DYNAMIC_LIMIT_MULTIPLIER = 2
+
+const groups = Math.ceil(tasks.length / MAX_BATCH_SIZE)
+const limit = groups * DYNAMIC_LIMIT_MULTIPLIER
+
+# WRONG: Hardcoded magic numbers in calculations
+const groups = Math.ceil(tasks.length / 5) // Magic number 5
+const limit = groups * 2 // Magic number 2
 </code_patterns>
 
 ## INTEGRATIONS

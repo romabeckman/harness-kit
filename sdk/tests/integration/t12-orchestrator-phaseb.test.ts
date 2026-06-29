@@ -129,7 +129,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
         productDir,
       }, { workingDir: tmpDir })
 
-      await expect(orchestrator.run()).rejects.toThrow(/TDD-OUTPUT\.json|exceeded 500 iterations/)
+      await expect(orchestrator.run()).rejects.toThrow(/TDD-OUTPUT\.json|exceeded 500 iterations|exceeded consecutive iteration limit/)
     })
   })
 
@@ -179,6 +179,58 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
       const tasks = fsm.loadDevelopmentState()
       const t01Tasks = tasks.filter(t => t.taskId === 'T01')
       expect(t01Tasks).toHaveLength(1) // no duplicates
+    })
+  })
+
+  describe('Task Chunking (up to 5 tasks)', () => {
+    it('processes 7 tasks in two separate chunks of 5 and 2', async () => {
+      const devState = [
+        '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | T01 | sdk | task 1 | sdk_core | - | NOT_STARTED |',
+        '| F001 | T02 | sdk | task 2 | sdk_core | - | NOT_STARTED |',
+        '| F001 | T03 | sdk | task 3 | sdk_core | - | NOT_STARTED |',
+        '| F001 | T04 | sdk | task 4 | sdk_core | - | NOT_STARTED |',
+        '| F001 | T05 | sdk | task 5 | sdk_core | - | NOT_STARTED |',
+        '| F001 | T06 | sdk | task 6 | sdk_core | - | NOT_STARTED |',
+        '| F001 | T07 | sdk | task 7 | sdk_core | - | NOT_STARTED |',
+      ].join('\n')
+      setupProductFiles('IN_PROGRESS', devState)
+
+      const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
+      mkdirSync(specDir, { recursive: true })
+      writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
+
+      const chunkTaskCounts: number[] = []
+      const origRun = fake.run.bind(fake)
+      fake.run = async (inv) => {
+        if (inv.skill === 'tdd-orchestrator') {
+          const tasksInPayload = inv.payload.tasks ?? []
+          chunkTaskCounts.push(tasksInPayload.length)
+          writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+        }
+        return origRun(inv)
+      }
+
+      fake.setResponse('the-grumpy-tech-lead', { raw: '```json\n{"scoreTL": 0.85}\n```' })
+      fake.setResponse('adversarial-qa', { raw: '```json\n{"scoreAdv": 0.80}\n```' })
+      fake.setResponse('project-memory', { raw: 'done' })
+
+      const orchestrator = new HarnessOrchestrator({
+        scope: 'sdk_core',
+        projectPaths: [tmpDir],
+        agentRunner: fake,
+        productDir,
+      }, { workingDir: tmpDir })
+
+      await orchestrator.run()
+
+      expect(chunkTaskCounts).toEqual([5, 2])
+
+      const { FileStateManager } = await import('../../src/file-state/FileStateManager')
+      const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
+      const finalTasks = fsm.loadDevelopmentState()
+      expect(finalTasks.filter(t => t.status === 'COMPLETED')).toHaveLength(7)
     })
   })
 })
