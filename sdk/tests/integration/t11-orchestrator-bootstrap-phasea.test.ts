@@ -400,4 +400,30 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     // Verify it restored the scope in resumedOrchestrator.config.scope
     expect(resumedOrchestrator.config.scope).toBe('my-custom-original-project-scope')
   })
+
+  it('re-entry resolves to PHASE_B when spec directory exists, even if empty', () => {
+    setupProductFiles()
+    // Mark feature IN_PROGRESS in backlog to ensure we're not in bootstrap
+    const backlogInProgress = [
+      '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| F001 | SDK Core | sdk_core | 1 | - | 0 | - | - | IN_PROGRESS |',
+    ].join('\n')
+    writeFileSync(join(productDir, 'BACKLOG.md'), backlogInProgress)
+
+    // Create an empty spec directory
+    const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
+    mkdirSync(specDir, { recursive: true })
+
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'test-scope',
+      projectPaths: [tmpDir],
+      agentRunner: fake,
+      productDir,
+    }, { workingDir: tmpDir })
+
+    // With spec dir present, re-entry should resolve to PHASE_B.
+    // This will fail with the old implementation because the dir is empty.
+    expect(orchestrator.getState().currentPhase).toBe(Phase.PHASE_B)
+  })
 })
