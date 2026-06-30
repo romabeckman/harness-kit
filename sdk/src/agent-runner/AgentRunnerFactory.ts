@@ -8,7 +8,7 @@ import './claude-agent/ClaudeAgentRunner'
 import './antigravity/AntigravityRunner'
 import './copilot/CopilotRunner'
 import './cursor/CursorRunner'
-import './opencode/OpenCodeRunner'
+// import './opencode/OpenCodeRunner' // Disabled due to module incompatibility
 
 export class AgentRunnerFactory {
   static create(config: RunnerConfig): IAgentRunner {
