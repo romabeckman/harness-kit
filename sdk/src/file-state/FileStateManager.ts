@@ -81,10 +81,10 @@ export class FileStateManager implements IFileStateManager {
       case 'BOOTSTRAP-CONFIG.json':
         return JSON.stringify({
           scoreThresholds: {
-            theGrumpyTechLead: { threshold: 0.70 },
-            adversarialQA: { threshold: 0.70 },
+            theGrumpyTechLead: { threshold: config?.score ?? 0.70 },
+            adversarialQA: { threshold: config?.score ?? 0.70 },
           },
-          completionCriteria: { maxReworks: 2 },
+          completionCriteria: { maxReworks: config?.reworks ?? 2 },
           cycleCounter: { completedCycles: 0 },
           steeringRules: createDefaultSteeringRules(config?.initialRules)
         }, null, 2)

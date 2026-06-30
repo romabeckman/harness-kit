@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { input, select, editor } from '@inquirer/prompts'
+import { input, select, editor, number } from '@inquirer/prompts'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { HarnessOrchestrator } from '../orchestrator/HarnessOrchestrator'
@@ -104,11 +104,42 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
 
   const projectPaths = pathsInput.split(',').map((p) => resolve(p.trim())).filter(Boolean)
 
+  let score = 0.7
+  let reworks = 2
   if (action === 'reset') {
     steeringMessage = await input({
       message: 'Are there any additional rules for the process (optional)?',
       default: '',
     })
+
+    score = await number({
+      message: 'Inform acceptable score for accepting tasks (0.1 - 1)',
+      default: score,
+      step: 0.01,
+      min: 0.1,
+      max: 1,
+      validate(value) {
+        console.log(value)
+        if (!value) return true
+        if (!Number.isFinite(value)) return false
+        if (value < 0.1 || value > 1) return false
+        return true
+      },
+    }) || score
+
+    reworks = await number({
+      message: 'Inform max number of reworks before triggering a cascade fail (1-10)',
+      default: reworks,
+      step: 1,
+      min: 1,
+      max: 10,
+      validate(value) {
+        if (!value) return true
+        if (!Number.isFinite(value)) return false
+        if (value < 1 || value > 10) return false
+        return true
+      }
+    }) || reworks
   }
 
   console.log('\n── Starting orchestration ──────────────────────────────')
@@ -135,6 +166,8 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
   const orchestrator = new HarnessOrchestrator({
     scope: scope,
     projectPaths,
+    score,
+    reworks,
     productDir,
     agentRunner,
     settings,

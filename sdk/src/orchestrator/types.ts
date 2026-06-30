@@ -5,6 +5,8 @@ import type { HarnessSettings } from '../settings/HarnessSettings'
 export interface OrchestratorConfig {
   scope: string
   projectPaths: string[]
+  score: number
+  reworks: number
   agentRunner?: IAgentRunner  // defaults to ClaudeCodeRunner
   productDir?: string
   settings?: HarnessSettings
