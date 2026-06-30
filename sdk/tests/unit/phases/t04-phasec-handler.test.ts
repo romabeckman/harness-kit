@@ -173,6 +173,23 @@ describe('PhaseCHandler', () => {
     expect(result).toBe(Phase.PHASE_D)
   })
 
+  it('deve limpar TL.json e QA.json no início de cada execução para evitar decisão com dados stale em retry', async () => {
+    const removedFiles: string[] = []
+    vi.mocked(existsSync).mockReturnValue(true)
+    vi.mocked(rmSync).mockImplementation((path) => { removedFiles.push(path.toString()) })
+    vi.mocked(readFileSync).mockImplementation((path) => {
+      if (path.toString().endsWith('TL.json')) return JSON.stringify(mockTL)
+      if (path.toString().endsWith('QA.json')) return JSON.stringify(mockQA)
+      return ''
+    })
+    vi.mocked(ValidationGate.evaluate).mockReturnValue({ verdict: Verdict.PASS, reason: 'Passed' })
+
+    await handler.handle(Phase.PHASE_C, mockContext)
+
+    expect(removedFiles.some(p => p.endsWith('TL.json'))).toBe(true)
+    expect(removedFiles.some(p => p.endsWith('QA.json'))).toBe(true)
+  })
+
   it('deve extrair campos de forma defensiva para evitar crashes com payloads malformados', async () => {
     const malformedTL = {
       featureId: 'F001',

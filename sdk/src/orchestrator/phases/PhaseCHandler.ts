@@ -53,9 +53,10 @@ export class PhaseCHandler extends AbstractPhaseHandler {
   }
 
   private cleanTemporaryFiles(context: PhaseContext, domain: string): void {
-    const tempJsonlPath = join(context.workingDir, 'docs', 'specs', domain, 'TDD-OUTPUT-TEMP.jsonl')
-    if (existsSync(tempJsonlPath)) {
-      rmSync(tempJsonlPath, { force: true })
+    const specsDir = join(context.workingDir, 'docs', 'specs', domain)
+    for (const file of ['TDD-OUTPUT-TEMP.jsonl', 'TL.json', 'QA.json']) {
+      const p = join(specsDir, file)
+      if (existsSync(p)) rmSync(p, { force: true })
     }
   }
 

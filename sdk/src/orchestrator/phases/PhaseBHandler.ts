@@ -34,9 +34,11 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       rmSync(tempJsonlPath)
     }
 
-    const CHUNK_SIZE = 4
-    let iterations = 0
+    // If existing rework count is greater than 0, process all tasks in one go (chunk size 100) to avoid multiple iterations. 
+    // Otherwise, process 4 tasks at a time in first iteration, then continue with next 4 tasks in subsequent iterations until all tasks are completed.
+    const CHUNK_SIZE = activeFeature.reworks > 0 ? 100 : 4
     const MAX_ITERATIONS = 100
+    let iterations = 0
 
     while (true) {
       if (iterations++ > MAX_ITERATIONS) {
