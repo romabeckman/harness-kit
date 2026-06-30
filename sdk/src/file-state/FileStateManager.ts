@@ -241,7 +241,9 @@ export class FileStateManager implements IFileStateManager {
     const feature = entry.featureId ?? 'GLOBAL'
     const scores = entry.scores ? `TL:${entry.scores.tl}, Adv:${entry.scores.adv}` : '-'
     const decision = entry.decision.replace(/\|/g, '&#124;')
-    const rationale = (entry.rationale ?? '-').replace(/\|/g, '&#124;')
+    const rawRationale = entry.rationale ?? '-'
+    const truncated = rawRationale.length > 200 ? rawRationale.slice(0, 200) + '...' : rawRationale
+    const rationale = truncated.replace(/\|/g, '&#124;')
     const row = `| ${timestamp} | ${feature} | ${decision} | ${scores} | ${rationale} |`
     const trimmed = existing.trimEnd()
     atomicWrite(path, trimmed + '\n' + row + '\n')

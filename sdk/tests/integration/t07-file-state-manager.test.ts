@@ -358,4 +358,35 @@ describe('T07 — FileStateManager', () => {
       expect(features[0].scoreAdv).toBeNull()
     })
   })
+
+  describe('TS-I-27: writeReworkLog preserves content without semicolons as-is', () => {
+    it('single-item reason written without modification', () => {
+      mgr.writeReworkLog('sdk_core', 'simple rework reason')
+      const logPath = join(tmpDir, 'docs', 'specs', 'sdk_core', 'REWORK-LOG.md')
+      const content = readFileSync(logPath, 'utf-8')
+      expect(content).toContain('simple rework reason')
+    })
+  })
+
+  describe('TS-I-28: appendDecision truncates rationale to 200 characters', () => {
+    it('rationale longer than 200 chars is truncated with ellipsis in DECISIONS.md', () => {
+      const longRationale = 'A'.repeat(300)
+      mgr.appendDecision({ featureId: 'F001', decision: 'PASS', rationale: longRationale })
+      const content = readFileSync(join(productDir, 'DECISIONS.md'), 'utf-8')
+      const dataRow = content.split('\n').find(l => l.includes('PASS') && l.startsWith('|'))!
+      const cells = dataRow.split('|').map(c => c.trim())
+      const rationaleCell = cells[5]
+      expect(rationaleCell.length).toBeLessThanOrEqual(203) // 200 chars + '...'
+      expect(rationaleCell.endsWith('...')).toBe(true)
+    })
+  })
+
+  describe('TS-I-29: appendDecision preserves rationale under 200 characters intact', () => {
+    it('short rationale written as-is without truncation', () => {
+      const shortRationale = 'Scores pass thresholds, no vulnerabilities.'
+      mgr.appendDecision({ featureId: 'F001', decision: 'PASS', rationale: shortRationale })
+      const content = readFileSync(join(productDir, 'DECISIONS.md'), 'utf-8')
+      expect(content).toContain(shortRationale)
+    })
+  })
 })

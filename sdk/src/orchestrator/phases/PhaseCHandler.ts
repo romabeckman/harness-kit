@@ -8,6 +8,7 @@ import { isExtractionResult } from '../../json-extraction/types'
 import { ValidationGate } from '../../validation-gate/ValidationGate'
 import type { PhaseCPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature } from '../../file-state/types'
+import type { ValidationScores } from '../../validation-gate/types'
 
 type ValidationResult = ReturnType<typeof ValidationGate.evaluate>;
 
@@ -136,7 +137,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     activeFeature: Feature,
     config: BootstrapConfig,
     result: ValidationResult,
-    scores: { scoreTL: number, scoreAdv: number }
+    scores: ValidationScores
   ): Phase {
     // Append verification decision log with scores and rationale
     context.fsm.appendDecision({
@@ -148,7 +149,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
 
     // If verification needs rework, transition back to retry handler
     if (result.verdict === 'RETRY') {
-      return this.handleRetry(context, activeFeature, result.reason)
+      return this.handleRetry(context, activeFeature, scores)
     }
 
     // Map validation gate verdicts to corresponding bootstrap statuses
@@ -168,9 +169,9 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     return Phase.PHASE_D
   }
 
-  private handleRetry(context: PhaseContext, activeFeature: Feature, reason: string): Phase {
+  private handleRetry(context: PhaseContext, activeFeature: Feature, scores: ValidationScores): Phase {
     context.fsm.incrementReworks(activeFeature.id)
-    context.fsm.writeReworkLog(activeFeature.domain, reason)
+    context.fsm.writeReworkLog(activeFeature.domain, this.buildReworkContent(scores))
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'NOT_STARTED')
 
     const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
@@ -182,6 +183,29 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       }
     }
     return Phase.PHASE_B
+  }
+
+  private buildReworkContent(scores: ValidationScores): string {
+    const sections: string[] = []
+
+    if (scores.openPoints?.length) {
+      sections.push(`### Open Points (Tech Lead)\n\n${scores.openPoints.map(p => `- ${p}`).join('\n')}`)
+    }
+
+    if (scores.architectureTip) {
+      sections.push(`### Architecture Tip\n\n${scores.architectureTip}`)
+    }
+
+    if (scores.vulnerabilities?.length) {
+      const list = scores.vulnerabilities.map(v => `- [${v.severity ?? 'UNKNOWN'}] ${v.description ?? 'Unspecified'}`).join('\n')
+      sections.push(`### Vulnerabilities\n\n${list}`)
+    }
+
+    if (scores.edgeCasesMissed?.length) {
+      sections.push(`### Edge Cases Missed\n\n${scores.edgeCasesMissed.map(e => `- ${e}`).join('\n')}`)
+    }
+
+    return sections.length > 0 ? sections.join('\n\n') : `Score TL: ${scores.scoreTL}, Score Adv: ${scores.scoreAdv}`
   }
 
   private buildTechLeadPrompt(payload: PhaseCPayload, config: BootstrapConfig): string {

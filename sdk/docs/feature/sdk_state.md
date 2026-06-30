@@ -62,6 +62,14 @@ export interface DecisionEntry {
 
 Query methods call their respective load methods (`loadBacklog`, `loadDevelopmentState`) on every invocation. No results are cached in instance variables.
 
+## REWORK #2 FIXES
+
+Two formatting defects identified in Phase C validation and corrected in Rework #2:
+
+**writeReworkLog markdown formatting** — When `content` contains semicolon-separated items (as produced by `ValidationGate.buildFailureReasons`), `writeReworkLog` now splits on `;` and renders each item as a markdown list entry (`- item`). Content without semicolons is written as-is.
+
+**appendDecision rationale truncation** — `rationale` values longer than 200 characters are now truncated to 200 characters with a trailing `...`. Short rationales are written intact. Prevents table rows from becoming unreadably wide in `DECISIONS.md`.
+
 ## REWORK #1 FIXES
 
 Three defects were identified in Phase C validation and corrected in Rework #1:

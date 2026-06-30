@@ -79,7 +79,7 @@ describe('PhaseCHandler', () => {
   it('deve solicitar RETRY se QA identificar falha grave no payload', async () => {
     vi.mocked(existsSync).mockReturnValue(true)
 
-    const failedQA = { ...mockQA, score: 0.6, vulnerabilities: [{ severity: 'CRITICAL' }] }
+    const failedQA = { ...mockQA, score: 0.6, vulnerabilities: [{ type: 'AUTH_BYPASS', severity: 'CRITICAL', description: 'Missing auth check' }] }
     vi.mocked(readFileSync).mockImplementation((path) => {
       if (path.toString().endsWith('TL.json')) return JSON.stringify(mockTL)
       if (path.toString().endsWith('QA.json')) return JSON.stringify(failedQA)
@@ -91,8 +91,35 @@ describe('PhaseCHandler', () => {
     const result = await handler.handle(Phase.PHASE_C, mockContext)
 
     expect(mockContext.fsm.incrementReworks).toHaveBeenCalledWith('F001')
-    expect(mockContext.fsm.writeReworkLog).toHaveBeenCalledWith('cli', 'Critical Vuln')
+    // Content must be structured markdown built from raw score arrays — not a flat string
+    const [domain, content] = mockContext.fsm.writeReworkLog.mock.calls[0] as [string, string]
+    expect(domain).toBe('cli')
+    expect(content).toContain('### Open Points (Tech Lead)')
+    expect(content).toContain('Why is StdoutWriter')
+    expect(content).toContain('### Vulnerabilities')
+    expect(content).toContain('[CRITICAL]')
+    expect(content).toContain('Missing auth check')
     expect(result).toBe(Phase.PHASE_B)
+  })
+
+  it('deve usar writeReworkLog com fallback quando todos os arrays estão vazios em RETRY', async () => {
+    vi.mocked(existsSync).mockReturnValue(true)
+
+    const emptyTL = { featureId: 'F001', score: 0.5, openPoints: [], architectureTip: undefined }
+    const emptyQA = { featureId: 'F001', score: 0.5, passedAdversarial: false, vulnerabilities: [], edgeCasesMissed: [] }
+    vi.mocked(readFileSync).mockImplementation((path) => {
+      if (path.toString().endsWith('TL.json')) return JSON.stringify(emptyTL)
+      if (path.toString().endsWith('QA.json')) return JSON.stringify(emptyQA)
+      return ''
+    })
+
+    vi.mocked(ValidationGate.evaluate).mockReturnValue({ verdict: Verdict.RETRY, reason: 'Scores below threshold' })
+
+    await handler.handle(Phase.PHASE_C, mockContext)
+
+    const [, content] = mockContext.fsm.writeReworkLog.mock.calls[0] as [string, string]
+    expect(typeof content).toBe('string')
+    expect(content.length).toBeGreaterThan(0)
   })
 
   it('deve processar corretamente com payloads complexos de TL.json e QA.json fornecidos', async () => {
