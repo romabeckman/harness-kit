@@ -19,7 +19,6 @@ export class ValidationGate {
     const { scoreTL, scoreAdv, hasHighCriticalVuln } = scores
 
     const passing = scoreTL >= thresholdTL && scoreAdv >= thresholdAdv && !hasHighCriticalVuln
-    const failing = !passing
 
     if (passing) {
       return {
@@ -28,36 +27,58 @@ export class ValidationGate {
       }
     }
 
-    if (failing && reworks < maxReworks) {
-      const reasons: string[] = []
-      if (scoreTL < thresholdTL) reasons.push(`TL score ${scoreTL} below threshold ${thresholdTL}`)
-      if (scoreAdv < thresholdAdv) reasons.push(`Adv score ${scoreAdv} below threshold ${thresholdAdv}`)
-      if (hasHighCriticalVuln) reasons.push('high/critical vulnerability detected')
+    const reasons = this.buildFailureReasons(scores, thresholdTL, thresholdAdv)
+
+    if (reworks < maxReworks) {
       return {
         verdict: Verdict.RETRY,
         reason: `RETRY: ${reasons.join('; ')}. Reworks ${reworks}/${maxReworks} not exhausted.`,
       }
     }
 
-    if (failing && reworks >= maxReworks && isCrashing) {
-      const reasons: string[] = []
-      if (scoreTL < thresholdTL) reasons.push(`TL score ${scoreTL} below threshold ${thresholdTL}`)
-      if (scoreAdv < thresholdAdv) reasons.push(`Adv score ${scoreAdv} below threshold ${thresholdAdv}`)
-      if (hasHighCriticalVuln) reasons.push('high/critical vulnerability detected')
+    if (isCrashing) {
       return {
         verdict: Verdict.BLOCK,
         reason: `BLOCK: ${reasons.join('; ')}. Max reworks (${maxReworks}) exhausted, feature is crashing — blocked.`,
       }
     }
 
-    // failing && reworks >= maxReworks && !isCrashing
-    const reasons: string[] = []
-    if (scoreTL < thresholdTL) reasons.push(`TL score ${scoreTL} below threshold ${thresholdTL}`)
-    if (scoreAdv < thresholdAdv) reasons.push(`Adv score ${scoreAdv} below threshold ${thresholdAdv}`)
-    if (hasHighCriticalVuln) reasons.push('high/critical vulnerability detected')
     return {
       verdict: Verdict.FAIL,
       reason: `FAIL: ${reasons.join('; ')}. Max reworks (${maxReworks}) exhausted, non-blocking — feature marked failed.`,
     }
+  }
+
+  /**
+   * Builds detailed descriptions of why validation failed.
+   */
+  private static buildFailureReasons(
+    scores: ValidationScores,
+    thresholdTL: number,
+    thresholdAdv: number
+  ): string[] {
+    const reasons: string[] = []
+    const { scoreTL, scoreAdv, hasHighCriticalVuln } = scores
+
+    if (scoreTL < thresholdTL) {
+      reasons.push(`TL score ${scoreTL} below threshold ${thresholdTL}`)
+    }
+    if (scoreAdv < thresholdAdv) {
+      reasons.push(`Adv score ${scoreAdv} below threshold ${thresholdAdv}`)
+    }
+    if (hasHighCriticalVuln) {
+      reasons.push('high/critical vulnerability detected')
+    }
+    if (scores.openPoints?.length) {
+      reasons.push(`Open Points: ${scores.openPoints.join(', ')}`)
+    }
+    if (scores.vulnerabilities?.length) {
+      reasons.push(`Vulnerabilities: ${scores.vulnerabilities.map(v => v?.description || 'Unspecified').filter(Boolean).join(', ')}`)
+    }
+    if (scores.edgeCasesMissed?.length) {
+      reasons.push(`Edge Cases Missed: ${scores.edgeCasesMissed.join(', ')}`)
+    }
+
+    return reasons
   }
 }

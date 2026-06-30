@@ -7,7 +7,9 @@ import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProt
 import { isExtractionResult } from '../../json-extraction/types'
 import { ValidationGate } from '../../validation-gate/ValidationGate'
 import type { PhaseCPayload } from '../../context-assembler/types'
-import type { BootstrapConfig } from '../../file-state/types'
+import type { BootstrapConfig, Feature } from '../../file-state/types'
+
+type ValidationResult = ReturnType<typeof ValidationGate.evaluate>;
 
 export class PhaseCHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
@@ -15,162 +17,179 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       return super.handle(phase, context)
     }
 
-    const features = context.fsm.loadBacklog()
-    const activeFeature = context.getActiveFeature(features)
-    if (!activeFeature) throw new Error(`Illegal state: phase PHASE_C requires an active feature but none is set`)
-
-    const tempJsonlPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT-TEMP.jsonl')
-    if (existsSync(tempJsonlPath)) {
-      rmSync(tempJsonlPath)
-    }
-
+    const activeFeature = this.getActiveFeature(context)
     const config = context.fsm.loadBootstrapConfig()
 
-    const payloadC = ContextAssembler.buildPhaseCPayload(activeFeature, context.config.projectPaths, config.steeringRules)
-    const tlPrompt = this.buildTechLeadPrompt(payloadC, config)
-    const advPrompt = this.buildAdversarialQAPrompt(payloadC, config)
+    this.cleanTemporaryFiles(context, activeFeature.domain)
 
-    const tlOutput = await context.invokeAgent({
-      skill: 'the-grumpy-tech-lead',
-      agent: 'harness-code-reviewer',
-      mode: 'autonomous',
-      prompt: tlPrompt,
-      phaseKey: 'phase_c_tl',
-    })
-
-    const advOutput = await context.invokeAgent({
-      skill: 'adversarial-qa',
-      agent: 'harness-qa',
-      mode: 'autonomous',
-      prompt: advPrompt,
-      phaseKey: 'phase_c_adv',
-    })
-
-    // Prefer files docs/specs/${domain}/TL.json and docs/specs/${domain}/QA.json if they exist.
-    // Otherwise, fall back to runner-extracted/raw output.
-    const specsDir = join(context.workingDir, 'docs', 'specs', activeFeature.domain)
-    const tlJsonPath = join(specsDir, 'TL.json')
-    const qaJsonPath = join(specsDir, 'QA.json')
-
-    let tlExtraction: any
-    let advExtraction: any
-
-    if (existsSync(tlJsonPath)) {
-      try {
-        const content = readFileSync(tlJsonPath, 'utf8')
-        tlExtraction = { data: JSON.parse(content) }
-      } catch (err: any) {
-        process.stderr.write(`[phase_c_tl] Failed to parse TL.json: ${err.message}\n`)
-        tlExtraction = tlOutput.artefacts && Object.keys(tlOutput.artefacts).length > 0
-          ? { data: tlOutput.artefacts }
-          : JsonExtractionProtocol.extract(tlOutput.raw)
-      }
-    } else {
-      tlExtraction = tlOutput.artefacts && Object.keys(tlOutput.artefacts).length > 0
-        ? { data: tlOutput.artefacts }
-        : JsonExtractionProtocol.extract(tlOutput.raw)
-    }
-
-    if (existsSync(qaJsonPath)) {
-      try {
-        const content = readFileSync(qaJsonPath, 'utf8')
-        advExtraction = { data: JSON.parse(content) }
-      } catch (err: any) {
-        process.stderr.write(`[phase_c_adv] Failed to parse QA.json: ${err.message}\n`)
-        advExtraction = advOutput.artefacts && Object.keys(advOutput.artefacts).length > 0
-          ? { data: advOutput.artefacts }
-          : JsonExtractionProtocol.extract(advOutput.raw)
-      }
-    } else {
-      advExtraction = advOutput.artefacts && Object.keys(advOutput.artefacts).length > 0
-        ? { data: advOutput.artefacts }
-        : JsonExtractionProtocol.extract(advOutput.raw)
-    }
-
-    let scoreTL = 0
-    let scoreAdv = 0
-    let hasHighCriticalVuln = false
-    let isCrashing = false
-
-    if (isExtractionResult(tlExtraction)) {
-      const data = tlExtraction.data as Record<string, unknown>
-      scoreTL = typeof data['scoreTL'] === 'number' ? data['scoreTL'] :
-        typeof data['score'] === 'number' ? data['score'] : 0
-    } else {
-      process.stderr.write(`[phase_c_tl] JSON extraction failed: ${tlExtraction.error}\nRaw output (first 500 chars): ${tlOutput.raw.slice(0, 500)}\n`)
-    }
-
-    if (isExtractionResult(advExtraction)) {
-      const data = advExtraction.data as Record<string, unknown>
-      scoreAdv = typeof data['scoreAdv'] === 'number' ? data['scoreAdv'] :
-        typeof data['score'] === 'number' ? data['score'] : 0
-      hasHighCriticalVuln = data['hasHighCriticalVuln'] === true
-      isCrashing = data['isCrashing'] === true
-    } else {
-      process.stderr.write(`[phase_c_adv] JSON extraction failed: ${advExtraction.error}\nRaw output (first 500 chars): ${advOutput.raw.slice(0, 500)}\n`)
-    }
-
-    const result = ValidationGate.evaluate(
-      { scoreTL, scoreAdv, hasHighCriticalVuln, isCrashing },
-      activeFeature.reworks,
-      config,
-      isCrashing
+    const payload = ContextAssembler.buildPhaseCPayload(
+      activeFeature,
+      context.config.projectPaths,
+      config.steeringRules
     )
 
+    const [tlOutput, advOutput] = await this.executeAgents(context, payload, config)
+
+    const scores = this.extractScores(context, activeFeature.domain, tlOutput, advOutput)
+
+    const result = ValidationGate.evaluate(
+      scores,
+      activeFeature.reworks,
+      config,
+      scores.isCrashing
+    )
+
+    return this.processDecision(context, activeFeature, config, result, scores)
+  }
+
+  private getActiveFeature(context: PhaseContext): Feature {
+    const features = context.fsm.loadBacklog()
+    const activeFeature = context.getActiveFeature(features)
+    if (!activeFeature) {
+      throw new Error('Illegal state: phase PHASE_C requires an active feature but none is set')
+    }
+    return activeFeature
+  }
+
+  private cleanTemporaryFiles(context: PhaseContext, domain: string): void {
+    const tempJsonlPath = join(context.workingDir, 'docs', 'specs', domain, 'TDD-OUTPUT-TEMP.jsonl')
+    if (existsSync(tempJsonlPath)) {
+      rmSync(tempJsonlPath, { force: true })
+    }
+  }
+
+  private async executeAgents(context: PhaseContext, payload: PhaseCPayload, config: BootstrapConfig) {
+    const tlPrompt = this.buildTechLeadPrompt(payload, config)
+    const advPrompt = this.buildAdversarialQAPrompt(payload, config)
+
+    return Promise.all([
+      context.invokeAgent({
+        skill: 'the-grumpy-tech-lead',
+        agent: 'harness-code-reviewer',
+        mode: 'autonomous',
+        prompt: tlPrompt,
+        phaseKey: 'phase_c_tl',
+      }),
+      context.invokeAgent({
+        skill: 'adversarial-qa',
+        agent: 'harness-qa',
+        mode: 'autonomous',
+        prompt: advPrompt,
+        phaseKey: 'phase_c_adv',
+      })
+    ])
+  }
+
+  private extractScores(context: PhaseContext, domain: string, tlOutput: any, advOutput: any) {
+    const specsDir = join(context.workingDir, 'docs', 'specs', domain)
+
+    const tlData = this.parseAgentOutput(join(specsDir, 'TL.json'), tlOutput, 'phase_c_tl')
+    const advData = this.parseAgentOutput(join(specsDir, 'QA.json'), advOutput, 'phase_c_adv')
+
+    return {
+      scoreTL: typeof tlData['scoreTL'] === 'number' ? tlData['scoreTL'] : (tlData['score'] as number || 0),
+      scoreAdv: typeof advData['scoreAdv'] === 'number' ? advData['scoreAdv'] : (advData['score'] as number || 0),
+      hasHighCriticalVuln: advData['hasHighCriticalVuln'] === true,
+      isCrashing: advData['isCrashing'] === true,
+      // TheGrumpyTechLead
+      openPoints: Array.isArray(tlData['openPoints']) ? tlData['openPoints'] : [],
+      architectureTip: typeof tlData['architectureTip'] === 'string' ? tlData['architectureTip'] : undefined,
+
+      // AdversarialQA
+      edgeCasesMissed: Array.isArray(advData['edgeCasesMissed']) ? advData['edgeCasesMissed'] : [],
+      vulnerabilities: Array.isArray(advData['vulnerabilities']) ? advData['vulnerabilities'] : []
+    }
+  }
+
+  private parseAgentOutput(filePath: string, agentOutput: any, logPrefix: string): Record<string, unknown> {
+    let extraction: any
+
+    if (existsSync(filePath)) {
+      try {
+        const content = readFileSync(filePath, 'utf8')
+        extraction = { data: JSON.parse(content) }
+      } catch (err: any) {
+        process.stderr.write(`[${logPrefix}] Failed to parse JSON file: ${err.message}\n`)
+      }
+    }
+
+    if (!extraction) {
+      extraction = agentOutput.artefacts && Object.keys(agentOutput.artefacts).length > 0
+        ? { data: agentOutput.artefacts }
+        : JsonExtractionProtocol.extract(agentOutput.raw)
+    }
+
+    if (isExtractionResult(extraction)) {
+      return extraction.data as Record<string, unknown>
+    }
+
+    process.stderr.write(`[${logPrefix}] JSON extraction failed.\nRaw output (first 500 chars): ${agentOutput.raw?.slice(0, 500)}\n`)
+    return {}
+  }
+
+  /**
+   * Processes the validation gate evaluation result and decides the next workflow step.
+   * Logs decisions, manages feature state transitions, and moves to PHASE_D or retries.
+   */
+  private processDecision(
+    context: PhaseContext,
+    activeFeature: Feature,
+    config: BootstrapConfig,
+    result: ValidationResult,
+    scores: { scoreTL: number, scoreAdv: number }
+  ): Phase {
+    // Append verification decision log with scores and rationale
     context.fsm.appendDecision({
       featureId: activeFeature.id,
       decision: `Phase C verdict: ${result.verdict}`,
-      scores: { tl: scoreTL, adv: scoreAdv },
+      scores: { tl: scores.scoreTL, adv: scores.scoreAdv },
       rationale: result.reason,
     })
 
-    switch (result.verdict) {
-      case 'PASS':
-        config.pendingStatus = 'COMPLETED'
-        context.fsm.saveBootstrapConfig(config)
-        context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS', { tl: scoreTL, adv: scoreAdv })
-        return Phase.PHASE_D
-
-      case 'RETRY':
-        context.fsm.incrementReworks(activeFeature.id)
-        context.fsm.writeReworkLog(activeFeature.domain, result.reason)
-        context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'NOT_STARTED')
-        
-        // Invalidate TDD-OUTPUT.json artifact to prevent infinite loop on re-entry to Phase B
-        const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
-        if (existsSync(tddOutputPath)) {
-          try {
-            rmSync(tddOutputPath, { force: true })
-          } catch {
-            // ignore
-          }
-        }
-        return Phase.PHASE_B
-
-      case 'BLOCK':
-        config.pendingStatus = 'BLOCKED'
-        context.fsm.saveBootstrapConfig(config)
-        context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS', { tl: scoreTL, adv: scoreAdv })
-        return Phase.PHASE_D
-
-      case 'FAIL':
-        config.pendingStatus = 'FAILED'
-        context.fsm.saveBootstrapConfig(config)
-        context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS', { tl: scoreTL, adv: scoreAdv })
-        return Phase.PHASE_D
-
-      default:
-        return Phase.PHASE_D
+    // If verification needs rework, transition back to retry handler
+    if (result.verdict === 'RETRY') {
+      return this.handleRetry(context, activeFeature, result.reason)
     }
+
+    // Map validation gate verdicts to corresponding bootstrap statuses
+    const statusMap: Record<string, typeof config.pendingStatus> = {
+      'PASS': 'COMPLETED',
+      'BLOCK': 'BLOCKED',
+      'FAIL': 'FAILED'
+    }
+
+    config.pendingStatus = statusMap[result.verdict] || config.pendingStatus
+
+    // Save final status configuration and update active feature metadata
+    context.fsm.saveBootstrapConfig(config)
+    context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS', { tl: scores.scoreTL, adv: scores.scoreAdv })
+
+    // Proceed to PHASE_D (documentation generation/completion check)
+    return Phase.PHASE_D
+  }
+
+  private handleRetry(context: PhaseContext, activeFeature: Feature, reason: string): Phase {
+    context.fsm.incrementReworks(activeFeature.id)
+    context.fsm.writeReworkLog(activeFeature.domain, reason)
+    context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'NOT_STARTED')
+
+    const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
+    if (existsSync(tddOutputPath)) {
+      try {
+        rmSync(tddOutputPath, { force: true })
+      } catch {
+        // ignore
+      }
+    }
+    return Phase.PHASE_B
   }
 
   private buildTechLeadPrompt(payload: PhaseCPayload, config: BootstrapConfig): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const threshold = config.scoreThresholds.theGrumpyTechLead.threshold
-    const rulesSection =
-      payload.steeringRules && payload.steeringRules.length > 0
-        ? payload.steeringRules.map(r => `- ${r}`).join('\n')
-        : '- No additional rules provided'
+    const rulesSection = payload.steeringRules?.length
+      ? payload.steeringRules.map(r => `- ${r}`).join('\n')
+      : '- No additional rules provided'
 
     return [
       `## Objective`,
@@ -195,8 +214,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       ``,
       `<spec_sources>`,
       `- Architecture blueprint: \`docs/specs/${payload.domain}/003-*-tactical-design.md\``,
-      `- Architecture decisions: \`docs/adr/ARCHITECTURE.md\``,
-      `- Test strategy: \`docs/adr/TESTS.md\``,
+      `- Architecture decision records: \`docs/adr/*.md\``,
       `</spec_sources>`,
       ``,
       `<score_threshold>`,
@@ -235,10 +253,9 @@ export class PhaseCHandler extends AbstractPhaseHandler {
   private buildAdversarialQAPrompt(payload: PhaseCPayload, config: BootstrapConfig): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const threshold = config.scoreThresholds.adversarialQA.threshold
-    const rulesSection =
-      payload.steeringRules && payload.steeringRules.length > 0
-        ? payload.steeringRules.map(r => `- ${r}`).join('\n')
-        : '- No additional rules provided'
+    const rulesSection = payload.steeringRules?.length
+      ? payload.steeringRules.map(r => `- ${r}`).join('\n')
+      : '- No additional rules provided'
 
     return [
       `## Objective`,

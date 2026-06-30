@@ -3,13 +3,19 @@ export interface ValidationScores {
   scoreAdv: number
   hasHighCriticalVuln: boolean
   isCrashing: boolean
+  // TheGrumpyTechLead
+  openPoints?: string[]
+  architectureTip?: string
+  // AdversarialQA
+  edgeCasesMissed?: string[]
+  vulnerabilities?: Array<{ type?: string, severity?: string, description?: string }>
 }
 
 export enum Verdict {
-  PASS  = 'PASS',
+  PASS = 'PASS',
   RETRY = 'RETRY',
   BLOCK = 'BLOCK',
-  FAIL  = 'FAIL',
+  FAIL = 'FAIL',
 }
 
 export interface VerdictResult {
