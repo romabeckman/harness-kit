@@ -22,9 +22,10 @@ export class PhaseAHandler extends AbstractPhaseHandler {
 
     if (this.hasCascadeBlock(activeFeature, features)) return Phase.CASCADE_BLOCKED
 
-    await this.runScopeRefinement(activeFeature, context)
-
-    if (!context.checkSpecFilesPresent(activeFeature.domain)) return Phase.PHASE_A
+    // If spec files are not present, run scope refinement to generate them.
+    if (!context.checkSpecFilesPresent(activeFeature.domain)) {
+      await this.runScopeRefinement(activeFeature, context)
+    }
 
     await this.ensureTasksAppended(activeFeature, context)
 
@@ -103,7 +104,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `Produce, under \`docs/specs/${payload.domain}/\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
       `- \`docs/specs/${payload.domain}/001-problem-space.md\` — Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions`,
       `- \`docs/specs/${payload.domain}/002-context-map.md\` — Bounded Contexts and Context Map`,
-      `- \`docs/specs/${payload.domain}/003-\${PROJECT_NAME}-tactical-design.md\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array of \`{ id, title }\` objects`,
+      `- \`docs/specs/${payload.domain}/003-\${PROJECT_NAME}-tactical-design.md\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array objects`,
       `- \`docs/specs/${payload.domain}/004-\${PROJECT_NAME}-test-scenarios.md\` (one per project) — Test Scenarios`,
       `</expected_outputs>`,
       ``,
@@ -177,6 +178,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
         `Do not output anything else.`,
       ].join(' '),
     })
-    return context.extractTasksFromTacticalDesign(feature.domain)
+    const reloadedTasks = context.fsm.loadDevelopmentState().filter(t => t.featureId === feature.id);
+    return reloadedTasks.map(t => ({ taskId: t.taskId, description: t.description }));
   }
 }

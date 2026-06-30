@@ -29,26 +29,26 @@ export class ProjectStateService {
     // Extract JSON array from fenced code block (```json ... ``` or ``` ... ```)
     const fenceMatch = section.match(/```(?:json)?\s*([\s\S]*?)```/i)
     const rawJson = fenceMatch ? fenceMatch[1].trim() : section.trim()
-
     let parsed: unknown
     try {
       parsed = JSON.parse(rawJson)
     } catch {
       return []
     }
-
     if (!Array.isArray(parsed)) return []
 
     return parsed
       .filter(
-        (item): item is { id: string; title: string } =>
+        (item): item is { id: string | number; title: string } =>
           typeof item === 'object' &&
           item !== null &&
-          typeof (item as Record<string, unknown>).id === 'string' &&
+          (typeof (item as Record<string, unknown>).id === 'string' || 
+           typeof (item as Record<string, unknown>).id === 'number') &&
           typeof (item as Record<string, unknown>).title === 'string',
       )
       .map(item => ({
-        taskId: `T${item.id.replace(/\D/g, '').padStart(2, '0')}`,
+        // Convertendo o id para String antes de chamar o replace
+        taskId: `T${String(item.id).replace(/\D/g, '').padStart(2, '0')}`,
         description: item.title,
       }))
   }
