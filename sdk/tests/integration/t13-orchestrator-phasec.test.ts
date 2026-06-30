@@ -311,15 +311,22 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
   describe('Reads validation reports from TL.json and QA.json files', () => {
     it('uses scores from TL.json and QA.json if present', async () => {
       setupFullRun()
-      // Setup fake agent responses that would fail if we only used their stdout,
-      // but write TL.json and QA.json with passing scores
-      fake.setResponse('the-grumpy-tech-lead', { raw: '```json\n{"scoreTL": 0.10}\n```' })
-      fake.setResponse('adversarial-qa', { raw: '```json\n{"scoreAdv": 0.10}\n```' })
-      fake.setResponse('project-memory', { raw: 'done' })
-
+      // Agents write TL.json / QA.json as a side-effect (mimicking real agent behaviour).
+      // Raw stdout scores are intentionally low so the test would fail if files were ignored.
       const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
-      writeFileSync(join(specDir, 'TL.json'), JSON.stringify({ featureId: 'F001', score: 0.95 }))
-      writeFileSync(join(specDir, 'QA.json'), JSON.stringify({ featureId: 'F001', score: 0.90 }))
+      const origRun = fake.run.bind(fake)
+      fake.run = async (inv) => {
+        if (inv.skill === 'the-grumpy-tech-lead') {
+          writeFileSync(join(specDir, 'TL.json'), JSON.stringify({ featureId: 'F001', score: 0.95 }))
+          return { raw: '```json\n{"scoreTL": 0.10}\n```' }
+        }
+        if (inv.skill === 'adversarial-qa') {
+          writeFileSync(join(specDir, 'QA.json'), JSON.stringify({ featureId: 'F001', score: 0.90 }))
+          return { raw: '```json\n{"scoreAdv": 0.10}\n```' }
+        }
+        return origRun(inv)
+      }
+      fake.setResponse('project-memory', { raw: 'done' })
 
       const orchestrator = new HarnessOrchestrator({
         scope: 'sdk_core',
