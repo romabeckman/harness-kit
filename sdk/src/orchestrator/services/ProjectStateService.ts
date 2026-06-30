@@ -21,6 +21,11 @@ export class ProjectStateService {
 
     const content = readFileSync(join(specsDir, files[0]), 'utf8')
 
+    return ProjectStateService._parseTasksFromMarkdown(content)
+  }
+
+  // This method is public for testing purposes.
+  public static _parseTasksFromMarkdown(content: string): Array<{ taskId: string; description: string }> {
     const section6Match = content.match(/## Section 6[^\n]*\n([\s\S]*?)(?=\n## |$)/i)
     if (!section6Match) return []
 
@@ -29,6 +34,8 @@ export class ProjectStateService {
     // Extract JSON array from fenced code block (```json ... ``` or ``` ... ```)
     const fenceMatch = section.match(/```(?:json)?\s*([\s\S]*?)```/i)
     const rawJson = fenceMatch ? fenceMatch[1].trim() : section.trim()
+    if (!rawJson) return []
+
     let parsed: unknown
     try {
       parsed = JSON.parse(rawJson)
@@ -42,8 +49,8 @@ export class ProjectStateService {
         (item): item is { id: string | number; title: string } =>
           typeof item === 'object' &&
           item !== null &&
-          (typeof (item as Record<string, unknown>).id === 'string' || 
-           typeof (item as Record<string, unknown>).id === 'number') &&
+          (typeof (item as Record<string, unknown>).id === 'string' ||
+            typeof (item as Record<string, unknown>).id === 'number') &&
           typeof (item as Record<string, unknown>).title === 'string',
       )
       .map(item => ({
@@ -51,7 +58,7 @@ export class ProjectStateService {
         taskId: `T${String(item.id).replace(/\D/g, '').padStart(2, '0')}`,
         description: item.title,
       }))
-  }
+}
 
   readOnDiskState(fsm: IFileStateManager, productDir: string): OnDiskState {
     const productFilesExist =
