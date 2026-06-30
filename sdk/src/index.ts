@@ -37,8 +37,6 @@ export { CopilotRunner } from './agent-runner/copilot/CopilotRunner'
 export type { CopilotRunnerConfig } from './agent-runner/copilot/CopilotRunner'
 export { CursorRunner } from './agent-runner/cursor/CursorRunner'
 export type { CursorRunnerConfig } from './agent-runner/cursor/CursorRunner'
-export { OpenCodeRunner } from './agent-runner/opencode/OpenCodeRunner'
-export type { OpenCodeRunnerConfig } from './agent-runner/opencode/OpenCodeRunner'
 
 // File state types
 export type {
