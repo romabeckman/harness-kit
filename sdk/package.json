@@ -40,7 +40,8 @@
     "@anthropic-ai/sdk": "^0.106.0",
     "@cursor/sdk": "^1.0.22",
     "@github/copilot-sdk": "^1.0.4",
-    "@inquirer/prompts": "^8.5.2"
+    "@inquirer/prompts": "^8.5.2",
+    "@vitest/coverage-v8": "^4.1.9"
   },
   "overrides": {
     "undici": "^6.27.0"

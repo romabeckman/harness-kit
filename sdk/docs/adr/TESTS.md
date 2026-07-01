@@ -9,6 +9,7 @@ Maintain high reliability of the SDK orchestrator core and runner strategies usi
 | Unit & Integration | `rtk npm test` | Runs the full Vitest suite via RTK proxy. |
 | Type Check | `rtk npm run typecheck` | Checks TypeScript compilation via RTK. |
 | Build Check | `rtk npm run build` | Compiles and builds source code via RTK. |
+| Coverage | `rtk npx vitest --coverage` | Runs coverage provider. |
 
 ## MINIMUM COVERAGE
 REQUIRED: Maintain the following minimum coverage levels:

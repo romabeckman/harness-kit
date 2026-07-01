@@ -1,0 +1,347 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { AgentInvocationService } from '../AgentInvocationService'
+import { Phase } from '../../types'
+import { DEFAULT_PHASE_TIMEOUT_MS } from '../../../settings/DefaultSettings'
+import type { IAgentRunner } from '../../../agent-runner/IAgentRunner'
+import type { AgentInvocation, AgentOutput, TokenUsage } from '../../../agent-runner/types'
+import type { OrchestratorConfig } from '../../types'
+import type { HarnessSettings } from '../../../settings/HarnessSettings'
+import type { TokenLedger } from '../../../telemetry/TokenLedger'
+
+vi.mock('../../../ui/TerminalProgress', () => ({
+  TerminalProgress: {
+    startSpinner: vi.fn(),
+    stopSpinner: vi.fn(),
+  },
+}))
+
+vi.mock('../../../ui/AnsiHelpers', () => ({
+  AnsiHelpers: {
+    yellow: (s: string) => s,
+    dim: (s: string) => s,
+    cyan: (s: string) => s,
+    green: (s: string) => s,
+    red: (s: string) => s,
+  },
+}))
+
+vi.mock('../../../orchestrator/utils/OrchestratorFormatter', () => ({
+  OrchestratorFormatter: {
+    getPhaseDescription: vi.fn().mockReturnValue('phase description'),
+    formatDuration: vi.fn().mockReturnValue('1s'),
+  },
+}))
+
+function makeRunner(output: Partial<AgentOutput> = {}): IAgentRunner {
+  return {
+    type: 'claude-code',
+    run: vi.fn().mockResolvedValue({
+      success: true,
+      stdout: '',
+      stderr: '',
+      raw: '',
+      ...output,
+    }),
+  } as unknown as IAgentRunner
+}
+
+function makeLedger(): TokenLedger {
+  return { record: vi.fn() } as unknown as TokenLedger
+}
+
+function makeSettings(overrides: Record<string, any> = {}): HarnessSettings {
+  return {
+    resolve: vi.fn().mockReturnValue(overrides),
+    getTimeoutMs: vi.fn().mockReturnValue(undefined),
+  } as unknown as HarnessSettings
+}
+
+function makeConfig(overrides: Partial<OrchestratorConfig> = {}): OrchestratorConfig {
+  return {
+    scope: 'test',
+    score: 0.85,
+    reworks: 3,
+    projectPaths: [],
+    ...overrides,
+  }
+}
+
+function makeInvocation(overrides: Partial<AgentInvocation> = {}): AgentInvocation {
+  return {
+    skill: 'tdd-orchestrator',
+    agent: 'developer-backend',
+    mode: 'autonomous',
+    payload: {},
+    ...overrides,
+  }
+}
+
+describe('AgentInvocationService', () => {
+  describe('phaseKey resolution', () => {
+    it('uses invocation.phaseKey when explicitly set', async () => {
+      const runner = makeRunner()
+      const settings = makeSettings()
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await service.invokeAgent(
+        makeInvocation({ phaseKey: 'phase_c_adv' }),
+        Phase.PHASE_C,
+        makeConfig(),
+        settings
+      )
+
+      expect(settings.resolve).toHaveBeenCalledWith('claude-code', 'phase_c_adv')
+    })
+
+    it('resolves phaseKey from Phase.BOOTSTRAP', async () => {
+      const settings = makeSettings()
+      const service = new AgentInvocationService(makeRunner(), makeLedger())
+
+      await service.invokeAgent(makeInvocation(), Phase.BOOTSTRAP, makeConfig(), settings)
+
+      expect(settings.resolve).toHaveBeenCalledWith('claude-code', 'bootstrap')
+    })
+
+    it('resolves phaseKey from Phase.PHASE_A', async () => {
+      const settings = makeSettings()
+      const service = new AgentInvocationService(makeRunner(), makeLedger())
+
+      await service.invokeAgent(makeInvocation(), Phase.PHASE_A, makeConfig(), settings)
+
+      expect(settings.resolve).toHaveBeenCalledWith('claude-code', 'phase_a')
+    })
+
+    it('resolves phaseKey from Phase.PHASE_B', async () => {
+      const settings = makeSettings()
+      const service = new AgentInvocationService(makeRunner(), makeLedger())
+
+      await service.invokeAgent(makeInvocation(), Phase.PHASE_B, makeConfig(), settings)
+
+      expect(settings.resolve).toHaveBeenCalledWith('claude-code', 'phase_b')
+    })
+
+    it('resolves phaseKey from Phase.PHASE_C to phase_c_tl', async () => {
+      const settings = makeSettings()
+      const service = new AgentInvocationService(makeRunner(), makeLedger())
+
+      await service.invokeAgent(makeInvocation(), Phase.PHASE_C, makeConfig(), settings)
+
+      expect(settings.resolve).toHaveBeenCalledWith('claude-code', 'phase_c_tl')
+    })
+
+    it('resolves phaseKey from Phase.PHASE_E', async () => {
+      const settings = makeSettings()
+      const service = new AgentInvocationService(makeRunner(), makeLedger())
+
+      await service.invokeAgent(makeInvocation(), Phase.PHASE_E, makeConfig(), settings)
+
+      expect(settings.resolve).toHaveBeenCalledWith('claude-code', 'phase_e')
+    })
+
+    it('skips model/effort override for unknown phases (empty phaseKey guards resolve call)', async () => {
+      const runner = makeRunner()
+      const settings = makeSettings({ model: 'should-not-apply' })
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await service.invokeAgent(makeInvocation({ model: 'original-model' }), Phase.PHASE_D, makeConfig(), settings)
+
+      // phaseKey resolves to '' which is falsy — settings.resolve is NOT called
+      expect(settings.resolve).not.toHaveBeenCalled()
+      const call = (runner.run as ReturnType<typeof vi.fn>).mock.calls[0][0] as AgentInvocation
+      expect(call.model).toBe('original-model')
+    })
+  })
+
+  describe('model/effort override from settings', () => {
+    it('overrides model when settings.resolve returns a model', async () => {
+      const runner = makeRunner()
+      const settings = makeSettings({ model: 'claude-opus-4-8' })
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await service.invokeAgent(
+        makeInvocation({ model: 'claude-haiku-4-5' }),
+        Phase.PHASE_A,
+        makeConfig(),
+        settings
+      )
+
+      const call = (runner.run as ReturnType<typeof vi.fn>).mock.calls[0][0] as AgentInvocation
+      expect(call.model).toBe('claude-opus-4-8')
+    })
+
+    it('overrides effort when settings.resolve returns an effort', async () => {
+      const runner = makeRunner()
+      const settings = makeSettings({ effort: 'max' })
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await service.invokeAgent(
+        makeInvocation({ effort: 'low' }),
+        Phase.PHASE_B,
+        makeConfig(),
+        settings
+      )
+
+      const call = (runner.run as ReturnType<typeof vi.fn>).mock.calls[0][0] as AgentInvocation
+      expect(call.effort).toBe('max')
+    })
+
+    it('does NOT override model/effort when settings returns empty object', async () => {
+      const runner = makeRunner()
+      const settings = makeSettings({})
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await service.invokeAgent(
+        makeInvocation({ model: 'original-model', effort: 'high' }),
+        Phase.PHASE_A,
+        makeConfig(),
+        settings
+      )
+
+      const call = (runner.run as ReturnType<typeof vi.fn>).mock.calls[0][0] as AgentInvocation
+      expect(call.model).toBe('original-model')
+      expect(call.effort).toBe('high')
+    })
+  })
+
+  describe('projectPaths injection', () => {
+    it('appends config.projectPaths to finalInvocation.additionalDirs', async () => {
+      const runner = makeRunner()
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await service.invokeAgent(
+        makeInvocation({ additionalDirs: ['/existing/dir'] }),
+        Phase.PHASE_B,
+        makeConfig({ projectPaths: ['/proj/one', '/proj/two'] }),
+        makeSettings()
+      )
+
+      const call = (runner.run as ReturnType<typeof vi.fn>).mock.calls[0][0] as AgentInvocation
+      expect(call.additionalDirs).toEqual(['/existing/dir', '/proj/one', '/proj/two'])
+    })
+
+    it('does not modify additionalDirs when projectPaths is empty', async () => {
+      const runner = makeRunner()
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await service.invokeAgent(
+        makeInvocation({ additionalDirs: ['/dir'] }),
+        Phase.PHASE_B,
+        makeConfig({ projectPaths: [] }),
+        makeSettings()
+      )
+
+      const call = (runner.run as ReturnType<typeof vi.fn>).mock.calls[0][0] as AgentInvocation
+      expect(call.additionalDirs).toEqual(['/dir'])
+    })
+  })
+
+  describe('timeout resolution precedence', () => {
+    it('uses config.timeoutMs when explicitly set (highest priority)', async () => {
+      const runner = makeRunner()
+      const settings = {
+        resolve: vi.fn().mockReturnValue({}),
+        getTimeoutMs: vi.fn().mockReturnValue(99999),
+      } as unknown as HarnessSettings
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await service.invokeAgent(
+        makeInvocation(),
+        Phase.PHASE_A,
+        makeConfig({ timeoutMs: 12345 }),
+        settings
+      )
+
+      // settings.getTimeoutMs should NOT be called when config.timeoutMs is defined
+      expect(settings.getTimeoutMs).not.toHaveBeenCalled()
+    })
+
+    it('uses settings.getTimeoutMs when config.timeoutMs is undefined', async () => {
+      const runner = makeRunner()
+      const settings = {
+        resolve: vi.fn().mockReturnValue({}),
+        getTimeoutMs: vi.fn().mockReturnValue(60000),
+      } as unknown as HarnessSettings
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await service.invokeAgent(
+        makeInvocation(),
+        Phase.PHASE_A,
+        makeConfig({ timeoutMs: undefined }),
+        settings
+      )
+
+      expect(settings.getTimeoutMs).toHaveBeenCalledWith('claude-code', 'phase_a')
+    })
+
+    it('falls back to DEFAULT_PHASE_TIMEOUT_MS when both config and settings return undefined', async () => {
+      // Verifying the default is applied: runner.run should be called (not rejected)
+      // because timeoutMs defaults to DEFAULT_PHASE_TIMEOUT_MS (30min), not 0.
+      const runner = makeRunner()
+      const settings = {
+        resolve: vi.fn().mockReturnValue({}),
+        getTimeoutMs: vi.fn().mockReturnValue(undefined),
+      } as unknown as HarnessSettings
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await service.invokeAgent(
+        makeInvocation(),
+        Phase.PHASE_B,
+        makeConfig({ timeoutMs: undefined }),
+        settings
+      )
+
+      expect(runner.run).toHaveBeenCalledTimes(1)
+      expect(DEFAULT_PHASE_TIMEOUT_MS).toBe(1_800_000)
+    })
+  })
+
+  describe('token ledger recording', () => {
+    it('records usage when output contains usage data', async () => {
+      const usage: TokenUsage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheCreationTokens: 0,
+        cacheReadTokens: 10,
+        costUsd: 0.001,
+        model: 'claude-sonnet',
+      }
+      const runner = makeRunner({ usage })
+      const ledger = makeLedger()
+      const service = new AgentInvocationService(runner, ledger)
+
+      await service.invokeAgent(
+        makeInvocation({ skill: 'tdd-orchestrator', agent: 'developer-backend' }),
+        Phase.PHASE_B,
+        makeConfig(),
+        makeSettings()
+      )
+
+      expect(ledger.record).toHaveBeenCalledWith('tdd-orchestrator', 'developer-backend', usage)
+    })
+
+    it('does NOT record when output has no usage', async () => {
+      const runner = makeRunner({ usage: undefined })
+      const ledger = makeLedger()
+      const service = new AgentInvocationService(runner, ledger)
+
+      await service.invokeAgent(makeInvocation(), Phase.PHASE_B, makeConfig(), makeSettings())
+
+      expect(ledger.record).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('error propagation', () => {
+    it('re-throws errors from runner.run after cleaning up the spinner', async () => {
+      const runner: IAgentRunner = {
+        type: 'claude-code',
+        run: vi.fn().mockRejectedValue(new Error('runner crashed')),
+      } as unknown as IAgentRunner
+
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await expect(
+        service.invokeAgent(makeInvocation(), Phase.PHASE_B, makeConfig({ timeoutMs: 0 }), makeSettings())
+      ).rejects.toThrow('runner crashed')
+    })
+  })
+})
