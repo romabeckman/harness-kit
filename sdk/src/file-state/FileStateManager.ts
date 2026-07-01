@@ -5,13 +5,14 @@ import { DevStateParser } from './parsers/DevStateParser'
 import { BootstrapConfigParser } from './parsers/BootstrapConfigParser'
 import type { Feature, Task, BootstrapConfig, FeatureStatus, TaskStatus, CurrentPhase, DecisionEntry } from './types'
 import { createDefaultSteeringRules } from './types'
-import { OrchestratorConfig } from '../orchestrator/types'
+import { OrchestratorConfig, Phase } from '../orchestrator/types'
 
 export interface IFileStateManager {
   // ─── Bootstrap ──────────────────────────────────────────────────────────
   ensureProductFiles(config?: OrchestratorConfig): void
   loadBootstrapConfig(): BootstrapConfig
   saveBootstrapConfig(config: BootstrapConfig): void
+  existBootstrapConfig(): boolean
 
   // ─── Backlog ────────────────────────────────────────────────────────────
   loadBacklog(): Feature[]
@@ -80,6 +81,9 @@ export class FileStateManager implements IFileStateManager {
         return '# Autonomous Decision Audit Trail\n\n| Timestamp | Feature | Decision | Scores | Rationale |\n| --- | --- | --- | --- | --- |\n'
       case 'BOOTSTRAP-CONFIG.json':
         return JSON.stringify({
+          originalScope: config?.scope,
+          projectPaths: config?.projectPaths ?? [],
+          currentPhase: Phase.BOOTSTRAP,
           scoreThresholds: {
             theGrumpyTechLead: { threshold: config?.score ?? 0.70 },
             adversarialQA: { threshold: config?.score ?? 0.70 },
@@ -91,6 +95,10 @@ export class FileStateManager implements IFileStateManager {
       default:
         return ''
     }
+  }
+
+  existBootstrapConfig(): boolean {
+    return existsSync(join(this.productDir, 'BOOTSTRAP-CONFIG.json'))
   }
 
   loadBootstrapConfig(): BootstrapConfig {

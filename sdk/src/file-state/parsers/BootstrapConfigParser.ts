@@ -19,6 +19,7 @@ export class BootstrapConfigParser {
       : 0.70
 
     const result: import('../types').BootstrapConfig = {
+      projectPaths: raw.projectPaths ?? [],
       scoreThresholds: {
         theGrumpyTechLead: { threshold: Math.min(1, Math.max(0, rawThresholdTL)) },
         adversarialQA: { threshold: Math.min(1, Math.max(0, rawThresholdAdv)) },
@@ -29,6 +30,7 @@ export class BootstrapConfigParser {
       cycleCounter: {
         completedCycles: raw.cycleCounter.completedCycles,
       },
+      originalScope: raw.originalScope,
     }
     if (typeof raw.currentPhase === 'string') {
       result.currentPhase = raw.currentPhase

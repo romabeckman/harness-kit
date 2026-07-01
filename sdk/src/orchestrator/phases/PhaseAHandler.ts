@@ -131,7 +131,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     if (extracted.length === 0) {
       throw new Error(
         `Phase A failed: no tasks extracted for feature ${feature.id} (domain '${feature.domain}'). ` +
-          `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array under "## Section 6 — Ordered Development Tasks".`,
+        `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array under "## Section 6 — Ordered Development Tasks".`,
       )
     }
 

@@ -44,6 +44,8 @@ export interface DecisionEntry {
 }
 
 export interface BootstrapConfig {
+  originalScope: string
+  projectPaths: string[]
   scoreThresholds: {
     theGrumpyTechLead: { threshold: number }
     adversarialQA: { threshold: number }
@@ -58,7 +60,6 @@ export interface BootstrapConfig {
   activeFeatureId?: string | null
   pendingStatus?: FeatureStatus
   steeringRules?: SteeringRulesConfig
-  originalScope?: string
 }
 
 export interface SteeringRulesConfig {

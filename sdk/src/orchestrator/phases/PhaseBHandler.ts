@@ -148,13 +148,13 @@ export class PhaseBHandler extends AbstractPhaseHandler {
 
     const reworkSection = payload.isRetry
       ? [
-          ``,
-          `<rework>`,
-          `This is a RETRY run. Read \`docs/specs/${payload.domain}/REWORK-LOG.md\` before starting.`,
-          `- Translate every vulnerability and missed edge case from REWORK-LOG.md into new failing test cases`,
-          `- Address all architectural questions and open points listed there alongside the tactical tasks`,
-          `</rework>`,
-        ].join('\n')
+        ``,
+        `<rework>`,
+        `This is a RETRY run. Read \`docs/specs/${payload.domain}/REWORK-LOG.md\` before starting.`,
+        `- Translate every vulnerability and missed edge case from REWORK-LOG.md into new failing test cases`,
+        `- Address all architectural questions and open points listed there alongside the tactical tasks`,
+        `</rework>`,
+      ].join('\n')
       : ''
 
     return [

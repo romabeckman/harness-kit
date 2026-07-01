@@ -53,15 +53,5 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       phase_c_adv: { model: 'gpt-5.3-codex', effort: 'low' },
       phase_e: { model: 'gpt-5.3-codex', effort: 'low' },
     }
-  },
-  'opencode': {
-    phases: {
-      bootstrap: { model: 'opencode/model' },
-      phase_a: { model: 'opencode/model' },
-      phase_b: { model: 'opencode/model' },
-      phase_c_tl: { model: 'opencode/model' },
-      phase_c_adv: { model: 'opencode/model' },
-      phase_e: { model: 'opencode/model' },
-    }
   }
 }

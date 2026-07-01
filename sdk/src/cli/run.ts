@@ -8,6 +8,9 @@ import { HarnessSettings } from '../settings/HarnessSettings'
 import { StartupBanner } from '../ui/StartupBanner'
 import { AnsiHelpers } from '../ui/AnsiHelpers'
 
+const DEFAULT_LINE_LENGTH = 80
+const DEFAULT_SCORE = 0.7
+const DEFAULT_REWORKS = 2
 const HELP = `
 @romabeckman/harness-kit — autonomous orchestrator
 
@@ -49,13 +52,21 @@ interface RunOptions {
   model?: string
 }
 
+interface ResetOptions {
+  scope: string
+  projectPaths: string[]
+  score: number
+  reworks: number
+  steeringMessage: string
+}
+
 async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
   const settings = HarnessSettings.load(cwd)
   const productDir = join(cwd, 'docs', 'product')
   const backlogPath = join(productDir, 'BACKLOG.md')
   const hasExistingSession = existsSync(backlogPath)
 
-  console.log('\n' + StartupBanner.render(process.stdout.columns || 80) + '\n')
+  console.log('\n' + StartupBanner.render(process.stdout.columns || DEFAULT_LINE_LENGTH) + '\n')
 
   const action = hasExistingSession
     ? await select({
@@ -68,89 +79,27 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     : 'reset'
 
   let steeringMessage = ''
-  if (action === 'resume') {
+  let optionsReset: ResetOptions | null = null
+  if (action === 'reset') {
+    optionsReset = await resetOptions(cwd)
+  } else {
     steeringMessage = await input({
       message: 'Steering rules or state overrides (optional):',
       default: '',
     })
   }
 
-  let scope = ''
-  if (action === 'reset') {
-    const inputMethod = await select({
-      message: 'How would you like to provide the project scope?',
-      choices: [
-        { name: 'type   — enter a short description', value: 'type' },
-        { name: 'editor — open editor for a longer PRD', value: 'editor' },
-      ],
-    })
-
-    scope = inputMethod === 'type'
-      ? await input({
-        message: 'Project scope:',
-        validate: validateScope,
-      })
-      : await editor({
-        message: 'Paste or write your PRD (save and close to continue):',
-        validate: validateScope,
-      })
-  }
-
-  const pathsInput = await input({
-    message: 'Project paths (comma-separated):',
-    default: cwd,
-    validate: (v) => v.trim().length > 0 || 'At least one path is required.',
-  })
-
-  const projectPaths = pathsInput.split(',').map((p) => resolve(p.trim())).filter(Boolean)
-
-  let score = 0.7
-  let reworks = 2
-  if (action === 'reset') {
-    steeringMessage = await input({
-      message: 'Are there any additional rules for the process (optional)?',
-      default: '',
-    })
-
-    score = await number({
-      message: 'Inform acceptable score for accepting tasks (0.1 - 1)',
-      default: score,
-      step: 0.01,
-      min: 0.1,
-      max: 1,
-      validate(value) {
-        console.log(value)
-        if (!value) return true
-        if (!Number.isFinite(value)) return false
-        if (value < 0.1 || value > 1) return false
-        return true
-      },
-    }) || score
-
-    reworks = await number({
-      message: 'Inform max number of reworks before triggering a cascade fail (1-10)',
-      default: reworks,
-      step: 1,
-      min: 1,
-      max: 10,
-      validate(value) {
-        if (!value) return true
-        if (!Number.isFinite(value)) return false
-        if (value < 1 || value > 10) return false
-        return true
-      }
-    }) || reworks
-  }
-
   console.log('\n── Starting orchestration ──────────────────────────────')
   if (action === 'reset') {
-    console.log(`  scope:  ${scope.slice(0, 80)}${scope.length > 80 ? '…' : ''}`)
+    console.log(`  scope:  ${optionsReset?.scope.slice(0, DEFAULT_LINE_LENGTH)}${optionsReset?.scope ? (optionsReset.scope.length > DEFAULT_LINE_LENGTH ? '…' : '') : ''}`)
+    console.log(`  paths:  ${optionsReset?.projectPaths?.join(', ')}`)
+    console.log(`  score:  ${optionsReset?.score}`)
+    console.log(`  reworks: ${optionsReset?.reworks}`)
   } else {
     console.log('  resuming from existing session')
   }
-  console.log(`  paths:  ${projectPaths.join(', ')}`)
   if (steeringMessage) {
-    console.log(`  steering:  ${steeringMessage.slice(0, 80)}${steeringMessage.length > 80 ? '…' : ''}`)
+    console.log(`  steering:  ${steeringMessage.slice(0, DEFAULT_LINE_LENGTH)}${steeringMessage.length > DEFAULT_LINE_LENGTH ? '…' : ''}`)
   }
   console.log('────────────────────────────────────────────────────────\n')
 
@@ -164,10 +113,10 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
     : undefined
 
   const orchestrator = new HarnessOrchestrator({
-    scope: scope,
-    projectPaths,
-    score,
-    reworks,
+    scope: optionsReset?.scope ?? '',
+    projectPaths: optionsReset?.projectPaths ?? [],
+    score: optionsReset?.score ?? DEFAULT_SCORE,
+    reworks: optionsReset?.reworks ?? DEFAULT_REWORKS,
     productDir,
     agentRunner,
     settings,
@@ -208,6 +157,82 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
   await orchestrator.run()
   console.log('\n✓ All features completed.')
   orchestrator.tokenReport()
+}
+
+async function resetOptions(cwd: string): Promise<ResetOptions> {
+  let scope = ''
+  let projectPaths: string[] = []
+  let score = DEFAULT_SCORE
+  let reworks = DEFAULT_REWORKS
+  let steeringMessage = ''
+
+  const inputMethod = await select({
+    message: 'How would you like to provide the project scope?',
+    choices: [
+      { name: 'type   — enter a short description', value: 'type' },
+      { name: 'editor — open editor for a longer PRD', value: 'editor' },
+    ],
+  })
+
+  scope = inputMethod === 'type'
+    ? await input({
+      message: 'Project scope:',
+      validate: validateScope,
+    })
+    : await editor({
+      message: 'Paste or write your PRD (save and close to continue):',
+      validate: validateScope,
+    })
+
+  const pathsInput = await input({
+    message: 'Project paths (comma-separated):',
+    default: cwd,
+    validate: (v) => v.trim().length > 0 || 'At least one path is required.',
+  })
+
+  projectPaths = pathsInput.split(',').map((p) => resolve(p.trim())).filter(Boolean)
+
+  steeringMessage = await input({
+    message: 'Are there any additional rules for the process (optional)?',
+    default: '',
+  })
+
+  score = await number({
+    message: 'Inform acceptable score for accepting tasks (0.1 - 1)',
+    default: score,
+    step: 0.01,
+    min: 0.1,
+    max: 1,
+    validate(value) {
+      console.log(value)
+      if (!value) return true
+      if (!Number.isFinite(value)) return false
+      if (value < 0.1 || value > 1) return false
+      return true
+    },
+  }) || score
+
+  reworks = await number({
+    message: 'Inform max number of reworks before triggering a cascade fail (1-10)',
+    default: reworks,
+    step: 1,
+    min: 1,
+    max: 10,
+    validate(value) {
+      if (!value) return true
+      if (!Number.isFinite(value)) return false
+      if (value < 1 || value > 10) return false
+      return true
+    }
+  }) || reworks
+
+  return {
+    scope,
+    projectPaths,
+    score,
+    reworks,
+    steeringMessage,
+  }
 }
 
 function cmdReport(cwd: string): void {

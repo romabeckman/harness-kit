@@ -1,6 +1,6 @@
-
 import { ProjectStateService } from '../ProjectStateService';
 import * as fs from 'fs';
+import * as path from 'path';
 
 import { describe, it, expect, beforeEach, vi, Mock } from 'vitest';
 vi.mock('fs');
@@ -53,13 +53,18 @@ describe('ProjectStateService', () => {
 
     beforeEach(() => {
         service = new ProjectStateService(workingDir);
-        vi.resetAllMocks();
+        // Garante que a implementação original do spy seja restaurada entre os testes
+        vi.restoreAllMocks();
     });
 
     describe('extractTasksFromTacticalDesign', () => {
         it('should extract tasks from a valid tactical design file', () => {
+            const expectedDir = path.join(workingDir, 'docs', 'specs', 'my-domain');
+            const expectedFile = path.join(expectedDir, '003-tactical-design.md');
+
             (fs.existsSync as Mock).mockReturnValue(true);
             (fs.readdirSync as Mock).mockReturnValue(['003-tactical-design.md']);
+
             const parseSpy = vi.spyOn(ProjectStateService, '_parseTasksFromMarkdown');
             parseSpy.mockReturnValue([
                 { taskId: 'T01', description: 'Mocked task 1' },
@@ -68,10 +73,11 @@ describe('ProjectStateService', () => {
             (fs.readFileSync as Mock).mockReturnValue(MOCK_TDD_FILE_CONTENT);
 
             const tasks = service.extractTasksFromTacticalDesign('my-domain');
-            
-            expect(fs.existsSync).toHaveBeenCalledWith('/fake/dir/docs/specs/my-domain');
-            expect(fs.readdirSync).toHaveBeenCalledWith('/fake/dir/docs/specs/my-domain');
-            expect(fs.readFileSync).toHaveBeenCalledWith('/fake/dir/docs/specs/my-domain/003-tactical-design.md', 'utf8');
+
+            // Usando caminhos compatíveis com OS
+            expect(fs.existsSync).toHaveBeenCalledWith(expectedDir);
+            expect(fs.readdirSync).toHaveBeenCalledWith(expectedDir);
+            expect(fs.readFileSync).toHaveBeenCalledWith(expectedFile, 'utf8');
             expect(parseSpy).toHaveBeenCalledWith(MOCK_TDD_FILE_CONTENT);
             expect(tasks).toEqual([
                 { taskId: 'T01', description: 'Mocked task 1' },

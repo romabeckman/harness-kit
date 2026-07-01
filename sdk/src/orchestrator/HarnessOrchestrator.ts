@@ -65,11 +65,10 @@ export class HarnessOrchestrator implements PhaseContext {
     if (!this.config.scope) {
       try {
         const bootConfig = this.fsm.loadBootstrapConfig()
-        if (bootConfig.originalScope) {
-          this.config.scope = bootConfig.originalScope
-        }
-      } catch {
-        // ignore
+        this.config.scope = bootConfig.originalScope
+        this.config.projectPaths = bootConfig.projectPaths
+      } catch (err) {
+        throw new Error(`Failed to load bootstrap config: ${err}`)
       }
     }
 

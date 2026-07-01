@@ -14,7 +14,7 @@ export class AgentInvocationService {
   constructor(
     private readonly agentRunner: IAgentRunner,
     private readonly ledger: TokenLedger
-  ) {}
+  ) { }
 
   async invokeAgent(
     invocation: AgentInvocation,
@@ -44,6 +44,7 @@ export class AgentInvocationService {
       timeoutMs = DEFAULT_PHASE_TIMEOUT_MS
     }
 
+    // Replace model if defined in settings for current phase
     let finalInvocation = invocation
     if (runnerType && phaseKey) {
       const overrides = settings.resolve(runnerType, phaseKey)

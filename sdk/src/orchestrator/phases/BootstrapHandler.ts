@@ -11,16 +11,8 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     context.fsm.ensureProductFiles(context.config)
 
     const bootConfig = context.fsm.loadBootstrapConfig()
-    if (context.config.scope) {
-      try {
-        bootConfig.originalScope = context.config.scope
-        context.fsm.saveBootstrapConfig(bootConfig)
-      } catch {
-        // ignore
-      }
-    }
-
     const existing = context.fsm.loadBacklog()
+
     if (existing.length > 0) return Phase.PHASE_A
 
     const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
