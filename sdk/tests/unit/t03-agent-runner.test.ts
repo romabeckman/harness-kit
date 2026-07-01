@@ -7,11 +7,11 @@ import type { IAgentRunner } from '../../src/agent-runner/IAgentRunner'
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeChild(lines: string[], exitCode = 0) {
-  const stdout = new Readable({ read() {} })
+  const stdout = new Readable({ read() { } })
   const stdin = new Writable({ write(_, __, cb) { cb() } })
   const child = new EventEmitter() as any
   child.stdout = stdout
-  child.stderr = new Readable({ read() {} })
+  child.stderr = new Readable({ read() { } })
   child.stdin = stdin
   child.kill = vi.fn()
   setTimeout(() => {
@@ -45,9 +45,9 @@ describe('T03 — IAgentRunner interface + NullAgentRunner', () => {
   })
 })
 
-// ─── ClaudeCodeRunner ────────────────────────────────────────────────────────
+// ─── ClaudeCLIRunner ────────────────────────────────────────────────────────
 
-describe('T03 — ClaudeCodeRunner', () => {
+describe('T03 — ClaudeCLIRunner', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.restoreAllMocks()
@@ -57,9 +57,9 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     // Access private config via constructor — just verify it constructs without throwing
-    const runner = new ClaudeCodeRunner()
+    const runner = new ClaudeCLIRunner()
     expect(runner).toBeDefined()
     // Verify the actual defaults are applied by reading static DEFAULT_CONFIG indirectly:
     // spawn is called with 'claude' as the bin
@@ -75,9 +75,9 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const { spawn } = await import('node:child_process')
-    const runner = new ClaudeCodeRunner()
+    const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     const args: string[] = (spawn as ReturnType<typeof vi.fn>).mock.calls[0][1]
     expect(args).toContain('--print')
@@ -93,9 +93,9 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const { spawn } = await import('node:child_process')
-    const runner = new ClaudeCodeRunner()
+    const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 's', agent: 'developer-backend', mode: 'autonomous', payload: {} })
     const args: string[] = (spawn as ReturnType<typeof vi.fn>).mock.calls[0][1]
     const agentIdx = args.indexOf('--agent')
@@ -111,9 +111,9 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const onProgress = vi.fn()
-    const runner = new ClaudeCodeRunner({ onProgress })
+    const runner = new ClaudeCLIRunner({ onProgress })
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     const textCalls = onProgress.mock.calls.filter(([l]) => l.type === 'text')
     expect(textCalls.length).toBeGreaterThan(0)
@@ -128,9 +128,9 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const onProgress = vi.fn()
-    const runner = new ClaudeCodeRunner({ onProgress })
+    const runner = new ClaudeCLIRunner({ onProgress })
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     const toolCalls = onProgress.mock.calls.filter(([l]) => l.type === 'tool_use')
     expect(toolCalls.length).toBeGreaterThan(0)
@@ -148,8 +148,8 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
-    const runner = new ClaudeCodeRunner({ onProgress: vi.fn() })
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
     const out = await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     expect(out.raw).toBe('final output')
     expect(out.usage).toBeDefined()
@@ -166,8 +166,8 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
-    const runner = new ClaudeCodeRunner({ onProgress: vi.fn() })
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
     const out = await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     expect(out.usage).toEqual({
       inputTokens: 200,
@@ -187,9 +187,9 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const { AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
-    const runner = new ClaudeCodeRunner({ onProgress: vi.fn() })
+    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
     await expect(
       runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     ).rejects.toMatchObject({ code: AgentRunnerErrorCode.API_ERROR })
@@ -200,17 +200,17 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => {
         const child = new EventEmitter() as any
-        child.stdout = new Readable({ read() {} })
-        child.stderr = new Readable({ read() {} })
+        child.stdout = new Readable({ read() { } })
+        child.stderr = new Readable({ read() { } })
         child.stdin = new Writable({ write(_, __, cb) { cb() } })
         child.kill = vi.fn()
         setTimeout(() => child.emit('error', enoentErr), 10)
         return child
       }),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const { AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
-    const runner = new ClaudeCodeRunner({ onProgress: vi.fn() })
+    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
     await expect(
       runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     ).rejects.toMatchObject({ code: AgentRunnerErrorCode.NETWORK_ERROR })
@@ -221,8 +221,8 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => {
         const child = new EventEmitter() as any
-        child.stdout = new Readable({ read() {} })
-        child.stderr = new Readable({ read() {} })
+        child.stdout = new Readable({ read() { } })
+        child.stderr = new Readable({ read() { } })
         child.stdin = new Writable({
           write(chunk, _, cb) {
             stdinChunks.push(chunk.toString())
@@ -237,8 +237,8 @@ describe('T03 — ClaudeCodeRunner', () => {
         return child
       }),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
-    const runner = new ClaudeCodeRunner({ onProgress: vi.fn() })
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
     await runner.run({
       skill: 's',
       agent: 'a',
@@ -257,9 +257,9 @@ describe('T03 — ClaudeCodeRunner', () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
-    const { ClaudeCodeRunner } = await import('../../src/agent-runner/claude-code/ClaudeCodeRunner')
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const onProgress = vi.fn()
-    const runner = new ClaudeCodeRunner({ onProgress })
+    const runner = new ClaudeCLIRunner({ onProgress })
     await runner.run({ skill: 'my-skill', agent: 'my-agent', mode: 'autonomous', payload: {} })
     expect(onProgress).toHaveBeenCalled()
     const firstCall = onProgress.mock.calls[0][0]

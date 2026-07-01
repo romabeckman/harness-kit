@@ -5,7 +5,7 @@ import type { AgentInvocation, AgentOutput } from '../types'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 
-export interface ClaudeCodeRunnerConfig {
+export interface ClaudeCLIRunnerConfig {
   readonly timeoutMs: number
   readonly claudeBin: string
   readonly model?: string   // passed as --model to claude CLI
@@ -22,7 +22,7 @@ export interface ProgressLine {
   isError?: boolean
 }
 
-const DEFAULT_CONFIG: Omit<ClaudeCodeRunnerConfig, 'onProgress' | 'model' | 'effort'> = Object.freeze({
+const DEFAULT_CONFIG: Omit<ClaudeCLIRunnerConfig, 'onProgress' | 'model' | 'effort'> = Object.freeze({
   timeoutMs: 0, // 0 = no timeout — agents can run for hours
   claudeBin: 'claude',
 })
@@ -56,11 +56,11 @@ function extractJson(raw: string): unknown | null {
   try { return JSON.parse(raw.slice(start, end + 1)) } catch { return null }
 }
 
-export class ClaudeCodeRunner implements IAgentRunner {
-  readonly type = 'claude-code'
-  readonly #config: ClaudeCodeRunnerConfig & { onProgress: (line: ProgressLine) => void }
+export class ClaudeCLIRunner implements IAgentRunner {
+  readonly type = 'claude-cli'
+  readonly #config: ClaudeCLIRunnerConfig & { onProgress: (line: ProgressLine) => void }
 
-  constructor(config?: Partial<ClaudeCodeRunnerConfig>) {
+  constructor(config?: Partial<ClaudeCLIRunnerConfig>) {
     this.#config = {
       ...DEFAULT_CONFIG,
       onProgress: defaultProgress,
@@ -254,6 +254,6 @@ export class ClaudeCodeRunner implements IAgentRunner {
 }
 
 AgentRunnerRegistry.register({
-  type: 'claude-code',
-  constructor: ClaudeCodeRunner,
+  type: 'claude-cli',
+  constructor: ClaudeCLIRunner,
 })

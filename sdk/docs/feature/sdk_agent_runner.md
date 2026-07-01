@@ -11,7 +11,7 @@ sdk/src/agent-runner/
 ├── types.ts                  # Shared types and config schemas
 ├── AgentRunnerRegistry.ts    # Static registry of strategy classes
 ├── AgentRunnerFactory.ts     # Instantiation factory executing validations
-├── claude-code/              # Subdirectory for local Claude Code CLI execution
+├── claude-cli/              # Subdirectory for local Claude Code CLI execution
 ├── claude-agent/             # Subdirectory for Anthropic SDK API calls
 ├── antigravity/              # Subdirectory for Google's agy CLI execution
 └── README.md                 # Blueprint for custom runner plugins
@@ -48,7 +48,7 @@ export interface AgentInvocation {
 
 | Runner | CLI Flag | Binary | Default Model | Description |
 |---|---|---|---|---|
-| `claude-code` | *(none)* | `claude` | — | CLI subprocess spawn; default when no flag is passed. |
+| `claude-cli` | *(none)* | `claude` | — | CLI subprocess spawn; default when no flag is passed. |
 | `claude-agent` | *(auto, env)* | — | Anthropic API | Used when `ANTHROPIC_API_KEY` is set and no explicit runner is given. |
 | `antigravity` | `--agent antigravity` | `agy` | `gemini-2.5-flash` | Google Antigravity CLI subprocess. Default model is `gemini-2.5-flash`. |
 | `copilot` | `--copilot` | `copilot` | — | GitHub Copilot CLI subprocess. |
@@ -87,7 +87,7 @@ All runners throw `AgentRunnerError` on failure. The `code` field distinguishes 
 - HTTP status `429`
 - Message containing `rate_limit`, `overloaded_error`, or `quota`
 
-`ClaudeCodeRunner` and `AbstractCliRunner` apply a regex `/rate.?limit|quota|overloaded/i` against the CLI output / stderr.
+`ClaudeCLIRunner` and `AbstractCliRunner` apply a regex `/rate.?limit|quota|overloaded/i` against the CLI output / stderr.
 
 ### Orchestrator Behaviour on `QUOTA_EXCEEDED`
 

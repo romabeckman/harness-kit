@@ -68,10 +68,10 @@ describe('T15 — Public API (src/index.ts)', () => {
     expect(mod['OnDiskState']).toBeUndefined()
   })
 
-  it('ClaudeCodeRunner is exported from index', async () => {
+  it('ClaudeCLIRunner is exported from index', async () => {
     const mod = await import('../../src/index')
-    expect(mod.ClaudeCodeRunner).toBeDefined()
-    expect(typeof mod.ClaudeCodeRunner).toBe('function')
+    expect(mod.ClaudeCLIRunner).toBeDefined()
+    expect(typeof mod.ClaudeCLIRunner).toBe('function')
   })
 
   it('TokenLedger is exported from index', async () => {

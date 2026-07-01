@@ -136,7 +136,7 @@ TOTAL                input: 40,550  cost: $0.16
 ## Agent runner — pluggable strategies
 
 The SDK supports multiple built-in coding agents:
-- **Claude Code CLI** (`claude-code`)
+- **Claude Code CLI** (`claude-cli`)
 - **Anthropic API** (`claude-agent`)
 - **Google Antigravity** (`antigravity`)
 
@@ -145,7 +145,7 @@ By default, the SDK auto-selects a runner:
 | Condition | Runner used |
 |---|---|
 | `ANTHROPIC_API_KEY` set in environment | `claude-agent` (direct API) |
-| No API key | `claude-code` (local `claude` CLI) |
+| No API key | `claude-cli` (local `claude` CLI) |
 
 Select agent strategy via CLI flags:
 ```bash
@@ -201,13 +201,13 @@ await orchestrator.run()
 ### Custom progress output
 
 ```typescript
-import { HarnessOrchestrator, ClaudeCodeRunner } from '@romabeckman/hrns'
+import { HarnessOrchestrator, ClaudeCLIRunner } from '@romabeckman/hrns'
 import type { ProgressLine } from '@romabeckman/hrns'
 
 const orchestrator = new HarnessOrchestrator({
   scope: 'my project',
   projectPaths: ['/path/to/project'],
-  agentRunner: new ClaudeCodeRunner({
+  agentRunner: new ClaudeCLIRunner({
     onProgress: (line: ProgressLine) => {
       if (line.type === 'tool_use') console.log(`[${line.skill}] → ${line.toolName}`)
       if (line.type === 'result')   console.log(`[${line.skill}] done`)

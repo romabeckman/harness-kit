@@ -18,9 +18,9 @@ export type { IAgentRunner } from './agent-runner/IAgentRunner'
 export { NullAgentRunner } from './agent-runner/NullAgentRunner'
 export type { AgentInvocation, AgentOutput, ContextPayload } from './agent-runner/types'
 
-// Agent runner — ClaudeCodeRunner (default, uses local claude CLI)
-export { ClaudeCodeRunner } from './agent-runner/claude-code/ClaudeCodeRunner'
-export type { ClaudeCodeRunnerConfig } from './agent-runner/claude-code/ClaudeCodeRunner'
+// Agent runner — ClaudeCLIRunner (default, uses local claude CLI)
+export { ClaudeCLIRunner } from './agent-runner/claude-cli/ClaudeCLIRunner'
+export type { ClaudeCLIRunnerConfig } from './agent-runner/claude-cli/ClaudeCLIRunner'
 
 // Agent runner — ClaudeSdkRunner (CI/CD, requires ANTHROPIC_API_KEY)
 export { ClaudeSdkRunner } from './agent-runner/claude-sdk/ClaudeSdkRunner'

@@ -22,7 +22,7 @@ describe('T17 — Orchestrator Settings Overrides', () => {
   it('applies settings overrides to agent invocations', async () => {
     const fakeRunner = new FakeAgentRunner()
     // Explicit type to match default settings or settings files
-    Object.defineProperty(fakeRunner, 'type', { value: 'claude-code', writable: true })
+    Object.defineProperty(fakeRunner, 'type', { value: 'claude-cli', writable: true })
 
     const globalDir = join(tmpDir, 'global-config')
     const globalFile = join(globalDir, 'harness-kit', 'settings.json')
@@ -31,7 +31,7 @@ describe('T17 — Orchestrator Settings Overrides', () => {
     // Pre-create global file with specific settings
     mkdirSync(join(globalDir, 'harness-kit'), { recursive: true })
     writeFileSync(globalFile, JSON.stringify({
-      'claude-code': {
+      'claude-cli': {
         phases: {
           bootstrap: { model: 'overridden-bootstrap-model', effort: 'low' }
         }
@@ -59,8 +59,8 @@ describe('T17 — Orchestrator Settings Overrides', () => {
 
   it('applies custom timeoutMs configuration and aborts when timeout expires', async () => {
     const fakeRunner = new FakeAgentRunner()
-    Object.defineProperty(fakeRunner, 'type', { value: 'claude-code', writable: true })
-    
+    Object.defineProperty(fakeRunner, 'type', { value: 'claude-cli', writable: true })
+
     // Stub runner to simulate a long running task that checks abort signal
     fakeRunner.run = async (invocation, options) => {
       fakeRunner.invocations.push(invocation)
@@ -89,8 +89,8 @@ describe('T17 — Orchestrator Settings Overrides', () => {
 
   it('reads timeoutMs from phase settings', async () => {
     const fakeRunner = new FakeAgentRunner()
-    Object.defineProperty(fakeRunner, 'type', { value: 'claude-code', writable: true })
-    
+    Object.defineProperty(fakeRunner, 'type', { value: 'claude-cli', writable: true })
+
     fakeRunner.run = async (invocation, options) => {
       fakeRunner.invocations.push(invocation)
       return { success: true, stdout: 'mock', stderr: '', raw: '{}' }
@@ -102,7 +102,7 @@ describe('T17 — Orchestrator Settings Overrides', () => {
 
     mkdirSync(join(globalDir, 'harness-kit'), { recursive: true })
     writeFileSync(globalFile, JSON.stringify({
-      'claude-code': {
+      'claude-cli': {
         phases: {
           bootstrap: { timeoutMs: 9999 }
         }
@@ -120,9 +120,9 @@ describe('T17 — Orchestrator Settings Overrides', () => {
     }, { workingDir: tmpDir })
 
     const spy = vi.spyOn(global, 'setTimeout')
-    
+
     await orchestrator.runBootstrapOnly()
-    
+
     expect(spy).toHaveBeenCalledWith(expect.any(Function), 9999)
   })
 })

@@ -70,7 +70,7 @@ class SteeringAnalyzer {
 
 REQUIRED: Pass a valid `IAgentRunner` instance — `SteeringAnalyzer` invokes the runner to call the LLM.
 
-REQUIRED: The CLI (`run.ts`) falls back to `AgentRunnerFactory.create({ type: 'claude-code' })` when no explicit `--agent` flag is provided, ensuring steering always works regardless of agent selection.
+REQUIRED: The CLI (`run.ts`) falls back to `AgentRunnerFactory.create({ type: 'claude-cli' })` when no explicit `--agent` flag is provided, ensuring steering always works regardless of agent selection.
 
 FORBIDDEN: Do not call `applySteeringActions` with an empty array — check `actions.length > 0` before applying.
 

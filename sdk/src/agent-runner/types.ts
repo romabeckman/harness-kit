@@ -35,7 +35,7 @@ export interface TokenUsage {
   cacheReadTokens: number
   costUsd: number
   model?: string   // extracted from modelUsage in result event
-  effort?: string  // from ClaudeCodeRunnerConfig if set
+  effort?: string  // from ClaudeCLIRunnerConfig if set
 }
 
 export type ContextPayload = Record<string, unknown>

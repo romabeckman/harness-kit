@@ -7,7 +7,7 @@ export interface OrchestratorConfig {
   score: number
   reworks: number
   projectPaths: string[]
-  agentRunner?: IAgentRunner  // defaults to ClaudeCodeRunner
+  agentRunner?: IAgentRunner  // defaults to ClaudeCLIRunner
   productDir?: string
   settings?: HarnessSettings
   timeoutMs?: number

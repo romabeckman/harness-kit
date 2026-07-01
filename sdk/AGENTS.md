@@ -47,7 +47,7 @@ Mode: autonomous
 <JSON payload>
 ```
 
-This serialization happens inside `ClaudeCodeRunner.#buildPrompt()` (and equivalent runners).
+This serialization happens inside `ClaudeCLIRunner.#buildPrompt()` (and equivalent runners).
 
 ---
 
@@ -61,7 +61,7 @@ When `invokeAgent` is called on `PhaseContext` (implemented by `HarnessOrchestra
 4. **Token recording**: On completion, `output.usage` is recorded to `docs/product/tokens.jsonl` via `TokenLedger`.
 5. **Spinner stop**: `TerminalProgress.stopSpinner()` is always called in the `finally` block.
 
-### Runner Execution (ClaudeCodeRunner example)
+### Runner Execution (ClaudeCLIRunner example)
 
 1. Spawns the `claude` CLI subprocess with flags: `--print`, `--output-format stream-json`, `--verbose`, `--dangerously-skip-permissions`.
 2. Passes `--agent <name>` and optionally `--model` and `--effort`.

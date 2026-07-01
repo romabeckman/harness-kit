@@ -14,7 +14,7 @@ sdk/
 │   │   ├── IAgentRunner.ts       # Outbound port interface for agent invocation
 │   │   ├── AgentRunnerRegistry.ts# Registry for strategy registrations
 │   │   ├── AgentRunnerFactory.ts # Factory to instantiate runner strategies
-│   │   ├── claude-code/          # Subdirectory for Claude CLI strategy
+│   │   ├── claude-cli/          # Subdirectory for Claude CLI strategy
 │   │   ├── claude-agent/         # Subdirectory for Anthropic API strategy
 │   │   └── antigravity/          # Subdirectory for Google Antigravity strategy
 │   ├── orchestrator/             # Core state machine loop and phase chain
@@ -89,7 +89,7 @@ AgentRunnerRegistry.register({
 })
 
 # WRONG: Direct strategy instantiation in core logic
-const runner = new ClaudeCodeRunner() // Hard-coded instantiation
+const runner = new ClaudeCLIRunner() // Hard-coded instantiation
 
 # CORRECT: Constants for boundaries and configurations
 const MAX_BATCH_SIZE = 5

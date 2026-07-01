@@ -40,21 +40,21 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
 
   console.log(
     "\n" +
-      StartupBanner.render(process.stdout.columns || DEFAULT_LINE_LENGTH) +
-      "\n",
+    StartupBanner.render(process.stdout.columns || DEFAULT_LINE_LENGTH) +
+    "\n",
   );
 
   const action = hasExistingSession
     ? await select({
-        message: "What would you like to do?",
-        choices: [
-          { name: "resume — continue from last session", value: "resume" },
-          {
-            name: "reset  — discard current session and start a new cycle",
-            value: "reset",
-          },
-        ],
-      })
+      message: "What would you like to do?",
+      choices: [
+        { name: "resume — continue from last session", value: "resume" },
+        {
+          name: "reset  — discard current session and start a new cycle",
+          value: "reset",
+        },
+      ],
+    })
     : "reset";
 
   let steeringMessage = "";
@@ -94,9 +94,9 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
 
   const agentRunner = options.agentType
     ? AgentRunnerFactory.create({
-        type: options.agentType,
-        model: options.model,
-      })
+      type: options.agentType,
+      model: options.model,
+    })
     : undefined;
 
   const orchestrator = new HarnessOrchestrator({
@@ -137,7 +137,7 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
         require("../../orchestrator/SteeringAnalyzer") as typeof import("../../orchestrator/SteeringAnalyzer");
       // Use explicit agentRunner or fall back to a default runner for steering analysis
       const steeringRunner =
-        agentRunner ?? AgentRunnerFactory.create({ type: "claude-code" });
+        agentRunner ?? AgentRunnerFactory.create({ type: "claude-cli" });
       const actions = await SteeringAnalyzer.analyze(
         steeringMessage,
         steeringRunner,

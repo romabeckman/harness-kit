@@ -18,7 +18,7 @@ Structure settings in a nested object. Use the first level for the runner type a
 ```jsonc
 // # CORRECT: Valid settings schema structure
 {
-  "claude-code": {
+  "claude-cli": {
     "phases": {
       "bootstrap":   { "model": "claude-sonnet-4-6", "effort": "high" },
       "phase_a":     { "model": "claude-sonnet-4-6", "effort": "high" },

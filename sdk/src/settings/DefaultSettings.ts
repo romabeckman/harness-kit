@@ -4,7 +4,7 @@ import type { HarnessSettingsMap } from './SettingsSchema'
 export const DEFAULT_PHASE_TIMEOUT_MS = 1_800_000 // 30 minutes
 
 export const DEFAULT_SETTINGS: HarnessSettingsMap = {
-  'claude-code': {
+  'claude-cli': {
     phases: {
       bootstrap: { model: 'claude-sonnet-4-6', effort: 'low' },
       phase_a: { model: 'claude-sonnet-4-6', effort: 'high' },

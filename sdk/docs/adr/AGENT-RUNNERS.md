@@ -11,7 +11,7 @@ sdk/src/
     ├── IAgentRunner.ts           # Core interface for running invocations
     ├── AgentRunnerRegistry.ts    # Static singleton runner strategy registry
     ├── AgentRunnerFactory.ts     # Dynamic factory creating strategy instances
-    ├── claude-code/              # Claude CLI execution adapter
+    ├── claude-cli/              # Claude CLI execution adapter
     ├── claude-agent/             # Anthropic API execution adapter
     └── antigravity/              # Google Antigravity execution adapter
 </folder_structure>
@@ -34,7 +34,7 @@ AgentRunnerRegistry.register({
 })
 
 # WRONG: Hardcode and instantiate concrete runner strategies in core logic
-const runner = new ClaudeCodeRunner() // Violates ports and adapters decoupling
+const runner = new ClaudeCLIRunner() // Violates ports and adapters decoupling
 </code_example>
 
 ## PARAMETERS / CONFIGURATIONS
