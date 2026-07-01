@@ -22,10 +22,10 @@ export type { AgentInvocation, AgentOutput, ContextPayload } from './agent-runne
 export { ClaudeCodeRunner } from './agent-runner/claude-code/ClaudeCodeRunner'
 export type { ClaudeCodeRunnerConfig } from './agent-runner/claude-code/ClaudeCodeRunner'
 
-// Agent runner — ClaudeAgentRunner (CI/CD, requires ANTHROPIC_API_KEY)
-export { ClaudeAgentRunner } from './agent-runner/claude-agent/ClaudeAgentRunner'
+// Agent runner — ClaudeSdkRunner (CI/CD, requires ANTHROPIC_API_KEY)
+export { ClaudeSdkRunner } from './agent-runner/claude-sdk/ClaudeSdkRunner'
 export { AgentRunnerError, AgentRunnerErrorCode } from './agent-runner/AgentRunnerError'
-export type { AgentRunnerConfig } from './agent-runner/claude-agent/AgentRunnerConfig'
+export type { AgentRunnerConfig } from './agent-runner/claude-sdk/AgentRunnerConfig'
 
 // Modular runner registry & factory, and built-in runners
 export { AgentRunnerRegistry } from './agent-runner/AgentRunnerRegistry'

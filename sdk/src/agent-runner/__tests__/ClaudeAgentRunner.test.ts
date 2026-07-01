@@ -26,7 +26,7 @@ vi.mock('@anthropic-ai/sdk', () => {
   }
 })
 
-import { ClaudeAgentRunner } from '../claude-agent/ClaudeAgentRunner'
+import { ClaudeSdkRunner } from '../claude-sdk/ClaudeSdkRunner'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 
 // ─── Fixture ──────────────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ const fakeInvocation: AgentInvocation = {
 }
 
 // ─── T03: Constructor ─────────────────────────────────────────────────────────
-describe('ClaudeAgentRunner — constructor', () => {
+describe('ClaudeSdkRunner — constructor', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -49,31 +49,31 @@ describe('ClaudeAgentRunner — constructor', () => {
   })
 
   it('constructs successfully when ANTHROPIC_API_KEY is set', () => {
-    expect(() => new ClaudeAgentRunner()).not.toThrow()
+    expect(() => new ClaudeSdkRunner()).not.toThrow()
   })
 
   it('throws AgentRunnerError(MISSING_API_KEY) when env var is absent', () => {
     delete process.env.ANTHROPIC_API_KEY
-    expect(() => new ClaudeAgentRunner()).toThrow(AgentRunnerError)
+    expect(() => new ClaudeSdkRunner()).toThrow(AgentRunnerError)
   })
 
   it('throws with code MISSING_API_KEY', () => {
     delete process.env.ANTHROPIC_API_KEY
-    expect(() => new ClaudeAgentRunner()).toThrow(
+    expect(() => new ClaudeSdkRunner()).toThrow(
       expect.objectContaining({ code: AgentRunnerErrorCode.MISSING_API_KEY })
     )
   })
 
   it('throws with skill "unknown" during construction', () => {
     delete process.env.ANTHROPIC_API_KEY
-    expect(() => new ClaudeAgentRunner()).toThrow(
+    expect(() => new ClaudeSdkRunner()).toThrow(
       expect.objectContaining({ skill: 'unknown' })
     )
   })
 
   it('throws with phase "construction"', () => {
     delete process.env.ANTHROPIC_API_KEY
-    expect(() => new ClaudeAgentRunner()).toThrow(
+    expect(() => new ClaudeSdkRunner()).toThrow(
       expect.objectContaining({ phase: 'construction' })
     )
   })
@@ -82,7 +82,7 @@ describe('ClaudeAgentRunner — constructor', () => {
     delete process.env.ANTHROPIC_API_KEY
     let caught: unknown
     try {
-      new ClaudeAgentRunner()
+      new ClaudeSdkRunner()
     } catch (e) {
       caught = e
     }
@@ -91,24 +91,24 @@ describe('ClaudeAgentRunner — constructor', () => {
 
   it('throws when ANTHROPIC_API_KEY is empty string', () => {
     process.env.ANTHROPIC_API_KEY = ''
-    expect(() => new ClaudeAgentRunner()).toThrow(
+    expect(() => new ClaudeSdkRunner()).toThrow(
       expect.objectContaining({ code: AgentRunnerErrorCode.MISSING_API_KEY })
     )
   })
 
   it('uses DEFAULT_AGENT_RUNNER_CONFIG when no config provided', () => {
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     expect(runner).toBeDefined()
   })
 
   it('accepts partial config overrides', () => {
-    const runner = new ClaudeAgentRunner({ model: 'claude-opus-4-5' })
+    const runner = new ClaudeSdkRunner({ model: 'claude-opus-4-5' })
     expect(runner).toBeDefined()
   })
 })
 
 // ─── T04: Happy Path (TS01) ───────────────────────────────────────────────────
-describe('ClaudeAgentRunner.run() — happy path (TS01)', () => {
+describe('ClaudeSdkRunner.run() — happy path (TS01)', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -122,7 +122,7 @@ describe('ClaudeAgentRunner.run() — happy path (TS01)', () => {
     mockMessagesCreate.mockResolvedValue({
       content: [{ type: 'text', text: '```json\n{"result":"ok"}\n```' }],
     })
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     const output = await runner.run(fakeInvocation)
     expect(output.raw).toBe('```json\n{"result":"ok"}\n```')
   })
@@ -131,7 +131,7 @@ describe('ClaudeAgentRunner.run() — happy path (TS01)', () => {
     mockMessagesCreate.mockResolvedValue({
       content: [{ type: 'text', text: '```json\n{"result":"ok"}\n```' }],
     })
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     const output = await runner.run(fakeInvocation)
     expect(output.artefacts).toEqual({ result: 'ok' })
   })
@@ -140,13 +140,13 @@ describe('ClaudeAgentRunner.run() — happy path (TS01)', () => {
     mockMessagesCreate.mockResolvedValue({
       content: [{ type: 'text', text: 'plain response' }],
     })
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     await expect(runner.run(fakeInvocation)).resolves.toBeDefined()
   })
 })
 
 // ─── T05: JSON extraction — markdown fences (TS02) ───────────────────────────
-describe('ClaudeAgentRunner.run() — JSON extraction: markdown fences (TS02)', () => {
+describe('ClaudeSdkRunner.run() — JSON extraction: markdown fences (TS02)', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -160,7 +160,7 @@ describe('ClaudeAgentRunner.run() — JSON extraction: markdown fences (TS02)', 
     mockMessagesCreate.mockResolvedValue({
       content: [{ type: 'text', text: 'Analysis complete.\n```json\n{"status":"done","score":"9"}\n```' }],
     })
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     const output = await runner.run(fakeInvocation)
     expect(output.artefacts).toEqual({ status: 'done', score: '9' })
   })
@@ -168,14 +168,14 @@ describe('ClaudeAgentRunner.run() — JSON extraction: markdown fences (TS02)', 
   it('raw output contains full prose and fence (TS02)', async () => {
     const text = 'Analysis complete.\n```json\n{"status":"done","score":"9"}\n```'
     mockMessagesCreate.mockResolvedValue({ content: [{ type: 'text', text }] })
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     const output = await runner.run(fakeInvocation)
     expect(output.raw).toBe(text)
   })
 })
 
 // ─── T06: JSON extraction — bare JSON (TS03) ─────────────────────────────────
-describe('ClaudeAgentRunner.run() — JSON extraction: bare JSON (TS03)', () => {
+describe('ClaudeSdkRunner.run() — JSON extraction: bare JSON (TS03)', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -189,14 +189,14 @@ describe('ClaudeAgentRunner.run() — JSON extraction: bare JSON (TS03)', () => 
     mockMessagesCreate.mockResolvedValue({
       content: [{ type: 'text', text: 'Here is the result: {"verdict":"PASS","reason":"all good"}' }],
     })
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     const output = await runner.run(fakeInvocation)
     expect(output.artefacts).toEqual({ verdict: 'PASS', reason: 'all good' })
   })
 })
 
 // ─── T07: JSON extraction — no JSON (TS04) ───────────────────────────────────
-describe('ClaudeAgentRunner.run() — JSON extraction: no JSON (TS04)', () => {
+describe('ClaudeSdkRunner.run() — JSON extraction: no JSON (TS04)', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -210,7 +210,7 @@ describe('ClaudeAgentRunner.run() — JSON extraction: no JSON (TS04)', () => {
     mockMessagesCreate.mockResolvedValue({
       content: [{ type: 'text', text: 'The implementation looks correct.' }],
     })
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     const output = await runner.run(fakeInvocation)
     expect(output.raw).toBe('The implementation looks correct.')
     expect(output.artefacts).toBeUndefined()
@@ -218,7 +218,7 @@ describe('ClaudeAgentRunner.run() — JSON extraction: no JSON (TS04)', () => {
 })
 
 // ─── T08: Timeout (TS05) ─────────────────────────────────────────────────────
-describe('ClaudeAgentRunner.run() — timeout (TS05)', () => {
+describe('ClaudeSdkRunner.run() — timeout (TS05)', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -230,7 +230,7 @@ describe('ClaudeAgentRunner.run() — timeout (TS05)', () => {
   })
 
   it('throws AgentRunnerError(TIMEOUT) when request exceeds timeoutMs', async () => {
-    const runner = new ClaudeAgentRunner({ timeoutMs: 50 })
+    const runner = new ClaudeSdkRunner({ timeoutMs: 50 })
     mockMessagesCreate.mockImplementation(() => new Promise(() => {})) // never resolves
 
     vi.useFakeTimers()
@@ -248,7 +248,7 @@ describe('ClaudeAgentRunner.run() — timeout (TS05)', () => {
 })
 
 // ─── T09: API error 4xx/5xx (TS07+TS08) ──────────────────────────────────────
-describe('ClaudeAgentRunner.run() — API errors (TS07, TS08)', () => {
+describe('ClaudeSdkRunner.run() — API errors (TS07, TS08)', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -262,7 +262,7 @@ describe('ClaudeAgentRunner.run() — API errors (TS07, TS08)', () => {
     const sdk = await import('@anthropic-ai/sdk') as unknown as { APIStatusError: new (status: number, body: unknown, message: string, headers: unknown) => Error & { status: number } }
     const apiError = new sdk.APIStatusError(401, { error: 'Unauthorized' }, 'Unauthorized', {})
     mockMessagesCreate.mockRejectedValue(apiError)
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     await expect(runner.run(fakeInvocation)).rejects.toMatchObject({
       code: AgentRunnerErrorCode.API_ERROR,
       phase: 'dispatch',
@@ -274,7 +274,7 @@ describe('ClaudeAgentRunner.run() — API errors (TS07, TS08)', () => {
     const sdk = await import('@anthropic-ai/sdk') as unknown as { APIStatusError: new (status: number, body: unknown, message: string, headers: unknown) => Error & { status: number } }
     const apiError = new sdk.APIStatusError(503, { error: 'Service Unavailable' }, 'Service Unavailable', {})
     mockMessagesCreate.mockRejectedValue(apiError)
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     let caught: AgentRunnerError | undefined
     try {
       await runner.run(fakeInvocation)
@@ -288,7 +288,7 @@ describe('ClaudeAgentRunner.run() — API errors (TS07, TS08)', () => {
 })
 
 // ─── T10: Network failure (TS09) ─────────────────────────────────────────────
-describe('ClaudeAgentRunner.run() — network failure (TS09)', () => {
+describe('ClaudeSdkRunner.run() — network failure (TS09)', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -302,7 +302,7 @@ describe('ClaudeAgentRunner.run() — network failure (TS09)', () => {
     const { APIConnectionError } = await import('@anthropic-ai/sdk')
     const connError = new APIConnectionError({ message: 'ECONNREFUSED' })
     mockMessagesCreate.mockRejectedValue(connError)
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     await expect(runner.run(fakeInvocation)).rejects.toMatchObject({
       code: AgentRunnerErrorCode.NETWORK_ERROR,
       skill: 'tdd-orchestrator',
@@ -313,7 +313,7 @@ describe('ClaudeAgentRunner.run() — network failure (TS09)', () => {
 })
 
 // ─── T10b: Quota / rate-limit errors ─────────────────────────────────────────
-describe('ClaudeAgentRunner.run() — quota and rate-limit errors', () => {
+describe('ClaudeSdkRunner.run() — quota and rate-limit errors', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -329,7 +329,7 @@ describe('ClaudeAgentRunner.run() — quota and rate-limit errors', () => {
     }
     const err429 = new sdk.APIStatusError(429, { error: 'rate_limit_error' }, 'Too Many Requests', {})
     mockMessagesCreate.mockRejectedValue(err429)
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     await expect(runner.run(fakeInvocation)).rejects.toMatchObject({
       code: AgentRunnerErrorCode.QUOTA_EXCEEDED,
       phase: 'dispatch',
@@ -341,7 +341,7 @@ describe('ClaudeAgentRunner.run() — quota and rate-limit errors', () => {
     ;(err as any).status = 429
     ;(err as any).name = 'APIStatusError'
     mockMessagesCreate.mockRejectedValue(err)
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     await expect(runner.run(fakeInvocation)).rejects.toMatchObject({
       code: AgentRunnerErrorCode.QUOTA_EXCEEDED,
     })
@@ -353,7 +353,7 @@ describe('ClaudeAgentRunner.run() — quota and rate-limit errors', () => {
     }
     const overloadedErr = new sdk.APIStatusError(529, {}, 'overloaded_error: server is temporarily overloaded', {})
     mockMessagesCreate.mockRejectedValue(overloadedErr)
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     await expect(runner.run(fakeInvocation)).rejects.toMatchObject({
       code: AgentRunnerErrorCode.QUOTA_EXCEEDED,
     })
@@ -365,7 +365,7 @@ describe('ClaudeAgentRunner.run() — quota and rate-limit errors', () => {
     }
     const err429 = new sdk.APIStatusError(429, {}, 'rate limit', {})
     mockMessagesCreate.mockRejectedValue(err429)
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     let caught: AgentRunnerError | undefined
     try { await runner.run(fakeInvocation) } catch (e) { caught = e as AgentRunnerError }
     expect(caught?.cause).toBe(err429)
@@ -373,7 +373,7 @@ describe('ClaudeAgentRunner.run() — quota and rate-limit errors', () => {
 })
 
 // ─── T10c: Unknown / generic errors ──────────────────────────────────────────
-describe('ClaudeAgentRunner.run() — unknown errors', () => {
+describe('ClaudeSdkRunner.run() — unknown errors', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -386,7 +386,7 @@ describe('ClaudeAgentRunner.run() — unknown errors', () => {
   it('throws UNKNOWN_ERROR for unrecognised plain Error', async () => {
     const unknownErr = new Error('something unexpected happened')
     mockMessagesCreate.mockRejectedValue(unknownErr)
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     await expect(runner.run(fakeInvocation)).rejects.toMatchObject({
       code: AgentRunnerErrorCode.UNKNOWN_ERROR,
       phase: 'dispatch',
@@ -396,7 +396,7 @@ describe('ClaudeAgentRunner.run() — unknown errors', () => {
   it('UNKNOWN_ERROR preserves original error as cause', async () => {
     const unknownErr = new Error('weird failure')
     mockMessagesCreate.mockRejectedValue(unknownErr)
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     let caught: AgentRunnerError | undefined
     try { await runner.run(fakeInvocation) } catch (e) { caught = e as AgentRunnerError }
     expect(caught?.cause).toBe(unknownErr)
@@ -404,7 +404,7 @@ describe('ClaudeAgentRunner.run() — unknown errors', () => {
 })
 
 // ─── T11: Custom model config (TS10) ─────────────────────────────────────────
-describe('ClaudeAgentRunner.run() — custom model config (TS10)', () => {
+describe('ClaudeSdkRunner.run() — custom model config (TS10)', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -416,7 +416,7 @@ describe('ClaudeAgentRunner.run() — custom model config (TS10)', () => {
 
   it('passes the configured model to messages.create', async () => {
     mockMessagesCreate.mockResolvedValue({ content: [{ type: 'text', text: 'done' }] })
-    const runner = new ClaudeAgentRunner({ model: 'claude-opus-4-5' })
+    const runner = new ClaudeSdkRunner({ model: 'claude-opus-4-5' })
     await runner.run(fakeInvocation)
     expect(mockMessagesCreate).toHaveBeenCalledWith(
       expect.objectContaining({ model: 'claude-opus-4-5' }),
@@ -426,7 +426,7 @@ describe('ClaudeAgentRunner.run() — custom model config (TS10)', () => {
 })
 
 // ─── T12: Empty response (TS11) ──────────────────────────────────────────────
-describe('ClaudeAgentRunner.run() — empty response (TS11)', () => {
+describe('ClaudeSdkRunner.run() — empty response (TS11)', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -438,7 +438,7 @@ describe('ClaudeAgentRunner.run() — empty response (TS11)', () => {
 
   it('returns empty raw string and no artefacts when API returns empty text', async () => {
     mockMessagesCreate.mockResolvedValue({ content: [{ type: 'text', text: '' }] })
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     const output = await runner.run(fakeInvocation)
     expect(output.raw).toBe('')
     expect(output.artefacts).toBeUndefined()
@@ -446,7 +446,7 @@ describe('ClaudeAgentRunner.run() — empty response (TS11)', () => {
 })
 
 // ─── T13: Large response (TS12) + error fields completeness (TS13) ────────────
-describe('ClaudeAgentRunner.run() — large response (TS12)', () => {
+describe('ClaudeSdkRunner.run() — large response (TS12)', () => {
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'test-api-key'
     mockMessagesCreate.mockReset()
@@ -459,7 +459,7 @@ describe('ClaudeAgentRunner.run() — large response (TS12)', () => {
   it('returns 100KB response without truncation', async () => {
     const largeString = 'x'.repeat(102400)
     mockMessagesCreate.mockResolvedValue({ content: [{ type: 'text', text: largeString }] })
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
     const output = await runner.run(fakeInvocation)
     expect(output.raw.length).toBeGreaterThan(50000)
     expect(output.raw).toBe(largeString)
@@ -478,7 +478,7 @@ describe('AgentRunnerError fields completeness (TS13)', () => {
   })
 
   it('TS13-A: TIMEOUT error has all required fields', async () => {
-    const runner = new ClaudeAgentRunner({ timeoutMs: 50 })
+    const runner = new ClaudeSdkRunner({ timeoutMs: 50 })
     mockMessagesCreate.mockImplementation(() => new Promise(() => {}))
 
     vi.useFakeTimers()
@@ -506,7 +506,7 @@ describe('AgentRunnerError fields completeness (TS13)', () => {
     const sdk = await import('@anthropic-ai/sdk') as unknown as { APIStatusError: new (status: number, body: unknown, message: string, headers: unknown) => Error & { status: number } }
     const apiError = new sdk.APIStatusError(401, {}, 'Unauthorized', {})
     mockMessagesCreate.mockRejectedValue(apiError)
-    const runner = new ClaudeAgentRunner()
+    const runner = new ClaudeSdkRunner()
 
     let error: AgentRunnerError | undefined
     try {
@@ -527,7 +527,7 @@ describe('AgentRunnerError fields completeness (TS13)', () => {
     delete process.env.ANTHROPIC_API_KEY
     let error: AgentRunnerError | undefined
     try {
-      new ClaudeAgentRunner()
+      new ClaudeSdkRunner()
     } catch (e) {
       error = e as AgentRunnerError
     }

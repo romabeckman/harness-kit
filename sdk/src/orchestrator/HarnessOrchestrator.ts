@@ -49,7 +49,7 @@ export class HarnessOrchestrator implements PhaseContext {
   constructor(config: OrchestratorConfig, options: HarnessOrchestratorOptions = {}) {
     this.agentRunner = config.agentRunner
       ?? (process.env.ANTHROPIC_API_KEY
-        ? AgentRunnerFactory.create({ type: 'claude-agent' })
+        ? AgentRunnerFactory.create({ type: 'claude-sdk' })
         : AgentRunnerFactory.create({ type: 'claude-code' }))
     this.config = config
     this.workingDir = options.workingDir ?? process.cwd()

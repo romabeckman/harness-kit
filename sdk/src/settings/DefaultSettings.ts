@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       phase_e: { model: 'claude-sonnet-4-6', effort: 'low' },
     }
   },
-  'claude-agent': {
+  'claude-sdk': {
     phases: {
       bootstrap: { model: 'claude-sonnet-4-6', effort: 'low' },
       phase_a: { model: 'claude-sonnet-4-6', effort: 'high' },
