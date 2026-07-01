@@ -35,8 +35,8 @@ export { AbstractCliRunner } from './agent-runner/AbstractCliRunner'
 export { AntigravityCLIRunner } from './agent-runner/antigravity-cli/AntigravityCLIRunner'
 export { CopilotSDKRunner } from './agent-runner/copilot-sdk/CopilotSDKRunner'
 export type { CopilotSDKRunnerConfig } from './agent-runner/copilot-sdk/CopilotSDKRunner'
-export { CursorRunner } from './agent-runner/cursor/CursorRunner'
-export type { CursorRunnerConfig } from './agent-runner/cursor/CursorRunner'
+export { CursorSDKRunner } from './agent-runner/cursor-sdk/CursorSDKRunner'
+export type { CursorSDKRunnerConfig } from './agent-runner/cursor-sdk/CursorSDKRunner'
 
 // File state types
 export type {

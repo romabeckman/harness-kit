@@ -44,7 +44,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       phase_e: { model: 'gpt-5.3-codex', effort: 'low' },
     }
   },
-  'cursor': {
+  'cursor-sdk': {
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'low' },
       phase_a: { model: 'claude-sonnet-4-6', effort: 'high' },

@@ -4,17 +4,17 @@ import type { AgentInvocation, AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 
-export interface CursorRunnerConfig {
+export interface CursorSDKRunnerConfig {
   readonly model?: string
   readonly timeoutMs?: number
 }
 
-export class CursorRunner implements IAgentRunner {
-  readonly type = 'cursor'
+export class CursorSDKRunner implements IAgentRunner {
+  readonly type = 'cursor-sdk'
   readonly #model: string | undefined
   readonly timeoutMs: number
 
-  constructor(config?: Partial<CursorRunnerConfig>) {
+  constructor(config?: Partial<CursorSDKRunnerConfig>) {
     this.timeoutMs = config?.timeoutMs ?? 0
     this.#model = config?.model
   }
@@ -29,7 +29,7 @@ export class CursorRunner implements IAgentRunner {
         code: AgentRunnerErrorCode.MISSING_API_KEY,
         skill: invocation.skill ?? 'unknown',
         phase: 'dispatch',
-        message: 'CursorRunner requires CURSOR_API_KEY environment variable to be set',
+        message: 'CursorSDKRunner requires CURSOR_API_KEY environment variable to be set',
       })
     }
 
@@ -175,15 +175,15 @@ export class CursorRunner implements IAgentRunner {
 }
 
 AgentRunnerRegistry.register({
-  type: 'cursor',
-  constructor: CursorRunner,
+  type: 'cursor-sdk',
+  constructor: CursorSDKRunner,
   validateConfig: () => {
     if (!process.env.CURSOR_API_KEY) {
       throw new AgentRunnerError({
         code: AgentRunnerErrorCode.MISSING_API_KEY,
         skill: 'unknown',
         phase: 'validate',
-        message: 'CursorRunner requires CURSOR_API_KEY environment variable to be set',
+        message: 'CursorSDKRunner requires CURSOR_API_KEY environment variable to be set',
       })
     }
   },

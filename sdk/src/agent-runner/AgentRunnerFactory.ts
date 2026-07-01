@@ -7,7 +7,7 @@ import './claude-cli/ClaudeCLIRunner'
 import './claude-sdk/ClaudeSDKRunner'
 import './antigravity-cli/AntigravityCLIRunner'
 import './copilot-sdk/CopilotSDKRunner'
-import './cursor/CursorRunner'
+import './cursor-sdk/CursorSDKRunner'
 
 export class AgentRunnerFactory {
   static create(config: RunnerConfig): IAgentRunner {

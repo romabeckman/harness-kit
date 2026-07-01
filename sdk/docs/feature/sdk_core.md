@@ -106,7 +106,7 @@ sdk/
       TokenLedger.ts                  # JSONL-backed token usage recorder; exposes report() and printReport()
     ui/
       StartupBanner.ts                # ASCII welcome banner rendered at CLI startup
-      AnsiHelpers.ts                  # ANSI escape helpers — colors, cursor control, line clearing
+      AnsiHelpers.ts                  # ANSI escape helpers — colors, cursor-sdk control, line clearing
       TerminalProgress.ts             # Animated braille spinner and one-shot progress bar
     orchestrator/
       SteeringAnalyzer.ts             # LLM-based classifier: text → SteeringAction[]

@@ -65,7 +65,7 @@ sdk/
 | `JsonExtractionProtocol` | Defensive JSON parser supporting top-level arrays and objects; never throws. Returns `ExtractionResult | ExtractionError`. | `src/json-extraction/` |
 | `FileStateManager` | Atomic file reads and writes for all markdown/JSON state files. | `src/file-state/` |
 | `TerminalProgress` | Animated CLI spinner and progress bar using ANSI escape codes. | `src/ui/` |
-| `AnsiHelpers` | Low-level ANSI escape helpers: cursor control, color wrappers (`blue`, `cyan`, `green`, `dim`). | `src/ui/` |
+| `AnsiHelpers` | Low-level ANSI escape helpers: cursor-sdk control, color wrappers (`blue`, `cyan`, `green`, `dim`). | `src/ui/` |
 
 ## PATTERNS
 REQUIRED: Use Constructor Dependency Injection to decouple ports from adapters.

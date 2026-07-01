@@ -19,7 +19,7 @@ vi.mock('@cursor/sdk', () => ({
 }))
 
 // ─── Import after mock ────────────────────────────────────────────────────────
-import { CursorRunner } from '../cursor/CursorRunner'
+import { CursorSDKRunner } from '../cursor-sdk/CursorSDKRunner'
 
 const baseInvocation = {
   skill: 'test-skill',
@@ -28,7 +28,7 @@ const baseInvocation = {
   payload: {},
 }
 
-describe('CursorRunner — timeout concurrency', () => {
+describe('CursorSDKRunner — timeout concurrency', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useRealTimers()
@@ -41,18 +41,18 @@ describe('CursorRunner — timeout concurrency', () => {
   })
 
   it('resolves successfully on happy path', async () => {
-    const runner = new CursorRunner({ timeoutMs: 5_000 })
+    const runner = new CursorSDKRunner({ timeoutMs: 5_000 })
     const out = await runner.run(baseInvocation)
     expect(out.success).toBe(true)
   })
 
   it('throws TIMEOUT error when run.wait() hangs past timeoutMs', async () => {
     // wait() never resolves
-    mockWait.mockImplementation(() => new Promise(() => {}))
+    mockWait.mockImplementation(() => new Promise(() => { }))
     mockSend.mockImplementation(async () => ({ wait: mockWait, cancel: mockCancel }))
     mockCreate.mockImplementation(async () => ({ send: mockSend, close: mockClose }))
 
-    const runner = new CursorRunner({ timeoutMs: 10 })
+    const runner = new CursorSDKRunner({ timeoutMs: 10 })
     const promise = runner.run(baseInvocation)
 
     await expect(promise).rejects.toThrow(
@@ -61,11 +61,11 @@ describe('CursorRunner — timeout concurrency', () => {
   })
 
   it('calls run.cancel() when timeout fires (no zombie background work)', async () => {
-    mockWait.mockImplementation(() => new Promise(() => {}))
+    mockWait.mockImplementation(() => new Promise(() => { }))
     mockSend.mockImplementation(async () => ({ wait: mockWait, cancel: mockCancel }))
     mockCreate.mockImplementation(async () => ({ send: mockSend, close: mockClose }))
 
-    const runner = new CursorRunner({ timeoutMs: 10 })
+    const runner = new CursorSDKRunner({ timeoutMs: 10 })
     const promise = runner.run(baseInvocation)
 
     await expect(promise).rejects.toThrow()
@@ -77,11 +77,11 @@ describe('CursorRunner — timeout concurrency', () => {
   it('propagates external AbortSignal and rejects promptly', async () => {
     const controller = new AbortController()
 
-    mockWait.mockImplementation(() => new Promise(() => {}))
+    mockWait.mockImplementation(() => new Promise(() => { }))
     mockSend.mockImplementation(async () => ({ wait: mockWait, cancel: mockCancel }))
     mockCreate.mockImplementation(async () => ({ send: mockSend, close: mockClose }))
 
-    const runner = new CursorRunner({ timeoutMs: 60_000 })
+    const runner = new CursorSDKRunner({ timeoutMs: 60_000 })
     const promise = runner.run(baseInvocation, { signal: controller.signal })
 
     controller.abort()
@@ -94,11 +94,11 @@ describe('CursorRunner — timeout concurrency', () => {
     const origUnhandled = process.listeners('unhandledRejection')
     process.on('unhandledRejection', (reason) => rejections.push(reason))
 
-    mockWait.mockImplementation(() => new Promise(() => {}))
+    mockWait.mockImplementation(() => new Promise(() => { }))
     mockSend.mockImplementation(async () => ({ wait: mockWait, cancel: mockCancel }))
     mockCreate.mockImplementation(async () => ({ send: mockSend, close: mockClose }))
 
-    const runner = new CursorRunner({ timeoutMs: 10 })
+    const runner = new CursorSDKRunner({ timeoutMs: 10 })
     const promise = runner.run(baseInvocation)
 
     await expect(promise).rejects.toThrow()
