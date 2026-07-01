@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { CopilotRunner } from '../copilot/CopilotRunner'
+import { CopilotSDKRunner } from '../copilot-sdk/CopilotSDKRunner'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerFactory } from '../AgentRunnerFactory'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
@@ -28,7 +28,7 @@ vi.mock('@github/copilot-sdk', () => {
   }
 })
 
-describe('CopilotRunner', () => {
+describe('CopilotSDKRunner', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     mockStart.mockResolvedValue(undefined)
@@ -43,13 +43,13 @@ describe('CopilotRunner', () => {
   })
 
   it('registers in global registry', () => {
-    expect(AgentRunnerRegistry.has('copilot')).toBe(true)
-    const runner = AgentRunnerFactory.create({ type: 'copilot' })
-    expect(runner).toBeInstanceOf(CopilotRunner)
+    expect(AgentRunnerRegistry.has('copilot-sdk')).toBe(true)
+    const runner = AgentRunnerFactory.create({ type: 'copilot-sdk' })
+    expect(runner).toBeInstanceOf(CopilotSDKRunner)
   })
 
   it('runs prompt via CopilotClient session', async () => {
-    const runner = new CopilotRunner({ model: 'test-model' })
+    const runner = new CopilotSDKRunner({ model: 'test-model' })
     const out = await runner.run({
       skill: 'test-skill',
       agent: 'test-agent',
@@ -73,7 +73,7 @@ describe('CopilotRunner', () => {
   })
 
   it('forwards reasoningEffort parameter to CopilotClient createSession', async () => {
-    const runner = new CopilotRunner({ model: 'test-model' })
+    const runner = new CopilotSDKRunner({ model: 'test-model' })
     const out = await runner.run({
       skill: 'test-skill',
       agent: 'test-agent',
@@ -110,14 +110,14 @@ describe('CopilotRunner', () => {
       disconnect: mockDestroy,
     })
 
-    const runner = new CopilotRunner({ model: 'test-model', timeoutMs: 5_000 })
+    const runner = new CopilotSDKRunner({ model: 'test-model', timeoutMs: 5_000 })
     const promise = runner.run({
       skill: 'test-skill',
       agent: 'test-agent',
       mode: 'autonomous',
       payload: {},
     })
-    promise.catch(() => {}) // Suppress unhandled rejection warning
+    promise.catch(() => { }) // Suppress unhandled rejection warning
 
     // Advance clock past timeout
     await vi.advanceTimersByTimeAsync(5_001)
@@ -148,7 +148,7 @@ describe('CopilotRunner', () => {
       disconnect: mockDestroy,
     })
 
-    const runner = new CopilotRunner({ model: 'test-model', timeoutMs: 60_000 })
+    const runner = new CopilotSDKRunner({ model: 'test-model', timeoutMs: 60_000 })
     const promise = runner.run(
       { skill: 'test-skill', agent: 'test-agent', mode: 'autonomous', payload: {} },
       { signal: controller.signal }

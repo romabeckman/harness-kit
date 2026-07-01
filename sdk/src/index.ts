@@ -22,8 +22,8 @@ export type { AgentInvocation, AgentOutput, ContextPayload } from './agent-runne
 export { ClaudeCLIRunner } from './agent-runner/claude-cli/ClaudeCLIRunner'
 export type { ClaudeCLIRunnerConfig } from './agent-runner/claude-cli/ClaudeCLIRunner'
 
-// Agent runner — ClaudeSdkRunner (CI/CD, requires ANTHROPIC_API_KEY)
-export { ClaudeSdkRunner } from './agent-runner/claude-sdk/ClaudeSdkRunner'
+// Agent runner — ClaudeSDKRunner (CI/CD, requires ANTHROPIC_API_KEY)
+export { ClaudeSDKRunner } from './agent-runner/claude-sdk/ClaudeSDKRunner'
 export { AgentRunnerError, AgentRunnerErrorCode } from './agent-runner/AgentRunnerError'
 export type { AgentRunnerConfig } from './agent-runner/claude-sdk/AgentRunnerConfig'
 
@@ -33,8 +33,8 @@ export type { RunnerRegistration } from './agent-runner/AgentRunnerRegistry'
 export { AgentRunnerFactory } from './agent-runner/AgentRunnerFactory'
 export { AbstractCliRunner } from './agent-runner/AbstractCliRunner'
 export { AntigravityCLIRunner } from './agent-runner/antigravity-cli/AntigravityCLIRunner'
-export { CopilotRunner } from './agent-runner/copilot/CopilotRunner'
-export type { CopilotRunnerConfig } from './agent-runner/copilot/CopilotRunner'
+export { CopilotSDKRunner } from './agent-runner/copilot-sdk/CopilotSDKRunner'
+export type { CopilotSDKRunnerConfig } from './agent-runner/copilot-sdk/CopilotSDKRunner'
 export { CursorRunner } from './agent-runner/cursor/CursorRunner'
 export type { CursorRunnerConfig } from './agent-runner/cursor/CursorRunner'
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { CopilotRunner } from '../../src/agent-runner/copilot/CopilotRunner'
+import { CopilotSDKRunner } from '../../src/agent-runner/copilot-sdk/CopilotSDKRunner'
 
 const startMock = vi.fn()
 const stopMock = vi.fn()
@@ -20,11 +20,11 @@ vi.mock('@github/copilot-sdk', () => {
         createSession: createSessionMock,
       }
     }),
-    approveAll: () => {},
+    approveAll: () => { },
   }
 })
 
-describe('CopilotRunner', () => {
+describe('CopilotSDKRunner', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     startMock.mockResolvedValue(undefined)
@@ -41,7 +41,7 @@ describe('CopilotRunner', () => {
   })
 
   it('initializes CopilotClient with workingDirectory and env, and creates session without workingDirectory', async () => {
-    const runner = new CopilotRunner({ model: 'gpt-5' })
+    const runner = new CopilotSDKRunner({ model: 'gpt-5' })
     const invocation = {
       skill: 'test-skill',
       agent: 'test-agent',

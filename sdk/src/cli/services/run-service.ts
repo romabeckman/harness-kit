@@ -23,8 +23,8 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
 
   for (let i = 0; i < runArgs.length; i++) {
     const arg = runArgs[i];
-    if (arg === "--copilot") {
-      options.agentType = "copilot";
+    if (arg === "--copilot-sdk") {
+      options.agentType = "copilot-sdk";
     } else if (arg === "--gemini") {
       options.agentType = "gemini";
     } else if (arg === "--agent" || arg === "-a") {

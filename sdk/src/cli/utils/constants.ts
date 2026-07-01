@@ -14,7 +14,7 @@ COMMANDS
   help      Show this help message
 
 RUN OPTIONS
-   --agent, -a <type>        Specify agent type (e.g., 'copilot', 'antigravity-cli')
+   --agent, -a <type>        Specify agent type (e.g., 'copilot-sdk', 'antigravity-cli')
   --model, -m <name>        Specify model name for the agent
 
 OPTIONS
@@ -23,7 +23,7 @@ OPTIONS
 
 EXAMPLES
   hrns run
-  hrns run --agent copilot --model gpt-4o
+  hrns run --agent copilot-sdk --model gpt-4o
   hrns report
   npx @romabeckman/hrns run --gemini
 

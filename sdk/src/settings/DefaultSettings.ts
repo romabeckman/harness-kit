@@ -34,7 +34,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       phase_e: { model: 'gemini-3.5-flash' },
     }
   },
-  'copilot': {
+  'copilot-sdk': {
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'low' },
       phase_a: { model: 'claude-sonnet-4-6', effort: 'high' },

@@ -51,14 +51,14 @@ export interface AgentInvocation {
 | `claude-cli` | *(none)* | `claude` | — | CLI subprocess spawn; default when no flag is passed. |
 | `claude-sdk` | *(auto, env)* | — | Anthropic API | Used when `ANTHROPIC_API_KEY` is set and no explicit runner is given. |
 | `antigravity-cli` | `--agent antigravity-cli` | `agy` | `gemini-2.5-flash` | Google Antigravity CLI subprocess. Default model is `gemini-2.5-flash`. |
-| `copilot` | `--copilot` | `copilot` | — | GitHub Copilot CLI subprocess. |
+| `copilot-sdk` | `--copilot-sdk` | `copilot-sdk` | — | GitHub Copilot CLI subprocess. |
 
 ## CLI OPTIONS
 REQUIRED: Pass agent selection flags when running orchestration command:
 
 | Flag | Description |
 |---|---|
-| `hrns run --copilot` | Resolves `copilot` runner. |
+| `hrns run --copilot-sdk` | Resolves `copilot-sdk` runner. |
 | `hrns run --gemini` | Resolves `gemini` runner. |
 | `hrns run --agent <type>` / `hrns -a <type>` | Resolves custom strategy named `<type>`. |
 | `hrns run --model <name>` / `hrns -m <name>` | Overrides the default model for the selected runner. |

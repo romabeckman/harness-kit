@@ -110,8 +110,8 @@ function extractJson(raw: string): unknown | null {
   return null
 }
 
-// ─── ClaudeSdkRunner ────────────────────────────────────────────────────────
-export class ClaudeSdkRunner implements IAgentRunner {
+// ─── ClaudeSDKRunner ────────────────────────────────────────────────────────
+export class ClaudeSDKRunner implements IAgentRunner {
   readonly type = 'claude-sdk'
   readonly #config: AgentRunnerConfig
   readonly #client: Anthropic
@@ -269,5 +269,5 @@ export class ClaudeSdkRunner implements IAgentRunner {
 
 AgentRunnerRegistry.register({
   type: 'claude-sdk',
-  constructor: ClaudeSdkRunner,
+  constructor: ClaudeSDKRunner,
 })

@@ -4,19 +4,19 @@ import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { CopilotClient, approveAll } from '@github/copilot-sdk'
 
-export interface CopilotRunnerConfig {
-  readonly type: 'copilot'
+export interface CopilotSDKRunnerConfig {
+  readonly type: 'copilot-sdk'
   readonly model?: string
   readonly timeoutMs?: number
 }
 
-export class CopilotRunner implements IAgentRunner {
-  readonly type = 'copilot'
-  private readonly config: CopilotRunnerConfig
+export class CopilotSDKRunner implements IAgentRunner {
+  readonly type = 'copilot-sdk'
+  private readonly config: CopilotSDKRunnerConfig
 
-  constructor(config?: Partial<CopilotRunnerConfig>) {
+  constructor(config?: Partial<CopilotSDKRunnerConfig>) {
     this.config = {
-      type: 'copilot',
+      type: 'copilot-sdk',
       model: config?.model ?? 'gpt-5.3-codex',
       timeoutMs: config?.timeoutMs ?? 900_000,
     }
@@ -60,7 +60,7 @@ export class CopilotRunner implements IAgentRunner {
       await session.sendAndWait({ prompt }, { signal: controller.signal })
       clearTimeout(timer)
 
-      // Get output from session or stdout. Since copilot runs in place, we can return success
+      // Get output from session or stdout. Since copilot-sdk runs in place, we can return success
       return {
         success: true,
         stdout: 'Copilot session executed successfully',
@@ -124,6 +124,6 @@ export class CopilotRunner implements IAgentRunner {
 
 // Register with AgentRunnerRegistry
 AgentRunnerRegistry.register({
-  type: 'copilot',
-  constructor: CopilotRunner,
+  type: 'copilot-sdk',
+  constructor: CopilotSDKRunner,
 })

@@ -74,9 +74,9 @@ node dist/cli/run.js
 | Command / Option | Description | Example |
 |---|---|---|
 | `hrns run` | Start or resume an orchestration session (interactive). | `hrns run` |
-| `hrns run --agent <type>` / `-a <type>` | Specify the agent type (e.g., `copilot`, `antigravity-cli`). | `hrns run --agent copilot` |
+| `hrns run --agent <type>` / `-a <type>` | Specify the agent type (e.g., `copilot-sdk`, `antigravity-cli`). | `hrns run --agent copilot-sdk` |
 | `hrns run --model <name>` / `-m <name>` | Specify the model name for the agent. | `hrns run --model gpt-4o` |
-| `hrns run --copilot` | Run with the Copilot agent. | `hrns run --copilot` |
+| `hrns run --copilot-sdk` | Run with the Copilot agent. | `hrns run --copilot-sdk` |
 | `hrns run --gemini` | Run with the Gemini agent. | `hrns run --gemini` |
 | `hrns report` | Print token usage report for the current session. | `hrns report` |
 | `hrns version` / `--version` / `-v` | Show version. | `hrns version` |
@@ -153,7 +153,7 @@ Select agent strategy via CLI flags:
 hrns run --agent antigravity-cli
 
 # Run with Copilot
-hrns run --copilot
+hrns run --copilot-sdk
 ```
 
 Detailed runner architectural specifications are located in [**sdk_agent_runner.md**](./docs/feature/sdk_agent_runner.md).
