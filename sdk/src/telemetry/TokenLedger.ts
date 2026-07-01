@@ -93,9 +93,11 @@ export class TokenLedger {
 
     const isExtraLargeModel = (m: string) => /fable|mythos|opus|gemini.*ultra|gpt-5\.5(?!-(?:mini|nano))/i.test(m)
     
-    const isFastModel       = (m: string) => /haiku|mini|nano|flash/i.test(m)
+    // Agora exige explicitamente o "lite" junto do flash para ser considerado FAST
+    const isFastModel       = (m: string) => /haiku|mini|nano|flash.?lite/i.test(m)
     
-    const isMediumModel     = (m: string) => /gpt-3\.5|claude-2/i.test(m)
+    // Adicionado o "flash" geral aqui. Como o isFastModel roda antes, o flash-lite já terá sido filtrado.
+    const isMediumModel     = (m: string) => /gpt-3\.5|claude-2|flash/i.test(m)
     
     const modelRate = (m: string) => 
         isExtraLargeModel(m) ? RATE_EXTRA_LARGE : 
