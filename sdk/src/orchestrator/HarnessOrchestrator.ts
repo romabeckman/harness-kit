@@ -63,26 +63,7 @@ export class HarnessOrchestrator implements PhaseContext {
     this.agentInvocationService = new AgentInvocationService(this.agentRunner, this.ledger)
 
     // When user resumes execution, we need to use the same scope as the original execution
-    if (!this.config.scope) {
-      try {
-        const bootConfig = this.fsm.loadBootstrapConfig()
-        if (!bootConfig.originalScope) {
-          process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Scope is not defined`)}\n\n`)
-          exit(1)
-        }
-
-        if (!bootConfig.projectPaths || bootConfig.projectPaths.length === 0) {
-          process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Project paths are not defined`)}\n\n`)
-          exit(1)
-        }
-
-        this.config.scope = bootConfig.originalScope
-        this.config.projectPaths = bootConfig.projectPaths
-      } catch (err) {
-        process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Failed to load scope and project paths: ${err}`)}\n\n`)
-        exit(1)
-      }
-    }
+    this.ensureConfig()
 
     // Determine initial phase via re-entry resolver
     const onDisk = this.readOnDiskState()
@@ -214,6 +195,32 @@ export class HarnessOrchestrator implements PhaseContext {
     if (this.state.currentPhase === Phase.BOOTSTRAP) {
       await this.chain.handle(Phase.BOOTSTRAP, this)
     }
+  }
+
+  /**
+   * Ensure that the orchestrator has the necessary configuration.
+   * If not, try to load it from the bootstrap config.
+   * If still not defined, exit the program.
+   */
+  private ensureConfig(): void {
+    if (this.config.scope && this.config.projectPaths) {
+      return
+    }
+
+    const bootConfig = this.fsm.loadBootstrapConfig()
+
+    if (!bootConfig.originalScope) {
+      process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Scope is not defined`)}\n\n`)
+      exit(1)
+    }
+
+    if (!bootConfig.projectPaths || bootConfig.projectPaths.length === 0) {
+      process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Project paths are not defined`)}\n\n`)
+      exit(1)
+    }
+
+    this.config.scope = bootConfig.originalScope
+    this.config.projectPaths = bootConfig.projectPaths
   }
 
   // ─── Phase dispatch ───────────────────────────────────────────────────────
