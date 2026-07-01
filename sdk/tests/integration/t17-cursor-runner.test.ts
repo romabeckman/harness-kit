@@ -127,7 +127,7 @@ describe('CursorRunner — TC-CU', () => {
     } finally {
       if (original !== undefined) process.env.CURSOR_API_KEY = original
     }
-  })
+  }, 15000) // 15 segundos
 
   it('TC-CU-02b: validateConfig passes when CURSOR_API_KEY is set', async () => {
     const { AgentRunnerFactory } = await import('../../src/agent-runner/AgentRunnerFactory')

@@ -1,12 +1,14 @@
+import { join } from 'node:path'
 import { ContextAssembler } from '../ContextAssembler'
 import { describe, it, expect } from 'vitest'
 
 describe('ContextAssembler', () => {
   it('should build bootstrap payload', () => {
-    const payload = ContextAssembler.buildBootstrapPayload('scope', ['path1'], 'prod/dir')
+    const productDir = join('prod/dir')
+    const payload = ContextAssembler.buildBootstrapPayload('scope', ['path1'], productDir)
     expect(payload.scope).toBe('scope')
     expect(payload.projectPaths).toEqual(['path1'])
-    expect(payload.backlogPath).toContain('prod/dir')
+    expect(payload.backlogPath).toBe(join(productDir, 'BACKLOG.md'))
   })
 
   it('should build phase A payload', () => {
