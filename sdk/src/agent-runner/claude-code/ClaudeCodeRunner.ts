@@ -85,6 +85,7 @@ export class ClaudeCodeRunner implements IAgentRunner {
     if (model) args.push('--model', model)
     if (effort) args.push('--effort', effort)
     if (invocation.agent) args.push('--agent', invocation.agent)
+    for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
 
     return new Promise<AgentOutput>((resolve, reject) => {
       const child = spawn(this.#config.claudeBin, args, {

@@ -57,6 +57,16 @@ export class AgentInvocationService {
       }
     }
 
+    if (config.projectPaths?.length) {
+      finalInvocation = {
+        ...finalInvocation,
+        additionalDirs: [
+          ...(finalInvocation.additionalDirs ?? []),
+          ...config.projectPaths,
+        ],
+      }
+    }
+
     const phaseDesc = OrchestratorFormatter.getPhaseDescription(currentPhase)
     const agentLabel = finalInvocation.agent
 
