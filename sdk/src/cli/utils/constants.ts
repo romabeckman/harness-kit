@@ -14,7 +14,7 @@ COMMANDS
   help      Show this help message
 
 RUN OPTIONS
-   --agent, -a <type>        Specify agent type (e.g., 'copilot', 'antigravity')
+   --agent, -a <type>        Specify agent type (e.g., 'copilot', 'antigravity-cli')
   --model, -m <name>        Specify model name for the agent
 
 OPTIONS

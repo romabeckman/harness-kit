@@ -5,7 +5,7 @@ import type { RunnerConfig } from './types'
 // Force load all built-in runner strategies to trigger self-registration
 import './claude-cli/ClaudeCLIRunner'
 import './claude-sdk/ClaudeSdkRunner'
-import './antigravity/AntigravityRunner'
+import './antigravity-cli/AntigravityCLIRunner'
 import './copilot/CopilotRunner'
 import './cursor/CursorRunner'
 

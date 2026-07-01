@@ -15,8 +15,8 @@ sdk/
 │   │   ├── AgentRunnerRegistry.ts# Registry for strategy registrations
 │   │   ├── AgentRunnerFactory.ts # Factory to instantiate runner strategies
 │   │   ├── claude-cli/          # Subdirectory for Claude CLI strategy
-│   │   ├── claude-agent/         # Subdirectory for Anthropic API strategy
-│   │   └── antigravity/          # Subdirectory for Google Antigravity strategy
+│   │   ├── claude-sdk/         # Subdirectory for Anthropic API strategy
+│   │   └── antigravity-cli/          # Subdirectory for Google Antigravity strategy
 │   ├── orchestrator/             # Core state machine loop and phase chain
 │   │   ├── phases/               # Chain-of-Responsibility phase handlers
 │   │   ├── services/             # Dedicated domain and infrastructure services

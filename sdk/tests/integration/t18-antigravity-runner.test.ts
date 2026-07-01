@@ -37,21 +37,21 @@ vi.mock('node:child_process', () => ({
   spawn: vi.fn(),
 }))
 
-describe('AntigravityRunner — TC-AGY', () => {
+describe('AntigravityCLIRunner — TC-AGY', () => {
   beforeEach(async () => {
     const { AgentRunnerRegistry } = await import('../../src/agent-runner/AgentRunnerRegistry')
     AgentRunnerRegistry.clear()
-    await import('../../src/agent-runner/antigravity/AntigravityRunner')
+    await import('../../src/agent-runner/antigravity-cli/AntigravityCLIRunner')
   })
 
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  // TC-AGY-03: self-registers as 'antigravity'
-  it('TC-AGY-03: self-registers as "antigravity" on import', async () => {
+  // TC-AGY-03: self-registers as 'antigravity-cli'
+  it('TC-AGY-03: self-registers as "antigravity-cli" on import', async () => {
     const { AgentRunnerRegistry } = await import('../../src/agent-runner/AgentRunnerRegistry')
-    expect(AgentRunnerRegistry.has('antigravity')).toBe(true)
+    expect(AgentRunnerRegistry.has('antigravity-cli')).toBe(true)
   })
 
   // TC-AGY-01: correct args constructed
@@ -61,8 +61,8 @@ describe('AntigravityRunner — TC-AGY', () => {
     const mockChild = makeMockChild({ stdout: 'gemini response output' })
     spawnMock.mockReturnValue(mockChild)
 
-    const { AntigravityRunner } = await import('../../src/agent-runner/antigravity/AntigravityRunner')
-    const runner = new AntigravityRunner({ model: 'gemini-3.5-flash-test' })
+    const { AntigravityCLIRunner } = await import('../../src/agent-runner/antigravity-cli/AntigravityCLIRunner')
+    const runner = new AntigravityCLIRunner({ model: 'gemini-3.5-flash-test' })
     const output = await runner.run({
       agent: 'developer-backend',
       mode: 'autonomous',

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerFactory } from '../AgentRunnerFactory'
-import { AntigravityRunner } from '../antigravity/AntigravityRunner'
+import { AntigravityCLIRunner } from '../antigravity-cli/AntigravityCLIRunner'
 import type { IAgentRunner } from '../IAgentRunner'
 import type { AgentInvocation, AgentOutput } from '../types'
 import { spawn } from 'node:child_process'
@@ -105,7 +105,7 @@ describe('AgentRunnerModular', () => {
     }
     vi.mocked(spawn).mockReturnValue(mockChild)
 
-    const runner = new AntigravityRunner({ timeoutMs: 0, agyBin: 'agy' })
+    const runner = new AntigravityCLIRunner({ timeoutMs: 0, agyBin: 'agy' })
     const controller = new AbortController()
 
     const promise = runner.run(

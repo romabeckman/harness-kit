@@ -12,14 +12,14 @@ sdk/src/agent-runner/
 ├── AgentRunnerRegistry.ts    # Static registry of strategy classes
 ├── AgentRunnerFactory.ts     # Instantiation factory executing validations
 ├── claude-cli/              # Subdirectory for local Claude Code CLI execution
-├── claude-agent/             # Subdirectory for Anthropic SDK API calls
-├── antigravity/              # Subdirectory for Google's agy CLI execution
+├── claude-sdk/             # Subdirectory for Anthropic SDK API calls
+├── antigravity-cli/              # Subdirectory for Google's agy CLI execution
 └── README.md                 # Blueprint for custom runner plugins
 </folder_structure>
 
 ## DESIGN SYSTEM & PATTERNS
 - **Strategy Pattern**: Concrete execution engines implement the `IAgentRunner` interface.
-- **Factory & Registry Pattern**: Decouples orchestrator from concrete implementations. The orchestrator requests a runner via `AgentRunnerFactory.create({ type: 'antigravity' })`.
+- **Factory & Registry Pattern**: Decouples orchestrator from concrete implementations. The orchestrator requests a runner via `AgentRunnerFactory.create({ type: 'antigravity-cli' })`.
 - **AbortSignal Propagation**: Run methods accept an `AbortSignal` in options. Concrete runners monitor this signal and terminate subprocess trees or API connection handles if triggered.
 
 ```typescript
@@ -49,8 +49,8 @@ export interface AgentInvocation {
 | Runner | CLI Flag | Binary | Default Model | Description |
 |---|---|---|---|---|
 | `claude-cli` | *(none)* | `claude` | — | CLI subprocess spawn; default when no flag is passed. |
-| `claude-agent` | *(auto, env)* | — | Anthropic API | Used when `ANTHROPIC_API_KEY` is set and no explicit runner is given. |
-| `antigravity` | `--agent antigravity` | `agy` | `gemini-2.5-flash` | Google Antigravity CLI subprocess. Default model is `gemini-2.5-flash`. |
+| `claude-sdk` | *(auto, env)* | — | Anthropic API | Used when `ANTHROPIC_API_KEY` is set and no explicit runner is given. |
+| `antigravity-cli` | `--agent antigravity-cli` | `agy` | `gemini-2.5-flash` | Google Antigravity CLI subprocess. Default model is `gemini-2.5-flash`. |
 | `copilot` | `--copilot` | `copilot` | — | GitHub Copilot CLI subprocess. |
 
 ## CLI OPTIONS

@@ -74,7 +74,7 @@ node dist/cli/run.js
 | Command / Option | Description | Example |
 |---|---|---|
 | `hrns run` | Start or resume an orchestration session (interactive). | `hrns run` |
-| `hrns run --agent <type>` / `-a <type>` | Specify the agent type (e.g., `copilot`, `antigravity`). | `hrns run --agent copilot` |
+| `hrns run --agent <type>` / `-a <type>` | Specify the agent type (e.g., `copilot`, `antigravity-cli`). | `hrns run --agent copilot` |
 | `hrns run --model <name>` / `-m <name>` | Specify the model name for the agent. | `hrns run --model gpt-4o` |
 | `hrns run --copilot` | Run with the Copilot agent. | `hrns run --copilot` |
 | `hrns run --gemini` | Run with the Gemini agent. | `hrns run --gemini` |
@@ -137,20 +137,20 @@ TOTAL                input: 40,550  cost: $0.16
 
 The SDK supports multiple built-in coding agents:
 - **Claude Code CLI** (`claude-cli`)
-- **Anthropic API** (`claude-agent`)
-- **Google Antigravity** (`antigravity`)
+- **Anthropic API** (`claude-sdk`)
+- **Google Antigravity** (`antigravity-cli`)
 
 By default, the SDK auto-selects a runner:
 
 | Condition | Runner used |
 |---|---|
-| `ANTHROPIC_API_KEY` set in environment | `claude-agent` (direct API) |
+| `ANTHROPIC_API_KEY` set in environment | `claude-sdk` (direct API) |
 | No API key | `claude-cli` (local `claude` CLI) |
 
 Select agent strategy via CLI flags:
 ```bash
 # Run with Google Antigravity CLI
-hrns run --agent antigravity
+hrns run --agent antigravity-cli
 
 # Run with Copilot
 hrns run --copilot
@@ -227,7 +227,7 @@ const orchestrator = new HarnessOrchestrator({
   scope: 'my project',
   projectPaths: ['/path/to/project'],
   agentRunner: AgentRunnerFactory.create({
-    type: 'antigravity',
+    type: 'antigravity-cli',
     model: 'gemini-3.5-flash',
   })
 })
@@ -253,7 +253,7 @@ import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hrns'
 const orchestrator = new HarnessOrchestrator({
   scope: 'my project',
   projectPaths: ['/path/to/project'],
-  agentRunner: AgentRunnerFactory.create({ type: 'claude-agent' }), // reads ANTHROPIC_API_KEY from env
+  agentRunner: AgentRunnerFactory.create({ type: 'claude-sdk' }), // reads ANTHROPIC_API_KEY from env
 })
 
 await orchestrator.run()

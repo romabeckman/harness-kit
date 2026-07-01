@@ -12,8 +12,8 @@ sdk/src/
     ├── AgentRunnerRegistry.ts    # Static singleton runner strategy registry
     ├── AgentRunnerFactory.ts     # Dynamic factory creating strategy instances
     ├── claude-cli/              # Claude CLI execution adapter
-    ├── claude-agent/             # Anthropic API execution adapter
-    └── antigravity/              # Google Antigravity execution adapter
+    ├── claude-sdk/             # Anthropic API execution adapter
+    └── antigravity-cli/              # Google Antigravity execution adapter
 </folder_structure>
 
 ## HOW TO REGISTER AND RUN AN AGENT

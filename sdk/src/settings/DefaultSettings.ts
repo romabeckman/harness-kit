@@ -24,7 +24,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       phase_e: { model: 'claude-sonnet-4-6', effort: 'low' },
     }
   },
-  'antigravity': {
+  'antigravity-cli': {
     phases: {
       bootstrap: { model: 'gemini-3.5-flash' },
       phase_a: { model: 'gemini-3.5-flash' },

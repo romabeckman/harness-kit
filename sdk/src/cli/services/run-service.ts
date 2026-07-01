@@ -124,9 +124,9 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
   }
 
   if (action === "resume" && steeringMessage.trim()) {
-    if (options.agentType === "antigravity") {
+    if (options.agentType === "antigravity-cli") {
       console.log(
-        `\n${AnsiHelpers.green("✓")} Applying steering rule directly for antigravity...`,
+        `\n${AnsiHelpers.green("✓")} Applying steering rule directly for antigravity-cli...`,
       );
       const actions = [{ type: "add_rule" as const, rule: steeringMessage }];
       orchestrator.applySteeringActions(actions);

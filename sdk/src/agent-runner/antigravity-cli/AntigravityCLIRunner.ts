@@ -2,17 +2,17 @@ import { AbstractCliRunner } from '../AbstractCliRunner'
 import type { AgentInvocation } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 
-export interface AntigravityRunnerConfig {
+export interface AntigravityCLIRunnerConfig {
   readonly timeoutMs?: number
   readonly agyBin?: string
   readonly model?: string
 }
 
-export class AntigravityRunner extends AbstractCliRunner {
-  readonly type = 'antigravity'
-  readonly #config: Required<AntigravityRunnerConfig>
+export class AntigravityCLIRunner extends AbstractCliRunner {
+  readonly type = 'antigravity-cli'
+  readonly #config: Required<AntigravityCLIRunnerConfig>
 
-  constructor(config?: Partial<AntigravityRunnerConfig>) {
+  constructor(config?: Partial<AntigravityCLIRunnerConfig>) {
     super()
     this.#config = {
       timeoutMs: config?.timeoutMs ?? 0,
@@ -48,6 +48,6 @@ export class AntigravityRunner extends AbstractCliRunner {
 }
 
 AgentRunnerRegistry.register({
-  type: 'antigravity',
-  constructor: AntigravityRunner,
+  type: 'antigravity-cli',
+  constructor: AntigravityCLIRunner,
 })

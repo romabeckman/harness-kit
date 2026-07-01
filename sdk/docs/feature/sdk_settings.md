@@ -28,7 +28,7 @@ Structure settings in a nested object. Use the first level for the runner type a
       "phase_e":     { "model": "claude-sonnet-4-6", "effort": "medium" }
     }
   },
-  "antigravity": {
+  "antigravity-cli": {
     "phases": {
       "bootstrap":   { "model": "gemini-3.5-flash" }
     }
