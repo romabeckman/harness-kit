@@ -82,6 +82,7 @@ async function cmdRun(cwd: string, options: RunOptions = {}): Promise<void> {
   let optionsReset: ResetOptions | null = null
   if (action === 'reset') {
     optionsReset = await resetOptions(cwd)
+    steeringMessage = optionsReset.steeringMessage
   } else {
     steeringMessage = await input({
       message: 'Steering rules or state overrides (optional):',
