@@ -26,6 +26,7 @@ import {
 import { OrchestratorFormatter } from './utils/OrchestratorFormatter'
 import { ProjectStateService } from './services/ProjectStateService'
 import { AgentInvocationService } from './services/AgentInvocationService'
+import { SteeringService } from './services/SteeringService'
 import { exit } from 'process'
 
 export interface HarnessOrchestratorOptions {
@@ -43,6 +44,7 @@ export class HarnessOrchestrator implements PhaseContext {
   private readonly settings: HarnessSettings
   private readonly projectStateService: ProjectStateService
   private readonly agentInvocationService: AgentInvocationService
+  private readonly steeringService: SteeringService
 
   constructor(config: OrchestratorConfig, options: HarnessOrchestratorOptions = {}) {
     this.agentRunner = config.agentRunner
@@ -73,6 +75,8 @@ export class HarnessOrchestrator implements PhaseContext {
       activeFeatureId: onDisk.config?.activeFeatureId ?? onDisk.activeFeature?.id ?? null,
       completedCycles: onDisk.config?.cycleCounter.completedCycles ?? 0,
     }
+
+    this.steeringService = new SteeringService(this.fsm, this.state)
 
     // Construct Chain of Responsibility
     const bootstrap = new BootstrapHandler()
@@ -239,63 +243,9 @@ export class HarnessOrchestrator implements PhaseContext {
     this.state = { ...this.state, ...state }
   }
 
-  // When user resumes execution, we need to apply the steering actions
-  // to the steering rules. This function is called from the CLI
+
   public applySteeringActions(actions: import('./SteeringAnalyzer').SteeringAction[]): void {
-    const config = this.fsm.loadBootstrapConfig()
-    if (!config.steeringRules) {
-      config.steeringRules = createDefaultSteeringRules()
-    }
-    if (!config.steeringRules.user) {
-      config.steeringRules.user = []
-    }
-    for (const action of actions) {
-      if (action.type === 'add_rule') {
-        config.steeringRules.user.push(action.rule)
-        this.fsm.appendDecision({
-          featureId: null,
-          decision: `Steering override: Added development rule: "${action.rule}"`
-        })
-      } else if (action.type === 'rollback') {
-        const target = action.targetPhase as Phase
-        this.state.currentPhase = target
-        config.currentPhase = target
-        this.fsm.appendDecision({
-          featureId: null,
-          decision: `Steering override: State rollback to phase ${target}`
-        })
-        if (target === Phase.PHASE_B || target === Phase.PHASE_A) {
-          const features = this.fsm.loadBacklog()
-          const active = this.getActiveFeature(features)
-          if (active) {
-            const tasks = this.fsm.loadDevelopmentState()
-            for (const t of tasks) {
-              if (t.featureId === active.id) {
-                this.fsm.updateTaskStatus(active.id, t.taskId, '-', 'NOT_STARTED')
-              }
-            }
-          }
-        }
-      } else if (action.type === 'override_score') {
-        const features = this.fsm.loadBacklog()
-        const active = this.getActiveFeature(features)
-        if (active) {
-          this.fsm.updateFeatureStatus(
-            active.id,
-            active.status,
-            {
-              tl: action.tl ?? active.scoreTL ?? 100,
-              adv: action.adv ?? active.scoreAdv ?? 100
-            }
-          )
-          this.fsm.appendDecision({
-            featureId: active.id,
-            decision: `Steering override: Manual QA scores set to (TL: ${action.tl}, ADV: ${action.adv})`
-          })
-        }
-      }
-    }
-    this.fsm.saveBootstrapConfig(config)
+    this.steeringService.applySteeringActions(actions)
   }
 
   public invokeAgent(invocation: import('../agent-runner/types').AgentInvocation): Promise<import('../agent-runner/types').AgentOutput> {
