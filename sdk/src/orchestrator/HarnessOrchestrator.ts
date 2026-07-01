@@ -26,6 +26,7 @@ import {
 import { OrchestratorFormatter } from './utils/OrchestratorFormatter'
 import { ProjectStateService } from './services/ProjectStateService'
 import { AgentInvocationService } from './services/AgentInvocationService'
+import { exit } from 'process'
 
 export interface HarnessOrchestratorOptions {
   workingDir?: string
@@ -65,10 +66,21 @@ export class HarnessOrchestrator implements PhaseContext {
     if (!this.config.scope) {
       try {
         const bootConfig = this.fsm.loadBootstrapConfig()
+        if (!bootConfig.originalScope) {
+          process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Scope is not defined`)}\n\n`)
+          exit(1)
+        }
+
+        if (!bootConfig.projectPaths || bootConfig.projectPaths.length === 0) {
+          process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Project paths are not defined`)}\n\n`)
+          exit(1)
+        }
+
         this.config.scope = bootConfig.originalScope
         this.config.projectPaths = bootConfig.projectPaths
       } catch (err) {
-        throw new Error(`Failed to load bootstrap config: ${err}`)
+        process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Failed to load scope and project paths: ${err}`)}\n\n`)
+        exit(1)
       }
     }
 
