@@ -8,6 +8,7 @@ The `sdk_agent_runner` module provides a decoupled, pluggable architecture for e
 sdk/src/agent-runner/
 ├── IAgentRunner.ts           # Outbound port interface
 ├── NullAgentRunner.ts        # No-op stub implementation
+├── AbstractCliRunner.ts      # Base class for all CLI subprocess runners
 ├── types.ts                  # Shared types and config schemas
 ├── AgentRunnerRegistry.ts    # Static registry of strategy classes
 ├── AgentRunnerFactory.ts     # Instantiation factory executing validations
@@ -15,6 +16,9 @@ sdk/src/agent-runner/
 ├── claude-sdk/             # Subdirectory for Anthropic SDK API calls
 ├── antigravity-cli/         # Subdirectory for Google's agy CLI execution
 ├── copilot-cli/             # Subdirectory for GitHub Copilot CLI execution
+├── copilot-sdk/             # Subdirectory for GitHub Copilot SDK execution
+├── cursor-cli/              # Subdirectory for Cursor agent CLI execution
+├── cursor-sdk/             # Subdirectory for Cursor SDK execution
 └── README.md                 # Blueprint for custom runner plugins
 </folder_structure>
 
@@ -54,6 +58,8 @@ export interface AgentInvocation {
 | `antigravity-cli` | `--agent antigravity-cli` | `agy` | `gemini-2.5-flash` | Google Antigravity CLI subprocess. Default model is `gemini-2.5-flash`. |
 | `copilot-sdk` | `--agent copilot-sdk` | — | — | GitHub Copilot via SDK (non-subprocess). |
 | `copilot-cli` | `--agent copilot-cli` | `copilot` | *(config)* | GitHub Copilot CLI subprocess. Uses `--allow-all-tools` for non-interactive mode. |
+| `cursor-cli` | `--agent cursor-cli` | `cursor` | *(config)* | Cursor agent CLI subprocess. Invokes `cursor agent --print --output-format stream-json --force`. |
+| `cursor-sdk` | `--agent cursor-sdk` | — | `composer-2.5` | Cursor agent via `@cursor/sdk`. Requires `CURSOR_API_KEY`. |
 
 ## CLI OPTIONS
 REQUIRED: Pass agent selection flags when running orchestration command:

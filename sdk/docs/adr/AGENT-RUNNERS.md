@@ -9,11 +9,16 @@ Agent runners abstract target LLM client integrations (CLI, API) for executing d
 sdk/src/
 └── agent-runner/                 # Agent runner port and adapters
     ├── IAgentRunner.ts           # Core interface for running invocations
+    ├── AbstractCliRunner.ts      # Shared spawn/abort/kill base for CLI runners
     ├── AgentRunnerRegistry.ts    # Static singleton runner strategy registry
     ├── AgentRunnerFactory.ts     # Dynamic factory creating strategy instances
     ├── claude-cli/              # Claude CLI execution adapter
     ├── claude-sdk/             # Anthropic API execution adapter
-    └── antigravity-cli/              # Google Antigravity execution adapter
+    ├── antigravity-cli/         # Google Antigravity execution adapter
+    ├── copilot-cli/             # GitHub Copilot CLI execution adapter
+    ├── copilot-sdk/             # GitHub Copilot SDK execution adapter
+    ├── cursor-cli/              # Cursor agent CLI execution adapter
+    └── cursor-sdk/             # Cursor SDK execution adapter
 </folder_structure>
 
 ## HOW TO REGISTER AND RUN AN AGENT
