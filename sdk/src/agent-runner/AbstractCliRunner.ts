@@ -30,6 +30,17 @@ export abstract class AbstractCliRunner implements IAgentRunner {
     return {}
   }
 
+  protected checkParsed(
+    _parsed: Partial<AgentOutput>,
+    _invocation: AgentInvocation,
+  ): AgentRunnerError | null {
+    return null
+  }
+
+  protected onStdoutLine(_line: string, _invocation: AgentInvocation): void {
+    // no-op — override in concrete runners for streaming progress
+  }
+
   protected buildPrompt(invocation: AgentInvocation): string {
     return [
       `Skill: ${invocation.skill ?? 'unknown'}`,
@@ -104,8 +115,18 @@ export abstract class AbstractCliRunner implements IAgentRunner {
 
       let stdout = ''
       let stderr = ''
+      let lineBuffer = ''
 
-      child.stdout.on('data', (chunk) => { stdout += chunk.toString() })
+      child.stdout.on('data', (chunk) => {
+        const text = chunk.toString()
+        stdout += text
+        lineBuffer += text
+        const parts = lineBuffer.split('\n')
+        lineBuffer = parts.pop() ?? ''
+        for (const line of parts) {
+          if (line.trim()) this.onStdoutLine(line, invocation)
+        }
+      })
       child.stderr.on('data', (chunk) => { stderr += chunk.toString() })
 
       child.on('error', (err: NodeJS.ErrnoException) => {
@@ -143,6 +164,8 @@ export abstract class AbstractCliRunner implements IAgentRunner {
         }
 
         const parsed = this.parseOutput(stdout, stderr, invocation)
+        const parseError = this.checkParsed(parsed, invocation)
+        if (parseError) { reject(parseError); return }
 
         resolve({
           success: true,

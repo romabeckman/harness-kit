@@ -4,6 +4,7 @@ import type { AgentInvocation, AgentOutput } from '../types'
 import { type AgentRunnerConfig, DEFAULT_AGENT_RUNNER_CONFIG } from './AgentRunnerConfig'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
+import { extractJsonOrNull } from '../CliRunnerProgress'
 
 // ─── Internal value object ────────────────────────────────────────────────────
 interface AgentResult {
@@ -52,62 +53,6 @@ function isQuotaError(err: unknown): boolean {
     || msg.includes('rate_limit')
     || msg.includes('overloaded_error')
     || msg.includes('quota')
-}
-
-// ─── JSON extraction ──────────────────────────────────────────────────────────
-function extractJson(raw: string): unknown | null {
-  // Strategy 1: markdown code fence ```json ... ```
-  const fenceMatch = raw.match(/```json\s*\n([\s\S]*?)\n```/)
-  if (fenceMatch) {
-    try {
-      return JSON.parse(fenceMatch[1])
-    } catch {
-      // fall through
-    }
-  }
-
-  // Strategy 2: bare JSON — find first { or [ and matching closer
-  const startBrace = raw.indexOf('{')
-  const startBracket = raw.indexOf('[')
-
-  let start = -1
-  let openChar: '{' | '[' | undefined
-  let closeChar: '}' | ']' | undefined
-
-  if (startBrace !== -1 && (startBracket === -1 || startBrace < startBracket)) {
-    start = startBrace
-    openChar = '{'
-    closeChar = '}'
-  } else if (startBracket !== -1) {
-    start = startBracket
-    openChar = '['
-    closeChar = ']'
-  }
-
-  if (start !== -1 && openChar && closeChar) {
-    let depth = 0
-    let end = -1
-    for (let i = start; i < raw.length; i++) {
-      if (raw[i] === openChar) depth++
-      else if (raw[i] === closeChar) {
-        depth--
-        if (depth === 0) {
-          end = i
-          break
-        }
-      }
-    }
-    if (end !== -1) {
-      try {
-        return JSON.parse(raw.slice(start, end + 1))
-      } catch {
-        // fall through
-      }
-    }
-  }
-
-  // Strategy 3: no JSON found
-  return null
 }
 
 // ─── ClaudeSDKRunner ────────────────────────────────────────────────────────
@@ -183,7 +128,7 @@ export class ClaudeSDKRunner implements IAgentRunner {
 
       result = {
         rawOutput,
-        extractedJson: extractJson(rawOutput),
+        extractedJson: extractJsonOrNull(rawOutput),
       }
 
       usage = {
