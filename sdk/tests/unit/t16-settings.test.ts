@@ -30,7 +30,7 @@ describe('T16 — HarnessSettings', () => {
     const settings = HarnessSettings.load(tmpDir)
 
     expect(existsSync(globalFile)).toBe(true)
-    const resolved = settings.resolve('claude-cli', 'bootstrap')
+    const resolved = settings.resolve('claude', 'bootstrap')
     expect(resolved).toEqual({ model: 'claude-sonnet-4-6', effort: 'low' })
   })
 
@@ -42,7 +42,7 @@ describe('T16 — HarnessSettings', () => {
     // Pre-create global file with specific settings
     mkdirSync(join(globalDir, 'harness-kit'), { recursive: true })
     writeFileSync(globalFile, JSON.stringify({
-      'claude-cli': {
+      'claude': {
         phases: {
           bootstrap: { model: 'claude-3-5-sonnet-latest', effort: 'high' },
           phase_a: { model: 'claude-3-5-sonnet-latest', effort: 'high' }
@@ -54,7 +54,7 @@ describe('T16 — HarnessSettings', () => {
     const projectDir = join(tmpDir, '.harness-kit')
     mkdirSync(projectDir, { recursive: true })
     writeFileSync(join(projectDir, 'settings.json'), JSON.stringify({
-      'claude-cli': {
+      'claude': {
         phases: {
           phase_a: { model: 'claude-opus-override', effort: 'medium' }
         }
@@ -64,13 +64,13 @@ describe('T16 — HarnessSettings', () => {
     const settings = HarnessSettings.load(tmpDir)
 
     // Un-overridden resolves to global
-    expect(settings.resolve('claude-cli', 'bootstrap')).toEqual({
+    expect(settings.resolve('claude', 'bootstrap')).toEqual({
       model: 'claude-3-5-sonnet-latest',
       effort: 'high'
     })
 
     // Overridden resolves to project
-    expect(settings.resolve('claude-cli', 'phase_a')).toEqual({
+    expect(settings.resolve('claude', 'phase_a')).toEqual({
       model: 'claude-opus-override',
       effort: 'medium'
     })
@@ -84,6 +84,6 @@ describe('T16 — HarnessSettings', () => {
     const settings = HarnessSettings.load(tmpDir)
 
     expect(settings.resolve('non-existent-runner', 'phase_a')).toEqual({})
-    expect(settings.resolve('claude-cli', 'non-existent-phase')).toEqual({})
+    expect(settings.resolve('claude', 'non-existent-phase')).toEqual({})
   })
 })

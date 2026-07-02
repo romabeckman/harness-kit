@@ -5,7 +5,7 @@ import type { HarnessSettingsMap, PhaseSettings } from './SettingsSchema'
 import { DEFAULT_SETTINGS } from './DefaultSettings'
 
 export class HarnessSettings {
-  private constructor(private readonly settings: HarnessSettingsMap) {}
+  private constructor(private readonly settings: HarnessSettingsMap) { }
 
   static getGlobalSettingsPath(): string {
     if (process.env.HARNESS_SETTINGS_PATH) {
@@ -15,13 +15,13 @@ export class HarnessSettings {
     if (process.env.XDG_CONFIG_HOME) {
       return join(process.env.XDG_CONFIG_HOME, 'harness-kit', 'settings.json')
     }
-    
+
     return join(homedir(), '.config', 'harness-kit', 'settings.json')
   }
 
   static load(projectPath?: string): HarnessSettings {
     const globalPath = this.getGlobalSettingsPath()
-    
+
     // Auto-create global settings if not existing
     if (!existsSync(globalPath)) {
       try {
@@ -65,6 +65,10 @@ export class HarnessSettings {
     return new HarnessSettings(mergedSettings)
   }
 
+  hasSettings(runnerType: string): boolean {
+    return this.settings[runnerType] !== undefined
+  }
+
   resolve(runnerType: string, phaseKey: string): PhaseSettings {
     const runner = this.settings[runnerType]
     if (!runner || !runner.phases) return {}
@@ -74,46 +78,46 @@ export class HarnessSettings {
   getTimeoutMs(runnerType: string, phaseKey?: string): number | undefined {
     const runner = this.settings[runnerType]
     if (!runner) return undefined
-    
+
     if (phaseKey && runner.phases && runner.phases[phaseKey]) {
       const phaseTimeout = runner.phases[phaseKey].timeoutMs
       if (phaseTimeout !== undefined) {
         return phaseTimeout
       }
     }
-    
+
     return runner.timeoutMs
   }
 
   private static mergeMaps(base: HarnessSettingsMap, override: HarnessSettingsMap): HarnessSettingsMap {
     const result: HarnessSettingsMap = {}
-    
+
     // Get all unique runner keys
     const runners = new Set([...Object.keys(base), ...Object.keys(override)])
-    
+
     for (const runner of runners) {
       const baseRunner = base[runner] ?? {}
       const overrideRunner = override[runner] ?? {}
-      
+
       const basePhases = baseRunner.phases ?? {}
       const overridePhases = overrideRunner.phases ?? {}
-      
+
       const mergedPhases: Record<string, PhaseSettings> = {}
       const phases = new Set([...Object.keys(basePhases), ...Object.keys(overridePhases)])
-      
+
       for (const phase of phases) {
         mergedPhases[phase] = {
           ...(basePhases[phase] ?? {}),
           ...(overridePhases[phase] ?? {})
         }
       }
-      
+
       result[runner] = {
         timeoutMs: overrideRunner.timeoutMs !== undefined ? overrideRunner.timeoutMs : baseRunner.timeoutMs,
         phases: mergedPhases
       }
     }
-    
+
     return result
   }
 }

@@ -4,7 +4,8 @@ import type { HarnessSettingsMap } from './SettingsSchema'
 export const DEFAULT_PHASE_TIMEOUT_MS = 1_800_000 // 30 minutes
 
 export const DEFAULT_SETTINGS: HarnessSettingsMap = {
-  'claude-cli': {
+  'claude': {
+    timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'claude-sonnet-4-6', effort: 'low' },
       phase_a: { model: 'claude-sonnet-4-6', effort: 'high' },
@@ -14,17 +15,8 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       phase_e: { model: 'claude-sonnet-4-6', effort: 'low' },
     }
   },
-  'claude-sdk': {
-    phases: {
-      bootstrap: { model: 'claude-sonnet-4-6', effort: 'low' },
-      phase_a: { model: 'claude-sonnet-4-6', effort: 'high' },
-      phase_b: { model: 'claude-sonnet-4-6', effort: 'medium' },
-      phase_c_tl: { model: 'claude-sonnet-4-6', effort: 'low' },
-      phase_c_adv: { model: 'claude-sonnet-4-6', effort: 'low' },
-      phase_e: { model: 'claude-sonnet-4-6', effort: 'low' },
-    }
-  },
-  'antigravity-cli': {
+  'antigravity': {
+    timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gemini-3.5-flash' },
       phase_a: { model: 'gemini-3.5-flash' },
@@ -34,7 +26,8 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       phase_e: { model: 'gemini-3.5-flash' },
     }
   },
-  'copilot-sdk': {
+  'copilot': {
+    timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'low' },
       phase_a: { model: 'claude-sonnet-4-6', effort: 'high' },
@@ -44,7 +37,8 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       phase_e: { model: 'gpt-5.3-codex', effort: 'low' },
     }
   },
-  'cursor-sdk': {
+  'cursor': {
+    timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'low' },
       phase_a: { model: 'claude-sonnet-4-6', effort: 'high' },

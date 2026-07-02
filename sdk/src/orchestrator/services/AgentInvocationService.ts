@@ -25,6 +25,7 @@ export class AgentInvocationService {
     const controller = new AbortController()
 
     const runnerType = this.agentRunner.type ?? ''
+    const settingKey = settings.hasSettings(runnerType) ? runnerType : runnerType.split('-')[0]
     const phaseKey = invocation.phaseKey ?? (() => {
       switch (currentPhase) {
         case Phase.BOOTSTRAP: return 'bootstrap'
@@ -37,8 +38,8 @@ export class AgentInvocationService {
     })()
 
     let timeoutMs = config.timeoutMs
-    if (timeoutMs === undefined && runnerType) {
-      timeoutMs = settings.getTimeoutMs(runnerType, phaseKey)
+    if (timeoutMs === undefined && settingKey) {
+      timeoutMs = settings.getTimeoutMs(settingKey, phaseKey)
     }
     if (timeoutMs === undefined) {
       timeoutMs = DEFAULT_PHASE_TIMEOUT_MS
@@ -46,8 +47,8 @@ export class AgentInvocationService {
 
     // Replace model if defined in settings for current phase
     let finalInvocation = invocation
-    if (runnerType && phaseKey) {
-      const overrides = settings.resolve(runnerType, phaseKey)
+    if (settingKey && phaseKey) {
+      const overrides = settings.resolve(settingKey, phaseKey)
       if (overrides.model || overrides.effort) {
         finalInvocation = {
           ...invocation,

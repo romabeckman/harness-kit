@@ -34,7 +34,7 @@ vi.mock('../../../orchestrator/utils/OrchestratorFormatter', () => ({
 
 function makeRunner(output: Partial<AgentOutput> = {}): IAgentRunner {
   return {
-    type: 'claude-cli',
+    type: 'claude',
     run: vi.fn().mockResolvedValue({
       success: true,
       stdout: '',
@@ -53,6 +53,7 @@ function makeSettings(overrides: Record<string, any> = {}): HarnessSettings {
   return {
     resolve: vi.fn().mockReturnValue(overrides),
     getTimeoutMs: vi.fn().mockReturnValue(undefined),
+    hasSettings: vi.fn().mockReturnValue(true),
   } as unknown as HarnessSettings
 }
 
@@ -90,7 +91,7 @@ describe('AgentInvocationService', () => {
         settings
       )
 
-      expect(settings.resolve).toHaveBeenCalledWith('claude-cli', 'phase_c_adv')
+      expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_c_adv')
     })
 
     it('resolves phaseKey from Phase.BOOTSTRAP', async () => {
@@ -99,7 +100,7 @@ describe('AgentInvocationService', () => {
 
       await service.invokeAgent(makeInvocation(), Phase.BOOTSTRAP, makeConfig(), settings)
 
-      expect(settings.resolve).toHaveBeenCalledWith('claude-cli', 'bootstrap')
+      expect(settings.resolve).toHaveBeenCalledWith('claude', 'bootstrap')
     })
 
     it('resolves phaseKey from Phase.PHASE_A', async () => {
@@ -108,7 +109,7 @@ describe('AgentInvocationService', () => {
 
       await service.invokeAgent(makeInvocation(), Phase.PHASE_A, makeConfig(), settings)
 
-      expect(settings.resolve).toHaveBeenCalledWith('claude-cli', 'phase_a')
+      expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_a')
     })
 
     it('resolves phaseKey from Phase.PHASE_B', async () => {
@@ -117,7 +118,7 @@ describe('AgentInvocationService', () => {
 
       await service.invokeAgent(makeInvocation(), Phase.PHASE_B, makeConfig(), settings)
 
-      expect(settings.resolve).toHaveBeenCalledWith('claude-cli', 'phase_b')
+      expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_b')
     })
 
     it('resolves phaseKey from Phase.PHASE_C to phase_c_tl', async () => {
@@ -126,7 +127,7 @@ describe('AgentInvocationService', () => {
 
       await service.invokeAgent(makeInvocation(), Phase.PHASE_C, makeConfig(), settings)
 
-      expect(settings.resolve).toHaveBeenCalledWith('claude-cli', 'phase_c_tl')
+      expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_c_tl')
     })
 
     it('resolves phaseKey from Phase.PHASE_E', async () => {
@@ -135,7 +136,7 @@ describe('AgentInvocationService', () => {
 
       await service.invokeAgent(makeInvocation(), Phase.PHASE_E, makeConfig(), settings)
 
-      expect(settings.resolve).toHaveBeenCalledWith('claude-cli', 'phase_e')
+      expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_e')
     })
 
     it('skips model/effort override for unknown phases (empty phaseKey guards resolve call)', async () => {
@@ -241,6 +242,7 @@ describe('AgentInvocationService', () => {
       const settings = {
         resolve: vi.fn().mockReturnValue({}),
         getTimeoutMs: vi.fn().mockReturnValue(99999),
+        hasSettings: vi.fn().mockReturnValue(true),
       } as unknown as HarnessSettings
       const service = new AgentInvocationService(runner, makeLedger())
 
@@ -260,6 +262,7 @@ describe('AgentInvocationService', () => {
       const settings = {
         resolve: vi.fn().mockReturnValue({}),
         getTimeoutMs: vi.fn().mockReturnValue(60000),
+        hasSettings: vi.fn().mockReturnValue(true),
       } as unknown as HarnessSettings
       const service = new AgentInvocationService(runner, makeLedger())
 
@@ -270,7 +273,7 @@ describe('AgentInvocationService', () => {
         settings
       )
 
-      expect(settings.getTimeoutMs).toHaveBeenCalledWith('claude-cli', 'phase_a')
+      expect(settings.getTimeoutMs).toHaveBeenCalledWith('claude', 'phase_a')
     })
 
     it('falls back to DEFAULT_PHASE_TIMEOUT_MS when both config and settings return undefined', async () => {
@@ -280,6 +283,7 @@ describe('AgentInvocationService', () => {
       const settings = {
         resolve: vi.fn().mockReturnValue({}),
         getTimeoutMs: vi.fn().mockReturnValue(undefined),
+        hasSettings: vi.fn().mockReturnValue(true),
       } as unknown as HarnessSettings
       const service = new AgentInvocationService(runner, makeLedger())
 
@@ -333,7 +337,7 @@ describe('AgentInvocationService', () => {
   describe('error propagation', () => {
     it('re-throws errors from runner.run after cleaning up the spinner', async () => {
       const runner: IAgentRunner = {
-        type: 'claude-cli',
+        type: 'claude',
         run: vi.fn().mockRejectedValue(new Error('runner crashed')),
       } as unknown as IAgentRunner
 
