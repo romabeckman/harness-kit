@@ -13,7 +13,8 @@ sdk/src/agent-runner/
 ├── AgentRunnerFactory.ts     # Instantiation factory executing validations
 ├── claude-cli/              # Subdirectory for local Claude Code CLI execution
 ├── claude-sdk/             # Subdirectory for Anthropic SDK API calls
-├── antigravity-cli/              # Subdirectory for Google's agy CLI execution
+├── antigravity-cli/         # Subdirectory for Google's agy CLI execution
+├── copilot-cli/             # Subdirectory for GitHub Copilot CLI execution
 └── README.md                 # Blueprint for custom runner plugins
 </folder_structure>
 
@@ -51,7 +52,8 @@ export interface AgentInvocation {
 | `claude-cli` | *(none)* | `claude` | — | CLI subprocess spawn; default when no flag is passed. |
 | `claude-sdk` | *(auto, env)* | — | Anthropic API | Used when `ANTHROPIC_API_KEY` is set and no explicit runner is given. |
 | `antigravity-cli` | `--agent antigravity-cli` | `agy` | `gemini-2.5-flash` | Google Antigravity CLI subprocess. Default model is `gemini-2.5-flash`. |
-| `copilot-sdk` | `--copilot-sdk` | `copilot-sdk` | — | GitHub Copilot CLI subprocess. |
+| `copilot-sdk` | `--agent copilot-sdk` | — | — | GitHub Copilot via SDK (non-subprocess). |
+| `copilot-cli` | `--agent copilot-cli` | `copilot` | *(config)* | GitHub Copilot CLI subprocess. Uses `--allow-all-tools` for non-interactive mode. |
 
 ## CLI OPTIONS
 REQUIRED: Pass agent selection flags when running orchestration command:
