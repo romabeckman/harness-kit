@@ -9,19 +9,37 @@ import { AgentRunnerError, AgentRunnerErrorCode } from './AgentRunnerError'
  * only need to override `binaryName` and `buildArgs()`.
  */
 export abstract class AbstractCliRunner implements IAgentRunner {
+  /** CLI binary name passed as the first argument to `spawn`. */
   protected abstract readonly binaryName: string
+
+  /** Milliseconds before the spawned process is force-killed. 0 = no timeout. */
   protected abstract readonly timeoutMs: number
 
+  /** Returns the argument list for the CLI invocation, excluding the binary itself. */
   protected abstract buildArgs(prompt: string, invocation: AgentInvocation): string[]
 
+  /**
+   * When true, the prompt is written to the child's stdin instead of being
+   * appended as a positional arg. Use this when the CLI reads from stdin to
+   * avoid OS ARG_MAX limits on long prompts.
+   */
   protected get writePromptToStdin(): boolean {
     return false
   }
 
+  /**
+   * Returns the model name to use as fallback in `AgentOutput.usage.model`
+   * when the runner's output does not include model information.
+   */
   protected getModelName(invocation: AgentInvocation): string | undefined {
     return undefined
   }
 
+  /**
+   * Parses the raw stdout/stderr collected after the process closes.
+   * Override to extract `raw`, `usage`, and `artefacts` from runner-specific output formats.
+   * Called once, after the process exits with code 0.
+   */
   protected parseOutput(
     stdout: string,
     stderr: string,
@@ -30,6 +48,12 @@ export abstract class AbstractCliRunner implements IAgentRunner {
     return {}
   }
 
+  /**
+   * Validates the result of `parseOutput` and returns an `AgentRunnerError` to
+   * reject with, or `null` to proceed with resolving. Override to detect logical
+   * errors that are signalled inside the output (e.g. `is_error: true`) rather
+   * than via a non-zero exit code.
+   */
   protected checkParsed(
     _parsed: Partial<AgentOutput>,
     _invocation: AgentInvocation,
@@ -37,10 +61,19 @@ export abstract class AbstractCliRunner implements IAgentRunner {
     return null
   }
 
+  /**
+   * Called for every complete stdout line while the process is still running,
+   * before `parseOutput`. Override for real-time streaming feedback such as
+   * progress callbacks. Stateless by design — do not accumulate state here.
+   */
   protected onStdoutLine(_line: string, _invocation: AgentInvocation): void {
-    // no-op — override in concrete runners for streaming progress
+    // no-op
   }
 
+  /**
+   * Builds a default prompt from the invocation payload when `invocation.prompt`
+   * is not explicitly provided.
+   */
   protected buildPrompt(invocation: AgentInvocation): string {
     return [
       `Skill: ${invocation.skill ?? 'unknown'}`,
@@ -50,6 +83,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
     ].join('\n')
   }
 
+  /** Entry point: resolves the prompt, builds args, and delegates to `spawnAndCollect`. */
   async run(
     invocation: AgentInvocation,
     options?: { signal?: AbortSignal },
