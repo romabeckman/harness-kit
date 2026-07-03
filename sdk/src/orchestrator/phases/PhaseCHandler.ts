@@ -9,6 +9,7 @@ import { ValidationGate } from '../../validation-gate/ValidationGate'
 import type { PhaseCPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
+import { exit } from 'node:process'
 
 type ValidationResult = ReturnType<typeof ValidationGate.evaluate>;
 
@@ -61,9 +62,9 @@ export class PhaseCHandler extends AbstractPhaseHandler {
   }
 
   private async executeAgents(context: PhaseContext, payload: PhaseCPayload, config: BootstrapConfig) {
-    const tlPrompt = this.buildTechLeadPrompt(payload, config)
-    const advPrompt = this.buildAdversarialQAPrompt(payload, config)
-
+    const tlPrompt = this.buildTechLeadPrompt(payload, config, context.workingDir)
+    const advPrompt = this.buildAdversarialQAPrompt(payload, config, context.workingDir)
+    
     return Promise.all([
       context.invokeAgent({
         skill: 'the-grumpy-tech-lead',
@@ -209,12 +210,13 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     return sections.length > 0 ? sections.join('\n\n') : `Score TL: ${scores.scoreTL}, Score Adv: ${scores.scoreAdv}`
   }
 
-  private buildTechLeadPrompt(payload: PhaseCPayload, config: BootstrapConfig): string {
+  private buildTechLeadPrompt(payload: PhaseCPayload, config: BootstrapConfig, workingDir: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const threshold = config.scoreThresholds.theGrumpyTechLead.threshold
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
       : '- No additional rules provided'
+    const specsDir = `${workingDir}/docs/specs/${payload.domain}`
 
     return [
       `## Objective`,
@@ -238,9 +240,9 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<spec_sources>`,
-      `- Development log: \`docs/specs/${payload.domain}/TDD-OUTPUT.json\``,
-      `- Architecture blueprint: \`docs/specs/${payload.domain}/003-*-tactical-design.md\``,
-      `- Read \`docs/README.md\`. You MUST read all files marked as 'Mandatory' or 'Required', and read optional files ONLY IF their context is required for the current task.`,
+      `- Development log: \`${specsDir}/TDD-OUTPUT.json\``,
+      `- Architecture blueprint: \`${specsDir}/003-*-tactical-design.md\``,
+      `- Read \`${workingDir}/docs/README.md\`. You MUST read all files marked as 'Mandatory' or 'Required', and read optional files ONLY IF their context is required for the current task.`,
       `</spec_sources>`,
       ``,
       `<score_threshold>`,
@@ -256,7 +258,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `</inputs>`,
       ``,
       `<expected_output>`,
-      `Respond exclusively with a valid JSON block saved to \`docs/specs/${payload.domain}/TL.json\`:`,
+      `Respond exclusively with a valid JSON block saved to \`${specsDir}/TL.json\`:`,
       `\`\`\`json`,
       `{`,
       `  "featureId": "${payload.featureId}",`,
@@ -278,12 +280,13 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     ].join('\n')
   }
 
-  private buildAdversarialQAPrompt(payload: PhaseCPayload, config: BootstrapConfig): string {
+  private buildAdversarialQAPrompt(payload: PhaseCPayload, config: BootstrapConfig, workingDir: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const threshold = config.scoreThresholds.adversarialQA.threshold
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
       : '- No additional rules provided'
+    const specsDir = `${workingDir}/docs/specs/${payload.domain}`
 
     return [
       `## Objective`,
@@ -307,10 +310,10 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<spec_sources>`,
-      `- Development log: \`docs/specs/${payload.domain}/TDD-OUTPUT.json\``,
-      `- Test scenarios (acceptance criteria, boundary values, security): \`docs/specs/${payload.domain}/004-*-test-scenarios.md\``,
-      `- Problem space (if exists): \`docs/specs/${payload.domain}/001-problem-space.md\``,
-      `- Context map (if exists): \`docs/specs/${payload.domain}/002-context-map.md\``,
+      `- Development log: \`${specsDir}/TDD-OUTPUT.json\``,
+      `- Test scenarios (acceptance criteria, boundary values, security): \`${specsDir}/004-*-test-scenarios.md\``,
+      `- Problem space (if exists): \`${specsDir}/001-problem-space.md\``,
+      `- Context map (if exists): \`${specsDir}/002-context-map.md\``,
       `</spec_sources>`,
       ``,
       `<score_threshold>`,
@@ -326,7 +329,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `</inputs>`,
       ``,
       `<expected_output>`,
-      `Respond exclusively with a valid JSON block saved to \`docs/specs/${payload.domain}/QA.json\`:`,
+      `Respond exclusively with a valid JSON block saved to \`${specsDir}/QA.json\`:`,
       `\`\`\`json`,
       `{`,
       `  "featureId": "${payload.featureId}",`,
