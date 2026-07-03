@@ -26,7 +26,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
 
     await context.invokeAgent({
       skill: 'project-memory',
-      agent: 'developer-backend',
+      agent: 'software-architect',
       mode: 'autonomous',
       prompt,
       phaseKey: 'phase_e',
@@ -50,7 +50,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`/project-memory\` skill before starting.`,
-      `You are operating as the \`developer-backend\` agent.`,
+      `You are operating as the \`software-architect\` agent.`,
       `</skill_context>`,
       ``,
       `<inputs>`,

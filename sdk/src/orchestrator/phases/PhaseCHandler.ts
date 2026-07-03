@@ -89,8 +89,8 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const advData = this.parseAgentOutput(join(specsDir, 'QA.json'), advOutput, 'phase_c_adv')
 
     return {
-      scoreTL: typeof tlData['scoreTL'] === 'number' ? tlData['scoreTL'] : (tlData['score'] as number || 0),
-      scoreAdv: typeof advData['scoreAdv'] === 'number' ? advData['scoreAdv'] : (advData['score'] as number || 0),
+      scoreTL: typeof tlData['score'] === 'number' ? tlData['score'] : (typeof tlData['scoreTL'] === 'number' ? tlData['scoreTL'] : 0),
+      scoreAdv: typeof advData['score'] === 'number' ? advData['score'] : (typeof advData['scoreAdv'] === 'number' ? advData['scoreAdv'] : 0),
       hasHighCriticalVuln: advData['hasHighCriticalVuln'] === true,
       isCrashing: advData['isCrashing'] === true,
       // TheGrumpyTechLead
