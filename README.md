@@ -85,6 +85,44 @@ agy plugin install https://github.com/romabeckman/harness-kit
 
 ---
 
+## 📦 SDK & CLI — `@romabeckman/hrns`
+
+For teams that want to run the autonomous orchestrator **without a coding assistant open**, HarnessKit ships an npm package that exposes both a CLI and a programmatic TypeScript API.
+
+### CLI (no install required)
+
+```bash
+npx @romabeckman/hrns run
+```
+
+### Global install
+
+```bash
+npm install -g @romabeckman/hrns
+hrns run          # start or resume an orchestration session
+hrns report       # print token usage report
+npm uninstall -g @romabeckman/hrns   # to remove
+```
+
+### Programmatic API
+
+```typescript
+import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hrns'
+
+const orchestrator = new HarnessOrchestrator({
+  scope: 'my project description',
+  projectPaths: ['/path/to/project'],
+  agentRunner: AgentRunnerFactory.create({ type: 'claude-code' }),
+})
+
+await orchestrator.run()
+orchestrator.tokenReport()
+```
+
+> 📄 Full SDK documentation: [`sdk/README.md`](sdk/README.md)
+
+---
+
 ## What's Inside
 
 To prevent role contamination, the orchestrator isolates operational contexts by dispatching highly specialized agent personas equipped with dedicated skills.

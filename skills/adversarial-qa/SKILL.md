@@ -17,7 +17,7 @@ Before executing, detect how you were invoked:
 - **`score >= ${scoreThresholdAdv}`** → Feature **PASSES** adversarial testing and progresses to production
 - **`score < ${scoreThresholdAdv}`** → Feature **RETRIES**: Vulnerabilities from `vulnerabilities[]` and `edgeCasesMissed[]` are logged to `docs/specs/${domain}/REWORK-LOG.md` for developer rework
 
-Default `${scoreThresholdAdv}` = **0.70** (configured during BOOTSTRAP, stored in `docs/product/BOOTSTRAP-CONFIG.md`). Your score must be in **[0.00, 1.00]** range. **Critical vulnerabilities automatically trigger RETRY regardless of score.**
+Default `${scoreThresholdAdv}` = **0.70** (configured during BOOTSTRAP, stored in `docs/product/BOOTSTRAP-CONFIG.json`). Your score must be in **[0.00, 1.00]** range. **Critical vulnerabilities automatically trigger RETRY regardless of score.**
 
 ---
 

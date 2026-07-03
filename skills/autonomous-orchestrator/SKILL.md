@@ -52,7 +52,7 @@ You do NOT write code, tests, or perform any sub-agent task.
 | `harness-kit:tdd-orchestrator` | `developer-backend` / `developer-frontend` / `developer-debugging` |
 | `harness-kit:adversarial-qa` | `harness-qa` |
 | `harness-kit:the-grumpy-tech-lead` | `harness-tech-lead` |
-| `harness-kit:project-memory` | orchestrator (self — Phase E only) |
+| `harness-kit:project-memory` | `software-architect` (self — Phase E only) |
 
 </role>
 
@@ -150,13 +150,17 @@ inputs:
 **A3. Verify:** Wait for all `docs/specs/{domain}/004-*-test-scenarios.md` files to exist.
 
 **A4. Task breakdown:**  
-For each `docs/specs/{domain}/003-*-tactical-design.md` file (one per project in `${projectPaths}`) → extract ordered dev tasks from Section 6 → append to `DEVELOPMENT-STATE.md`:
+For each `docs/specs/{domain}/003-*-tactical-design.md` file (one per project in `${projectPaths}`) → locate `## Section 6 — Ordered Development Tasks` → parse the JSON array in the fenced code block immediately following → append one row per task to `DEVELOPMENT-STATE.md`:
 
 ```
 Feature ID | Task ID | Project | Description | Domain | Current Phase: - | Status: NOT_STARTED
 ```
 
-`Project` = root folder name of the source project (e.g., `order-service`, `checkout-ui`).
+- `Task ID` = `id` field from JSON (e.g., `"01"`)
+- `Description` = `title` field from JSON
+- `Project` = root folder name of the source project (e.g., `order-service`, `checkout-ui`)
+
+**Parsing rule:** extract JSON with the defensive protocol in §3. On parse failure → log error in `DECISIONS.md` and halt Phase A for that feature.
 
 </phase>
 
@@ -217,14 +221,17 @@ DEVELOPMENT-STATE.md[all tasks for feature].Current Phase → VALIDATION
 ```
 C3: harness-kit:the-grumpy-tech-lead (harness-tech-lead agent, Autonomous Mode)
     inputs: ${featureId}, ${domain}, ${projectPaths}
-    → extract Score A via JSON Extraction Protocol
+    → Writes report to docs/specs/${domain}/TL.json
 
 C4: harness-kit:adversarial-qa (harness-qa agent, Autonomous Mode)
     inputs: ${featureId}, ${domain}, ${projectPaths}
-    → extract Score B via JSON Extraction Protocol
+    → Writes report to docs/specs/${domain}/QA.json
 ```
 
-**C5. Verdict Gate:**
+**C5. Read JSON Reports:**
+Read `docs/specs/${domain}/TL.json` (Score A) and `docs/specs/${domain}/QA.json` (Score B). If a file is missing or corrupt, fallback to parsing stdout extraction.
+
+**C6. Verdict Gate & DECISIONS.md update:**
 
 <gate id="PASS">
 

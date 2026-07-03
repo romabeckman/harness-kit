@@ -24,7 +24,7 @@ Read from runtime context:
 - `${featureId}` — Feature ID from `BACKLOG.md` (e.g., `F001`)
 - `${domain}` — Snake_case domain (e.g., `user_authentication`)
 - `${projectPaths}` — Absolute paths of all projects in scope
-- `${scoreThresholdAdv}` — Pass threshold from `docs/product/BOOTSTRAP-CONFIG.md`
+- `${scoreThresholdAdv}` — Pass threshold from `docs/product/BOOTSTRAP-CONFIG.json` if exists
 
 **No confirmations. No pauses. Execute atomically.**
 
@@ -82,13 +82,16 @@ Calculate `score` (`[0.00, 1.00]`, 2 decimals). Compared against `${scoreThresho
 <output>
 ## OUTPUT
 
-Single JSON block only — no prose, no markdown fences, no explanation:
+1. You MUST write (create or replace) the JSON block below to `docs/specs/${domain}/QA.json`.
+2. Also return the single JSON block only in your stdout response — no prose, no markdown fences, no explanation:
 
 ```json
 {
   "featureId": "${featureId}",
   "score": 0.00,
   "passedAdversarial": false,
+  "hasHighCriticalVuln": false,
+  "isCrashing": false,
   "vulnerabilities": [
     {
       "type": "SQL_INJECTION|XSS|RACE_CONDITION|AUTH_BYPASS|DATA_EXPOSURE|NULL_DEREF|...",
@@ -108,6 +111,8 @@ Single JSON block only — no prose, no markdown fences, no explanation:
 - `featureId`: MUST match `${featureId}` from context injection
 - `score`: `[0.00, 1.00]`. Compared against `${scoreThresholdAdv}` by the orchestrator
 - `passedAdversarial`: `true` only if `score >= ${scoreThresholdAdv}` AND no `HIGH`/`CRITICAL` vulnerabilities
+- `hasHighCriticalVuln`: `true` if any vulnerability is HIGH or CRITICAL
+- `isCrashing`: `true` if any vulnerability causes application crash or critical break
 - `vulnerabilities`: `[]` if none found. All `HIGH`/`CRITICAL` findings are mandatory
 - `edgeCasesMissed`: `[]` if all spec scenarios are covered
 
@@ -132,9 +137,10 @@ Single JSON block only — no prose, no markdown fences, no explanation:
 
 ## STRICT RULES
 
-1. Output is **one JSON block only** — no prose, no explanation.
-2. `HIGH`/`CRITICAL` vulnerability = forced RETRY, non-negotiable.
-3. Every missed edge case must reference a scenario from `004-*-test-scenarios.md` or a concrete failure vector.
-4. On retry cycles, explicitly verify `REWORK-LOG.md` findings before scoring.
+1. Output is **one JSON block only** on stdout — no prose, no explanation.
+2. You MUST write the JSON report to `docs/specs/${domain}/QA.json`.
+3. `HIGH`/`CRITICAL` vulnerability = forced RETRY, non-negotiable.
+4. Every missed edge case must reference a scenario from `004-*-test-scenarios.md` or a concrete failure vector.
+5. On retry cycles, explicitly verify `REWORK-LOG.md` findings before scoring.
 
 </strict_rules>

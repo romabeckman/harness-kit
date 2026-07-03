@@ -1,0 +1,44 @@
+#!/usr/bin/env node
+import { cmdRun } from './services/run-service'
+import { printVersion } from './utils/cli-utils'
+import { cmdReport } from './services/report-service'
+import { HELP } from './utils/constants'
+
+async function main(): Promise<void> {
+  const args = process.argv.slice(2)
+  const cmd = args[0]
+  const cwd = process.cwd()
+
+  if (!cmd || cmd === '--help' || cmd === '-h' || cmd === 'help') {
+    console.log(HELP)
+    return
+  }
+
+  if (cmd === '--version' || cmd === '-v' || cmd === 'version') {
+    printVersion()
+    return
+  }
+
+  if (cmd === 'run') {
+    const runArgs = args.slice(1)
+    await cmdRun(cwd, runArgs)
+    return
+  }
+
+  if (cmd === 'report') {
+    cmdReport(cwd)
+    return
+  }
+
+  console.error(`Unknown command: ${cmd}\nRun "hrns help" for usage.`)
+  process.exit(1)
+}
+
+main().catch((err) => {
+  if ((err as NodeJS.ErrnoException).name === 'ExitPromptError') {
+    console.log('\nAborted.')
+    process.exit(0)
+  }
+  console.error(err)
+  process.exit(1)
+})
