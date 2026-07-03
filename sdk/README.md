@@ -26,7 +26,7 @@ claude --version
 
 ## How to run
 
-### Option A — npx (no install, always latest)
+### Option A — npx (available soon)
 
 ```bash
 npx @romabeckman/hrns run
@@ -43,6 +43,15 @@ Build from source and install globally once:
 ```bash
 git clone https://github.com/romabeckman/harness-kit.git
 cd harness-kit/sdk
+npm install
+npm run build
+npm install -g .
+```
+
+In Claude code:
+
+```bash
+cd ~/.claude/plugins/marketplaces/harness-kit/sdk
 npm install
 npm run build
 npm install -g .

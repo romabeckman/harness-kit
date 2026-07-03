@@ -92,31 +92,26 @@ For teams that want to run the autonomous orchestrator **without a coding assist
 ### CLI (no install required)
 
 ```bash
-npx @romabeckman/hrns run
+git clone https://github.com/romabeckman/harness-kit.git
+cd harness-kit/sdk
+npm install
+npm run build
+npm install -g .
 ```
 
-### Global install
+In Claude code:
 
 ```bash
-npm install -g @romabeckman/hrns
-hrns run          # start or resume an orchestration session
-hrns report       # print token usage report
-npm uninstall -g @romabeckman/hrns   # to remove
+cd ~/.claude/plugins/marketplaces/harness-kit/sdk
+npm install
+npm run build
+npm install -g .
 ```
 
-### Programmatic API
+Then from any project directory:
 
-```typescript
-import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hrns'
-
-const orchestrator = new HarnessOrchestrator({
-  scope: 'my project description',
-  projectPaths: ['/path/to/project'],
-  agentRunner: AgentRunnerFactory.create({ type: 'claude-code' }),
-})
-
-await orchestrator.run()
-orchestrator.tokenReport()
+```bash
+hrns run
 ```
 
 > 📄 Full SDK documentation: [`sdk/README.md`](sdk/README.md)
