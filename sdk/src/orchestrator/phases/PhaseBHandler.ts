@@ -127,18 +127,19 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       config.steeringRules
     )
 
-    const prompt = this.buildTddOrchestratorPrompt(payload)
+    const agent = activeFeature.layer ? 'developer-' + activeFeature.layer : 'developer-backend'
+    const prompt = this.buildTddOrchestratorPrompt(payload, agent)
 
     await context.invokeAgent({
       skill: 'tdd-orchestrator',
-      agent: 'developer-backend',
+      agent,
       mode: 'autonomous',
       prompt,
       phaseKey: 'phase_b',
     })
   }
 
-  private buildTddOrchestratorPrompt(payload: PhaseBPayload): string {
+  private buildTddOrchestratorPrompt(payload: PhaseBPayload, agent: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const tasksList = payload.tasks.map(t => `- [${t.taskId}] ${t.description}`).join('\n')
     const rulesSection =
@@ -163,7 +164,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`/tdd-orchestrator\` skill before starting.`,
-      `You are operating as the \`developer-backend\` agent.`,
+      `You are operating as the \`${agent}\` agent.`,
       `</skill_context>`,
       ``,
       `<inputs>`,

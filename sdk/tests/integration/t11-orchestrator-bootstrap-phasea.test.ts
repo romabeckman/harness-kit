@@ -11,9 +11,9 @@ let productDir: string
 let fake: FakeAgentRunner
 
 const BACKLOG_WITH_ONE_FEATURE = [
-  '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-  '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-  '| F001 | SDK Core | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
+  '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+  '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+  '| F001 | SDK Core | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
 ].join('\n')
 
 const DEV_STATE_EMPTY = [
@@ -204,7 +204,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     const backlogInProgress = [
       '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
       '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-      '| F001 | SDK Core | sdk_core | 1 | - | 0 | - | - | IN_PROGRESS |',
+      '| F001 | SDK Core | sdk_core | backend | 1 | - | 0 | - | - | IN_PROGRESS |',
     ].join('\n')
     writeFileSync(join(productDir, 'BACKLOG.md'), backlogInProgress)
 
@@ -407,7 +407,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     const backlogInProgress = [
       '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
       '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-      '| F001 | SDK Core | sdk_core | 1 | - | 0 | - | - | IN_PROGRESS |',
+      '| F001 | SDK Core | sdk_core | backend | 1 | - | 0 | - | - | IN_PROGRESS |',
     ].join('\n')
     writeFileSync(join(productDir, 'BACKLOG.md'), backlogInProgress)
 

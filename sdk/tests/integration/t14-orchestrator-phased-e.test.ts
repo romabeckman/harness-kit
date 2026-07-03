@@ -24,10 +24,10 @@ afterEach(() => {
 function setupTwoFeatures(f2Dependencies: string[] = []): void {
   const deps = f2Dependencies.length > 0 ? f2Dependencies.join(',') : '-'
   const backlog = [
-    '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    '| F001 | Feature One | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
-    `| F002 | Feature Two | sdk_core | 2 | ${deps} | 0 | - | - | NOT_STARTED |`,
+    '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| F001 | Feature One | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
+    `| F002 | Feature Two | sdk_core | backend | 2 | ${deps} | 0 | - | - | NOT_STARTED |`,
   ].join('\n')
   writeFileSync(join(productDir, 'BACKLOG.md'), backlog)
   writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), [
@@ -82,9 +82,9 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
     it('feature COMPLETED, Reworks=1, REWORK-LOG.md exists, completedCycles=1', async () => {
       // Setup at PHASE_C starting point (TDD-OUTPUT present, tasks completed)
       const backlog = [
-        '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | SDK Core | sdk_core | 1 | - | 0 | - | - | IN_PROGRESS |',
+        '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | SDK Core | sdk_core | backend | 1 | - | 0 | - | - | IN_PROGRESS |',
       ].join('\n')
       writeFileSync(join(productDir, 'BACKLOG.md'), backlog)
       const devState = [
@@ -177,10 +177,10 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
       // Pre-set F001 as BLOCKED, F002 depends on F001
       // Orchestrator starts at PHASE_A for F002, discovers dependency is BLOCKED → CASCADE_BLOCKED
       const backlog = [
-        '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | Feature One | sdk_core | 1 | - | 2 | 0.50 | 0.50 | BLOCKED |',
-        '| F002 | Feature Two | sdk_core | 2 | F001 | 0 | - | - | NOT_STARTED |',
+        '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | Feature One | sdk_core | backend | 1 | - | 2 | 0.50 | 0.50 | BLOCKED |',
+        '| F002 | Feature Two | sdk_core | backend | 2 | F001 | 0 | - | - | NOT_STARTED |',
       ].join('\n')
       writeFileSync(join(productDir, 'BACKLOG.md'), backlog)
       writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), [
@@ -223,9 +223,9 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
   describe('PHASE_E invokes project-memory', () => {
     it('project-memory skill called after completion', async () => {
       const backlog = [
-        '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | SDK Core | sdk_core | 1 | - | 0 | - | - | IN_PROGRESS |',
+        '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | SDK Core | sdk_core | backend | 1 | - | 0 | - | - | IN_PROGRESS |',
       ].join('\n')
       writeFileSync(join(productDir, 'BACKLOG.md'), backlog)
       const devState = [

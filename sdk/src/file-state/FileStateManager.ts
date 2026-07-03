@@ -74,7 +74,7 @@ export class FileStateManager implements IFileStateManager {
   private defaultContent(file: string, config?: OrchestratorConfig): string {
     switch (file) {
       case 'BACKLOG.md':
-        return '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n'
+        return '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n'
       case 'DEVELOPMENT-STATE.md':
         return '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |\n| --- | --- | --- | --- | --- | --- | --- |\n'
       case 'DECISIONS.md':
@@ -126,16 +126,16 @@ export class FileStateManager implements IFileStateManager {
     const updated = lines.map(line => {
       if (!line.startsWith('|')) return line
       const cells = line.split('|').slice(1, -1)
-      if (cells.length < 9) return line
+      if (cells.length < 10) return line
       const rowId = cells[0].trim().replace(/\*\*/g, '').replace(/`/g, '')
       if (rowId !== featureId) return line
       found = true
-      // Update: Status (col 8), Score (TL) (col 6), Score (Adv) (col 7)
+      // Update: Status (col 9), Score (TL) (col 7), Score (Adv) (col 8)
       const newCells = [...cells]
-      newCells[8] = ` ${status} `
+      newCells[9] = ` ${status} `
       if (scores) {
-        newCells[6] = ` ${scores.tl} `
-        newCells[7] = ` ${scores.adv} `
+        newCells[7] = ` ${scores.tl} `
+        newCells[8] = ` ${scores.adv} `
       }
       return '|' + newCells.join('|') + '|'
     })
@@ -151,13 +151,13 @@ export class FileStateManager implements IFileStateManager {
     const updated = lines.map(line => {
       if (!line.startsWith('|')) return line
       const cells = line.split('|').slice(1, -1)
-      if (cells.length < 9) return line
+      if (cells.length < 10) return line
       const rowId = cells[0].trim().replace(/\*\*/g, '').replace(/`/g, '')
       if (rowId !== featureId) return line
       found = true
       const newCells = [...cells]
-      const current = parseInt(newCells[5].trim(), 10) || 0
-      newCells[5] = ` ${current + 1} `
+      const current = parseInt(newCells[6].trim(), 10) || 0
+      newCells[6] = ` ${current + 1} `
       return '|' + newCells.join('|') + '|'
     })
     if (!found) throw new Error(`Feature not found: ${featureId}`)

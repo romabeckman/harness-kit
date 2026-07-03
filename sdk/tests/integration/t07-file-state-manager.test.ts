@@ -47,11 +47,11 @@ describe('T07 — FileStateManager', () => {
       mgr.ensureProductFiles()
       // Write a BACKLOG with 3 rows
       const md = [
-        '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | Alpha | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
-        '| F002 | Beta | sdk_core | 2 | F001 | 0 | - | - | NOT_STARTED |',
-        '| F003 | Gamma | sdk_core | 3 | - | 0 | - | - | NOT_STARTED |',
+        '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | Alpha | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| F002 | Beta | sdk_core | backend | 2 | F001 | 0 | - | - | NOT_STARTED |',
+        '| F003 | Gamma | sdk_core | backend | 3 | - | 0 | - | - | NOT_STARTED |',
       ].join('\n')
       writeFileSync(join(productDir, 'BACKLOG.md'), md)
       const features = mgr.loadBacklog()
@@ -62,7 +62,7 @@ describe('T07 — FileStateManager', () => {
 
   describe('TS-I-04: loadBacklog returns empty array for header-only file', () => {
     it('returns []', () => {
-      const md = '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |'
+      const md = '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |'
       writeFileSync(join(productDir, 'BACKLOG.md'), md)
       expect(mgr.loadBacklog()).toEqual([])
     })
@@ -71,11 +71,11 @@ describe('T07 — FileStateManager', () => {
   describe('TS-I-05: updateFeatureStatus updates correct row only', () => {
     it('updates F002 row, leaves F001 and F003 unchanged', () => {
       const md = [
-        '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | Alpha | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
-        '| F002 | Beta | sdk_core | 2 | F001 | 0 | - | - | NOT_STARTED |',
-        '| F003 | Gamma | sdk_core | 3 | - | 0 | - | - | NOT_STARTED |',
+        '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | Alpha | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| F002 | Beta | sdk_core | backend | 2 | F001 | 0 | - | - | NOT_STARTED |',
+        '| F003 | Gamma | sdk_core | backend | 3 | - | 0 | - | - | NOT_STARTED |',
       ].join('\n')
       writeFileSync(join(productDir, 'BACKLOG.md'), md)
       mgr.updateFeatureStatus('F002', 'COMPLETED', { tl: 0.85, adv: 0.80 })
@@ -91,10 +91,10 @@ describe('T07 — FileStateManager', () => {
   describe('TS-I-06: incrementReworks increments only target', () => {
     it('F002 reworks increments, F001 unchanged', () => {
       const md = [
-        '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | Alpha | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
-        '| F002 | Beta | sdk_core | 2 | F001 | 1 | - | - | IN_PROGRESS |',
+        '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | Alpha | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| F002 | Beta | sdk_core | backend | 2 | F001 | 1 | - | - | IN_PROGRESS |',
       ].join('\n')
       writeFileSync(join(productDir, 'BACKLOG.md'), md)
       mgr.incrementReworks('F002')
@@ -211,9 +211,9 @@ describe('T07 — FileStateManager', () => {
   describe('TS-I-21: updateFeatureStatus throws on unknown featureId', () => {
     it('throws Error("Feature not found: NONEXISTENT") when id absent from BACKLOG.md', () => {
       const md = [
-        '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | Alpha | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | Alpha | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
       ].join('\n')
       writeFileSync(join(productDir, 'BACKLOG.md'), md)
       expect(() => mgr.updateFeatureStatus('NONEXISTENT', 'COMPLETED')).toThrow('Feature not found: NONEXISTENT')
@@ -223,9 +223,9 @@ describe('T07 — FileStateManager', () => {
   describe('TS-I-22: incrementReworks throws on unknown featureId', () => {
     it('throws Error("Feature not found: NONEXISTENT") when id absent from BACKLOG.md', () => {
       const md = [
-        '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | Alpha | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | Alpha | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
       ].join('\n')
       writeFileSync(join(productDir, 'BACKLOG.md'), md)
       expect(() => mgr.incrementReworks('NONEXISTENT')).toThrow('Feature not found: NONEXISTENT')
@@ -321,9 +321,9 @@ describe('T07 — FileStateManager', () => {
   describe('TS-I-16: Atomic write — file is consistent after save', () => {
     it('file is valid markdown table after updateFeatureStatus', () => {
       const md = [
-        '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | Alpha | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | Alpha | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
       ].join('\n')
       writeFileSync(join(productDir, 'BACKLOG.md'), md)
       mgr.updateFeatureStatus('F001', 'IN_PROGRESS')
@@ -348,9 +348,9 @@ describe('T07 — FileStateManager', () => {
   describe('TS-I-18: loadBacklog gracefully handles Score "-" as null', () => {
     it('scoreTL and scoreAdv are null not NaN', () => {
       const md = [
-        '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | Alpha | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| F001 | Alpha | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
       ].join('\n')
       writeFileSync(join(productDir, 'BACKLOG.md'), md)
       const features = mgr.loadBacklog()

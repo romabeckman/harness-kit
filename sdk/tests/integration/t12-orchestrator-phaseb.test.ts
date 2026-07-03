@@ -11,9 +11,9 @@ let fake: FakeAgentRunner
 
 function setupProductFiles(backlogStatus: string = 'IN_PROGRESS', tasks: string = ''): void {
   const backlog = [
-    '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    `| F001 | SDK Core | sdk_core | 1 | - | 0 | - | - | ${backlogStatus} |`,
+    '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    `| F001 | SDK Core | sdk_core | backend | 1 | - | 0 | - | - | ${backlogStatus} |`,
   ].join('\n')
   writeFileSync(join(productDir, 'BACKLOG.md'), backlog)
 

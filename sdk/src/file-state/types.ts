@@ -14,10 +14,13 @@ export type TaskStatus =
 
 export type CurrentPhase = 'IMPLEMENTATION' | 'VALIDATION' | '-'
 
+export type FeatureLayer = 'backend' | 'frontend' | 'qa' | 'devops'
+
 export interface Feature {
   id: string
   title: string
   domain: string
+  layer: FeatureLayer | null
   priority: number
   dependencies: string[]
   reworks: number

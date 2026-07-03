@@ -20,6 +20,7 @@ function makeFeature(overrides: Partial<Feature> = {}): Feature {
     id: 'F001',
     title: 'Test Feature',
     domain: 'sdk_core',
+    layer: 'backend',
     priority: 1,
     dependencies: [],
     reworks: 0,

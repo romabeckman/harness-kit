@@ -5,24 +5,26 @@ import { BootstrapConfigParser } from '../../src/file-state/parsers/BootstrapCon
 
 describe('T06 — FileStateManager parsers', () => {
   describe('BacklogParser', () => {
-    const HEADER = '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |'
-    const SEP    = '| --- | --- | --- | --- | --- | --- | --- | --- | --- |'
+    const HEADER = '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |'
+    const SEP    = '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |'
 
     it('parses three feature rows', () => {
       const md = [
         HEADER, SEP,
-        '| F001 | Feature One | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
-        '| F002 | Feature Two | sdk_core | 2 | F001 | 1 | 0.85 | 0.80 | IN_PROGRESS |',
-        '| F003 | Feature Three | sdk_core | 3 | F001,F002 | 0 | - | - | COMPLETED |',
+        '| F001 | Feature One | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| F002 | Feature Two | sdk_core | frontend | 2 | F001 | 1 | 0.85 | 0.80 | IN_PROGRESS |',
+        '| F003 | Feature Three | sdk_core | backend | 3 | F001,F002 | 0 | - | - | COMPLETED |',
       ].join('\n')
       const features = BacklogParser.parse(md)
       expect(features).toHaveLength(3)
       expect(features[0].id).toBe('F001')
       expect(features[0].title).toBe('Feature One')
+      expect(features[0].layer).toBe('backend')
       expect(features[0].dependencies).toEqual([])
       expect(features[0].reworks).toBe(0)
       expect(features[0].scoreTL).toBeNull()
       expect(features[0].scoreAdv).toBeNull()
+      expect(features[1].layer).toBe('frontend')
       expect(features[1].dependencies).toEqual(['F001'])
       expect(features[1].reworks).toBe(1)
       expect(features[1].scoreTL).toBe(0.85)
@@ -38,7 +40,7 @@ describe('T06 — FileStateManager parsers', () => {
     it('handles Score columns with "-" as null (TS-I-18)', () => {
       const md = [
         HEADER, SEP,
-        '| F001 | Test | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| F001 | Test | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
       ].join('\n')
       const features = BacklogParser.parse(md)
       expect(features[0].scoreTL).toBeNull()

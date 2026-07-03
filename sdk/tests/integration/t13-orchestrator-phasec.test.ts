@@ -18,9 +18,9 @@ function setupFullRun(options: {
   const { reworks = 0, backlogStatus = 'IN_PROGRESS', maxReworks = 2 } = options
 
   const backlog = [
-    '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    `| F001 | SDK Core | sdk_core | 1 | - | ${reworks} | - | - | ${backlogStatus} |`,
+    '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    `| F001 | SDK Core | sdk_core | backend | 1 | - | ${reworks} | - | - | ${backlogStatus} |`,
   ].join('\n')
   writeFileSync(join(productDir, 'BACKLOG.md'), backlog)
 
@@ -176,7 +176,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
       writeFileSync(join(productDir, 'BACKLOG.md'), [
         '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
         '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | SDK Core | sdk_core | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| F001 | SDK Core | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
       ].join('\n'))
       writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), [
         '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |',

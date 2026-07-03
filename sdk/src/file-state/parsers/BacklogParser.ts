@@ -1,4 +1,4 @@
-import type { Feature, FeatureStatus } from '../types'
+import type { Feature, FeatureLayer, FeatureStatus } from '../types'
 
 function parseCell(cell: string): string {
   return cell.trim()
@@ -29,9 +29,19 @@ function isFeatureStatus(s: string): s is FeatureStatus {
   return ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED', 'FAILED'].includes(s)
 }
 
+function parseLayer(cell: string): FeatureLayer | null {
+  const v = cell.trim().toLowerCase()
+
+  if (v === 'backend') return 'backend'
+  if (v === 'frontend') return 'frontend'
+  if (v === 'qa') return 'qa'
+  if (v === 'devops') return 'devops'
+  return null
+}
+
 /**
  * Parses a BACKLOG.md markdown table into Feature[].
- * Columns: ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status
+ * Columns: ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status
  */
 export class BacklogParser {
   static parse(markdown: string): Feature[] {
@@ -51,19 +61,20 @@ export class BacklogParser {
     for (const line of dataLines) {
       try {
         const cells = line.split('|').slice(1, -1)
-        if (cells.length < 9) continue
+        if (cells.length < 10) continue
         const id = normalizeId(cells[0])
         if (!id || id === '---') continue
-        const status = parseCell(cells[8])
+        const status = parseCell(cells[9])
         features.push({
           id,
           title: parseCell(cells[1]),
           domain: parseCell(cells[2]),
-          priority: parseNumber(cells[3]),
-          dependencies: parseDependencies(cells[4]),
-          reworks: parseNumber(cells[5]) || 0,
-          scoreTL: parseScore(cells[6]),
-          scoreAdv: parseScore(cells[7]),
+          layer: parseLayer(cells[3]),
+          priority: parseNumber(cells[4]),
+          dependencies: parseDependencies(cells[5]),
+          reworks: parseNumber(cells[6]) || 0,
+          scoreTL: parseScore(cells[7]),
+          scoreAdv: parseScore(cells[8]),
           status: isFeatureStatus(status) ? status : 'NOT_STARTED',
         })
       } catch {

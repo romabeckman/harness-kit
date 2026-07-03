@@ -27,8 +27,8 @@ afterEach(() => {
 
 function writeBacklog(rows: string[]): void {
   const header = [
-    '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
   ]
   writeFileSync(join(productDir, 'BACKLOG.md'), [...header, ...rows].join('\n'))
 }
@@ -177,8 +177,8 @@ describe('F002 — updateFeatureStatus', () => {
   describe('1.1 Status and scores written to correct row', () => {
     it('updates status, scoreTL, scoreAdv for matching row', () => {
       writeBacklog([
-        '| F001 | Feature One | core | 1 | - | 0 | - | - | NOT_STARTED |',
-        '| F002 | Feature Two | core | 2 | - | 0 | - | - | NOT_STARTED |',
+        '| F001 | Feature One | core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| F002 | Feature Two | core | backend | 2 | - | 0 | - | - | NOT_STARTED |',
       ])
       mgr.updateFeatureStatus('F001', 'COMPLETED', { tl: 0.85, adv: 0.90 })
       const features = mgr.loadBacklog()
@@ -194,7 +194,7 @@ describe('F002 — updateFeatureStatus', () => {
 
   describe('1.2 Status updated without scores — score columns preserved', () => {
     it('existing scores remain unchanged when scores arg omitted', () => {
-      writeBacklog(['| F001 | Feature One | core | 1 | - | 0 | 0.75 | 0.80 | IN_PROGRESS |'])
+      writeBacklog(['| F001 | Feature One | core | backend | 1 | - | 0 | 0.75 | 0.80 | IN_PROGRESS |'])
       mgr.updateFeatureStatus('F001', 'FAILED')
       const features = mgr.loadBacklog()
       const f001 = features.find(f => f.id === 'F001')!
@@ -206,7 +206,7 @@ describe('F002 — updateFeatureStatus', () => {
 
   describe('1.3 Not found — throws with featureId in message', () => {
     it('throws Error containing F999 when not in backlog', () => {
-      writeBacklog(['| F001 | Feature One | core | 1 | - | 0 | - | - | NOT_STARTED |'])
+      writeBacklog(['| F001 | Feature One | core | backend | 1 | - | 0 | - | - | NOT_STARTED |'])
       expect(() => mgr.updateFeatureStatus('F999', 'COMPLETED')).toThrow('F999')
       // File unchanged
       const features = mgr.loadBacklog()
@@ -217,7 +217,7 @@ describe('F002 — updateFeatureStatus', () => {
 
   describe('1.4 Idempotency — second call produces identical file', () => {
     it('file content after second call is byte-for-byte equal to after first call', () => {
-      writeBacklog(['| F001 | Feature One | core | 1 | - | 0 | - | - | NOT_STARTED |'])
+      writeBacklog(['| F001 | Feature One | core | backend | 1 | - | 0 | - | - | NOT_STARTED |'])
       mgr.updateFeatureStatus('F001', 'COMPLETED', { tl: 0.9, adv: 0.8 })
       const after1 = readFileSync(join(productDir, 'BACKLOG.md'), 'utf-8')
       mgr.updateFeatureStatus('F001', 'COMPLETED', { tl: 0.9, adv: 0.8 })
@@ -233,8 +233,8 @@ describe('F002 — incrementReworks', () => {
   describe('4.1 Reworks incremented from 0 to 1', () => {
     it('reworks is 1 after one call', () => {
       writeBacklog([
-        '| F001 | Feature One | core | 1 | - | 0 | - | - | NOT_STARTED |',
-        '| F002 | Feature Two | core | 2 | - | 0 | - | - | NOT_STARTED |',
+        '| F001 | Feature One | core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| F002 | Feature Two | core | backend | 2 | - | 0 | - | - | NOT_STARTED |',
       ])
       mgr.incrementReworks('F001')
       const features = mgr.loadBacklog()
@@ -245,7 +245,7 @@ describe('F002 — incrementReworks', () => {
 
   describe('4.2 Multiple increments — calling N times → Reworks = N', () => {
     it('three calls produce reworks = 3', () => {
-      writeBacklog(['| F001 | Feature One | core | 1 | - | 0 | - | - | NOT_STARTED |'])
+      writeBacklog(['| F001 | Feature One | core | backend | 1 | - | 0 | - | - | NOT_STARTED |'])
       mgr.incrementReworks('F001')
       mgr.incrementReworks('F001')
       mgr.incrementReworks('F001')
@@ -256,7 +256,7 @@ describe('F002 — incrementReworks', () => {
 
   describe('4.3 Starts at non-zero — increments correctly', () => {
     it('reworks 2 → 3 after one call', () => {
-      writeBacklog(['| F001 | Feature One | core | 1 | - | 2 | - | - | NOT_STARTED |'])
+      writeBacklog(['| F001 | Feature One | core | backend | 1 | - | 2 | - | - | NOT_STARTED |'])
       mgr.incrementReworks('F001')
       expect(mgr.loadBacklog()[0].reworks).toBe(3)
     })
@@ -264,14 +264,14 @@ describe('F002 — incrementReworks', () => {
 
   describe('4.4 Not found — throws with featureId in message', () => {
     it('throws Error containing F999', () => {
-      writeBacklog(['| F001 | Feature One | core | 1 | - | 0 | - | - | NOT_STARTED |'])
+      writeBacklog(['| F001 | Feature One | core | backend | 1 | - | 0 | - | - | NOT_STARTED |'])
       expect(() => mgr.incrementReworks('F999')).toThrow('F999')
     })
   })
 
   describe('4.5 Non-numeric Reworks cell — treated as 0', () => {
     it('dash reworks cell treated as 0, becomes 1 after increment', () => {
-      writeBacklog(['| F001 | Feature One | core | 1 | - | - | - | - | NOT_STARTED |'])
+      writeBacklog(['| F001 | Feature One | core | backend | 1 | - | - | - | - | NOT_STARTED |'])
       mgr.incrementReworks('F001')
       expect(mgr.loadBacklog()[0].reworks).toBe(1)
     })
@@ -352,8 +352,8 @@ describe('F002 — getExecutableFeatures', () => {
   describe('6.1 All dependencies COMPLETED — feature included', () => {
     it('returns [F002] when F001 is COMPLETED', () => {
       writeBacklog([
-        '| F001 | Feature One | core | 1 | - | 0 | - | - | COMPLETED |',
-        '| F002 | Feature Two | core | 2 | F001 | 0 | - | - | NOT_STARTED |',
+        '| F001 | Feature One | core | backend | 1 | - | 0 | - | - | COMPLETED |',
+        '| F002 | Feature Two | core | backend | 2 | F001 | 0 | - | - | NOT_STARTED |',
       ])
       const result = mgr.getExecutableFeatures()
       expect(result).toHaveLength(1)
@@ -364,8 +364,8 @@ describe('F002 — getExecutableFeatures', () => {
   describe('6.2 One dependency BLOCKED — feature excluded', () => {
     it('returns [] when dependency is BLOCKED', () => {
       writeBacklog([
-        '| F001 | Feature One | core | 1 | - | 0 | - | - | BLOCKED |',
-        '| F002 | Feature Two | core | 2 | F001 | 0 | - | - | NOT_STARTED |',
+        '| F001 | Feature One | core | backend | 1 | - | 0 | - | - | BLOCKED |',
+        '| F002 | Feature Two | core | backend | 2 | F001 | 0 | - | - | NOT_STARTED |',
       ])
       expect(mgr.getExecutableFeatures()).toEqual([])
     })
@@ -374,8 +374,8 @@ describe('F002 — getExecutableFeatures', () => {
   describe('6.3 One dependency IN_PROGRESS — feature excluded', () => {
     it('returns [] when dependency is IN_PROGRESS', () => {
       writeBacklog([
-        '| F001 | Feature One | core | 1 | - | 0 | - | - | IN_PROGRESS |',
-        '| F002 | Feature Two | core | 2 | F001 | 0 | - | - | NOT_STARTED |',
+        '| F001 | Feature One | core | backend | 1 | - | 0 | - | - | IN_PROGRESS |',
+        '| F002 | Feature Two | core | backend | 2 | F001 | 0 | - | - | NOT_STARTED |',
       ])
       expect(mgr.getExecutableFeatures()).toEqual([])
     })
@@ -383,7 +383,7 @@ describe('F002 — getExecutableFeatures', () => {
 
   describe('6.4 No dependencies — feature included when NOT_STARTED', () => {
     it('returns [F001] when dependencies empty and status NOT_STARTED', () => {
-      writeBacklog(['| F001 | Feature One | core | 1 | - | 0 | - | - | NOT_STARTED |'])
+      writeBacklog(['| F001 | Feature One | core | backend | 1 | - | 0 | - | - | NOT_STARTED |'])
       const result = mgr.getExecutableFeatures()
       expect(result).toHaveLength(1)
       expect(result[0].id).toBe('F001')
@@ -393,8 +393,8 @@ describe('F002 — getExecutableFeatures', () => {
   describe('6.5 Feature is IN_PROGRESS — excluded even if all deps COMPLETED', () => {
     it('returns [] when feature status is IN_PROGRESS', () => {
       writeBacklog([
-        '| F001 | Feature One | core | 1 | - | 0 | - | - | COMPLETED |',
-        '| F002 | Feature Two | core | 2 | F001 | 0 | - | - | IN_PROGRESS |',
+        '| F001 | Feature One | core | backend | 1 | - | 0 | - | - | COMPLETED |',
+        '| F002 | Feature Two | core | backend | 2 | F001 | 0 | - | - | IN_PROGRESS |',
       ])
       expect(mgr.getExecutableFeatures()).toEqual([])
     })
@@ -410,9 +410,9 @@ describe('F002 — getExecutableFeatures', () => {
   describe('6.7 All features terminal — returns empty array', () => {
     it('returns [] when all features are COMPLETED/BLOCKED/FAILED', () => {
       writeBacklog([
-        '| F001 | Feature One | core | 1 | - | 0 | - | - | COMPLETED |',
-        '| F002 | Feature Two | core | 2 | - | 0 | - | - | BLOCKED |',
-        '| F003 | Feature Three | core | 3 | - | 0 | - | - | FAILED |',
+        '| F001 | Feature One | core | backend | 1 | - | 0 | - | - | COMPLETED |',
+        '| F002 | Feature Two | core | backend | 2 | - | 0 | - | - | BLOCKED |',
+        '| F003 | Feature Three | core | backend | 3 | - | 0 | - | - | FAILED |',
       ])
       expect(mgr.getExecutableFeatures()).toEqual([])
     })
@@ -421,8 +421,8 @@ describe('F002 — getExecutableFeatures', () => {
   describe('6.8 Multiple executable features — all returned', () => {
     it('returns both F001 and F002 in table order', () => {
       writeBacklog([
-        '| F001 | Feature One | core | 1 | - | 0 | - | - | NOT_STARTED |',
-        '| F002 | Feature Two | core | 2 | - | 0 | - | - | NOT_STARTED |',
+        '| F001 | Feature One | core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| F002 | Feature Two | core | backend | 2 | - | 0 | - | - | NOT_STARTED |',
       ])
       const result = mgr.getExecutableFeatures()
       expect(result).toHaveLength(2)
@@ -433,7 +433,7 @@ describe('F002 — getExecutableFeatures', () => {
 
   describe('6.9 Dependency referenced but not in backlog — feature excluded', () => {
     it('returns [] when dependency F001 does not exist in backlog', () => {
-      writeBacklog(['| F002 | Feature Two | core | 2 | F001 | 0 | - | - | NOT_STARTED |'])
+      writeBacklog(['| F002 | Feature Two | core | backend | 2 | F001 | 0 | - | - | NOT_STARTED |'])
       expect(mgr.getExecutableFeatures()).toEqual([])
     })
   })
@@ -512,8 +512,8 @@ describe('F002 REWORK — bold-markdown ID stripping', () => {
   describe('8.1 updateFeatureStatus with bold ID in BACKLOG.md', () => {
     it('succeeds when BACKLOG.md stores ID as **F002** but caller passes plain F002', () => {
       writeBacklog([
-        '| **F001** | Feature One | core | 1 | - | 0 | - | - | COMPLETED |',
-        '| **F002** | Feature Two | core | 2 | F001 | 0 | - | - | NOT_STARTED |',
+        '| **F001** | Feature One | core | backend | 1 | - | 0 | - | - | COMPLETED |',
+        '| **F002** | Feature Two | core | backend | 2 | F001 | 0 | - | - | NOT_STARTED |',
       ])
       expect(() => mgr.updateFeatureStatus('F002', 'IN_PROGRESS', { tl: 0.75, adv: 0.80 })).not.toThrow()
       const features = mgr.loadBacklog()
@@ -526,7 +526,7 @@ describe('F002 REWORK — bold-markdown ID stripping', () => {
   describe('8.2 incrementReworks with bold ID in BACKLOG.md', () => {
     it('increments reworks when BACKLOG.md stores ID as **F002**', () => {
       writeBacklog([
-        '| **F002** | Feature Two | core | 2 | - | 0 | - | - | NOT_STARTED |',
+        '| **F002** | Feature Two | core | backend | 2 | - | 0 | - | - | NOT_STARTED |',
       ])
       expect(() => mgr.incrementReworks('F002')).not.toThrow()
       const features = mgr.loadBacklog()
@@ -537,8 +537,8 @@ describe('F002 REWORK — bold-markdown ID stripping', () => {
   describe('8.3 getExecutableFeatures with bold IDs in BACKLOG.md', () => {
     it('resolves dependency match when IDs stored as **F001** in ID col and plain F001 in deps col', () => {
       writeBacklog([
-        '| **F001** | Feature One | core | 1 | - | 0 | - | - | COMPLETED |',
-        '| **F002** | Feature Two | core | 2 | F001 | 0 | - | - | NOT_STARTED |',
+        '| **F001** | Feature One | core | backend | 1 | - | 0 | - | - | COMPLETED |',
+        '| **F002** | Feature Two | core | backend | 2 | F001 | 0 | - | - | NOT_STARTED |',
       ])
       const result = mgr.getExecutableFeatures()
       expect(result).toHaveLength(1)
