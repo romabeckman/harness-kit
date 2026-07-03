@@ -67,7 +67,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     return Promise.all([
       context.invokeAgent({
         skill: 'the-grumpy-tech-lead',
-        agent: 'harness-code-reviewer',
+        agent: 'harness-tech-lead',
         mode: 'autonomous',
         prompt: tlPrompt,
         phaseKey: 'phase_c_tl',
@@ -92,7 +92,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       scoreTL: typeof tlData['score'] === 'number' ? tlData['score'] : (typeof tlData['scoreTL'] === 'number' ? tlData['scoreTL'] : 0),
       scoreAdv: typeof advData['score'] === 'number' ? advData['score'] : (typeof advData['scoreAdv'] === 'number' ? advData['scoreAdv'] : 0),
       hasHighCriticalVuln: advData['hasHighCriticalVuln'] === true,
-      isCrashing: advData['isCrashing'] === true,
+      isCrashing: advData['isCrashing'] === true || tlData['isCrashing'] === true,
       // TheGrumpyTechLead
       openPoints: Array.isArray(tlData['openPoints']) ? tlData['openPoints'] : [],
       architectureTip: typeof tlData['architectureTip'] === 'string' ? tlData['architectureTip'] : undefined,
@@ -222,7 +222,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`/the-grumpy-tech-lead\` skill before starting.`,
-      `You are operating as the \`harness-code-reviewer\` agent.`,
+      `You are operating as the \`harness-tech-lead\` agent.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
@@ -261,6 +261,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `{`,
       `  "featureId": "${payload.featureId}",`,
       `  "score": 0.00,`,
+      `  "isCrashing": false,`,
       `  "openPoints": ["Socratic question 1", "Socratic question 2", "Socratic question 3"],`,
       `  "architectureTip": "Single sentence pointing toward an architectural pattern"`,
       `}`,
@@ -271,6 +272,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `- Execute autonomously without pausing or asking for confirmation`,
       `- Do not provide ready-made solutions — raise Socratic questions only`,
       `- score must be a float in [0.00, 1.00] rounded to 2 decimals`,
+      `- isCrashing: true ONLY if a TIER 1 finding causes application crash or critical break (data loss, downtime, security breach)`,
       `- featureId MUST match: ${payload.featureId}`,
       `</strict_rules>`,
     ].join('\n')

@@ -52,7 +52,7 @@ You do NOT write code, tests, or perform any sub-agent task.
 | `harness-kit:tdd-orchestrator` | `developer-backend` / `developer-frontend` / `developer-debugging` |
 | `harness-kit:adversarial-qa` | `harness-qa` |
 | `harness-kit:the-grumpy-tech-lead` | `harness-tech-lead` |
-| `harness-kit:project-memory` | orchestrator (self — Phase E only) |
+| `harness-kit:project-memory` | `software-architect` (self — Phase E only) |
 
 </role>
 
