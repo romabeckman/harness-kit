@@ -173,6 +173,9 @@ export class HarnessOrchestrator implements PhaseContext {
           this.state = { ...this.state, currentPhase: Phase.HALTED }
           return
         }
+        if (err instanceof AgentRunnerError) {
+          process.stderr.write(`\n${AnsiHelpers.red('✗')} Agent error [${err.code}]: ${err.message}\n\n`)
+        }
         throw err
       }
 
