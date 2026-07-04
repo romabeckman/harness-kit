@@ -110,8 +110,8 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
     expect(tddCalls[0].skill).toBe('tdd-orchestrator')
   })
 
-  describe('TS-F-10: runPhaseB throws when TDD-OUTPUT.json absent after agent run', () => {
-    it('run() rejects with error when tdd-orchestrator does NOT create TDD-OUTPUT.json', async () => {
+  describe('TS-F-10: runPhaseB completes when TDD-OUTPUT.json absent after agent run', () => {
+    it('run() resolves successfully when tdd-orchestrator does NOT create TDD-OUTPUT.json', async () => {
       setupProductFiles()
       const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
       mkdirSync(specDir, { recursive: true })
@@ -129,7 +129,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
         productDir,
       }, { workingDir: tmpDir })
 
-      await expect(orchestrator.run()).rejects.toThrow(/TDD-OUTPUT\.json|exceeded 500 iterations|exceeded consecutive iteration limit/)
+      await expect(orchestrator.run()).resolves.toBeUndefined()
     })
   })
 

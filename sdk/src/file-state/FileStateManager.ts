@@ -26,6 +26,7 @@ export interface IFileStateManager {
   updateTaskStatus(featureId: string, taskId: string, phase: CurrentPhase, status: TaskStatus): void
   updateAllFeatureTasks(featureId: string, phase: CurrentPhase, status: TaskStatus): void
   resetTasksForRetry(featureId: string): void
+  getPendingTasks(featureId: string): Task[]
 
   // ─── Decisions log ──────────────────────────────────────────────────────
   appendDecision(entry: DecisionEntry): void
@@ -221,6 +222,12 @@ export class FileStateManager implements IFileStateManager {
 
   resetTasksForRetry(featureId: string): void {
     this.updateAllFeatureTasks(featureId, 'IMPLEMENTATION', 'NOT_STARTED')
+  }
+
+  getPendingTasks(featureId: string): Task[] {
+    return this.loadDevelopmentState()
+      .filter(t => t.featureId === featureId)
+      .filter(t => t.status === 'IN_PROGRESS' || t.status === 'NOT_STARTED')
   }
 
   getExecutableFeatures(): Feature[] {

@@ -81,7 +81,12 @@ sdk/
       HarnessOrchestrator.ts          # State machine loop
       StateMachine.ts                 # Pure phase transition function
       ReentryResolver.ts              # Ordered predicate table (first match wins)
+      SteeringAnalyzer.ts             # LLM-based classifier: text → SteeringAction[]
       types.ts                        # OrchestratorConfig, Phase, OrchestratorState, OnDiskState
+      builder/                        # Phase handler builder utilities
+      phases/                         # Per-phase handler modules (Bootstrap, A–E)
+      services/                       # Shared orchestrator services
+      utils/                          # Internal orchestrator utilities
     file-state/
       FileStateManager.ts             # IFileStateManager implementation
       types.ts                        # Feature, Task, BootstrapConfig, status enums
@@ -93,32 +98,32 @@ sdk/
       IAgentRunner.ts                 # Outbound port interface
       NullAgentRunner.ts              # No-op stub
       types.ts                        # AgentInvocation, AgentOutput, TokenUsage, ContextPayload
+    context-assembler/
+      ContextAssembler.ts             # Per-phase payload builders; injects steeringRules into all payloads
+      types.ts                        # PhasePayloadRequest, phase payload types
     validation-gate/
       ValidationGate.ts              # Pure evaluate() function
       types.ts                        # ValidationScores, VerdictResult, Verdict
-    context-assembler/
-      ContextAssembler.ts            # Per-phase payload builders
-      types.ts                        # PhasePayloadRequest, phase payload types
     json-extraction/
-      JsonExtractionProtocol.ts      # Defensive JSON parser
+      JsonExtractionProtocol.ts      # Defensive JSON parser; supports top-level objects AND arrays
       types.ts                        # ExtractionResult, ExtractionError, type guards
     telemetry/
       TokenLedger.ts                  # JSONL-backed token usage recorder; exposes report() and printReport()
     ui/
       StartupBanner.ts                # ASCII welcome banner rendered at CLI startup
-      AnsiHelpers.ts                  # ANSI escape helpers — colors, cursor-sdk control, line clearing
+      AnsiHelpers.ts                  # ANSI escape helpers — colors, cursor control, line clearing
       TerminalProgress.ts             # Animated braille spinner and one-shot progress bar
-    orchestrator/
-      SteeringAnalyzer.ts             # LLM-based classifier: text → SteeringAction[]
-    context-assembler/
-      ContextAssembler.ts             # Per-phase payload builders; injects steeringRules into all payloads
-    json-extraction/
-      JsonExtractionProtocol.ts       # Supports top-level objects AND arrays (Step 2 fixed)
+    settings/
+      SettingsSchema.ts               # Schema and types for Settings Map
+      DefaultSettings.ts              # Complete out-of-the-box configurations
+      HarnessSettings.ts              # Settings loader, merger, and resolver
+    cli/
+      run.ts                          # CLI entry point — interactive orchestrator launcher
   tests/
     helpers/
       FakeAgentRunner.ts             # Test double for IAgentRunner
-    # 15 test suites (unit + integration)
-  package.json                        # harness-kit-sdk, Vitest, strict TypeScript
+    # 250+ tests across unit and integration suites
+  package.json                        # @romabeckman/hrns, Vitest, strict TypeScript
   tsconfig.json
   tsconfig.build.json
 ```

@@ -9,7 +9,6 @@ import { ValidationGate } from '../../validation-gate/ValidationGate'
 import type { PhaseCPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
-import { exit } from 'node:process'
 
 type ValidationResult = ReturnType<typeof ValidationGate.evaluate>;
 
@@ -64,7 +63,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
   private async executeAgents(context: PhaseContext, payload: PhaseCPayload, config: BootstrapConfig) {
     const tlPrompt = this.buildTechLeadPrompt(payload, config, context.workingDir)
     const advPrompt = this.buildAdversarialQAPrompt(payload, config, context.workingDir)
-    
+
     return Promise.all([
       context.invokeAgent({
         skill: 'the-grumpy-tech-lead',
@@ -149,6 +148,9 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       rationale: result.reason,
     })
 
+    const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
+    if (existsSync(tddOutputPath)) rmSync(tddOutputPath, { force: true })
+
     // If verification needs rework, transition back to retry handler
     if (result.verdict === 'RETRY') {
       return this.handleRetry(context, activeFeature, scores)
@@ -175,15 +177,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     context.fsm.incrementReworks(activeFeature.id)
     context.fsm.writeReworkLog(activeFeature.domain, this.buildReworkContent(scores))
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'NOT_STARTED')
-
-    const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
-    if (existsSync(tddOutputPath)) {
-      try {
-        rmSync(tddOutputPath, { force: true })
-      } catch {
-        // ignore
-      }
-    }
     return Phase.PHASE_B
   }
 
@@ -218,6 +211,21 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       : '- No additional rules provided'
     const specsDir = `${workingDir}/docs/specs/${payload.domain}`
 
+    const reworkLogPath = join(workingDir, 'docs', 'specs', payload.domain, 'REWORK-LOG.md')
+    const reworkSection: string[] = []
+    if (existsSync(reworkLogPath)) {
+      reworkSection.push(
+        `<rework_history totalReworks="${payload.totalReworks}">`,
+        `Contains a log of previous reviews:`,
+        ``,
+        `\`\`\`text`,
+        readFileSync(reworkLogPath, 'utf8').trim(),
+        `</rework_history>`,
+        `\`\`\``,
+        ``
+      )
+    }
+
     return [
       `## Objective`,
       `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Identify systemic risks, architectural flaws, and open points using Socratic questioning.`,
@@ -229,6 +237,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       ``,
       `<inputs>`,
       ``,
+      ...reworkSection,
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,
@@ -288,6 +297,21 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       : '- No additional rules provided'
     const specsDir = `${workingDir}/docs/specs/${payload.domain}`
 
+    const reworkLogPath = join(workingDir, 'docs', 'specs', payload.domain, 'REWORK-LOG.md')
+    const reworkSection: string[] = []
+    if (existsSync(reworkLogPath)) {
+      reworkSection.push(
+        `<rework_history totalReworks="${payload.totalReworks}">`,
+        `Contains a log of previous reviews:`,
+        ``,
+        `\`\`\`text`,
+        readFileSync(reworkLogPath, 'utf8').trim(),
+        `</rework_history>`,
+        `\`\`\``,
+        ``
+      )
+    }
+
     return [
       `## Objective`,
       `Break the implementation for feature \`${payload.featureId}\` by finding edge cases, boundary faults, and security vulnerabilities that standard TDD missed.`,
@@ -299,6 +323,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       ``,
       `<inputs>`,
       ``,
+      ...reworkSection,
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,

@@ -33,6 +33,7 @@ export interface PhaseCPayload extends ContextPayload {
   domain: string
   projectPaths: string[]
   steeringRules?: string[]
+  totalReworks: number
 }
 
 export interface PhaseEPayload extends ContextPayload {

@@ -74,6 +74,7 @@ export class ContextAssembler {
       featureTitle: feature.title,
       domain: feature.domain,
       projectPaths,
+      totalReworks: feature.reworks || 0
     }
     const flattened = this.flattenRules(Phase.PHASE_C, steeringRules)
     if (flattened) {

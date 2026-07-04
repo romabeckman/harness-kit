@@ -81,7 +81,7 @@ describe('T08 — ContextAssembler', () => {
       expect(payload).toHaveProperty('projectPaths')
       expect(payload).not.toHaveProperty('tasks')
       expect(payload).not.toHaveProperty('scoreTL')
-      expect(Object.keys(payload)).toHaveLength(4)
+      expect(Object.keys(payload)).toHaveLength(5)
     })
 
     it('featureId is feature.id and featureTitle is feature.title', () => {

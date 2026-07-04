@@ -17,91 +17,30 @@ export class PhaseBHandler extends AbstractPhaseHandler {
     if (!activeFeature) throw new Error(`Illegal state: phase PHASE_B requires an active feature but none is set`)
 
     const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
-    const tempJsonlPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT-TEMP.jsonl')
 
-    // 1. If TDD-OUTPUT.json exists, handle any IN_PROGRESS tasks that were finished
-    const shouldGoToPhaseC = this.handleResumedExecution(activeFeature, tddOutputPath, context)
+    let pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
+
+    const shouldGoToPhaseC = this.shouldGoToPhaseC(activeFeature, tddOutputPath, context, pendingTasks)
+
     if (shouldGoToPhaseC) {
       return Phase.PHASE_C
     }
 
-    // Clean stale temp file only if starting a completely fresh run (no tasks COMPLETED)
-    const allTasks = context.fsm.loadDevelopmentState().filter(t => t.featureId === activeFeature.id)
-    const inProgressTasks = allTasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'NOT_STARTED')
-
-    // If no tasks are completed or in progress, it's safe to clean up temp files from a previous crashed run.
-    if (inProgressTasks.length === 0 && existsSync(tempJsonlPath)) {
-      rmSync(tempJsonlPath)
-    }
-
-    // If existing rework count is greater than 0, process all tasks in one go (chunk size 100) to avoid multiple iterations. 
-    // Otherwise, process 4 tasks at a time in first iteration, then continue with next 4 tasks in subsequent iterations until all tasks are completed.
-    const CHUNK_SIZE = activeFeature.reworks > 0 ? 100 : 4
-    const MAX_ITERATIONS = 100
-    let iterations = 0
-
-    while (true) {
-      if (iterations++ > MAX_ITERATIONS) {
-        throw new Error(`PhaseBHandler: exceeded maximum iteration limit of ${MAX_ITERATIONS} — possible infinite loop.`)
-      }
-
-      // 2. Load latest non-completed tasks
-      const currentTasks = context.fsm.loadDevelopmentState().filter(t => t.featureId === activeFeature.id)
-      const nonCompletedTasks = currentTasks.filter(t => t.status !== 'COMPLETED')
-
-      if (nonCompletedTasks.length === 0) {
-        this.consolidateTempOutputs(tempJsonlPath, tddOutputPath)
-        return Phase.PHASE_C
-      }
-
-      // 3. Paginate: 4 tasks per run
-      const chunkTasks = nonCompletedTasks.slice(0, CHUNK_SIZE)
-
-      await this.executeChunk(activeFeature, chunkTasks, tddOutputPath, context)
-
-      // 4. Post-execution: if TDD-OUTPUT.json exists, complete the current chunk
-      if (existsSync(tddOutputPath)) {
-        // Append chunk output to temp jsonl file
-        try {
-          const chunkData = readFileSync(tddOutputPath, 'utf8')
-          JSON.parse(chunkData) // verify valid JSON
-          appendFileSync(tempJsonlPath, chunkData.trim().replace(/\r?\n/g, '') + '\n', 'utf8')
-        } catch (err: any) {
-          process.stderr.write(`Failed to append chunk data: ${err.message}\n`)
-        }
-
-        const allDone = this.completeChunk(activeFeature, chunkTasks, tddOutputPath, context)
-        if (allDone) {
-          this.consolidateTempOutputs(tempJsonlPath, tddOutputPath)
-          return Phase.PHASE_C
-        }
-      } else {
-        // If TDD-OUTPUT.json doesn't exist, execution failed or was aborted
-        return Phase.PHASE_B
-      }
-    }
+    await this.executeChunk(activeFeature, pendingTasks, tddOutputPath, context)
+    return Phase.PHASE_C
   }
 
-  private handleResumedExecution(activeFeature: Feature, tddOutputPath: string, context: PhaseContext): boolean {
-    const allTasks = context.fsm.loadDevelopmentState().filter(t => t.featureId === activeFeature.id)
-    const inProgressTasks = allTasks.filter(t => t.status === 'IN_PROGRESS')
-
-    if (existsSync(tddOutputPath) && inProgressTasks.length > 0) {
-      for (const task of inProgressTasks) {
-        context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
+  private shouldGoToPhaseC(activeFeature: Feature, tddOutputPath: string, context: PhaseContext, pendingTasks: Task[]): boolean {
+    if (existsSync(tddOutputPath)) {
+      if (pendingTasks.length > 0) {
+        for (const task of pendingTasks) {
+          context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
+        }
       }
 
-      const remainingTasks = context.fsm.loadDevelopmentState().filter(
-        t => t.featureId === activeFeature.id && t.status !== 'COMPLETED'
-      )
-      if (remainingTasks.length > 0) {
-        // More tasks remain, delete the tdd-output and continue in Phase B
-        rmSync(tddOutputPath)
-      } else {
-        // No more tasks remain, transition to Phase C
-        return true
-      }
+      return true
     }
+
     return false
   }
 
@@ -218,85 +157,5 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `- Execute autonomously without pausing or asking for confirmation`,
       `</strict_rules>`,
     ].join('\n')
-  }
-
-  private completeChunk(activeFeature: Feature, chunkTasks: Task[], tddOutputPath: string, context: PhaseContext): boolean {
-    for (const task of chunkTasks) {
-      context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
-    }
-
-    const remainingTasks = context.fsm.loadDevelopmentState().filter(
-      t => t.featureId === activeFeature.id && t.status !== 'COMPLETED'
-    )
-    if (remainingTasks.length > 0) {
-      // More tasks remain, delete the tdd-output and continue in Phase B
-      rmSync(tddOutputPath)
-      return false
-    }
-    return true
-  }
-
-  private consolidateTempOutputs(tempJsonlPath: string, tddOutputPath: string): void {
-    if (!existsSync(tempJsonlPath)) {
-      return
-    }
-
-    try {
-      const lines = readFileSync(tempJsonlPath, 'utf8').split('\n').filter(l => l.trim())
-      let consolidatedOutput: any = null
-      for (const line of lines) {
-        try {
-          const chunkData = JSON.parse(line)
-          consolidatedOutput = this.mergeTddOutputs(consolidatedOutput, chunkData)
-        } catch {
-          // ignore parsing error
-        }
-      }
-      if (consolidatedOutput) {
-        writeFileSync(tddOutputPath, JSON.stringify(consolidatedOutput, null, 2), 'utf8')
-      }
-      rmSync(tempJsonlPath)
-    } catch (err: any) {
-      process.stderr.write(`Failed to consolidate temp outputs: ${err.message}\n`)
-    }
-  }
-
-  private mergeTddOutputs(target: any, source: any): any {
-    if (!target) return { ...source }
-
-    const merged = { ...target }
-    if (source.featureId) merged.featureId = source.featureId
-
-    // Status: FAILED takes precedence over SUCCESS
-    if (source.status === 'FAILED' || target.status === 'FAILED') {
-      merged.status = 'FAILED'
-    } else if (source.status) {
-      merged.status = source.status
-    }
-
-    // Metrics
-    const targetMetrics = target.metrics || {}
-    const sourceMetrics = source.metrics || {}
-    merged.metrics = {
-      totalTests: (targetMetrics.totalTests || 0) + (sourceMetrics.totalTests || 0),
-      passed: (targetMetrics.passed || 0) + (sourceMetrics.passed || 0),
-      failed: (targetMetrics.failed || 0) + (sourceMetrics.failed || 0),
-      coverage: Math.max(targetMetrics.coverage || 0, sourceMetrics.coverage || 0),
-    }
-
-    // Modified files: union
-    const targetFiles = Array.isArray(target.modifiedFiles) ? target.modifiedFiles : []
-    const sourceFiles = Array.isArray(source.modifiedFiles) ? source.modifiedFiles : []
-    merged.modifiedFiles = Array.from(new Set([...targetFiles, ...sourceFiles]))
-
-    // Reworks
-    merged.reworksCount = Math.max(target.reworksCount || 0, source.reworksCount || 0)
-
-    // Custom test tasksCompleted
-    if (typeof source.tasksCompleted === 'number' || typeof target.tasksCompleted === 'number') {
-      merged.tasksCompleted = (target.tasksCompleted || 0) + (source.tasksCompleted || 0)
-    }
-
-    return merged
   }
 }
