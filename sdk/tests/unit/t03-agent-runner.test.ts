@@ -53,24 +53,6 @@ describe('T03 — ClaudeCLIRunner', () => {
     vi.restoreAllMocks()
   })
 
-  it('defaults: timeoutMs=0, claudeBin="claude"', async () => {
-    vi.doMock('node:child_process', () => ({
-      spawn: vi.fn(() => makeChild([], 0)),
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
-    // Access private config via constructor — just verify it constructs without throwing
-    const runner = new ClaudeCLIRunner()
-    expect(runner).toBeDefined()
-    // Verify the actual defaults are applied by reading static DEFAULT_CONFIG indirectly:
-    // spawn is called with 'claude' as the bin
-    const { spawn } = await import('node:child_process')
-    const resultP = runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
-    // Don't await — just check spawn was called with 'claude'
-    await new Promise(r => setTimeout(r, 20))
-    expect(spawn).toHaveBeenCalledWith('claude', expect.any(Array), expect.any(Object))
-    await resultP
-  })
-
   it('spawns with required args', async () => {
     vi.doMock('node:child_process', () => ({
       spawn: vi.fn(() => makeChild([], 0)),

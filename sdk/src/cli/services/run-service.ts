@@ -12,6 +12,7 @@ import {
   DEFAULT_REWORKS,
 } from "../utils/constants";
 import { ResetOptions, resetOptions } from "./reset-service";
+import { parseRunArgs } from "../utils/run-args-parser";
 
 export interface RunOptions {
   agentType?: string;
@@ -19,20 +20,12 @@ export interface RunOptions {
 }
 
 export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
-  const options: RunOptions = {};
+  const parsed = parseRunArgs(runArgs);
+  const options: RunOptions = {
+    agentType: parsed.agentType,
+    model: parsed.model,
+  };
 
-  for (let i = 0; i < runArgs.length; i++) {
-    const arg = runArgs[i];
-    if (arg === "--copilot-sdk") {
-      options.agentType = "copilot-sdk";
-    } else if (arg === "--gemini") {
-      options.agentType = "gemini";
-    } else if (arg === "--agent" || arg === "-a") {
-      options.agentType = runArgs[++i];
-    } else if (arg === "--model" || arg === "-m") {
-      options.model = runArgs[++i];
-    }
-  }
   const settings = HarnessSettings.load(cwd);
   const productDir = join(cwd, "docs", "product");
   const backlogPath = join(productDir, "BACKLOG.md");
@@ -44,29 +37,56 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
     "\n",
   );
 
-  const action = hasExistingSession
-    ? await select({
-      message: "What would you like to do?",
-      choices: [
-        { name: "resume — continue from last session", value: "resume" },
-        {
-          name: "reset  — discard current session and start a new cycle",
-          value: "reset",
-        },
-      ],
-    })
-    : "reset";
+  // Determine action: use CLI flag when provided, otherwise prompt interactively.
+  const action: "reset" | "resume" = parsed.action
+    ?? (hasExistingSession
+      ? await select({
+        message: "What would you like to do?",
+        choices: [
+          { name: "resume — continue from last session", value: "resume" },
+          {
+            name: "reset  — discard current session and start a new cycle",
+            value: "reset",
+          },
+        ],
+      })
+      : "reset");
 
   let steeringMessage = "";
   let optionsReset: ResetOptions | null = null;
   if (action === "reset") {
-    optionsReset = await resetOptions(cwd);
-    steeringMessage = optionsReset.steeringMessage;
+    // When reset fields are fully supplied via CLI args, skip the interactive wizard.
+    const hasCliResetArgs =
+      parsed.scope !== undefined ||
+      parsed.projectPaths.length > 0 ||
+      parsed.score !== undefined ||
+      parsed.reworks !== undefined;
+
+    if (hasCliResetArgs) {
+      optionsReset = {
+        scope: parsed.scope ?? "",
+        projectPaths: parsed.projectPaths.length > 0 ? parsed.projectPaths : [cwd],
+        score: parsed.score ?? DEFAULT_SCORE,
+        reworks: parsed.reworks ?? DEFAULT_REWORKS,
+        steeringMessage: parsed.steeringMessage ?? "",
+      };
+      steeringMessage = optionsReset.steeringMessage;
+    } else {
+      optionsReset = await resetOptions(cwd);
+      steeringMessage = optionsReset.steeringMessage;
+      // CLI --steering overrides the interactive prompt value.
+      if (parsed.steeringMessage !== undefined) {
+        steeringMessage = parsed.steeringMessage;
+        optionsReset.steeringMessage = steeringMessage;
+      }
+    }
   } else {
-    steeringMessage = await input({
-      message: "Steering rules or state overrides (optional):",
-      default: "",
-    });
+    // resume: use CLI --steering when supplied, otherwise prompt.
+    steeringMessage = parsed.steeringMessage
+      ?? await input({
+        message: "Steering rules or state overrides (optional):",
+        default: "",
+      });
   }
 
   console.log("\n── Starting orchestration ──────────────────────────────");
