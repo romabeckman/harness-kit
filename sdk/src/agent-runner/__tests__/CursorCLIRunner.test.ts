@@ -55,11 +55,11 @@ describe('CursorCLIRunner', () => {
     expect(runner).toBeInstanceOf(CursorCLIRunner)
   })
 
-  it('uses "cursor" as default binary', () => {
+  it('uses "agent" as default binary', () => {
     mockSpawn.mockReturnValue(makeChild({ stdout: 'ok' }))
     const runner = new CursorCLIRunner()
     runner.run(baseInvocation)
-    expect(mockSpawn).toHaveBeenCalledWith('cursor', expect.arrayContaining(['agent', '--print']), expect.any(Object))
+    expect(mockSpawn).toHaveBeenCalledWith('agent', expect.arrayContaining(['--print', '--force']), expect.any(Object))
   })
 
   it('uses custom cursorBin when provided', () => {

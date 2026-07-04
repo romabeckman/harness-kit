@@ -16,7 +16,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
     super()
     this.#config = {
       timeoutMs: config?.timeoutMs ?? 0,
-      cursorBin: config?.cursorBin ?? 'cursor',
+      cursorBin: config?.cursorBin ?? 'agent',
       model: config?.model ?? '',
     }
   }
@@ -34,7 +34,13 @@ export class CursorCLIRunner extends AbstractCliRunner {
   }
 
   protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
-    const args = ['agent', '--print', '--output-format', 'stream-json', '--force']
+    const args = [
+      '--print',
+      '--output-format', 'stream-json',
+      '--stream-partial-output',
+      '--force',
+      '--trust',
+    ]
 
     const model = invocation.model ?? (this.#config.model || undefined)
     if (model) args.push('--model', model)
@@ -42,7 +48,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
     if (invocation.workspacePath) args.push('--workspace', invocation.workspacePath)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
 
-    args.push(prompt)
+    args.push('--', prompt)
     return args
   }
 
@@ -52,25 +58,23 @@ export class CursorCLIRunner extends AbstractCliRunner {
     invocation: AgentInvocation,
   ): Partial<AgentOutput> {
     const lines = stdout.split('\n').filter(Boolean)
-    let raw = stdout
+    let raw = ''
+    let finalResult: string | undefined
 
-    for (let i = lines.length - 1; i >= 0; i--) {
+    for (const line of lines) {
       try {
-        const obj = JSON.parse(lines[i]) as Record<string, unknown>
-        if (obj.type === 'result' && typeof obj.result === 'string') {
-          raw = obj.result
-          break
-        }
+        const obj = JSON.parse(line) as Record<string, unknown>
         if (obj.type === 'text' && typeof obj.text === 'string') {
-          raw = obj.text
-          break
+          raw += obj.text
+        } else if (obj.type === 'result' && typeof obj.result === 'string') {
+          finalResult = obj.result
         }
       } catch {
-        // not JSON, keep scanning
+        // ignore non-json lines
       }
     }
 
-    return { raw }
+    return { raw: finalResult ?? (raw || stdout) }
   }
 }
 

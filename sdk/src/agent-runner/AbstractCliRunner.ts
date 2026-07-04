@@ -103,6 +103,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
       const child = spawn(this.binaryName, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
+        env: { ...process.env, ...(invocation.env ?? {}) },
       })
 
       let timer: ReturnType<typeof setTimeout> | undefined
