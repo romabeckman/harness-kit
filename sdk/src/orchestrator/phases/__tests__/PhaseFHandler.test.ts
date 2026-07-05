@@ -31,7 +31,6 @@ function makeConfig(pendingStatus?: string): BootstrapConfig {
     },
     completionCriteria: { maxReworks: 2 },
     cycleCounter: { completedCycles: 0 },
-    pendingStatus: pendingStatus as any,
     steeringRules: { user: [] },
   }
 }
@@ -73,8 +72,6 @@ function makeContext(fsm: IFileStateManager, activeFeature: Feature | null = mak
     config: { scope: 'test', score: 0.7, reworks: 2, projectPaths: [] },
     workingDir: '/tmp/test',
     fsm,
-    state: { currentPhase: Phase.PHASE_F, activeFeatureId: activeFeature?.id ?? null, completedCycles: 0 },
-    updateState: vi.fn(),
     invokeAgent: vi.fn(),
     getActiveFeature: vi.fn().mockReturnValue(activeFeature),
     checkSpecFilesPresent: vi.fn().mockReturnValue(true),

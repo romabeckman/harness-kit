@@ -85,8 +85,6 @@ function makeContext(workingDir: string, fsm: IFileStateManager, invokeAgentImpl
     config: { scope: 'test', score: 0.85, reworks: 3, projectPaths: [] },
     workingDir,
     fsm,
-    state: { currentPhase: Phase.PHASE_B, activeFeatureId: 'F001', completedCycles: 0 },
-    updateState: vi.fn(),
     invokeAgent: invokeAgentImpl ? vi.fn().mockImplementation(invokeAgentImpl) : vi.fn().mockResolvedValue({ success: true, stdout: '', stderr: '', raw: '' }),
     getActiveFeature: vi.fn().mockReturnValue(makeFeature()),
     checkSpecFilesPresent: vi.fn().mockReturnValue(true),
