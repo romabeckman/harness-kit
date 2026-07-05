@@ -83,6 +83,11 @@ export class PhaseAHandler extends AbstractPhaseHandler {
         ? payload.steeringRules.map((r) => `- ${r}`).join("\n")
         : "- No additional rules provided";
 
+    const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
+    const contextMapFile = join(payload.workingDir, '002-context-map.md');
+    const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
+    const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
+
     return [
       `## Objective`,
       `Perform scope refinement STRICTLY for the <target_feature>. Use the <background_context> ONLY for system alignment and contextual awareness. Do NOT refine or generate specifications for the entire background context.`,
@@ -124,11 +129,11 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `</inputs>`,
       ``,
       `<expected_outputs>`,
-      `Produce, under \`docs/specs/${payload.workingDir}/\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
-      `- \`docs/specs/${payload.workingDir}/001-problem-space.md\` — Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature)`,
-      `- \`docs/specs/${payload.workingDir}/002-context-map.md\` — Bounded Contexts and Context Map`,
-      `- \`docs/specs/${payload.workingDir}/003-\${PROJECT_NAME}-tactical-design.md\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array objects`,
-      `- \`docs/specs/${payload.workingDir}/004-\${PROJECT_NAME}-test-scenarios.md\` (one per project) — Test Scenarios`,
+      `Produce, under \`${payload.workingDir}\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
+      `- \`${problemSpaceFile}\` — Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature)`,
+      `- \`${contextMapFile}\` — Bounded Contexts and Context Map`,
+      `- \`${tacticalDesignFile}\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array objects`,
+      `- \`${testScenariosFile}\` (one per project) — Test Scenarios`,
       `</expected_outputs>`,
       ``,
       `<strict_rules>`,

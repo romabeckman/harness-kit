@@ -80,7 +80,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
 
   private buildTddOrchestratorPrompt(payload: PhaseBPayload, agent: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
-    const tasksList = payload.tasks.map(t => `- [${t.taskId}] (${t.project}) ${t.description}`).join('\n')
+    const tasksList = payload.tasks.map(t => `- [${t.taskId}] ${t.description}`).join('\n')
     const rulesSection =
       payload.steeringRules && payload.steeringRules.length > 0
         ? payload.steeringRules.map(r => `- ${r}`).join('\n')
