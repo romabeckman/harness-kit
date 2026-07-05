@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import type { IAgentRunner } from './IAgentRunner'
 import type { AgentInvocation, AgentOutput } from './types'
 import { AgentRunnerError, AgentRunnerErrorCode } from './AgentRunnerError'
+import { DEFAULT_PHASE_TIMEOUT_MS } from '../settings/DefaultSettings'
 
 /**
  * Abstract base class for all CLI subprocess runners.
@@ -13,7 +14,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   protected abstract readonly binaryName: string
 
   /** Milliseconds before the spawned process is force-killed. 0 = no timeout. */
-  protected abstract readonly timeoutMs: number
+  protected timeoutMs: number = DEFAULT_PHASE_TIMEOUT_MS
 
   /** Returns the argument list for the CLI invocation, excluding the binary itself. */
   protected abstract buildArgs(prompt: string, invocation: AgentInvocation): string[]
@@ -90,6 +91,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   ): Promise<AgentOutput> {
     const prompt = invocation.prompt ?? this.buildPrompt(invocation)
     const args = this.buildArgs(prompt, invocation)
+    if (invocation.timeoutMs) this.timeoutMs = invocation.timeoutMs
     return this.spawnAndCollect(prompt, args, invocation, options)
   }
 

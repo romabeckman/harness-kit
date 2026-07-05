@@ -46,12 +46,16 @@ export class AgentInvocationService {
     }
 
     // Replace model if defined in settings for current phase
-    let finalInvocation = invocation
+    let finalInvocation = {
+      ...invocation,
+      timeoutMs: timeoutMs
+    }
+
     if (settingKey && phaseKey) {
       const overrides = settings.resolve(settingKey, phaseKey)
       if (overrides.model || overrides.effort) {
         finalInvocation = {
-          ...invocation,
+          ...finalInvocation,
           model: overrides.model ?? invocation.model,
           effort: overrides.effort ?? invocation.effort,
         }

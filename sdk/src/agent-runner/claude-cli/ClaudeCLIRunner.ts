@@ -3,37 +3,36 @@ import { AbstractCliRunner } from '../AbstractCliRunner'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { type ProgressLine, defaultProgress, extractJsonOrNull } from '../CliRunnerProgress'
+import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
 export type { ProgressLine } from '../CliRunnerProgress'
 
 export interface ClaudeCLIRunnerConfig {
   readonly timeoutMs: number
   readonly claudeBin: string
-  readonly model?: string   // passed as --model to claude CLI
-  readonly effort?: string  // passed as --effort to claude CLI ('low'|'medium'|'high'|'max')
+  readonly model?: string
+  readonly effort?: string
   readonly onProgress?: (line: ProgressLine) => void
 }
-
-const DEFAULT_CONFIG: Omit<ClaudeCLIRunnerConfig, 'onProgress' | 'model' | 'effort'> = Object.freeze({
-  timeoutMs: 0, // 0 = no timeout — agents can run for hours
-  claudeBin: 'claude',
-})
 
 export class ClaudeCLIRunner extends AbstractCliRunner {
   readonly type = 'claude-cli'
   readonly #config: ClaudeCLIRunnerConfig & { onProgress: (line: ProgressLine) => void }
 
-  protected binaryName: string
-  protected timeoutMs: number
-
   constructor(config?: Partial<ClaudeCLIRunnerConfig>) {
     super()
     this.#config = {
-      ...DEFAULT_CONFIG,
+      model: config?.model,
+      effort: config?.effort,
+      claudeBin: config?.claudeBin ?? 'claude',
+      timeoutMs: config?.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS,
       onProgress: defaultProgress,
       ...config,
     }
-    this.binaryName = this.#config.claudeBin
     this.timeoutMs = this.#config.timeoutMs
+  }
+
+  protected get binaryName(): string {
+    return this.#config.claudeBin
   }
 
   protected override get writePromptToStdin(): boolean {

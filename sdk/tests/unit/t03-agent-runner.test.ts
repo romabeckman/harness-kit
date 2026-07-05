@@ -49,6 +49,7 @@ describe('T03 — IAgentRunner interface + NullAgentRunner', () => {
 
 describe('T03 — ClaudeCLIRunner', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     vi.resetModules()
     vi.restoreAllMocks()
   })

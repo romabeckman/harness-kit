@@ -72,7 +72,7 @@ describe('AntigravityCLIRunner — TC-AGY', () => {
 
     expect(spawnMock).toHaveBeenCalledWith(
       'agy',
-      ['--prompt', 'do coding task', '--model', 'gemini-3.5-flash-test', '--print-timeout', '60m'],
+      ['--print', 'do coding task', '--model', 'gemini-3.5-flash-test', '--print-timeout', '1800000ms'],
       expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'] }),
     )
 
@@ -100,7 +100,7 @@ describe('AntigravityCLIRunner — TC-AGY', () => {
 
     expect(spawnMock).toHaveBeenCalledWith(
       'agy',
-      ['--prompt', 'do coding task', '--model', 'gemini-3.5-flash-test', '--print-timeout', '30000ms'],
+      ['--print', 'do coding task', '--model', 'gemini-3.5-flash-test', '--print-timeout', '30000ms'],
       expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'] }),
     )
   })

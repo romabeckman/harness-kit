@@ -1,6 +1,7 @@
 import { AbstractCliRunner } from '../AbstractCliRunner'
 import type { AgentInvocation } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
+import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
 
 export interface CopilotCLIRunnerConfig {
   readonly copilotBin?: string
@@ -16,17 +17,14 @@ export class CopilotCLIRunner extends AbstractCliRunner {
     super()
     this.#config = {
       copilotBin: config?.copilotBin ?? 'copilot',
-      timeoutMs: config?.timeoutMs ?? 0,
+      timeoutMs: config?.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS,
       model: config?.model ?? '',
     }
+    this.timeoutMs = this.#config.timeoutMs
   }
 
   protected get binaryName(): string {
     return this.#config.copilotBin
-  }
-
-  protected get timeoutMs(): number {
-    return this.#config.timeoutMs
   }
 
   protected get writePromptToStdin(): boolean {

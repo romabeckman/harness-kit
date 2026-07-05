@@ -16,6 +16,7 @@ export interface AgentInvocation {
   readonly model?: string
   readonly effort?: string
   readonly phaseKey?: string
+  readonly timeoutMs?: number
   readonly additionalDirs?: string[]
 }
 

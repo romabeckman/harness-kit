@@ -1,6 +1,7 @@
 import { AbstractCliRunner } from '../AbstractCliRunner'
 import type { AgentInvocation, AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
+import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
 
 export interface CursorCLIRunnerConfig {
   readonly timeoutMs?: number
@@ -15,18 +16,15 @@ export class CursorCLIRunner extends AbstractCliRunner {
   constructor(config?: Partial<CursorCLIRunnerConfig>) {
     super()
     this.#config = {
-      timeoutMs: config?.timeoutMs ?? 0,
+      timeoutMs: config?.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS,
       cursorBin: config?.cursorBin ?? 'agent',
       model: config?.model ?? '',
     }
+    this.timeoutMs = this.#config.timeoutMs
   }
 
   protected get binaryName(): string {
     return this.#config.cursorBin
-  }
-
-  protected get timeoutMs(): number {
-    return this.#config.timeoutMs
   }
 
   protected getModelName(invocation: AgentInvocation): string | undefined {
