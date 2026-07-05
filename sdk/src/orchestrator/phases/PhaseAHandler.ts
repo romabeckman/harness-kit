@@ -3,6 +3,7 @@ import { AbstractPhaseHandler, PhaseContext } from "./AbstractPhaseHandler";
 import { ContextAssembler } from "../../context-assembler/ContextAssembler";
 import type { Feature } from "../../file-state/types";
 import type { PhaseAPayload } from "../../context-assembler/types";
+import { join } from "node:path";
 
 export class PhaseAHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
@@ -53,8 +54,10 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     context.fsm.updateFeatureStatus(feature.id, "IN_PROGRESS");
 
     const config = context.fsm.loadBootstrapConfig();
+    const workingDir = join(context.workingDir, 'docs', 'specs', feature.domain)
     const payload = ContextAssembler.buildPhaseAPayload(
       feature,
+      workingDir,
       context.config.projectPaths,
       context.config.scope,
       config.steeringRules,
@@ -121,11 +124,11 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `</inputs>`,
       ``,
       `<expected_outputs>`,
-      `Produce, under \`docs/specs/${payload.domain}/\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
-      `- \`docs/specs/${payload.domain}/001-problem-space.md\` — Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature)`,
-      `- \`docs/specs/${payload.domain}/002-context-map.md\` — Bounded Contexts and Context Map`,
-      `- \`docs/specs/${payload.domain}/003-\${PROJECT_NAME}-tactical-design.md\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array objects`,
-      `- \`docs/specs/${payload.domain}/004-\${PROJECT_NAME}-test-scenarios.md\` (one per project) — Test Scenarios`,
+      `Produce, under \`docs/specs/${payload.workingDir}/\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
+      `- \`docs/specs/${payload.workingDir}/001-problem-space.md\` — Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature)`,
+      `- \`docs/specs/${payload.workingDir}/002-context-map.md\` — Bounded Contexts and Context Map`,
+      `- \`docs/specs/${payload.workingDir}/003-\${PROJECT_NAME}-tactical-design.md\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array objects`,
+      `- \`docs/specs/${payload.workingDir}/004-\${PROJECT_NAME}-test-scenarios.md\` (one per project) — Test Scenarios`,
       `</expected_outputs>`,
       ``,
       `<strict_rules>`,

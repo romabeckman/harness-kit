@@ -11,6 +11,7 @@ export interface PhaseAPayload extends ContextPayload {
   scope: string
   domain: string
   featureTitle: string
+  workingDir: string
   projectPaths: string[]
   steeringRules?: string[]
 }
