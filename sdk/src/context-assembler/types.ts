@@ -20,7 +20,7 @@ export interface PhaseBPayload extends ContextPayload {
   featureTitle: string
   domain: string
   projectPaths: string[]
-  tasks: Array<{ taskId: string; description: string }>
+  tasks: Task[]
   isRetry: boolean
   reworks: number
   reworkLogPath?: string

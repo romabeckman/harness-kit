@@ -51,7 +51,7 @@ export class ContextAssembler {
       featureTitle: feature.title,
       domain: feature.domain,
       projectPaths,
-      tasks: tasks.map(t => ({ taskId: t.taskId, description: t.description })),
+      tasks: tasks,
       isRetry,
       reworks: reworks ? reworks : 0,
     }
