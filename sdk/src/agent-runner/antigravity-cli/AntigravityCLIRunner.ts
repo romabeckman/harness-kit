@@ -42,7 +42,9 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     if (model) {
       args.push('--model', model)
     }
-    const timeout = this.timeoutMs > 0 ? `${this.timeoutMs}ms` : DEFAULT_TIMEOUT
+
+    // add 1000ms to timeout to avoid throw error for 1sec difference
+    const timeout = this.timeoutMs > 0 ? `${this.timeoutMs + 1000}ms` : DEFAULT_TIMEOUT + 1000
     args.push('--print-timeout', timeout)
     return args
   }

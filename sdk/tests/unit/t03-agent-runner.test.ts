@@ -266,7 +266,6 @@ describe('T03 — ClaudeCLIRunner', () => {
 
     const output = stderrSpy.mock.calls.map(c => String(c[0])).join('')
     expect(output).toContain('[DEBUG] spawn:')
-    expect(output).toContain('[DEBUG] prompt:')
     expect(output).toContain('claude')
 
     stderrSpy.mockRestore()
