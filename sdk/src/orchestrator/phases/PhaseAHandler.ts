@@ -174,7 +174,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       extracted.map((t) => ({
         featureId: feature.id,
         taskId: t.taskId,
-        project: t.file,
+        project: "-" as const,
         description: t.description,
         domain: feature.domain,
         currentPhase: "-" as const,
