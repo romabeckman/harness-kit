@@ -41,6 +41,9 @@ export class BootstrapConfigParser {
     if (typeof raw.pendingStatus === 'string') {
       result.pendingStatus = raw.pendingStatus
     }
+    if (raw.pendingScores && typeof raw.pendingScores.tl === 'number' && typeof raw.pendingScores.adv === 'number') {
+      result.pendingScores = { tl: raw.pendingScores.tl, adv: raw.pendingScores.adv }
+    }
     if (typeof raw.originalScope === 'string') {
       result.originalScope = raw.originalScope
     }

@@ -104,15 +104,15 @@ describe('ValidationGate.evaluate', () => {
   })
 
   describe('buildFailureReasons — uncovered branches', () => {
-    it('includes openPoints in failure reason when present', () => {
+    it('includes openPoints count in failure reason when present', () => {
       const result = ValidationGate.evaluate(
         makeScores({ scoreTL: 0.5, openPoints: ['Missing error handler', 'No retry logic'] }),
         0,
         makeConfig(3),
         false
       )
-      expect(result.reason).toContain('Open Points')
-      expect(result.reason).toContain('Missing error handler')
+      expect(result.reason).toContain('open point(s) flagged by tech lead')
+      expect(result.reason).toContain('2')
     })
 
     it('includes hasHighCriticalVuln description in failure reason', () => {
@@ -183,7 +183,7 @@ describe('ValidationGate.evaluate', () => {
       expect(result.reason).toContain('TL score')
       expect(result.reason).toContain('Adv score')
       expect(result.reason).toContain('high/critical vulnerability')
-      expect(result.reason).toContain('Open Points')
+      expect(result.reason).toContain('open point(s) flagged by tech lead')
       expect(result.reason).toContain('Edge Cases Missed')
       expect(result.reason).toContain('Vulnerabilities')
     })

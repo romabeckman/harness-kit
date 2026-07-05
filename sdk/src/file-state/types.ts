@@ -62,6 +62,7 @@ export interface BootstrapConfig {
   currentPhase?: string
   activeFeatureId?: string | null
   pendingStatus?: FeatureStatus
+  pendingScores?: { tl: number; adv: number }
   steeringRules?: SteeringRulesConfig
 }
 

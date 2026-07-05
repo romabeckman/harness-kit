@@ -1,0 +1,239 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { PhaseFHandler } from '../PhaseFHandler'
+import { Phase } from '../../types'
+import type { PhaseContext } from '../AbstractPhaseHandler'
+import type { IFileStateManager } from '../../../file-state/FileStateManager'
+import type { Feature, BootstrapConfig } from '../../../file-state/types'
+
+function makeFeature(overrides: Partial<Feature> = {}): Feature {
+  return {
+    id: 'F001',
+    title: 'Feature 1',
+    domain: 'feat1',
+    layer: 'backend',
+    priority: 1,
+    dependencies: [],
+    reworks: 2,
+    scoreTL: 0.9,
+    scoreAdv: 0.9,
+    status: 'IN_PROGRESS',
+    ...overrides,
+  }
+}
+
+function makeConfig(pendingStatus?: string): BootstrapConfig {
+  return {
+    originalScope: 'scope',
+    projectPaths: [],
+    scoreThresholds: {
+      theGrumpyTechLead: { threshold: 0.70 },
+      adversarialQA: { threshold: 0.70 },
+    },
+    completionCriteria: { maxReworks: 2 },
+    cycleCounter: { completedCycles: 0 },
+    pendingStatus: pendingStatus as any,
+    steeringRules: { user: [] },
+  }
+}
+
+function makeFsm(
+  features: Feature[],
+  pendingStatus?: string,
+  blockDependentsImpl?: (id: string, fs: Feature[]) => string[]
+): IFileStateManager {
+  const loadBacklog = vi.fn().mockReturnValue(features)
+  const blockDependents = vi.fn().mockImplementation(blockDependentsImpl ?? (() => []))
+
+  return {
+    loadBacklog,
+    loadBootstrapConfig: vi.fn().mockReturnValue(makeConfig(pendingStatus)),
+    updateFeatureStatus: vi.fn(),
+    updateAllFeatureTasks: vi.fn(),
+    blockDependents,
+    saveBootstrapConfig: vi.fn(),
+    appendDecision: vi.fn(),
+    getExecutableFeatures: vi.fn(),
+    incrementReworks: vi.fn(),
+    loadDevelopmentState: vi.fn().mockReturnValue([]),
+    appendTasks: vi.fn(),
+    updateTaskStatus: vi.fn(),
+    resetTasksForRetry: vi.fn(),
+    getPendingTasks: vi.fn().mockReturnValue([]),
+    getNextTask: vi.fn().mockReturnValue(null),
+    writeReworkLog: vi.fn(),
+    loadRecentDecisions: vi.fn().mockReturnValue([]),
+    existBootstrapConfig: vi.fn().mockReturnValue(true),
+    ensureProductFiles: vi.fn(),
+  } as unknown as IFileStateManager
+}
+
+function makeContext(fsm: IFileStateManager, activeFeature: Feature | null = makeFeature()): PhaseContext {
+  return {
+    config: { scope: 'test', score: 0.7, reworks: 2, projectPaths: [] },
+    workingDir: '/tmp/test',
+    fsm,
+    state: { currentPhase: Phase.PHASE_F, activeFeatureId: activeFeature?.id ?? null, completedCycles: 0 },
+    updateState: vi.fn(),
+    invokeAgent: vi.fn(),
+    getActiveFeature: vi.fn().mockReturnValue(activeFeature),
+    checkSpecFilesPresent: vi.fn().mockReturnValue(true),
+    extractTasksFromTacticalDesign: vi.fn().mockReturnValue([]),
+  }
+}
+
+describe('PhaseFHandler', () => {
+  let handler: PhaseFHandler
+
+  beforeEach(() => {
+    handler = new PhaseFHandler()
+  })
+
+  it('delegates to next handler when phase is not PHASE_F', async () => {
+    const fsm = makeFsm([makeFeature()], 'COMPLETED')
+    const ctx = makeContext(fsm)
+    const result = await handler.handle(Phase.PHASE_A, ctx)
+    expect(result).toBeNull()
+  })
+
+  it('throws when no active feature', async () => {
+    const fsm = makeFsm([makeFeature()], 'COMPLETED')
+    const ctx = makeContext(fsm, null)
+    await expect(handler.handle(Phase.PHASE_F, ctx)).rejects.toThrow('Illegal state')
+  })
+
+  describe('COMPLETED — no cascade', () => {
+    it('does not call blockDependents and advances to next NOT_STARTED feature', async () => {
+      const f1 = makeFeature({ id: 'F001', status: 'IN_PROGRESS', scoreTL: 0.9, scoreAdv: 0.9 })
+      const f2 = makeFeature({ id: 'F002', status: 'NOT_STARTED', dependencies: [] })
+      const fsm = makeFsm([f1, f2], 'COMPLETED')
+
+      // After update F1 is COMPLETED, F2 still NOT_STARTED
+      const updatedFeatures = [
+        { ...f1, status: 'COMPLETED' as const },
+        f2,
+      ]
+      fsm.loadBacklog = vi.fn()
+        .mockReturnValueOnce([f1, f2])   // initial load in handle()
+        .mockReturnValueOnce(updatedFeatures) // reload after cascade
+
+      const ctx = makeContext(fsm, f1)
+      const result = await handler.handle(Phase.PHASE_F, ctx)
+
+      expect(fsm.blockDependents).not.toHaveBeenCalled()
+      expect(result).toBe(Phase.PHASE_A)
+      expect(ctx.updateState).toHaveBeenCalledWith({ activeFeatureId: 'F002' })
+    })
+  })
+
+  describe('BLOCKED — cascade to direct dependents', () => {
+    it('calls blockDependents and logs cascade decision', async () => {
+      const f1 = makeFeature({ id: 'F001', status: 'IN_PROGRESS', scoreTL: 0.4, scoreAdv: 0.2 })
+      const f2 = makeFeature({ id: 'F002', status: 'NOT_STARTED', dependencies: ['F001'] })
+      const fsm = makeFsm([f1, f2], 'BLOCKED', () => ['F002'])
+
+      // After blockDependents, F2 is BLOCKED
+      const afterCascade = [
+        { ...f1, status: 'BLOCKED' as const },
+        { ...f2, status: 'BLOCKED' as const },
+      ]
+      fsm.loadBacklog = vi.fn()
+        .mockReturnValueOnce([f1, f2])    // initial
+        .mockReturnValueOnce([f1, f2])    // for cascade
+        .mockReturnValueOnce(afterCascade) // find next
+
+      const ctx = makeContext(fsm, f1)
+      const result = await handler.handle(Phase.PHASE_F, ctx)
+
+      expect(fsm.blockDependents).toHaveBeenCalledWith('F001', [f1, f2])
+      expect(fsm.appendDecision).toHaveBeenCalledWith(
+        expect.objectContaining({
+          decision: expect.stringContaining('F002'),
+        })
+      )
+      // No NOT_STARTED left → HALTED
+      expect(result).toBe(Phase.HALTED)
+    })
+
+    it('returns PHASE_A when unrelated features remain NOT_STARTED after cascade', async () => {
+      const f1 = makeFeature({ id: 'F001', status: 'IN_PROGRESS' })
+      const f2 = makeFeature({ id: 'F002', status: 'NOT_STARTED', dependencies: ['F001'] })
+      const f3 = makeFeature({ id: 'F003', status: 'NOT_STARTED', dependencies: [] })
+      const fsm = makeFsm([f1, f2, f3], 'BLOCKED', () => ['F002'])
+
+      const afterCascade = [
+        { ...f1, status: 'BLOCKED' as const },
+        { ...f2, status: 'BLOCKED' as const },
+        f3,
+      ]
+      fsm.loadBacklog = vi.fn()
+        .mockReturnValueOnce([f1, f2, f3])
+        .mockReturnValueOnce([f1, f2, f3])
+        .mockReturnValueOnce(afterCascade)
+
+      const ctx = makeContext(fsm, f1)
+      const result = await handler.handle(Phase.PHASE_F, ctx)
+
+      expect(result).toBe(Phase.PHASE_A)
+      expect(ctx.updateState).toHaveBeenCalledWith({ activeFeatureId: 'F003' })
+    })
+
+    it('does not log cascade decision when no dependents exist', async () => {
+      const f1 = makeFeature({ id: 'F001', status: 'IN_PROGRESS' })
+      const fsm = makeFsm([f1], 'BLOCKED', () => [])
+
+      fsm.loadBacklog = vi.fn()
+        .mockReturnValueOnce([f1])
+        .mockReturnValueOnce([f1])
+        .mockReturnValueOnce([{ ...f1, status: 'BLOCKED' as const }])
+
+      const ctx = makeContext(fsm, f1)
+      await handler.handle(Phase.PHASE_F, ctx)
+
+      // appendDecision is called for onFeatureTransition but NOT for cascade
+      const cascadeCall = (fsm.appendDecision as ReturnType<typeof vi.fn>).mock.calls
+        .find(c => String(c[0]?.decision).includes('cascade'))
+      expect(cascadeCall).toBeUndefined()
+    })
+  })
+
+  describe('FAILED — no cascade, dependents liberated', () => {
+    it('does not call blockDependents and picks dependent as next feature', async () => {
+      const f1 = makeFeature({ id: 'F001', status: 'IN_PROGRESS', scoreTL: 0.5, scoreAdv: 0.5 })
+      const f2 = makeFeature({ id: 'F002', status: 'NOT_STARTED', dependencies: ['F001'] })
+      const fsm = makeFsm([f1, f2], 'FAILED')
+
+      const afterFail = [
+        { ...f1, status: 'FAILED' as const },
+        f2, // still NOT_STARTED — liberated
+      ]
+      fsm.loadBacklog = vi.fn()
+        .mockReturnValueOnce([f1, f2])
+        .mockReturnValueOnce(afterFail)
+
+      const ctx = makeContext(fsm, f1)
+      const result = await handler.handle(Phase.PHASE_F, ctx)
+
+      expect(fsm.blockDependents).not.toHaveBeenCalled()
+      expect(result).toBe(Phase.PHASE_A)
+      expect(ctx.updateState).toHaveBeenCalledWith({ activeFeatureId: 'F002' })
+    })
+  })
+
+  describe('HALTED — no NOT_STARTED features remain', () => {
+    it('clears activeFeatureId and returns HALTED', async () => {
+      const f1 = makeFeature({ id: 'F001', status: 'IN_PROGRESS' })
+      const fsm = makeFsm([f1], 'COMPLETED')
+
+      fsm.loadBacklog = vi.fn()
+        .mockReturnValueOnce([f1])
+        .mockReturnValueOnce([{ ...f1, status: 'COMPLETED' as const }])
+        .mockReturnValueOnce([{ ...f1, status: 'COMPLETED' as const }]) // for saveBootstrapConfig reload
+
+      const ctx = makeContext(fsm, f1)
+      const result = await handler.handle(Phase.PHASE_F, ctx)
+
+      expect(result).toBe(Phase.HALTED)
+      expect(ctx.updateState).toHaveBeenCalledWith({ activeFeatureId: null })
+    })
+  })
+})

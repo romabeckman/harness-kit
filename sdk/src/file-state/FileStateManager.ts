@@ -18,6 +18,7 @@ export interface IFileStateManager {
   loadBacklog(): Feature[]
   updateFeatureStatus(featureId: string, status: FeatureStatus, scores?: { tl: number; adv: number }): void
   incrementReworks(featureId: string): void
+  blockDependents(blockedId: string, features: Feature[]): string[]
   getExecutableFeatures(): Feature[]
 
   // ─── Development State ──────────────────────────────────────────────────
@@ -228,6 +229,32 @@ export class FileStateManager implements IFileStateManager {
     return this.loadDevelopmentState()
       .filter(t => t.featureId === featureId)
       .filter(t => t.status === 'IN_PROGRESS' || t.status === 'NOT_STARTED')
+  }
+
+  blockDependents(blockedId: string, features: Feature[]): string[] {
+    const newlyBlocked: string[] = []
+    const blockedSet = new Set<string>([blockedId])
+
+    // BFS over the feature list to find all transitive dependents
+    let changed = true
+    while (changed) {
+      changed = false
+      for (const f of features) {
+        if (blockedSet.has(f.id)) continue
+        if (f.status === 'COMPLETED' || f.status === 'FAILED' || f.status === 'BLOCKED') continue
+        if (f.dependencies.some(depId => blockedSet.has(depId))) {
+          blockedSet.add(f.id)
+          newlyBlocked.push(f.id)
+          changed = true
+        }
+      }
+    }
+
+    for (const id of newlyBlocked) {
+      this.updateFeatureStatus(id, 'BLOCKED')
+    }
+
+    return newlyBlocked
   }
 
   getExecutableFeatures(): Feature[] {

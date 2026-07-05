@@ -164,10 +164,8 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     }
 
     config.pendingStatus = statusMap[result.verdict] || config.pendingStatus
-
-    // Save final status configuration and update active feature metadata
+    config.pendingScores = { tl: scores.scoreTL, adv: scores.scoreAdv }
     context.fsm.saveBootstrapConfig(config)
-    context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS', { tl: scores.scoreTL, adv: scores.scoreAdv })
 
     // Proceed to PHASE_D (documentation generation/completion check)
     return Phase.PHASE_D
@@ -228,7 +226,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
 
     return [
       `## Objective`,
-      `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Identify systemic risks, architectural flaws, and open points using Socratic questioning.`,
+      `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Identify systemic risks, architectural flaws, and concrete production failure vectors.`,
       ``,
       `<skill_context>`,
       `Invoke the \`/the-grumpy-tech-lead\` skill before starting.`,
@@ -273,17 +271,23 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `  "featureId": "${payload.featureId}",`,
       `  "score": 0.00,`,
       `  "isCrashing": false,`,
-      `  "openPoints": ["Socratic question 1", "Socratic question 2", "Socratic question 3"],`,
-      `  "architectureTip": "Single sentence pointing toward an architectural pattern"`,
+      `  "openPoints": [`,
+      `    "[CRITICAL] <file>:<line> — <direct description of the problem and its impact>",`,
+      `    "[HIGH] <file> — <direct description of the problem and its impact>",`,
+      `    "[MEDIUM] <area> — <direct description of the problem and its impact>",`,
+      `    "[LOW] <area> — <direct description of the problem and its impact>"`,
+      `  ],`,
+      `  "architectureTip": "Single actionable sentence recommending an architectural improvement"`,
       `}`,
       `\`\`\``,
       `</expected_output>`,
       ``,
       `<strict_rules>`,
       `- Execute autonomously without pausing or asking for confirmation`,
-      `- Do not provide ready-made solutions — raise Socratic questions only`,
-      `- score must be a float in [0.00, 1.00] rounded to 2 decimals`,
-      `- isCrashing: true ONLY if a TIER 1 finding causes application crash or critical break (data loss, downtime, security breach)`,
+      `- openPoints MUST be direct, actionable findings — NO questions, NO vague suggestions`,
+      `- Each openPoint MUST start with [CRITICAL], [HIGH], [MEDIUM], or [LOW]`,
+      `- score must be a float in [0.00, 1.00] rounded to 2 decimals, computed from severity weights`,
+      `- isCrashing: true ONLY if a CRITICAL finding causes application crash, data loss, downtime, or security breach`,
       `- featureId MUST match: ${payload.featureId}`,
       `</strict_rules>`,
     ].join('\n')
@@ -335,8 +339,8 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<spec_sources>`,
-      `- Development log: \`${specsDir}/TDD-OUTPUT.json\``,
       `- Test scenarios (acceptance criteria, boundary values, security): \`${specsDir}/004-*-test-scenarios.md\``,
+      `- Architecture contract: \`${specsDir}/003-*-tactical-design.md\``,
       `- Problem space (if exists): \`${specsDir}/001-problem-space.md\``,
       `- Context map (if exists): \`${specsDir}/002-context-map.md\``,
       `</spec_sources>`,
@@ -360,10 +364,12 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `  "featureId": "${payload.featureId}",`,
       `  "score": 0.00,`,
       `  "passedAdversarial": false,`,
+      `  "hasHighCriticalVuln": false,`,
+      `  "isCrashing": false,`,
       `  "vulnerabilities": [`,
-      `    { "type": "SQL_INJECTION|XSS|RACE_CONDITION|AUTH_BYPASS|DATA_EXPOSURE|...", "severity": "LOW|MEDIUM|HIGH|CRITICAL", "description": "Details..." }`,
+      `    { "type": "SQL_INJECTION|XSS|RACE_CONDITION|AUTH_BYPASS|DATA_EXPOSURE|NULL_DEREF|...", "severity": "LOW|MEDIUM|HIGH|CRITICAL", "description": "Specific location and impact." }`,
       `  ],`,
-      `  "edgeCasesMissed": ["Description of untested scenario"]`,
+      `  "edgeCasesMissed": ["Description of untested scenario from 004-*-test-scenarios.md or concrete failure vector"]`,
       `}`,
       `\`\`\``,
       `</expected_output>`,
