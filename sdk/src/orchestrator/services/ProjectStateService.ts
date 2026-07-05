@@ -2,30 +2,35 @@ import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 import type { IFileStateManager } from '../../file-state/FileStateManager'
 import type { OnDiskState } from '../types'
+import { ExtractedTask } from '../phases'
 
 export class ProjectStateService {
-  constructor(private readonly workingDir: string) {}
+  constructor(private readonly workingDir: string) { }
 
   checkSpecFilesPresent(domain: string): boolean {
     const specsDir = join(this.workingDir, 'docs', 'specs', domain)
     return existsSync(specsDir)
   }
 
-  extractTasksFromTacticalDesign(domain: string): Array<{ taskId: string; description: string }> {
+  extractTasksFromTacticalDesign(domain: string): ExtractedTask[] {
     const specsDir = join(this.workingDir, 'docs', 'specs', domain)
     const files = existsSync(specsDir)
       ? readdirSync(specsDir).filter(f => f.match(/^003-.*tactical-design.*\.md$/i))
       : []
+    const extractedTasks: ExtractedTask[] = []
 
-    if (files.length === 0) return []
+    if (files.length === 0) return extractedTasks
 
-    const content = readFileSync(join(specsDir, files[0]), 'utf8')
-
-    return ProjectStateService._parseTasksFromMarkdown(content)
+    for (const file of files) {
+      const content = readFileSync(join(specsDir, file), 'utf8')
+      const tasks = ProjectStateService._parseTasksFromMarkdown(content, file)
+      extractedTasks.push(...tasks)
+    }
+    return extractedTasks
   }
 
   // This method is public for testing purposes.
-  public static _parseTasksFromMarkdown(content: string): Array<{ taskId: string; description: string }> {
+  public static _parseTasksFromMarkdown(content: string, file: string): ExtractedTask[] {
     const section6Match = content.match(/## Section 6[^\n]*\n([\s\S]*?)(?=\n## |$)/i)
     if (!section6Match) return []
 
@@ -57,8 +62,9 @@ export class ProjectStateService {
         // Convertendo o id para String antes de chamar o replace
         taskId: `T${String(item.id).replace(/\D/g, '').padStart(2, '0')}`,
         description: item.title,
+        file
       }))
-}
+  }
 
   readOnDiskState(fsm: IFileStateManager, productDir: string): OnDiskState {
     const productFilesExist =

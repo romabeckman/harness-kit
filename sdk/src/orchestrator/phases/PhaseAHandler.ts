@@ -1,5 +1,5 @@
 import { Phase } from "../types";
-import { AbstractPhaseHandler, PhaseContext } from "./AbstractPhaseHandler";
+import { AbstractPhaseHandler, ExtractedTask, PhaseContext } from "./AbstractPhaseHandler";
 import { ContextAssembler } from "../../context-assembler/ContextAssembler";
 import type { Feature } from "../../file-state/types";
 import type { PhaseAPayload } from "../../context-assembler/types";
@@ -170,13 +170,11 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       );
     }
 
-    const projectName =
-      context.config.projectPaths[0]?.split("/").pop() ?? "project";
     context.fsm.appendTasks(
       extracted.map((t) => ({
         featureId: feature.id,
         taskId: t.taskId,
-        project: projectName,
+        project: t.file,
         description: t.description,
         domain: feature.domain,
         currentPhase: "-" as const,
@@ -190,9 +188,13 @@ export class PhaseAHandler extends AbstractPhaseHandler {
   private async recoverTasksViaAgent(
     feature: Feature,
     context: PhaseContext,
-  ): Promise<Array<{ taskId: string; description: string }>> {
-    const projectName =
-      context.config.projectPaths[0]?.split("/").pop() ?? "project";
+  ): Promise<ExtractedTask[]> {
+    const projectPathsList = context.config.projectPaths
+      .map((p) => `- ${p}`)
+      .join("\n");
+
+    const tacticalDesignFile = join(context.workingDir, 'docs', 'specs', feature.domain, `003-*-tactical-design.md`)
+
     await context.invokeAgent({
       skill: "scope-refinement",
       agent: "software-architect",
@@ -207,11 +209,15 @@ export class PhaseAHandler extends AbstractPhaseHandler {
         `You are operating as the \`software-architect\` agent.`,
         `</skill_context>`,
         ``,
-        `Read docs/specs/${feature.domain}/003-*-tactical-design.md.`,
+        `<project_paths>`,
+        projectPathsList,
+        `</project_paths>`,
+        ``,
+        `Read all files matching \`${tacticalDesignFile}\`.`,
         `Locate "## Section 6 — Ordered Development Tasks" and parse the JSON array in the fenced code block immediately following it.`,
         `For each task object, append a row to docs/product/DEVELOPMENT-STATE.md using this format:`,
-        `| ${feature.id} | T<zero-padded id> | <project> | <title> | ${feature.domain} | - | NOT_STARTED |`,
-        `where <project> is the last folder segment of the project path: ${projectName}.`,
+        `| ${feature.id} | T<zero-padded id> | <project path> | <title> | ${feature.domain} | - | NOT_STARTED |`,
+        `where <project> is one of the last folder segment of the project path: \`project_paths\`.`,
         `Do not output anything else.`,
       ].join(" "),
     });
@@ -221,6 +227,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     return reloadedTasks.map((t) => ({
       taskId: t.taskId,
       description: t.description,
+      file: t.project,
     }));
   }
 }

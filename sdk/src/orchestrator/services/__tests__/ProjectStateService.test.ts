@@ -67,8 +67,8 @@ describe('ProjectStateService', () => {
 
             const parseSpy = vi.spyOn(ProjectStateService, '_parseTasksFromMarkdown');
             parseSpy.mockReturnValue([
-                { taskId: 'T01', description: 'Mocked task 1' },
-                { taskId: 'T02', description: 'Mocked task 2' },
+                { taskId: 'T01', description: 'Mocked task 1', file: '003-tactical-design.md' },
+                { taskId: 'T02', description: 'Mocked task 2', file: '003-tactical-design.md' },
             ]);
             (fs.readFileSync as Mock).mockReturnValue(MOCK_TDD_FILE_CONTENT);
 
@@ -78,31 +78,31 @@ describe('ProjectStateService', () => {
             expect(fs.existsSync).toHaveBeenCalledWith(expectedDir);
             expect(fs.readdirSync).toHaveBeenCalledWith(expectedDir);
             expect(fs.readFileSync).toHaveBeenCalledWith(expectedFile, 'utf8');
-            expect(parseSpy).toHaveBeenCalledWith(MOCK_TDD_FILE_CONTENT);
+            expect(parseSpy).toHaveBeenCalledWith(MOCK_TDD_FILE_CONTENT, '003-tactical-design.md');
             expect(tasks).toEqual([
-                { taskId: 'T01', description: 'Mocked task 1' },
-                { taskId: 'T02', description: 'Mocked task 2' },
+                { taskId: 'T01', description: 'Mocked task 1', file: '003-tactical-design.md' },
+                { taskId: 'T02', description: 'Mocked task 2', file: '003-tactical-design.md' },
             ]);
         });
     });
 
     describe('_parseTasksFromMarkdown', () => {
         it('should return an empty array if section 6 is not found', () => {
-            const tasks = ProjectStateService._parseTasksFromMarkdown('## Section 5');
+            const tasks = ProjectStateService._parseTasksFromMarkdown('## Section 5', "003-tactical-design.md");
             expect(tasks).toEqual([]);
         });
 
         it('should return an empty array for invalid JSON', () => {
             const content = '## Section 6\n```json\n{ not json }\n```';
-            const tasks = ProjectStateService._parseTasksFromMarkdown(content);
+            const tasks = ProjectStateService._parseTasksFromMarkdown(content, "003-tactical-design.md");
             expect(tasks).toEqual([]);
         });
 
         it('should correctly parse tasks from valid markdown', () => {
-            const tasks = ProjectStateService._parseTasksFromMarkdown(MOCK_TDD_FILE_CONTENT);
+            const tasks = ProjectStateService._parseTasksFromMarkdown(MOCK_TDD_FILE_CONTENT, "003-tactical-design.md");
             expect(tasks).toEqual([
-                { taskId: 'T01', description: 'Create main.py with failing test hook' },
-                { taskId: 'T02', description: 'Implement greeting in main()' },
+                { taskId: 'T01', description: 'Create main.py with failing test hook', file: '003-tactical-design.md' },
+                { taskId: 'T02', description: 'Implement greeting in main()', file: '003-tactical-design.md' },
             ]);
         });
     });

@@ -20,7 +20,8 @@ import {
   PhaseDHandler,
   PhaseEHandler,
   PhaseFHandler,
-  CascadeBlockedHandler
+  CascadeBlockedHandler,
+  ExtractedTask
 } from './phases'
 import { OrchestratorFormatter } from './utils/OrchestratorFormatter'
 import { ProjectStateService } from './services/ProjectStateService'
@@ -276,7 +277,7 @@ export class HarnessOrchestrator implements PhaseContext {
     return this.projectStateService.checkSpecFilesPresent(domain)
   }
 
-  public extractTasksFromTacticalDesign(domain: string): Array<{ taskId: string; description: string }> {
+  public extractTasksFromTacticalDesign(domain: string): ExtractedTask[] {
     return this.projectStateService.extractTasksFromTacticalDesign(domain)
   }
 
