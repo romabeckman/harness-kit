@@ -13,7 +13,7 @@ describe('ContextAssembler', () => {
 
   it('should build phase A payload', () => {
     const feature = { title: 'feature title', domain: 'domain' }
-    const payload = ContextAssembler.buildPhaseAPayload(feature as any, ['path1'], 'original scope')
+    const payload = ContextAssembler.buildPhaseAPayload(feature as any, 'workdir', ['path1'], 'original scope')
     expect(payload.scope).toBe('original scope')
     expect(payload.domain).toBe('domain')
     expect(payload.featureTitle).toBe('feature title')
@@ -48,7 +48,7 @@ describe('ContextAssembler', () => {
       phase_a: ['rule a'],
       user: ['user rule']
     }
-    const payload = ContextAssembler.buildPhaseAPayload(feature as any, [], undefined, steeringRules)
+    const payload = ContextAssembler.buildPhaseAPayload(feature as any, 'workdir', [], undefined, steeringRules)
     expect(payload.steeringRules).toEqual(['rule a', 'user rule'])
   })
 })
