@@ -123,6 +123,8 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<spec_sources>`,
+      `- Problem: \`docs/specs/${payload.domain}/001-problem-space.md\``,
+      `- Context: \`docs/specs/${payload.domain}/002-context-map.md\``,
       `- Implementation blueprint: \`docs/specs/${payload.domain}/003-*-tactical-design.md\``,
       `- Test scenarios (drives RED phase): \`docs/specs/${payload.domain}/004-*-test-scenarios.md\``,
       `</spec_sources>`,
