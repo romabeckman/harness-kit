@@ -16,6 +16,9 @@ export interface ParsedRunArgs {
   score?: number
   reworks?: number
   steeringMessage?: string
+
+  // Debug mode
+  debug?: boolean
 }
 
 /**
@@ -92,6 +95,10 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
 
       case '--steering':
         result.steeringMessage = args[++i]
+        break
+
+      case '--debug':
+        result.debug = true
         break
 
       // ── unknown flags — silently ignored ──────────────────────────────────

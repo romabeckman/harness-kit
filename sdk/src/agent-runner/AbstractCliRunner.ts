@@ -3,6 +3,7 @@ import type { IAgentRunner } from './IAgentRunner'
 import type { AgentInvocation, AgentOutput } from './types'
 import { AgentRunnerError, AgentRunnerErrorCode } from './AgentRunnerError'
 import { DEFAULT_PHASE_TIMEOUT_MS } from '../settings/DefaultSettings'
+import { DebugContext } from '../cli/DebugContext'
 
 /**
  * Abstract base class for all CLI subprocess runners.
@@ -102,6 +103,11 @@ export abstract class AbstractCliRunner implements IAgentRunner {
     options?: { signal?: AbortSignal },
   ): Promise<AgentOutput> {
     return new Promise<AgentOutput>((resolve, reject) => {
+      if (DebugContext.enabled) {
+        process.stderr.write(`[DEBUG] spawn: ${this.binaryName} ${args.join(' ')}\n\n`)
+        process.stderr.write(`[DEBUG] timeout: ${this.timeoutMs}ms\n\n`)
+      }
+
       const child = spawn(this.binaryName, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
@@ -168,6 +174,9 @@ export abstract class AbstractCliRunner implements IAgentRunner {
 
       child.on('error', (err: NodeJS.ErrnoException) => {
         clearTimer()
+        if (DebugContext.enabled) {
+          process.stderr.write(`[DEBUG] spawn error: ${err.stack ?? err.message}\n`)
+        }
         if (err.code === 'ENOENT') {
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.NETWORK_ERROR,
@@ -192,8 +201,11 @@ export abstract class AbstractCliRunner implements IAgentRunner {
         if (code !== 0) {
           const combined = (stderr + '\n' + stdout).trim()
           const isQuota = /rate.?limit|quota|overloaded/i.test(combined)
-          const snippet = combined.slice(-1500)
+          const snippet = DebugContext.enabled ? combined : combined.slice(-1500)
           const detail = snippet ? `\n${snippet}` : ''
+          if (DebugContext.enabled) {
+            process.stderr.write(`[DEBUG] exit code: ${code}\n`)
+          }
           reject(new AgentRunnerError({
             code: isQuota ? AgentRunnerErrorCode.QUOTA_EXCEEDED : AgentRunnerErrorCode.UNKNOWN_ERROR,
             skill: invocation.skill ?? 'unknown',

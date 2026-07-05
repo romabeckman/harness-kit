@@ -26,8 +26,8 @@ ACTION (skips interactive prompt)
 RESET OPTIONS (all optional — omitting any triggers the interactive wizard)
   --scope <text>            Project scope / PRD description
   --path <dir>              Add a directory to project paths (repeatable)
-  --score <0.1-1>           Acceptance score threshold (default: ${DEFAULT_SCORE})
-  --reworks <1-10>          Max rework cycles before cascade fail (default: ${DEFAULT_REWORKS})
+  --score <0.1-1>           Acceptance score threshold (default: \${DEFAULT_SCORE})
+  --reworks <1-10>          Max rework cycles before cascade fail (default: \${DEFAULT_REWORKS})
   --steering <text>         Additional orchestration rules
 
 RESUME OPTIONS
@@ -36,12 +36,14 @@ RESUME OPTIONS
 OPTIONS
   --help, -h                Show this help message
   --version, -v             Show version
+  --debug                   Enable debug mode (expose errors, print prompts, CLI args)
 
 EXAMPLES
   hrns run
   hrns run --agent copilot-sdk --model gpt-4o
   hrns run --reset --scope "Build a REST API" --path ./api --path ./web --score 0.9
   hrns run --resume --steering "focus on security hardening"
+  hrns run --debug --reset --scope "My project"
   hrns report
   npx @romabeckman/hrns run --gemini
 

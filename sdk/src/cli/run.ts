@@ -3,6 +3,7 @@ import { cmdRun } from './services/run-service'
 import { printVersion } from './utils/cli-utils'
 import { cmdReport } from './services/report-service'
 import { HELP } from './utils/constants'
+import { DebugContext } from './DebugContext'
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2)
@@ -39,6 +40,11 @@ main().catch((err) => {
     console.log('\nAborted.')
     process.exit(0)
   }
-  console.error(err)
+  if (DebugContext.enabled) {
+    console.error('\n[DEBUG] Unhandled error:')
+    console.error(err)
+  } else {
+    console.error(err instanceof Error ? err.message : err)
+  }
   process.exit(1)
 })

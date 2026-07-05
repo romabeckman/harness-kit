@@ -129,6 +129,25 @@ describe('T19 — parseRunArgs', () => {
     })
   })
 
+  // ── debug flag ─────────────────────────────────────────────────────────────
+
+  it('parses --debug flag', () => {
+    const result = parseRunArgs(['--debug'])
+    expect(result.debug).toBe(true)
+  })
+
+  it('debug is undefined when --debug not supplied', () => {
+    const result = parseRunArgs([])
+    expect(result.debug).toBeUndefined()
+  })
+
+  it('--debug combined with other flags', () => {
+    const result = parseRunArgs(['--debug', '--reset', '--agent', 'claude-cli'])
+    expect(result.debug).toBe(true)
+    expect(result.action).toBe('reset')
+    expect(result.agentType).toBe('claude-cli')
+  })
+
   // ── edge cases ────────────────────────────────────────────────────────────
 
   it('returns undefined for optional fields when not supplied', () => {

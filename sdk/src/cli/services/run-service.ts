@@ -13,6 +13,7 @@ import {
 } from "../utils/constants";
 import { ResetOptions, resetOptions } from "./reset-service";
 import { parseRunArgs } from "../utils/run-args-parser";
+import { DebugContext } from "../DebugContext";
 
 export interface RunOptions {
   agentType?: string;
@@ -21,6 +22,9 @@ export interface RunOptions {
 
 export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
   const parsed = parseRunArgs(runArgs);
+  if (parsed.debug) {
+    DebugContext.enable();
+  }
   const options: RunOptions = {
     agentType: parsed.agentType,
     model: parsed.model,

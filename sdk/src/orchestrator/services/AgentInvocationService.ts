@@ -9,6 +9,7 @@ import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
 import { OrchestratorFormatter } from '../utils/OrchestratorFormatter'
 import { TerminalProgress } from '../../ui/TerminalProgress'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
+import { DebugContext } from '../../cli/DebugContext'
 
 export class AgentInvocationService {
   constructor(
@@ -74,6 +75,19 @@ export class AgentInvocationService {
 
     const phaseDesc = OrchestratorFormatter.getPhaseDescription(currentPhase)
     const agentLabel = finalInvocation.agent
+
+    if (DebugContext.enabled) {
+      process.stderr.write(
+        `[DEBUG] invokeAgent: agent=${finalInvocation.agent}` +
+        `, skill=${finalInvocation.skill ?? 'unknown'}` +
+        `, model=${finalInvocation.model ?? 'default'}` +
+        `, effort=${finalInvocation.effort ?? 'default'}` +
+        `, timeoutMs=${finalInvocation.timeoutMs}\n\n`
+      )
+      if (finalInvocation.additionalDirs?.length) {
+        process.stderr.write(`[DEBUG] additionalDirs: [${finalInvocation.additionalDirs.join(', ')}]\n\n`)
+      }
+    }
 
     /**
      * Schedules a timeout that, when it fires, stops the spinner and asks the
