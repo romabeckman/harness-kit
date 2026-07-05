@@ -85,9 +85,7 @@ export function createDefaultSteeringRules(initialRules?: string): SteeringRules
       "Evaluate scope complexity: Classify as 'SIMPLE' if changes are isolated (e.g., basic CRUD, minor UI/API enhancements, or bug fixes with no architectural impact). IF 'SIMPLE', generate ONLY '003-${PROJECT_NAME}-tactical-design.md' and '004-${PROJECT_NAME}-test-scenarios.md'.",
       "Evaluate scope complexity: Classify as 'COMPLEX' if the scope introduces new core features, cross-domain interactions, external integrations, or intricate business logic. IF 'COMPLEX', generate ALL specified documents (001, 002, 003, and 004)."
     ],
-    phase_b: [
-      "If exist, read `docs/specs/${domain}/TL.json` and `docs/specs/${domain}/QA.json` for fixes details"
-    ],
+    phase_b: [],
     phase_c: [
       "If you are running as `harness-tech-lead` you MUST write (overwrite) your review json in a file `docs/specs/${domain}/TL.json`",
       "If you are running as `harness-qa` you MUST write (overwrite) your review json in a file `docs/specs/${domain}/QA.json`"
