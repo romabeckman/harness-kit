@@ -38,11 +38,14 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
   }
 
   protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
+    const DEFAULT_TIMEOUT = '60m'
     const args = ['--prompt', prompt]
     const model = invocation.model ?? this.#config.model
     if (model) {
       args.push('--model', model)
     }
+    const timeout = this.timeoutMs > 0 ? `${this.timeoutMs}ms` : DEFAULT_TIMEOUT
+    args.push('--print-timeout', timeout)
     return args
   }
 }
