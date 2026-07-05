@@ -254,13 +254,14 @@ export class HarnessOrchestrator implements PhaseContext {
     return this.agentInvocationService.invokeAgent(invocation, this.state.currentPhase, this.config, this.settings)
   }
 
-  public getActiveFeature(features: Feature[]): Feature | null {
-    // If we have an activeFeatureId, use it
-    if (this.state.activeFeatureId) {
-      const found = features.find(f => f.id === this.state.activeFeatureId)
+  public getActiveFeature(): Feature | null {
+    const features = this.fsm.loadBacklog();
+    const config = this.fsm.loadBootstrapConfig();
+
+    if (config.activeFeatureId) {
+      const found = features.find(f => f.id === config.activeFeatureId)
       if (found) return found
     }
-    // Otherwise pick first NOT_STARTED or IN_PROGRESS
     return features.find(f => f.status === 'NOT_STARTED' || f.status === 'IN_PROGRESS') ?? null
   }
 

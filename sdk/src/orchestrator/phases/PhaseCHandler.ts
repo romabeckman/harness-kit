@@ -7,7 +7,7 @@ import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProt
 import { isExtractionResult } from '../../json-extraction/types'
 import { ValidationGate } from '../../validation-gate/ValidationGate'
 import type { PhaseCPayload } from '../../context-assembler/types'
-import type { BootstrapConfig, Feature } from '../../file-state/types'
+import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
 
 type ValidationResult = ReturnType<typeof ValidationGate.evaluate>;
@@ -18,10 +18,15 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       return super.handle(phase, context)
     }
 
-    const activeFeature = this.getActiveFeature(context)
-    const config = context.fsm.loadBootstrapConfig()
+    const features = context.fsm.loadBacklog()
+    const activeFeature = context.getActiveFeature(features)
+    if (!activeFeature) {
+      throw new Error('Illegal state: phase PHASE_C requires an active feature but none is set')
+    }
 
     this.cleanTemporaryFiles(context, activeFeature.domain)
+
+    const config = context.fsm.loadBootstrapConfig()
 
     const payload = ContextAssembler.buildPhaseCPayload(
       activeFeature,
@@ -43,18 +48,9 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     return this.processDecision(context, activeFeature, config, result, scores)
   }
 
-  private getActiveFeature(context: PhaseContext): Feature {
-    const features = context.fsm.loadBacklog()
-    const activeFeature = context.getActiveFeature(features)
-    if (!activeFeature) {
-      throw new Error('Illegal state: phase PHASE_C requires an active feature but none is set')
-    }
-    return activeFeature
-  }
-
   private cleanTemporaryFiles(context: PhaseContext, domain: string): void {
     const specsDir = join(context.workingDir, 'docs', 'specs', domain)
-    for (const file of ['TDD-OUTPUT-TEMP.jsonl', 'TL.json', 'QA.json']) {
+    for (const file of ['TL.json', 'QA.json']) {
       const p = join(specsDir, file)
       if (existsSync(p)) rmSync(p, { force: true })
     }
@@ -157,15 +153,15 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     }
 
     // Map validation gate verdicts to corresponding bootstrap statuses
-    const statusMap: Record<string, typeof config.pendingStatus> = {
+    const statusMap: Record<string, FeatureStatus> = {
       'PASS': 'COMPLETED',
       'BLOCK': 'BLOCKED',
       'FAIL': 'FAILED'
     }
 
-    config.pendingStatus = statusMap[result.verdict] || config.pendingStatus
-    config.pendingScores = { tl: scores.scoreTL, adv: scores.scoreAdv }
-    context.fsm.saveBootstrapConfig(config)
+    activeFeature.status = statusMap[result.verdict] || activeFeature.status
+    context.fsm.updateFeatureStatus(activeFeature.id, activeFeature.status, { tl: scores.scoreTL, adv: scores.scoreAdv })
+    context.fsm.updateAllFeatureTasks(activeFeature.id, '-', activeFeature.status)
 
     // Proceed to PHASE_D (documentation generation/completion check)
     return Phase.PHASE_D

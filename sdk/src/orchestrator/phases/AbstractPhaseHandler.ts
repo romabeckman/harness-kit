@@ -8,8 +8,6 @@ export interface PhaseContext {
   readonly config: OrchestratorConfig
   readonly workingDir: string
   readonly fsm: IFileStateManager
-  readonly state: OrchestratorState
-  updateState(state: Partial<OrchestratorState>): void
   invokeAgent(invocation: AgentInvocation): Promise<AgentOutput>
   getActiveFeature(features: Feature[]): Feature | null
   checkSpecFilesPresent(domain: string): boolean

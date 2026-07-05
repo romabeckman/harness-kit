@@ -11,9 +11,7 @@ export class CascadeBlockedHandler extends AbstractPhaseHandler {
     const activeFeature = context.getActiveFeature(features)
     if (!activeFeature) throw new Error(`Illegal state: phase CASCADE_BLOCKED requires an active feature but none is set`)
 
-    const config = context.fsm.loadBootstrapConfig()
-    config.pendingStatus = 'BLOCKED'
-    context.fsm.saveBootstrapConfig(config)
+    context.fsm.updateFeatureStatus(activeFeature.id, 'BLOCKED')
 
     context.fsm.appendDecision({
       featureId: activeFeature.id,

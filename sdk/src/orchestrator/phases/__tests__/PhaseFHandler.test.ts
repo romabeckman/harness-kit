@@ -54,6 +54,7 @@ function makeFsm(
     appendDecision: vi.fn(),
     getExecutableFeatures: vi.fn(),
     incrementReworks: vi.fn(),
+    resetReworks: vi.fn(),
     loadDevelopmentState: vi.fn().mockReturnValue([]),
     appendTasks: vi.fn(),
     updateTaskStatus: vi.fn(),
@@ -95,8 +96,8 @@ describe('PhaseFHandler', () => {
     expect(result).toBeNull()
   })
 
-  it('throws when no active feature', async () => {
-    const fsm = makeFsm([makeFeature()], 'COMPLETED')
+  it('throws when no active feature and no retryable features exist', async () => {
+    const fsm = makeFsm([makeFeature({ status: 'COMPLETED' })], 'COMPLETED')
     const ctx = makeContext(fsm, null)
     await expect(handler.handle(Phase.PHASE_F, ctx)).rejects.toThrow('Illegal state')
   })
@@ -219,21 +220,74 @@ describe('PhaseFHandler', () => {
     })
   })
 
-  describe('HALTED — no NOT_STARTED features remain', () => {
+  describe('HALTED — no NOT_STARTED features remain and all BLOCKED exhausted', () => {
     it('clears activeFeatureId and returns HALTED', async () => {
-      const f1 = makeFeature({ id: 'F001', status: 'IN_PROGRESS' })
+      const f1 = makeFeature({ id: 'F001', status: 'IN_PROGRESS', reworks: 2 })
       const fsm = makeFsm([f1], 'COMPLETED')
 
+      const completedF1 = { ...f1, status: 'COMPLETED' as const }
       fsm.loadBacklog = vi.fn()
-        .mockReturnValueOnce([f1])
-        .mockReturnValueOnce([{ ...f1, status: 'COMPLETED' as const }])
-        .mockReturnValueOnce([{ ...f1, status: 'COMPLETED' as const }]) // for saveBootstrapConfig reload
+        .mockReturnValueOnce([f1])           // initial load
+        .mockReturnValueOnce([completedF1])  // reload after cascade
+        .mockReturnValueOnce([completedF1])  // for saveBootstrapConfig reload
 
       const ctx = makeContext(fsm, f1)
       const result = await handler.handle(Phase.PHASE_F, ctx)
 
       expect(result).toBe(Phase.HALTED)
       expect(ctx.updateState).toHaveBeenCalledWith({ activeFeatureId: null })
+    })
+  })
+
+  describe('unblock-retry (reentry) — BLOCKED features with reworks < maxReworks when activeFeature is null', () => {
+    it('resets all BLOCKED features (root + dependents) and returns PHASE_B', async () => {
+      // maxReworks=2 in makeConfig; features have reworks=0 (below max)
+      const f1 = makeFeature({ id: 'F001', status: 'BLOCKED', reworks: 0 })
+      const f2 = makeFeature({ id: 'F002', status: 'BLOCKED', reworks: 0, dependencies: ['F001'] })
+      const fsm = makeFsm([f1, f2], 'BLOCKED')
+
+      const ctx = makeContext(fsm, null)
+      const result = await handler.handle(Phase.PHASE_F, ctx)
+
+      expect(result).toBe(Phase.PHASE_B)
+      expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'NOT_STARTED')
+      expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F002', 'NOT_STARTED')
+      expect(fsm.resetReworks).toHaveBeenCalledWith('F001')
+      expect(fsm.resetReworks).toHaveBeenCalledWith('F002')
+      expect(fsm.appendDecision).toHaveBeenCalledWith(
+        expect.objectContaining({
+          decision: expect.stringContaining('unblock-retry (reentry)'),
+        })
+      )
+      expect(ctx.updateState).toHaveBeenCalledWith({ activeFeatureId: 'F001' })
+    })
+
+    it('throws Illegal state when all BLOCKED features have reworks >= maxReworks', async () => {
+      // maxReworks=2; feature has reworks=2 (exhausted)
+      const f1 = makeFeature({ id: 'F001', status: 'BLOCKED', reworks: 2 })
+      const fsm = makeFsm([f1], 'BLOCKED')
+
+      const ctx = makeContext(fsm, null)
+      
+      await expect(handler.handle(Phase.PHASE_F, ctx)).rejects.toThrow('Illegal state')
+      expect(fsm.resetReworks).not.toHaveBeenCalled()
+    })
+
+    it('retries only features with reworks < maxReworks, skips exhausted ones', async () => {
+      // F001 exhausted (reworks=2), F002 eligible (reworks=1)
+      const f1 = makeFeature({ id: 'F001', status: 'BLOCKED', reworks: 2 })
+      const f2 = makeFeature({ id: 'F002', status: 'BLOCKED', reworks: 1, dependencies: [] })
+      const fsm = makeFsm([f1, f2], 'BLOCKED')
+
+      const ctx = makeContext(fsm, null)
+      const result = await handler.handle(Phase.PHASE_F, ctx)
+
+      expect(result).toBe(Phase.PHASE_B)
+      expect(fsm.updateFeatureStatus).not.toHaveBeenCalledWith('F001', 'NOT_STARTED')
+      expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F002', 'NOT_STARTED')
+      expect(fsm.resetReworks).not.toHaveBeenCalledWith('F001')
+      expect(fsm.resetReworks).toHaveBeenCalledWith('F002')
+      expect(ctx.updateState).toHaveBeenCalledWith({ activeFeatureId: 'F002' })
     })
   })
 })

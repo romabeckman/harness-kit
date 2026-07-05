@@ -20,7 +20,9 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       return Phase.HALTED;
     }
 
-    context.updateState({ activeFeatureId: activeFeature.id });
+    const config = context.fsm.loadBootstrapConfig();
+    config.activeFeatureId = activeFeature.id
+    context.fsm.saveBootstrapConfig(config)
 
     if (this.hasCascadeBlock(activeFeature, features))
       return Phase.CASCADE_BLOCKED;
@@ -156,7 +158,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     if (extracted.length === 0) {
       throw new Error(
         `Phase A failed: no tasks extracted for feature ${feature.id} (domain '${feature.domain}'). ` +
-          `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array under "## Section 6 — Ordered Development Tasks".`,
+        `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array under "## Section 6 — Ordered Development Tasks".`,
       );
     }
 

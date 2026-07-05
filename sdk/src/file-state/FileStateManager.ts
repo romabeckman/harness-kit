@@ -18,6 +18,7 @@ export interface IFileStateManager {
   loadBacklog(): Feature[]
   updateFeatureStatus(featureId: string, status: FeatureStatus, scores?: { tl: number; adv: number }): void
   incrementReworks(featureId: string): void
+  resetReworks(featureId: string): void
   blockDependents(blockedId: string, features: Feature[]): string[]
   getExecutableFeatures(): Feature[]
 
@@ -160,6 +161,26 @@ export class FileStateManager implements IFileStateManager {
       const newCells = [...cells]
       const current = parseInt(newCells[6].trim(), 10) || 0
       newCells[6] = ` ${current + 1} `
+      return '|' + newCells.join('|') + '|'
+    })
+    if (!found) throw new Error(`Feature not found: ${featureId}`)
+    atomicWrite(path, updated.join('\n'))
+  }
+
+  resetReworks(featureId: string): void {
+    const path = join(this.productDir, 'BACKLOG.md')
+    const content = readFileSync(path, 'utf-8')
+    const lines = content.split('\n')
+    let found = false
+    const updated = lines.map(line => {
+      if (!line.startsWith('|')) return line
+      const cells = line.split('|').slice(1, -1)
+      if (cells.length < 10) return line
+      const rowId = cells[0].trim().replace(/\*\*/g, '').replace(/`/g, '')
+      if (rowId !== featureId) return line
+      found = true
+      const newCells = [...cells]
+      newCells[6] = ' 0 '
       return '|' + newCells.join('|') + '|'
     })
     if (!found) throw new Error(`Feature not found: ${featureId}`)
