@@ -38,7 +38,7 @@ export class CopilotCLIRunner extends AbstractCliRunner {
   }
 
   protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
-    const args = ['--prompt', prompt, '--allow-all-tools']
+    const args = ['--prompt', prompt, '--allow-all-tools', '--autopilot']
 
     const model = invocation.model ?? (this.#config.model || undefined)
     if (model) {
