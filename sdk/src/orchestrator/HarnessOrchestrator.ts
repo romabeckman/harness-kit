@@ -181,6 +181,13 @@ export class HarnessOrchestrator implements PhaseContext {
       const elapsedMs = Date.now() - phaseStartTime
       const durationStr = OrchestratorFormatter.formatDuration(elapsedMs)
 
+      try {
+        const updatedConfig = this.fsm.loadBootstrapConfig()
+        this.state.activeFeatureId = updatedConfig.activeFeatureId ?? null
+      } catch {
+        // ignore
+      }
+
       if (next !== this.state.currentPhase) {
         const transitionMsg = `Phase transition: ${this.getPhaseDescription(this.state.currentPhase)} → ${this.getPhaseDescription(next)}`
         this.fsm.appendDecision({

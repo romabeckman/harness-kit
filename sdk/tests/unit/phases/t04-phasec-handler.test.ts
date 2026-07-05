@@ -68,10 +68,8 @@ describe('PhaseCHandler', () => {
 
     expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining('TL.json'), 'utf8')
     expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining('QA.json'), 'utf8')
-    expect(mockContext.fsm.updateFeatureStatus).not.toHaveBeenCalled()
-    expect(mockContext.fsm.saveBootstrapConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ pendingScores: { tl: 0.9, adv: 0.9 } })
-    )
+    expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED', { tl: 0.9, adv: 0.9 })
+    expect(mockContext.fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
     expect(result).toBe(Phase.PHASE_D)
   })
 
@@ -164,10 +162,8 @@ describe('PhaseCHandler', () => {
 
     expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining('TL.json'), 'utf8')
     expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining('QA.json'), 'utf8')
-    expect(mockContext.fsm.updateFeatureStatus).not.toHaveBeenCalled()
-    expect(mockContext.fsm.saveBootstrapConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ pendingScores: { tl: 0.9, adv: 0.9 } })
-    )
+    expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED', { tl: 0.9, adv: 0.9 })
+    expect(mockContext.fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
     expect(result).toBe(Phase.PHASE_D)
   })
 
