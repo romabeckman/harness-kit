@@ -1,7 +1,7 @@
 import type { Feature, FeatureLayer, FeatureStatus } from '../types'
 
 function parseCell(cell: string): string {
-  return cell.trim()
+  return normalizeId(cell)
 }
 
 function normalizeId(cell: string): string {
@@ -30,12 +30,12 @@ function isFeatureStatus(s: string): s is FeatureStatus {
 }
 
 function parseLayer(cell: string): FeatureLayer | null {
-  const v = cell.trim().toLowerCase()
+  const v = normalizeId(cell).toLowerCase()
 
-  if (v === 'backend') return 'backend'
-  if (v === 'frontend') return 'frontend'
-  if (v === 'qa') return 'qa'
-  if (v === 'devops') return 'devops'
+  if (v === 'backend' || v === 'developer-backend') return 'backend'
+  if (v === 'frontend' || v === 'developer-frontend') return 'frontend'
+  if (v === 'qa' || v === 'developer-qa') return 'qa'
+  if (v === 'devops' || v === 'developer-devops') return 'devops'
   return null
 }
 

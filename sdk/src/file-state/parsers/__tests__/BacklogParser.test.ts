@@ -29,11 +29,12 @@ describe('BacklogParser', () => {
   })
 
   it('parses all other fields correctly with new column', () => {
-    const md = HEADER + '| **F001** | **Auth** | auth | backend | HIGH | F000 | 2 | 0.85 | 0.90 | COMPLETED |\n'
+    const md = HEADER + '| **F001** | **Auth** | `auth` | `backend` | HIGH | F000 | 2 | 0.85 | 0.90 | COMPLETED |\n'
     const [f] = BacklogParser.parse(md)
     expect(f.id).toBe('F001')
-    expect(f.title).toBe('**Auth**')
+    expect(f.title).toBe('Auth')
     expect(f.domain).toBe('auth')
+    expect(f.layer).toBe('backend')
     expect(f.dependencies).toEqual(['F000'])
     expect(f.reworks).toBe(2)
     expect(f.scoreTL).toBe(0.85)
