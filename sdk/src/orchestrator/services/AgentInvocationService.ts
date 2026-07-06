@@ -54,10 +54,12 @@ export class AgentInvocationService {
 
     if (settingKey && phaseKey) {
       const overrides = settings.resolve(settingKey, phaseKey)
-      finalInvocation = {
-        ...finalInvocation,
-        model: overrides.model ?? invocation.model,
-        effort: overrides.effort ?? invocation.effort,
+      if (overrides.model || overrides.effort) {
+        finalInvocation = {
+          ...finalInvocation,
+          model: overrides.model ?? invocation.model,
+          effort: overrides.effort ?? invocation.effort,
+        }
       }
     }
 
