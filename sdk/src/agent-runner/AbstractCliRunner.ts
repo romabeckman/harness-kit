@@ -238,6 +238,9 @@ export abstract class AbstractCliRunner implements IAgentRunner {
       })
 
       if (this.writePromptToStdin && child.stdin) {
+        if (DebugContext.enabled) {
+          process.stderr.write(`[DEBUG] writing prompt to stdin:\n${prompt}\n\n`)
+        }
         child.stdin.write(prompt, 'utf8')
       }
       child.stdin?.end()
