@@ -87,6 +87,7 @@ node dist/cli/run.js
 | `hrns run --model <name>` / `-m <name>` | Specify the model name for the agent. | `hrns run --model gpt-4o` |
 | `hrns run --copilot-sdk` | Run with the Copilot agent. | `hrns run --copilot-sdk` |
 | `hrns run --gemini` | Run with the Antigravity CLI (Gemini) agent. | `hrns run --gemini` |
+| `hrns run --complexity <val>` / `-c <val>` | Force Phase A complexity: `SIMPLE`/`S` or `COMPLEX`/`C`. Omit for `AUTO` (agent decides). | `hrns run --complexity S` |
 | `hrns report` | Print token usage report for the current session. | `hrns report` |
 | `hrns version` / `--version` / `-v` | Show version. | `hrns version` |
 | `hrns help` / `--help` / `-h` | Show help message. | `hrns help` |
@@ -163,7 +164,16 @@ hrns run --agent antigravity-cli
 
 # Run with Copilot
 hrns run --copilot-sdk
+
+# Force SIMPLE classification for Phase A (skips 001/002 spec files)
+hrns run --reset --scope "Fix login redirect bug" --path ./api --complexity S
+
+# Force COMPLEX classification (generates all four spec files)
+hrns run --reset --scope "Payment gateway integration" --path ./api -c COMPLEX
 ```
+
+> [!NOTE]
+> When `--complexity` is omitted, Phase A auto-classifies the scope based on the steering rules (default: `AUTO`). Use `SIMPLE` for isolated bug fixes or minor enhancements; use `COMPLEX` for new features, cross-domain work, or external integrations.
 
 Detailed runner architectural specifications are located in [**sdk_agent_runner.md**](./docs/feature/sdk_agent_runner.md).
 Detailed specifications for agent invocations during orchestration are in [**AGENTS.md**](./AGENTS.md).
