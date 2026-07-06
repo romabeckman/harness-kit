@@ -1,6 +1,7 @@
 import type { IAgentRunner } from '../agent-runner/IAgentRunner'
 import type { Feature, Task, BootstrapConfig } from '../file-state/types'
 import type { HarnessSettings } from '../settings/HarnessSettings'
+import type { IPhaseHandler } from './phases/AbstractPhaseHandler'
 
 export interface OrchestratorConfig {
   scope: string
@@ -13,6 +14,7 @@ export interface OrchestratorConfig {
   timeoutMs?: number
   initialRules?: string
   complexity?: 'SIMPLE' | 'COMPLEX'
+  chain?: IPhaseHandler
 }
 
 export enum Phase {

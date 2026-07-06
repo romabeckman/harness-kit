@@ -13,16 +13,9 @@ import { AnsiHelpers } from '../ui/AnsiHelpers'
 import {
   IPhaseHandler,
   PhaseContext,
-  BootstrapHandler,
-  PhaseAHandler,
-  PhaseBHandler,
-  PhaseCHandler,
-  PhaseDHandler,
-  PhaseEHandler,
-  PhaseFHandler,
-  CascadeBlockedHandler,
   ExtractedTask
 } from './phases'
+import { ChainBuilder } from './ChainBuilder'
 import { OrchestratorFormatter } from './utils/OrchestratorFormatter'
 import { ProjectStateService } from './services/ProjectStateService'
 import { AgentInvocationService } from './services/AgentInvocationService'
@@ -77,18 +70,7 @@ export class HarnessOrchestrator implements PhaseContext {
     }
 
     this.steeringService = new SteeringService(this.fsm, this.state)
-
-    // Construct Chain of Responsibility
-    const bootstrap = new BootstrapHandler()
-    bootstrap
-      .setNext(new PhaseAHandler())
-      .setNext(new PhaseBHandler())
-      .setNext(new PhaseCHandler())
-      .setNext(new PhaseDHandler())
-      .setNext(new PhaseEHandler())
-      .setNext(new PhaseFHandler())
-      .setNext(new CascadeBlockedHandler())
-    this.chain = bootstrap
+    this.chain = config.chain ?? ChainBuilder.buildDefault()
   }
 
   getState(): OrchestratorState {
