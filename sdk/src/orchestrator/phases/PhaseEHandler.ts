@@ -47,6 +47,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
     return [
       `## Objective`,
       `Persist project memory for domain \`${payload.domain}\` after cycle ${payload.completedCycles}. Update or create \`docs/feature/[FEATURE_NAME].md\` and any relevant ADR files.`,
+      `Each project must have its own \`docs/adr\` and \`docs/feature\` folders where all ADRs and features are stored.`,
       ``,
       `<skill_context>`,
       `Invoke the \`/project-memory\` skill before starting.`,

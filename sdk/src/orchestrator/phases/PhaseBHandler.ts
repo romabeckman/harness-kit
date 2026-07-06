@@ -165,6 +165,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       ``,
       `<strict_rules>`,
       `- Read \`docs/README.md\`, \`docs/adr/ARCHITECTURE.md\`, and \`docs/adr/TESTS.md\` in each project before writing any code`,
+      `- Each project must have its own \`docs/adr\` and \`docs/feature\` folders where all ADRs and features are stored.`,
       `- Invoke test-driven-development skill before any production code — verify tests FAIL first`,
       `- Invoke verification-before-completion before declaring any task complete`,
       `- Invoke systematic-debugging before attempting any fix on failing tests`,
