@@ -105,5 +105,13 @@ describe('ProjectStateService', () => {
                 { taskId: 'T02', description: 'Implement greeting in main()', file: '003-tactical-design.md' },
             ]);
         });
+
+        it('should extract component name from structured filename', () => {
+            const tasksBackend = ProjectStateService._parseTasksFromMarkdown(MOCK_TDD_FILE_CONTENT, "003-backend-tactical-design.md");
+            expect(tasksBackend[0].file).toBe('backend');
+
+            const tasksFrontend = ProjectStateService._parseTasksFromMarkdown(MOCK_TDD_FILE_CONTENT, "003-frontend-tactical-design.md");
+            expect(tasksFrontend[0].file).toBe('frontend');
+        });
     });
 });

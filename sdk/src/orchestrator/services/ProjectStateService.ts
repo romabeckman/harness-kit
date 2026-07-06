@@ -49,6 +49,9 @@ export class ProjectStateService {
     }
     if (!Array.isArray(parsed)) return []
 
+    const fileNameMatch = file.match(/^003-(.*?)-tactical-design.*$/i)
+    const extractedFile = fileNameMatch ? fileNameMatch[1] : file
+
     return parsed
       .filter(
         (item): item is { id: string | number; title: string } =>
@@ -62,7 +65,7 @@ export class ProjectStateService {
         // Convertendo o id para String antes de chamar o replace
         taskId: `T${String(item.id).replace(/\D/g, '').padStart(2, '0')}`,
         description: item.title,
-        file
+        file: extractedFile
       }))
   }
 
