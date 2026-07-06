@@ -10,13 +10,12 @@ export class ValidationGate {
   static evaluate(
     scores: ValidationScores,
     reworks: number,
-    config: BootstrapConfig,
-    isCrashing: boolean
+    config: BootstrapConfig
   ): VerdictResult {
     const thresholdTL = config.scoreThresholds.theGrumpyTechLead.threshold
     const thresholdAdv = config.scoreThresholds.adversarialQA.threshold
     const maxReworks = config.completionCriteria.maxReworks
-    const { scoreTL, scoreAdv, hasHighCriticalVuln } = scores
+    const { scoreTL, scoreAdv, hasHighCriticalVuln, isCrashing } = scores
 
     const passing = scoreTL >= thresholdTL && scoreAdv >= thresholdAdv && !hasHighCriticalVuln && !isCrashing
 
@@ -75,6 +74,9 @@ export class ValidationGate {
     }
     if (hasHighCriticalVuln) {
       reasons.push('high/critical vulnerability detected')
+    }
+    if (scores.isCrashing) {
+      reasons.push('crashing')
     }
     if (scores.openPoints?.length) {
       reasons.push(`${scores.openPoints.length} open point(s) flagged by tech lead`)

@@ -41,8 +41,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const result = ValidationGate.evaluate(
       scores,
       activeFeature.reworks,
-      config,
-      scores.isCrashing
+      config
     )
 
     return this.processDecision(context, activeFeature, config, result, scores)
@@ -248,12 +247,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `- Read \`${workingDir}/docs/README.md\`. You MUST read all files marked as 'Mandatory' or 'Required', and read optional files ONLY IF their context is required for the current task.`,
       `</spec_sources>`,
       ``,
-      `<score_threshold>`,
-      `scoreThresholdTL = ${threshold}`,
-      `score >= ${threshold} → PASS (feature progresses to COMPLETED)`,
-      `score <  ${threshold} → RETRY (openPoints logged to REWORK-LOG.md for developer rework)`,
-      `</score_threshold>`,
-      ``,
       `<rules>`,
       rulesSection,
       `</rules>`,
@@ -340,12 +333,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `- Context map (if exists): \`${specsDir}/002-context-map.md\``,
       `</spec_sources>`,
       ``,
-      `<score_threshold>`,
-      `scoreThresholdAdv = ${threshold}`,
-      `score >= ${threshold} AND no HIGH/CRITICAL vulns → PASS`,
-      `score <  ${threshold} OR any HIGH/CRITICAL vuln    → RETRY (forced)`,
-      `</score_threshold>`,
-      ``,
       `<rules>`,
       rulesSection,
       `</rules>`,
@@ -372,7 +359,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `<strict_rules>`,
       `- Execute autonomously without pausing or asking for confirmation`,
       `- Any HIGH or CRITICAL vulnerability triggers RETRY regardless of score`,
-      `- passedAdversarial = true ONLY if score >= ${threshold} AND no HIGH/CRITICAL vulnerabilities`,
       `- score must be a float in [0.00, 1.00] rounded to 2 decimals`,
       `- featureId MUST match: ${payload.featureId}`,
       `</strict_rules>`,

@@ -219,8 +219,7 @@ describe('PhaseCHandler', () => {
         edgeCasesMissed: []
       }),
       0,
-      mockConfig,
-      false
+      mockConfig
     )
   })
 })

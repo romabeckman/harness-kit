@@ -79,10 +79,9 @@ describe('ValidationGate.evaluate', () => {
   describe('BLOCK verdict', () => {
     it('returns BLOCK when reworks exhausted and isCrashing is true', () => {
       const result = ValidationGate.evaluate(
-        makeScores({ scoreTL: 0.5 }),
+        makeScores({ scoreTL: 0.5, isCrashing: true }),
         3,
-        makeConfig(3),
-        true
+        makeConfig(3)
       )
       expect(result.verdict).toBe(Verdict.BLOCK)
       expect(result.reason).toContain('BLOCK')
@@ -93,10 +92,9 @@ describe('ValidationGate.evaluate', () => {
   describe('FAIL verdict', () => {
     it('returns FAIL when reworks exhausted and isCrashing is false', () => {
       const result = ValidationGate.evaluate(
-        makeScores({ scoreTL: 0.5 }),
+        makeScores({ scoreTL: 0.5, isCrashing: false }),
         3,
-        makeConfig(3),
-        false
+        makeConfig(3)
       )
       expect(result.verdict).toBe(Verdict.FAIL)
       expect(result.reason).toContain('FAIL')
