@@ -97,7 +97,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
 
       reworkSection = [
         ``,
-        `<rework>`,
+        `<rework file="${reworkLogPath}">`,
         `This is a RETRY run. Here is the content of \`REWORK-LOG.md\`:`,
         ``,
         `\`\`\`markdown`,
