@@ -44,7 +44,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       ``,
       `# OUTPUT FORMAT`,
       `Table columns (exact):`,
-      `| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |`,
+      `| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |`,
       ``,
       `# CONSTRAINTS & RULES`,
       `- **ID**: F001, F002, ... (sequential, bolded: **F001**)`,

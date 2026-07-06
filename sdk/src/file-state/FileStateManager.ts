@@ -77,7 +77,7 @@ export class FileStateManager implements IFileStateManager {
   private defaultContent(file: string, config?: OrchestratorConfig): string {
     switch (file) {
       case 'BACKLOG.md':
-        return '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n'
+        return '| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n'
       case 'DEVELOPMENT-STATE.md':
         return '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |\n| --- | --- | --- | --- | --- | --- | --- |\n'
       case 'DECISIONS.md':

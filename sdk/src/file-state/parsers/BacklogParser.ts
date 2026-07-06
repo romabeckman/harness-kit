@@ -41,7 +41,7 @@ function parseLayer(cell: string): FeatureLayer | null {
 
 /**
  * Parses a BACKLOG.md markdown table into Feature[].
- * Columns: ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status
+ * Columns: ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status
  */
 export class BacklogParser {
   static parse(markdown: string): Feature[] {
