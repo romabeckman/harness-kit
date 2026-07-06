@@ -193,7 +193,7 @@ describe('PhaseBHandler', () => {
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
       const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
       expect(invokeCall.prompt).toContain('Mocked rework content here')
-      expect(invokeCall.prompt).toContain('<rework>')
+      expect(invokeCall.prompt).toContain('<rework')
     })
   })
 })
