@@ -2,6 +2,7 @@
 // HarnessOrchestrator — main entry point
 export { HarnessOrchestrator } from './orchestrator/HarnessOrchestrator'
 export type { HarnessOrchestratorOptions } from './orchestrator/HarnessOrchestrator'
+export { ChainBuilder } from './orchestrator/ChainBuilder'
 
 // Orchestrator types
 export { Phase } from './orchestrator/types'

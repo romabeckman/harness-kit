@@ -2,6 +2,7 @@ import { input, select } from "@inquirer/prompts";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { HarnessOrchestrator } from "../../orchestrator/HarnessOrchestrator";
+import { ChainBuilder } from "../../orchestrator/ChainBuilder";
 import { AgentRunnerFactory } from "../../agent-runner/AgentRunnerFactory";
 import { HarnessSettings } from "../../settings/HarnessSettings";
 import { StartupBanner } from "../../ui/StartupBanner";
@@ -133,6 +134,7 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
     settings,
     initialRules: steeringMessage.length > 0 ? steeringMessage : undefined,
     complexity: parsed.complexity,
+    chain: ChainBuilder.buildDefault(),
   });
 
   if (action === "resume") {
