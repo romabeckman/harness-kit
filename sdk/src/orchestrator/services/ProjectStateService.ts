@@ -50,7 +50,7 @@ export class ProjectStateService {
     if (!Array.isArray(parsed)) return []
 
     const fileNameMatch = file.match(/^003-(.*?)-tactical-design.*$/i)
-    const extractedFile = fileNameMatch ? fileNameMatch[1] : file
+    const extractedFile = fileNameMatch ? fileNameMatch[1] : ""
 
     return parsed
       .filter(

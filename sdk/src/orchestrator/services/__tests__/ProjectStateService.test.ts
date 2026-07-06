@@ -101,8 +101,8 @@ describe('ProjectStateService', () => {
         it('should correctly parse tasks from valid markdown', () => {
             const tasks = ProjectStateService._parseTasksFromMarkdown(MOCK_TDD_FILE_CONTENT, "003-tactical-design.md");
             expect(tasks).toEqual([
-                { taskId: 'T01', description: 'Create main.py with failing test hook', file: '003-tactical-design.md' },
-                { taskId: 'T02', description: 'Implement greeting in main()', file: '003-tactical-design.md' },
+                { taskId: 'T01', description: 'Create main.py with failing test hook', file: '' },
+                { taskId: 'T02', description: 'Implement greeting in main()', file: '' },
             ]);
         });
 
