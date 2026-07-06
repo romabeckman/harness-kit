@@ -4,6 +4,75 @@
 
 Runs the [harness-kit](https://github.com/romabeckman/harness-kit) autonomous orchestrator programmatically. Instead of typing `/autonomous-orchestrator` in Claude Code, you run a single command and the full TDD loop executes unattended — scope in, backlog built, agents delegated, validation scored, memory persisted.
 
+---
+
+## How the orchestration works
+
+The orchestrator drives a feature through a fixed pipeline of phases. Each phase hands off to the next; failures trigger rework or cascade-blocking rather than silent skips.
+
+```
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │                         Project Scope                                │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                                 ▼
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  Bootstrap  ·  software-architect agent                              │
+  │  Parses scope → writes BACKLOG.md with features, layers, priorities  │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │  (for each feature)
+                                 ▼
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  Phase A  ·  scope-refinement skill                                  │
+  │  Writes spec files (user stories, tactical design, test scenarios)   │
+  │  Extracts task list into DEVELOPMENT-STATE.md                        │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                                 ▼
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  Phase B  ·  tdd-orchestrator skill                                  │
+  │  Implements tasks in strict TDD order (red → green → refactor)       │
+  │  Each task must pass its tests before the next begins                │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                                 ▼
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  Phase C  ·  the-grumpy-tech-lead + adversarial-qa skills            │
+  │  Code review scores implementation quality (0–10)                    │
+  │  QA agent hunts security vulnerabilities and missing edge cases      │
+  │  Scores below threshold → feature returns to Phase B (rework)        │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                                 ▼
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  Phase D  ·  completion gate (no agent)                              │
+  │  Checks all features meet score thresholds and rework limits         │
+  │  Violations are logged to DECISIONS.md                               │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                                 ▼
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  Phase E  ·  project-memory skill                                    │
+  │  Persists learnings, decisions, and patterns to long-term memory     │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                                 ▼
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  Phase F  ·  transition (no agent)                                   │
+  │  Advances to next NOT_STARTED feature, or cascades BLOCKED status    │
+  │  to dependents. When all features are done → HALTED                  │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    ▼                         ▼
+             next feature               all done
+          (loops to Phase A)           (session end)
+```
+
+> Phases B → C loop per rework. A feature can cycle back from C to B up to `maxReworks` times before being marked BLOCKED. BLOCKED features cascade to dependents; FAILED features do not.
+
+---
+
 ## Integration with Superpowers
 
 HarnessKit is designed to complement [Superpowers Skills](https://github.com/obra/superpowers). While HarnessKit defines the *strategy and discipline* (what to build and how to validate it), Superpowers provides the low-level *execution tools* (Git worktrees, parallel agents, etc.).
