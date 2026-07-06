@@ -19,6 +19,9 @@ export interface ParsedRunArgs {
 
   // Debug mode
   debug?: boolean
+
+  // Complexity hint for Phase A scope refinement ('SIMPLE' | 'COMPLEX' | undefined = AUTO)
+  complexity?: 'SIMPLE' | 'COMPLEX'
 }
 
 /**
@@ -37,6 +40,7 @@ export interface ParsedRunArgs {
  * --score <0.1-1>          Acceptance score threshold
  * --reworks <1-10>         Max rework cycles before cascade fail
  * --steering <text>        Additional orchestration rules
+ * --complexity, -c <val>   Force complexity: SIMPLE|S or COMPLEX|C (default: AUTO)
  */
 export function parseRunArgs(args: string[]): ParsedRunArgs {
   const result: ParsedRunArgs = {
@@ -100,6 +104,14 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
       case '--debug':
         result.debug = true
         break
+
+      case '--complexity':
+      case '-c': {
+        const val = args[++i]?.toUpperCase()
+        if (val === 'S' || val === 'SIMPLE') result.complexity = 'SIMPLE'
+        else if (val === 'C' || val === 'COMPLEX') result.complexity = 'COMPLEX'
+        break
+      }
 
       // ── unknown flags — silently ignored ──────────────────────────────────
       default:

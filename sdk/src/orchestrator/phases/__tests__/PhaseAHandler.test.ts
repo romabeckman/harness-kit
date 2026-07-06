@@ -96,4 +96,41 @@ describe('PhaseAHandler', () => {
         expect(mockFsm.appendTasks).not.toHaveBeenCalled();
     });
 
+    describe('complexity override in scope-refinement prompt', () => {
+        beforeEach(() => {
+            // Ensure spec files are absent so runScopeRefinement is called
+            mockContext.checkSpecFilesPresent = vi.fn().mockReturnValue(false);
+            mockContext.extractTasksFromTacticalDesign = vi.fn().mockReturnValue([
+                { taskId: 'T001', description: 'Task', file: 'project' },
+            ]);
+        });
+
+        it('includes SIMPLE override rule when config.complexity is SIMPLE', async () => {
+            mockContext.config = { ...mockContext.config, complexity: 'SIMPLE' };
+
+            await handler.handle(Phase.PHASE_A, mockContext);
+
+            const invokedPrompt = (mockContext.invokeAgent as ReturnType<typeof vi.fn>).mock.calls[0][0].prompt as string;
+            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'SIMPLE'");
+        });
+
+        it('includes COMPLEX override rule when config.complexity is COMPLEX', async () => {
+            mockContext.config = { ...mockContext.config, complexity: 'COMPLEX' };
+
+            await handler.handle(Phase.PHASE_A, mockContext);
+
+            const invokedPrompt = (mockContext.invokeAgent as ReturnType<typeof vi.fn>).mock.calls[0][0].prompt as string;
+            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'COMPLEX'");
+        });
+
+        it('omits COMPLEXITY OVERRIDE rule when config.complexity is undefined (AUTO)', async () => {
+            mockContext.config = { ...mockContext.config, complexity: undefined };
+
+            await handler.handle(Phase.PHASE_A, mockContext);
+
+            const invokedPrompt = (mockContext.invokeAgent as ReturnType<typeof vi.fn>).mock.calls[0][0].prompt as string;
+            expect(invokedPrompt).not.toContain('COMPLEXITY OVERRIDE');
+        });
+    });
+
 });

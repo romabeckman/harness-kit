@@ -33,6 +33,9 @@ RESET OPTIONS (all optional — omitting any triggers the interactive wizard)
 RESUME OPTIONS
   --steering <text>         Steering rules or state overrides
 
+PHASE A OPTIONS
+  --complexity, -c <val>    Force complexity classification: SIMPLE|S or COMPLEX|C (default: AUTO)
+
 OPTIONS
   --help, -h                Show this help message
   --version, -v             Show version
@@ -44,6 +47,8 @@ EXAMPLES
   hrns run --reset --scope "Build a REST API" --path ./api --path ./web --score 0.9
   hrns run --resume --steering "focus on security hardening"
   hrns run --debug --reset --scope "My project"
+  hrns run --reset --scope "Fix login bug" --path ./api --complexity S
+  hrns run --reset --scope "New payment flow" --path ./api --complexity COMPLEX
   hrns report
   npx @romabeckman/hrns run --gemini
 

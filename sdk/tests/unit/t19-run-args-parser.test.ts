@@ -169,4 +169,54 @@ describe('T19 — parseRunArgs', () => {
     const result = parseRunArgs(['--score', 'abc'])
     expect(Number.isNaN(result.score)).toBe(true)
   })
+
+  // ── --complexity / -c ─────────────────────────────────────────────────────
+
+  it('complexity is undefined when flag is omitted (AUTO)', () => {
+    const result = parseRunArgs(['--reset'])
+    expect(result.complexity).toBeUndefined()
+  })
+
+  it('parses --complexity SIMPLE', () => {
+    expect(parseRunArgs(['--complexity', 'SIMPLE']).complexity).toBe('SIMPLE')
+  })
+
+  it('parses --complexity S (shorthand)', () => {
+    expect(parseRunArgs(['--complexity', 'S']).complexity).toBe('SIMPLE')
+  })
+
+  it('parses --complexity simple (case-insensitive)', () => {
+    expect(parseRunArgs(['--complexity', 'simple']).complexity).toBe('SIMPLE')
+  })
+
+  it('parses --complexity COMPLEX', () => {
+    expect(parseRunArgs(['--complexity', 'COMPLEX']).complexity).toBe('COMPLEX')
+  })
+
+  it('parses --complexity C (shorthand)', () => {
+    expect(parseRunArgs(['--complexity', 'C']).complexity).toBe('COMPLEX')
+  })
+
+  it('parses --complexity complex (case-insensitive)', () => {
+    expect(parseRunArgs(['--complexity', 'complex']).complexity).toBe('COMPLEX')
+  })
+
+  it('parses -c SIMPLE via short flag', () => {
+    expect(parseRunArgs(['-c', 'SIMPLE']).complexity).toBe('SIMPLE')
+  })
+
+  it('parses -c C via short flag', () => {
+    expect(parseRunArgs(['-c', 'C']).complexity).toBe('COMPLEX')
+  })
+
+  it('ignores unknown complexity value, leaves complexity undefined', () => {
+    expect(parseRunArgs(['--complexity', 'MEDIUM']).complexity).toBeUndefined()
+  })
+
+  it('--complexity coexists with other flags without interference', () => {
+    const result = parseRunArgs(['--reset', '--complexity', 'SIMPLE', '--debug'])
+    expect(result.action).toBe('reset')
+    expect(result.complexity).toBe('SIMPLE')
+    expect(result.debug).toBe(true)
+  })
 })

@@ -132,6 +132,7 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
     agentRunner,
     settings,
     initialRules: steeringMessage.length > 0 ? steeringMessage : undefined,
+    complexity: parsed.complexity,
   });
 
   if (action === "resume") {

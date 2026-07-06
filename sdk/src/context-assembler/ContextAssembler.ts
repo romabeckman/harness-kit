@@ -90,12 +90,14 @@ export class ContextAssembler {
    */
   static buildPhaseEPayload(
     feature: Feature,
+    projectPaths: string[],
     completedCycles: number,
     decisions: string[],
     steeringRules?: SteeringRulesConfig
   ): PhaseEPayload {
     const payload: PhaseEPayload = {
       domain: feature.domain,
+      projectPaths,
       scopeDescription: feature.title,
       completedCycles,
       recentDecisions: decisions,

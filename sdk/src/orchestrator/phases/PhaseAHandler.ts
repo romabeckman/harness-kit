@@ -63,7 +63,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       config.steeringRules,
     );
 
-    const prompt = this.buildScopeRefinementPrompt(payload);
+    const prompt = this.buildScopeRefinementPrompt(payload, context.config.complexity);
 
     await context.invokeAgent({
       skill: "scope-refinement",
@@ -74,7 +74,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     });
   }
 
-  private buildScopeRefinementPrompt(payload: PhaseAPayload): string {
+  private buildScopeRefinementPrompt(payload: PhaseAPayload, complexity?: 'SIMPLE' | 'COMPLEX'): string {
     const projectPathsList = payload.projectPaths
       .map((p) => `- ${p}`)
       .join("\n");
@@ -139,6 +139,9 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `<strict_rules>`,
       `- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features present in the <background_context> or the backlog file.`,
       `- DEPENDENCY RULE: If the <target_feature> has dependencies listed in the backlog, acknowledge them as assumptions or interfaces in your design, but DO NOT design, spec, or generate tasks for the dependencies themselves.`,
+      ...(complexity !== undefined
+        ? [`- COMPLEXITY OVERRIDE: Classify as '${complexity}' — do not re-evaluate scope complexity.`]
+        : []),
       `- Execute autonomously without pausing or asking for confirmation.`,
       `- Write every file to disk before advancing to the next.`,
       `- Do NOT output explanations — produce the spec files only.`,

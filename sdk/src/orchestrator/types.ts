@@ -12,6 +12,7 @@ export interface OrchestratorConfig {
   settings?: HarnessSettings
   timeoutMs?: number
   initialRules?: string
+  complexity?: 'SIMPLE' | 'COMPLEX'
 }
 
 export enum Phase {

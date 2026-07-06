@@ -42,6 +42,7 @@ export interface PhaseEPayload extends ContextPayload {
   scopeDescription: string
   completedCycles: number
   recentDecisions: string[]
+  projectPaths: string[]
   steeringRules?: string[]
 }
 
