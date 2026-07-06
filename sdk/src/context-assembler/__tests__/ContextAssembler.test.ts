@@ -22,7 +22,7 @@ describe('ContextAssembler', () => {
 
   it('should build phase B payload', () => {
     const feature = { id: '1', title: 'feature title', domain: 'domain' }
-    const tasks = [{ taskId: 't1', description: 'task desc' }]
+    const tasks = [{ taskId: 't1', description: 'task desc' }] as any
     const payload = ContextAssembler.buildPhaseBPayload(feature as any, tasks, ['path1'], false, 0)
     expect(payload.featureId).toBe('1')
     expect(payload.tasks).toHaveLength(1)
@@ -37,7 +37,7 @@ describe('ContextAssembler', () => {
 
   it('should build phase E payload', () => {
     const feature = { domain: 'domain', title: 'scope desc' }
-    const payload = ContextAssembler.buildPhaseEPayload(feature as any, 3, ['decision1'])
+    const payload = ContextAssembler.buildPhaseEPayload(feature as any, [], 3, ['decision1'])
     expect(payload.domain).toBe('domain')
     expect(payload.completedCycles).toBe(3)
   })

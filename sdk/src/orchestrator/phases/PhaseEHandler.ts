@@ -17,6 +17,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
     const decisions = context.fsm.loadRecentDecisions(5)
     const payload = ContextAssembler.buildPhaseEPayload(
       activeFeature,
+      context.config.projectPaths,
       config.cycleCounter.completedCycles,
       decisions,
       config.steeringRules
@@ -36,6 +37,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
   }
 
   private buildProjectMemoryPrompt(payload: PhaseEPayload): string {
+    const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const decisionsList = payload.recentDecisions.length > 0
       ? payload.recentDecisions.map(d => `- ${d}`).join('\n')
       : '- No decisions recorded this cycle'
@@ -72,7 +74,12 @@ export class PhaseEHandler extends AbstractPhaseHandler {
       ``,
       `</inputs>`,
       ``,
+      `<project_paths>`,
+      projectPathsList,
+      `</project_paths>`,
+      ``,
       `<instructions>`,
+      `- Each project must have its own \`docs/adr\` and \`docs/feature\` folders where all ADRs and features are stored.`,
       `- REQUIRED: Document the developed feature under \`docs/feature/[FEATURE_NAME].md\` (create if missing, update if it exists the same or relevant previous feature), following \`./references/DOCUMENT-TEMPLATE.md\` strictly`,
       `- REQUIRED: \`FOLDER STRUCTURE\` section must reflect the module's current relevant structure, incorporating paths added or modified this cycle — do not drop paths from prior cycles`,
       `- REQUIRED: All cross-references MUST point ONLY to \`./docs/adr/\` or \`./docs/feature/\` — validate every reference before finalizing`,
