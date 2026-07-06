@@ -21,6 +21,8 @@ import { ProjectStateService } from './services/ProjectStateService'
 import { AgentInvocationService } from './services/AgentInvocationService'
 import { SteeringService } from './services/SteeringService'
 import { exit } from 'process'
+import { AgentInvocation, AgentOutput } from '../agent-runner/types'
+import { SteeringAction } from './SteeringAnalyzer'
 
 export interface HarnessOrchestratorOptions {
   workingDir?: string
@@ -236,11 +238,11 @@ export class HarnessOrchestrator implements PhaseContext {
   }
 
 
-  public applySteeringActions(actions: import('./SteeringAnalyzer').SteeringAction[]): void {
+  public applySteeringActions(actions: SteeringAction[]): void {
     this.steeringService.applySteeringActions(actions)
   }
 
-  public invokeAgent(invocation: import('../agent-runner/types').AgentInvocation): Promise<import('../agent-runner/types').AgentOutput> {
+  public invokeAgent(invocation: AgentInvocation): Promise<AgentOutput> {
     return this.agentInvocationService.invokeAgent(invocation, this.state.currentPhase, this.config, this.settings)
   }
 
