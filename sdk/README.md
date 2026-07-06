@@ -149,23 +149,36 @@ node dist/cli/run.js
 
 ## CLI Reference
 
-| Command / Option | Description | Example |
-|---|---|---|
-| `hrns run` | Start or resume an orchestration session (interactive). | `hrns run` |
-| `hrns run --agent <type>` / `-a <type>` | Specify the agent type (e.g., `copilot-sdk`, `antigravity-cli`). | `hrns run --agent copilot-sdk` |
-| `hrns run --model <name>` / `-m <name>` | Specify the model name for the agent. | `hrns run --model gpt-4o` |
-| `hrns run --copilot-sdk` | Run with the Copilot agent. | `hrns run --copilot-sdk` |
-| `hrns run --gemini` | Run with the Antigravity CLI (Gemini) agent. | `hrns run --gemini` |
-| `hrns run --complexity <val>` / `-c <val>` | Force Phase A complexity: `SIMPLE`/`S` or `COMPLEX`/`C`. Omit for `AUTO` (agent decides). | `hrns run --complexity S` |
-| `hrns report` | Print token usage report for the current session. | `hrns report` |
-| `hrns version` / `--version` / `-v` | Show version. | `hrns version` |
-| `hrns help` / `--help` / `-h` | Show help message. | `hrns help` |
+### `hrns run` — start or resume an orchestration session
+
+| Flag | Alias | Description | Example |
+|---|---|---|---|
+| `--agent <type>` | `-a` | Agent runner type (see table below) | `--agent copilot-sdk` |
+| `--model <name>` | `-m` | Model override for all phases | `--model gpt-4o` |
+| `--copilot-sdk` | | Shorthand for `--agent copilot-sdk` | |
+| `--gemini` | | Shorthand for `--agent antigravity-cli` | |
+| `--reset` | | Force reset action (skip interactive prompt) | |
+| `--resume` | | Force resume action (skip interactive prompt) | |
+| `--scope <text>` | | Project scope / PRD (skips editor prompt) | `--scope "REST API with JWT"` |
+| `--path <dir>` | | Project directory (repeatable) | `--path ./api --path ./web` |
+| `--score <0–1>` | | Acceptance score threshold | `--score 0.8` |
+| `--reworks <1–10>` | | Max rework cycles before cascade fail | `--reworks 3` |
+| `--steering <text>` | | Additional orchestration rules | `--steering "prefer async/await"` |
+| `--complexity <val>` | `-c` | Phase A complexity: `SIMPLE`/`S`, `COMPLEX`/`C`, or omit for `AUTO` | `--complexity S` |
+| `--debug` | | Enable debug output | |
+
+### Other commands
+
+| Command | Description |
+|---|---|
+| `hrns report` | Print token usage report for the current session |
+| `hrns version` | Show version |
+| `hrns help` | Show help message |
 
 > [!NOTE]
-> The model specified via `--model` depends on what is supported by the chosen agent. Verify compatibility beforehand.
+> The model specified via `--model` overrides the default for all phases. Each agent runner has its own supported model list — verify compatibility beforehand. For per-phase model tuning, use `settings.json` instead.
 
 ---
-
 
 ## What happens when you run it
 
@@ -212,43 +225,170 @@ TOTAL                input: 40,550  cost: $0.16
 
 ---
 
-## Agent runner — pluggable strategies
+## Agent runners — pluggable strategies
 
-The SDK supports multiple built-in coding agents:
-- **Claude Code CLI** (`claude-cli`)
-- **Anthropic API** (`claude-sdk`)
-- **Google Antigravity** (`antigravity-cli`)
+Each agent runner is a self-contained strategy that knows how to invoke a specific AI backend. The SDK ships seven built-in runners:
 
-By default, the SDK auto-selects a runner:
+| Type | Binary / SDK | Default model | Notes |
+|---|---|---|---|
+| `claude-cli` | `claude` CLI | _(from settings)_ | Default when no `ANTHROPIC_API_KEY` is set |
+| `claude-sdk` | `@anthropic-ai/sdk` | `claude-sonnet-4-6` | Default when `ANTHROPIC_API_KEY` is set |
+| `antigravity-cli` | `agy` CLI | `gemini-3.5-flash` | Google Gemini via Antigravity |
+| `copilot-cli` | `copilot` CLI | _(from settings)_ | GitHub Copilot CLI |
+| `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.3-codex` | GitHub Copilot SDK |
+| `cursor-cli` | `agent` CLI | _(from settings)_ | Cursor CLI |
+| `cursor-sdk` | `@cursor/sdk` | `composer-2.5` | Requires `CURSOR_API_KEY` env var |
+
+### Auto-selection
 
 | Condition | Runner used |
 |---|---|
 | `ANTHROPIC_API_KEY` set in environment | `claude-sdk` (direct API) |
 | No API key | `claude-cli` (local `claude` CLI) |
 
-Select agent strategy via CLI flags:
+### CLI shorthands
+
 ```bash
-# Run with Google Antigravity CLI
-hrns run --agent antigravity-cli
-
-# Run with Copilot
-hrns run --copilot-sdk
-
-# Force SIMPLE classification for Phase A (skips 001/002 spec files)
-hrns run --reset --scope "Fix login redirect bug" --path ./api --complexity S
-
-# Force COMPLEX classification (generates all four spec files)
-hrns run --reset --scope "Payment gateway integration" --path ./api -c COMPLEX
+hrns run --agent antigravity-cli     # Google Gemini via Antigravity
+hrns run --gemini                    # shorthand for the above
+hrns run --copilot-sdk               # GitHub Copilot SDK
+hrns run --agent cursor-sdk          # Cursor SDK (needs CURSOR_API_KEY)
+hrns run --agent copilot-cli         # GitHub Copilot CLI
+hrns run --agent cursor-cli          # Cursor CLI
 ```
-
-> [!NOTE]
-> When `--complexity` is omitted, Phase A auto-classifies the scope based on the steering rules (default: `AUTO`). Use `SIMPLE` for isolated bug fixes or minor enhancements; use `COMPLEX` for new features, cross-domain work, or external integrations.
 
 Detailed runner architectural specifications are located in [**sdk_agent_runner.md**](./docs/feature/sdk_agent_runner.md).
 Detailed specifications for agent invocations during orchestration are in [**AGENTS.md**](./AGENTS.md).
 
 ---
 
+## Configuration — `settings.json`
+
+`settings.json` lets you tune the model and timeout for each runner and phase without touching code. Changes apply immediately on the next run.
+
+### File locations
+
+The SDK reads settings from two places and deep-merges them (project overrides global):
+
+| Scope | Path |
+|---|---|
+| **Global** (all projects) | `~/.config/harness-kit/settings.json` |
+| **Project** (current project only) | `<projectPath>/.harness-kit/settings.json` |
+
+The global file is created automatically on first run if it does not exist. You can also set `HARNESS_SETTINGS_PATH` to point to a custom path, or `XDG_CONFIG_HOME` to change the base config directory.
+
+### Schema
+
+```json
+{
+  "<runner-key>": {
+    "timeoutMs": 1800000,
+    "phases": {
+      "<phase-key>": {
+        "model": "claude-sonnet-4-6",
+        "effort": "high",
+        "timeoutMs": 3600000
+      }
+    }
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `timeoutMs` | `number` | Default timeout (ms) for all phases under this runner |
+| `phases.<key>.model` | `string` | Model to use for this specific phase |
+| `phases.<key>.effort` | `string` | Reasoning effort: `low`, `medium`, `high` |
+| `phases.<key>.timeoutMs` | `number` | Phase-level timeout override (takes precedence over runner-level) |
+
+### Runner keys
+
+| Key | Applies to |
+|---|---|
+| `claude` | `claude-cli` and `claude-sdk` runners |
+| `antigravity` | `antigravity-cli` runner |
+| `copilot` | `copilot-cli` and `copilot-sdk` runners |
+| `cursor` | `cursor-cli` and `cursor-sdk` runners |
+
+### Phase keys
+
+| Key | Phase |
+|---|---|
+| `bootstrap` | Bootstrap — software-architect agent |
+| `phase_a` | Phase A — scope-refinement |
+| `phase_b` | Phase B — tdd-orchestrator |
+| `phase_c_tl` | Phase C — the-grumpy-tech-lead review |
+| `phase_c_adv` | Phase C — adversarial-qa review |
+| `phase_e` | Phase E — project-memory |
+
+### Default settings
+
+```json
+{
+  "claude": {
+    "timeoutMs": 1800000,
+    "phases": {
+      "bootstrap":   { "model": "claude-sonnet-4-6", "effort": "low"    },
+      "phase_a":     { "model": "claude-sonnet-4-6", "effort": "high"   },
+      "phase_b":     { "model": "claude-sonnet-4-6", "effort": "medium" },
+      "phase_c_tl":  { "model": "claude-sonnet-4-6", "effort": "low"    },
+      "phase_c_adv": { "model": "claude-sonnet-4-6", "effort": "low"    },
+      "phase_e":     { "model": "claude-sonnet-4-6", "effort": "low"    }
+    }
+  },
+  "antigravity": {
+    "timeoutMs": 1800000,
+    "phases": {
+      "bootstrap":   { "model": "gemini-3.5-flash" },
+      "phase_a":     { "model": "gemini-3.5-flash" },
+      "phase_b":     { "model": "gemini-3.5-flash" },
+      "phase_c_tl":  { "model": "gemini-3.5-flash" },
+      "phase_c_adv": { "model": "gemini-3.5-flash" },
+      "phase_e":     { "model": "gemini-3.5-flash" }
+    }
+  },
+  "copilot": {
+    "timeoutMs": 1800000,
+    "phases": {
+      "bootstrap":   { "model": "gpt-5.3-codex",    "effort": "low"    },
+      "phase_a":     { "model": "claude-sonnet-4-6", "effort": "high"   },
+      "phase_b":     { "model": "gpt-5.3-codex",    "effort": "medium" },
+      "phase_c_tl":  { "model": "gpt-5.3-codex",    "effort": "low"    },
+      "phase_c_adv": { "model": "gpt-5.3-codex",    "effort": "low"    },
+      "phase_e":     { "model": "gpt-5.3-codex",    "effort": "low"    }
+    }
+  },
+  "cursor": {
+    "timeoutMs": 1800000,
+    "phases": {
+      "bootstrap":   { "model": "gpt-5.3-codex",    "effort": "low"    },
+      "phase_a":     { "model": "claude-sonnet-4-6", "effort": "high"   },
+      "phase_b":     { "model": "gpt-5.3-codex",    "effort": "medium" },
+      "phase_c_tl":  { "model": "gpt-5.3-codex",    "effort": "low"    },
+      "phase_c_adv": { "model": "gpt-5.3-codex",    "effort": "low"    },
+      "phase_e":     { "model": "gpt-5.3-codex",    "effort": "low"    }
+    }
+  }
+}
+```
+
+### Example — upgrade Phase B to a more powerful model for a project
+
+Create `.harness-kit/settings.json` inside your project root:
+
+```json
+{
+  "claude": {
+    "phases": {
+      "phase_b": { "model": "claude-opus-4-8", "effort": "high" }
+    }
+  }
+}
+```
+
+Only the fields you specify are overridden — everything else falls back to the global settings or defaults.
+
+---
 
 ## Using the SDK programmatically
 
@@ -268,6 +408,8 @@ import { HarnessOrchestrator } from '@romabeckman/hrns'
 const orchestrator = new HarnessOrchestrator({
   scope: 'REST API with JWT auth and PostgreSQL',
   projectPaths: ['/path/to/my-api'],
+  score: 0.7,    // minimum acceptance score (0–1)
+  reworks: 3,    // max rework cycles before cascade-blocking
 })
 
 await orchestrator.run()
@@ -276,11 +418,14 @@ orchestrator.tokenReport() // print token + cost breakdown
 
 ### Resume a previous session
 
+When a backlog already exists on disk, the orchestrator re-enters at the last persisted phase automatically. The `scope` field is still required by the type, but its value is overridden by the persisted scope on disk.
+
 ```typescript
-// same config + same projectPaths → resumes automatically
 const orchestrator = new HarnessOrchestrator({
-  scope: 'my project',       // ignored when backlog already exists on disk
+  scope: '',   // overridden by persisted scope on disk
   projectPaths: ['/path/to/api'],
+  score: 0.7,
+  reworks: 3,
 })
 
 await orchestrator.run()
@@ -295,6 +440,8 @@ import type { ProgressLine } from '@romabeckman/hrns'
 const orchestrator = new HarnessOrchestrator({
   scope: 'my project',
   projectPaths: ['/path/to/project'],
+  score: 0.7,
+  reworks: 3,
   agentRunner: new ClaudeCLIRunner({
     onProgress: (line: ProgressLine) => {
       if (line.type === 'tool_use') console.log(`[${line.skill}] → ${line.toolName}`)
@@ -306,7 +453,7 @@ const orchestrator = new HarnessOrchestrator({
 
 ### Pluggable agent strategies
 
-Instantiate any registered runner (e.g. Antigravity) via the Factory:
+Instantiate any registered runner via the Factory:
 
 ```typescript
 import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hrns'
@@ -314,10 +461,48 @@ import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hrns'
 const orchestrator = new HarnessOrchestrator({
   scope: 'my project',
   projectPaths: ['/path/to/project'],
+  score: 0.7,
+  reworks: 3,
   agentRunner: AgentRunnerFactory.create({
     type: 'antigravity-cli',
     model: 'gemini-3.5-flash',
-  })
+  }),
+})
+```
+
+### Custom chain
+
+By default the orchestrator uses `ChainBuilder.buildDefault()`, which wires all phases in order. Pass a `chain` to replace or extend it:
+
+```typescript
+import {
+  HarnessOrchestrator,
+  ChainBuilder,
+  PhaseAHandler,
+  PhaseBHandler,
+  PhaseCHandler,
+  PhaseDHandler,
+  PhaseEHandler,
+  PhaseFHandler,
+  CascadeBlockedHandler,
+} from '@romabeckman/hrns'
+
+const chain = new ChainBuilder()
+  .addPhaseA(new PhaseAHandler())
+  .addPhaseB(new PhaseBHandler())
+  .addPhaseC(new PhaseCHandler())
+  .addPhaseD(new PhaseDHandler())
+  .addPhaseE(new PhaseEHandler())
+  .addPhaseF(new PhaseFHandler())
+  .addCascadeBlocked(new CascadeBlockedHandler())
+  .build()
+
+const orchestrator = new HarnessOrchestrator({
+  scope: 'my project',
+  projectPaths: ['/path/to/project'],
+  score: 0.7,
+  reworks: 3,
+  chain,
 })
 ```
 
@@ -330,7 +515,6 @@ const state = new FileStateManager({ productDir: './docs/product' })
 
 const features = state.loadBacklog()
 const executable = state.getExecutableFeatures()
-const nextTask = state.getNextTask('F001')
 ```
 
 ### CI/CD with API key
@@ -341,6 +525,8 @@ import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hrns'
 const orchestrator = new HarnessOrchestrator({
   scope: 'my project',
   projectPaths: ['/path/to/project'],
+  score: 0.7,
+  reworks: 3,
   agentRunner: AgentRunnerFactory.create({ type: 'claude-sdk' }), // reads ANTHROPIC_API_KEY from env
 })
 
