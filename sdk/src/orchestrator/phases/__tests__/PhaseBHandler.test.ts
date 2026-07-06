@@ -165,5 +165,35 @@ describe('PhaseBHandler', () => {
       expect(result).toBe(Phase.PHASE_C)
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
     })
+
+    it('embeds REWORK-LOG.md content in the prompt on retry run', async () => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      const reworkLogPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'REWORK-LOG.md')
+      writeFileSync(reworkLogPath, 'Mocked rework content here')
+
+      const fsm = makeFsm({
+        loadBootstrapConfig: vi.fn().mockReturnValue(makeConfig()),
+        loadBacklog: vi.fn().mockReturnValue([makeFeature({ reworks: 1 })]),
+        updateTaskStatus: vi.fn(),
+      })
+
+      const context = makeContext(workingDir, fsm, async () => {
+        writeFileSync(tddPath, JSON.stringify({
+          featureId: 'F001',
+          status: 'SUCCESS',
+          metrics: { totalTests: 3, passed: 3, failed: 0, coverage: 0.85 },
+          reworksCount: 1
+        }))
+        return { success: true, stdout: '', stderr: '', raw: '' }
+      })
+      context.getActiveFeature = vi.fn().mockReturnValue(makeFeature({ reworks: 1 }))
+
+      await handler.handle(Phase.PHASE_B, context)
+
+      expect(context.invokeAgent).toHaveBeenCalledTimes(1)
+      const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
+      expect(invokeCall.prompt).toContain('Mocked rework content here')
+      expect(invokeCall.prompt).toContain('<rework>')
+    })
   })
 })

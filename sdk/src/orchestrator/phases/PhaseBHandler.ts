@@ -67,7 +67,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
     )
 
     const agent = activeFeature.layer ? 'developer-' + activeFeature.layer : 'developer-backend'
-    const prompt = this.buildTddOrchestratorPrompt(payload, agent)
+    const prompt = this.buildTddOrchestratorPrompt(payload, context, agent)
 
     await context.invokeAgent({
       skill: 'tdd-orchestrator',
@@ -78,7 +78,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
     })
   }
 
-  private buildTddOrchestratorPrompt(payload: PhaseBPayload, agent: string): string {
+  private buildTddOrchestratorPrompt(payload: PhaseBPayload, context: PhaseContext, agent: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const tasksList = payload.tasks.map(t => `- [${t.taskId}] ${t.description}`).join('\n')
     const rulesSection =
@@ -86,16 +86,30 @@ export class PhaseBHandler extends AbstractPhaseHandler {
         ? payload.steeringRules.map(r => `- ${r}`).join('\n')
         : '- No additional rules provided'
 
-    const reworkSection = payload.isRetry
-      ? [
+    const workingDir = join(context.workingDir, 'docs', 'specs', payload.domain)
+
+    let reworkSection = ''
+    if (payload.isRetry) {
+      const reworkLogPath = join(workingDir, 'REWORK-LOG.md')
+      const reworkLogContent = existsSync(reworkLogPath)
+        ? readFileSync(reworkLogPath, 'utf8')
+        : 'No REWORK-LOG.md found.'
+
+      reworkSection = [
         ``,
         `<rework>`,
-        `This is a RETRY run. Read \`docs/specs/${payload.domain}/REWORK-LOG.md\` before starting.`,
+        `This is a RETRY run. Here is the content of \`REWORK-LOG.md\`:`,
+        ``,
+        `\`\`\`markdown`,
+        reworkLogContent,
+        `\`\`\``,
+        ``,
+        `- Review and fix all vulnerabilities and missed edge cases from REWORK-LOG.md`,
         `- Translate every vulnerability and missed edge case from REWORK-LOG.md into new failing test cases`,
-        `- Address all architectural questions and open points listed there alongside the tactical tasks`,
+        `- Analyze all architecture tips and implement if is relevant for the feature`,
         `</rework>`,
       ].join('\n')
-      : ''
+    }
 
     return [
       `## Objective`,
@@ -123,10 +137,10 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<spec_sources>`,
-      `- Problem: \`docs/specs/${payload.domain}/001-problem-space.md\``,
-      `- Context: \`docs/specs/${payload.domain}/002-context-map.md\``,
-      `- Implementation blueprint: \`docs/specs/${payload.domain}/003-*-tactical-design.md\``,
-      `- Test scenarios (drives RED phase): \`docs/specs/${payload.domain}/004-*-test-scenarios.md\``,
+      `- Problem: \`${workingDir}/001-problem-space.md\``,
+      `- Context: \`${workingDir}/002-context-map.md\``,
+      `- Implementation blueprint: \`${workingDir}/003-*-tactical-design.md\``,
+      `- Test scenarios (drives RED phase): \`${workingDir}/004-*-test-scenarios.md\``,
       `</spec_sources>`,
       ``,
       `<rules>`,
@@ -137,7 +151,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       reworkSection,
       ``,
       `<expected_output>`,
-      `Write \`docs/specs/${payload.domain}/TDD-OUTPUT.json\` upon completion:`,
+      `Write \`${workingDir}/TDD-OUTPUT.json\` upon completion:`,
       `\`\`\`json`,
       `{`,
       `  "featureId": "${payload.featureId}",`,
@@ -150,7 +164,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `</expected_output>`,
       ``,
       `<strict_rules>`,
-      `- Read \`docs/README.md\`, \`docs/adr/ARCHITECTURE.md\`, and \`docs/adr/TESTS.md\` before writing any code`,
+      `- Read \`docs/README.md\`, \`docs/adr/ARCHITECTURE.md\`, and \`docs/adr/TESTS.md\` in each project before writing any code`,
       `- Invoke test-driven-development skill before any production code — verify tests FAIL first`,
       `- Invoke verification-before-completion before declaring any task complete`,
       `- Invoke systematic-debugging before attempting any fix on failing tests`,

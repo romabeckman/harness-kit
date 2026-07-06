@@ -203,16 +203,16 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
       : '- No additional rules provided'
-    const specsDir = `${workingDir}/docs/specs/${payload.domain}`
-
+    const specsDir = join(workingDir, 'docs', 'specs', payload.domain)
     const reworkLogPath = join(workingDir, 'docs', 'specs', payload.domain, 'REWORK-LOG.md')
     const reworkSection: string[] = []
+
     if (existsSync(reworkLogPath)) {
       reworkSection.push(
         `<rework_history totalReworks="${payload.totalReworks}">`,
         `Contains a log of previous reviews:`,
         ``,
-        `\`\`\`text`,
+        `\`\`\`markdown`,
         readFileSync(reworkLogPath, 'utf8').trim(),
         `</rework_history>`,
         `\`\`\``,
@@ -295,8 +295,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
       : '- No additional rules provided'
-    const specsDir = `${workingDir}/docs/specs/${payload.domain}`
-
+    const specsDir = join(workingDir, 'docs', 'specs', payload.domain)
     const reworkLogPath = join(workingDir, 'docs', 'specs', payload.domain, 'REWORK-LOG.md')
     const reworkSection: string[] = []
     if (existsSync(reworkLogPath)) {
@@ -304,7 +303,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
         `<rework_history totalReworks="${payload.totalReworks}">`,
         `Contains a log of previous reviews:`,
         ``,
-        `\`\`\`text`,
+        `\`\`\`markdown`,
         readFileSync(reworkLogPath, 'utf8').trim(),
         `</rework_history>`,
         `\`\`\``,
