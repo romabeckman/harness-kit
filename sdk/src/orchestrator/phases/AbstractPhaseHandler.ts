@@ -4,16 +4,20 @@ import type { IFileStateManager } from '../../file-state/FileStateManager'
 import type { Feature } from '../../file-state/types'
 import type { AgentInvocation, AgentOutput } from '../../agent-runner/types'
 
+export interface ExtractedTask {
+  taskId: string
+  description: string
+  file: string
+}
+
 export interface PhaseContext {
   readonly config: OrchestratorConfig
   readonly workingDir: string
   readonly fsm: IFileStateManager
-  readonly state: OrchestratorState
-  updateState(state: Partial<OrchestratorState>): void
   invokeAgent(invocation: AgentInvocation): Promise<AgentOutput>
   getActiveFeature(features: Feature[]): Feature | null
   checkSpecFilesPresent(domain: string): boolean
-  extractTasksFromTacticalDesign(domain: string): Array<{ taskId: string; description: string }>
+  extractTasksFromTacticalDesign(domain: string): ExtractedTask[]
   onFeatureTransition?(completed: Feature, next: Feature | null, cycle: number): void
 }
 

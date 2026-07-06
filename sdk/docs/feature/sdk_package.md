@@ -48,11 +48,12 @@ sdk/
 
 ```json
 "bin": {
-  "harness-kit-sdk": "dist/cli/run.js"
+  "hrns": "dist/cli/run.js",
+  "harness-kit": "dist/cli/run.js"
 }
 ```
 
-Enables `npx harness-kit-sdk run` without a wrapper script. The compiled `dist/cli/run.js` requires a Unix shebang (`#!/usr/bin/env node`) which is injected by the `postbuild` script — `tsc` does not emit shebangs from source comments.
+Exposes two CLI entry points: `hrns` (short alias) and `harness-kit` (full alias). Enables `npx @romabeckman/hrns run` without a wrapper script. The compiled `dist/cli/run.js` requires a Unix shebang (`#!/usr/bin/env node`) which is injected by the postbuild script — `tsc` does not emit shebangs from source comments.
 
 **CJS-only decision** — No `"import"` condition is defined. The package ships CommonJS only. ESM dual-publishing is deferred; adding an `"import"` entry later is additive and non-breaking.
 
@@ -102,14 +103,15 @@ Enables `npx harness-kit-sdk run` without a wrapper script. The compiled `dist/c
 
 | Field | Location | Required | Value | Notes |
 |---|---|---|---|---|
-| `name` | `package.json` | Yes | `harness-kit-sdk` | Scoped package name for npm registry |
-| `version` | `package.json` | Yes | `1.0.0` | Semantic version — initial stable release |
+| `name` | `package.json` | Yes | `@romabeckman/hrns` | Scoped package name for npm registry |
+| `version` | `package.json` | Yes | `0.1.0-beta.2` | Semantic version — current beta release |
 | `main` | `package.json` | Yes | `dist/index.js` | CJS entry point (legacy `require` fallback) |
 | `types` | `package.json` | Yes | `dist/index.d.ts` | TypeScript declaration entry |
 | `exports["."].require` | `package.json` | Yes | `./dist/index.js` | CJS entry via `exports` map |
 | `exports["."].types` | `package.json` | Yes | `./dist/index.d.ts` | Type declarations via `exports` map |
 | `files` | `package.json` | Yes | `["dist", "README.md"]` | Tarball whitelist — all other files excluded |
-| `bin["harness-kit-sdk"]` | `package.json` | Yes | `dist/cli/run.js` | CLI entry point — enables `npx harness-kit-sdk run` |
+| `bin["hrns"]` | `package.json` | Yes | `dist/cli/run.js` | Short CLI alias — enables `hrns run` |
+| `bin["harness-kit"]` | `package.json` | Yes | `dist/cli/run.js` | Full CLI alias — enables `harness-kit run` |
 | `prepublishOnly` | `package.json` | Yes | `npm run build && npm test` | Full gate before `npm publish` |
 | `outDir` | `tsconfig.build.json` | Yes | `dist` | Compile output directory |
 | `rootDir` | `tsconfig.build.json` | Yes | `src` | Restricts compiled sources to `src/` only |

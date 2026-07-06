@@ -1,8 +1,9 @@
 import { Phase } from "../types";
-import { AbstractPhaseHandler, PhaseContext } from "./AbstractPhaseHandler";
+import { AbstractPhaseHandler, ExtractedTask, PhaseContext } from "./AbstractPhaseHandler";
 import { ContextAssembler } from "../../context-assembler/ContextAssembler";
 import type { Feature } from "../../file-state/types";
 import type { PhaseAPayload } from "../../context-assembler/types";
+import { join } from "node:path";
 
 export class PhaseAHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
@@ -20,7 +21,9 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       return Phase.HALTED;
     }
 
-    context.updateState({ activeFeatureId: activeFeature.id });
+    const config = context.fsm.loadBootstrapConfig();
+    config.activeFeatureId = activeFeature.id
+    context.fsm.saveBootstrapConfig(config)
 
     if (this.hasCascadeBlock(activeFeature, features))
       return Phase.CASCADE_BLOCKED;
@@ -51,8 +54,10 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     context.fsm.updateFeatureStatus(feature.id, "IN_PROGRESS");
 
     const config = context.fsm.loadBootstrapConfig();
+    const workingDir = join(context.workingDir, 'docs', 'specs', feature.domain)
     const payload = ContextAssembler.buildPhaseAPayload(
       feature,
+      workingDir,
       context.config.projectPaths,
       context.config.scope,
       config.steeringRules,
@@ -77,6 +82,11 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       payload.steeringRules && payload.steeringRules.length > 0
         ? payload.steeringRules.map((r) => `- ${r}`).join("\n")
         : "- No additional rules provided";
+
+    const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
+    const contextMapFile = join(payload.workingDir, '002-context-map.md');
+    const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
+    const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
 
     return [
       `## Objective`,
@@ -119,11 +129,11 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `</inputs>`,
       ``,
       `<expected_outputs>`,
-      `Produce, under \`docs/specs/${payload.domain}/\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
-      `- \`docs/specs/${payload.domain}/001-problem-space.md\` — Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature)`,
-      `- \`docs/specs/${payload.domain}/002-context-map.md\` — Bounded Contexts and Context Map`,
-      `- \`docs/specs/${payload.domain}/003-\${PROJECT_NAME}-tactical-design.md\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array objects`,
-      `- \`docs/specs/${payload.domain}/004-\${PROJECT_NAME}-test-scenarios.md\` (one per project) — Test Scenarios`,
+      `Produce, under \`${payload.workingDir}\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
+      `- \`${problemSpaceFile}\` — Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature)`,
+      `- \`${contextMapFile}\` — Bounded Contexts and Context Map`,
+      `- \`${tacticalDesignFile}\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array objects`,
+      `- \`${testScenariosFile}\` (one per project) — Test Scenarios`,
       `</expected_outputs>`,
       ``,
       `<strict_rules>`,
@@ -156,17 +166,15 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     if (extracted.length === 0) {
       throw new Error(
         `Phase A failed: no tasks extracted for feature ${feature.id} (domain '${feature.domain}'). ` +
-          `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array under "## Section 6 — Ordered Development Tasks".`,
+        `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array under "## Section 6 — Ordered Development Tasks".`,
       );
     }
 
-    const projectName =
-      context.config.projectPaths[0]?.split("/").pop() ?? "project";
     context.fsm.appendTasks(
       extracted.map((t) => ({
         featureId: feature.id,
         taskId: t.taskId,
-        project: projectName,
+        project: t.file || "-",
         description: t.description,
         domain: feature.domain,
         currentPhase: "-" as const,
@@ -180,9 +188,13 @@ export class PhaseAHandler extends AbstractPhaseHandler {
   private async recoverTasksViaAgent(
     feature: Feature,
     context: PhaseContext,
-  ): Promise<Array<{ taskId: string; description: string }>> {
-    const projectName =
-      context.config.projectPaths[0]?.split("/").pop() ?? "project";
+  ): Promise<ExtractedTask[]> {
+    const projectPathsList = context.config.projectPaths
+      .map((p) => `- ${p}`)
+      .join("\n");
+
+    const tacticalDesignFile = join(context.workingDir, 'docs', 'specs', feature.domain, `003-*-tactical-design.md`)
+
     await context.invokeAgent({
       skill: "scope-refinement",
       agent: "software-architect",
@@ -197,11 +209,15 @@ export class PhaseAHandler extends AbstractPhaseHandler {
         `You are operating as the \`software-architect\` agent.`,
         `</skill_context>`,
         ``,
-        `Read docs/specs/${feature.domain}/003-*-tactical-design.md.`,
+        `<project_paths>`,
+        projectPathsList,
+        `</project_paths>`,
+        ``,
+        `Read all files matching \`${tacticalDesignFile}\`.`,
         `Locate "## Section 6 — Ordered Development Tasks" and parse the JSON array in the fenced code block immediately following it.`,
         `For each task object, append a row to docs/product/DEVELOPMENT-STATE.md using this format:`,
-        `| ${feature.id} | T<zero-padded id> | <project> | <title> | ${feature.domain} | - | NOT_STARTED |`,
-        `where <project> is the last folder segment of the project path: ${projectName}.`,
+        `| ${feature.id} | T<zero-padded id> | <project path> | <title> | ${feature.domain} | - | NOT_STARTED |`,
+        `where <project> is one of the last folder segment of the project path: \`project_paths\`.`,
         `Do not output anything else.`,
       ].join(" "),
     });
@@ -211,6 +227,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     return reloadedTasks.map((t) => ({
       taskId: t.taskId,
       description: t.description,
+      file: t.project,
     }));
   }
 }

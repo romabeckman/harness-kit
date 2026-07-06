@@ -17,9 +17,11 @@ describe('PhaseAHandler', () => {
             loadDevelopmentState: vi.fn().mockReturnValue([]),
             appendTasks: vi.fn(),
             loadBootstrapConfig: vi.fn().mockReturnValue({ steeringRules: [] }),
+            saveBootstrapConfig: vi.fn(),
         } as unknown as ContextFSM; // Cast to unknown to allow partial mock
 
         mockContext = {
+            workingDir: '/test/working-dir',
             fsm: mockFsm,
             getActiveFeature: vi.fn().mockReturnValue({ id: 'F001', domain: 'hello_world_cli', dependencies: [] }),
             config: {

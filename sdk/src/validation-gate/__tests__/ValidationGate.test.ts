@@ -79,10 +79,9 @@ describe('ValidationGate.evaluate', () => {
   describe('BLOCK verdict', () => {
     it('returns BLOCK when reworks exhausted and isCrashing is true', () => {
       const result = ValidationGate.evaluate(
-        makeScores({ scoreTL: 0.5 }),
+        makeScores({ scoreTL: 0.5, isCrashing: true }),
         3,
-        makeConfig(3),
-        true
+        makeConfig(3)
       )
       expect(result.verdict).toBe(Verdict.BLOCK)
       expect(result.reason).toContain('BLOCK')
@@ -93,10 +92,9 @@ describe('ValidationGate.evaluate', () => {
   describe('FAIL verdict', () => {
     it('returns FAIL when reworks exhausted and isCrashing is false', () => {
       const result = ValidationGate.evaluate(
-        makeScores({ scoreTL: 0.5 }),
+        makeScores({ scoreTL: 0.5, isCrashing: false }),
         3,
-        makeConfig(3),
-        false
+        makeConfig(3)
       )
       expect(result.verdict).toBe(Verdict.FAIL)
       expect(result.reason).toContain('FAIL')
@@ -104,15 +102,15 @@ describe('ValidationGate.evaluate', () => {
   })
 
   describe('buildFailureReasons — uncovered branches', () => {
-    it('includes openPoints in failure reason when present', () => {
+    it('includes openPoints count in failure reason when present', () => {
       const result = ValidationGate.evaluate(
         makeScores({ scoreTL: 0.5, openPoints: ['Missing error handler', 'No retry logic'] }),
         0,
         makeConfig(3),
         false
       )
-      expect(result.reason).toContain('Open Points')
-      expect(result.reason).toContain('Missing error handler')
+      expect(result.reason).toContain('open point(s) flagged by tech lead')
+      expect(result.reason).toContain('2')
     })
 
     it('includes hasHighCriticalVuln description in failure reason', () => {
@@ -183,7 +181,7 @@ describe('ValidationGate.evaluate', () => {
       expect(result.reason).toContain('TL score')
       expect(result.reason).toContain('Adv score')
       expect(result.reason).toContain('high/critical vulnerability')
-      expect(result.reason).toContain('Open Points')
+      expect(result.reason).toContain('open point(s) flagged by tech lead')
       expect(result.reason).toContain('Edge Cases Missed')
       expect(result.reason).toContain('Vulnerabilities')
     })

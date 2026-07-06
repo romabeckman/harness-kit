@@ -271,7 +271,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       expect(orc2.getState().currentPhase).toBe(Phase.PHASE_A)
 
       // No bootstrap agent invocation should have happened
-      const bootstrapCalls = fake2.getInvocationsForSkill('autonomous-orchestrator:bootstrap')
+      const bootstrapCalls = fake2.invocations.filter(i => i.agent === 'software-architect')
       expect(bootstrapCalls).toHaveLength(0)
     } finally {
       rmSync(tmpDir2, { recursive: true, force: true })
@@ -295,7 +295,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
 
     await orchestrator.runBootstrapOnly()
 
-    const bootstrapCalls = fakeWithUsage.getInvocationsForSkill('autonomous-orchestrator:bootstrap')
+    const bootstrapCalls = fakeWithUsage.invocations.filter(i => i.agent === 'software-architect')
     expect(bootstrapCalls.length).toBeGreaterThan(0)
     expect(bootstrapCalls[0].agent).toBe('software-architect')
   })

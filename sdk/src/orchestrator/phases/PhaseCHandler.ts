@@ -7,9 +7,8 @@ import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProt
 import { isExtractionResult } from '../../json-extraction/types'
 import { ValidationGate } from '../../validation-gate/ValidationGate'
 import type { PhaseCPayload } from '../../context-assembler/types'
-import type { BootstrapConfig, Feature } from '../../file-state/types'
+import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
-import { exit } from 'node:process'
 
 type ValidationResult = ReturnType<typeof ValidationGate.evaluate>;
 
@@ -19,10 +18,15 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       return super.handle(phase, context)
     }
 
-    const activeFeature = this.getActiveFeature(context)
-    const config = context.fsm.loadBootstrapConfig()
+    const features = context.fsm.loadBacklog()
+    const activeFeature = context.getActiveFeature(features)
+    if (!activeFeature) {
+      throw new Error('Illegal state: phase PHASE_C requires an active feature but none is set')
+    }
 
     this.cleanTemporaryFiles(context, activeFeature.domain)
+
+    const config = context.fsm.loadBootstrapConfig()
 
     const payload = ContextAssembler.buildPhaseCPayload(
       activeFeature,
@@ -37,25 +41,15 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const result = ValidationGate.evaluate(
       scores,
       activeFeature.reworks,
-      config,
-      scores.isCrashing
+      config
     )
 
     return this.processDecision(context, activeFeature, config, result, scores)
   }
 
-  private getActiveFeature(context: PhaseContext): Feature {
-    const features = context.fsm.loadBacklog()
-    const activeFeature = context.getActiveFeature(features)
-    if (!activeFeature) {
-      throw new Error('Illegal state: phase PHASE_C requires an active feature but none is set')
-    }
-    return activeFeature
-  }
-
   private cleanTemporaryFiles(context: PhaseContext, domain: string): void {
     const specsDir = join(context.workingDir, 'docs', 'specs', domain)
-    for (const file of ['TDD-OUTPUT-TEMP.jsonl', 'TL.json', 'QA.json']) {
+    for (const file of ['TL.json', 'QA.json']) {
       const p = join(specsDir, file)
       if (existsSync(p)) rmSync(p, { force: true })
     }
@@ -64,7 +58,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
   private async executeAgents(context: PhaseContext, payload: PhaseCPayload, config: BootstrapConfig) {
     const tlPrompt = this.buildTechLeadPrompt(payload, config, context.workingDir)
     const advPrompt = this.buildAdversarialQAPrompt(payload, config, context.workingDir)
-    
+
     return Promise.all([
       context.invokeAgent({
         skill: 'the-grumpy-tech-lead',
@@ -149,23 +143,24 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       rationale: result.reason,
     })
 
+    const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
+    if (existsSync(tddOutputPath)) rmSync(tddOutputPath, { force: true })
+
     // If verification needs rework, transition back to retry handler
     if (result.verdict === 'RETRY') {
       return this.handleRetry(context, activeFeature, scores)
     }
 
     // Map validation gate verdicts to corresponding bootstrap statuses
-    const statusMap: Record<string, typeof config.pendingStatus> = {
+    const statusMap: Record<string, FeatureStatus> = {
       'PASS': 'COMPLETED',
       'BLOCK': 'BLOCKED',
       'FAIL': 'FAILED'
     }
 
-    config.pendingStatus = statusMap[result.verdict] || config.pendingStatus
-
-    // Save final status configuration and update active feature metadata
-    context.fsm.saveBootstrapConfig(config)
-    context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS', { tl: scores.scoreTL, adv: scores.scoreAdv })
+    activeFeature.status = statusMap[result.verdict] || activeFeature.status
+    context.fsm.updateFeatureStatus(activeFeature.id, activeFeature.status, { tl: scores.scoreTL, adv: scores.scoreAdv })
+    context.fsm.updateAllFeatureTasks(activeFeature.id, '-', activeFeature.status)
 
     // Proceed to PHASE_D (documentation generation/completion check)
     return Phase.PHASE_D
@@ -175,15 +170,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     context.fsm.incrementReworks(activeFeature.id)
     context.fsm.writeReworkLog(activeFeature.domain, this.buildReworkContent(scores))
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'NOT_STARTED')
-
-    const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
-    if (existsSync(tddOutputPath)) {
-      try {
-        rmSync(tddOutputPath, { force: true })
-      } catch {
-        // ignore
-      }
-    }
     return Phase.PHASE_B
   }
 
@@ -216,11 +202,26 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
       : '- No additional rules provided'
-    const specsDir = `${workingDir}/docs/specs/${payload.domain}`
+    const specsDir = join(workingDir, 'docs', 'specs', payload.domain)
+    const reworkLogPath = join(workingDir, 'docs', 'specs', payload.domain, 'REWORK-LOG.md')
+    const reworkSection: string[] = []
+
+    if (existsSync(reworkLogPath)) {
+      reworkSection.push(
+        `<rework_history totalReworks="${payload.totalReworks}">`,
+        `Contains a log of previous reviews:`,
+        ``,
+        `\`\`\`markdown`,
+        readFileSync(reworkLogPath, 'utf8').trim(),
+        `</rework_history>`,
+        `\`\`\``,
+        ``
+      )
+    }
 
     return [
       `## Objective`,
-      `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Identify systemic risks, architectural flaws, and open points using Socratic questioning.`,
+      `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Identify systemic risks, architectural flaws, and concrete production failure vectors.`,
       ``,
       `<skill_context>`,
       `Invoke the \`/the-grumpy-tech-lead\` skill before starting.`,
@@ -229,6 +230,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       ``,
       `<inputs>`,
       ``,
+      ...reworkSection,
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,
@@ -245,12 +247,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `- Read \`${workingDir}/docs/README.md\`. You MUST read all files marked as 'Mandatory' or 'Required', and read optional files ONLY IF their context is required for the current task.`,
       `</spec_sources>`,
       ``,
-      `<score_threshold>`,
-      `scoreThresholdTL = ${threshold}`,
-      `score >= ${threshold} → PASS (feature progresses to COMPLETED)`,
-      `score <  ${threshold} → RETRY (openPoints logged to REWORK-LOG.md for developer rework)`,
-      `</score_threshold>`,
-      ``,
       `<rules>`,
       rulesSection,
       `</rules>`,
@@ -264,17 +260,23 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `  "featureId": "${payload.featureId}",`,
       `  "score": 0.00,`,
       `  "isCrashing": false,`,
-      `  "openPoints": ["Socratic question 1", "Socratic question 2", "Socratic question 3"],`,
-      `  "architectureTip": "Single sentence pointing toward an architectural pattern"`,
+      `  "openPoints": [`,
+      `    "[CRITICAL] <file>:<line> — <direct description of the problem and its impact>",`,
+      `    "[HIGH] <file> — <direct description of the problem and its impact>",`,
+      `    "[MEDIUM] <area> — <direct description of the problem and its impact>",`,
+      `    "[LOW] <area> — <direct description of the problem and its impact>"`,
+      `  ],`,
+      `  "architectureTip": "Single actionable sentence recommending an architectural improvement"`,
       `}`,
       `\`\`\``,
       `</expected_output>`,
       ``,
       `<strict_rules>`,
       `- Execute autonomously without pausing or asking for confirmation`,
-      `- Do not provide ready-made solutions — raise Socratic questions only`,
-      `- score must be a float in [0.00, 1.00] rounded to 2 decimals`,
-      `- isCrashing: true ONLY if a TIER 1 finding causes application crash or critical break (data loss, downtime, security breach)`,
+      `- openPoints MUST be direct, actionable findings — NO questions, NO vague suggestions`,
+      `- Each openPoint MUST start with [CRITICAL], [HIGH], [MEDIUM], or [LOW]`,
+      `- score must be a float in [0.00, 1.00] rounded to 2 decimals, computed from severity weights`,
+      `- isCrashing: true ONLY if a CRITICAL finding causes application crash, data loss, downtime, or security breach`,
       `- featureId MUST match: ${payload.featureId}`,
       `</strict_rules>`,
     ].join('\n')
@@ -286,7 +288,21 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
       : '- No additional rules provided'
-    const specsDir = `${workingDir}/docs/specs/${payload.domain}`
+    const specsDir = join(workingDir, 'docs', 'specs', payload.domain)
+    const reworkLogPath = join(workingDir, 'docs', 'specs', payload.domain, 'REWORK-LOG.md')
+    const reworkSection: string[] = []
+    if (existsSync(reworkLogPath)) {
+      reworkSection.push(
+        `<rework_history totalReworks="${payload.totalReworks}">`,
+        `Contains a log of previous reviews:`,
+        ``,
+        `\`\`\`markdown`,
+        readFileSync(reworkLogPath, 'utf8').trim(),
+        `</rework_history>`,
+        `\`\`\``,
+        ``
+      )
+    }
 
     return [
       `## Objective`,
@@ -299,6 +315,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       ``,
       `<inputs>`,
       ``,
+      ...reworkSection,
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,
@@ -310,17 +327,11 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<spec_sources>`,
-      `- Development log: \`${specsDir}/TDD-OUTPUT.json\``,
       `- Test scenarios (acceptance criteria, boundary values, security): \`${specsDir}/004-*-test-scenarios.md\``,
+      `- Architecture contract: \`${specsDir}/003-*-tactical-design.md\``,
       `- Problem space (if exists): \`${specsDir}/001-problem-space.md\``,
       `- Context map (if exists): \`${specsDir}/002-context-map.md\``,
       `</spec_sources>`,
-      ``,
-      `<score_threshold>`,
-      `scoreThresholdAdv = ${threshold}`,
-      `score >= ${threshold} AND no HIGH/CRITICAL vulns → PASS`,
-      `score <  ${threshold} OR any HIGH/CRITICAL vuln    → RETRY (forced)`,
-      `</score_threshold>`,
       ``,
       `<rules>`,
       rulesSection,
@@ -335,10 +346,12 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `  "featureId": "${payload.featureId}",`,
       `  "score": 0.00,`,
       `  "passedAdversarial": false,`,
+      `  "hasHighCriticalVuln": false,`,
+      `  "isCrashing": false,`,
       `  "vulnerabilities": [`,
-      `    { "type": "SQL_INJECTION|XSS|RACE_CONDITION|AUTH_BYPASS|DATA_EXPOSURE|...", "severity": "LOW|MEDIUM|HIGH|CRITICAL", "description": "Details..." }`,
+      `    { "type": "SQL_INJECTION|XSS|RACE_CONDITION|AUTH_BYPASS|DATA_EXPOSURE|NULL_DEREF|...", "severity": "LOW|MEDIUM|HIGH|CRITICAL", "description": "Specific location and impact." }`,
       `  ],`,
-      `  "edgeCasesMissed": ["Description of untested scenario"]`,
+      `  "edgeCasesMissed": ["Description of untested scenario from 004-*-test-scenarios.md or concrete failure vector"]`,
       `}`,
       `\`\`\``,
       `</expected_output>`,
@@ -346,7 +359,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `<strict_rules>`,
       `- Execute autonomously without pausing or asking for confirmation`,
       `- Any HIGH or CRITICAL vulnerability triggers RETRY regardless of score`,
-      `- passedAdversarial = true ONLY if score >= ${threshold} AND no HIGH/CRITICAL vulnerabilities`,
       `- score must be a float in [0.00, 1.00] rounded to 2 decimals`,
       `- featureId MUST match: ${payload.featureId}`,
       `</strict_rules>`,

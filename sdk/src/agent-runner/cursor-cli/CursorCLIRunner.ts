@@ -1,6 +1,7 @@
 import { AbstractCliRunner } from '../AbstractCliRunner'
 import type { AgentInvocation, AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
+import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
 
 export interface CursorCLIRunnerConfig {
   readonly timeoutMs?: number
@@ -15,18 +16,15 @@ export class CursorCLIRunner extends AbstractCliRunner {
   constructor(config?: Partial<CursorCLIRunnerConfig>) {
     super()
     this.#config = {
-      timeoutMs: config?.timeoutMs ?? 0,
-      cursorBin: config?.cursorBin ?? 'cursor',
+      timeoutMs: config?.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS,
+      cursorBin: config?.cursorBin ?? 'agent',
       model: config?.model ?? '',
     }
+    this.timeoutMs = this.#config.timeoutMs
   }
 
   protected get binaryName(): string {
     return this.#config.cursorBin
-  }
-
-  protected get timeoutMs(): number {
-    return this.#config.timeoutMs
   }
 
   protected getModelName(invocation: AgentInvocation): string | undefined {
@@ -34,7 +32,13 @@ export class CursorCLIRunner extends AbstractCliRunner {
   }
 
   protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
-    const args = ['agent', '--print', '--output-format', 'stream-json', '--force']
+    const args = [
+      '--print',
+      '--output-format', 'stream-json',
+      '--stream-partial-output',
+      '--force',
+      '--trust',
+    ]
 
     const model = invocation.model ?? (this.#config.model || undefined)
     if (model) args.push('--model', model)
@@ -42,7 +46,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
     if (invocation.workspacePath) args.push('--workspace', invocation.workspacePath)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
 
-    args.push(prompt)
+    args.push('--', prompt)
     return args
   }
 
@@ -52,25 +56,23 @@ export class CursorCLIRunner extends AbstractCliRunner {
     invocation: AgentInvocation,
   ): Partial<AgentOutput> {
     const lines = stdout.split('\n').filter(Boolean)
-    let raw = stdout
+    let raw = ''
+    let finalResult: string | undefined
 
-    for (let i = lines.length - 1; i >= 0; i--) {
+    for (const line of lines) {
       try {
-        const obj = JSON.parse(lines[i]) as Record<string, unknown>
-        if (obj.type === 'result' && typeof obj.result === 'string') {
-          raw = obj.result
-          break
-        }
+        const obj = JSON.parse(line) as Record<string, unknown>
         if (obj.type === 'text' && typeof obj.text === 'string') {
-          raw = obj.text
-          break
+          raw += obj.text
+        } else if (obj.type === 'result' && typeof obj.result === 'string') {
+          finalResult = obj.result
         }
       } catch {
-        // not JSON, keep scanning
+        // ignore non-json lines
       }
     }
 
-    return { raw }
+    return { raw: finalResult ?? (raw || stdout) }
   }
 }
 

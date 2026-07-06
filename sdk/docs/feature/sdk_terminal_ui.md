@@ -43,7 +43,7 @@ Static helpers for ANSI escape codes. Use these instead of raw escape literals.
 | `AnsiHelpers.hideCursor()` | `\x1b[?25l` | Call before spinner starts |
 | `AnsiHelpers.showCursor()` | `\x1b[?25h` | Call after spinner stops |
 | `AnsiHelpers.clearLine()` | `\x1b[2K` | Overwrite current line |
-| `AnsiHelpers.moveCursor(x, y)` | `\x1b[y;xH` | Absolute cursor-sdk positioning |
+| `AnsiHelpers.moveCursor(x, y)` | `\x1b[y;xH` | Absolute cursor positioning |
 
 ### TerminalProgress
 
@@ -51,8 +51,8 @@ Static class. Manages the spinner lifecycle and can render a one-shot progress b
 
 | Method | Description |
 |---|---|
-| `TerminalProgress.startSpinner(phase, message)` | Starts animated braille spinner with phase label. Hides cursor-sdk. |
-| `TerminalProgress.stopSpinner()` | Clears the spinner line, restores cursor-sdk, and emits a newline. |
+| `TerminalProgress.startSpinner(phase, message)` | Starts animated braille spinner with phase label. Hides cursor. |
+| `TerminalProgress.stopSpinner()` | Clears the spinner line, restores cursor, and emits a newline. |
 | `TerminalProgress.drawProgressBar(phase, total, current, message)` | Renders a `[██░░] N%` bar to stdout (one-shot, not animated). |
 
 REQUIRED: Always call `stopSpinner()` in a `finally` block — the orchestrator does this inside `invokeAgentInternal`. Do not call `startSpinner()` without a corresponding `stopSpinner()`.

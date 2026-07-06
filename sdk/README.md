@@ -86,7 +86,7 @@ node dist/cli/run.js
 | `hrns run --agent <type>` / `-a <type>` | Specify the agent type (e.g., `copilot-sdk`, `antigravity-cli`). | `hrns run --agent copilot-sdk` |
 | `hrns run --model <name>` / `-m <name>` | Specify the model name for the agent. | `hrns run --model gpt-4o` |
 | `hrns run --copilot-sdk` | Run with the Copilot agent. | `hrns run --copilot-sdk` |
-| `hrns run --gemini` | Run with the Gemini agent. | `hrns run --gemini` |
+| `hrns run --gemini` | Run with the Antigravity CLI (Gemini) agent. | `hrns run --gemini` |
 | `hrns report` | Print token usage report for the current session. | `hrns report` |
 | `hrns version` / `--version` / `-v` | Show version. | `hrns version` |
 | `hrns help` / `--help` / `-h` | Show help message. | `hrns help` |
@@ -266,7 +266,6 @@ const orchestrator = new HarnessOrchestrator({
 })
 
 await orchestrator.run()
-```
 ```
 
 ---

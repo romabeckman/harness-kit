@@ -10,15 +10,14 @@ export class ValidationGate {
   static evaluate(
     scores: ValidationScores,
     reworks: number,
-    config: BootstrapConfig,
-    isCrashing: boolean
+    config: BootstrapConfig
   ): VerdictResult {
     const thresholdTL = config.scoreThresholds.theGrumpyTechLead.threshold
     const thresholdAdv = config.scoreThresholds.adversarialQA.threshold
     const maxReworks = config.completionCriteria.maxReworks
-    const { scoreTL, scoreAdv, hasHighCriticalVuln } = scores
+    const { scoreTL, scoreAdv, hasHighCriticalVuln, isCrashing } = scores
 
-    const passing = scoreTL >= thresholdTL && scoreAdv >= thresholdAdv && !hasHighCriticalVuln
+    const passing = scoreTL >= thresholdTL && scoreAdv >= thresholdAdv && !hasHighCriticalVuln && !isCrashing
 
     if (passing) {
       return {
@@ -40,6 +39,13 @@ export class ValidationGate {
       return {
         verdict: Verdict.BLOCK,
         reason: `BLOCK: ${reasons.join('; ')}. Max reworks (${maxReworks}) exhausted, feature is crashing — blocked.`,
+      }
+    }
+
+    if (scores.hasHighCriticalVuln) {
+      return {
+        verdict: Verdict.BLOCK,
+        reason: `BLOCK: ${reasons.join('; ')}. Max reworks (${maxReworks}) exhausted, unresolved HIGH/CRITICAL vulnerability — blocked.`,
       }
     }
 
@@ -69,8 +75,11 @@ export class ValidationGate {
     if (hasHighCriticalVuln) {
       reasons.push('high/critical vulnerability detected')
     }
+    if (scores.isCrashing) {
+      reasons.push('crashing')
+    }
     if (scores.openPoints?.length) {
-      reasons.push(`Open Points: ${scores.openPoints.join(', ')}`)
+      reasons.push(`${scores.openPoints.length} open point(s) flagged by tech lead`)
     }
     if (scores.vulnerabilities?.length) {
       reasons.push(`Vulnerabilities: ${scores.vulnerabilities.map(v => v?.description || 'Unspecified').filter(Boolean).join(', ')}`)

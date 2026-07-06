@@ -33,10 +33,9 @@ export class BootstrapHandler extends AbstractPhaseHandler {
 
     const promptLines = [
       `# ROLE`,
-      `You are the autonomous orchestrator bootstrap agent.`,
+      `You are software architect defining the backlog of a project. Understand the project scope and generate a \`BACKLOG.md\` table with all the features of the project.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`/autonomous-orchestrator:bootstrap\` skill before starting.`,
       `You are operating as the \`software-architect\` agent.`,
       `</skill_context>`,
       ``,
@@ -45,14 +44,14 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       ``,
       `# OUTPUT FORMAT`,
       `Table columns (exact):`,
-      `| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |`,
+      `| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |`,
       ``,
       `# CONSTRAINTS & RULES`,
       `- **ID**: F001, F002, ... (sequential, bolded: **F001**)`,
-      `- **Title**: Bolded: **Feature Name**`,
-      `- **Domain**: snake_case of feature title`,
+      `- **Title**: Bolded: **Feature Name with short description**, limit of 200 characters.`,
+      `- **Domain**: snake_case of feature title without spaces, limit of 50 characters.`,
       `- **Layer**: \`backend\`, \`frontend\`, \`qa\`, \`devops\` — infer from the feature scope; use the project paths as hints`,
-      `- **Priority**: CRITICAL, HIGH, MEDIUM, or LOW`,
+      `- **Priority**: CRITICAL, HIGH, MEDIUM, or LOW. Only use CRITICAL if the feature is mission critical, if it impacts the core functionality of the system, or if it is a security requirement.`,
       `- **Dependencies**: comma-separated IDs, or None`,
       `- **Reworks**: 0`,
       `- **Score (TL)** & **Score (Adv)**: -`,
@@ -81,7 +80,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     const prompt = promptLines.join('\n')
 
     await context.invokeAgent({
-      skill: 'autonomous-orchestrator:bootstrap',
       agent: 'software-architect',
       mode: 'autonomous',
       prompt,

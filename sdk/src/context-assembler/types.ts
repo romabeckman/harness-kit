@@ -11,6 +11,7 @@ export interface PhaseAPayload extends ContextPayload {
   scope: string
   domain: string
   featureTitle: string
+  workingDir: string
   projectPaths: string[]
   steeringRules?: string[]
 }
@@ -20,7 +21,7 @@ export interface PhaseBPayload extends ContextPayload {
   featureTitle: string
   domain: string
   projectPaths: string[]
-  tasks: Array<{ taskId: string; description: string }>
+  tasks: Task[]
   isRetry: boolean
   reworks: number
   reworkLogPath?: string
@@ -33,6 +34,7 @@ export interface PhaseCPayload extends ContextPayload {
   domain: string
   projectPaths: string[]
   steeringRules?: string[]
+  totalReworks: number
 }
 
 export interface PhaseEPayload extends ContextPayload {

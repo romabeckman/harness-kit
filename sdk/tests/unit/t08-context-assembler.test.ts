@@ -21,9 +21,10 @@ const tasks: Task[] = [
 
 describe('T08 — ContextAssembler', () => {
   describe('TS-U-33: Phase A payload contains only required fields', () => {
-    it('payload has scope, domain, featureTitle, projectPaths and nothing else', () => {
-      const payload = ContextAssembler.buildPhaseAPayload(feature, ['/path/to/project'])
+    it('payload has scope, workingDir, domain, featureTitle, projectPaths and nothing else', () => {
+      const payload = ContextAssembler.buildPhaseAPayload(feature, '/path/to/workdir', ['/path/to/project'])
       expect(payload).toHaveProperty('scope')
+      expect(payload).toHaveProperty('workingDir')
       expect(payload).toHaveProperty('domain')
       expect(payload).toHaveProperty('featureTitle')
       expect(payload).toHaveProperty('projectPaths')
@@ -31,12 +32,12 @@ describe('T08 — ContextAssembler', () => {
       expect(payload).not.toHaveProperty('scoreAdv')
       expect(payload).not.toHaveProperty('tasks')
       expect(payload).not.toHaveProperty('reworks')
-      // exactly 4 keys
-      expect(Object.keys(payload)).toHaveLength(4)
+      // exactly 5 keys
+      expect(Object.keys(payload)).toHaveLength(5)
     })
 
     it('scope comes from feature.title when originalScope is not provided, domain from feature.domain', () => {
-      const payload = ContextAssembler.buildPhaseAPayload(feature, ['/path/to/project'])
+      const payload = ContextAssembler.buildPhaseAPayload(feature, '/path/to/workdir', ['/path/to/project'])
       expect(payload.scope).toBe('SDK Core')
       expect(payload.domain).toBe('sdk_core')
       expect(payload.featureTitle).toBe('SDK Core')
@@ -44,7 +45,7 @@ describe('T08 — ContextAssembler', () => {
     })
 
     it('scope comes from originalScope when provided', () => {
-      const payload = ContextAssembler.buildPhaseAPayload(feature, ['/path/to/project'], 'My Original Scope')
+      const payload = ContextAssembler.buildPhaseAPayload(feature, '/path/to/workdir', ['/path/to/project'], 'My Original Scope')
       expect(payload.scope).toBe('My Original Scope')
       expect(payload.domain).toBe('sdk_core')
       expect(payload.featureTitle).toBe('SDK Core')
@@ -81,7 +82,7 @@ describe('T08 — ContextAssembler', () => {
       expect(payload).toHaveProperty('projectPaths')
       expect(payload).not.toHaveProperty('tasks')
       expect(payload).not.toHaveProperty('scoreTL')
-      expect(Object.keys(payload)).toHaveLength(4)
+      expect(Object.keys(payload)).toHaveLength(5)
     })
 
     it('featureId is feature.id and featureTitle is feature.title', () => {

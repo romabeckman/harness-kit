@@ -72,7 +72,7 @@ describe('AntigravityCLIRunner — TC-AGY', () => {
 
     expect(spawnMock).toHaveBeenCalledWith(
       'agy',
-      ['--prompt', 'do coding task', '--model', 'gemini-3.5-flash-test'],
+      ['--print', 'do coding task', '--model', 'gemini-3.5-flash-test', '--print-timeout', '1801000ms'],
       expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'] }),
     )
 
@@ -80,5 +80,28 @@ describe('AntigravityCLIRunner — TC-AGY', () => {
     expect(output.raw).toBe('gemini response output')
     expect(output.usage?.model).toBe('gemini-3.5-flash-test')
     expect(output.success).toBe(true)
+  })
+
+  // TC-AGY-04: passes non-zero timeoutMs formatted as ms Go-duration
+  it('TC-AGY-04: passes non-zero timeoutMs to --print-timeout with ms suffix', async () => {
+    const { spawn } = await import('node:child_process')
+    const spawnMock = spawn as unknown as ReturnType<typeof vi.fn>
+    const mockChild = makeMockChild({ stdout: 'gemini response output' })
+    spawnMock.mockReturnValue(mockChild)
+
+    const { AntigravityCLIRunner } = await import('../../src/agent-runner/antigravity-cli/AntigravityCLIRunner')
+    const runner = new AntigravityCLIRunner({ model: 'gemini-3.5-flash-test', timeoutMs: 30000 })
+    await runner.run({
+      agent: 'developer-backend',
+      mode: 'autonomous',
+      payload: {},
+      prompt: 'do coding task',
+    })
+
+    expect(spawnMock).toHaveBeenCalledWith(
+      'agy',
+      ['--print', 'do coding task', '--model', 'gemini-3.5-flash-test', '--print-timeout', '31000ms'],
+      expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'] }),
+    )
   })
 })

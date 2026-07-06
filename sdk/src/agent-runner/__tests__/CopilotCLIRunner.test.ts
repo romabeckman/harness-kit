@@ -233,7 +233,11 @@ describe('CopilotCLIRunner', () => {
     controller.abort()
 
     await expect(promise).rejects.toThrow(/aborted/i)
-    expect(mockChild.kill).toHaveBeenCalled()
+    if (process.platform === 'win32') {
+      expect(spawn).toHaveBeenCalledWith('taskkill', expect.any(Array))
+    } else {
+      expect(mockChild.kill).toHaveBeenCalled()
+    }
   })
 
   // TS12 — Timeout kills process and rejects with TIMEOUT

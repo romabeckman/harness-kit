@@ -24,7 +24,7 @@ describe('Steering Rules Injection', () => {
       user: ['User Rule 1', 'User Rule 2']
     }
 
-    const payloadA = ContextAssembler.buildPhaseAPayload(feature, ['/path'], 'Original Scope', rules)
+    const payloadA = ContextAssembler.buildPhaseAPayload(feature, '/dummy/workdir', ['/path'], 'Original Scope', rules)
     expect(payloadA.steeringRules).toContain('User Rule 1')
     expect(payloadA.steeringRules).toContain('User Rule 2')
 
@@ -67,7 +67,7 @@ describe('Steering Rules Injection', () => {
     const rules: SteeringRulesConfig = {
       phase_b: ['Limit of 5 tasks for feature']
     }
-    const payloadA = ContextAssembler.buildPhaseAPayload(feature, ['/path'], 'Original Scope', rules)
+    const payloadA = ContextAssembler.buildPhaseAPayload(feature, '/dummy/workdir', ['/path'], 'Original Scope', rules)
     expect(payloadA.steeringRules).toBeUndefined()
 
     const payloadC = ContextAssembler.buildPhaseCPayload(feature, ['/path'], rules)

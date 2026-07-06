@@ -49,26 +49,9 @@ describe('T03 — IAgentRunner interface + NullAgentRunner', () => {
 
 describe('T03 — ClaudeCLIRunner', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     vi.resetModules()
     vi.restoreAllMocks()
-  })
-
-  it('defaults: timeoutMs=0, claudeBin="claude"', async () => {
-    vi.doMock('node:child_process', () => ({
-      spawn: vi.fn(() => makeChild([], 0)),
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
-    // Access private config via constructor — just verify it constructs without throwing
-    const runner = new ClaudeCLIRunner()
-    expect(runner).toBeDefined()
-    // Verify the actual defaults are applied by reading static DEFAULT_CONFIG indirectly:
-    // spawn is called with 'claude' as the bin
-    const { spawn } = await import('node:child_process')
-    const resultP = runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
-    // Don't await — just check spawn was called with 'claude'
-    await new Promise(r => setTimeout(r, 20))
-    expect(spawn).toHaveBeenCalledWith('claude', expect.any(Array), expect.any(Object))
-    await resultP
   })
 
   it('spawns with required args', async () => {
@@ -266,4 +249,27 @@ describe('T03 — ClaudeCLIRunner', () => {
     expect(firstCall).toHaveProperty('agent', 'my-agent')
     expect(firstCall).toHaveProperty('skill', 'my-skill')
   })
+
+  it('prints debug info to stderr when DebugContext is enabled', async () => {
+    const { DebugContext } = await import('../../src/cli/DebugContext')
+    DebugContext.enable()
+
+    vi.doMock('node:child_process', () => ({
+      spawn: vi.fn(() => makeChild([], 0)),
+    }))
+    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    const { spawn } = await import('node:child_process')
+
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
+    await runner.run({ skill: 'my-skill', agent: 'my-agent', mode: 'autonomous', payload: {} })
+
+    const output = stderrSpy.mock.calls.map(c => String(c[0])).join('')
+    expect(output).toContain('[DEBUG] spawn:')
+    expect(output).toContain('claude')
+
+    stderrSpy.mockRestore()
+    DebugContext.reset()
+  })
 })
+

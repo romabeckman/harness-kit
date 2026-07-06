@@ -38,9 +38,6 @@ export class BootstrapConfigParser {
     if (raw.activeFeatureId !== undefined) {
       result.activeFeatureId = raw.activeFeatureId
     }
-    if (typeof raw.pendingStatus === 'string') {
-      result.pendingStatus = raw.pendingStatus
-    }
     if (typeof raw.originalScope === 'string') {
       result.originalScope = raw.originalScope
     }

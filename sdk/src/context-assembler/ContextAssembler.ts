@@ -18,12 +18,14 @@ export class ContextAssembler {
    */
   static buildPhaseAPayload(
     feature: Feature,
+    workingDir: string,
     projectPaths: string[],
     originalScope?: string,
     steeringRules?: SteeringRulesConfig
   ): PhaseAPayload {
     const payload: PhaseAPayload = {
       scope: originalScope || feature.title,
+      workingDir: workingDir,
       domain: feature.domain,
       featureTitle: feature.title,
       projectPaths,
@@ -51,7 +53,7 @@ export class ContextAssembler {
       featureTitle: feature.title,
       domain: feature.domain,
       projectPaths,
-      tasks: tasks.map(t => ({ taskId: t.taskId, description: t.description })),
+      tasks: tasks,
       isRetry,
       reworks: reworks ? reworks : 0,
     }
@@ -74,6 +76,7 @@ export class ContextAssembler {
       featureTitle: feature.title,
       domain: feature.domain,
       projectPaths,
+      totalReworks: feature.reworks || 0
     }
     const flattened = this.flattenRules(Phase.PHASE_C, steeringRules)
     if (flattened) {
