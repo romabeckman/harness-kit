@@ -9,7 +9,7 @@ export class CascadeBlockedHandler extends AbstractPhaseHandler {
 
     const features = context.fsm.loadBacklog()
     const activeFeature = context.getActiveFeature(features)
-    if (!activeFeature) throw new Error(`Illegal state: phase CASCADE_BLOCKED requires an active feature but none is set`)
+    if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
 
     context.fsm.updateFeatureStatus(activeFeature.id, 'BLOCKED')
 

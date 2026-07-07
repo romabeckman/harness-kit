@@ -458,7 +458,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
 
     // Expect the orchestrator run to throw an error
     await expect(orchestrator.run()).rejects.toThrow(
-      /Phase A failed: no tasks extracted/
+      /PLANNING failed: no tasks extracted/
     )
   })
 })

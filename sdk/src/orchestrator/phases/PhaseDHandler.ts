@@ -30,8 +30,8 @@ export class PhaseDHandler extends AbstractPhaseHandler {
 
     const completed = features.filter(f => f.status === 'COMPLETED').length
     const decision = violations.length > 0
-      ? `Phase D: completion check — ${completed}/${features.length} completed. Violations: ${violations.join('; ')}`
-      : `Phase D: completion check — ${completed}/${features.length} features completed.`
+      ? `${phase}: completion check — ${completed}/${features.length} completed. Violations: ${violations.join('; ')}`
+      : `${phase}: completion check — ${completed}/${features.length} features completed.`
 
     context.fsm.appendDecision({ featureId: null, decision })
 

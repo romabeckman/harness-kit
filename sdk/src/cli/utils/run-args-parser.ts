@@ -108,6 +108,7 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
       case '--complexity':
       case '-c': {
         const val = args[++i]?.toUpperCase()
+        console.log('complexity value: ' + val)
         if (val === 'S' || val === 'SIMPLE') result.complexity = 'SIMPLE'
         else if (val === 'C' || val === 'COMPLEX') result.complexity = 'COMPLEX'
         break

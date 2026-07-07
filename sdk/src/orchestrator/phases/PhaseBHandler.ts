@@ -14,7 +14,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
 
     const features = context.fsm.loadBacklog()
     const activeFeature = context.getActiveFeature(features)
-    if (!activeFeature) throw new Error(`Illegal state: phase PHASE_B requires an active feature but none is set`)
+    if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
 
     const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
 

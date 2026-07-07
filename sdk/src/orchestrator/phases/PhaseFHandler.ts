@@ -11,7 +11,7 @@ export class PhaseFHandler extends AbstractPhaseHandler {
     const features = context.fsm.loadBacklog()
     const activeFeature = context.getActiveFeature(features)
     if (!activeFeature) {
-      return this.retryableFeatures(features, context)
+      return this.retryableFeatures(features, context, phase)
     }
 
     const config = context.fsm.loadBootstrapConfig()
@@ -22,7 +22,7 @@ export class PhaseFHandler extends AbstractPhaseHandler {
     )
 
     if (!pendingStatus) {
-      throw new Error(`Illegal state: phase PHASE_F requires pendingStatus in config or terminal active feature status but none is set`)
+      throw new Error(`Illegal state: phase ${phase} requires pendingStatus in config or terminal active feature status but none is set`)
     }
 
     // Cascade block: only BLOCKED propagates to transitive dependents
@@ -32,7 +32,7 @@ export class PhaseFHandler extends AbstractPhaseHandler {
       if (cascadedIds.length > 0) {
         context.fsm.appendDecision({
           featureId: activeFeature.id,
-          decision: `Phase F cascade: ${activeFeature.id} BLOCKED → dependents also blocked: ${cascadedIds.join(', ')}`,
+          decision: `${phase} cascade: ${activeFeature.id} BLOCKED → dependents also blocked: ${cascadedIds.join(', ')}`,
         })
       }
     }
@@ -60,7 +60,7 @@ export class PhaseFHandler extends AbstractPhaseHandler {
     return Phase.HALTED
   }
 
-  private retryableFeatures(features: Feature[], context: PhaseContext) {
+  private retryableFeatures(features: Feature[], context: PhaseContext, phase: Phase) {
     const config = context.fsm.loadBootstrapConfig()
     const maxReworks = config.completionCriteria.maxReworks
     const retryable = features.filter(f => f.status === 'BLOCKED')
@@ -74,14 +74,14 @@ export class PhaseFHandler extends AbstractPhaseHandler {
       const retryIds = retryable.map(f => f.id).join(', ')
       context.fsm.appendDecision({
         featureId: null,
-        decision: `Phase F unblock-retry (reentry): reset BLOCKED → NOT_STARTED (reworks zeroed) for [${retryIds}] (maxReworks=${maxReworks})`,
+        decision: `Phase ${phase} unblock-retry (reentry): reset BLOCKED → NOT_STARTED (reworks zeroed) for [${retryIds}] (maxReworks=${maxReworks})`,
       })
 
       config.activeFeatureId = retryable[0].id
       context.fsm.saveBootstrapConfig(config)
       return Phase.PHASE_B
     }
-    throw new Error(`Illegal state: phase PHASE_F requires an active feature but none is set`)
+    throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
   }
 
   private clearActiveFeatureTasks(context: PhaseContext): void {

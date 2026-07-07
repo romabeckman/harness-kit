@@ -33,7 +33,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       await this.runScopeRefinement(activeFeature, context);
     }
 
-    await this.ensureTasksAppended(activeFeature, context);
+    await this.ensureTasksAppended(activeFeature, context, phase);
 
     return Phase.PHASE_B;
   }
@@ -154,6 +154,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
   private async ensureTasksAppended(
     feature: Feature,
     context: PhaseContext,
+    phase: Phase
   ): Promise<void> {
     const existing = context.fsm
       .loadDevelopmentState()
@@ -168,7 +169,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
 
     if (extracted.length === 0) {
       throw new Error(
-        `Phase A failed: no tasks extracted for feature ${feature.id} (domain '${feature.domain}'). ` +
+        `${phase} failed: no tasks extracted for feature ${feature.id} (domain '${feature.domain}'). ` +
         `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array under "## Section 6 — Ordered Development Tasks".`,
       );
     }
