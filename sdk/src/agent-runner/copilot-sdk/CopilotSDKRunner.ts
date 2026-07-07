@@ -80,7 +80,7 @@ export class CopilotSDKRunner implements IAgentRunner {
       if (controller.signal.aborted) {
         throw new AgentRunnerError({
           code: AgentRunnerErrorCode.TIMEOUT,
-          skill: invocation.skill ?? 'unknown',
+          skill: invocation.skill ?? '',
           phase: 'dispatch',
           message: `Agent invocation timed out after ${this.config.timeoutMs}ms`,
           cause: err as Error,
@@ -88,7 +88,7 @@ export class CopilotSDKRunner implements IAgentRunner {
       }
       throw new AgentRunnerError({
         code: AgentRunnerErrorCode.API_ERROR,
-        skill: invocation.skill ?? 'unknown',
+        skill: invocation.skill ?? '',
         phase: 'dispatch',
         message: `Copilot Client Error: ${err.message || String(err)}`,
         cause: err as Error,
@@ -114,7 +114,7 @@ export class CopilotSDKRunner implements IAgentRunner {
       return invocation.prompt
     }
     return [
-      `Skill: ${invocation.skill ?? 'unknown'}`,
+      `Skill: ${invocation.skill ?? ''}`,
       `Agent: ${invocation.agent}`,
       '',
       JSON.stringify(invocation.payload, null, 2),

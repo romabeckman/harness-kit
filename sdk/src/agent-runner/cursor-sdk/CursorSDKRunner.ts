@@ -27,7 +27,7 @@ export class CursorSDKRunner implements IAgentRunner {
     if (!apiKey) {
       throw new AgentRunnerError({
         code: AgentRunnerErrorCode.MISSING_API_KEY,
-        skill: invocation.skill ?? 'unknown',
+        skill: invocation.skill ?? '',
         phase: 'dispatch',
         message: 'CursorSDKRunner requires CURSOR_API_KEY environment variable to be set',
       })
@@ -84,7 +84,7 @@ export class CursorSDKRunner implements IAgentRunner {
           controller.abort()
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.TIMEOUT,
-            skill: invocation.skill ?? 'unknown',
+            skill: invocation.skill ?? '',
             phase: 'dispatch',
             message: `Cursor SDK runner timed out after ${this.timeoutMs}ms`,
           }))
@@ -107,7 +107,7 @@ export class CursorSDKRunner implements IAgentRunner {
         if (result.status === 'error') {
           throw new AgentRunnerError({
             code: AgentRunnerErrorCode.UNKNOWN_ERROR,
-            skill: invocation.skill ?? 'unknown',
+            skill: invocation.skill ?? '',
             phase: 'dispatch',
             message: `Cursor SDK run ended with error`,
           })
@@ -150,7 +150,7 @@ export class CursorSDKRunner implements IAgentRunner {
       }
       throw new AgentRunnerError({
         code: AgentRunnerErrorCode.UNKNOWN_ERROR,
-        skill: invocation.skill ?? 'unknown',
+        skill: invocation.skill ?? '',
         phase: 'dispatch',
         message: `Cursor SDK error: ${err.message || String(err)}`,
         cause: err,
@@ -166,7 +166,7 @@ export class CursorSDKRunner implements IAgentRunner {
 
   #buildPrompt(invocation: AgentInvocation): string {
     return [
-      `Skill: ${invocation.skill ?? 'unknown'}`,
+      `Skill: ${invocation.skill ?? ''}`,
       `Mode: ${invocation.mode}`,
       '',
       JSON.stringify(invocation.payload, null, 2),
