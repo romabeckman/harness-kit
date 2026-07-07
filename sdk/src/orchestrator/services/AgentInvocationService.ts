@@ -63,7 +63,6 @@ export class AgentInvocationService {
       }
     }
 
-    const phaseDesc = OrchestratorFormatter.getPhaseDescription(currentPhase)
     const agentLabel = finalInvocation.agent
 
     if (DebugContext.enabled) {
@@ -135,7 +134,7 @@ export class AgentInvocationService {
 
         // Any other key (including 'C' or Enter) → extend
         console.error(`\n  ${AnsiHelpers.green('✔')} Timeout renovado. Aguardando agente...\n`)
-        TerminalProgress.startSpinner(phaseDesc, `Running agent: ${agentLabel}`)
+        TerminalProgress.startSpinner(currentPhase, `Running agent: ${agentLabel}`)
         cancel = scheduleTimeout(elapsedMs + timeoutMs!)
       }, timeoutMs!)
 
@@ -147,7 +146,7 @@ export class AgentInvocationService {
       return () => cancel()
     }
 
-    TerminalProgress.startSpinner(phaseDesc, `Running agent: ${agentLabel}`)
+    TerminalProgress.startSpinner(currentPhase, `Running agent: ${agentLabel}`)
 
     const startTime = Date.now()
     let cancelTimeout = scheduleTimeout(0)

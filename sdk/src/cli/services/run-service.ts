@@ -139,9 +139,8 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
 
   if (action === "resume") {
     const state = orchestrator.getState();
-    const phaseDesc = orchestrator.getPhaseDescription(state.currentPhase);
     console.log(
-      `\n${AnsiHelpers.blue("►")} ${AnsiHelpers.dim("Current State:")} ${AnsiHelpers.cyan(phaseDesc)}`,
+      `\n${AnsiHelpers.blue("►")} ${AnsiHelpers.dim("Current State:")} ${AnsiHelpers.cyan(state.currentPhase)}`,
     );
     if (state.activeFeatureId) {
       console.log(

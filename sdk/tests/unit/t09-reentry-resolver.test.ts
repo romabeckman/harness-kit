@@ -43,7 +43,7 @@ describe('T09 — ReentryResolver', () => {
   describe('TS-U-37: Persisted currentPhase in config takes precedence', () => {
     it('returns the persisted phase', () => {
       const state = makeState({
-        config: { ...defaultConfig, currentPhase: 'PHASE_E' },
+        config: { ...defaultConfig, currentPhase: Phase.PHASE_E },
       })
       expect(ReentryResolver.resolve(state)).toBe(Phase.PHASE_E)
     })

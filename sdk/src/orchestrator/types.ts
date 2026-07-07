@@ -19,12 +19,12 @@ export interface OrchestratorConfig {
 
 export enum Phase {
   BOOTSTRAP = 'BOOTSTRAP',
-  PHASE_A = 'PHASE_A',
-  PHASE_B = 'PHASE_B',
-  PHASE_C = 'PHASE_C',
-  PHASE_D = 'PHASE_D',
-  PHASE_E = 'PHASE_E',
-  PHASE_F = 'PHASE_F',
+  PHASE_A = 'PLANNING',
+  PHASE_B = 'IMPLEMENTATION',
+  PHASE_C = 'VALIDATION',
+  PHASE_D = 'STATE_CHECK',
+  PHASE_E = 'STEERING',
+  PHASE_F = 'DECISION',
   CASCADE_BLOCKED = 'CASCADE_BLOCKED',
   HALTED = 'HALTED',
 }

@@ -128,7 +128,7 @@ describe('SteeringService', () => {
       const state = makeState({ currentPhase: Phase.PHASE_C })
       const service = new SteeringService(fsm, state)
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: 'PHASE_B' }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_B }])
 
       expect(state.currentPhase).toBe(Phase.PHASE_B)
       expect(config.currentPhase).toBe(Phase.PHASE_B)
@@ -138,10 +138,10 @@ describe('SteeringService', () => {
       const fsm = makeFsm(makeConfig())
       const service = new SteeringService(fsm, makeState())
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: 'PHASE_A' }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_A }])
 
       expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({
-        decision: expect.stringContaining('PHASE_A'),
+        decision: expect.stringContaining(Phase.PHASE_A),
       }))
     })
 
@@ -156,7 +156,7 @@ describe('SteeringService', () => {
       const state = makeState({ activeFeatureId: 'F001' })
       const service = new SteeringService(fsm, state)
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: 'PHASE_B' }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_B }])
 
       expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T01', '-', 'NOT_STARTED')
       expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T02', '-', 'NOT_STARTED')
@@ -170,7 +170,7 @@ describe('SteeringService', () => {
       const state = makeState({ activeFeatureId: 'F001' })
       const service = new SteeringService(fsm, state)
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: 'PHASE_A' }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_A }])
 
       expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T01', '-', 'NOT_STARTED')
     })
@@ -182,7 +182,7 @@ describe('SteeringService', () => {
       const state = makeState({ activeFeatureId: 'F001' })
       const service = new SteeringService(fsm, state)
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: 'PHASE_C' }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_C }])
 
       expect(fsm.updateTaskStatus).not.toHaveBeenCalled()
     })
@@ -192,7 +192,7 @@ describe('SteeringService', () => {
       const state = makeState({ activeFeatureId: null })
       const service = new SteeringService(fsm, state)
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: 'PHASE_B' }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_B }])
 
       expect(fsm.updateTaskStatus).not.toHaveBeenCalled()
     })

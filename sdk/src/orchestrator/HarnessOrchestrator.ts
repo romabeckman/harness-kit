@@ -151,7 +151,7 @@ export class HarnessOrchestrator implements PhaseContext {
         if (err instanceof AgentRunnerError && err.code === AgentRunnerErrorCode.QUOTA_EXCEEDED) {
           process.stderr.write(
             `\n${AnsiHelpers.yellow('⚠')} ${AnsiHelpers.dim('Quota / rate-limit reached.')} ` +
-            `Phase ${AnsiHelpers.cyan(this.getPhaseDescription(this.state.currentPhase))} persisted.\n` +
+            `Phase ${AnsiHelpers.cyan(this.state.currentPhase)} persisted.\n` +
             `  Resume: ${AnsiHelpers.dim('hrns run')} → select "resume"\n\n`
           )
           this.state = { ...this.state, currentPhase: Phase.HALTED }
@@ -174,13 +174,13 @@ export class HarnessOrchestrator implements PhaseContext {
       }
 
       if (next !== this.state.currentPhase) {
-        const transitionMsg = `Phase transition: ${this.getPhaseDescription(this.state.currentPhase)} → ${this.getPhaseDescription(next)}`
+        const transitionMsg = `Phase transition: ${this.state.currentPhase} → ${next}`
         this.fsm.appendDecision({
           featureId: null,
           decision: transitionMsg
         })
-        console.log(`\n${AnsiHelpers.green('✔')} ${AnsiHelpers.cyan(this.getPhaseDescription(this.state.currentPhase))} completed in ${AnsiHelpers.yellow(durationStr)}`)
-        console.log(`${AnsiHelpers.blue('⟳')} ${AnsiHelpers.dim('Transitioning to:')} ${AnsiHelpers.cyan(this.getPhaseDescription(next))}`)
+        console.log(`\n${AnsiHelpers.green('✔')} ${AnsiHelpers.cyan(this.state.currentPhase)} completed in ${AnsiHelpers.yellow(durationStr)}`)
+        console.log(`${AnsiHelpers.blue('⟳')} ${AnsiHelpers.dim('Transitioning to:')} ${AnsiHelpers.cyan(next)}`)
       }
       this.state = { ...this.state, currentPhase: next }
     }
@@ -283,9 +283,5 @@ export class HarnessOrchestrator implements PhaseContext {
 
   public onFeatureTransition(completed: Feature, next: Feature | null, cycle: number): void {
     OrchestratorFormatter.onFeatureTransition(completed, next, cycle)
-  }
-
-  public getPhaseDescription(phase: Phase): string {
-    return OrchestratorFormatter.getPhaseDescription(phase)
   }
 }
