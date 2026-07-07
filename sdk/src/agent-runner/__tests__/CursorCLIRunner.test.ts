@@ -62,25 +62,25 @@ describe('CursorCLIRunner', () => {
     expect(mockSpawn).toHaveBeenCalledWith('agent', expect.arrayContaining(['--print', '--force']), expect.any(Object))
   })
 
-  it('uses custom cursorBin when provided', () => {
+  it('uses "agent" as binary (no custom bin override via config)', () => {
     mockSpawn.mockReturnValue(makeChild({ stdout: 'ok' }))
-    const runner = new CursorCLIRunner({ cursorBin: '/usr/local/bin/cursor' })
+    const runner = new CursorCLIRunner()
     runner.run(baseInvocation)
-    expect(mockSpawn).toHaveBeenCalledWith('/usr/local/bin/cursor', expect.any(Array), expect.any(Object))
+    expect(mockSpawn).toHaveBeenCalledWith('agent', expect.any(Array), expect.any(Object))
   })
 
-  it('includes --model when model is configured', () => {
+  it('includes --model when model is provided in invocation', () => {
     mockSpawn.mockReturnValue(makeChild({ stdout: 'ok' }))
-    const runner = new CursorCLIRunner({ model: 'gpt-5' })
-    runner.run(baseInvocation)
+    const runner = new CursorCLIRunner()
+    runner.run({ ...baseInvocation, model: 'gpt-5' })
     const args = mockSpawn.mock.calls[0][1] as string[]
     expect(args).toContain('--model')
     expect(args[args.indexOf('--model') + 1]).toBe('gpt-5')
   })
 
-  it('model from invocation overrides config model', () => {
+  it('uses model from invocation', () => {
     mockSpawn.mockReturnValue(makeChild({ stdout: 'ok' }))
-    const runner = new CursorCLIRunner({ model: 'gpt-5' })
+    const runner = new CursorCLIRunner()
     runner.run({ ...baseInvocation, model: 'claude-opus-4-8' })
     const args = mockSpawn.mock.calls[0][1] as string[]
     expect(args[args.indexOf('--model') + 1]).toBe('claude-opus-4-8')
@@ -170,8 +170,8 @@ describe('CursorCLIRunner', () => {
     child.kill = vi.fn()
     mockSpawn.mockReturnValue(child)
 
-    const runner = new CursorCLIRunner({ timeoutMs: 10 })
-    await expect(runner.run(baseInvocation)).rejects.toMatchObject({
+    const runner = new CursorCLIRunner()
+    await expect(runner.run({ ...baseInvocation, timeoutMs: 10 })).rejects.toMatchObject({
       code: AgentRunnerErrorCode.TIMEOUT,
     })
   })

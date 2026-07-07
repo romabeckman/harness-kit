@@ -77,13 +77,13 @@ describe('CopilotCLIRunner', () => {
     await promise
   })
 
-  // TS03 — buildArgs: model flag from config default
-  it('TS03 — buildArgs uses config model when invocation has no model', async () => {
+  // TS03 — buildArgs: model flag from invocation
+  it('TS03 — buildArgs includes --model when invocation provides model', async () => {
     const mockChild = createMockChild()
     vi.mocked(spawn).mockReturnValue(mockChild as any)
 
-    const runner = new CopilotCLIRunner({ model: 'gpt-4o' })
-    const promise = runner.run({ agent: 'a', mode: 'autonomous', prompt: 'x' })
+    const runner = new CopilotCLIRunner()
+    const promise = runner.run({ agent: 'a', mode: 'autonomous', prompt: 'x', model: 'gpt-4o' })
 
     const [, args] = vi.mocked(spawn).mock.calls[0]
     expect(args).toContain('--model')
@@ -247,8 +247,8 @@ describe('CopilotCLIRunner', () => {
     const mockChild = createMockChild()
     vi.mocked(spawn).mockReturnValue(mockChild as any)
 
-    const runner = new CopilotCLIRunner({ timeoutMs: 100 })
-    const promise = runner.run({ agent: 'a', mode: 'autonomous', prompt: 'x' })
+    const runner = new CopilotCLIRunner()
+    const promise = runner.run({ agent: 'a', mode: 'autonomous', prompt: 'x', timeoutMs: 100 })
     promise.catch(() => { /* suppress unhandled */ })
 
     await vi.advanceTimersByTimeAsync(150)

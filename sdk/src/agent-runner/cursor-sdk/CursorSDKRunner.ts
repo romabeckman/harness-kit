@@ -3,6 +3,7 @@ import type { IAgentRunner } from '../IAgentRunner'
 import type { AgentInvocation, AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
+import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
 
 export interface CursorSDKRunnerConfig {
   readonly model?: string
@@ -15,7 +16,7 @@ export class CursorSDKRunner implements IAgentRunner {
   readonly timeoutMs: number
 
   constructor(config?: Partial<CursorSDKRunnerConfig>) {
-    this.timeoutMs = config?.timeoutMs ?? 0
+    this.timeoutMs = config?.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS
     this.#model = config?.model
   }
 

@@ -1,34 +1,12 @@
 import { AbstractCliRunner } from '../AbstractCliRunner'
 import type { AgentInvocation, AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
-import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
-
-export interface CursorCLIRunnerConfig {
-  readonly timeoutMs?: number
-  readonly cursorBin?: string
-  readonly model?: string
-}
 
 export class CursorCLIRunner extends AbstractCliRunner {
   readonly type = 'cursor-cli'
-  readonly #config: Required<CursorCLIRunnerConfig>
-
-  constructor(config?: Partial<CursorCLIRunnerConfig>) {
-    super()
-    this.#config = {
-      timeoutMs: config?.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS,
-      cursorBin: config?.cursorBin ?? 'agent',
-      model: config?.model ?? '',
-    }
-    this.timeoutMs = this.#config.timeoutMs
-  }
 
   protected get binaryName(): string {
-    return this.#config.cursorBin
-  }
-
-  protected getModelName(invocation: AgentInvocation): string | undefined {
-    return invocation.model ?? (this.#config.model || undefined)
+    return 'agent'
   }
 
   protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
@@ -40,9 +18,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
       '--trust',
     ]
 
-    const model = invocation.model ?? (this.#config.model || undefined)
-    if (model) args.push('--model', model)
-
+    if (invocation.model) args.push('--model', invocation.model)
     if (invocation.workspacePath) args.push('--workspace', invocation.workspacePath)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
 

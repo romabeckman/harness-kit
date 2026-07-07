@@ -2,37 +2,14 @@ import type { AgentInvocation, AgentOutput } from '../types'
 import { AbstractCliRunner } from '../AbstractCliRunner'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
-import { type ProgressLine, defaultProgress, extractJsonOrNull } from '../CliRunnerProgress'
-import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
-export type { ProgressLine } from '../CliRunnerProgress'
+import { defaultProgress, extractJsonOrNull } from '../CliRunnerProgress'
 
-export interface ClaudeCLIRunnerConfig {
-  readonly timeoutMs: number
-  readonly claudeBin: string
-  readonly model?: string
-  readonly effort?: string
-  readonly onProgress?: (line: ProgressLine) => void
-}
 
 export class ClaudeCLIRunner extends AbstractCliRunner {
   readonly type = 'claude-cli'
-  readonly #config: ClaudeCLIRunnerConfig & { onProgress: (line: ProgressLine) => void }
-
-  constructor(config?: Partial<ClaudeCLIRunnerConfig>) {
-    super()
-    this.#config = {
-      model: config?.model,
-      effort: config?.effort,
-      claudeBin: config?.claudeBin ?? 'claude',
-      timeoutMs: config?.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS,
-      onProgress: defaultProgress,
-      ...config,
-    }
-    this.timeoutMs = this.#config.timeoutMs
-  }
 
   protected get binaryName(): string {
-    return this.#config.claudeBin
+    return 'claude'
   }
 
   protected override get writePromptToStdin(): boolean {
@@ -48,10 +25,8 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
       '--dangerously-skip-permissions',
     ]
 
-    const model = invocation.model ?? this.#config.model
-    const effort = invocation.effort ?? this.#config.effort
-    if (model) args.push('--model', model)
-    if (effort) args.push('--effort', effort)
+    if (invocation.model) args.push('--model', invocation.model)
+    if (invocation.effort) args.push('--effort', invocation.effort)
     if (invocation.agent) args.push('--agent', invocation.agent)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
 
@@ -71,14 +46,14 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
 
     for (const block of content) {
       if (block.type === 'text') {
-        this.#config.onProgress({
+        defaultProgress({
           agent: invocation.agent,
           skill: invocation.skill ?? '',
           type: 'text',
           text: typeof block.text === 'string' ? block.text : undefined,
         })
       } else if (block.type === 'tool_use') {
-        this.#config.onProgress({
+        defaultProgress({
           agent: invocation.agent,
           skill: invocation.skill ?? '',
           type: 'tool_use',
@@ -129,7 +104,7 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
         const u = event.usage as Record<string, number> | undefined
         if (u) {
           const modelUsage = event.modelUsage as Record<string, unknown> | undefined
-          const detectedModel = modelUsage ? Object.keys(modelUsage)[0] : (invocation.model ?? this.#config.model)
+          const detectedModel = modelUsage ? Object.keys(modelUsage)[0] : (invocation.model ?? "default")
 
           finalUsage = {
             inputTokens: u.input_tokens ?? 0,
@@ -138,7 +113,7 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
             cacheReadTokens: u.cache_read_input_tokens ?? 0,
             costUsd: typeof event.total_cost_usd === 'number' ? event.total_cost_usd : 0,
             model: detectedModel,
-            effort: invocation.effort ?? this.#config.effort,
+            effort: invocation.effort ?? "",
           }
         }
       }

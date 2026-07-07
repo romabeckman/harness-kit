@@ -86,7 +86,7 @@ describe('T03 — ClaudeCLIRunner', () => {
     expect(args[agentIdx + 1]).toBe('developer-backend')
   })
 
-  it('calls onProgress({ type: "text", text }) for assistant text blocks', async () => {
+  it('writes text progress to stderr for assistant text blocks', async () => {
     const event = JSON.stringify({
       type: 'assistant',
       message: { content: [{ type: 'text', text: 'hello world' }] },
@@ -95,15 +95,15 @@ describe('T03 — ClaudeCLIRunner', () => {
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
     const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
-    const onProgress = vi.fn()
-    const runner = new ClaudeCLIRunner({ onProgress })
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
-    const textCalls = onProgress.mock.calls.filter(([l]) => l.type === 'text')
-    expect(textCalls.length).toBeGreaterThan(0)
-    expect(textCalls[0][0]).toMatchObject({ type: 'text', text: 'hello world' })
+    const output = stderrSpy.mock.calls.map(c => String(c[0])).join('')
+    expect(output).toContain('hello world')
+    stderrSpy.mockRestore()
   })
 
-  it('calls onProgress({ type: "tool_use", toolName }) for tool_use blocks', async () => {
+  it('writes tool_use progress to stderr for tool_use blocks', async () => {
     const event = JSON.stringify({
       type: 'assistant',
       message: { content: [{ type: 'tool_use', name: 'Bash' }] },
@@ -112,12 +112,12 @@ describe('T03 — ClaudeCLIRunner', () => {
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
     const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
-    const onProgress = vi.fn()
-    const runner = new ClaudeCLIRunner({ onProgress })
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
-    const toolCalls = onProgress.mock.calls.filter(([l]) => l.type === 'tool_use')
-    expect(toolCalls.length).toBeGreaterThan(0)
-    expect(toolCalls[0][0]).toMatchObject({ type: 'tool_use', toolName: 'Bash' })
+    const output = stderrSpy.mock.calls.map(c => String(c[0])).join('')
+    expect(output).toContain('→ Bash')
+    stderrSpy.mockRestore()
   })
 
   it('resolves with { raw, usage } when result event is_error=false', async () => {
@@ -132,7 +132,7 @@ describe('T03 — ClaudeCLIRunner', () => {
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
     const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
-    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
+    const runner = new ClaudeCLIRunner()
     const out = await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     expect(out.raw).toBe('final output')
     expect(out.usage).toBeDefined()
@@ -150,9 +150,9 @@ describe('T03 — ClaudeCLIRunner', () => {
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
     const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
-    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
+    const runner = new ClaudeCLIRunner()
     const out = await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
-    expect(out.usage).toEqual({
+    expect(out.usage).toMatchObject({
       inputTokens: 200,
       outputTokens: 80,
       cacheCreationTokens: 5,
@@ -172,7 +172,7 @@ describe('T03 — ClaudeCLIRunner', () => {
     }))
     const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const { AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
-    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
+    const runner = new ClaudeCLIRunner()
     await expect(
       runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     ).rejects.toMatchObject({ code: AgentRunnerErrorCode.API_ERROR })
@@ -193,7 +193,7 @@ describe('T03 — ClaudeCLIRunner', () => {
     }))
     const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const { AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
-    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
+    const runner = new ClaudeCLIRunner()
     await expect(
       runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     ).rejects.toMatchObject({ code: AgentRunnerErrorCode.NETWORK_ERROR })
@@ -221,7 +221,7 @@ describe('T03 — ClaudeCLIRunner', () => {
       }),
     }))
     const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
-    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
+    const runner = new ClaudeCLIRunner()
     await runner.run({
       skill: 's',
       agent: 'a',
@@ -232,7 +232,7 @@ describe('T03 — ClaudeCLIRunner', () => {
     expect(stdinChunks.join('')).toContain('explicit prompt override')
   })
 
-  it('custom onProgress callback is called (not just default stderr)', async () => {
+  it('progress written to stderr includes skill tag', async () => {
     const event = JSON.stringify({
       type: 'assistant',
       message: { content: [{ type: 'text', text: 'progress line' }] },
@@ -241,13 +241,13 @@ describe('T03 — ClaudeCLIRunner', () => {
       spawn: vi.fn(() => makeChild([event], 0)),
     }))
     const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
-    const onProgress = vi.fn()
-    const runner = new ClaudeCLIRunner({ onProgress })
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 'my-skill', agent: 'my-agent', mode: 'autonomous', payload: {} })
-    expect(onProgress).toHaveBeenCalled()
-    const firstCall = onProgress.mock.calls[0][0]
-    expect(firstCall).toHaveProperty('agent', 'my-agent')
-    expect(firstCall).toHaveProperty('skill', 'my-skill')
+    const output = stderrSpy.mock.calls.map(c => String(c[0])).join('')
+    expect(output).toContain('[my-skill]')
+    expect(output).toContain('progress line')
+    stderrSpy.mockRestore()
   })
 
   it('prints debug info to stderr when DebugContext is enabled', async () => {
@@ -261,7 +261,7 @@ describe('T03 — ClaudeCLIRunner', () => {
     const { spawn } = await import('node:child_process')
 
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
-    const runner = new ClaudeCLIRunner({ onProgress: vi.fn() })
+    const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 'my-skill', agent: 'my-agent', mode: 'autonomous', payload: {} })
 
     const output = stderrSpy.mock.calls.map(c => String(c[0])).join('')

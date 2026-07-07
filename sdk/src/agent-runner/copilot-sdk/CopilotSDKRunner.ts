@@ -3,6 +3,7 @@ import type { AgentInvocation, AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { CopilotClient, approveAll } from '@github/copilot-sdk'
+import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
 
 export interface CopilotSDKRunnerConfig {
   readonly type: 'copilot-sdk'
@@ -18,7 +19,7 @@ export class CopilotSDKRunner implements IAgentRunner {
     this.config = {
       type: 'copilot-sdk',
       model: config?.model ?? 'gpt-5.3-codex',
-      timeoutMs: config?.timeoutMs ?? 900_000,
+      timeoutMs: config?.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS,
     }
   }
 

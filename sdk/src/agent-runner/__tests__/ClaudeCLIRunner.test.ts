@@ -80,7 +80,7 @@ describe('ClaudeCLIRunner', () => {
 
   // Test for buildArgs method (will be added after refactoring to extend AbstractCliRunner)
   it('should build correct CLI arguments based on invocation and config', async () => {
-    const runner = new ClaudeCLIRunner({ claudeBin: 'test-claude-bin' })
+    const runner = new ClaudeCLIRunner()
 
     // @ts-ignore - access protected method for testing
     const args = runner.buildArgs(invocation.prompt, invocation)
@@ -104,17 +104,16 @@ describe('ClaudeCLIRunner', () => {
 
     mockSpawn.mockReturnValue(new MockChildProcess(mockOutputLines) as any)
 
-    const runner = new ClaudeCLIRunner({ claudeBin: 'claude' })
+    const runner = new ClaudeCLIRunner()
     const result = await runner.run(invocation)
 
-    expect(result.usage).toEqual({
+    expect(result.usage).toMatchObject({
       inputTokens: 100,
       outputTokens: 50,
       cacheCreationTokens: 10,
       cacheReadTokens: 5,
       costUsd: 0.001,
       model: 'claude-opus-4-8',
-      effort: undefined, // Assuming effort is not part of the output event for now
     })
     expect(result.success).toBe(true)
     expect(result.raw).toBe('Final Answer')
@@ -126,7 +125,7 @@ describe('ClaudeCLIRunner', () => {
 
     mockSpawn.mockReturnValue(new MockChildProcess([], [], 1, mockError) as any)
 
-    const runner = new ClaudeCLIRunner({ claudeBin: 'non-existent-claude' })
+    const runner = new ClaudeCLIRunner()
 
     await expect(runner.run(invocation)).rejects.toThrow(
       expect.objectContaining({
@@ -140,9 +139,9 @@ describe('ClaudeCLIRunner', () => {
     // Process that never closes — timeout must fire first
     mockSpawn.mockReturnValue(new MockChildProcess([], [], 0, undefined, { hang: true }) as any)
 
-    const runner = new ClaudeCLIRunner({ claudeBin: 'claude', timeoutMs: 50 })
+    const runner = new ClaudeCLIRunner()
 
-    await expect(runner.run(invocation)).rejects.toThrow(
+    await expect(runner.run({ ...invocation, timeoutMs: 50 })).rejects.toThrow(
       expect.objectContaining({
         code: AgentRunnerErrorCode.TIMEOUT,
         message: expect.stringContaining('timed out'),
@@ -159,7 +158,7 @@ describe('ClaudeCLIRunner', () => {
 
     mockSpawn.mockReturnValue(new MockChildProcess() as any)
 
-    const runner = new ClaudeCLIRunner({ claudeBin: 'claude' })
+    const runner = new ClaudeCLIRunner()
     await runner.run(invocationWithOverrides)
 
     // Verify spawn was called with the correct arguments
