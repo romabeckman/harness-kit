@@ -93,64 +93,6 @@ describe('AgentInvocationService', () => {
 
       expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_c_adv')
     })
-
-    it('resolves phaseKey from Phase.BOOTSTRAP', async () => {
-      const settings = makeSettings()
-      const service = new AgentInvocationService(makeRunner(), makeLedger())
-
-      await service.invokeAgent(makeInvocation(), Phase.BOOTSTRAP, makeConfig(), settings)
-
-      expect(settings.resolve).toHaveBeenCalledWith('claude', 'bootstrap')
-    })
-
-    it('resolves phaseKey from Phase.PHASE_A', async () => {
-      const settings = makeSettings()
-      const service = new AgentInvocationService(makeRunner(), makeLedger())
-
-      await service.invokeAgent(makeInvocation(), Phase.PHASE_A, makeConfig(), settings)
-
-      expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_a')
-    })
-
-    it('resolves phaseKey from Phase.PHASE_B', async () => {
-      const settings = makeSettings()
-      const service = new AgentInvocationService(makeRunner(), makeLedger())
-
-      await service.invokeAgent(makeInvocation(), Phase.PHASE_B, makeConfig(), settings)
-
-      expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_b')
-    })
-
-    it('resolves phaseKey from Phase.PHASE_C to phase_c_tl', async () => {
-      const settings = makeSettings()
-      const service = new AgentInvocationService(makeRunner(), makeLedger())
-
-      await service.invokeAgent(makeInvocation(), Phase.PHASE_C, makeConfig(), settings)
-
-      expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_c_tl')
-    })
-
-    it('resolves phaseKey from Phase.PHASE_E', async () => {
-      const settings = makeSettings()
-      const service = new AgentInvocationService(makeRunner(), makeLedger())
-
-      await service.invokeAgent(makeInvocation(), Phase.PHASE_E, makeConfig(), settings)
-
-      expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_e')
-    })
-
-    it('skips model/effort override for unknown phases (empty phaseKey guards resolve call)', async () => {
-      const runner = makeRunner()
-      const settings = makeSettings({ model: 'should-not-apply' })
-      const service = new AgentInvocationService(runner, makeLedger())
-
-      await service.invokeAgent(makeInvocation({ model: 'original-model' }), Phase.PHASE_D, makeConfig(), settings)
-
-      // phaseKey resolves to '' which is falsy — settings.resolve is NOT called
-      expect(settings.resolve).not.toHaveBeenCalled()
-      const call = (runner.run as ReturnType<typeof vi.fn>).mock.calls[0][0] as AgentInvocation
-      expect(call.model).toBe('original-model')
-    })
   })
 
   describe('model/effort override from settings', () => {
@@ -160,7 +102,7 @@ describe('AgentInvocationService', () => {
       const service = new AgentInvocationService(runner, makeLedger())
 
       await service.invokeAgent(
-        makeInvocation({ model: 'claude-haiku-4-5' }),
+        makeInvocation({ model: 'claude-haiku-4-5', phaseKey: 'phase_a' }),
         Phase.PHASE_A,
         makeConfig(),
         settings
@@ -176,7 +118,7 @@ describe('AgentInvocationService', () => {
       const service = new AgentInvocationService(runner, makeLedger())
 
       await service.invokeAgent(
-        makeInvocation({ effort: 'low' }),
+        makeInvocation({ effort: 'low', phaseKey: 'phase_b' }),
         Phase.PHASE_B,
         makeConfig(),
         settings
@@ -192,7 +134,7 @@ describe('AgentInvocationService', () => {
       const service = new AgentInvocationService(runner, makeLedger())
 
       await service.invokeAgent(
-        makeInvocation({ model: 'original-model', effort: 'high' }),
+        makeInvocation({ model: 'original-model', effort: 'high', phaseKey: 'phase_a' }),
         Phase.PHASE_A,
         makeConfig(),
         settings
@@ -267,7 +209,7 @@ describe('AgentInvocationService', () => {
       const service = new AgentInvocationService(runner, makeLedger())
 
       await service.invokeAgent(
-        makeInvocation(),
+        makeInvocation({ phaseKey: 'phase_a' }),
         Phase.PHASE_A,
         makeConfig({ timeoutMs: undefined }),
         settings
