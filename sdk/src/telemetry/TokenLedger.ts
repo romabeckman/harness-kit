@@ -26,8 +26,8 @@ export class TokenLedger {
   record(skill: string, agent: string, usage: TokenUsage): void {
     const entry: TokenEntry = {
       ts: new Date().toISOString(),
-      skill,
-      agent,
+      skill: skill || "",
+      agent: agent || "",
       model: usage.model ?? 'unknown',
       effort: usage.effort ?? 'default',
       ...usage,
@@ -87,24 +87,24 @@ export class TokenLedger {
     // medium      ~$0.108/MTok: Gemini3.5Flash $0.15, gpt-5/5.1 $0.125, Haiku $0.10, gpt-4.1-mini $0.10
     // fast        ~$0.045/MTok: gpt-4o-mini $0.075, Gemini3Flash $0.05, gpt-4.1-nano $0.025, gpt-5-mini $0.025, GeminiFlashLite $0.025
     const RATE_EXTRA_LARGE = 0.000000916
-    const RATE_LARGE       = 0.000000235
-    const RATE_MEDIUM      = 0.000000108
-    const RATE_FAST        = 0.000000045
+    const RATE_LARGE = 0.000000235
+    const RATE_MEDIUM = 0.000000108
+    const RATE_FAST = 0.000000045
 
     const isExtraLargeModel = (m: string) => /fable|mythos|opus|gemini.*ultra|gpt-5\.5(?!-(?:mini|nano))/i.test(m)
-    
+
     // Agora exige explicitamente o "lite" junto do flash para ser considerado FAST
-    const isFastModel       = (m: string) => /haiku|mini|nano|flash.?lite/i.test(m)
-    
+    const isFastModel = (m: string) => /haiku|mini|nano|flash.?lite/i.test(m)
+
     // Adicionado o "flash" geral aqui. Como o isFastModel roda antes, o flash-lite já terá sido filtrado.
-    const isMediumModel     = (m: string) => /gpt-3\.5|claude-2|flash/i.test(m)
-    
-    const modelRate = (m: string) => 
-        isExtraLargeModel(m) ? RATE_EXTRA_LARGE : 
-        isFastModel(m)       ? RATE_FAST : 
-        isMediumModel(m)     ? RATE_MEDIUM : 
-        RATE_LARGE 
-    
+    const isMediumModel = (m: string) => /gpt-3\.5|claude-2|flash/i.test(m)
+
+    const modelRate = (m: string) =>
+      isExtraLargeModel(m) ? RATE_EXTRA_LARGE :
+        isFastModel(m) ? RATE_FAST :
+          isMediumModel(m) ? RATE_MEDIUM :
+            RATE_LARGE
+
     const cacheReadRate = models.length > 0
       ? models.reduce((sum, m) => sum + modelRate(m), 0) / models.length
       : RATE_LARGE
@@ -130,7 +130,7 @@ export class TokenLedger {
       ? `  cache_read saved ~${usd(totals.cacheReadTokens * cacheReadRate)}`
       : ''
     if (cacheSaved) console.log(cacheSaved)
-    
+
     console.log('  * Note: all costs are estimated tier averages, not real pricing.')
     console.log()
   }

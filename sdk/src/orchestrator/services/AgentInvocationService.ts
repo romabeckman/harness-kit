@@ -69,7 +69,7 @@ export class AgentInvocationService {
     if (DebugContext.enabled) {
       process.stderr.write(
         `[DEBUG] invokeAgent: agent=${finalInvocation.agent}` +
-        `, skill=${finalInvocation.skill ?? 'unknown'}` +
+        `, skill=${finalInvocation.skill ?? ''}` +
         `, model=${finalInvocation.model ?? 'default'}` +
         `, effort=${finalInvocation.effort ?? 'default'}` +
         `, timeoutMs=${finalInvocation.timeoutMs}\n\n`

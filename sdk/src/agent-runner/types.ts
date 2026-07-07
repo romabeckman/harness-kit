@@ -6,9 +6,9 @@ export interface BaseRunnerConfig {
 export type RunnerConfig = BaseRunnerConfig & Record<string, any>
 
 export interface AgentInvocation {
-  readonly skill?: string
   readonly agent: string
   readonly mode: 'autonomous'
+  readonly skill?: string
   readonly payload?: ContextPayload
   readonly prompt?: string  // explicit prompt override (takes precedence over payload serialization)
   readonly workspacePath?: string
