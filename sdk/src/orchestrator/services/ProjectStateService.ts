@@ -31,14 +31,9 @@ export class ProjectStateService {
 
   // This method is public for testing purposes.
   public static _parseTasksFromMarkdown(content: string, file: string): ExtractedTask[] {
-    const section6Match = content.match(/## Section 6[^\n]*\n([\s\S]*?)(?=\n## |$)/i)
-    if (!section6Match) return []
-
-    const section = section6Match[1]
-
     // Extract JSON array from fenced code block (```json ... ``` or ``` ... ```)
-    const fenceMatch = section.match(/```(?:json)?\s*([\s\S]*?)```/i)
-    const rawJson = fenceMatch ? fenceMatch[1].trim() : section.trim()
+    const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/i)
+    const rawJson = fenceMatch ? fenceMatch[1].trim() : content.trim()
     if (!rawJson) return []
 
     let parsed: unknown
@@ -57,8 +52,7 @@ export class ProjectStateService {
         (item): item is { id: string | number; title: string } =>
           typeof item === 'object' &&
           item !== null &&
-          (typeof (item as Record<string, unknown>).id === 'string' ||
-            typeof (item as Record<string, unknown>).id === 'number') &&
+          (typeof (item as Record<string, unknown>).id === 'string' || typeof (item as Record<string, unknown>).id === 'number') &&
           typeof (item as Record<string, unknown>).title === 'string',
       )
       .map(item => ({

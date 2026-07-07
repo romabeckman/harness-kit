@@ -80,7 +80,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
       ``,
       `<instructions>`,
       `- Each project must have its own \`docs/adr\` and \`docs/feature\` folders where all ADRs and features are stored.`,
-      `- REQUIRED: Document the developed feature under \`docs/feature/[FEATURE_NAME].md\` (create if missing, update if it exists the same or relevant previous feature), following \`./references/DOCUMENT-TEMPLATE.md\` strictly`,
+      `- REQUIRED: Document the developed feature under \`docs/feature/[FEATURE_NAME].md\` (Frist check if exists similar, create if missing, update if it exists the same or relevant previous feature), following \`./references/DOCUMENT-TEMPLATE.md\` strictly`,
       `- REQUIRED: \`FOLDER STRUCTURE\` section must reflect the module's current relevant structure, incorporating paths added or modified this cycle — do not drop paths from prior cycles`,
       `- REQUIRED: All cross-references MUST point ONLY to \`./docs/adr/\` or \`./docs/feature/\` — validate every reference before finalizing`,
       `- REQUIRED: Keep all content direct and minimal — enough for a future LLM to orient itself without re-reading source files`,
