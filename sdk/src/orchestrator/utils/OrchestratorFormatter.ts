@@ -53,7 +53,7 @@ export class OrchestratorFormatter {
   }
 
   static onFeatureTransition(completed: Feature, next: Feature | null, cycle: number): void {
-    const width = 150
+    const width = 100
     const hr = '╠' + '═'.repeat(width - 2) + '╣'
     const top = '╔' + '═'.repeat(width - 2) + '╗'
     const bot = '╚' + '═'.repeat(width - 2) + '╝'
@@ -73,7 +73,7 @@ export class OrchestratorFormatter {
     console.log(`\n${AnsiHelpers.blue(top)}`)
     console.log(padLine(headerContent))
     console.log(AnsiHelpers.blue(hr))
-    console.log(padLine(`${AnsiHelpers.cyan(completed.id)}  ${completed.title}`))
+    console.log(padLine(`${AnsiHelpers.cyan(completed.id)}  ${completed.title.slice(0, 88)}`))
 
     const scoreTLStr = completed.scoreTL !== null ? completed.scoreTL.toString() : '-'
     const scoreAdvStr = completed.scoreAdv !== null ? completed.scoreAdv.toString() : '-'

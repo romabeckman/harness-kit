@@ -20,7 +20,7 @@ function setupFullRun(options: {
   const backlog = [
     '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
     '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    `| F001 | SDK Core | sdk_core | backend | 1 | - | ${reworks} | - | - | ${backlogStatus} |`,
+    `| F001 | Lorem ipsum dolor sit amet consectetur adipiscing elit quisque faucibus ex sapien vitae | sdk_core | backend | 1 | - | ${reworks} | - | - | ${backlogStatus} |`,
   ].join('\n')
   writeFileSync(join(productDir, 'BACKLOG.md'), backlog)
 
@@ -176,7 +176,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
       writeFileSync(join(productDir, 'BACKLOG.md'), [
         '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
         '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-        '| F001 | SDK Core | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
+        '| F001 | Lorem ipsum dolor sit amet consectetur adipiscing elit quisque faucibus ex sapien vitae pellentesque  | sdk_core | backend | 1 | - | 0 | - | - | NOT_STARTED |',
       ].join('\n'))
       writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), [
         '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |',
