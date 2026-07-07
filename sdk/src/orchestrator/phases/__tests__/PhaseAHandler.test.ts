@@ -67,10 +67,8 @@ describe('PhaseAHandler', () => {
 
         expect(mockContext.extractTasksFromTacticalDesign).toHaveBeenCalledTimes(1);
         expect(mockContext.invokeAgent).toHaveBeenCalledTimes(1);
-        expect(mockFsm.appendTasks).toHaveBeenCalledWith([
-            expect.objectContaining({ taskId: 'T001', description: 'Task 1', featureId: 'F001', domain: 'hello_world_cli', project: 'project', status: 'NOT_STARTED' }),
-            expect.objectContaining({ taskId: 'T002', description: 'Task 2', featureId: 'F001', domain: 'hello_world_cli', project: 'project', status: 'NOT_STARTED' }),
-        ]);
+        // Recovery path: agent writes directly to DEVELOPMENT-STATE.md, appendTasks is not called
+        expect(mockFsm.appendTasks).not.toHaveBeenCalled();
     });
 
     // Test to ensure it does not append tasks if already existing
