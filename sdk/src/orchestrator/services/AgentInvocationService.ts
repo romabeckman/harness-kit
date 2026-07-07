@@ -27,20 +27,10 @@ export class AgentInvocationService {
 
     const runnerType = this.agentRunner.type ?? ''
     const settingKey = settings.hasSettings(runnerType) ? runnerType : runnerType.split('-')[0]
-    const phaseKey = invocation.phaseKey ?? (() => {
-      switch (currentPhase) {
-        case Phase.BOOTSTRAP: return 'bootstrap'
-        case Phase.PHASE_A: return 'phase_a'
-        case Phase.PHASE_B: return 'phase_b'
-        case Phase.PHASE_C: return 'phase_c_tl'
-        case Phase.PHASE_E: return 'phase_e'
-        default: return ''
-      }
-    })()
 
     let timeoutMs = config.timeoutMs
     if (timeoutMs === undefined && settingKey) {
-      timeoutMs = settings.getTimeoutMs(settingKey, phaseKey)
+      timeoutMs = settings.getTimeoutMs(settingKey, invocation.phaseKey)
     }
     if (timeoutMs === undefined) {
       timeoutMs = DEFAULT_PHASE_TIMEOUT_MS
@@ -52,8 +42,8 @@ export class AgentInvocationService {
       timeoutMs: timeoutMs
     }
 
-    if (settingKey && phaseKey) {
-      const overrides = settings.resolve(settingKey, phaseKey)
+    if (settingKey && invocation.phaseKey) {
+      const overrides = settings.resolve(settingKey, invocation.phaseKey)
       if (overrides.model || overrides.effort) {
         finalInvocation = {
           ...finalInvocation,
@@ -73,13 +63,12 @@ export class AgentInvocationService {
       }
     }
 
-    const phaseDesc = OrchestratorFormatter.getPhaseDescription(currentPhase)
     const agentLabel = finalInvocation.agent
 
     if (DebugContext.enabled) {
       process.stderr.write(
         `[DEBUG] invokeAgent: agent=${finalInvocation.agent}` +
-        `, skill=${finalInvocation.skill ?? 'unknown'}` +
+        `, skill=${finalInvocation.skill ?? ''}` +
         `, model=${finalInvocation.model ?? 'default'}` +
         `, effort=${finalInvocation.effort ?? 'default'}` +
         `, timeoutMs=${finalInvocation.timeoutMs}\n\n`
@@ -145,7 +134,7 @@ export class AgentInvocationService {
 
         // Any other key (including 'C' or Enter) → extend
         console.error(`\n  ${AnsiHelpers.green('✔')} Timeout renovado. Aguardando agente...\n`)
-        TerminalProgress.startSpinner(phaseDesc, `Running agent: ${agentLabel}`)
+        TerminalProgress.startSpinner(currentPhase, `Running agent: ${agentLabel}`)
         cancel = scheduleTimeout(elapsedMs + timeoutMs!)
       }, timeoutMs!)
 
@@ -157,14 +146,14 @@ export class AgentInvocationService {
       return () => cancel()
     }
 
-    TerminalProgress.startSpinner(phaseDesc, `Running agent: ${agentLabel}`)
+    TerminalProgress.startSpinner(currentPhase, `Running agent: ${agentLabel}`)
 
     const startTime = Date.now()
     let cancelTimeout = scheduleTimeout(0)
     try {
       const output = await this.agentRunner.run(finalInvocation, { signal: controller.signal })
       if (output.usage) {
-        this.ledger.record(finalInvocation.skill ?? 'unknown', finalInvocation.agent, output.usage)
+        this.ledger.record(finalInvocation.skill ?? '', finalInvocation.agent, output.usage)
         const elapsedMs = Date.now() - startTime
         const durationStr = OrchestratorFormatter.formatDuration(elapsedMs)
         const { inputTokens, outputTokens } = output.usage

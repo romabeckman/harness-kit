@@ -91,11 +91,12 @@ describe('T02 — Shared type definitions', () => {
   describe('Phase enum', () => {
     it('Phase enum values are correct strings', () => {
       expect(Phase.BOOTSTRAP).toBe('BOOTSTRAP')
-      expect(Phase.PHASE_A).toBe('PHASE_A')
-      expect(Phase.PHASE_B).toBe('PHASE_B')
-      expect(Phase.PHASE_C).toBe('PHASE_C')
-      expect(Phase.PHASE_D).toBe('PHASE_D')
-      expect(Phase.PHASE_E).toBe('PHASE_E')
+      expect(Phase.PHASE_A).toBe('PLANNING')
+      expect(Phase.PHASE_B).toBe('IMPLEMENTATION')
+      expect(Phase.PHASE_C).toBe('VALIDATION')
+      expect(Phase.PHASE_D).toBe('STATE_CHECK')
+      expect(Phase.PHASE_E).toBe('STEERING')
+      expect(Phase.PHASE_F).toBe('DECISION')
       expect(Phase.CASCADE_BLOCKED).toBe('CASCADE_BLOCKED')
       expect(Phase.HALTED).toBe('HALTED')
     })

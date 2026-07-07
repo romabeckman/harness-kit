@@ -488,13 +488,13 @@ import {
 } from '@romabeckman/hrns'
 
 const chain = new ChainBuilder()
-  .addPhaseA(new PhaseAHandler())
-  .addPhaseB(new PhaseBHandler())
-  .addPhaseC(new PhaseCHandler())
-  .addPhaseD(new PhaseDHandler())
-  .addPhaseE(new PhaseEHandler())
-  .addPhaseF(new PhaseFHandler())
-  .addCascadeBlocked(new CascadeBlockedHandler())
+  .addPhase(new PhaseAHandler())
+  .addPhase(new PhaseBHandler())
+  .addPhase(new PhaseCHandler())
+  .addPhase(new PhaseDHandler())
+  .addPhase(new PhaseEHandler())
+  .addPhase(new PhaseFHandler())
+  .addPhase(new CascadeBlockedHandler())
   .build()
 
 const orchestrator = new HarnessOrchestrator({

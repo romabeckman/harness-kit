@@ -1,3 +1,5 @@
+import { exit } from "node:process"
+
 /**
  * Parsed result of CLI run arguments.
  * All fields are optional — only present when explicitly supplied.

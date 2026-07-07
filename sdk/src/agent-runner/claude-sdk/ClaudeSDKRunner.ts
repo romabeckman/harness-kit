@@ -145,7 +145,7 @@ export class ClaudeSDKRunner implements IAgentRunner {
       if (controller.signal.aborted) {
         throw new AgentRunnerError({
           code: AgentRunnerErrorCode.TIMEOUT,
-          skill: invocation.skill ?? 'unknown',
+          skill: invocation.skill ?? '',
           phase: 'dispatch',
           message: `Agent invocation timed out after ${this.#config.timeoutMs}ms`,
           cause: err as Error,
@@ -155,7 +155,7 @@ export class ClaudeSDKRunner implements IAgentRunner {
       if (isConnectionError(err)) {
         throw new AgentRunnerError({
           code: AgentRunnerErrorCode.NETWORK_ERROR,
-          skill: invocation.skill ?? 'unknown',
+          skill: invocation.skill ?? '',
           phase: 'dispatch',
           message: `Network failure during agent invocation: ${(err as Error).message}`,
           cause: err as Error,
@@ -165,7 +165,7 @@ export class ClaudeSDKRunner implements IAgentRunner {
       if (isQuotaError(err)) {
         throw new AgentRunnerError({
           code: AgentRunnerErrorCode.QUOTA_EXCEEDED,
-          skill: invocation.skill ?? 'unknown',
+          skill: invocation.skill ?? '',
           phase: 'dispatch',
           message: `API quota or rate limit exceeded: ${(err as Error).message}`,
           cause: err as Error,
@@ -175,7 +175,7 @@ export class ClaudeSDKRunner implements IAgentRunner {
       if (isApiStatusError(err)) {
         throw new AgentRunnerError({
           code: AgentRunnerErrorCode.API_ERROR,
-          skill: invocation.skill ?? 'unknown',
+          skill: invocation.skill ?? '',
           phase: 'dispatch',
           message: `Anthropic API returned an error status: ${(err as { message: string }).message}`,
           cause: err as Error,
@@ -184,7 +184,7 @@ export class ClaudeSDKRunner implements IAgentRunner {
 
       throw new AgentRunnerError({
         code: AgentRunnerErrorCode.UNKNOWN_ERROR,
-        skill: invocation.skill ?? 'unknown',
+        skill: invocation.skill ?? '',
         phase: 'dispatch',
         message: `Unexpected error during agent invocation: ${(err as Error).message}`,
         cause: err as Error,
@@ -204,7 +204,7 @@ export class ClaudeSDKRunner implements IAgentRunner {
   #buildPrompt(invocation: AgentInvocation): string {
     if (invocation.prompt) return invocation.prompt
     return [
-      `Skill: ${invocation.skill ?? 'unknown'}`,
+      `Skill: ${invocation.skill ?? ''}`,
       `Agent: ${invocation.agent}`,
       '',
       JSON.stringify(invocation.payload, null, 2),

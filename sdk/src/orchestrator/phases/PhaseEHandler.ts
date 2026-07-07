@@ -11,7 +11,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
 
     const features = context.fsm.loadBacklog()
     const activeFeature = context.getActiveFeature(features)
-    if (!activeFeature) throw new Error(`Illegal state: phase PHASE_E requires an active feature but none is set`)
+    if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
 
     const config = context.fsm.loadBootstrapConfig()
     const decisions = context.fsm.loadRecentDecisions(5)

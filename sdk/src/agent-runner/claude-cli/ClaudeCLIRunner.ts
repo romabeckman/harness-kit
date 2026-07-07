@@ -73,14 +73,14 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
       if (block.type === 'text') {
         this.#config.onProgress({
           agent: invocation.agent,
-          skill: invocation.skill ?? 'unknown',
+          skill: invocation.skill ?? '',
           type: 'text',
           text: typeof block.text === 'string' ? block.text : undefined,
         })
       } else if (block.type === 'tool_use') {
         this.#config.onProgress({
           agent: invocation.agent,
-          skill: invocation.skill ?? 'unknown',
+          skill: invocation.skill ?? '',
           type: 'tool_use',
           toolName: typeof block.name === 'string' ? block.name : undefined,
         })
@@ -95,7 +95,7 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
     if (parsed.success === false) {
       return new AgentRunnerError({
         code: AgentRunnerErrorCode.API_ERROR,
-        skill: invocation.skill ?? 'unknown',
+        skill: invocation.skill ?? '',
         phase: 'dispatch',
         message: `${this.binaryName} agent returned an error: ${parsed.raw ?? ''}`,
       })

@@ -11,61 +11,17 @@ import {
 } from './phases'
 
 export class ChainBuilder {
-  private handlersPhaseA: IPhaseHandler[] = []
-  private handlersPhaseB: IPhaseHandler[] = []
-  private handlersPhaseC: IPhaseHandler[] = []
-  private handlersPhaseD: IPhaseHandler[] = []
-  private handlersPhaseE: IPhaseHandler[] = []
-  private handlersPhaseF: IPhaseHandler[] = []
-  private handlersCascadeBlocked: IPhaseHandler[] = []
+  private handlersPhases: IPhaseHandler[] = []
 
-  addPhaseA(phase: IPhaseHandler): this {
-    this.handlersPhaseA.push(phase)
-    return this
-  }
-
-  addPhaseB(phase: IPhaseHandler): this {
-    this.handlersPhaseB.push(phase)
-    return this
-  }
-
-  addPhaseC(phase: IPhaseHandler): this {
-    this.handlersPhaseC.push(phase)
-    return this
-  }
-
-  addPhaseD(phase: IPhaseHandler): this {
-    this.handlersPhaseD.push(phase)
-    return this
-  }
-
-  addPhaseE(phase: IPhaseHandler): this {
-    this.handlersPhaseE.push(phase)
-    return this
-  }
-
-  addPhaseF(phase: IPhaseHandler): this {
-    this.handlersPhaseF.push(phase)
-    return this
-  }
-
-  addCascadeBlocked(phase: IPhaseHandler): this {
-    this.handlersCascadeBlocked.push(phase)
+  addPhase(phase: IPhaseHandler): this {
+    this.handlersPhases.push(phase)
     return this
   }
 
   build(): IPhaseHandler {
     const bootstrap = new BootstrapHandler()
     let tail: IPhaseHandler = bootstrap
-    const ordered = [
-      ...this.handlersPhaseA,
-      ...this.handlersPhaseB,
-      ...this.handlersPhaseC,
-      ...this.handlersPhaseD,
-      ...this.handlersPhaseE,
-      ...this.handlersPhaseF,
-      ...this.handlersCascadeBlocked,
-    ]
+    const ordered = this.handlersPhases
     for (const handler of ordered) {
       tail = tail.setNext(handler)
     }
@@ -74,13 +30,13 @@ export class ChainBuilder {
 
   static buildDefault(): IPhaseHandler {
     return new ChainBuilder()
-      .addPhaseA(new PhaseAHandler())
-      .addPhaseB(new PhaseBHandler())
-      .addPhaseC(new PhaseCHandler())
-      .addPhaseD(new PhaseDHandler())
-      .addPhaseE(new PhaseEHandler())
-      .addPhaseF(new PhaseFHandler())
-      .addCascadeBlocked(new CascadeBlockedHandler())
+      .addPhase(new PhaseAHandler())
+      .addPhase(new PhaseBHandler())
+      .addPhase(new PhaseCHandler())
+      .addPhase(new PhaseDHandler())
+      .addPhase(new PhaseEHandler())
+      .addPhase(new PhaseFHandler())
+      .addPhase(new CascadeBlockedHandler())
       .build()
   }
 }

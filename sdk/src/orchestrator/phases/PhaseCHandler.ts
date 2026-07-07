@@ -21,7 +21,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const features = context.fsm.loadBacklog()
     const activeFeature = context.getActiveFeature(features)
     if (!activeFeature) {
-      throw new Error('Illegal state: phase PHASE_C requires an active feature but none is set')
+      throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
     }
 
     this.cleanTemporaryFiles(context, activeFeature.domain)
@@ -44,7 +44,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       config
     )
 
-    return this.processDecision(context, activeFeature, config, result, scores)
+    return this.processDecision(context, activeFeature, phase, result, scores)
   }
 
   private cleanTemporaryFiles(context: PhaseContext, domain: string): void {
@@ -131,14 +131,14 @@ export class PhaseCHandler extends AbstractPhaseHandler {
   private processDecision(
     context: PhaseContext,
     activeFeature: Feature,
-    config: BootstrapConfig,
+    phase: Phase,
     result: ValidationResult,
     scores: ValidationScores
   ): Phase {
     // Append verification decision log with scores and rationale
     context.fsm.appendDecision({
       featureId: activeFeature.id,
-      decision: `Phase C verdict: ${result.verdict}`,
+      decision: `${phase} verdict: ${result.verdict}`,
       scores: { tl: scores.scoreTL, adv: scores.scoreAdv },
       rationale: result.reason,
     })

@@ -13,21 +13,6 @@ export class OrchestratorFormatter {
     return `${minutes}m ${remainingSeconds}s`
   }
 
-  static getPhaseDescription(phase: Phase): string {
-    switch (phase) {
-      case Phase.BOOTSTRAP: return 'BOOTSTRAP (Initialization)'
-      case Phase.PHASE_A: return 'PHASE_A (Scope Refinement)'
-      case Phase.PHASE_B: return 'PHASE_B (TDD Implementation)'
-      case Phase.PHASE_C: return 'PHASE_C (Validation & Review)'
-      case Phase.PHASE_D: return 'PHASE_D (Completion Check)'
-      case Phase.PHASE_E: return 'PHASE_E (Documentation & Memory)'
-      case Phase.PHASE_F: return 'PHASE_F (Feature Transition & Decision)'
-      case Phase.CASCADE_BLOCKED: return 'CASCADE_BLOCKED (Dependency Blocked)'
-      case Phase.HALTED: return 'HALTED (Execution Halted)'
-      default: return phase
-    }
-  }
-
   static printPipelineHeader(current: Phase): void {
     const phases = [
       Phase.BOOTSTRAP,
@@ -39,13 +24,13 @@ export class OrchestratorFormatter {
       Phase.PHASE_F,
     ]
     const shortNames: Record<Phase, string> = {
-      [Phase.BOOTSTRAP]: 'BOOT',
-      [Phase.PHASE_A]: 'REFINE',
-      [Phase.PHASE_B]: 'IMPLEMENT',
-      [Phase.PHASE_C]: 'VALIDATE',
-      [Phase.PHASE_D]: 'TUNING',
-      [Phase.PHASE_E]: 'MEMORY',
-      [Phase.PHASE_F]: 'DECIDE',
+      [Phase.BOOTSTRAP]: Phase.BOOTSTRAP,
+      [Phase.PHASE_A]: Phase.PHASE_A,
+      [Phase.PHASE_B]: Phase.PHASE_B,
+      [Phase.PHASE_C]: Phase.PHASE_C,
+      [Phase.PHASE_D]: Phase.PHASE_D,
+      [Phase.PHASE_E]: Phase.PHASE_E,
+      [Phase.PHASE_F]: Phase.PHASE_F,
       [Phase.CASCADE_BLOCKED]: 'BLOCKED',
       [Phase.HALTED]: 'HALTED',
     }
@@ -68,7 +53,7 @@ export class OrchestratorFormatter {
   }
 
   static onFeatureTransition(completed: Feature, next: Feature | null, cycle: number): void {
-    const width = 60
+    const width = 100
     const hr = '╠' + '═'.repeat(width - 2) + '╣'
     const top = '╔' + '═'.repeat(width - 2) + '╗'
     const bot = '╚' + '═'.repeat(width - 2) + '╝'
@@ -88,7 +73,7 @@ export class OrchestratorFormatter {
     console.log(`\n${AnsiHelpers.blue(top)}`)
     console.log(padLine(headerContent))
     console.log(AnsiHelpers.blue(hr))
-    console.log(padLine(`${AnsiHelpers.cyan(completed.id)}  ${completed.title}`))
+    console.log(padLine(`${AnsiHelpers.cyan(completed.id)}  ${completed.title.slice(0, 88)}`))
 
     const scoreTLStr = completed.scoreTL !== null ? completed.scoreTL.toString() : '-'
     const scoreAdvStr = completed.scoreAdv !== null ? completed.scoreAdv.toString() : '-'
