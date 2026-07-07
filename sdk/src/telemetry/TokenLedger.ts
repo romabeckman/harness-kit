@@ -26,8 +26,8 @@ export class TokenLedger {
   record(skill: string, agent: string, usage: TokenUsage): void {
     const entry: TokenEntry = {
       ts: new Date().toISOString(),
-      skill: skill || "",
-      agent: agent || "",
+      skill,
+      agent,
       model: usage.model ?? 'unknown',
       effort: usage.effort ?? 'default',
       ...usage,

@@ -154,7 +154,7 @@ export class AgentInvocationService {
     try {
       const output = await this.agentRunner.run(finalInvocation, { signal: controller.signal })
       if (output.usage) {
-        this.ledger.record(finalInvocation.skill ?? 'unknown', finalInvocation.agent, output.usage)
+        this.ledger.record(finalInvocation.skill ?? '', finalInvocation.agent, output.usage)
         const elapsedMs = Date.now() - startTime
         const durationStr = OrchestratorFormatter.formatDuration(elapsedMs)
         const { inputTokens, outputTokens } = output.usage

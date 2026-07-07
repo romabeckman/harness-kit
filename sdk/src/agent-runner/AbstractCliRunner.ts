@@ -78,7 +78,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
    */
   protected buildPrompt(invocation: AgentInvocation): string {
     return [
-      `Skill: ${invocation.skill ?? 'unknown'}`,
+      `${invocation.skill ? `Skill: ${invocation.skill}` : ''}`,
       `Mode: ${invocation.mode}`,
       '',
       JSON.stringify(invocation.payload, null, 2),
@@ -137,7 +137,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
           killProcessGroup()
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.TIMEOUT,
-            skill: invocation.skill ?? 'unknown',
+            skill: invocation.skill ?? '',
             phase: 'dispatch',
             message: `${this.binaryName} runner timed out after ${this.timeoutMs}ms`,
           }))
@@ -180,7 +180,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
         if (err.code === 'ENOENT') {
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.NETWORK_ERROR,
-            skill: invocation.skill ?? 'unknown',
+            skill: invocation.skill ?? '',
             phase: 'dispatch',
             message: `${this.binaryName} CLI not found — is it installed? (looked for: ${this.binaryName})`,
             cause: err,
@@ -188,7 +188,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
         } else {
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.API_ERROR,
-            skill: invocation.skill ?? 'unknown',
+            skill: invocation.skill ?? '',
             phase: 'dispatch',
             message: `${this.binaryName} CLI error: ${err.message}`,
             cause: err,
@@ -208,7 +208,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
           }
           reject(new AgentRunnerError({
             code: isQuota ? AgentRunnerErrorCode.QUOTA_EXCEEDED : AgentRunnerErrorCode.UNKNOWN_ERROR,
-            skill: invocation.skill ?? 'unknown',
+            skill: invocation.skill ?? '',
             phase: 'dispatch',
             message: `${this.binaryName} CLI exited with code ${code}${detail}`,
           }))
