@@ -53,7 +53,7 @@ export class OrchestratorFormatter {
   }
 
   static onFeatureTransition(completed: Feature, next: Feature | null, cycle: number): void {
-    const width = 60
+    const width = 150
     const hr = '╠' + '═'.repeat(width - 2) + '╣'
     const top = '╔' + '═'.repeat(width - 2) + '╗'
     const bot = '╚' + '═'.repeat(width - 2) + '╝'
