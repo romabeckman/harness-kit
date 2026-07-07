@@ -31,9 +31,25 @@ export class ProjectStateService {
 
   // This method is public for testing purposes.
   public static _parseTasksFromMarkdown(content: string, file: string): ExtractedTask[] {
-    // Extract JSON array from fenced code block (```json ... ``` or ``` ... ```)
-    const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/i)
-    const rawJson = fenceMatch ? fenceMatch[1].trim() : content.trim()
+    // Split into sections on any "## ..." heading
+    const sectionBlocks = content.split(/(?=^## )/m)
+
+    // Prefer the section whose title contains "Ordered Development Tasks"
+    // Fall back to trying every section in order
+    const orderedFirst = sectionBlocks.filter(s => /ordered development tasks/i.test(s))
+    const candidates = orderedFirst.length > 0 ? orderedFirst : sectionBlocks
+
+    let rawJson = ''
+    for (const section of candidates) {
+      const fenceMatch = section.match(/```(?:json)?\s*([\s\S]*?)```/i)
+      let candidate = fenceMatch ? fenceMatch[1].trim() : ''
+      if (!candidate || !(/(title)/i.test(candidate) && /(description)/i.test(candidate))) continue
+      try {
+        candidate = candidate.replaceAll(/taskId/gi, 'id').replaceAll(/task_id/gi, 'id')
+        const parsed = JSON.parse(candidate)
+        if (Array.isArray(parsed)) { rawJson = candidate; break }
+      } catch { /* not valid JSON, try next */ }
+    }
     if (!rawJson) return []
 
     let parsed: unknown
