@@ -62,14 +62,14 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     return Promise.all([
       context.invokeAgent({
         skill: 'the-grumpy-tech-lead',
-        agent: 'harness-tech-lead',
+        agent: 'harness-kit:harness-tech-lead',
         mode: 'autonomous',
         prompt: tlPrompt,
         phaseKey: 'phase_c_tl',
       }),
       context.invokeAgent({
         skill: 'adversarial-qa',
-        agent: 'harness-qa',
+        agent: 'harness-kit:harness-qa',
         mode: 'autonomous',
         prompt: advPrompt,
         phaseKey: 'phase_c_adv',
@@ -225,7 +225,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`/the-grumpy-tech-lead\` skill before starting.`,
-      `You are operating as the \`harness-tech-lead\` agent.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
@@ -310,7 +309,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`/adversarial-qa\` skill before starting.`,
-      `You are operating as the \`harness-qa\` agent.`,
       `</skill_context>`,
       ``,
       `<inputs>`,

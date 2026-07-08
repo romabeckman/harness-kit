@@ -35,10 +35,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `# ROLE`,
       `You are software architect defining the backlog of a project. Understand the project scope and generate a \`BACKLOG.md\` table with all the features of the project.`,
       ``,
-      `<skill_context>`,
-      `You are operating as the \`software-architect\` agent.`,
-      `</skill_context>`,
-      ``,
       `# OBJECTIVE`,
       `Parse the project scope below and generate a \`BACKLOG.md\` table. Write it to: \`${backlogPath}\``,
       ``,
@@ -80,7 +76,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     const prompt = promptLines.join('\n')
 
     await context.invokeAgent({
-      agent: 'software-architect',
+      agent: 'harness-kit:software-architect',
       mode: 'autonomous',
       prompt,
       phaseKey: 'bootstrap',

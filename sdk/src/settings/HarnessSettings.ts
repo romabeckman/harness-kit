@@ -35,7 +35,7 @@ export class HarnessSettings {
       }
     }
 
-    let mergedSettings: HarnessSettingsMap = { ...DEFAULT_SETTINGS }
+    let mergedSettings: HarnessSettingsMap = { }
 
     // Read global settings
     if (existsSync(globalPath)) {

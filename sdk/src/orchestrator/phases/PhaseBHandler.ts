@@ -66,7 +66,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       config.steeringRules
     )
 
-    const agent = activeFeature.layer ? 'developer-' + activeFeature.layer : 'developer-backend'
+    const agent = activeFeature.layer ? 'harness-kit:developer-' + activeFeature.layer : 'harness-kit:developer-backend'
     const prompt = this.buildTddOrchestratorPrompt(payload, context, agent)
 
     await context.invokeAgent({
@@ -117,7 +117,6 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`/tdd-orchestrator\` skill before starting.`,
-      `You are operating as the \`${agent}\` agent.`,
       `</skill_context>`,
       ``,
       `<inputs>`,

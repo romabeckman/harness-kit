@@ -67,7 +67,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
 
     await context.invokeAgent({
       skill: "scope-refinement",
-      agent: "software-architect",
+      agent: "harness-kit:software-architect",
       mode: "autonomous",
       prompt,
       phaseKey: "phase_a",
@@ -94,7 +94,6 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`/scope-refinement\` skill before starting.`,
-      `You are operating as the \`software-architect\` agent.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
@@ -205,7 +204,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     const tacticalDesignFile = join(context.workingDir, 'docs', 'specs', feature.domain, `003-*-tactical-design.md`)
 
     await context.invokeAgent({
-      agent: "software-architect",
+      agent: "harness-kit:software-architect",
       mode: "autonomous",
       phaseKey: "phase_a",
       prompt: [
