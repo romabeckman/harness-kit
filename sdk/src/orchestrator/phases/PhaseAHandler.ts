@@ -1,5 +1,5 @@
 import { Phase } from "../types";
-import { AbstractPhaseHandler, ExtractedTask, PhaseContext } from "./AbstractPhaseHandler";
+import { AbstractPhaseHandler, PhaseContext } from "./AbstractPhaseHandler";
 import { ContextAssembler } from "../../context-assembler/ContextAssembler";
 import type { Feature } from "../../file-state/types";
 import type { PhaseAPayload } from "../../context-assembler/types";
@@ -67,7 +67,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
 
     await context.invokeAgent({
       skill: "scope-refinement",
-      agent: "software-architect",
+      agent: "harness-kit:software-architect",
       mode: "autonomous",
       prompt,
       phaseKey: "phase_a",
@@ -94,7 +94,6 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`/scope-refinement\` skill before starting.`,
-      `You are operating as the \`software-architect\` agent.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
@@ -164,14 +163,19 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     let extracted = context.extractTasksFromTacticalDesign(feature.domain);
 
     if (extracted.length === 0) {
-      extracted = await this.recoverTasksViaAgent(feature, context);
-    }
-
-    if (extracted.length === 0) {
-      throw new Error(
-        `${phase} failed: no tasks extracted for feature ${feature.id} (domain '${feature.domain}'). ` +
-        `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array under "## Section 6 — Ordered Development Tasks".`,
-      );
+      // Agent writes rows directly into DEVELOPMENT-STATE.md; do not call appendTasks after.
+      await this.recoverTasksViaAgent(feature, context);
+      const recovered = context.fsm
+        .loadDevelopmentState()
+        .filter((t) => t.featureId === feature.id);
+        
+      if (recovered.length === 0) {
+        throw new Error(
+          `${phase} failed: no tasks extracted for feature ${feature.id} (domain '${feature.domain}'). ` +
+          `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array with objects having 'title'.`,
+        );
+      }
+      return;
     }
 
     context.fsm.appendTasks(
@@ -188,11 +192,11 @@ export class PhaseAHandler extends AbstractPhaseHandler {
   }
 
   // Last-resort recovery: asks the agent to read the 003 doc and write the missing rows
-  // directly into DEVELOPMENT-STATE.md, then re-runs the local parser.
+  // directly into DEVELOPMENT-STATE.md. Caller must reload state after this returns.
   private async recoverTasksViaAgent(
     feature: Feature,
     context: PhaseContext,
-  ): Promise<ExtractedTask[]> {
+  ): Promise<void> {
     const projectPathsList = context.config.projectPaths
       .map((p) => `- ${p}`)
       .join("\n");
@@ -200,38 +204,24 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     const tacticalDesignFile = join(context.workingDir, 'docs', 'specs', feature.domain, `003-*-tactical-design.md`)
 
     await context.invokeAgent({
-      skill: "scope-refinement",
-      agent: "software-architect",
+      agent: "harness-kit:software-architect",
       mode: "autonomous",
       phaseKey: "phase_a",
       prompt: [
         `## Objective`,
         `Extract ordered development tasks from the tactical design and append them to DEVELOPMENT-STATE.md.`,
         ``,
-        `<skill_context>`,
-        `Invoke the \`/scope-refinement\` skill before starting.`,
-        `You are operating as the \`software-architect\` agent.`,
-        `</skill_context>`,
-        ``,
         `<project_paths>`,
         projectPathsList,
         `</project_paths>`,
         ``,
         `Read all files matching \`${tacticalDesignFile}\`.`,
-        `Locate "## Section 6 — Ordered Development Tasks" and parse the JSON array in the fenced code block immediately following it.`,
+        `Locate the fenced JSON array containing task objects with "title" and "id" fields.`,
         `For each task object, append a row to docs/product/DEVELOPMENT-STATE.md using this format:`,
         `| ${feature.id} | T<zero-padded id> | <project path> | <title> | ${feature.domain} | - | NOT_STARTED |`,
         `where <project> is one of the last folder segment of the project path: \`project_paths\`.`,
         `Do not output anything else.`,
       ].join(" "),
     });
-    const reloadedTasks = context.fsm
-      .loadDevelopmentState()
-      .filter((t) => t.featureId === feature.id);
-    return reloadedTasks.map((t) => ({
-      taskId: t.taskId,
-      description: t.description,
-      file: t.project,
-    }));
   }
 }

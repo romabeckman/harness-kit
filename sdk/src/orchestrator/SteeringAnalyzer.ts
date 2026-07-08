@@ -30,7 +30,7 @@ export class SteeringAnalyzer {
     ].join('\n')
 
     const output = await runner.run({
-      agent: 'software-architect',
+      agent: 'harness-kit:software-architect',
       mode: 'autonomous',
       payload: {},
       prompt,

@@ -36,12 +36,20 @@ const MOCK_TDD_FILE_CONTENT = `
     "acceptance": "pytest test_main.py exits non-zero"
   },
   {
-    "id": 2,
+    "taskId": 2,
     "title": "Implement greeting in main()",
     "description": "Add print('Hello, World!') inside main(). Add if __name__ == '__main__': main() guard. Test must PASS.",
     "tdd_phase": "GREEN",
     "files_affected": ["main.py"],
     "acceptance": "pytest test_main.py exits zero; python main.py outputs 'Hello, World!'"
+  },
+  {
+    "task_id": 3,
+    "title": "Implement new feature in main()",
+    "description": "Add a new feature to main() that prints 'Feature implemented!'. Test must PASS.",
+    "tdd_phase": "GREEN",
+    "files_affected": ["main_new.py"],
+    "acceptance": ""
   }
 ]
 \`\`\`
@@ -103,6 +111,7 @@ describe('ProjectStateService', () => {
             expect(tasks).toEqual([
                 { taskId: 'T01', description: 'Create main.py with failing test hook', file: '' },
                 { taskId: 'T02', description: 'Implement greeting in main()', file: '' },
+                { taskId: 'T03', description: 'Implement new feature in main()', file: '' },
             ]);
         });
 

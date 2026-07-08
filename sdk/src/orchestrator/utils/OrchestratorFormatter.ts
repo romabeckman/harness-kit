@@ -95,7 +95,7 @@ export class OrchestratorFormatter {
         : '-'
       console.log(
         padLine(
-          `${AnsiHelpers.cyan(next.id)}  ${next.title}  ` +
+          `${AnsiHelpers.cyan(next.id)}  ${next.title.slice(0, 65)}  ` +
           `[${AnsiHelpers.dim('Priority:')} ${AnsiHelpers.yellow(priorityStr)}]`
         )
       )

@@ -11,7 +11,7 @@ export interface ProgressLine {
 }
 
 export function defaultProgress(line: ProgressLine): void {
-  const tag = line.skill ? `[${line.skill}] ` : ''
+  const tag = line.skill ? `[${line.skill}] ` : ' '
   if (line.type === 'text' && line.text) {
     const preview = line.text.replace(/\n/g, ' ').slice(0, 120)
     process.stderr.write(`${tag}${preview}\n`)

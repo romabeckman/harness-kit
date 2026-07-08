@@ -18,7 +18,7 @@ describe('SteeringAnalyzer', () => {
     expect(actions).toEqual([{ type: 'add_rule', rule: 'Never change index.ts' }])
     expect(mockRunner.run).toHaveBeenCalledWith(
       expect.objectContaining({
-        agent: 'software-architect',
+        agent: 'harness-kit:software-architect',
       })
     )
   })

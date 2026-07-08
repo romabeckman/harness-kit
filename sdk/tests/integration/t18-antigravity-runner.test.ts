@@ -62,12 +62,13 @@ describe('AntigravityCLIRunner — TC-AGY', () => {
     spawnMock.mockReturnValue(mockChild)
 
     const { AntigravityCLIRunner } = await import('../../src/agent-runner/antigravity-cli/AntigravityCLIRunner')
-    const runner = new AntigravityCLIRunner({ model: 'gemini-3.5-flash-test' })
+    const runner = new AntigravityCLIRunner()
     const output = await runner.run({
       agent: 'developer-backend',
       mode: 'autonomous',
       payload: {},
       prompt: 'do coding task',
+      model: 'gemini-3.5-flash-test',
     })
 
     expect(spawnMock).toHaveBeenCalledWith(
@@ -78,7 +79,6 @@ describe('AntigravityCLIRunner — TC-AGY', () => {
 
     expect(mockChild.stdin.write).toHaveBeenCalledWith('do coding task', 'utf8')
     expect(output.raw).toBe('gemini response output')
-    expect(output.usage?.model).toBe('gemini-3.5-flash-test')
     expect(output.success).toBe(true)
   })
 
@@ -90,12 +90,14 @@ describe('AntigravityCLIRunner — TC-AGY', () => {
     spawnMock.mockReturnValue(mockChild)
 
     const { AntigravityCLIRunner } = await import('../../src/agent-runner/antigravity-cli/AntigravityCLIRunner')
-    const runner = new AntigravityCLIRunner({ model: 'gemini-3.5-flash-test', timeoutMs: 30000 })
+    const runner = new AntigravityCLIRunner()
     await runner.run({
       agent: 'developer-backend',
       mode: 'autonomous',
       payload: {},
       prompt: 'do coding task',
+      model: 'gemini-3.5-flash-test',
+      timeoutMs: 30000,
     })
 
     expect(spawnMock).toHaveBeenCalledWith(

@@ -53,7 +53,10 @@ function makeFullRunFake(specDir: string): void {
     '## Section 6 — Ordered Development Tasks',
     '',
     '```json',
-    JSON.stringify([{ id: '1', title: 'Implement core functionality' }]),
+    JSON.stringify([
+      { id: '1', title: 'Implement core functionality', description: 'Implement the core functionality for the SDK' },
+      { taskId: '2', title: 'Implement core functionality', description: 'Implement the core functionality for the SDK' }
+    ]),
     '```',
   ].join('\n')
   const origRun = fake.run.bind(fake)
