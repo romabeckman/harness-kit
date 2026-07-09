@@ -145,7 +145,11 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features present in the <background_context> or the backlog file.`,
       `- DEPENDENCY RULE: If the <target_feature> has dependencies listed in the backlog, acknowledge them as assumptions or interfaces in your design, but DO NOT design, spec, or generate tasks for the dependencies themselves.`,
       ...(complexity !== undefined
-        ? [`- COMPLEXITY OVERRIDE: Classify as '${complexity}' — do not re-evaluate scope complexity.`]
+        ? [
+          `- COMPLEXITY OVERRIDE: Classify as '${complexity}' — do not re-evaluate scope complexity.`,
+          `- For 'SIMPLE': create only 'tactical-design' and 'test-scenarios' documents for each project. Do not invoke \`the-grumpy-tech-lead\`.`,
+          `- For 'COMPLEX': create all documents for each project. Its required \`the-grumpy-tech-lead\` to get context and clarification about the scope before invoke \`scope-refinement\`.`,
+        ]
         : []),
       `- Execute autonomously without pausing or asking for confirmation.`,
       `- Write every file to disk before advancing to the next.`,
