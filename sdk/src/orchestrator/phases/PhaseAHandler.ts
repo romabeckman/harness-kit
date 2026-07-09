@@ -93,7 +93,8 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `Perform scope refinement STRICTLY for the <target_feature>. Use the <background_context> ONLY for system alignment and contextual awareness. Do NOT refine or generate specifications for the entire background context.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`/scope-refinement\` skill before starting.`,
+      `Invoke the \`scope-refinement\` skill before starting.`,
+      `Use \`the-grumpy-tech-leadt\` skill, its optional, only use it if you have questions.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
@@ -126,6 +127,11 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `</rules>`,
       ``,
       `</inputs>`,
+      ``,
+      `<workflow>`,
+      `- Step 1: (Is Optional) Invoke the \`the-grumpy-tech-lead\` skill to make questions to clarify the scope if something is not clear. Save in memory the questions and answers for next step. If no questions are made, it means the feature is clear and we can proceed.`,
+      `- Step 2: Invoke the \`scope-refinement\` skill to start creating specs. If exists questions from step 1, pass them to the \`scope-refinement\` skill to improve the understanding of the feature.`,
+      `</workflow>`,
       ``,
       `<expected_outputs>`,
       `Produce, under \`${payload.workingDir}\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
@@ -168,7 +174,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       const recovered = context.fsm
         .loadDevelopmentState()
         .filter((t) => t.featureId === feature.id);
-        
+
       if (recovered.length === 0) {
         throw new Error(
           `${phase} failed: no tasks extracted for feature ${feature.id} (domain '${feature.domain}'). ` +
