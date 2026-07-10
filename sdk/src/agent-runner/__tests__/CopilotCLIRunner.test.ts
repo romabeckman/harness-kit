@@ -99,7 +99,7 @@ describe('CopilotCLIRunner', () => {
     const mockChild = createMockChild()
     vi.mocked(spawn).mockReturnValue(mockChild as any)
 
-    const runner = new CopilotCLIRunner({ model: 'gpt-4o' })
+    const runner = new CopilotCLIRunner()
     const promise = runner.run({ agent: 'a', mode: 'autonomous', prompt: 'x', model: 'o3' })
 
     const [, args] = vi.mocked(spawn).mock.calls[0]

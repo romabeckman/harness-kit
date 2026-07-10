@@ -5,8 +5,8 @@ import type { IPhaseHandler } from './phases/AbstractPhaseHandler'
 
 export interface OrchestratorConfig {
   scope: string
-  score: number
-  reworks: number
+  score?: number
+  reworks?: number
   projectPaths: string[]
   agentRunner?: IAgentRunner  // defaults to ClaudeCLIRunner
   productDir?: string

@@ -13,9 +13,9 @@ vi.mock('node:child_process', () => ({
 class MockChildProcess extends EventEmitter {
   stdout: EventEmitter
   stderr: EventEmitter
-  stdin: { write: vi.Mock, end: vi.Mock }
+  stdin: { write: ReturnType<typeof vi.fn>, end: ReturnType<typeof vi.fn> }
   pid: number | undefined
-  kill: vi.Mock
+  kill: ReturnType<typeof vi.fn>
 
   constructor(
     mockStdout: string[] = [],
@@ -73,8 +73,9 @@ describe('ClaudeCLIRunner', () => {
     invocation = {
       prompt: 'Hello Claude',
       skill: 'test-skill',
+      agent: 'test-agent',
       payload: { key: 'value' },
-      mode: 'default',
+      mode: 'autonomous',
     }
   })
 
@@ -92,6 +93,7 @@ describe('ClaudeCLIRunner', () => {
       '--verbose',
       '--input-format', 'text',
       '--dangerously-skip-permissions',
+      '--agent', 'test-agent',
     ])
   })
 

@@ -45,7 +45,7 @@ export class ContextAssembler {
     tasks: Task[],
     projectPaths: string[],
     isRetry: boolean,
-    reworks: number,
+    reworks?: number,
     steeringRules?: SteeringRulesConfig
   ): PhaseBPayload {
     const payload: PhaseBPayload = {
