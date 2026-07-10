@@ -21,7 +21,7 @@ import { ProjectStateService } from './services/ProjectStateService'
 import { AgentInvocationService } from './services/AgentInvocationService'
 import { SteeringService } from './services/SteeringService'
 import { exit } from 'process'
-import { AgentInvocation, AgentOutput } from '../agent-runner/types'
+import { AgentInvocation, AgentOutput, Runner } from '../agent-runner/types'
 import { SteeringAction } from './SteeringAnalyzer'
 import { IAgentRunner } from '../agent-runner/IAgentRunner'
 
@@ -45,8 +45,8 @@ export class HarnessOrchestrator implements PhaseContext {
   constructor(config: OrchestratorConfig, options: HarnessOrchestratorOptions = {}) {
     this.agentRunner = config.agentRunner
       ?? (process.env.ANTHROPIC_API_KEY
-        ? AgentRunnerFactory.create({ type: 'claude-sdk' })
-        : AgentRunnerFactory.create({ type: 'claude-cli' }))
+        ? AgentRunnerFactory.create({ type: Runner.CLAUDE_SDK })
+        : AgentRunnerFactory.create({ type: Runner.CLAUDE_CLI }))
     this.config = config
     this.workingDir = options.workingDir ?? process.cwd()
     this.settings = config.settings ?? HarnessSettings.load(this.workingDir)

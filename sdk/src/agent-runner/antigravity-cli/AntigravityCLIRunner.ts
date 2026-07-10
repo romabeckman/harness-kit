@@ -1,10 +1,10 @@
 import { AbstractCliRunner } from '../AbstractCliRunner'
-import type { AgentInvocation } from '../types'
+import { Runner, type AgentInvocation } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
 
 export class AntigravityCLIRunner extends AbstractCliRunner {
-  readonly type = 'antigravity-cli'
+  readonly type = Runner.ANTIGRAVITY_CLI
 
   protected get binaryName(): string {
     return 'agy'
@@ -28,6 +28,6 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
 }
 
 AgentRunnerRegistry.register({
-  type: 'antigravity-cli',
+  type: Runner.ANTIGRAVITY_CLI,
   constructor: AntigravityCLIRunner,
 })

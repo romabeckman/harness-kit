@@ -1,4 +1,4 @@
-import type { AgentInvocation, AgentOutput } from '../types'
+import { Runner, type AgentInvocation, type AgentOutput } from '../types'
 import { AbstractCliRunner } from '../AbstractCliRunner'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
@@ -6,7 +6,7 @@ import { defaultProgress, extractJsonOrNull } from '../CliRunnerProgress'
 
 
 export class ClaudeCLIRunner extends AbstractCliRunner {
-  readonly type = 'claude-cli'
+  readonly type = Runner.CLAUDE_CLI
 
   protected get binaryName(): string {
     return 'claude'
@@ -137,6 +137,6 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
 }
 
 AgentRunnerRegistry.register({
-  type: 'claude-cli',
+  type: Runner.CLAUDE_CLI,
   constructor: ClaudeCLIRunner,
 })

@@ -1,11 +1,11 @@
 import { AbstractCliRunner } from '../AbstractCliRunner'
-import type { AgentInvocation, AgentOutput } from '../types'
+import { Runner, type AgentInvocation, type AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { defaultProgress, extractJsonOrNull } from '../CliRunnerProgress'
 
 export class CursorCLIRunner extends AbstractCliRunner {
-  readonly type = 'cursor-cli'
+  readonly type = Runner.CURSOR_CLI
 
   protected get binaryName(): string {
     return 'agent'
@@ -148,7 +148,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
 }
 
 AgentRunnerRegistry.register({
-  type: 'cursor-cli',
+  type: Runner.CURSOR_CLI,
   constructor: CursorCLIRunner,
 })
 

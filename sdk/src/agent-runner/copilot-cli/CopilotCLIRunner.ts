@@ -1,11 +1,11 @@
 import { AbstractCliRunner } from '../AbstractCliRunner'
-import type { AgentInvocation, AgentOutput } from '../types'
+import { Runner, type AgentInvocation, type AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { defaultProgress, extractJsonOrNull } from '../CliRunnerProgress'
 
 export class CopilotCLIRunner extends AbstractCliRunner {
-  readonly type = 'copilot-cli'
+  readonly type = Runner.COPILOT_CLI
 
   protected get binaryName(): string {
     return 'copilot'
@@ -106,6 +106,6 @@ export class CopilotCLIRunner extends AbstractCliRunner {
 }
 
 AgentRunnerRegistry.register({
-  type: 'copilot-cli',
+  type: Runner.COPILOT_CLI,
   constructor: CopilotCLIRunner,
 })

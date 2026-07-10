@@ -16,7 +16,7 @@ import {
 import { ResetOptions, resetOptions } from "./reset-service";
 import { parseRunArgs } from "../utils/run-args-parser";
 import { DebugContext } from "../DebugContext";
-import { ClaudeCLIRunner } from "../../agent-runner/claude-cli/ClaudeCLIRunner";
+import { Runner } from "../../agent-runner/types";
 
 export interface RunOptions {
   agentType?: string;
@@ -120,7 +120,7 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
   }
 
   const agentRunner = AgentRunnerFactory.create({
-      type: options.agentType ?? 'claude-cli',
+      type: options.agentType ?? Runner.CLAUDE_CLI,
       model: options.model,
     })
 
