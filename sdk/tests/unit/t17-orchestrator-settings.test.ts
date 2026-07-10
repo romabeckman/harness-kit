@@ -5,6 +5,7 @@ import { tmpdir } from 'os'
 import { HarnessOrchestrator } from '../../src/orchestrator/HarnessOrchestrator'
 import { HarnessSettings } from '../../src/settings/HarnessSettings'
 import { FakeAgentRunner } from '../helpers/FakeAgentRunner'
+import type { AgentInvocation, AgentOutput } from '../../src/agent-runner/types'
 
 describe('T17 — Orchestrator Settings Overrides', () => {
   let tmpDir: string
@@ -62,7 +63,7 @@ describe('T17 — Orchestrator Settings Overrides', () => {
     Object.defineProperty(fakeRunner, 'type', { value: 'claude-cli', writable: true })
 
     // Stub runner to simulate a long running task that checks abort signal
-    fakeRunner.run = async (invocation, options) => {
+    fakeRunner.run = async (invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput> => {
       fakeRunner.invocations.push(invocation)
       return new Promise((_, reject) => {
         const check = () => {
@@ -91,7 +92,7 @@ describe('T17 — Orchestrator Settings Overrides', () => {
     const fakeRunner = new FakeAgentRunner()
     Object.defineProperty(fakeRunner, 'type', { value: 'claude-cli', writable: true })
 
-    fakeRunner.run = async (invocation, options) => {
+    fakeRunner.run = async (invocation: AgentInvocation, _options?: { signal?: AbortSignal }): Promise<AgentOutput> => {
       fakeRunner.invocations.push(invocation)
       return { success: true, stdout: 'mock', stderr: '', raw: '{}' }
     }

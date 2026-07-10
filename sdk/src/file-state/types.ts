@@ -20,7 +20,7 @@ export interface Feature {
   id: string
   title: string
   domain: string
-  layer: FeatureLayer | null
+  layer?: FeatureLayer | null
   priority: number
   dependencies: string[]
   reworks: number
@@ -47,8 +47,8 @@ export interface DecisionEntry {
 }
 
 export interface BootstrapConfig {
-  originalScope: string
-  projectPaths: string[]
+  originalScope?: string
+  projectPaths?: string[]
   scoreThresholds: {
     theGrumpyTechLead: { threshold: number }
     adversarialQA: { threshold: number }

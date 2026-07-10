@@ -2,7 +2,7 @@ import type { IAgentRunner } from '../../src/agent-runner/IAgentRunner'
 import type { AgentInvocation, AgentOutput } from '../../src/agent-runner/types'
 
 export interface FakeInvocationRecord {
-  skill: string
+  skill?: string
   agent: string
   payload?: Record<string, unknown>
   prompt?: string
@@ -18,18 +18,10 @@ export class FakeAgentRunner implements IAgentRunner {
     raw: JSON.stringify({ score: 0.85, scoreTL: 0.85, scoreAdv: 0.85 }),
   }
 
-  /**
-   * Configure a fixed response for a skill name.
-   */
   setResponse(skill: string, output: AgentOutput): void {
     this.responses.set(skill, output)
   }
 
-  /**
-   * Configure a sequence of responses for a skill.
-   * First call returns queue[0], second call returns queue[1], etc.
-   * Falls back to setResponse if queue exhausted.
-   */
   enqueueResponse(skill: string, output: AgentOutput): void {
     const q = this.callQueue.get(skill) ?? []
     q.push(output)
@@ -40,7 +32,7 @@ export class FakeAgentRunner implements IAgentRunner {
     this.defaultOutput = output
   }
 
-  async run(invocation: AgentInvocation): Promise<AgentOutput> {
+  async run(invocation: AgentInvocation, _options?: { signal?: AbortSignal }): Promise<AgentOutput> {
     this.invocations.push({
       skill: invocation.skill,
       agent: invocation.agent,
@@ -50,14 +42,16 @@ export class FakeAgentRunner implements IAgentRunner {
       effort: invocation.effort,
     })
 
+    const skill = invocation.skill ?? ''
+
     // Check queue first
-    const q = this.callQueue.get(invocation.skill)
+    const q = this.callQueue.get(skill)
     if (q && q.length > 0) {
       return q.shift()!
     }
 
     // Check fixed responses
-    const fixed = this.responses.get(invocation.skill)
+    const fixed = this.responses.get(skill)
     if (fixed) return fixed
 
     return this.defaultOutput

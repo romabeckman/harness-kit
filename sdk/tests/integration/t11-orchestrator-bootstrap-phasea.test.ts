@@ -295,9 +295,9 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
 
     await orchestrator.runBootstrapOnly()
 
-    const bootstrapCalls = fakeWithUsage.invocations.filter(i => i.agent === 'software-architect')
+    const bootstrapCalls = fakeWithUsage.invocations.filter(i => i.agent === 'harness-kit:software-architect')
     expect(bootstrapCalls.length).toBeGreaterThan(0)
-    expect(bootstrapCalls[0].agent).toBe('software-architect')
+    expect(bootstrapCalls[0].agent).toBe('harness-kit:software-architect')
   })
 
   it('invokeAgent() calls ledger.record() when output.usage is defined', async () => {

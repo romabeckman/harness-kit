@@ -105,7 +105,7 @@ describe('AgentRunnerModular', () => {
     }
     vi.mocked(spawn).mockReturnValue(mockChild)
 
-    const runner = new AntigravityCLIRunner({ timeoutMs: 0, agyBin: 'agy' })
+    const runner = new AntigravityCLIRunner()
     const controller = new AbortController()
 
     const promise = runner.run(

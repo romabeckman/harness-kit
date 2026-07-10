@@ -7,7 +7,7 @@ export type RunnerConfig = BaseRunnerConfig & Record<string, any>
 
 export interface AgentInvocation {
   readonly agent: string
-  readonly mode: 'autonomous'
+  readonly mode: 'autonomous' | 'default'
   readonly skill?: string
   readonly payload?: ContextPayload
   readonly prompt?: string  // explicit prompt override (takes precedence over payload serialization)
@@ -21,9 +21,9 @@ export interface AgentInvocation {
 }
 
 export interface AgentOutput {
-  readonly success: boolean
-  readonly stdout: string
-  readonly stderr: string
+  readonly success?: boolean
+  readonly stdout?: string
+  readonly stderr?: string
   readonly raw: string
   readonly artefacts?: Record<string, string>
   readonly usage?: TokenUsage

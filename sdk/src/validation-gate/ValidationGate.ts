@@ -10,7 +10,8 @@ export class ValidationGate {
   static evaluate(
     scores: ValidationScores,
     reworks: number,
-    config: BootstrapConfig
+    config: BootstrapConfig,
+    _isCrashing?: boolean
   ): VerdictResult {
     const thresholdTL = config.scoreThresholds.theGrumpyTechLead.threshold
     const thresholdAdv = config.scoreThresholds.adversarialQA.threshold
