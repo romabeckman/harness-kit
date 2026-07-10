@@ -27,6 +27,9 @@ export class HarnessSettings {
       try {
         mkdirSync(dirname(globalPath), { recursive: true })
         writeFileSync(globalPath, JSON.stringify(DEFAULT_SETTINGS, null, 2), 'utf-8')
+        console.info(`==================================================`)
+        console.info(`   Global settings created at ${globalPath}`)
+        console.info(`==================================================`)
       } catch (err: any) {
         // If another process/test created it concurrently, ignore the error
         if (!existsSync(globalPath)) {
@@ -35,7 +38,7 @@ export class HarnessSettings {
       }
     }
 
-    let mergedSettings: HarnessSettingsMap = { }
+    let mergedSettings: HarnessSettingsMap = {}
 
     // Read global settings
     if (existsSync(globalPath)) {
