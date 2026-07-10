@@ -16,12 +16,10 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
 
   protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
     const args = ['--print', prompt]
-    const model = invocation.model
     const timeout = invocation.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS
-
-    if (model) {
-      args.push('--model', model)
-    }
+    
+    const model = this.getModelName(invocation)
+    if (model) args.push('--model', model)
 
     // add 1000ms to timeout to avoid throw error for 1sec difference
     args.push('--print-timeout', `${timeout + 1000}ms`)

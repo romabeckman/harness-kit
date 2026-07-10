@@ -24,7 +24,8 @@ export class CursorCLIRunner extends AbstractCliRunner {
       '--trust',
     ]
 
-    if (invocation.model) args.push('--model', invocation.model)
+    const model = this.getModelName(invocation)
+    if (model) args.push('--model', model)
     if (invocation.workspacePath) args.push('--workspace', invocation.workspacePath)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
     return args

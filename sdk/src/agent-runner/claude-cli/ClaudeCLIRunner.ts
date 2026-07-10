@@ -24,8 +24,8 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
       '--input-format', 'text',
       '--dangerously-skip-permissions',
     ]
-
-    if (invocation.model) args.push('--model', invocation.model)
+    const model = this.getModelName(invocation)
+    if (model) args.push('--model', model)
     if (invocation.effort) args.push('--effort', invocation.effort)
     if (invocation.agent) args.push('--agent', invocation.agent)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)

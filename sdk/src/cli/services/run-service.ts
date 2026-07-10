@@ -1,6 +1,7 @@
 import { input, select } from "@inquirer/prompts";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { exit } from 'process';
 import { HarnessOrchestrator } from "../../orchestrator/HarnessOrchestrator";
 import { ChainBuilder } from "../../orchestrator/ChainBuilder";
 import { AgentRunnerFactory } from "../../agent-runner/AgentRunnerFactory";
@@ -15,6 +16,7 @@ import {
 import { ResetOptions, resetOptions } from "./reset-service";
 import { parseRunArgs } from "../utils/run-args-parser";
 import { DebugContext } from "../DebugContext";
+import { ClaudeCLIRunner } from "../../agent-runner/claude-cli/ClaudeCLIRunner";
 
 export interface RunOptions {
   agentType?: string;
@@ -117,12 +119,10 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
     rmSync(productDir, { recursive: true, force: true });
   }
 
-  const agentRunner = options.agentType
-    ? AgentRunnerFactory.create({
-      type: options.agentType,
+  const agentRunner = AgentRunnerFactory.create({
+      type: options.agentType ?? 'claude-cli',
       model: options.model,
     })
-    : undefined;
 
   const orchestrator = new HarnessOrchestrator({
     scope: optionsReset?.scope ?? "",

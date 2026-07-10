@@ -23,6 +23,7 @@ import { SteeringService } from './services/SteeringService'
 import { exit } from 'process'
 import { AgentInvocation, AgentOutput } from '../agent-runner/types'
 import { SteeringAction } from './SteeringAnalyzer'
+import { IAgentRunner } from '../agent-runner/IAgentRunner'
 
 export interface HarnessOrchestratorOptions {
   workingDir?: string
@@ -33,7 +34,7 @@ export class HarnessOrchestrator implements PhaseContext {
   readonly workingDir: string
   readonly fsm: IFileStateManager
   state: OrchestratorState
-  private readonly agentRunner: import('../agent-runner/IAgentRunner').IAgentRunner
+  private readonly agentRunner: IAgentRunner
   private readonly ledger: TokenLedger
   private readonly chain: IPhaseHandler
   private readonly settings: HarnessSettings

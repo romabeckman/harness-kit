@@ -15,6 +15,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   // A single set of OS signal handlers forwards termination to every child.
   private static readonly activeKillFns = new Set<() => void>()
   private static signalsRegistered = false
+  private model ?: string
 
   private static registerSignalHandlers(): void {
     if (AbstractCliRunner.signalsRegistered) return
@@ -42,6 +43,10 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   /** Returns the argument list for the CLI invocation, excluding the binary itself. */
   protected abstract buildArgs(prompt: string, invocation: AgentInvocation): string[]
 
+  constructor(config?: Record<string, unknown>) {
+    if (config?.model) this.model = String(config.model)
+  }
+
   /**
    * When true, the prompt is written to the child's stdin instead of being
    * appended as a positional arg. Use this when the CLI reads from stdin to
@@ -56,7 +61,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
    * when the runner's output does not include model information.
    */
   protected getModelName(invocation: AgentInvocation): string | undefined {
-    return undefined
+    return this.model ?? invocation.model
   }
 
   /**

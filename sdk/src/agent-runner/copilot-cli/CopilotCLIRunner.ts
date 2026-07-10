@@ -18,7 +18,8 @@ export class CopilotCLIRunner extends AbstractCliRunner {
   protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
     const args = ['--allow-all-tools', '--autopilot', '--output-format', 'json']
 
-    if (invocation.model) args.push('--model', invocation.model)
+    const model = this.getModelName(invocation)
+    if (model) args.push('--model', model)
     if (invocation.effort) args.push('--reasoning-effort', invocation.effort)
     if (invocation.agent) args.push('--agent', invocation.agent)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
