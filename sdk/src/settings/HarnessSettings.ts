@@ -27,9 +27,11 @@ export class HarnessSettings {
       try {
         mkdirSync(dirname(globalPath), { recursive: true })
         writeFileSync(globalPath, JSON.stringify(DEFAULT_SETTINGS, null, 2), 'utf-8')
-        console.info(`==================================================`)
-        console.info(`   Global settings created at ${globalPath}`)
-        console.info(`==================================================`)
+
+        const columns: string = "=".repeat(`Global settings created at ${globalPath}`.length)
+        console.info(columns)
+        console.info(`Global settings created at ${globalPath}`)
+        console.info(columns)
       } catch (err: any) {
         // If another process/test created it concurrently, ignore the error
         if (!existsSync(globalPath)) {
