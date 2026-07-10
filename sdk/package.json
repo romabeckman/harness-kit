@@ -32,16 +32,16 @@
     "prepublishOnly": "npm run build && npm test"
   },
   "devDependencies": {
-    "@types/node": "^26.1.0",
-    "typescript": "^5.4.5",
-    "vitest": "^4.1.9"
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.106.0",
-    "@cursor/sdk": "^1.0.22",
-    "@github/copilot-sdk": "^1.0.4",
+    "@anthropic-ai/sdk": "^0.110.0",
+    "@cursor/sdk": "^1.0.23",
+    "@github/copilot-sdk": "^1.0.6",
     "@inquirer/prompts": "^8.5.2",
-    "@vitest/coverage-v8": "^4.1.9"
+    "@vitest/coverage-v8": "^4.1.10"
   },
   "overrides": {
     "undici": "^6.27.0"
