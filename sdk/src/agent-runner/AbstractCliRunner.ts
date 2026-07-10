@@ -11,6 +11,28 @@ import { DebugContext } from '../cli/DebugContext'
  * only need to override `binaryName` and `buildArgs()`.
  */
 export abstract class AbstractCliRunner implements IAgentRunner {
+  // Tracks kill functions for all active child processes across instances.
+  // A single set of OS signal handlers forwards termination to every child.
+  private static readonly activeKillFns = new Set<() => void>()
+  private static signalsRegistered = false
+
+  private static registerSignalHandlers(): void {
+    if (AbstractCliRunner.signalsRegistered) return
+    AbstractCliRunner.signalsRegistered = true
+
+    const handleSignal = (signal: NodeJS.Signals) => {
+      for (const fn of AbstractCliRunner.activeKillFns) fn()
+      AbstractCliRunner.activeKillFns.clear()
+      process.exit(signal === 'SIGINT' ? 130 : signal === 'SIGHUP' ? 129 : 143)
+    }
+
+    process.on('SIGINT', () => handleSignal('SIGINT'))
+    process.on('SIGTERM', () => handleSignal('SIGTERM'))
+    if (process.platform !== 'win32') {
+      process.on('SIGHUP', () => handleSignal('SIGHUP'))
+    }
+  }
+
   /** CLI binary name passed as the first argument to `spawn`. */
   protected abstract readonly binaryName: string
 
@@ -102,6 +124,8 @@ export abstract class AbstractCliRunner implements IAgentRunner {
     invocation: AgentInvocation,
     options?: { signal?: AbortSignal },
   ): Promise<AgentOutput> {
+    AbstractCliRunner.registerSignalHandlers()
+
     return new Promise<AgentOutput>((resolve, reject) => {
       if (DebugContext.enabled) {
         process.stderr.write(`[DEBUG] spawn: ${this.binaryName} ${args.join(' ')}\n\n`)
@@ -119,6 +143,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
 
       const killProcessGroup = () => {
         clearTimer()
+        AbstractCliRunner.activeKillFns.delete(killProcessGroup)
         if (child.pid) {
           if (process.platform === 'win32') {
             try { spawn('taskkill', ['/pid', child.pid.toString(), '/f', '/t']) }
@@ -131,6 +156,8 @@ export abstract class AbstractCliRunner implements IAgentRunner {
           child.kill()
         }
       }
+
+      AbstractCliRunner.activeKillFns.add(killProcessGroup)
 
       if (this.timeoutMs > 0) {
         timer = setTimeout(() => {
@@ -174,6 +201,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
 
       child.on('error', (err: NodeJS.ErrnoException) => {
         clearTimer()
+        AbstractCliRunner.activeKillFns.delete(killProcessGroup)
         if (DebugContext.enabled) {
           process.stderr.write(`[DEBUG] spawn error: ${err.stack ?? err.message}\n`)
         }
@@ -198,6 +226,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
 
       child.on('close', (code) => {
         clearTimer()
+        AbstractCliRunner.activeKillFns.delete(killProcessGroup)
         if (code !== 0) {
           const combined = (stderr + '\n' + stdout).trim()
           const isQuota = /rate.?limit|quota|overloaded/i.test(combined)
