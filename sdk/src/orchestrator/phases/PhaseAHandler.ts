@@ -147,8 +147,8 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       ...(complexity !== undefined
         ? [
           `- COMPLEXITY OVERRIDE: Classify as '${complexity}' — do not re-evaluate scope complexity.`,
-          `- For 'SIMPLE': create only 'tactical-design' and 'test-scenarios' documents for each project. Do not invoke \`the-grumpy-tech-lead\`.`,
-          `- For 'COMPLEX': create all documents for each project. Its required \`the-grumpy-tech-lead\` to get context and clarification about the scope before invoke \`scope-refinement\`.`,
+          `- For 'SIMPLE': Do not invoke \`the-grumpy-tech-lead\`.`,
+          `- For 'COMPLEX': Its required \`the-grumpy-tech-lead\` to get context and clarification about the scope before invoke \`scope-refinement\`.`,
         ]
         : []),
       `- Execute autonomously without pausing or asking for confirmation.`,
