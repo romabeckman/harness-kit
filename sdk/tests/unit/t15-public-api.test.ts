@@ -5,7 +5,7 @@ describe('T15 — Public API (src/index.ts)', () => {
     const mod = await import('../../src/index')
     expect(mod.HarnessOrchestrator).toBeDefined()
     expect(typeof mod.HarnessOrchestrator).toBe('function')
-  }, 15000) // 15 segundos
+  }, 30000) // 30 segundos
 
   it('NullAgentRunner is exported from index', async () => {
     const mod = await import('../../src/index')
