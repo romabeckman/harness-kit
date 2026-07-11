@@ -22,10 +22,8 @@ const DEV_STATE_EMPTY = [
 ].join('\n')
 
 const BOOTSTRAP_CONFIG = JSON.stringify({
-  scoreThresholds: {
-    theGrumpyTechLead: { threshold: 0.70 },
-    adversarialQA: { threshold: 0.70 },
-  },
+  scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
   completionCriteria: { maxReworks: 2 },
   cycleCounter: { completedCycles: 0 },
 }, null, 2)

@@ -49,10 +49,8 @@ export interface DecisionEntry {
 export interface BootstrapConfig {
   originalScope?: string
   projectPaths?: string[]
-  scoreThresholds: {
-    theGrumpyTechLead: { threshold: number }
-    adversarialQA: { threshold: number }
-  }
+  scoreThresholdTL: number
+  scoreThresholdAdv: number
   completionCriteria: {
     maxReworks: number
   }

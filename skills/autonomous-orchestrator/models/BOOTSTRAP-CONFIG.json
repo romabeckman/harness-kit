@@ -1,14 +1,6 @@
 {
-  "scoreThresholds": {
-    "theGrumpyTechLead": {
-      "threshold": 0.70,
-      "userProvided": false
-    },
-    "adversarialQA": {
-      "threshold": 0.70,
-      "userProvided": false
-    }
-  },
+  "scoreThresholdTL": 0.70,
+  "scoreThresholdAdv": 0.70,
   "completionCriteria": {
     "maxReworks": 2,
     "userProvided": false

@@ -75,15 +75,13 @@ describe('T02 — Shared type definitions', () => {
   describe('TS-U-05: BootstrapConfig thresholds', () => {
     it('BootstrapConfig stores exact numeric values without mutation', () => {
       const cfg: BootstrapConfig = {
-        scoreThresholds: {
-          theGrumpyTechLead: { threshold: 0.70 },
-          adversarialQA: { threshold: 0.70 },
-        },
+        scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       }
-      expect(cfg.scoreThresholds.theGrumpyTechLead.threshold).toBe(0.70)
-      expect(cfg.scoreThresholds.adversarialQA.threshold).toBe(0.70)
+      expect(cfg.scoreThresholdTL).toBe(0.70)
+      expect(cfg.scoreThresholdAdv).toBe(0.70)
       expect(cfg.completionCriteria.maxReworks).toBe(2)
     })
   })

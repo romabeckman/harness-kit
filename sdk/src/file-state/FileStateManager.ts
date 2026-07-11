@@ -87,10 +87,8 @@ export class FileStateManager implements IFileStateManager {
           originalScope: config?.scope,
           projectPaths: config?.projectPaths ?? [],
           currentPhase: Phase.BOOTSTRAP,
-          scoreThresholds: {
-            theGrumpyTechLead: { threshold: config?.score ?? 0.70 },
-            adversarialQA: { threshold: config?.score ?? 0.70 },
-          },
+          scoreThresholdTL: config?.score ?? 0.70,
+          scoreThresholdAdv: config?.score ?? 0.70,
           completionCriteria: { maxReworks: config?.reworks ?? 2 },
           cycleCounter: { completedCycles: 0 },
           steeringRules: createDefaultSteeringRules(config?.initialRules)

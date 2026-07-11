@@ -56,19 +56,19 @@ export class PhaseCHandler extends AbstractPhaseHandler {
   }
 
   private async executeAgents(context: PhaseContext, payload: PhaseCPayload, config: BootstrapConfig) {
-    const tlPrompt = this.buildTechLeadPrompt(payload, config, context.workingDir)
-    const advPrompt = this.buildAdversarialQAPrompt(payload, config, context.workingDir)
+    const tlPrompt = this.buildTechLeadPrompt(payload, context.workingDir)
+    const advPrompt = this.buildAdversarialQAPrompt(payload, context.workingDir)
 
     return Promise.all([
       context.invokeAgent({
-        skill: 'the-grumpy-tech-lead',
+        skill: 'harness-kit:the-grumpy-tech-lead',
         agent: 'harness-kit:harness-tech-lead',
         mode: 'autonomous',
         prompt: tlPrompt,
         phaseKey: 'phase_c_tl',
       }),
       context.invokeAgent({
-        skill: 'adversarial-qa',
+        skill: 'harness-kit:adversarial-qa',
         agent: 'harness-kit:harness-qa',
         mode: 'autonomous',
         prompt: advPrompt,
@@ -177,7 +177,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const sections: string[] = []
 
     if (scores.openPoints?.length) {
-      sections.push(`### Open Points (Tech Lead)\n\n${scores.openPoints.map(p => `- ${p}`).join('\n')}`)
+      sections.push(`### Action Items (Tech Lead)\n\n${scores.openPoints.map(p => `- [ ] FIX: ${p}`).join('\n')}`)
     }
 
     if (scores.architectureTip) {
@@ -196,9 +196,8 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     return sections.length > 0 ? sections.join('\n\n') : `Score TL: ${scores.scoreTL}, Score Adv: ${scores.scoreAdv}`
   }
 
-  private buildTechLeadPrompt(payload: PhaseCPayload, config: BootstrapConfig, workingDir: string): string {
+  private buildTechLeadPrompt(payload: PhaseCPayload, workingDir: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
-    const threshold = config.scoreThresholds.theGrumpyTechLead.threshold
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
       : '- No additional rules provided'
@@ -209,22 +208,29 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     if (existsSync(reworkLogPath)) {
       reworkSection.push(
         `<rework_history totalReworks="${payload.totalReworks}">`,
-        `Contains a log of previous reviews:`,
-        ``,
-        `\`\`\`markdown`,
-        readFileSync(reworkLogPath, 'utf8').trim(),
+        `Read the file \`${reworkLogPath}\` to know what was fixed in previous rounds.`,
         `</rework_history>`,
-        `\`\`\``,
+        ``,
+        `<rework_directive round="${payload.totalReworks}">`,
+        `This is rework validation round ${payload.totalReworks}. You MUST:`,
+        `1. Read the rework_history above carefully`,
+        `2. Check which previous findings have been FIXED in the current code`,
+        `3. REMOVE fixed items from your findings — do NOT re-report resolved issues`,
+        `4. Only report issues that REMAIN UNFIXED or are NEW`,
+        `5. If a previous finding was partially fixed, describe what remains`,
+        `6. Your score MUST reflect the CURRENT state of the code after rework, not historical issues`,
+        `7. If all previous findings are resolved and no new critical issues exist, score accordingly`,
+        `</rework_directive>`,
         ``
       )
     }
 
     return [
       `## Objective`,
-      `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Identify systemic risks, architectural flaws, and concrete production failure vectors.`,
+      `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Your job is to give an HONEST, EVIDENCE-BASED verdict on the code's real state — not to guarantee a certain number of findings per run.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`/the-grumpy-tech-lead\` skill before starting.`,
+      `Invoke the \`harness-kit:the-grumpy-tech-lead\` skill before starting.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
@@ -252,6 +258,14 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       ``,
       `</inputs>`,
       ``,
+      `<evaluation_principle>`,
+      `Finding zero issues is a VALID and EXPECTED outcome when the code genuinely deserves it. You are not being evaluated on how many problems you find — you are being evaluated on accuracy. Before adding ANY item to openPoints, verify it against all three of these:`,
+      `1. Evidence: you can point to an exact file and line (or exact area) in the CURRENT code where the flaw actually exists — not a hypothetical, a "could happen", or a style preference.`,
+      `2. Impact: you can state a concrete, reproducible consequence (crash, data loss, security breach, incorrect behavior, real maintenance risk).`,
+      `3. Proportional severity: the [CRITICAL]/[HIGH]/[MEDIUM]/[LOW] label matches the actual impact. Do NOT escalate a minor issue to CRITICAL/HIGH just to make the review look thorough or to force a rework cycle.`,
+      `If, after reading the code and specs, nothing meets this bar, return "openPoints": [] and a score that reflects genuinely solid work (e.g. 0.90–1.00). A fabricated or inflated finding is a WORSE outcome than an honest "no issues found", because it triggers an unnecessary rework cycle and wastes effort on a non-problem.`,
+      `</evaluation_principle>`,
+      ``,
       `<expected_output>`,
       `Respond exclusively with a valid JSON block saved to \`${specsDir}/TL.json\`:`,
       `\`\`\`json`,
@@ -268,22 +282,23 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `  "architectureTip": "Single actionable sentence recommending an architectural improvement"`,
       `}`,
       `\`\`\``,
+      `Note: openPoints may be an empty array [] when no issue meets the evaluation_principle bar. An empty array with a high score is a fully valid response.`,
       `</expected_output>`,
       ``,
       `<strict_rules>`,
       `- Execute autonomously without pausing or asking for confirmation`,
-      `- openPoints MUST be direct, actionable findings — NO questions, NO vague suggestions`,
+      `- openPoints MUST be direct, actionable findings — NO questions, NO vague suggestions, NO speculative "might" or "could" wording`,
+      `- Do NOT force a CRITICAL/HIGH finding when none genuinely exists — an empty or low-severity-only openPoints list is expected for solid code`,
       `- Each openPoint MUST start with [CRITICAL], [HIGH], [MEDIUM], or [LOW]`,
-      `- score must be a float in [0.00, 1.00] rounded to 2 decimals, computed from severity weights`,
+      `- score must be a float in [0.00, 1.00] rounded to 2 decimals, computed from severity weights of REAL findings only`,
       `- isCrashing: true ONLY if a CRITICAL finding causes application crash, data loss, downtime, or security breach`,
       `- featureId MUST match: ${payload.featureId}`,
       `</strict_rules>`,
     ].join('\n')
   }
 
-  private buildAdversarialQAPrompt(payload: PhaseCPayload, config: BootstrapConfig, workingDir: string): string {
+  private buildAdversarialQAPrompt(payload: PhaseCPayload, workingDir: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
-    const threshold = config.scoreThresholds.adversarialQA.threshold
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
       : '- No additional rules provided'
@@ -293,22 +308,29 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     if (existsSync(reworkLogPath)) {
       reworkSection.push(
         `<rework_history totalReworks="${payload.totalReworks}">`,
-        `Contains a log of previous reviews:`,
-        ``,
-        `\`\`\`markdown`,
-        readFileSync(reworkLogPath, 'utf8').trim(),
+        `Read the file \`${reworkLogPath}\` to know what was fixed in previous rounds.`,
         `</rework_history>`,
-        `\`\`\``,
+        ``,
+        `<rework_directive round="${payload.totalReworks}">`,
+        `This is rework validation round ${payload.totalReworks}. You MUST:`,
+        `1. Read the rework_history above carefully`,
+        `2. Check which previous findings have been FIXED in the current code`,
+        `3. REMOVE fixed items from your findings — do NOT re-report resolved issues`,
+        `4. Only report issues that REMAIN UNFIXED or are NEW`,
+        `5. If a previous finding was partially fixed, describe what remains`,
+        `6. Your score MUST reflect the CURRENT state of the code after rework, not historical issues`,
+        `7. If all previous findings are resolved and no new critical issues exist, score accordingly`,
+        `</rework_directive>`,
         ``
       )
     }
 
     return [
       `## Objective`,
-      `Break the implementation for feature \`${payload.featureId}\` by finding edge cases, boundary faults, and security vulnerabilities that standard TDD missed.`,
+      `Attempt to break the implementation for feature \`${payload.featureId}\` by probing edge cases, boundary faults, and security vulnerabilities that standard TDD might miss. Your verdict must reflect what you actually found in the CURRENT code — not a quota of vulnerabilities to report.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`/adversarial-qa\` skill before starting.`,
+      `Invoke the \`harness-kit:adversarial-qa\` skill before starting.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
@@ -337,6 +359,14 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       ``,
       `</inputs>`,
       ``,
+      `<evaluation_principle>`,
+      `Passing with zero vulnerabilities and zero missed edge cases is a VALID and EXPECTED outcome when the implementation genuinely handles them. You are evaluated on accuracy, not on how many issues you surface. Before adding ANY item to vulnerabilities or edgeCasesMissed, verify:`,
+      `1. Evidence: you can point to the exact file/function/line in the CURRENT code where the flaw exists.`,
+      `2. Exploitability / reproducibility: for a vulnerability, you can describe a concrete trigger or exploit path — not a generic "this pattern can sometimes be risky" note. For an edge case, it must be a scenario the code demonstrably fails, not one it merely wasn't explicitly tested against while still behaving correctly.`,
+      `3. Proportional severity: LOW/MEDIUM/HIGH/CRITICAL must match real impact. Do NOT inflate severity to force a RETRY.`,
+      `If the implementation genuinely covers the scenarios in the test-scenarios spec and no real vulnerability exists, return "vulnerabilities": [], "edgeCasesMissed": [], "passedAdversarial": true, "hasHighCriticalVuln": false, and a score reflecting that robustness. A fabricated or inflated finding is a WORSE outcome than an honest pass — it triggers an unnecessary rework cycle on a non-problem.`,
+      `</evaluation_principle>`,
+      ``,
       `<expected_output>`,
       `Respond exclusively with a valid JSON block saved to \`${specsDir}/QA.json\`:`,
       `\`\`\`json`,
@@ -352,11 +382,13 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `  "edgeCasesMissed": ["Description of untested scenario from 004-*-test-scenarios.md or concrete failure vector"]`,
       `}`,
       `\`\`\``,
+      `Note: vulnerabilities and edgeCasesMissed may be empty arrays when nothing meets the evaluation_principle bar. In that case passedAdversarial should be true and hasHighCriticalVuln false.`,
       `</expected_output>`,
       ``,
       `<strict_rules>`,
       `- Execute autonomously without pausing or asking for confirmation`,
-      `- Any HIGH or CRITICAL vulnerability triggers RETRY regardless of score`,
+      `- Any HIGH or CRITICAL vulnerability triggers RETRY regardless of score — but only report HIGH/CRITICAL when exploitability is demonstrated, not assumed`,
+      `- Do NOT force a vulnerability or edge case finding when none genuinely exists — empty arrays with passedAdversarial: true is expected for solid code`,
       `- score must be a float in [0.00, 1.00] rounded to 2 decimals`,
       `- featureId MUST match: ${payload.featureId}`,
       `</strict_rules>`,

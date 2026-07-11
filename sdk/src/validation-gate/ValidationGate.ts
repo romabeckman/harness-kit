@@ -13,8 +13,8 @@ export class ValidationGate {
     config: BootstrapConfig,
     _isCrashing?: boolean
   ): VerdictResult {
-    const thresholdTL = config.scoreThresholds.theGrumpyTechLead.threshold
-    const thresholdAdv = config.scoreThresholds.adversarialQA.threshold
+    const thresholdTL = config.scoreThresholdTL
+    const thresholdAdv = config.scoreThresholdAdv
     const maxReworks = config.completionCriteria.maxReworks
     const { scoreTL, scoreAdv, hasHighCriticalVuln, isCrashing } = scores
 

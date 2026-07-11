@@ -86,30 +86,26 @@ describe('T06 — FileStateManager parsers', () => {
   describe('BootstrapConfigParser', () => {
     it('parses valid BOOTSTRAP-CONFIG.json', () => {
       const json = JSON.stringify({
-        scoreThresholds: {
-          theGrumpyTechLead: { threshold: 0.70 },
-          adversarialQA: { threshold: 0.70 },
-        },
+        scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       })
       const cfg = BootstrapConfigParser.parse(json)
-      expect(cfg.scoreThresholds.theGrumpyTechLead.threshold).toBe(0.70)
+      expect(cfg.scoreThresholdTL).toBe(0.70)
       expect(cfg.completionCriteria.maxReworks).toBe(2)
       expect(cfg.cycleCounter.completedCycles).toBe(0)
     })
 
     it('parses config with extra fields (template format with userProvided)', () => {
       const json = JSON.stringify({
-        scoreThresholds: {
-          theGrumpyTechLead: { threshold: 0.70, userProvided: false },
-          adversarialQA: { threshold: 0.70, userProvided: false },
-        },
+        scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2, userProvided: false },
         cycleCounter: { completedCycles: 0, lastAutoTuningAt: null },
       })
       const cfg = BootstrapConfigParser.parse(json)
-      expect(cfg.scoreThresholds.theGrumpyTechLead.threshold).toBe(0.70)
+      expect(cfg.scoreThresholdTL).toBe(0.70)
       expect(cfg.completionCriteria.maxReworks).toBe(2)
     })
 
@@ -119,10 +115,8 @@ describe('T06 — FileStateManager parsers', () => {
 
     it('sanitizes maxReworks: 0 to minimum 1 to prevent immediate FAIL', () => {
       const json = JSON.stringify({
-        scoreThresholds: {
-          theGrumpyTechLead: { threshold: 0.70 },
-          adversarialQA: { threshold: 0.70 },
-        },
+        scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 0 },
         cycleCounter: { completedCycles: 0 },
       })

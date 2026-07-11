@@ -11,19 +11,17 @@ export class BootstrapConfigParser {
     const rawMaxReworks = typeof raw.completionCriteria.maxReworks === 'number'
       ? raw.completionCriteria.maxReworks
       : 2
-    const rawThresholdTL = typeof raw.scoreThresholds.theGrumpyTechLead.threshold === 'number'
-      ? raw.scoreThresholds.theGrumpyTechLead.threshold
-      : 0.70
-    const rawThresholdAdv = typeof raw.scoreThresholds.adversarialQA.threshold === 'number'
-      ? raw.scoreThresholds.adversarialQA.threshold
-      : 0.70
+    const rawThresholdTL = typeof raw.scoreThresholdTL === 'number'
+      ? raw.scoreThresholdTL
+      : (typeof raw.scoreThresholds?.theGrumpyTechLead?.threshold === 'number' ? raw.scoreThresholds.theGrumpyTechLead.threshold : 0.70)
+    const rawThresholdAdv = typeof raw.scoreThresholdAdv === 'number'
+      ? raw.scoreThresholdAdv
+      : (typeof raw.scoreThresholds?.adversarialQA?.threshold === 'number' ? raw.scoreThresholds.adversarialQA.threshold : 0.70)
 
     const result: import('../types').BootstrapConfig = {
       projectPaths: raw.projectPaths ?? [],
-      scoreThresholds: {
-        theGrumpyTechLead: { threshold: Math.min(1, Math.max(0, rawThresholdTL)) },
-        adversarialQA: { threshold: Math.min(1, Math.max(0, rawThresholdAdv)) },
-      },
+      scoreThresholdTL: Math.min(1, Math.max(0, rawThresholdTL)),
+      scoreThresholdAdv: Math.min(1, Math.max(0, rawThresholdAdv)),
       completionCriteria: {
         maxReworks: Math.max(1, rawMaxReworks),  // guard: never allow 0 — would skip all retries
       },

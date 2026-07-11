@@ -48,10 +48,8 @@ function makeConfig(): BootstrapConfig {
   return {
     originalScope: 'scope',
     projectPaths: [],
-    scoreThresholds: {
-      theGrumpyTechLead: { threshold: 0.85 },
-      adversarialQA: { threshold: 0.85 },
-    },
+    scoreThresholdTL: 0.85,
+    scoreThresholdAdv: 0.85,
     completionCriteria: { maxReworks: 3 },
     cycleCounter: { completedCycles: 0 },
     steeringRules: { user: [] },
@@ -192,7 +190,7 @@ describe('PhaseBHandler', () => {
 
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
       const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
-      expect(invokeCall.prompt).toContain('Mocked rework content here')
+      expect(invokeCall.prompt).toContain(reworkLogPath)
       expect(invokeCall.prompt).toContain('<rework')
     })
   })

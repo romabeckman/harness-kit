@@ -34,7 +34,8 @@ describe('PhaseCHandler', () => {
     handler = new PhaseCHandler()
 
     mockActiveFeature = { id: 'F001', domain: 'cli', reworks: 0 }
-    mockConfig = { scoreThresholds: { theGrumpyTechLead: { threshold: 0.8 }, adversarialQA: { threshold: 0.8 } } }
+    mockConfig = { scoreThresholdTL: 0.8,
+      scoreThresholdAdv: 0.8 }
 
     mockContext = {
       workingDir: '/mock/dir',
@@ -91,7 +92,7 @@ describe('PhaseCHandler', () => {
     // Content must be structured markdown built from raw score arrays — not a flat string
     const [domain, content] = mockContext.fsm.writeReworkLog.mock.calls[0] as [string, string]
     expect(domain).toBe('cli')
-    expect(content).toContain('### Open Points (Tech Lead)')
+    expect(content).toContain('### Action Items (Tech Lead)')
     expect(content).toContain('Why is StdoutWriter')
     expect(content).toContain('### Vulnerabilities')
     expect(content).toContain('[CRITICAL]')
