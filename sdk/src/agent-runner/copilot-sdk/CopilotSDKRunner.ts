@@ -1,5 +1,5 @@
 import { IAgentRunner } from '../IAgentRunner'
-import type { AgentInvocation, AgentOutput } from '../types'
+import { Runner, type AgentInvocation, type AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { CopilotClient, approveAll } from '@github/copilot-sdk'
@@ -12,7 +12,7 @@ export interface CopilotSDKRunnerConfig {
 }
 
 export class CopilotSDKRunner implements IAgentRunner {
-  readonly type = 'copilot-sdk'
+  readonly type = Runner.COPILOT_SDK
   private readonly config: CopilotSDKRunnerConfig
 
   constructor(config?: Partial<CopilotSDKRunnerConfig>) {
@@ -125,6 +125,6 @@ export class CopilotSDKRunner implements IAgentRunner {
 
 // Register with AgentRunnerRegistry
 AgentRunnerRegistry.register({
-  type: 'copilot-sdk',
+  type: Runner.COPILOT_SDK,
   constructor: CopilotSDKRunner,
 })

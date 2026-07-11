@@ -39,5 +39,15 @@ export interface TokenUsage {
   effort?: string  // from ClaudeCLIRunnerConfig if set
 }
 
+export enum Runner {
+  ANTIGRAVITY_CLI = 'antigravity-cli',
+  CLAUDE_CLI = 'claude-cli',
+  CLAUDE_SDK = 'claude-sdk',
+  COPILOT_CLI = 'copilot-cli',
+  COPILOT_SDK = 'copilot-sdk',
+  CURSOR_CLI = 'cursor-cli',
+  CURSOR_SDK = 'cursor-sdk',
+}
+
 export type ContextPayload = Record<string, unknown>
 

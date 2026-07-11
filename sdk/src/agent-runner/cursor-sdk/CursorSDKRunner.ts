@@ -1,6 +1,6 @@
 import { Agent } from '@cursor/sdk'
 import type { IAgentRunner } from '../IAgentRunner'
-import type { AgentInvocation, AgentOutput } from '../types'
+import { Runner, type AgentInvocation, type AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
@@ -11,7 +11,7 @@ export interface CursorSDKRunnerConfig {
 }
 
 export class CursorSDKRunner implements IAgentRunner {
-  readonly type = 'cursor-sdk'
+  readonly type = Runner.CURSOR_SDK
   readonly #model: string | undefined
   readonly timeoutMs: number
 
@@ -176,7 +176,7 @@ export class CursorSDKRunner implements IAgentRunner {
 }
 
 AgentRunnerRegistry.register({
-  type: 'cursor-sdk',
+  type: Runner.CURSOR_SDK,
   constructor: CursorSDKRunner,
   validateConfig: () => {
     if (!process.env.CURSOR_API_KEY) {

@@ -50,7 +50,19 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
   }
 
   for (let i = 0; i < args.length; i++) {
-    const arg = args[i]
+    const currentArg = args[i]
+    let arg: string
+    let value: string | undefined
+
+    const equalsIndex = currentArg.indexOf('=')
+    if (currentArg.startsWith('--') && equalsIndex !== -1) {
+      arg = currentArg.substring(0, equalsIndex)
+      value = currentArg.substring(equalsIndex + 1)
+    } else {
+      arg = currentArg
+    }
+
+    const nextArg = () => (value !== undefined ? value : args[++i])
 
     switch (arg) {
       // ── agent shorthands ─────────────────────────────────────────────────
@@ -65,12 +77,12 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
       // ── agent / model ────────────────────────────────────────────────────
       case '--agent':
       case '-a':
-        result.agentType = args[++i]
+        result.agentType = nextArg()
         break
 
       case '--model':
       case '-m':
-        result.model = args[++i]
+        result.model = nextArg()
         break
 
       // ── action selector ──────────────────────────────────────────────────
@@ -84,23 +96,23 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
 
       // ── ResetOptions ─────────────────────────────────────────────────────
       case '--scope':
-        result.scope = args[++i]
+        result.scope = nextArg()
         break
 
       case '--path':
-        result.projectPaths.push(args[++i])
+        result.projectPaths.push(nextArg())
         break
 
       case '--score':
-        result.score = parseFloat(args[++i])
+        result.score = parseFloat(nextArg())
         break
 
       case '--reworks':
-        result.reworks = parseInt(args[++i], 10)
+        result.reworks = parseInt(nextArg(), 10)
         break
 
       case '--steering':
-        result.steeringMessage = args[++i]
+        result.steeringMessage = nextArg()
         break
 
       case '--debug':
@@ -109,7 +121,7 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
 
       case '--complexity':
       case '-c': {
-        const val = args[++i]?.toUpperCase()
+        const val = nextArg()?.toUpperCase()
         if (val === 'S' || val === 'SIMPLE') result.complexity = 'SIMPLE'
         else if (val === 'C' || val === 'COMPLEX') result.complexity = 'COMPLEX'
         break
@@ -119,7 +131,7 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
       default:
         if (arg.startsWith('--') || arg.startsWith('-')) {
           // consume next token as value if it doesn't look like a flag
-          if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+          if (value === undefined && i + 1 < args.length && !args[i + 1].startsWith('-')) {
             i++
           }
         }

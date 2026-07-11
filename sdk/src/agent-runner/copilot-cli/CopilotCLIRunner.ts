@@ -1,11 +1,11 @@
 import { AbstractCliRunner } from '../AbstractCliRunner'
-import type { AgentInvocation, AgentOutput } from '../types'
+import { Runner, type AgentInvocation, type AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { defaultProgress, extractJsonOrNull } from '../CliRunnerProgress'
 
 export class CopilotCLIRunner extends AbstractCliRunner {
-  readonly type = 'copilot-cli'
+  readonly type = Runner.COPILOT_CLI
 
   protected get binaryName(): string {
     return 'copilot'
@@ -18,7 +18,8 @@ export class CopilotCLIRunner extends AbstractCliRunner {
   protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
     const args = ['--allow-all-tools', '--autopilot', '--output-format', 'json']
 
-    if (invocation.model) args.push('--model', invocation.model)
+    const model = this.getModelName(invocation)
+    if (model) args.push('--model', model)
     if (invocation.effort) args.push('--reasoning-effort', invocation.effort)
     if (invocation.agent) args.push('--agent', invocation.agent)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
@@ -105,6 +106,6 @@ export class CopilotCLIRunner extends AbstractCliRunner {
 }
 
 AgentRunnerRegistry.register({
-  type: 'copilot-cli',
+  type: Runner.COPILOT_CLI,
   constructor: CopilotCLIRunner,
 })

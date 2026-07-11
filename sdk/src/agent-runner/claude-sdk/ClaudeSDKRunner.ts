@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { IAgentRunner } from '../IAgentRunner'
-import type { AgentInvocation, AgentOutput } from '../types'
+import { Runner, type AgentInvocation, type AgentOutput } from '../types'
 import { type AgentRunnerConfig, DEFAULT_AGENT_RUNNER_CONFIG } from './AgentRunnerConfig'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
@@ -57,7 +57,7 @@ function isQuotaError(err: unknown): boolean {
 
 // ─── ClaudeSDKRunner ────────────────────────────────────────────────────────
 export class ClaudeSDKRunner implements IAgentRunner {
-  readonly type = 'claude-sdk'
+  readonly type = Runner.CLAUDE_SDK
   readonly #config: AgentRunnerConfig
   readonly #client: Anthropic
 
@@ -213,6 +213,6 @@ export class ClaudeSDKRunner implements IAgentRunner {
 }
 
 AgentRunnerRegistry.register({
-  type: 'claude-sdk',
+  type: Runner.CLAUDE_SDK,
   constructor: ClaudeSDKRunner,
 })

@@ -5,16 +5,12 @@ import { AgentRunnerError, AgentRunnerErrorCode } from './AgentRunnerError'
 import { DEFAULT_PHASE_TIMEOUT_MS } from '../settings/DefaultSettings'
 import { DebugContext } from '../cli/DebugContext'
 
-/**
- * Abstract base class for all CLI subprocess runners.
- * Encapsulates the shared spawn/abort/kill/ENOENT pattern so concrete runners
- * only need to override `binaryName` and `buildArgs()`.
- */
+
 export abstract class AbstractCliRunner implements IAgentRunner {
-  // Tracks kill functions for all active child processes across instances.
-  // A single set of OS signal handlers forwards termination to every child.
   private static readonly activeKillFns = new Set<() => void>()
   private static signalsRegistered = false
+  #model?: string
+  #timeoutMs: number = DEFAULT_PHASE_TIMEOUT_MS
 
   private static registerSignalHandlers(): void {
     if (AbstractCliRunner.signalsRegistered) return
@@ -36,11 +32,12 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   /** CLI binary name passed as the first argument to `spawn`. */
   protected abstract readonly binaryName: string
 
-  /** Milliseconds before the spawned process is force-killed. 0 = no timeout. */
-  protected timeoutMs: number = DEFAULT_PHASE_TIMEOUT_MS
-
   /** Returns the argument list for the CLI invocation, excluding the binary itself. */
   protected abstract buildArgs(prompt: string, invocation: AgentInvocation): string[]
+
+  constructor(config?: Record<string, unknown>) {
+    if (config?.model) this.#model = String(config.model)
+  }
 
   /**
    * When true, the prompt is written to the child's stdin instead of being
@@ -56,7 +53,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
    * when the runner's output does not include model information.
    */
   protected getModelName(invocation: AgentInvocation): string | undefined {
-    return undefined
+    return this.#model ?? invocation.model
   }
 
   /**
@@ -114,7 +111,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   ): Promise<AgentOutput> {
     const prompt = invocation.prompt ?? this.buildPrompt(invocation)
     const args = this.buildArgs(prompt, invocation)
-    if (invocation.timeoutMs) this.timeoutMs = invocation.timeoutMs
+    if (invocation.timeoutMs) this.#timeoutMs = invocation.timeoutMs
     return this.spawnAndCollect(prompt, args, invocation, options)
   }
 
@@ -129,7 +126,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
     return new Promise<AgentOutput>((resolve, reject) => {
       if (DebugContext.enabled) {
         process.stderr.write(`[DEBUG] spawn: ${this.binaryName} ${args.join(' ')}\n\n`)
-        process.stderr.write(`[DEBUG] timeout: ${this.timeoutMs}ms\n\n`)
+        process.stderr.write(`[DEBUG] timeout: ${this.#timeoutMs}ms\n\n`)
       }
 
       const child = spawn(this.binaryName, args, {
@@ -159,16 +156,16 @@ export abstract class AbstractCliRunner implements IAgentRunner {
 
       AbstractCliRunner.activeKillFns.add(killProcessGroup)
 
-      if (this.timeoutMs > 0) {
+      if (this.#timeoutMs > 0) {
         timer = setTimeout(() => {
           killProcessGroup()
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.TIMEOUT,
             skill: invocation.skill ?? '',
             phase: 'dispatch',
-            message: `${this.binaryName} runner timed out after ${this.timeoutMs}ms`,
+            message: `${this.binaryName} runner timed out after ${this.#timeoutMs}ms`,
           }))
-        }, this.timeoutMs)
+        }, this.#timeoutMs)
       }
 
       if (options?.signal) {

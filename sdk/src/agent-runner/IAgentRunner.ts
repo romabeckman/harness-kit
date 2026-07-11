@@ -1,6 +1,6 @@
-import type { AgentInvocation, AgentOutput } from './types'
+import type { AgentInvocation, AgentOutput, Runner } from './types'
 
 export interface IAgentRunner {
-  readonly type?: string
+  readonly type?: Runner
   run(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput>
 }
