@@ -91,21 +91,13 @@ export class PhaseBHandler extends AbstractPhaseHandler {
     let reworkSection = ''
     if (payload.isRetry) {
       const reworkLogPath = join(workingDir, 'REWORK-LOG.md')
-      const reworkLogContent = existsSync(reworkLogPath)
-        ? readFileSync(reworkLogPath, 'utf8')
-        : 'No REWORK-LOG.md found.'
 
       reworkSection = [
-        ``,
-        `<rework file="${reworkLogPath}">`,
-        `This is a RETRY run. Here is the content of \`REWORK-LOG.md\`:`,
-        ``,
-        `\`\`\`markdown`,
-        reworkLogContent,
-        `\`\`\``,
+        `<rework>`,
+        `You are working in a fixes from previous runs. Read the file \`${reworkLogPath}\` with tech lead and qa feedback.`,
         ``,
         `MANDATORY STEPS:`,
-        `1. Read REWORK-LOG.md completely — every item is a required fix`,
+        `1. Read \`${reworkLogPath}\` completely — every item is a required fix.`,
         `2. For EACH item marked "FIX:":`,
         `   a. Write a FAILING test that reproduces the issue described`,
         `   b. Implement the minimal fix to make the test pass`,
@@ -121,6 +113,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
         `DO NOT modify existing passing tests to force compliance.`,
         `DO NOT skip any item from REWORK-LOG.md.`,
         `</rework>`,
+        ``,
       ].join('\n')
     }
 
@@ -128,10 +121,10 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `## Objective`,
       `Execute the TDD workflow for the tasks listed below. Follow steps 1–6 of the tdd-orchestrator skill sequentially without pausing.`,
       ``,
+      reworkSection,
       `<skill_context>`,
-      `Invoke the \`tdd-orchestrator\` skill before starting.`,
+      `Invoke the \`harness-kit:tdd-orchestrator\` skill before starting.`,
       `</skill_context>`,
-      ``,
       `<inputs>`,
       ``,
       `<feature>`,
@@ -148,19 +141,18 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       projectPathsList,
       `</project_paths>`,
       ``,
-      `<spec_sources>`,
+      `<development_specifications>`,
       `- Problem: \`${workingDir}/001-problem-space.md\``,
       `- Context: \`${workingDir}/002-context-map.md\``,
-      `- Implementation blueprint: \`${workingDir}/003-*-tactical-design.md\``,
-      `- Test scenarios (drives RED phase): \`${workingDir}/004-*-test-scenarios.md\``,
-      `</spec_sources>`,
+      `- Tactical design: \`${workingDir}/003-*-tactical-design.md\``,
+      `- Test scenarios: \`${workingDir}/004-*-test-scenarios.md\``,
+      `</development_specifications>`,
       ``,
       `<rules>`,
       rulesSection,
       `</rules>`,
       ``,
       `</inputs>`,
-      reworkSection,
       ``,
       `<expected_output>`,
       `Write \`${workingDir}/TDD-OUTPUT.json\` upon completion:`,

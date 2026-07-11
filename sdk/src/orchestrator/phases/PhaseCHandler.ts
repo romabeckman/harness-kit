@@ -61,14 +61,14 @@ export class PhaseCHandler extends AbstractPhaseHandler {
 
     return Promise.all([
       context.invokeAgent({
-        skill: 'the-grumpy-tech-lead',
+        skill: 'harness-kit:the-grumpy-tech-lead',
         agent: 'harness-kit:harness-tech-lead',
         mode: 'autonomous',
         prompt: tlPrompt,
         phaseKey: 'phase_c_tl',
       }),
       context.invokeAgent({
-        skill: 'adversarial-qa',
+        skill: 'harness-kit:adversarial-qa',
         agent: 'harness-kit:harness-qa',
         mode: 'autonomous',
         prompt: advPrompt,
@@ -208,11 +208,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     if (existsSync(reworkLogPath)) {
       reworkSection.push(
         `<rework_history totalReworks="${payload.totalReworks}">`,
-        `Contains a log of previous reviews:`,
-        ``,
-        `\`\`\`markdown`,
-        readFileSync(reworkLogPath, 'utf8').trim(),
-        `\`\`\``,
+        `Read the file \`${reworkLogPath}\` to know what was fixed in previous rounds.`,
         `</rework_history>`,
         ``,
         `<rework_directive round="${payload.totalReworks}">`,
@@ -234,7 +230,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Identify systemic risks, architectural flaws, and concrete production failure vectors.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`/the-grumpy-tech-lead\` skill before starting.`,
+      `Invoke the \`harness-kit:the-grumpy-tech-lead\` skill before starting.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
@@ -302,11 +298,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     if (existsSync(reworkLogPath)) {
       reworkSection.push(
         `<rework_history totalReworks="${payload.totalReworks}">`,
-        `Contains a log of previous reviews:`,
-        ``,
-        `\`\`\`markdown`,
-        readFileSync(reworkLogPath, 'utf8').trim(),
-        `\`\`\``,
+        `Read the file \`${reworkLogPath}\` to know what was fixed in previous rounds.`,
         `</rework_history>`,
         ``,
         `<rework_directive round="${payload.totalReworks}">`,
@@ -328,7 +320,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `Break the implementation for feature \`${payload.featureId}\` by finding edge cases, boundary faults, and security vulnerabilities that standard TDD missed.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`/adversarial-qa\` skill before starting.`,
+      `Invoke the \`harness-kit:adversarial-qa\` skill before starting.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
