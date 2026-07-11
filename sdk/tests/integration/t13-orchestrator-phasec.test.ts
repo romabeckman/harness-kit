@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+﻿import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -24,7 +24,6 @@ function setupFullRun(options: {
   ].join('\n')
   writeFileSync(join(productDir, 'BACKLOG.md'), backlog)
 
-  // Start with all tasks completed + TDD-OUTPUT present (jump straight to PHASE_C)
   const devState = [
     '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |',
     '| --- | --- | --- | --- | --- | --- | --- |',
@@ -34,7 +33,7 @@ function setupFullRun(options: {
   writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
   writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
     scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+    scoreThresholdAdv: 0.70,
     completionCriteria: { maxReworks },
     cycleCounter: { completedCycles: 0 },
   }, null, 2))
@@ -103,10 +102,8 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
 
   describe('TS-F-03: BLOCK after maxReworks — feature BLOCKED', () => {
     it('feature status is BLOCKED (not FAILED) when isCrashing=true and reworks exhausted', async () => {
-      // Setup with reworks already at max (2) and failing scores
       setupFullRun({ reworks: 2, maxReworks: 2 })
       fake.setResponse('the-grumpy-tech-lead', { raw: '```json\n{"scoreTL": 0.50}\n```' })
-      // adversarial-qa signals isCrashing=true — must be extracted and passed to ValidationGate
       fake.setResponse('adversarial-qa', { raw: '```json\n{"scoreAdv": 0.50, "isCrashing": true, "hasHighCriticalVuln": true}\n```' })
       fake.setResponse('project-memory', { raw: 'done' })
 
@@ -122,7 +119,6 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
       const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
       const features = fsm.loadBacklog()
       const f = features.find(f => f.id === 'F001')
-      // isCrashing=true + maxReworks exhausted → BLOCK verdict → BLOCKED status
       expect(f?.status).toBe('BLOCKED')
     })
   })
@@ -170,7 +166,6 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
 
   describe('TS-F-08: IAgentRunner called with correct skill per phase', () => {
     it('invocation log has scope-refinement, tdd-orchestrator, the-grumpy-tech-lead, adversarial-qa, project-memory', async () => {
-      // Full fresh run — setup files so BOOTSTRAP runs and phases execute sequentially
       writeFileSync(join(productDir, 'BACKLOG.md'), [
         '| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
         '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
@@ -183,7 +178,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
       writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
       writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
         scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+        scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       }, null, 2))
@@ -195,7 +190,6 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         if (inv.skill === 'scope-refinement') {
           mkdirSync(specDir, { recursive: true })
           writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
-          // Also create a dev state task
           const devState = [
             '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |',
             '| --- | --- | --- | --- | --- | --- | --- |',
@@ -224,7 +218,8 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
 
       await orchestrator.run()
 
-      const skills = fake.invocations.map(i => i.skill)
+      // Strip harness-kit: namespace prefix — Phase C uses it internally
+      const skills = fake.invocations.map(i => (i.skill ?? '').replace(/^harness-kit:/, ''))
       expect(skills).toContain('scope-refinement')
       expect(skills).toContain('tdd-orchestrator')
       expect(skills).toContain('the-grumpy-tech-lead')
@@ -307,16 +302,15 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
   describe('Reads validation reports from TL.json and QA.json files', () => {
     it('uses scores from TL.json and QA.json if present', async () => {
       setupFullRun()
-      // Agents write TL.json / QA.json as a side-effect (mimicking real agent behaviour).
-      // Raw stdout scores are intentionally low so the test would fail if files were ignored.
       const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
       const origRun = fake.run.bind(fake)
       fake.run = async (inv) => {
-        if (inv.skill === 'the-grumpy-tech-lead') {
+        const skill = (inv.skill ?? '').replace(/^harness-kit:/, '')
+        if (skill === 'the-grumpy-tech-lead') {
           writeFileSync(join(specDir, 'TL.json'), JSON.stringify({ featureId: 'F001', score: 0.95 }))
           return { raw: '```json\n{"scoreTL": 0.10}\n```' }
         }
-        if (inv.skill === 'adversarial-qa') {
+        if (skill === 'adversarial-qa') {
           writeFileSync(join(specDir, 'QA.json'), JSON.stringify({ featureId: 'F001', score: 0.90 }))
           return { raw: '```json\n{"scoreAdv": 0.10}\n```' }
         }

@@ -43,22 +43,27 @@ export class FakeAgentRunner implements IAgentRunner {
     })
 
     const skill = invocation.skill ?? ''
+    const cleanSkill = skill.replace(/^harness-kit:/, '')
 
     // Check queue first
-    const q = this.callQueue.get(skill)
+    const q = this.callQueue.get(skill) ?? this.callQueue.get(cleanSkill)
     if (q && q.length > 0) {
       return q.shift()!
     }
 
     // Check fixed responses
-    const fixed = this.responses.get(skill)
+    const fixed = this.responses.get(skill) ?? this.responses.get(cleanSkill)
     if (fixed) return fixed
 
     return this.defaultOutput
   }
 
   getInvocationsForSkill(skill: string): FakeInvocationRecord[] {
-    return this.invocations.filter(i => i.skill === skill)
+    const cleanTarget = skill.replace(/^harness-kit:/, '')
+    return this.invocations.filter(i => {
+      const cleanSkill = (i.skill ?? '').replace(/^harness-kit:/, '')
+      return cleanSkill === cleanTarget
+    })
   }
 
   reset(): void {
