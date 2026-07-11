@@ -101,6 +101,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
         `2. For EACH item marked "FIX:":`,
         `   a. Write a FAILING test that reproduces the issue described`,
         `   b. Implement the minimal fix to make the test pass`,
+        `   c. Put \`[ X ]\` after the task when you're done`,
         `3. For EACH vulnerability listed:`,
         `   a. Write a test that proves the vulnerability exists`,
         `   b. Fix the code to pass the security test`,
