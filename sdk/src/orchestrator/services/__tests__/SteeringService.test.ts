@@ -25,10 +25,8 @@ function makeConfig(overrides: Partial<BootstrapConfig> = {}): BootstrapConfig {
   return {
     originalScope: 'test scope',
     projectPaths: [],
-    scoreThresholds: {
-      theGrumpyTechLead: { threshold: 0.85 },
-      adversarialQA: { threshold: 0.85 },
-    },
+    scoreThresholdTL: 0.85,
+    scoreThresholdAdv: 0.85,
     completionCriteria: { maxReworks: 3 },
     cycleCounter: { completedCycles: 0 },
     steeringRules: { user: [] },

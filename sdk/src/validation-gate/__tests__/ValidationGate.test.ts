@@ -8,10 +8,8 @@ function makeConfig(maxReworks = 3, thresholdTL = 0.85, thresholdAdv = 0.85): Bo
   return {
     originalScope: 'scope',
     projectPaths: [],
-    scoreThresholds: {
-      theGrumpyTechLead: { threshold: thresholdTL },
-      adversarialQA: { threshold: thresholdAdv },
-    },
+    scoreThresholdTL: thresholdTL,
+    scoreThresholdAdv: thresholdAdv,
     completionCriteria: { maxReworks },
     cycleCounter: { completedCycles: 0 },
   }

@@ -25,10 +25,8 @@ function makeConfig(pendingStatus?: string): BootstrapConfig {
   return {
     originalScope: 'scope',
     projectPaths: [],
-    scoreThresholds: {
-      theGrumpyTechLead: { threshold: 0.70 },
-      adversarialQA: { threshold: 0.70 },
-    },
+      scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
     completionCriteria: { maxReworks: 2 },
     cycleCounter: { completedCycles: 0 },
     steeringRules: { user: [] },

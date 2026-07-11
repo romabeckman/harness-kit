@@ -33,10 +33,8 @@ function setupFullRun(options: {
   writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), devState)
   writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
   writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
-    scoreThresholds: {
-      theGrumpyTechLead: { threshold: 0.70 },
-      adversarialQA: { threshold: 0.70 },
-    },
+    scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
     completionCriteria: { maxReworks },
     cycleCounter: { completedCycles: 0 },
   }, null, 2))
@@ -184,10 +182,8 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
       ].join('\n'))
       writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
       writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
-        scoreThresholds: {
-          theGrumpyTechLead: { threshold: 0.70 },
-          adversarialQA: { threshold: 0.70 },
-        },
+        scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       }, null, 2))

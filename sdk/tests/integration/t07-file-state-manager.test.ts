@@ -108,8 +108,8 @@ describe('T07 — FileStateManager', () => {
     it('returns correct thresholds', () => {
       mgr.ensureProductFiles()
       const cfg = mgr.loadBootstrapConfig()
-      expect(cfg.scoreThresholds.theGrumpyTechLead.threshold).toBe(0.70)
-      expect(cfg.scoreThresholds.adversarialQA.threshold).toBe(0.70)
+      expect(cfg.scoreThresholdTL).toBe(0.70)
+      expect(cfg.scoreThresholdAdv).toBe(0.70)
       expect(cfg.completionCriteria.maxReworks).toBe(2)
     })
   })

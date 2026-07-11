@@ -4,10 +4,8 @@ import { Verdict } from '../../src/validation-gate/types'
 import type { BootstrapConfig } from '../../src/file-state/types'
 
 const defaultConfig: BootstrapConfig = {
-  scoreThresholds: {
-    theGrumpyTechLead: { threshold: 0.70 },
-    adversarialQA: { threshold: 0.70 },
-  },
+  scoreThresholdTL: 0.70,
+  scoreThresholdAdv: 0.70,
   completionCriteria: { maxReworks: 2 },
   cycleCounter: { completedCycles: 0 },
 }

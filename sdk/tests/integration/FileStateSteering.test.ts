@@ -20,10 +20,8 @@ describe('FileStateSteering', () => {
     // Write bootstrap config without steeringRules key
     const configPath = join(tmpDir, 'BOOTSTRAP-CONFIG.json')
     writeFileSync(configPath, JSON.stringify({
-      scoreThresholds: {
-        theGrumpyTechLead: { threshold: 80 },
-        adversarialQA: { threshold: 80 }
-      },
+      scoreThresholdTL: 80,
+      scoreThresholdAdv: 80,
       completionCriteria: { maxReworks: 3 },
       currentPhase: 'BOOTSTRAP',
       cycleCounter: { completedCycles: 0 }

@@ -29,7 +29,7 @@ describe('T26 — TerminalProgress', () => {
     vi.advanceTimersByTime(80)
 
     // Stderr should contain phase, message, elapsed time
-    const output = stderrSpy.mock.calls.map(c => String(c[0])).join('')
+    const output = stderrSpy.mock.calls.map((c: any[]) => String(c[0])).join('')
     expect(output).toContain('BOOTSTRAP')
     expect(output).toContain('Scaffolding project')
     expect(output).toContain('(0s)')
@@ -55,7 +55,7 @@ describe('T26 — TerminalProgress', () => {
     TerminalProgress.stopSpinner()
 
     // Assert: should show cursor and newline
-    const output = stderrSpy.mock.calls.map(c => String(c[0])).join('')
+    const output = stderrSpy.mock.calls.map((c: any[]) => String(c[0])).join('')
     expect(output).toContain('\x1b[?25h') // show cursor
   })
 
@@ -64,7 +64,7 @@ describe('T26 — TerminalProgress', () => {
     TerminalProgress.drawProgressBar('PHASE_B', 10, 5, 'Progress description')
 
     // Assert
-    const output = stdoutSpy.mock.calls.map(c => String(c[0])).join('')
+    const output = stdoutSpy.mock.calls.map((c: any[]) => String(c[0])).join('')
     expect(output).toContain('PHASE_B')
     expect(output).toContain('50%')
     expect(output).toContain('Progress description')
@@ -75,7 +75,7 @@ describe('T26 — TerminalProgress', () => {
     TerminalProgress.drawProgressBar('PHASE_B', 0, 5, 'Zero total')
 
     // Assert
-    const output = stdoutSpy.mock.calls.map(c => String(c[0])).join('')
+    const output = stdoutSpy.mock.calls.map((c: any[]) => String(c[0])).join('')
     expect(output).toContain('0%')
   })
 })

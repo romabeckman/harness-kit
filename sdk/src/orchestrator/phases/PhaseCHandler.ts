@@ -56,8 +56,8 @@ export class PhaseCHandler extends AbstractPhaseHandler {
   }
 
   private async executeAgents(context: PhaseContext, payload: PhaseCPayload, config: BootstrapConfig) {
-    const tlPrompt = this.buildTechLeadPrompt(payload, config, context.workingDir)
-    const advPrompt = this.buildAdversarialQAPrompt(payload, config, context.workingDir)
+    const tlPrompt = this.buildTechLeadPrompt(payload, context.workingDir)
+    const advPrompt = this.buildAdversarialQAPrompt(payload, context.workingDir)
 
     return Promise.all([
       context.invokeAgent({
@@ -177,7 +177,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const sections: string[] = []
 
     if (scores.openPoints?.length) {
-      sections.push(`### Open Points (Tech Lead)\n\n${scores.openPoints.map(p => `- ${p}`).join('\n')}`)
+      sections.push(`### Action Items (Tech Lead)\n\n${scores.openPoints.map(p => `- [ ] FIX: ${p}`).join('\n')}`)
     }
 
     if (scores.architectureTip) {
@@ -196,9 +196,8 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     return sections.length > 0 ? sections.join('\n\n') : `Score TL: ${scores.scoreTL}, Score Adv: ${scores.scoreAdv}`
   }
 
-  private buildTechLeadPrompt(payload: PhaseCPayload, config: BootstrapConfig, workingDir: string): string {
+  private buildTechLeadPrompt(payload: PhaseCPayload, workingDir: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
-    const threshold = config.scoreThresholds.theGrumpyTechLead.threshold
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
       : '- No additional rules provided'
@@ -213,8 +212,19 @@ export class PhaseCHandler extends AbstractPhaseHandler {
         ``,
         `\`\`\`markdown`,
         readFileSync(reworkLogPath, 'utf8').trim(),
-        `</rework_history>`,
         `\`\`\``,
+        `</rework_history>`,
+        ``,
+        `<rework_directive round="${payload.totalReworks}">`,
+        `This is rework validation round ${payload.totalReworks}. You MUST:`,
+        `1. Read the rework_history above carefully`,
+        `2. Check which previous findings have been FIXED in the current code`,
+        `3. REMOVE fixed items from your findings — do NOT re-report resolved issues`,
+        `4. Only report issues that REMAIN UNFIXED or are NEW`,
+        `5. If a previous finding was partially fixed, describe what remains`,
+        `6. Your score MUST reflect the CURRENT state of the code after rework, not historical issues`,
+        `7. If all previous findings are resolved and no new critical issues exist, score accordingly`,
+        `</rework_directive>`,
         ``
       )
     }
@@ -281,9 +291,8 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     ].join('\n')
   }
 
-  private buildAdversarialQAPrompt(payload: PhaseCPayload, config: BootstrapConfig, workingDir: string): string {
+  private buildAdversarialQAPrompt(payload: PhaseCPayload, workingDir: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
-    const threshold = config.scoreThresholds.adversarialQA.threshold
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
       : '- No additional rules provided'
@@ -297,8 +306,19 @@ export class PhaseCHandler extends AbstractPhaseHandler {
         ``,
         `\`\`\`markdown`,
         readFileSync(reworkLogPath, 'utf8').trim(),
-        `</rework_history>`,
         `\`\`\``,
+        `</rework_history>`,
+        ``,
+        `<rework_directive round="${payload.totalReworks}">`,
+        `This is rework validation round ${payload.totalReworks}. You MUST:`,
+        `1. Read the rework_history above carefully`,
+        `2. Check which previous findings have been FIXED in the current code`,
+        `3. REMOVE fixed items from your findings — do NOT re-report resolved issues`,
+        `4. Only report issues that REMAIN UNFIXED or are NEW`,
+        `5. If a previous finding was partially fixed, describe what remains`,
+        `6. Your score MUST reflect the CURRENT state of the code after rework, not historical issues`,
+        `7. If all previous findings are resolved and no new critical issues exist, score accordingly`,
+        `</rework_directive>`,
         ``
       )
     }

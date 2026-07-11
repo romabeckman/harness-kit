@@ -30,7 +30,7 @@ describe('T24 — AgentInvocationService', () => {
 
   it('TC-AIS-01: uses timeoutMs from config if defined', async () => {
     // Arrange
-    const config = { timeoutMs: 12345, projectPaths: [] }
+    const config = { scope: 'test', timeoutMs: 12345, projectPaths: [] }
     const settings = HarnessSettings.load()
     const invocation = { skill: 's', agent: 'a', mode: 'autonomous' as const, payload: {} }
 
@@ -48,9 +48,9 @@ describe('T24 — AgentInvocationService', () => {
   it('TC-AIS-02: falls back to settings timeout if config timeout is undefined', async () => {
     // Arrange
     fakeRunner = new FakeAgentRunner()
-    fakeRunner.type = 'claude-cli'
+    Object.defineProperty(fakeRunner, 'type', { value: 'claude-cli' })
     service = new AgentInvocationService(fakeRunner, mockLedger)
-    const config = { projectPaths: [] }
+    const config = { scope: 'test', projectPaths: [] }
     const settings = HarnessSettings.load()
     vi.spyOn(settings, 'hasSettings').mockReturnValue(true)
     vi.spyOn(settings, 'getTimeoutMs').mockReturnValue(9999)
@@ -71,9 +71,9 @@ describe('T24 — AgentInvocationService', () => {
   it('TC-AIS-03: applies model and effort overrides from settings.resolve', async () => {
     // Arrange
     fakeRunner = new FakeAgentRunner()
-    fakeRunner.type = 'claude-sdk'
+    Object.defineProperty(fakeRunner, 'type', { value: 'claude-sdk' })
     service = new AgentInvocationService(fakeRunner, mockLedger)
-    const config = { projectPaths: [] }
+    const config = { scope: 'test', projectPaths: [] }
     const settings = HarnessSettings.load()
 
     vi.spyOn(settings, 'hasSettings').mockReturnValue(true)
@@ -108,7 +108,7 @@ describe('T24 — AgentInvocationService', () => {
 
   it('TC-AIS-04: appends projectPaths to additionalDirs', async () => {
     // Arrange
-    const config = { projectPaths: ['/project/path/1', '/project/path/2'] }
+    const config = { scope: 'test', projectPaths: ['/project/path/1', '/project/path/2'] }
     const settings = HarnessSettings.load()
     const invocation = {
       skill: 's',
@@ -134,7 +134,7 @@ describe('T24 — AgentInvocationService', () => {
   it('TC-AIS-05: logs debug info when DebugContext is enabled', async () => {
     // Arrange
     DebugContext.enable()
-    const config = { projectPaths: ['/test-dir'] }
+    const config = { scope: 'test', projectPaths: ['/test-dir'] }
     const settings = HarnessSettings.load()
     const invocation = { skill: 'my-skill', agent: 'my-agent', mode: 'autonomous' as const, payload: {} }
 
@@ -152,7 +152,7 @@ describe('T24 — AgentInvocationService', () => {
 
   it('TC-AIS-06: records usage to ledger when present in output', async () => {
     // Arrange
-    const config = { projectPaths: [] }
+    const config = { scope: 'test', projectPaths: [] }
     const settings = HarnessSettings.load()
     const invocation = { skill: 'my-skill', agent: 'my-agent', mode: 'autonomous' as const, payload: {} }
 

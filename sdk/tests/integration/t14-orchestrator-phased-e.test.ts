@@ -36,10 +36,8 @@ function setupTwoFeatures(f2Dependencies: string[] = []): void {
   ].join('\n'))
   writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
   writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
-    scoreThresholds: {
-      theGrumpyTechLead: { threshold: 0.70 },
-      adversarialQA: { threshold: 0.70 },
-    },
+    scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
     completionCriteria: { maxReworks: 2 },
     cycleCounter: { completedCycles: 0 },
   }, null, 2))
@@ -98,10 +96,8 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
       writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), devState)
       writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
       writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
-        scoreThresholds: {
-          theGrumpyTechLead: { threshold: 0.70 },
-          adversarialQA: { threshold: 0.70 },
-        },
+        scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       }, null, 2))
@@ -192,10 +188,8 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
       ].join('\n'))
       writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
       writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
-        scoreThresholds: {
-          theGrumpyTechLead: { threshold: 0.70 },
-          adversarialQA: { threshold: 0.70 },
-        },
+        scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       }, null, 2))
@@ -239,10 +233,8 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
       writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), devState)
       writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
       writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
-        scoreThresholds: {
-          theGrumpyTechLead: { threshold: 0.70 },
-          adversarialQA: { threshold: 0.70 },
-        },
+        scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       }, null, 2))
