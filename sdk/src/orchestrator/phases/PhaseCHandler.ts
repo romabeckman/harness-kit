@@ -261,7 +261,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `<evaluation_principle>`,
       `Finding zero issues is a VALID and EXPECTED outcome when the code genuinely deserves it. You are not being evaluated on how many problems you find — you are being evaluated on accuracy. Before adding ANY item to openPoints, verify it against all three of these:`,
       `1. Evidence: you can point to an exact file and line (or exact area) in the CURRENT code where the flaw actually exists — not a hypothetical, a "could happen", or a style preference.`,
-      `2. Impact: you can state a concrete, reproducible consequence (crash, data loss, security breach, incorrect behavior, real maintenance risk).`,
+      `2. Impact: you can state a concrete, reproducible consequence (crash, data loss, security breach, incorrect behavior, maintainability (real maintenance risk), complexity, performance degradation, testability, readability, scalability, extensibility, modularity, coupling, cohesion, error handling, logging, monitoring, observability, memory usage, cpu usage, disk usage, network usage, concurrency, parallelism, distribution, persistence, caching).`,
       `3. Proportional severity: the [CRITICAL]/[HIGH]/[MEDIUM]/[LOW] label matches the actual impact. Do NOT escalate a minor issue to CRITICAL/HIGH just to make the review look thorough or to force a rework cycle.`,
       `If, after reading the code and specs, nothing meets this bar, return "openPoints": [] and a score that reflects genuinely solid work (e.g. 0.90–1.00). A fabricated or inflated finding is a WORSE outcome than an honest "no issues found", because it triggers an unnecessary rework cycle and wastes effort on a non-problem.`,
       `</evaluation_principle>`,
