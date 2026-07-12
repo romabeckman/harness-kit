@@ -88,6 +88,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
 
     const workingDir = join(context.workingDir, 'docs', 'specs', payload.domain)
 
+    let tasksSection = ''
     let reworkSection = ''
     if (payload.isRetry) {
       const reworkLogPath = join(workingDir, 'REWORK-LOG.md')
@@ -98,22 +99,32 @@ export class PhaseBHandler extends AbstractPhaseHandler {
         ``,
         `MANDATORY STEPS:`,
         `1. Read \`${reworkLogPath}\` completely — every item is a required fix.`,
-        `2. For EACH item marked "FIX:":`,
+        `2. For EACH action items":`,
         `   a. Write a FAILING test that reproduces the issue described`,
         `   b. Implement the minimal fix to make the test pass`,
-        `   c. Put \`[ X ]\` when you're done in item`,
+        `   c. Set checked \`[X]\` when you're done in item`,
         `3. For EACH vulnerability listed:`,
         `   a. Write a test that proves the vulnerability exists`,
         `   b. Fix the code to pass the security test`,
+        `   c. Set checked \`[X]\` when you're done in vulnerability`,
         `4. For EACH edge case missed:`,
         `   a. Write a test for the edge case`,
         `   b. Implement handling for the edge case`,
+        `   c. Set checked \`[X]\` when you're done in case`,
         `5. Architecture tips: evaluate and implement if relevant`,
         `6. Run ALL tests (old + new) — all must pass`,
+        `7. Work on \`[ ] FIX\` for each pending task.`,
         ``,
         `DO NOT modify existing passing tests to force compliance.`,
         `DO NOT skip any item from REWORK-LOG.md.`,
         `</rework>`,
+        ``,
+      ].join('\n')
+    } else {
+      tasksSection = [
+        `<tasks>`,
+        tasksList,
+        `</tasks>`,
         ``,
       ].join('\n')
     }
@@ -133,10 +144,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `Title: ${payload.featureTitle}`,
       `Domain: ${payload.domain}`,
       `</feature>`,
-      ``,
-      `<tasks>`,
-      tasksList,
-      `</tasks>`,
+      tasksSection,
       ``,
       `<project_paths>`,
       projectPathsList,

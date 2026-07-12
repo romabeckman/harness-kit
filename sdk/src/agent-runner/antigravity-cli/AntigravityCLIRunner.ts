@@ -10,14 +10,10 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     return 'agy'
   }
 
-  protected override get writePromptToStdin(): boolean {
-    return true
-  }
-
   protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
     const args = ['--print', prompt]
     const timeout = invocation.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS
-    
+
     const model = this.getModelName(invocation)
     if (model) args.push('--model', model)
 

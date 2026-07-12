@@ -185,12 +185,12 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     }
 
     if (scores.vulnerabilities?.length) {
-      const list = scores.vulnerabilities.map(v => `- [${v.severity ?? 'UNKNOWN'}] ${v.description ?? 'Unspecified'}`).join('\n')
+      const list = scores.vulnerabilities.map(v => `- [ ] FIX: [${v.severity ?? 'UNKNOWN'}] ${v.description ?? 'Unspecified'}`).join('\n')
       sections.push(`### Vulnerabilities\n\n${list}`)
     }
 
     if (scores.edgeCasesMissed?.length) {
-      sections.push(`### Edge Cases Missed\n\n${scores.edgeCasesMissed.map(e => `- ${e}`).join('\n')}`)
+      sections.push(`### Edge Cases Missed\n\n${scores.edgeCasesMissed.map(e => `- [ ] FIX: ${e}`).join('\n')}`)
     }
 
     return sections.length > 0 ? sections.join('\n\n') : `Score TL: ${scores.scoreTL}, Score Adv: ${scores.scoreAdv}`
