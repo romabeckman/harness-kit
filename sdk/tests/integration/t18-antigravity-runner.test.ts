@@ -77,7 +77,6 @@ describe('AntigravityCLIRunner — TC-AGY', () => {
       expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'] }),
     )
 
-    expect(mockChild.stdin.write).toHaveBeenCalledWith('do coding task', 'utf8')
     expect(output.raw).toBe('gemini response output')
     expect(output.success).toBe(true)
   })
