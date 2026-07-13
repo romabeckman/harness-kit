@@ -167,6 +167,21 @@ node dist/cli/run.js
 | `--complexity <val>` | `-c` | Phase A complexity: `SIMPLE`/`S`, `COMPLEX`/`C`, or omit for `AUTO` | `--complexity S` |
 | `--debug` | | Enable debug output | |
 
+### `hrns init` — initialize workspace files and configure steering rules
+
+Runs an interactive wizard to initialize your Harness Kit workspace:
+
+1. **Creates Tracking Files**: Generates base files (`BACKLOG.md`, `DEVELOPMENT-STATE.md`, `DECISIONS.md`, and `BOOTSTRAP-CONFIG.json`) under `docs/product/`.
+2. **Interactive Steering Wizard**: Prompts the developer for optional, custom steering rules phase-by-phase:
+   - Global (`user`)
+   - Bootstrap (`bootstrap`)
+   - Planning (`phase_a` / `PLANNING`)
+   - Implementation (`phase_b` / `IMPLEMENTATION`)
+   - Validation (`phase_c` / `VALIDATION`)
+   - Steering (`phase_e` / `STEERING`)
+3. **Local Settings Creation**: Prompts to create a local `.harness-kit/settings.json` file if one does not already exist.
+4. **Execution Follow-up**: Offers to trigger `hrns run` immediately at the end. Any arguments passed to `hrns init` (e.g. `--agent gemini`) are automatically inherited and forwarded to `hrns run` when launching.
+
 ### Other commands
 
 | Command | Description |
