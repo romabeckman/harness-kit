@@ -22,6 +22,10 @@ export async function cmdInit(cwd: string, args: string[]): Promise<void> {
       console.log('Aborted initialization.')
       return
     }
+
+    const { rmSync } = await import("node:fs");
+    rmSync(productDir, { recursive: true, force: true });
+    console.log(`${AnsiHelpers.green('✓')} Removed existing product directory.\n`)
   }
 
   console.log(AnsiHelpers.blue('►') + ' Initializing Harness Kit workspace...\n')
@@ -102,7 +106,7 @@ export async function cmdInit(cwd: string, args: string[]): Promise<void> {
     // Dynamically import to avoid circular dependencies and only load when needed
     const { cmdRun } = await import('./run-service')
     const runArgs = [...args.filter(arg => arg !== '--resume'), '--reset']
-    await cmdRun(cwd, runArgs)
+    await cmdRun(cwd, runArgs, true)
   } else {
     console.log(`\nAll set! Run ${AnsiHelpers.cyan('hrns run')} when you're ready to start.`)
   }

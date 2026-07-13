@@ -33,7 +33,7 @@ vi.mock('node:fs', async (importOriginal) => {
 
 const mockCmdRun = vi.fn()
 vi.mock('../../src/cli/services/run-service', () => ({
-  cmdRun: (cwd: string, args: string[]) => mockCmdRun(cwd, args)
+  cmdRun: (cwd: string, args: string[], isFromInit?: boolean) => mockCmdRun(cwd, args, isFromInit)
 }))
 
 const mockCreateLocalSettings = vi.fn().mockReturnValue('/mock/cwd/.harness-kit/settings.json')
@@ -104,7 +104,7 @@ describe('T29 — cmdInit', () => {
     mockConfirm.mockResolvedValueOnce(false) // Create settings
     mockConfirm.mockResolvedValueOnce(true) // Run hrns run
     await cmdInit(cwd, [])
-    expect(mockCmdRun).toHaveBeenCalledWith(cwd, ['--reset'])
+    expect(mockCmdRun).toHaveBeenCalledWith(cwd, ['--reset'], true)
   })
 
   it('aborts early if product dir exists and user declines overwrite', async () => {

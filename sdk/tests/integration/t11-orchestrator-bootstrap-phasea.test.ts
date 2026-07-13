@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { HarnessOrchestrator } from '../../src/orchestrator/HarnessOrchestrator'
-import { Phase } from '../../src/orchestrator/types'
+import { Phase, CliCommand } from '../../src/orchestrator/types'
 import { FakeAgentRunner } from '../helpers/FakeAgentRunner'
 
 let tmpDir: string
@@ -458,5 +458,62 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     await expect(orchestrator.run()).rejects.toThrow(
       /PLANNING failed: no tasks extracted/
     )
+  })
+
+  it('TC-BOOT-03: merges current config into existing BOOTSTRAP-CONFIG.json during bootstrap', async () => {
+    // Write an existing BOOTSTRAP-CONFIG.json with default/empty values and custom steeringRules
+    const initialConfig = {
+      originalScope: undefined,
+      projectPaths: [],
+      currentPhase: 'BOOTSTRAP',
+      scoreThresholdTL: 0.70,
+      scoreThresholdAdv: 0.70,
+      completionCriteria: { maxReworks: 2 },
+      cycleCounter: { completedCycles: 0 },
+      steeringRules: {
+        user: ['custom user rule']
+      }
+    }
+    writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify(initialConfig, null, 2))
+
+    // Set up mock responses so it runs bootstrap but doesn't crash on Phase A
+    fake.setResponse('autonomous-orchestrator:bootstrap', {
+      raw: 'backlog generated'
+    })
+    
+    // Intercept to check if backlog is written (though we just want to run bootstrap)
+    const backlogPath = join(productDir, 'BACKLOG.md')
+    const origRun = fake.run.bind(fake)
+    fake.run = async (inv) => {
+      if (inv.skill === 'autonomous-orchestrator:bootstrap') {
+        writeFileSync(backlogPath, BACKLOG_WITH_ONE_FEATURE)
+      }
+      return origRun(inv)
+    }
+
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'my new scope',
+      projectPaths: [tmpDir, '/another/path'],
+      score: 0.85,
+      reworks: 4,
+      agentRunner: fake,
+      productDir,
+      cliCommand: CliCommand.INIT,
+    }, { workingDir: tmpDir })
+
+    // Execute only the bootstrap phase
+    await orchestrator.runBootstrapOnly()
+
+    // Read the saved config and verify fields were merged
+    const { readFileSync } = await import('fs')
+    const savedConfig = JSON.parse(readFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), 'utf-8'))
+
+    expect(savedConfig.originalScope).toBe('my new scope')
+    expect(savedConfig.projectPaths).toEqual([tmpDir, '/another/path'])
+    expect(savedConfig.scoreThresholdTL).toBe(0.85)
+    expect(savedConfig.scoreThresholdAdv).toBe(0.85)
+    expect(savedConfig.completionCriteria.maxReworks).toBe(4)
+    // Steering rules should be preserved!
+    expect(savedConfig.steeringRules.user).toEqual(['custom user rule'])
   })
 })
