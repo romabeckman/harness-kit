@@ -29,6 +29,7 @@ function makeContext(): PhaseContext {
     fsm: {
       ensureProductFiles: vi.fn(),
       loadBootstrapConfig: vi.fn().mockReturnValue({ steeringRules: [] }),
+      saveBootstrapConfig: vi.fn(),
       loadBacklog: vi.fn().mockReturnValue([{ id: 'F001', domain: 'd', dependencies: [] }]),
     } as unknown as PhaseContext['fsm'],
     invokeAgent: vi.fn().mockResolvedValue(undefined),

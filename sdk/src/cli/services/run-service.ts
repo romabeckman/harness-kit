@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { exit } from 'process';
 import { HarnessOrchestrator } from "../../orchestrator/HarnessOrchestrator";
 import { ChainBuilder } from "../../orchestrator/ChainBuilder";
+import { CliCommand } from "../../orchestrator/types";
 import { AgentRunnerFactory } from "../../agent-runner/AgentRunnerFactory";
 import { HarnessSettings } from "../../settings/HarnessSettings";
 import { StartupBanner } from "../../ui/StartupBanner";
@@ -23,7 +24,7 @@ export interface RunOptions {
   model?: string;
 }
 
-export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
+export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolean): Promise<void> {
   const parsed = parseRunArgs(runArgs);
   if (parsed.debug) {
     DebugContext.enable();
@@ -114,7 +115,7 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
   }
   console.log("────────────────────────────────────────────────────────\n");
 
-  if (action === "reset" && existsSync(productDir)) {
+  if (action === "reset" && existsSync(productDir) && !isFromInit) {
     const { rmSync } = await import("node:fs");
     rmSync(productDir, { recursive: true, force: true });
   }
@@ -135,6 +136,7 @@ export async function cmdRun(cwd: string, runArgs: string[]): Promise<void> {
     initialRules: steeringMessage.length > 0 ? steeringMessage : undefined,
     complexity: parsed.complexity,
     chain: ChainBuilder.buildDefault(),
+    cliCommand: isFromInit ? CliCommand.INIT : CliCommand.RUN,
   });
 
   if (action === "resume") {

@@ -15,6 +15,12 @@ export interface OrchestratorConfig {
   initialRules?: string
   complexity?: 'SIMPLE' | 'COMPLEX'
   chain?: IPhaseHandler
+  cliCommand?: CliCommand
+}
+
+export enum CliCommand {
+  INIT = 'init',
+  RUN = 'run',
 }
 
 export enum Phase {

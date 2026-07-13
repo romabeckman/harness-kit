@@ -5,7 +5,7 @@ export type { HarnessOrchestratorOptions } from './orchestrator/HarnessOrchestra
 export { ChainBuilder } from './orchestrator/ChainBuilder'
 
 // Orchestrator types
-export { Phase } from './orchestrator/types'
+export { Phase, CliCommand } from './orchestrator/types'
 export type {
   OrchestratorConfig,
   OrchestratorState,

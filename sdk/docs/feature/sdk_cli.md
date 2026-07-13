@@ -4,12 +4,13 @@ The CLI module provides the `hrns` command-line interface for launching and mana
 
 ---
 
-## Entry Points
+## ENTRY POINTS
 
 | File | Description |
 |---|---|
 | `src/cli/run.ts` | Main CLI binary. Dispatches to service functions based on `<command>`. |
 | `src/cli/services/run-service.ts` | `cmdRun()` — resolves options and starts an orchestration session. |
+| `src/cli/services/init-service.ts` | `cmdInit()` — interactive wizard to initialize product files and steering rules. |
 | `src/cli/services/reset-service.ts` | `resetOptions()` — interactive wizard to collect `ResetOptions`. |
 | `src/cli/utils/run-args-parser.ts` | `parseRunArgs()` — pure, testable arg parser for all `run` flags. |
 | `src/cli/utils/cli-utils.ts` | Path helpers: `expandPath()`, `resolveDirs()`, `validateDirs()`, `validateScope()`. |
@@ -17,9 +18,10 @@ The CLI module provides the `hrns` command-line interface for launching and mana
 
 ---
 
-## Commands
+## COMMANDS
 
 ```
+hrns init      Initialize workspace files and configure steering rules
 hrns run       Start or resume an orchestration session
 hrns report    Print token usage report
 hrns version   Show version
@@ -28,7 +30,18 @@ hrns help      Show help
 
 ---
 
-## `hrns run` — Flags Reference
+## HRNS INIT — WORKSPACE INITIALIZATION WIZARD
+
+The `hrns init` command prepares a directory for running Harness Kit cycles:
+
+1. **Product File Creation**: Generates base files (`BACKLOG.md`, `DEVELOPMENT-STATE.md`, `DECISIONS.md`, and `BOOTSTRAP-CONFIG.json`) under `docs/product/`.
+2. **Interactive Steering Wizard**: Prompts the developer phase-by-phase for custom steering rules (Global, Bootstrap, Planning, Implementation, Validation, and Steering).
+3. **Local Settings Creation**: Prompts the developer to create a local `.harness-kit/settings.json` file if one does not already exist.
+4. **Direct Execution Follow-up**: Offers to trigger `hrns run` immediately at the end. Passed CLI arguments (such as `--agent` or `--model`) are inherited, and `--reset` is appended alongside `cliCommand = CliCommand.INIT` to bypass the resume prompt and correctly sync the newly configured project scope.
+
+---
+
+## HRNS RUN — FLAGS REFERENCE
 
 ### Agent Runner
 
@@ -66,7 +79,7 @@ hrns help      Show help
 
 ---
 
-## Arg Parsing — `parseRunArgs()`
+## ARG PARSING — PARSERUNARGS()
 
 `parseRunArgs(args: string[]): ParsedRunArgs`
 
@@ -89,7 +102,7 @@ Unknown flags are silently ignored. `--score` is parsed with `parseFloat`; `--re
 
 ---
 
-## Non-interactive (headless) usage examples
+## NON-INTERACTIVE (HEADLESS) USAGE EXAMPLES
 
 ```bash
 # Full reset — no wizard prompts
@@ -111,16 +124,25 @@ hrns run --reset --scope "Build REST API" --path ./src --agent claude-cli --mode
 
 ---
 
-## Interactive fallback behaviour
+## INTERACTIVE FALLBACK BEHAVIOUR
 
 When `--reset` or `--resume` is omitted and a `BACKLOG.md` exists, `cmdRun()` displays a `select` prompt. When none of the reset option flags are provided, the full interactive wizard (`resetOptions()`) is invoked.
 
 ---
 
-## Tests
+## TESTS
 
 | File | Suite | Count |
 |---|---|---|
 | `tests/unit/t19-run-args-parser.test.ts` | `T19 — parseRunArgs` | 21 |
+| `tests/unit/t29-init-service.test.ts` | `T29 — cmdInit` | 5 |
 
-All tests exercise the pure parser — no filesystem or process I/O required.
+All unit tests exercise either pure parsers or mocked prompt structures — no process I/O required.
+
+---
+
+## REFERENCES
+
+- [**sdk_settings.md**](./sdk_settings.md): Settings and configuration resolver details for `HarnessSettings`.
+- [**sdk_steering.md**](./sdk_steering.md): Orchestration phase steering rules details.
+- [**sdk_core.md**](./sdk_core.md): Core `HarnessOrchestrator` lifecycle and phases.

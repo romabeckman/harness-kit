@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { Phase } from '../types'
+import { Phase, CliCommand } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 
 export class BootstrapHandler extends AbstractPhaseHandler {
@@ -11,6 +11,22 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     context.fsm.ensureProductFiles(context.config)
 
     const bootConfig = context.fsm.loadBootstrapConfig()
+
+    if (context.config.cliCommand === CliCommand.INIT) {
+      bootConfig.originalScope = context.config.scope
+      bootConfig.projectPaths = context.config.projectPaths
+      if (context.config.score !== undefined) {
+        bootConfig.scoreThresholdTL = context.config.score
+        bootConfig.scoreThresholdAdv = context.config.score
+      }
+      if (context.config.reworks !== undefined) {
+        bootConfig.completionCriteria = {
+          maxReworks: context.config.reworks
+        }
+      }
+      context.fsm.saveBootstrapConfig(bootConfig)
+    }
+
     const existing = context.fsm.loadBacklog()
 
     if (existing.length > 0) return Phase.PHASE_A
