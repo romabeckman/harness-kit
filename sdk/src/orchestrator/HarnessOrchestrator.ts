@@ -149,9 +149,16 @@ export class HarnessOrchestrator implements PhaseContext {
       try {
         next = await this.dispatch(this.state.currentPhase)
       } catch (err) {
-        if (err instanceof AgentRunnerError && err.code === AgentRunnerErrorCode.QUOTA_EXCEEDED) {
+        if (
+          err instanceof AgentRunnerError &&
+          (err.code === AgentRunnerErrorCode.QUOTA_EXCEEDED || err.code === AgentRunnerErrorCode.TIMEOUT)
+        ) {
           process.stderr.write(
-            `\n${AnsiHelpers.yellow('⚠')} ${AnsiHelpers.dim('Quota / rate-limit reached.')} ` +
+            `\n${AnsiHelpers.yellow('⚠')} ${AnsiHelpers.dim(
+              err.code === AgentRunnerErrorCode.TIMEOUT
+                ? 'Agent timed out / aborted by user.'
+                : 'Quota / rate-limit reached.'
+            )} ` +
             `Phase ${AnsiHelpers.cyan(this.state.currentPhase)} persisted.\n` +
             `  Resume: ${AnsiHelpers.dim('hrns run')} → select "resume"\n\n`
           )

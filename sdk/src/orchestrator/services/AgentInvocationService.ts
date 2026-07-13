@@ -3,6 +3,7 @@ import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
 import type { AgentInvocation, AgentOutput } from '../../agent-runner/types'
 import { Phase } from '../types'
 import type { OrchestratorConfig } from '../types'
+import { AgentRunnerError, AgentRunnerErrorCode } from '../../agent-runner/AgentRunnerError'
 import type { HarnessSettings } from '../../settings/HarnessSettings'
 import type { TokenLedger } from '../../telemetry/TokenLedger'
 import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
@@ -118,7 +119,20 @@ export class AgentInvocationService {
 
         const answer = await new Promise<string>(resolve => {
           const rl = createInterface({ input: process.stdin, output: process.stderr })
-          rl.question(`  ${AnsiHelpers.dim('Escolha [C/E]:')} `, ans => {
+          
+          let resolved = false
+          const promptTimeoutId = setTimeout(() => {
+            if (resolved) return
+            resolved = true
+            rl.close()
+            console.error(`\n  ${AnsiHelpers.red('✖')} Tempo limite esgotado (60s). Encerrando agente automaticamente.`)
+            resolve('E')
+          }, 60000)
+
+          rl.question(`  ${AnsiHelpers.dim('Escolha [C/E] (60s para auto-encerrar):')} `, ans => {
+            if (resolved) return
+            resolved = true
+            clearTimeout(promptTimeoutId)
             rl.close()
             resolve(ans.trim().toUpperCase())
           })
@@ -127,7 +141,7 @@ export class AgentInvocationService {
         if (cancelled || controller.signal.aborted) return
 
         if (answer === 'E') {
-          console.error(`\n  ${AnsiHelpers.red('✖')} Agente abortado pelo usuário.\n`)
+          console.error(`\n  ${AnsiHelpers.red('✖')} Agente abortado.\n`)
           controller.abort()
           return
         }
@@ -169,6 +183,16 @@ export class AgentInvocationService {
         )
       }
       return output
+    } catch (err: any) {
+      if (controller.signal.aborted) {
+        throw new AgentRunnerError({
+          code: AgentRunnerErrorCode.TIMEOUT,
+          skill: finalInvocation.skill ?? '',
+          phase: 'dispatch',
+          message: `Agent aborted by user after timeout (agent: ${agentLabel})`,
+        })
+      }
+      throw err
     } finally {
       cancelTimeout()
       TerminalProgress.stopSpinner()
