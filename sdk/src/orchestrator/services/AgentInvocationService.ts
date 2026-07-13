@@ -6,7 +6,7 @@ import type { OrchestratorConfig } from '../types'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../../agent-runner/AgentRunnerError'
 import type { HarnessSettings } from '../../settings/HarnessSettings'
 import type { TokenLedger } from '../../telemetry/TokenLedger'
-import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
+import { DEFAULT_PHASE_TIMEOUT_MS, DEFAULT_WAIT_TIMEOUT_MS } from '../../settings/DefaultSettings'
 import { OrchestratorFormatter } from '../utils/OrchestratorFormatter'
 import { TerminalProgress } from '../../ui/TerminalProgress'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
@@ -119,7 +119,7 @@ export class AgentInvocationService {
 
         const answer = await new Promise<string>(resolve => {
           const rl = createInterface({ input: process.stdin, output: process.stderr })
-          
+
           let resolved = false
           const promptTimeoutId = setTimeout(() => {
             if (resolved) return
@@ -127,7 +127,7 @@ export class AgentInvocationService {
             rl.close()
             console.error(`\n  ${AnsiHelpers.red('✖')} Tempo limite esgotado (60s). Encerrando agente automaticamente.`)
             resolve('E')
-          }, 60000)
+          }, DEFAULT_WAIT_TIMEOUT_MS)
 
           rl.question(`  ${AnsiHelpers.dim('Escolha [C/E] (60s para auto-encerrar):')} `, ans => {
             if (resolved) return

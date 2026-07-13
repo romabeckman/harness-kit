@@ -1,7 +1,7 @@
 import { AbstractCliRunner } from '../AbstractCliRunner'
 import { Runner, type AgentInvocation } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
-import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
+import { DEFAULT_PHASE_TIMEOUT_MS, DEFAULT_WAIT_TIMEOUT_MS } from '../../settings/DefaultSettings'
 
 export class AntigravityCLIRunner extends AbstractCliRunner {
   readonly type = Runner.ANTIGRAVITY_CLI
@@ -18,7 +18,7 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     if (model) args.push('--model', model)
 
     // add 1000ms to timeout to avoid throw error for 1sec difference
-    args.push('--print-timeout', `${timeout + 1000}ms`)
+    args.push('--print-timeout', `${timeout + DEFAULT_WAIT_TIMEOUT_MS + 1000}ms`)
     return args
   }
 }

@@ -2,6 +2,7 @@ import type { HarnessSettingsMap } from './SettingsSchema'
 
 /** Default per-invocation timeout (ms) used when neither config nor harness.config.json define one. */
 export const DEFAULT_PHASE_TIMEOUT_MS = 1_800_000 // 30 minutes
+export const DEFAULT_WAIT_TIMEOUT_MS = 60_000 // 60 seconds
 
 export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   'claude': {
