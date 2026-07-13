@@ -26,6 +26,13 @@ async function main(): Promise<void> {
     return
   }
 
+  if (cmd === 'init') {
+    const { cmdInit } = await import('./services/init-service')
+    const initArgs = args.slice(1)
+    await cmdInit(cwd, initArgs)
+    return
+  }
+
   if (cmd === 'report') {
     cmdReport(cwd)
     return

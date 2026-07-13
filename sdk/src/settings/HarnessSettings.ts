@@ -7,6 +7,15 @@ import { DEFAULT_SETTINGS } from './DefaultSettings'
 export class HarnessSettings {
   private constructor(private readonly settings: HarnessSettingsMap) { }
 
+  static createLocalSettings(projectPath: string): string {
+    const settingsPath = join(projectPath, '.harness-kit', 'settings.json')
+    if (!existsSync(settingsPath)) {
+      mkdirSync(dirname(settingsPath), { recursive: true })
+      writeFileSync(settingsPath, JSON.stringify(DEFAULT_SETTINGS, null, 2), 'utf-8')
+    }
+    return settingsPath
+  }
+
   static getGlobalSettingsPath(): string {
     if (process.env.HARNESS_SETTINGS_PATH) {
       return process.env.HARNESS_SETTINGS_PATH
