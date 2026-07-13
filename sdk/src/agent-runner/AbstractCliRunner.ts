@@ -156,7 +156,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
 
       AbstractCliRunner.activeKillFns.add(killProcessGroup)
 
-      if (this.#timeoutMs > 0) {
+      if (this.#timeoutMs > 0 && !options?.signal) {
         timer = setTimeout(() => {
           killProcessGroup()
           reject(new AgentRunnerError({
