@@ -101,7 +101,8 @@ export async function cmdInit(cwd: string, args: string[]): Promise<void> {
   if (launch) {
     // Dynamically import to avoid circular dependencies and only load when needed
     const { cmdRun } = await import('./run-service')
-    await cmdRun(cwd, args)
+    const runArgs = [...args.filter(arg => arg !== '--resume'), '--reset']
+    await cmdRun(cwd, runArgs)
   } else {
     console.log(`\nAll set! Run ${AnsiHelpers.cyan('hrns run')} when you're ready to start.`)
   }

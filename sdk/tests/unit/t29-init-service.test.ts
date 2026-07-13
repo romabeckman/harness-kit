@@ -104,7 +104,7 @@ describe('T29 — cmdInit', () => {
     mockConfirm.mockResolvedValueOnce(false) // Create settings
     mockConfirm.mockResolvedValueOnce(true) // Run hrns run
     await cmdInit(cwd, [])
-    expect(mockCmdRun).toHaveBeenCalledWith(cwd, [])
+    expect(mockCmdRun).toHaveBeenCalledWith(cwd, ['--reset'])
   })
 
   it('aborts early if product dir exists and user declines overwrite', async () => {
