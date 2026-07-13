@@ -104,4 +104,30 @@ describe('T28 — HarnessSettings', () => {
       model: 'phaseB-model'
     })
   })
+
+  it('TC-HS-07: createLocalSettings creates local settings in project path', async () => {
+    const { HarnessSettings } = await import('../../src/settings/HarnessSettings')
+    const { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } = await import('fs')
+    const { tmpdir } = await import('os')
+    const { join } = await import('path')
+
+    const tmpDir = mkdtempSync(join(tmpdir(), 'harness-kit-test-'))
+    
+    try {
+      const createdPath = HarnessSettings.createLocalSettings(tmpDir)
+      expect(existsSync(createdPath)).toBe(true)
+      expect(createdPath).toBe(join(tmpDir, '.harness-kit', 'settings.json'))
+      
+      const content = readFileSync(createdPath, 'utf-8')
+      expect(content).toContain('"claude"')
+      
+      // Test it doesn't overwrite if it exists
+      writeFileSync(createdPath, '{"custom": true}')
+      HarnessSettings.createLocalSettings(tmpDir)
+      const newContent = readFileSync(createdPath, 'utf-8')
+      expect(newContent).toBe('{"custom": true}')
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true })
+    }
+  })
 })
