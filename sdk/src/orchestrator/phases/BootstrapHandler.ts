@@ -24,6 +24,11 @@ export class BootstrapHandler extends AbstractPhaseHandler {
           maxReworks: context.config.reworks
         }
       }
+      if (context.config?.initialRules) {
+        if (!bootConfig?.steeringRules) bootConfig.steeringRules = { 'user': [] }
+        if (!bootConfig?.steeringRules?.user) bootConfig.steeringRules.user = []
+        bootConfig.steeringRules.user.push(context.config.initialRules)
+      }
       context.fsm.saveBootstrapConfig(bootConfig)
     }
 
