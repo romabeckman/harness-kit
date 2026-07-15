@@ -2,7 +2,7 @@
 
 ![beta](https://img.shields.io/badge/status-beta-blue)
 
-Runs the [harness-kit](https://github.com/romabeckman/harness-kit) autonomous orchestrator programmatically. Instead of typing `/autonomous-orchestrator` in Claude Code, you run a single command and the full TDD loop executes unattended — scope in, backlog built, agents delegated, validation scored, memory persisted.
+Autonomous orchestrator SDK for [harness-kit](https://github.com/romabeckman/harness-kit). Run a single command and the full TDD loop executes unattended — scope in, backlog built, agents delegated, validation scored, memory persisted.
 
 ---
 
@@ -73,15 +73,7 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
 
 ---
 
-## Integration with Superpowers
-
-HarnessKit is designed to complement [Superpowers Skills](https://github.com/obra/superpowers). While HarnessKit defines the *strategy and discipline* (what to build and how to validate it), Superpowers provides the low-level *execution tools* (Git worktrees, parallel agents, etc.).
-
----
-
 ## Prerequisites
-
-Before anything else:
 
 ```bash
 # 1. Claude Code CLI installed and authenticated
@@ -93,7 +85,7 @@ claude --version
 
 ---
 
-## How to run
+## Installation
 
 ### Option A — npx (available soon)
 
@@ -103,26 +95,12 @@ npx @romabeckman/hrns run
 
 > If the package is not yet published to npm, use Option B or C below.
 
----
-
-### Option B — install globally (run from anywhere)
-
-Build from source and install globally once:
+### Option B — install globally
 
 ```bash
 git clone https://github.com/romabeckman/harness-kit.git
 cd harness-kit/sdk
-npm install
-npm run build
-npm install -g .
-```
-
-In Claude code:
-
-```bash
-cd ~/.claude/plugins/marketplaces/harness-kit/sdk
-npm install
-npm run build
+npm install && npm run build
 npm install -g .
 ```
 
@@ -134,9 +112,7 @@ hrns run
 
 > To uninstall: `npm uninstall -g @romabeckman/hrns`
 
----
-
-### Option C — run directly without installing
+### Option C — run without installing
 
 ```bash
 git clone https://github.com/romabeckman/harness-kit.git
@@ -147,9 +123,32 @@ node dist/cli/run.js
 
 ---
 
-## CLI Reference
+## CLI commands
 
-### `hrns run` — start or resume an orchestration session
+### `hrns init`
+
+Runs an interactive wizard to initialize your workspace:
+
+1. **Creates tracking files** — `BACKLOG.md`, `DEVELOPMENT-STATE.md`, `DECISIONS.md`, and `BOOTSTRAP-CONFIG.json` under `docs/product/`.
+2. **Steering wizard** — prompts for optional custom steering rules per phase (global, bootstrap, planning, implementation, validation, memory).
+3. **Local settings** — prompts to create `.harness-kit/settings.json` if it does not exist.
+4. **Run follow-up** — offers to trigger `hrns run` immediately. Any arguments passed to `init` (e.g. `--agent gemini`) are forwarded automatically.
+
+### `hrns run`
+
+Starts or resumes an orchestration session. If a backlog exists on disk, it picks up exactly where the previous run stopped.
+
+### `hrns report`
+
+Prints token usage report for the current session.
+
+### `hrns version` / `hrns help`
+
+Show version or help message.
+
+---
+
+## CLI flags (`hrns run`)
 
 | Flag | Alias | Description | Example |
 |---|---|---|---|
@@ -157,8 +156,8 @@ node dist/cli/run.js
 | `--model <name>` | `-m` | Model override for all phases | `--model gpt-4o` |
 | `--copilot-sdk` | | Shorthand for `--agent copilot-sdk` | |
 | `--gemini` | | Shorthand for `--agent antigravity-cli` | |
-| `--reset` | | Force reset action (skip interactive prompt) | |
-| `--resume` | | Force resume action (skip interactive prompt) | |
+| `--reset` | | Force reset (skip interactive prompt) | |
+| `--resume` | | Force resume (skip interactive prompt) | |
 | `--scope <text>` | | Project scope / PRD (skips editor prompt) | `--scope "REST API with JWT"` |
 | `--path <dir>` | | Project directory (repeatable) | `--path ./api --path ./web` |
 | `--score <0–1>` | | Acceptance score threshold | `--score 0.8` |
@@ -167,130 +166,58 @@ node dist/cli/run.js
 | `--complexity <val>` | `-c` | Phase A complexity: `SIMPLE`/`S`, `COMPLEX`/`C`, or omit for `AUTO` | `--complexity S` |
 | `--debug` | | Enable debug output | |
 
-### `hrns init` — initialize workspace files and configure steering rules
-
-Runs an interactive wizard to initialize your Harness Kit workspace:
-
-1. **Creates Tracking Files**: Generates base files (`BACKLOG.md`, `DEVELOPMENT-STATE.md`, `DECISIONS.md`, and `BOOTSTRAP-CONFIG.json`) under `docs/product/`.
-2. **Interactive Steering Wizard**: Prompts the developer for optional, custom steering rules phase-by-phase:
-   - Global (`user`)
-   - Bootstrap (`bootstrap`)
-   - Planning (`phase_a` / `PLANNING`)
-   - Implementation (`phase_b` / `IMPLEMENTATION`)
-   - Validation (`phase_c` / `VALIDATION`)
-   - Steering (`phase_e` / `STEERING`)
-3. **Local Settings Creation**: Prompts to create a local `.harness-kit/settings.json` file if one does not already exist.
-4. **Execution Follow-up**: Offers to trigger `hrns run` immediately at the end. Any arguments passed to `hrns init` (e.g. `--agent gemini`) are automatically inherited and forwarded to `hrns run` when launching.
-
-### Other commands
-
-| Command | Description |
-|---|---|
-| `hrns report` | Print token usage report for the current session |
-| `hrns version` | Show version |
-| `hrns help` | Show help message |
-
 > [!NOTE]
-> The model specified via `--model` overrides the default for all phases. Each agent runner has its own supported model list — verify compatibility beforehand. For per-phase model tuning, use `settings.json` instead.
+> `--model` overrides the default for **all** phases. For per-phase model tuning, use `settings.json` instead.
 
 ---
 
-## What happens when you run it
+## Agent runners
 
-An interactive form collects the required info:
+Each runner is a self-contained strategy for invoking a specific AI backend. The SDK ships seven built-in runners:
 
-```
-harness-kit — autonomous orchestrator
-
-? What would you like to do?
-  ❯ resume — continue from last session
-    reset  — discard current session and start a new cycle
-
-? How would you like to provide the project scope?
-  ❯ type   — enter a short description
-    editor — open editor for a longer PRD
-
-? Project scope: REST API with JWT auth and PostgreSQL
-
-? Project paths (comma-separated): /home/user/my-api
-
-── Starting orchestration ──────────────────────────────
-  scope:  REST API with JWT auth and PostgreSQL
-  paths:  /home/user/my-api
-────────────────────────────────────────────────────────
-[scope-refinement] → Skill
-[scope-refinement] → Write
-[scope-refinement] ✓ done
-[tdd-orchestrator] → Bash
-...
-✓ All features completed.
-
-harness-kit — token report
-────────────────────────────────────────
-scope-refinement     input: 12,450  cost: $0.04
-tdd-orchestrator     input: 28,100  cost: $0.12
-────────────────────────────────────────
-TOTAL                input: 40,550  cost: $0.16
-```
-
-- Real-time progress logged to the terminal as agents work
-- `docs/product/BACKLOG.md`, `DEVELOPMENT-STATE.md`, `DECISIONS.md` updated continuously
-- If interrupted, run the same command again and choose **resume** — it picks up exactly where it stopped
-- Ctrl+C cancels cleanly at any prompt
-
----
-
-## Agent runners — pluggable strategies
-
-Each agent runner is a self-contained strategy that knows how to invoke a specific AI backend. The SDK ships seven built-in runners:
-
-| Type | Binary / SDK | Default model | Notes |
-|---|---|---|---|
-| `claude-cli` | `claude` CLI | _(from settings)_ | Default when no `ANTHROPIC_API_KEY` is set |
-| `claude-sdk` | `@anthropic-ai/sdk` | `claude-sonnet-4-6` | Default when `ANTHROPIC_API_KEY` is set |
-| `antigravity-cli` | `agy` CLI | `gemini-3.5-flash` | Google Gemini via Antigravity |
-| `copilot-cli` | `copilot` CLI | _(from settings)_ | GitHub Copilot CLI |
-| `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.3-codex` | GitHub Copilot SDK |
-| `cursor-cli` | `agent` CLI | _(from settings)_ | Cursor CLI |
-| `cursor-sdk` | `@cursor/sdk` | `composer-2.5` | Requires `CURSOR_API_KEY` env var |
+| Type | Binary / SDK | Default model |
+|---|---|---|
+| `claude-cli` | `claude` CLI | _(from settings)_ |
+| `claude-sdk` | `@anthropic-ai/sdk` | `claude-sonnet-4-6` |
+| `antigravity-cli` | `agy` CLI | `gemini-3.5-flash` |
+| `copilot-cli` | `copilot` CLI | _(from settings)_ |
+| `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.3-codex` |
+| `cursor-cli` | `agent` CLI | _(from settings)_ |
+| `cursor-sdk` | `@cursor/sdk` | `composer-2.5` |
 
 ### Auto-selection
 
 | Condition | Runner used |
 |---|---|
-| `ANTHROPIC_API_KEY` set in environment | `claude-sdk` (direct API) |
-| No API key | `claude-cli` (local `claude` CLI) |
+| `ANTHROPIC_API_KEY` set | `claude-sdk` (direct API) |
+| No API key | `claude-cli` (local CLI) |
 
 ### CLI shorthands
 
 ```bash
-hrns run --agent antigravity-cli     # Google Gemini via Antigravity
-hrns run --gemini                    # shorthand for the above
-hrns run --copilot-sdk               # GitHub Copilot SDK
-hrns run --agent cursor-sdk          # Cursor SDK (needs CURSOR_API_KEY)
-hrns run --agent copilot-cli         # GitHub Copilot CLI
-hrns run --agent cursor-cli          # Cursor CLI
+hrns run --gemini                    # antigravity-cli
+hrns run --copilot-sdk               # copilot-sdk
+hrns run --agent cursor-sdk          # cursor-sdk (needs CURSOR_API_KEY)
+hrns run --agent copilot-cli         # copilot-cli
+hrns run --agent cursor-cli          # cursor-cli
 ```
-
-Detailed runner architectural specifications are located in [**sdk_agent_runner.md**](./docs/feature/sdk_agent_runner.md).
-Detailed specifications for agent invocations during orchestration are in [**AGENTS.md**](./AGENTS.md).
 
 ---
 
 ## Configuration — `settings.json`
 
-`settings.json` lets you tune the model and timeout for each runner and phase without touching code. Changes apply immediately on the next run.
+Tune model and timeout per runner and phase without touching code. Changes apply on the next run.
 
 ### File locations
 
-The SDK reads settings from two places and deep-merges them (project overrides global):
+The SDK reads from two locations and deep-merges them (project overrides global):
 
 | Scope | Path |
 |---|---|
-| **Global** (all projects) | `~/.config/harness-kit/settings.json` |
-| **Project** (current project only) | `<projectPath>/.harness-kit/settings.json` |
+| **Global** | `~/.config/harness-kit/settings.json` |
+| **Project** | `<projectPath>/.harness-kit/settings.json` |
 
-The global file is created automatically on first run if it does not exist. You can also set `HARNESS_SETTINGS_PATH` to point to a custom path, or `XDG_CONFIG_HOME` to change the base config directory.
+The global file is created automatically on first run. You can also set `HARNESS_SETTINGS_PATH` to point to a custom path, or `XDG_CONFIG_HOME` to change the base config directory.
 
 ### Schema
 
@@ -312,18 +239,18 @@ The global file is created automatically on first run if it does not exist. You 
 | Field | Type | Description |
 |---|---|---|
 | `timeoutMs` | `number` | Default timeout (ms) for all phases under this runner |
-| `phases.<key>.model` | `string` | Model to use for this specific phase |
+| `phases.<key>.model` | `string` | Model for this specific phase |
 | `phases.<key>.effort` | `string` | Reasoning effort: `low`, `medium`, `high` |
-| `phases.<key>.timeoutMs` | `number` | Phase-level timeout override (takes precedence over runner-level) |
+| `phases.<key>.timeoutMs` | `number` | Phase-level timeout override |
 
 ### Runner keys
 
 | Key | Applies to |
 |---|---|
-| `claude` | `claude-cli` and `claude-sdk` runners |
-| `antigravity` | `antigravity-cli` runner |
-| `copilot` | `copilot-cli` and `copilot-sdk` runners |
-| `cursor` | `cursor-cli` and `cursor-sdk` runners |
+| `claude` | `claude-cli` and `claude-sdk` |
+| `antigravity` | `antigravity-cli` |
+| `copilot` | `copilot-cli` and `copilot-sdk` |
+| `cursor` | `cursor-cli` and `cursor-sdk` |
 
 ### Phase keys
 
@@ -332,7 +259,7 @@ The global file is created automatically on first run if it does not exist. You 
 | `bootstrap` | Bootstrap — software-architect agent |
 | `phase_a` | Phase A — scope-refinement |
 | `phase_b` | Phase B — tdd-orchestrator |
-| `phase_c_tl` | Phase C — the-grumpy-tech-lead review |
+| `phase_c_tl` | Phase C — tech-lead review |
 | `phase_c_adv` | Phase C — adversarial-qa review |
 | `phase_e` | Phase E — project-memory |
 
@@ -387,7 +314,7 @@ The global file is created automatically on first run if it does not exist. You 
 }
 ```
 
-### Example — upgrade Phase B to a more powerful model for a project
+### Example — override Phase B for a project
 
 Create `.harness-kit/settings.json` inside your project root:
 
@@ -401,97 +328,24 @@ Create `.harness-kit/settings.json` inside your project root:
 }
 ```
 
-Only the fields you specify are overridden — everything else falls back to the global settings or defaults.
+Only the fields you specify are overridden — everything else falls back to defaults.
 
 ---
 
 ## Using the SDK programmatically
 
-Install as a dependency in your project:
+Install as a dependency:
 
 ```bash
 npm install @romabeckman/hrns
-# or, before publishing:
-npm install /path/to/harness-kit/sdk
 ```
 
-Basic usage:
-
-```typescript
-import { HarnessOrchestrator } from '@romabeckman/hrns'
-
-const orchestrator = new HarnessOrchestrator({
-  scope: 'REST API with JWT auth and PostgreSQL',
-  projectPaths: ['/path/to/my-api'],
-  score: 0.7,    // minimum acceptance score (0–1)
-  reworks: 3,    // max rework cycles before cascade-blocking
-})
-
-await orchestrator.run()
-orchestrator.tokenReport() // print token + cost breakdown
-```
-
-### Resume a previous session
-
-When a backlog already exists on disk, the orchestrator re-enters at the last persisted phase automatically. The `scope` field is still required by the type, but its value is overridden by the persisted scope on disk.
-
-```typescript
-const orchestrator = new HarnessOrchestrator({
-  scope: '',   // overridden by persisted scope on disk
-  projectPaths: ['/path/to/api'],
-  score: 0.7,
-  reworks: 3,
-})
-
-await orchestrator.run()
-```
-
-### Custom progress output
-
-```typescript
-import { HarnessOrchestrator, ClaudeCLIRunner } from '@romabeckman/hrns'
-import type { ProgressLine } from '@romabeckman/hrns'
-
-const orchestrator = new HarnessOrchestrator({
-  scope: 'my project',
-  projectPaths: ['/path/to/project'],
-  score: 0.7,
-  reworks: 3,
-  agentRunner: new ClaudeCLIRunner({
-    onProgress: (line: ProgressLine) => {
-      if (line.type === 'tool_use') console.log(`[${line.skill}] → ${line.toolName}`)
-      if (line.type === 'result')   console.log(`[${line.skill}] done`)
-    },
-  }),
-})
-```
-
-### Pluggable agent strategies
-
-Instantiate any registered runner via the Factory:
-
-```typescript
-import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hrns'
-
-const orchestrator = new HarnessOrchestrator({
-  scope: 'my project',
-  projectPaths: ['/path/to/project'],
-  score: 0.7,
-  reworks: 3,
-  agentRunner: AgentRunnerFactory.create({
-    type: 'antigravity-cli',
-    model: 'gemini-3.5-flash',
-  }),
-})
-```
-
-### Custom chain
-
-By default the orchestrator uses `ChainBuilder.buildDefault()`, which wires all phases in order. Pass a `chain` to replace or extend it:
+### Example — custom chain with pluggable runner
 
 ```typescript
 import {
   HarnessOrchestrator,
+  AgentRunnerFactory,
   ChainBuilder,
   PhaseAHandler,
   PhaseBHandler,
@@ -502,6 +356,13 @@ import {
   CascadeBlockedHandler,
 } from '@romabeckman/hrns'
 
+// Pick any registered runner (claude-cli, claude-sdk, antigravity-cli, copilot-sdk, etc.)
+const runner = AgentRunnerFactory.create({
+  type: 'claude-sdk',   // reads ANTHROPIC_API_KEY from env
+  model: 'claude-sonnet-4-6',
+})
+
+// Build a custom phase chain (or use ChainBuilder.buildDefault())
 const chain = new ChainBuilder()
   .addPhase(new PhaseAHandler())
   .addPhase(new PhaseBHandler())
@@ -513,51 +374,25 @@ const chain = new ChainBuilder()
   .build()
 
 const orchestrator = new HarnessOrchestrator({
-  scope: 'my project',
-  projectPaths: ['/path/to/project'],
-  score: 0.7,
-  reworks: 3,
+  scope: 'REST API with JWT auth and PostgreSQL',
+  projectPaths: ['/path/to/my-api'],
+  score: 0.7,      // minimum acceptance score (0–1)
+  reworks: 3,      // max rework cycles before cascade-blocking
+  agentRunner: runner,
   chain,
-})
-```
-
-### Read backlog state
-
-```typescript
-import { FileStateManager } from '@romabeckman/hrns'
-
-const state = new FileStateManager({ productDir: './docs/product' })
-
-const features = state.loadBacklog()
-const executable = state.getExecutableFeatures()
-```
-
-### CI/CD with API key
-
-```typescript
-import { HarnessOrchestrator, AgentRunnerFactory } from '@romabeckman/hrns'
-
-const orchestrator = new HarnessOrchestrator({
-  scope: 'my project',
-  projectPaths: ['/path/to/project'],
-  score: 0.7,
-  reworks: 3,
-  agentRunner: AgentRunnerFactory.create({ type: 'claude-sdk' }), // reads ANTHROPIC_API_KEY from env
 })
 
 await orchestrator.run()
+orchestrator.tokenReport()
 ```
+
+> When a backlog already exists on disk, the orchestrator re-enters at the last persisted phase automatically. The `scope` value is overridden by the persisted scope.
 
 ---
 
 ## Token report
 
-After each run, `docs/product/tokens.jsonl` is written with one entry per agent invocation.
-Call `tokenReport()` to print a summary:
-
-```typescript
-orchestrator.tokenReport()
-```
+After each run, `docs/product/tokens.jsonl` is written with one entry per agent invocation. Call `tokenReport()` or use `hrns report` to print a summary:
 
 ```
 harness-kit-sdk — token report
@@ -587,6 +422,14 @@ npm run build      # compiles TypeScript → dist/
 npm test           # runs Vitest (250+ tests)
 npm run typecheck  # zero-error type check
 ```
+
+---
+
+## Further reading
+
+- [Agent invocations reference](./AGENTS.md) — detailed breakdown of each agent call per phase
+- [Agent runner architecture](./docs/feature/sdk_agent_runner.md) — runner internals and extension points
+- [Integration with Superpowers](https://github.com/obra/superpowers) — low-level execution tools (Git worktrees, parallel agents, etc.)
 
 ---
 
