@@ -24,16 +24,58 @@ Reference for all `invokeAgent` calls executed during the orchestrator lifecycle
 
 ---
 
-## Prompt construction
+## Steering rules
 
-Bootstrap passes a custom `prompt` string directly. All other phases use `ContextAssembler` to build a structured payload. When no explicit `prompt` is given, the runner serializes the payload as:
+Every phase payload is enriched with **steering rules** at the moment the phase starts. Rules are loaded from `steeringRules` inside `BOOTSTRAP-CONFIG.json` and merged into the agent prompt before dispatch.
 
+### `SteeringRulesConfig` shape
+
+```typescript
+interface SteeringRulesConfig {
+  user?:      string[]   // global — injected into every phase
+  bootstrap?: string[]
+  phase_a?:   string[]
+  phase_b?:   string[]
+  phase_c?:   string[]
+  phase_e?:   string[]
+}
 ```
-Skill: <skill-name>
-Mode: autonomous
 
-<JSON payload>
-```
+The `user` key is **global**: its rules are prepended to every phase's rule list, regardless of which phase is running.
+
+### Default rules (`createDefaultSteeringRules`)
+
+Defined in [`src/file-state/types.ts`](./src/file-state/types.ts):
+
+| Key | Default rules |
+| :--- | :--- |
+| `user` | _(empty — populated via `--steering` flag or `hrns init` wizard)_ |
+| `bootstrap` | Granularity rule: each feature is one deliverable chunk. Never mix multiple unrelated projects in a single feature. |
+| `phase_a` | • Min 1 / max 5 tasks per tactical-design doc (10 total max)<br>• Classify scope as `SIMPLE` (basic CRUD, minor enhancements) → generate only `003` + `004` docs<br>• Classify scope as `COMPLEX` (new core features, cross-domain, integrations) → generate all docs (`001`–`004`) |
+| `phase_b` | _(empty by default)_ |
+| `phase_c` | • `harness-tech-lead` must write its review JSON to `docs/specs/${domain}/TL.json`<br>• `harness-qa` must write its review JSON to `docs/specs/${domain}/QA.json` |
+| `phase_e` | _(empty by default)_ |
+
+### Adding rules
+
+Rules can be added in three ways:
+
+1. **`hrns init` wizard** — interactive prompts per phase populate `BOOTSTRAP-CONFIG.json`.
+2. **`--steering` flag** — appends a rule to the `user` (global) key for the current run:
+   ```bash
+   hrns run --steering "prefer async/await over promise chains"
+   ```
+3. **Direct edit** — open `docs/product/BOOTSTRAP-CONFIG.json` and append strings to any phase array:
+   ```json
+   {
+     "steeringRules": {
+       "phase_b": ["Always write JSDoc for public functions"]
+     }
+   }
+   ```
+
+> [!NOTE]
+> Rules are plain strings. They are injected verbatim into the agent prompt each time a phase starts. Keep them concise and directive — the agent treats them as mandatory constraints, not suggestions.
 
 ---
 
@@ -47,6 +89,28 @@ When `invokeAgent` is called:
 4. **Token recording** — `output.usage` recorded to `docs/product/tokens.jsonl` via `TokenLedger`.
 5. **Spinner stop** — always called in the `finally` block.
 
-### Quota / rate-limit handling
+### Timeout handling
 
-If the agent returns an error matching `/rate.?limit|quota|overloaded/i`, the runner throws `AgentRunnerError` with code `QUOTA_EXCEEDED`. The orchestrator persists the current phase to disk and halts gracefully — run `hrns run` to resume.
+Each agent invocation runs under a timeout controlled by `timeoutMs` (configured in `settings.json` at the runner or phase level). If the timeout expires before the agent responds, the `AbortController` fires, the runner throws, and the orchestrator persists the current phase state to disk before halting.
+
+Because state is always persisted on exit, **the session can be resumed** at any time:
+
+```bash
+hrns run --resume
+```
+
+The orchestrator re-enters at the exact phase that was interrupted. To increase the timeout for long-running phases before resuming, update `settings.json`:
+
+```json
+{
+  "claude": {
+    "phases": {
+      "phase_b": { "timeoutMs": 3600000 }
+    }
+  }
+}
+```
+
+> [!TIP]
+> The default `timeoutMs` is `1800000` (30 min) at the runner level. Phase-level `timeoutMs` takes precedence over the runner-level default.
+
