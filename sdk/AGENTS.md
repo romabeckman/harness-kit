@@ -114,3 +114,32 @@ The orchestrator re-enters at the exact phase that was interrupted. To increase 
 > [!TIP]
 > The default `timeoutMs` is `1800000` (30 min) at the runner level. Phase-level `timeoutMs` takes precedence over the runner-level default.
 
+---
+
+## Loop safety guards
+
+The main orchestration loop in [`HarnessOrchestrator.ts`](./src/orchestrator/HarnessOrchestrator.ts) runs until the pipeline reaches `Phase.HALTED`. Two independent counters protect against runaway execution:
+
+| Guard | Constant | Trigger |
+| :--- | :--- | :--- |
+| **Global iteration cap** | `MAX_ITERATIONS = 500` | Fires when the total number of loop ticks exceeds 500, regardless of phase. |
+| **Consecutive phase cap** | `MAX_PHASE_ITERATIONS = 3` | Fires when the same phase repeats more than 3 consecutive ticks without advancing. |
+
+### Behavior on breach
+
+When either limit is exceeded, the orchestrator checks whether it is running in an interactive terminal (`process.stdout.isTTY && process.stdin.isTTY`):
+
+- **Interactive (TTY)** — prompts the developer:
+  ```
+  HarnessOrchestrator: exceeded 500 iterations — possible infinite loop at phase IMPLEMENTATION.
+  Do you want to continue anyway? (Y/n)
+  ```
+  Answering **Y** resets the breached counter to zero and the loop continues. Answering **N** throws and halts.
+
+- **Non-interactive (CI / test env)** — throws immediately without prompting:
+  ```
+  HarnessOrchestrator: exceeded 500 iterations — possible infinite loop at phase IMPLEMENTATION
+  ```
+
+> [!WARNING]
+> A breach of `MAX_PHASE_ITERATIONS` almost always indicates a phase handler that is not advancing state correctly (e.g., a feature stuck between B and C due to a score parsing failure). Investigate `DEVELOPMENT-STATE.md` and `DECISIONS.md` before choosing to continue.
