@@ -66,8 +66,6 @@ REQUIRED: Pass agent selection flags when running orchestration command:
 
 | Flag | Description |
 |---|---|
-| `hrns run --copilot-sdk` | Resolves `copilot-sdk` runner. |
-| `hrns run --gemini` | Resolves `gemini` runner. |
 | `hrns run --agent <type>` / `hrns -a <type>` | Resolves custom strategy named `<type>`. |
 | `hrns run --model <name>` / `hrns -m <name>` | Overrides the default model for the selected runner. |
 

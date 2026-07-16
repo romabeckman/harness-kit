@@ -49,8 +49,6 @@ The `hrns init` command prepares a directory for running Harness Kit cycles:
 |---|---|---|
 | `--agent <type>` | `-a` | Agent type (e.g. `claude-cli`, `copilot-sdk`, `antigravity-cli`, `gemini`) |
 | `--model <name>` | `-m` | Model name forwarded to the agent runner |
-| `--copilot-sdk` | — | Shorthand for `--agent copilot-sdk` |
-| `--gemini` | — | Shorthand for `--agent gemini` |
 
 ### Action Selector
 

@@ -33,8 +33,6 @@ export interface ParsedRunArgs {
  * ─────────────────
  * --agent, -a <type>       Agent type
  * --model, -m <name>       Model name
- * --copilot-sdk            Shorthand for --agent copilot-sdk
- * --gemini                 Shorthand for --agent gemini
  * --reset                  Force reset action (skip interactive prompt)
  * --resume                 Force resume action (skip interactive prompt)
  * --scope <text>           Project scope / PRD
@@ -65,15 +63,6 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
     const nextArg = () => (value !== undefined ? value : args[++i])
 
     switch (arg) {
-      // ── agent shorthands ─────────────────────────────────────────────────
-      case '--copilot-sdk':
-        result.agentType = 'copilot-sdk'
-        break
-
-      case '--gemini':
-        result.agentType = 'gemini'
-        break
-
       // ── agent / model ────────────────────────────────────────────────────
       case '--agent':
       case '-a':

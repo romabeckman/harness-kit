@@ -14,16 +14,6 @@ describe('T19 — parseRunArgs', () => {
     expect(result.agentType).toBe('gemini')
   })
 
-  it('parses --copilot-sdk flag as agentType shorthand', () => {
-    const result = parseRunArgs(['--copilot-sdk'])
-    expect(result.agentType).toBe('copilot-sdk')
-  })
-
-  it('parses --gemini flag as agentType shorthand', () => {
-    const result = parseRunArgs(['--gemini'])
-    expect(result.agentType).toBe('gemini')
-  })
-
   it('parses --model flag', () => {
     const result = parseRunArgs(['--model', 'gpt-4o'])
     expect(result.model).toBe('gpt-4o')
