@@ -85,7 +85,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
       `- PROHIBITED: Narrative explanations, justifications, or process history`,
       `- PROHIBITED: Creating a new ADR file unless explicitly requested by a human`,
       `- PROHIBITED: Reading, creating, or modifying any file under \`docs/harness-history/\``,
-      `- OPTIONAL: Run \`git status -s\` to check all files modified.`,
+      `- OPTIONAL: Run \`git status -s\` to list all modified files in each project.`,
       `</instructions>`,
       ``,
       `<strict_rules>`,
