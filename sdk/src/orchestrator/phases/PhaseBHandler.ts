@@ -179,7 +179,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `<strict_rules>`,
       `- You MUST read \`docs/README.md\` (It is a guide to all the documents; load them into memory as needed), \`docs/adr/ARCHITECTURE.md\`, and \`docs/adr/TESTS.md\` in each project before writing any code`,
       `- Each project MUST have its own \`docs/adr\` and \`docs/feature\` folders where all ADRs and features are stored.`,
-      `- You MUST run each workflow step in \`tdd-orchestrator\` skill correctly`,
+      `- You MUST run each workflow step in \`harness-kit:tdd-orchestrator\` skill correctly`,
       `- If exists "Socratic Questions" section in \`001-problem-space.md\`, use it to reflect and write the code in the best possible way.`,
       `- NEVER change correct tests to force passing`,
       `- NEVER run package installation commands automatically — instruct the user instead`,
