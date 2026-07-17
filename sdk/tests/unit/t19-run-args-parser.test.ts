@@ -164,7 +164,7 @@ describe('T19 — parseRunArgs', () => {
 
   it('complexity is undefined when flag is omitted (AUTO)', () => {
     const result = parseRunArgs(['--reset'])
-    expect(result.complexity).toBeUndefined()
+    expect(result.complexity).toBe('AUTO')
   })
 
   it('parses --complexity SIMPLE', () => {
@@ -200,7 +200,7 @@ describe('T19 — parseRunArgs', () => {
   })
 
   it('ignores unknown complexity value, leaves complexity undefined', () => {
-    expect(parseRunArgs(['--complexity', 'MEDIUM']).complexity).toBeUndefined()
+    expect(parseRunArgs(['--complexity', 'MEDIUM']).complexity).toBe('AUTO')
   })
 
   it('--complexity coexists with other flags without interference', () => {

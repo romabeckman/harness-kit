@@ -5,6 +5,7 @@ import { join } from 'path'
 import { HarnessOrchestrator } from '../../src/orchestrator/HarnessOrchestrator'
 import { FakeAgentRunner } from '../helpers/FakeAgentRunner'
 import { FileStateManager } from '../../src/file-state/FileStateManager'
+import { Complexity } from '../../src/orchestrator/types'
 
 let tmpDir: string
 let productDir: string
@@ -37,7 +38,7 @@ function setupTwoFeatures(f2Dependencies: string[] = []): void {
   writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
   writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
     scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+    scoreThresholdAdv: 0.70,
     completionCriteria: { maxReworks: 2 },
     cycleCounter: { completedCycles: 0 },
   }, null, 2))
@@ -97,7 +98,7 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
       writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
       writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
         scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+        scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       }, null, 2))
@@ -129,6 +130,7 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()
@@ -158,6 +160,7 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()
@@ -189,7 +192,7 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
       writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
       writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
         scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+        scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       }, null, 2))
@@ -201,6 +204,7 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()
@@ -234,7 +238,7 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
       writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
       writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
         scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+        scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       }, null, 2))
@@ -253,6 +257,7 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()

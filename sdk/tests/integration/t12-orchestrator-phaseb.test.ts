@@ -4,6 +4,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import { HarnessOrchestrator } from '../../src/orchestrator/HarnessOrchestrator'
 import { FakeAgentRunner } from '../helpers/FakeAgentRunner'
+import { Complexity } from '../../src/orchestrator/types'
 
 let tmpDir: string
 let productDir: string
@@ -27,7 +28,7 @@ function setupProductFiles(backlogStatus: string = 'IN_PROGRESS', tasks: string 
   writeFileSync(join(productDir, 'DECISIONS.md'), '# Decisions\n')
   writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), JSON.stringify({
     scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+    scoreThresholdAdv: 0.70,
     completionCriteria: { maxReworks: 2 },
     cycleCounter: { completedCycles: 0 },
   }, null, 2))
@@ -69,6 +70,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     await orchestrator.run()
@@ -99,6 +101,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     await orchestrator.run()
@@ -125,6 +128,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await expect(orchestrator.run()).resolves.toBeUndefined()
@@ -163,6 +167,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       // Re-entry: spec files present, tasks not all completed → PHASE_B

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AgentInvocationService } from '../AgentInvocationService'
-import { Phase } from '../../types'
+import { Complexity, Phase } from '../../types'
 import { DEFAULT_PHASE_TIMEOUT_MS } from '../../../settings/DefaultSettings'
 import type { IAgentRunner } from '../../../agent-runner/IAgentRunner'
 import type { AgentInvocation, AgentOutput, TokenUsage } from '../../../agent-runner/types'
@@ -63,6 +63,7 @@ function makeConfig(overrides: Partial<OrchestratorConfig> = {}): OrchestratorCo
     score: 0.85,
     reworks: 3,
     projectPaths: [],
+    complexity: Complexity.AUTO,
     ...overrides,
   }
 }

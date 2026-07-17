@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PhaseFHandler } from '../PhaseFHandler'
-import { Phase } from '../../types'
+import { Complexity, Phase } from '../../types'
 import type { PhaseContext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
 import type { Feature, BootstrapConfig } from '../../../file-state/types'
@@ -25,8 +25,8 @@ function makeConfig(pendingStatus?: string): BootstrapConfig {
   return {
     originalScope: 'scope',
     projectPaths: [],
-      scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+    scoreThresholdTL: 0.70,
+    scoreThresholdAdv: 0.70,
     completionCriteria: { maxReworks: 2 },
     cycleCounter: { completedCycles: 0 },
     steeringRules: { user: [] },
@@ -67,7 +67,7 @@ function makeFsm(
 
 function makeContext(fsm: IFileStateManager, activeFeature: Feature | null = makeFeature()): PhaseContext {
   return {
-    config: { scope: 'test', score: 0.7, reworks: 2, projectPaths: [] },
+    config: { scope: 'test', score: 0.7, reworks: 2, projectPaths: [], complexity: Complexity.AUTO },
     workingDir: '/tmp/test',
     fsm,
     invokeAgent: vi.fn(),
