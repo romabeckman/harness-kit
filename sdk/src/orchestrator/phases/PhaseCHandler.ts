@@ -1,6 +1,6 @@
 import { existsSync, rmSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { Phase } from '../types'
+import { Complexity, Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
@@ -60,13 +60,15 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const advPrompt = this.buildAdversarialQAPrompt(payload, context.workingDir)
 
     return Promise.all([
-      context.invokeAgent({
-        skill: 'harness-kit:the-grumpy-tech-lead',
-        agent: 'harness-kit:harness-tech-lead',
-        mode: 'autonomous',
-        prompt: tlPrompt,
-        phaseKey: 'phase_c_tl',
-      }),
+      context.config.complexity === Complexity.SIMPLE ?
+        { score: 1, openPoints: [], architectureTip: '' } :
+        context.invokeAgent({
+          skill: 'harness-kit:the-grumpy-tech-lead',
+          agent: 'harness-kit:harness-tech-lead',
+          mode: 'autonomous',
+          prompt: tlPrompt,
+          phaseKey: 'phase_c_tl',
+        }),
       context.invokeAgent({
         skill: 'harness-kit:adversarial-qa',
         agent: 'harness-kit:harness-qa',
