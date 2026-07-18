@@ -1,7 +1,5 @@
 # @romabeckman/hrns
 
-![beta](https://img.shields.io/badge/status-beta-blue)
-
 Autonomous orchestrator SDK for [harness-kit](https://github.com/romabeckman/harness-kit). Run a single command and the full TDD loop executes unattended — scope in, backlog built, agents delegated, validation scored, memory persisted.
 
 ---
