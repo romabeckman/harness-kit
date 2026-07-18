@@ -91,7 +91,7 @@ Confirmed production failure vectors. These are bugs or structural flaws that wi
 - Data integrity risks: non-atomic operations, missing transactions, race conditions
 - Confirmed N+1 queries or unbounded dataset loading that will cause OOM or lock contention at scale
 
-### TIER 2 — HIGH (deduct -0.10 to -0.15 per finding)
+### TIER 2 — HIGH (deduct -0.10 to -0.19 per finding)
 
 Systemic fragility. Not an immediate crash, but a failure waiting to happen under stress or dependency failure.
 
@@ -100,7 +100,7 @@ Systemic fragility. Not an immediate crash, but a failure waiting to happen unde
 - Endpoints returning unbounded datasets without pagination
 - SOLID/DRY violations spanning multiple modules or cross-cutting concerns
 
-### TIER 3 — MEDIUM (deduct -0.05 to -0.08 per finding)
+### TIER 3 — MEDIUM (deduct -0.05 to -0.09 per finding)
 
 Maintainability and observability gaps. These do not cause immediate production failures but increase incident response time and technical debt.
 
@@ -109,7 +109,7 @@ Maintainability and observability gaps. These do not cause immediate production 
 - Missing error handling on a non-critical path
 - Minor spec misalignment that is cosmetic and does not affect behavior
 
-### TIER 4 — LOW (deduct -0.01 to -0.03 per finding; escalate to TIER 3 if 5 or more occurrences)
+### TIER 4 — LOW (deduct -0.01 to -0.04 per finding; escalate to TIER 3 if 5 or more occurrences)
 
 Stylistic or cosmetic issues. Negligible in isolation. Only become relevant when widespread.
 
@@ -119,6 +119,8 @@ Stylistic or cosmetic issues. Negligible in isolation. Only become relevant when
 - Trivial code duplication isolated to a single utility
 
 Accumulation rule: if TIER 4 findings total 5 or more occurrences across the codebase, treat the entire cluster as a single TIER 3 finding. Widespread low-severity negligence has systemic cost.
+
+Security severity floor: vulnerabilities in authentication or authorization flows — session fixation, CSRF bypass, authentication bypass, privilege escalation, token leakage, missing session regeneration — are **TIER 1 (CRITICAL)** or **TIER 2 (HIGH)** minimum. Never classify these as TIER 3 or TIER 4 regardless of perceived exploitability. These attack vectors have well-documented exploit chains and production breach history. Likewise, globally disabling a framework security filter (e.g., CSRF filter commented out) is TIER 2 (HIGH) minimum because it removes defense-in-depth across all routes.
 
 Score ceiling rule: a score above 0.90 requires no TIER 1 or TIER 2 findings, full spec alignment, and no accumulated TIER 4 cluster.
 

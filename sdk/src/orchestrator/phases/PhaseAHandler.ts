@@ -94,7 +94,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`scope-refinement\` skill before starting.`,
-      `Use \`the-grumpy-tech-leadt\` skill, its optional, only use it if you have questions.`,
+      `Use \`the-grumpy-tech-lead\` skill, its optional, only use it if you have questions.`,
       `</skill_context>`,
       ``,
       `<inputs>`,

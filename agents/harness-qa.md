@@ -79,6 +79,59 @@ Calculate `score` (`[0.00, 1.00]`, 2 decimals). Compared against `${scoreThresho
 
 </analysis>
 
+<scoring_relevance_criteria>
+
+## SCORING RELEVANCE CRITERIA
+
+Each finding in `vulnerabilities` or `edgeCasesMissed` carries a relevance weight that must be applied when calculating `score`. Classify every finding into one of the four tiers below before deducting. Focus on **semantic impact** — exploitability, behavioral correctness under adversarial input, and real-world attack surface — not code style or structural patterns.
+
+### TIER 1 — CRITICAL (deduct -0.20 to -0.30 per finding)
+
+Confirmed exploitable vulnerabilities with a direct, reproducible attack path. These represent immediate production risk if deployed.
+
+- Exploitable injection vectors with demonstrated payload: SQL injection, XSS with stored/reflected path, command injection, path traversal
+- Authentication/authorization bypass: session fixation, missing session regeneration on auth state change, privilege escalation, token leakage
+- Data integrity violations under adversarial input: crafted input causes data corruption, silent data loss, or incorrect state transitions
+- Application crash reproducible via crafted user input (NULL dereference, unhandled exception on boundary value)
+
+### TIER 2 — HIGH (deduct -0.10 to -0.19 per finding)
+
+Vulnerabilities with indirect or conditional exploit paths, and edge cases that cause incorrect business outcomes.
+
+- CSRF when combined with social engineering or phishing vector; framework security controls disabled or misconfigured globally (e.g., CSRF filter commented out)
+- Race conditions on shared resources with demonstrable concurrent trigger path
+- Edge cases from `004-*-test-scenarios.md` that cause incorrect business results: wrong calculations, wrong state transitions, data returned for wrong user
+- Missing ownership/authorization checks on mutating operations (delete, update) where another user's data can be affected
+- External dependency failure (timeout, malformed response) that causes silent data corruption rather than a clean error
+
+### TIER 3 — MEDIUM (deduct -0.05 to -0.09 per finding)
+
+Missing boundary handling or incomplete coverage that degrades robustness but does not cause data corruption or security breach.
+
+- Boundary values not validated on non-critical paths (empty strings accepted but cause cosmetic issues, not data corruption)
+- Edge cases from `004-*-test-scenarios.md` not covered but with low business impact (UX degradation, non-critical field missing)
+- Incomplete error handling for external failures that degrades user experience but does not corrupt data or state
+- Missing rate limiting or input length constraints on non-sensitive endpoints
+
+### TIER 4 — LOW (deduct -0.01 to -0.04 per finding; escalate to TIER 3 if 5 or more occurrences)
+
+Observations with minimal exploitability or impact. Negligible in isolation.
+
+- Missing validation on fields where the framework already provides default protection (e.g., ORM parameterized queries already prevent injection)
+- Edge cases theoretically possible but requiring extraordinary conditions to trigger (e.g., simultaneous failure of 3+ independent services)
+- Informational security observations without concrete exploit path or reproducible trigger
+- Redundant validation already covered at another layer
+
+Accumulation rule: if TIER 4 findings total 5 or more occurrences, treat the entire cluster as a single TIER 3 finding.
+
+Security severity floor: vulnerabilities in authentication or authorization flows (session fixation, CSRF bypass, auth bypass, privilege escalation, token leakage, missing session regeneration) are **TIER 1 or TIER 2 minimum** — never TIER 3 or TIER 4. Globally disabling a framework security filter is TIER 2 minimum.
+
+Score ceiling rule: a score above 0.90 requires no TIER 1 or TIER 2 findings and full coverage of scenarios in `004-*-test-scenarios.md`.
+
+---
+
+</scoring_relevance_criteria>
+
 <output>
 ## OUTPUT
 
@@ -142,5 +195,6 @@ Calculate `score` (`[0.00, 1.00]`, 2 decimals). Compared against `${scoreThresho
 3. `HIGH`/`CRITICAL` vulnerability = forced RETRY, non-negotiable.
 4. Every missed edge case must reference a scenario from `004-*-test-scenarios.md` or a concrete failure vector.
 5. On retry cycles, explicitly verify `REWORK-LOG.md` findings before scoring.
+6. Score deductions must follow the **SCORING RELEVANCE CRITERIA** tiers. Respect the security severity floor: auth/authz vulnerabilities and disabled framework security controls are TIER 1 or TIER 2 minimum — never TIER 3 or TIER 4.
 
 </strict_rules>

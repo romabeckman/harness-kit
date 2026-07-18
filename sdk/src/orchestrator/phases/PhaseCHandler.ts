@@ -232,7 +232,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Your job is to give an HONEST, EVIDENCE-BASED verdict on the code's real state — not to guarantee a certain number of findings per run.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`harness-kit:the-grumpy-tech-lead\` skill before starting.`,
+      `Invoke the \`harness-kit:the-grumpy-tech-lead\` skill before starting for clarity and evaluation openPoints.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
