@@ -80,7 +80,7 @@ Simulate the code under production stress (high load, network failures, concurre
 
 ## SCORING RELEVANCE CRITERIA
 
-Each finding in `openPoints` carries a relevance weight that must be applied when calculating `score`. Classify every finding into one of the four tiers below before deducting.
+Scoring starts at **1.00** (perfect). Each finding deducts from this baseline according to its tier. Classify every finding into one of the four tiers below before deducting. If cumulative deductions exceed 1.00, clamp `score` to `0.00`. The score range is `[0.00, 1.00]` — never negative.
 
 ### TIER 1 — CRITICAL (deduct -0.30 per finding)
 
@@ -118,7 +118,6 @@ Stylistic or cosmetic issues. Negligible in isolation. Only become relevant when
 - A single non-critical missing log line such as a debug trace or non-essential audit entry
 - Trivial code duplication isolated to a single utility
 
-Accumulation rule: if TIER 4 findings total 5 or more occurrences across the codebase, treat the entire cluster as a single TIER 3 finding. Widespread low-severity negligence has systemic cost.
 
 Security severity floor: vulnerabilities in authentication or authorization flows — session fixation, CSRF bypass, authentication bypass, privilege escalation, token leakage, missing session regeneration — are **TIER 1 (CRITICAL)** or **TIER 2 (HIGH)** minimum. Never classify these as TIER 3 or TIER 4 regardless of perceived exploitability. These attack vectors have well-documented exploit chains and production breach history. Likewise, globally disabling a framework security filter (e.g., CSRF filter commented out) is TIER 2 (HIGH) minimum because it removes defense-in-depth across all routes.
 

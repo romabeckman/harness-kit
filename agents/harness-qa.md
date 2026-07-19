@@ -83,7 +83,7 @@ Calculate `score` (`[0.00, 1.00]`, 2 decimals). Compared against `${scoreThresho
 
 ## SCORING RELEVANCE CRITERIA
 
-Each finding in `vulnerabilities` or `edgeCasesMissed` carries a relevance weight that must be applied when calculating `score`. Classify every finding into one of the four tiers below before deducting. Focus on **semantic impact** — exploitability, behavioral correctness under adversarial input, and real-world attack surface — not code style or structural patterns.
+Scoring starts at **1.00** (perfect). Each finding deducts from this baseline according to its tier. Classify every finding into one of the four tiers below before deducting. Focus on **semantic impact** — exploitability, behavioral correctness under adversarial input, and real-world attack surface — not code style or structural patterns. If cumulative deductions exceed 1.00, clamp `score` to `0.00`. The score range is `[0.00, 1.00]` — never negative.
 
 ### TIER 1 — CRITICAL (deduct -0.30 per finding)
 
@@ -122,7 +122,6 @@ Observations with minimal exploitability or impact. Negligible in isolation.
 - Informational security observations without concrete exploit path or reproducible trigger
 - Redundant validation already covered at another layer
 
-Accumulation rule: if TIER 4 findings total 5 or more occurrences, treat the entire cluster as a single TIER 3 finding.
 
 Security severity floor: vulnerabilities in authentication or authorization flows (session fixation, CSRF bypass, auth bypass, privilege escalation, token leakage, missing session regeneration) are **TIER 1 or TIER 2 minimum** — never TIER 3 or TIER 4. Globally disabling a framework security filter is TIER 2 minimum.
 
