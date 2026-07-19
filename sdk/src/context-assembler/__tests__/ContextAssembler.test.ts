@@ -37,7 +37,7 @@ describe('ContextAssembler', () => {
 
   it('should build phase E payload', () => {
     const feature = { domain: 'domain', title: 'scope desc' }
-    const payload = ContextAssembler.buildPhaseEPayload(feature as any, [], 3, ['decision1'])
+    const payload = ContextAssembler.buildPhaseEPayload(feature as any, [], 3, ['decision1'], 'workdir')
     expect(payload.domain).toBe('domain')
     expect(payload.completedCycles).toBe(3)
   })

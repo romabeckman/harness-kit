@@ -122,7 +122,7 @@ describe('PhaseAHandler', () => {
             await handler.handle(Phase.PHASE_A, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).not.toContain('COMPLEXITY OVERRIDE');
+            expect(invokedPrompt).not.toContain('Evaluate scope complexity between \'SIMPLE\' and \'COMPLEX\'');
         });
     });
 

@@ -5,6 +5,7 @@ import { join } from 'path'
 import { HarnessOrchestrator } from '../../src/orchestrator/HarnessOrchestrator'
 import { FakeAgentRunner } from '../helpers/FakeAgentRunner'
 import { FileStateManager } from '../../src/file-state/FileStateManager'
+import { Complexity } from '../../src/orchestrator/types'
 
 let tmpDir: string
 let productDir: string
@@ -68,6 +69,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()
@@ -90,6 +92,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()
@@ -112,6 +115,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()
@@ -135,6 +139,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()
@@ -155,6 +160,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()
@@ -214,6 +220,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()
@@ -241,6 +248,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()
@@ -277,6 +285,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       const tddOutputPath = join(tmpDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
@@ -323,6 +332,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
         projectPaths: [tmpDir],
         agentRunner: fake,
         productDir,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
       await orchestrator.run()

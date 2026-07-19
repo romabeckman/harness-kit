@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { HarnessOrchestrator } from '../../src/orchestrator/HarnessOrchestrator'
-import { Phase, CliCommand } from '../../src/orchestrator/types'
+import { Phase, CliCommand, Complexity } from '../../src/orchestrator/types'
 import { FakeAgentRunner } from '../helpers/FakeAgentRunner'
 
 let tmpDir: string
@@ -23,7 +23,7 @@ const DEV_STATE_EMPTY = [
 
 const BOOTSTRAP_CONFIG = JSON.stringify({
   scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+  scoreThresholdAdv: 0.70,
   completionCriteria: { maxReworks: 2 },
   cycleCounter: { completedCycles: 0 },
 }, null, 2)
@@ -54,6 +54,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     // Setup fake so PHASE_A calls succeed and halt
@@ -79,6 +80,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
     const state = orchestrator.getState()
     expect(state.currentPhase).toBe(Phase.BOOTSTRAP)
@@ -91,6 +93,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
     // With product files present, re-entry resolves to PHASE_A
     const state = orchestrator.getState()
@@ -138,6 +141,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     await orchestrator.run()
@@ -184,6 +188,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     await orchestrator.run()
@@ -211,6 +216,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
     // Feature is IN_PROGRESS, no spec files yet → PHASE_A
     expect(orchestrator.getState().currentPhase).toBe(Phase.PHASE_A)
@@ -223,6 +229,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
     expect(orchestrator.getState().currentPhase).toBe(Phase.BOOTSTRAP)
 
@@ -242,6 +249,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
     // State resolved to PHASE_A (product files exist), so runBootstrapOnly is a no-op
     // To test runBootstrap behaviour directly we construct one with BOOTSTRAP phase:
@@ -263,6 +271,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
         projectPaths: [tmpDir2],
         agentRunner: fake2,
         productDir: productDir2,
+        complexity: Complexity.AUTO,
       }, { workingDir: tmpDir2 })
 
       // Resolved to PHASE_A because backlog already has features
@@ -289,6 +298,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fakeWithUsage,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     await orchestrator.runBootstrapOnly()
@@ -309,6 +319,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fakeWithUsage,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     await orchestrator.runBootstrapOnly()
@@ -333,6 +344,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fakeNoUsage,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     await orchestrator.runBootstrapOnly()
@@ -354,6 +366,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     // Capture console.log output
@@ -377,6 +390,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     await orchestrator.runBootstrapOnly()
@@ -393,6 +407,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     // Verify it restored the scope in resumedOrchestrator.config.scope
@@ -418,6 +433,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     // With spec dir present, re-entry should resolve to PHASE_B.
@@ -452,6 +468,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       projectPaths: [tmpDir],
       agentRunner: fake,
       productDir,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     // Expect the orchestrator run to throw an error
@@ -480,7 +497,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     fake.setResponse('autonomous-orchestrator:bootstrap', {
       raw: 'backlog generated'
     })
-    
+
     // Intercept to check if backlog is written (though we just want to run bootstrap)
     const backlogPath = join(productDir, 'BACKLOG.md')
     const origRun = fake.run.bind(fake)
@@ -499,6 +516,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       agentRunner: fake,
       productDir,
       cliCommand: CliCommand.INIT,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     // Execute only the bootstrap phase

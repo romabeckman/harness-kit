@@ -93,14 +93,16 @@ export class ContextAssembler {
     projectPaths: string[],
     completedCycles: number,
     decisions: string[],
-    steeringRules?: SteeringRulesConfig
+    workingDir: string,
+    steeringRules?: SteeringRulesConfig,
   ): PhaseEPayload {
     const payload: PhaseEPayload = {
       domain: feature.domain,
       projectPaths,
       scopeDescription: feature.title,
       completedCycles,
-      recentDecisions: decisions,
+      workingDir,
+      recentDecisions: decisions
     }
     const flattened = this.flattenRules(Phase.PHASE_E, steeringRules)
     if (flattened) {

@@ -78,15 +78,10 @@ export function createDefaultSteeringRules(initialRules?: string): SteeringRules
       "Granularity rule: each feature is one deliverable chunk — one project per feature, or one flow including combined projects (frontend and backend for example), or one meaningful part of a large project if splitting is necessary. Never mix multiple unrelated projects in a single feature."
     ],
     phase_a: [
-      'Create a minimum of 1 and a maximum of 5 tasks for each `003-\${PROJECT_NAME}-tactical-design.md` (maximum of 10 tasks total)',
-      "Evaluate scope complexity: Classify as 'SIMPLE' if changes are isolated (e.g., basic CRUD, minor UI/API enhancements, or bug fixes with no architectural impact). IF 'SIMPLE', generate ONLY '003-${PROJECT_NAME}-tactical-design.md' and '004-${PROJECT_NAME}-test-scenarios.md'.",
-      "Evaluate scope complexity: Classify as 'COMPLEX' if the scope introduces new core features, cross-domain interactions, external integrations, or intricate business logic. IF 'COMPLEX', generate ALL specified documents (001, 002, 003, and 004)."
+      'Create a minimum of 1 and a maximum of 5 tasks for each `003-\${PROJECT_NAME}-tactical-design.md` (maximum of 10 tasks total)'
     ],
     phase_b: [],
-    phase_c: [
-      "If you are running as `harness-tech-lead` you MUST write (overwrite) your review json in a file `docs/specs/${domain}/TL.json`",
-      "If you are running as `harness-qa` you MUST write (overwrite) your review json in a file `docs/specs/${domain}/QA.json`"
-    ],
+    phase_c: [],
     phase_e: []
   }
 }

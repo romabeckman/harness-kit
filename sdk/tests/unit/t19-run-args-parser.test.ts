@@ -14,16 +14,6 @@ describe('T19 — parseRunArgs', () => {
     expect(result.agentType).toBe('gemini')
   })
 
-  it('parses --copilot-sdk flag as agentType shorthand', () => {
-    const result = parseRunArgs(['--copilot-sdk'])
-    expect(result.agentType).toBe('copilot-sdk')
-  })
-
-  it('parses --gemini flag as agentType shorthand', () => {
-    const result = parseRunArgs(['--gemini'])
-    expect(result.agentType).toBe('gemini')
-  })
-
   it('parses --model flag', () => {
     const result = parseRunArgs(['--model', 'gpt-4o'])
     expect(result.model).toBe('gpt-4o')
@@ -174,7 +164,7 @@ describe('T19 — parseRunArgs', () => {
 
   it('complexity is undefined when flag is omitted (AUTO)', () => {
     const result = parseRunArgs(['--reset'])
-    expect(result.complexity).toBeUndefined()
+    expect(result.complexity).toBe('AUTO')
   })
 
   it('parses --complexity SIMPLE', () => {
@@ -210,7 +200,7 @@ describe('T19 — parseRunArgs', () => {
   })
 
   it('ignores unknown complexity value, leaves complexity undefined', () => {
-    expect(parseRunArgs(['--complexity', 'MEDIUM']).complexity).toBeUndefined()
+    expect(parseRunArgs(['--complexity', 'MEDIUM']).complexity).toBe('AUTO')
   })
 
   it('--complexity coexists with other flags without interference', () => {

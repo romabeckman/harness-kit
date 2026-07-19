@@ -1,7 +1,6 @@
 import { input, select } from "@inquirer/prompts";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { exit } from 'process';
 import { HarnessOrchestrator } from "../../orchestrator/HarnessOrchestrator";
 import { ChainBuilder } from "../../orchestrator/ChainBuilder";
 import { CliCommand } from "../../orchestrator/types";
@@ -18,47 +17,66 @@ import { ResetOptions, resetOptions } from "./reset-service";
 import { parseRunArgs } from "../utils/run-args-parser";
 import { DebugContext } from "../DebugContext";
 import { Runner } from "../../agent-runner/types";
+import { FileStateManager } from "../../file-state/FileStateManager";
 
 export interface RunOptions {
   agentType?: string;
   model?: string;
 }
 
+export type RunAction = "reset" | "resume"
+
 export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolean): Promise<void> {
-  const parsed = parseRunArgs(runArgs);
+  const parsed = parseRunArgs(runArgs)
   if (parsed.debug) {
-    DebugContext.enable();
+    DebugContext.enable()
   }
   const options: RunOptions = {
     agentType: parsed.agentType,
     model: parsed.model,
-  };
+  }
 
-  const settings = HarnessSettings.load(cwd);
-  const productDir = join(cwd, "docs", "product");
-  const backlogPath = join(productDir, "BACKLOG.md");
-  const hasExistingSession = existsSync(backlogPath);
+  const settings = HarnessSettings.load(cwd)
+  const productDir = join(cwd, "docs", "product")
+  const fsm = new FileStateManager({
+    productDir,
+    workingDir: cwd,
+  })
+  const bootConfig = fsm.existBootstrapConfig() ? fsm.loadBootstrapConfig() : undefined
+  const hasExistingSession = bootConfig && bootConfig.originalScope && bootConfig.projectPaths && bootConfig.projectPaths.length > 0
 
   console.log(
     "\n" +
     StartupBanner.render(process.stdout.columns || DEFAULT_LINE_LENGTH) +
     "\n",
-  );
+  )
+
+  let action: RunAction = "reset"
+
+  if (hasExistingSession) {
+    action = parsed.action ?? await select({
+      message: "What would you like to do?",
+      choices: [
+        { name: "resume — continue from last session", value: "resume" },
+        { name: "reset  — discard current session and start a new cycle", value: "reset" },
+      ],
+    })
+  }
 
   // Determine action: use CLI flag when provided, otherwise prompt interactively.
-  const action: "reset" | "resume" = parsed.action
-    ?? (hasExistingSession
-      ? await select({
-        message: "What would you like to do?",
-        choices: [
-          { name: "resume — continue from last session", value: "resume" },
-          {
-            name: "reset  — discard current session and start a new cycle",
-            value: "reset",
-          },
-        ],
-      })
-      : "reset");
+  // let action: "reset" | "resume" = parsed.action ??
+  //   (hasExistingSession ?
+  //     await select({
+  //       message: "What would you like to do?",
+  //       choices: [
+  //         { name: "resume — continue from last session", value: "resume" },
+  //         {
+  //           name: "reset  — discard current session and start a new cycle",
+  //           value: "reset",
+  //         },
+  //       ],
+  //     })
+  //     : "reset");
 
   let steeringMessage = "";
   let optionsReset: ResetOptions | null = null;
@@ -121,9 +139,9 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
   }
 
   const agentRunner = AgentRunnerFactory.create({
-      type: options.agentType ?? Runner.CLAUDE_CLI,
-      model: options.model,
-    })
+    type: options.agentType ?? Runner.CLAUDE_CLI,
+    model: options.model,
+  })
 
   const orchestrator = new HarnessOrchestrator({
     scope: optionsReset?.scope ?? "",

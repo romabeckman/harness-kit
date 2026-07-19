@@ -13,9 +13,15 @@ export interface OrchestratorConfig {
   settings?: HarnessSettings
   timeoutMs?: number
   initialRules?: string
-  complexity?: 'SIMPLE' | 'COMPLEX'
+  complexity: Complexity
   chain?: IPhaseHandler
   cliCommand?: CliCommand
+}
+
+export enum Complexity {
+  AUTO = 'AUTO',
+  SIMPLE = 'SIMPLE',
+  COMPLEX = 'COMPLEX'
 }
 
 export enum CliCommand {

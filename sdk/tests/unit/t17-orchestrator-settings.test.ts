@@ -6,6 +6,7 @@ import { HarnessOrchestrator } from '../../src/orchestrator/HarnessOrchestrator'
 import { HarnessSettings } from '../../src/settings/HarnessSettings'
 import { FakeAgentRunner } from '../helpers/FakeAgentRunner'
 import type { AgentInvocation, AgentOutput } from '../../src/agent-runner/types'
+import { Complexity } from '../../src/orchestrator/types'
 
 describe('T17 — Orchestrator Settings Overrides', () => {
   let tmpDir: string
@@ -47,6 +48,7 @@ describe('T17 — Orchestrator Settings Overrides', () => {
       agentRunner: fakeRunner,
       productDir: join(tmpDir, 'docs', 'product'),
       settings,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     await orchestrator.runBootstrapOnly()
@@ -83,6 +85,7 @@ describe('T17 — Orchestrator Settings Overrides', () => {
       agentRunner: fakeRunner,
       productDir: join(tmpDir, 'docs', 'product'),
       timeoutMs: 10, // 10ms timeout via orchestrator config
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     await expect(orchestrator.runBootstrapOnly()).rejects.toThrow('aborted')
@@ -118,6 +121,7 @@ describe('T17 — Orchestrator Settings Overrides', () => {
       agentRunner: fakeRunner,
       productDir: join(tmpDir, 'docs', 'product'),
       settings,
+      complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
     const spy = vi.spyOn(global, 'setTimeout')

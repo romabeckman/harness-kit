@@ -17,8 +17,6 @@ COMMANDS
 RUN OPTIONS
   --agent, -a <type>        Specify agent type (e.g., 'copilot-sdk', 'antigravity-cli')
   --model, -m <name>        Specify model name for the agent
-  --copilot-sdk             Shorthand for --agent copilot-sdk
-  --gemini                  Shorthand for --agent gemini
 
 ACTION (skips interactive prompt)
   --reset                   Discard current session and start a new cycle
@@ -51,7 +49,6 @@ EXAMPLES
   hrns run --reset --scope "Fix login bug" --path ./api --complexity S
   hrns run --reset --scope "New payment flow" --path ./api --complexity COMPLEX
   hrns report
-  npx @romabeckman/hrns run --gemini
 
 DOCS
   https://github.com/romabeckman/harness-kit

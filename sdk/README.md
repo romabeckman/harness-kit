@@ -1,7 +1,5 @@
 # @romabeckman/hrns
 
-![beta](https://img.shields.io/badge/status-beta-blue)
-
 Autonomous orchestrator SDK for [harness-kit](https://github.com/romabeckman/harness-kit). Run a single command and the full TDD loop executes unattended — scope in, backlog built, agents delegated, validation scored, memory persisted.
 
 ---
@@ -155,7 +153,6 @@ Show version or help message.
 | `--agent <type>` | `-a` | Agent runner type (see table below) | `--agent copilot-sdk` |
 | `--model <name>` | `-m` | Model override for all phases | `--model gpt-4o` |
 | `--copilot-sdk` | | Shorthand for `--agent copilot-sdk` | |
-| `--gemini` | | Shorthand for `--agent antigravity-cli` | |
 | `--reset` | | Force reset (skip interactive prompt) | |
 | `--resume` | | Force resume (skip interactive prompt) | |
 | `--scope <text>` | | Project scope / PRD (skips editor prompt) | `--scope "REST API with JWT"` |
@@ -195,8 +192,6 @@ Each runner is a self-contained strategy for invoking a specific AI backend. The
 ### CLI shorthands
 
 ```bash
-hrns run --gemini                    # antigravity-cli
-hrns run --copilot-sdk               # copilot-sdk
 hrns run --agent cursor-sdk          # cursor-sdk (needs CURSOR_API_KEY)
 hrns run --agent copilot-cli         # copilot-cli
 hrns run --agent cursor-cli          # cursor-cli

@@ -95,7 +95,7 @@ describe('T08 — ContextAssembler', () => {
   describe('TS-U-37: Phase E payload contains domain, scopeDescription, completedCycles, recentDecisions', () => {
     it('payload has all required fields', () => {
       const decisions = ['decision 1', 'decision 2']
-      const payload = ContextAssembler.buildPhaseEPayload(feature, [], 3, decisions)
+      const payload = ContextAssembler.buildPhaseEPayload(feature, [], 3, decisions, 'workdir')
       expect(payload).toHaveProperty('domain')
       expect(payload).toHaveProperty('scopeDescription')
       expect(payload).toHaveProperty('completedCycles')

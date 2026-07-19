@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { PhaseBHandler } from '../PhaseBHandler'
-import { Phase } from '../../types'
+import { Complexity, Phase } from '../../types'
 import type { PhaseContext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
 import type { Feature, Task, BootstrapConfig } from '../../../file-state/types'
@@ -80,7 +80,7 @@ function makeFsm(overrides: Partial<IFileStateManager> = {}): IFileStateManager 
 
 function makeContext(workingDir: string, fsm: IFileStateManager, invokeAgentImpl?: () => Promise<any>): PhaseContext {
   return {
-    config: { scope: 'test', score: 0.85, reworks: 3, projectPaths: [] },
+    config: { scope: 'test', score: 0.85, reworks: 3, projectPaths: [], complexity: Complexity.AUTO },
     workingDir,
     fsm,
     invokeAgent: invokeAgentImpl ? vi.fn().mockImplementation(invokeAgentImpl) : vi.fn().mockResolvedValue({ success: true, stdout: '', stderr: '', raw: '' }),

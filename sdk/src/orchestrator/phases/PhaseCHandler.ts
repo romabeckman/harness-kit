@@ -1,6 +1,6 @@
 import { existsSync, rmSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { Phase } from '../types'
+import { Complexity, Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
@@ -60,13 +60,15 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const advPrompt = this.buildAdversarialQAPrompt(payload, context.workingDir)
 
     return Promise.all([
-      context.invokeAgent({
-        skill: 'harness-kit:the-grumpy-tech-lead',
-        agent: 'harness-kit:harness-tech-lead',
-        mode: 'autonomous',
-        prompt: tlPrompt,
-        phaseKey: 'phase_c_tl',
-      }),
+      context.config.complexity === Complexity.SIMPLE ?
+        { score: 1, openPoints: [], architectureTip: '' } :
+        context.invokeAgent({
+          skill: 'harness-kit:the-grumpy-tech-lead',
+          agent: 'harness-kit:harness-tech-lead',
+          mode: 'autonomous',
+          prompt: tlPrompt,
+          phaseKey: 'phase_c_tl',
+        }),
       context.invokeAgent({
         skill: 'harness-kit:adversarial-qa',
         agent: 'harness-kit:harness-qa',
@@ -230,7 +232,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Your job is to give an HONEST, EVIDENCE-BASED verdict on the code's real state — not to guarantee a certain number of findings per run.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`harness-kit:the-grumpy-tech-lead\` skill before starting.`,
+      `Invoke the \`harness-kit:the-grumpy-tech-lead\` skill before starting for clarity and evaluation openPoints.`,
       `</skill_context>`,
       ``,
       `<inputs>`,
@@ -247,7 +249,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<spec_sources>`,
-      `- Development log: \`${specsDir}/TDD-OUTPUT.json\``,
+      `- Development log: \`${specsDir}/TDD-OUTPUT.json\` or \`git status -s\` to list all modified files in each project.`,
       `- Architecture blueprint: \`${specsDir}/003-*-tactical-design.md\``,
       `- Read \`${workingDir}/docs/README.md\`. You MUST read all files marked as 'Mandatory' or 'Required', and read optional files ONLY IF their context is required for the current task.`,
       `</spec_sources>`,
@@ -259,10 +261,11 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `</inputs>`,
       ``,
       `<evaluation_principle>`,
-      `Finding zero issues is a VALID and EXPECTED outcome when the code genuinely deserves it. You are not being evaluated on how many problems you find — you are being evaluated on accuracy. Before adding ANY item to openPoints, verify it against all three of these:`,
+      `Before adding ANY item to openPoints, verify it against all three of these:`,
       `1. Evidence: you can point to an exact file and line (or exact area) in the CURRENT code where the flaw actually exists — not a hypothetical, a "could happen", or a style preference.`,
       `2. Impact: you can state a concrete, reproducible consequence (crash, data loss, security breach, incorrect behavior, maintainability (real maintenance risk), complexity, performance degradation, testability, readability, scalability, extensibility, modularity, coupling, cohesion, error handling, logging, monitoring, observability, memory usage, cpu usage, disk usage, network usage, concurrency, parallelism, distribution, persistence, caching).`,
       `3. Proportional severity: the [CRITICAL]/[HIGH]/[MEDIUM]/[LOW] label matches the actual impact. Do NOT escalate a minor issue to CRITICAL/HIGH just to make the review look thorough or to force a rework cycle.`,
+      `Finding zero issues could be a valid and expected outcome when the code genuinely deserves it. You are not being evaluated on how many problems you find — you are being evaluated on accuracy.`,
       `If, after reading the code and specs, nothing meets this bar, return "openPoints": [] and a score that reflects genuinely solid work (e.g. 0.90–1.00). A fabricated or inflated finding is a WORSE outcome than an honest "no issues found", because it triggers an unnecessary rework cycle and wastes effort on a non-problem.`,
       `</evaluation_principle>`,
       ``,
@@ -347,6 +350,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<spec_sources>`,
+      `- Development log: \`${specsDir}/TDD-OUTPUT.json\` or \`git status -s\` to list all modified files in each project.`,
       `- Test scenarios (acceptance criteria, boundary values, security): \`${specsDir}/004-*-test-scenarios.md\``,
       `- Architecture contract: \`${specsDir}/003-*-tactical-design.md\``,
       `- Problem space (if exists): \`${specsDir}/001-problem-space.md\``,
@@ -360,10 +364,11 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `</inputs>`,
       ``,
       `<evaluation_principle>`,
-      `Passing with zero vulnerabilities and zero missed edge cases is a VALID and EXPECTED outcome when the implementation genuinely handles them. You are evaluated on accuracy, not on how many issues you surface. Before adding ANY item to vulnerabilities or edgeCasesMissed, verify:`,
+      `Before adding ANY item to vulnerabilities or edgeCasesMissed, verify:`,
       `1. Evidence: you can point to the exact file/function/line in the CURRENT code where the flaw exists.`,
       `2. Exploitability / reproducibility: for a vulnerability, you can describe a concrete trigger or exploit path — not a generic "this pattern can sometimes be risky" note. For an edge case, it must be a scenario the code demonstrably fails, not one it merely wasn't explicitly tested against while still behaving correctly.`,
       `3. Proportional severity: LOW/MEDIUM/HIGH/CRITICAL must match real impact. Do NOT inflate severity to force a RETRY.`,
+      `Finding zero issues could be a valid and expected outcome when the code genuinely deserves it. You are not being evaluated on how many problems you find — you are being evaluated on accuracy.`,
       `If the implementation genuinely covers the scenarios in the test-scenarios spec and no real vulnerability exists, return "vulnerabilities": [], "edgeCasesMissed": [], "passedAdversarial": true, "hasHighCriticalVuln": false, and a score reflecting that robustness. A fabricated or inflated finding is a WORSE outcome than an honest pass — it triggers an unnecessary rework cycle on a non-problem.`,
       `</evaluation_principle>`,
       ``,

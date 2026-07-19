@@ -1,4 +1,4 @@
-import { exit } from "node:process"
+import { Complexity } from "../../orchestrator/types"
 
 /**
  * Parsed result of CLI run arguments.
@@ -23,7 +23,7 @@ export interface ParsedRunArgs {
   debug?: boolean
 
   // Complexity hint for Phase A scope refinement ('SIMPLE' | 'COMPLEX' | undefined = AUTO)
-  complexity?: 'SIMPLE' | 'COMPLEX'
+  complexity: Complexity
 }
 
 /**
@@ -33,8 +33,6 @@ export interface ParsedRunArgs {
  * ─────────────────
  * --agent, -a <type>       Agent type
  * --model, -m <name>       Model name
- * --copilot-sdk            Shorthand for --agent copilot-sdk
- * --gemini                 Shorthand for --agent gemini
  * --reset                  Force reset action (skip interactive prompt)
  * --resume                 Force resume action (skip interactive prompt)
  * --scope <text>           Project scope / PRD
@@ -47,6 +45,7 @@ export interface ParsedRunArgs {
 export function parseRunArgs(args: string[]): ParsedRunArgs {
   const result: ParsedRunArgs = {
     projectPaths: [],
+    complexity: Complexity.AUTO,
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -65,15 +64,6 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
     const nextArg = () => (value !== undefined ? value : args[++i])
 
     switch (arg) {
-      // ── agent shorthands ─────────────────────────────────────────────────
-      case '--copilot-sdk':
-        result.agentType = 'copilot-sdk'
-        break
-
-      case '--gemini':
-        result.agentType = 'gemini'
-        break
-
       // ── agent / model ────────────────────────────────────────────────────
       case '--agent':
       case '-a':
@@ -122,8 +112,8 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
       case '--complexity':
       case '-c': {
         const val = nextArg()?.toUpperCase()
-        if (val === 'S' || val === 'SIMPLE') result.complexity = 'SIMPLE'
-        else if (val === 'C' || val === 'COMPLEX') result.complexity = 'COMPLEX'
+        if (val === 'S' || val === Complexity.SIMPLE) result.complexity = Complexity.SIMPLE
+        else if (val === 'C' || val === Complexity.COMPLEX) result.complexity = Complexity.COMPLEX
         break
       }
 
