@@ -85,7 +85,7 @@ Calculate `score` (`[0.00, 1.00]`, 2 decimals). Compared against `${scoreThresho
 
 Each finding in `vulnerabilities` or `edgeCasesMissed` carries a relevance weight that must be applied when calculating `score`. Classify every finding into one of the four tiers below before deducting. Focus on **semantic impact** — exploitability, behavioral correctness under adversarial input, and real-world attack surface — not code style or structural patterns.
 
-### TIER 1 — CRITICAL (deduct -0.20 to -0.30 per finding)
+### TIER 1 — CRITICAL (deduct -0.30 per finding)
 
 Confirmed exploitable vulnerabilities with a direct, reproducible attack path. These represent immediate production risk if deployed.
 
@@ -94,7 +94,7 @@ Confirmed exploitable vulnerabilities with a direct, reproducible attack path. T
 - Data integrity violations under adversarial input: crafted input causes data corruption, silent data loss, or incorrect state transitions
 - Application crash reproducible via crafted user input (NULL dereference, unhandled exception on boundary value)
 
-### TIER 2 — HIGH (deduct -0.10 to -0.19 per finding)
+### TIER 2 — HIGH (deduct -0.15 per finding)
 
 Vulnerabilities with indirect or conditional exploit paths, and edge cases that cause incorrect business outcomes.
 
@@ -104,7 +104,7 @@ Vulnerabilities with indirect or conditional exploit paths, and edge cases that 
 - Missing ownership/authorization checks on mutating operations (delete, update) where another user's data can be affected
 - External dependency failure (timeout, malformed response) that causes silent data corruption rather than a clean error
 
-### TIER 3 — MEDIUM (deduct -0.05 to -0.09 per finding)
+### TIER 3 — MEDIUM (deduct -0.10 per finding)
 
 Missing boundary handling or incomplete coverage that degrades robustness but does not cause data corruption or security breach.
 
@@ -113,7 +113,7 @@ Missing boundary handling or incomplete coverage that degrades robustness but do
 - Incomplete error handling for external failures that degrades user experience but does not corrupt data or state
 - Missing rate limiting or input length constraints on non-sensitive endpoints
 
-### TIER 4 — LOW (deduct -0.01 to -0.04 per finding; escalate to TIER 3 if 5 or more occurrences)
+### TIER 4 — LOW (deduct -0.05 per finding)
 
 Observations with minimal exploitability or impact. Negligible in isolation.
 

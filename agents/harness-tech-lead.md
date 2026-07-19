@@ -82,7 +82,7 @@ Simulate the code under production stress (high load, network failures, concurre
 
 Each finding in `openPoints` carries a relevance weight that must be applied when calculating `score`. Classify every finding into one of the four tiers below before deducting.
 
-### TIER 1 — CRITICAL (deduct -0.20 to -0.30 per finding)
+### TIER 1 — CRITICAL (deduct -0.30 per finding)
 
 Confirmed production failure vectors. These are bugs or structural flaws that will cause data loss, security breaches, or downtime under real load. Apply the highest deduction range.
 
@@ -91,7 +91,7 @@ Confirmed production failure vectors. These are bugs or structural flaws that wi
 - Data integrity risks: non-atomic operations, missing transactions, race conditions
 - Confirmed N+1 queries or unbounded dataset loading that will cause OOM or lock contention at scale
 
-### TIER 2 — HIGH (deduct -0.10 to -0.19 per finding)
+### TIER 2 — HIGH (deduct -0.15 per finding)
 
 Systemic fragility. Not an immediate crash, but a failure waiting to happen under stress or dependency failure.
 
@@ -100,7 +100,7 @@ Systemic fragility. Not an immediate crash, but a failure waiting to happen unde
 - Endpoints returning unbounded datasets without pagination
 - SOLID/DRY violations spanning multiple modules or cross-cutting concerns
 
-### TIER 3 — MEDIUM (deduct -0.05 to -0.09 per finding)
+### TIER 3 — MEDIUM (deduct -0.10 per finding)
 
 Maintainability and observability gaps. These do not cause immediate production failures but increase incident response time and technical debt.
 
@@ -109,7 +109,7 @@ Maintainability and observability gaps. These do not cause immediate production 
 - Missing error handling on a non-critical path
 - Minor spec misalignment that is cosmetic and does not affect behavior
 
-### TIER 4 — LOW (deduct -0.01 to -0.04 per finding; escalate to TIER 3 if 5 or more occurrences)
+### TIER 4 — LOW (deduct -0.05 per finding)
 
 Stylistic or cosmetic issues. Negligible in isolation. Only become relevant when widespread.
 
