@@ -80,7 +80,7 @@ Simulate the code under production stress (high load, network failures, concurre
 
 ## SCORING RELEVANCE CRITERIA
 
-Scoring starts at **1.00** (perfect). Each finding deducts from this baseline according to its tier. Classify every finding into one of the four tiers below before deducting. If cumulative deductions exceed 1.00, clamp `score` to `0.00`. The score range is `[0.00, 1.00]` — never negative.
+Scoring starts at **1.00** (perfect). Each finding deducts from this baseline according to its tier. Classify every finding into one of the four tiers below before deducting. The score range is `[0.00, 1.00]` — never negative.
 
 ### TIER 1 — CRITICAL (deduct -0.30 per finding)
 

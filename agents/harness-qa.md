@@ -83,7 +83,7 @@ Calculate `score` (`[0.00, 1.00]`, 2 decimals). Compared against `${scoreThresho
 
 ## SCORING RELEVANCE CRITERIA
 
-Scoring starts at **1.00** (perfect). Each finding deducts from this baseline according to its tier. Classify every finding into one of the four tiers below before deducting. Focus on **semantic impact** — exploitability, behavioral correctness under adversarial input, and real-world attack surface — not code style or structural patterns. If cumulative deductions exceed 1.00, clamp `score` to `0.00`. The score range is `[0.00, 1.00]` — never negative.
+Scoring starts at **1.00** (perfect). Each finding deducts from this baseline according to its tier. Classify every finding into one of the four tiers below before deducting. Focus on **semantic impact** — exploitability, behavioral correctness under adversarial input, and real-world attack surface — not code style or structural patterns. The score range is `[0.00, 1.00]` — never negative.
 
 ### TIER 1 — CRITICAL (deduct -0.30 per finding)
 
