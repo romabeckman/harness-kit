@@ -422,6 +422,7 @@ npm run typecheck  # zero-error type check
 
 ## Further reading
 
+- [Daily Use Playbook](./docs/PLAYBOOK-DAILY-USE.md) — real-world recipes for multi-project setups, POCs, mid-run corrections, and more
 - [Agent invocations reference](./AGENTS.md) — detailed breakdown of each agent call per phase
 - [Agent runner architecture](./docs/feature/sdk_agent_runner.md) — runner internals and extension points
 - [Integration with Superpowers](https://github.com/obra/superpowers) — low-level execution tools (Git worktrees, parallel agents, etc.)
