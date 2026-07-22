@@ -20,6 +20,7 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     // add 1000ms to timeout to avoid throw error for 1sec difference
     args.push('--print-timeout', `${timeout + 1000}ms`)
     args.push('--dangerously-skip-permissions')
+    args.push('--agent', invocation.agent)
     args.push('-p', prompt)
     return args
   }
