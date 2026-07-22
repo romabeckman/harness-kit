@@ -66,7 +66,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     const prompt = this.buildScopeRefinementPrompt(payload, context.config.complexity);
 
     await context.invokeAgent({
-      skill: "scope-refinement",
+      skill: "harness-kit:scope-refinement",
       agent: "harness-kit:software-architect",
       mode: "autonomous",
       prompt,
@@ -93,7 +93,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `Perform scope refinement STRICTLY for the <target_feature>. Use the <background_context> ONLY for system alignment and contextual awareness. Do NOT refine or generate specifications for the entire background context.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`scope-refinement\` skill before starting.`,
+      `Invoke the \`harness-kit:scope-refinement\` skill before starting.`,
       `Use \`the-grumpy-tech-lead\` skill, its optional, only use it if you have questions.`,
       `</skill_context>`,
       ``,
@@ -129,8 +129,8 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `</inputs>`,
       ``,
       `<workflow>`,
-      `- Step 1: (Is Optional) Invoke the \`the-grumpy-tech-lead\` skill to make questions to clarify the scope if something is not clear. Save in memory the questions and answers for next step. If no questions are made, it means the feature is clear and we can proceed.`,
-      `- Step 2: Invoke the \`scope-refinement\` skill to start creating specs. If exists questions from step 1, pass them to the \`scope-refinement\` skill to improve the understanding of the feature.`,
+      `- Step 1: (Is Optional) Invoke the \`harness-kit:the-grumpy-tech-lead\` skill to make questions to clarify the scope if something is not clear. Save in memory the questions and answers for next step. If no questions are made, it means the feature is clear and we can proceed.`,
+      `- Step 2: Invoke the \`harness-kit:scope-refinement\` skill to start creating specs. If exists questions from step 1, pass them to the \`harness-kit:scope-refinement\` skill to improve the understanding of the feature.`,
       `</workflow>`,
       ``,
       `<expected_outputs>`,
@@ -149,16 +149,16 @@ export class PhaseAHandler extends AbstractPhaseHandler {
           complexity === Complexity.SIMPLE ?
             [
               `- COMPLEXITY OVERRIDE: Classify as 'SIMPLE' — do not re-evaluate scope complexity.`,
-              `- For 'SIMPLE': Do not invoke \`the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
+              `- For 'SIMPLE': Do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
             ] :
             [
               `- COMPLEXITY OVERRIDE: Classify as 'COMPLEX' — do not re-evaluate scope complexity.`,
-              `- For 'COMPLEX': Its required \`the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`scope-refinement\`.`,
+              `- For 'COMPLEX': Its required \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
             ]
         ) : [
           `- Evaluate scope complexity between 'SIMPLE' and 'COMPLEX'. SIMPLE is characterized by crystal-clear requirements, zero structural ambiguities, isolated changes, zero cross-team dependencies, use of existing patterns, straightforward flows, zero backward compatibility risks, and standard unit testing without complex integrations.`,
-          `- If SIMPLE: do not invoke \`the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
-          `- If COMPLEX: invoke \`the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`scope-refinement\`.`,
+          `- If SIMPLE: do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
+          `- If COMPLEX: invoke \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
         ]),
       `- Execute autonomously without pausing or asking for confirmation.`,
       `- Write every file to disk before advancing to the next.`,
