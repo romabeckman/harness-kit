@@ -14,8 +14,11 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     const args = []
     const timeout = invocation.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS
 
+    for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
+
     const model = this.getModelName(invocation)
     if (model) args.push('--model', model)
+    if (invocation.effort) args.push('--effort', invocation.effort)
 
     // add 1000ms to timeout to avoid throw error for 1sec difference
     args.push('--print-timeout', `${timeout + 1000}ms`)
