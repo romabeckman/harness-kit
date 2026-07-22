@@ -182,11 +182,6 @@ export class HarnessOrchestrator implements PhaseContext {
       }
 
       if (next !== this.state.currentPhase) {
-        const transitionMsg = `Phase transition: ${this.state.currentPhase} → ${next}`
-        this.fsm.appendDecision({
-          featureId: null,
-          decision: transitionMsg
-        })
         console.log(`\n${AnsiHelpers.green('✔')} ${AnsiHelpers.cyan(this.state.currentPhase)} completed in ${AnsiHelpers.yellow(durationStr)}`)
         console.log(`${AnsiHelpers.blue('⟳')} ${AnsiHelpers.dim('Transitioning to:')} ${AnsiHelpers.cyan(next)}`)
       }
