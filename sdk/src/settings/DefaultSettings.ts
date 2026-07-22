@@ -19,12 +19,12 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   'antigravity': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'Gemini 3.6 Flash (Low)' },
-      phase_a: { model: 'Gemini 3.6 Flash (High)' },
-      phase_b: { model: 'Gemini 3.6 Flash (Medium)' },
-      phase_c_tl: { model: 'Gemini 3.6 Flash (Low)' },
-      phase_c_adv: { model: 'Gemini 3.6 Flash (Low)' },
-      phase_e: { model: 'Gemini 3.6 Flash (Low)' },
+      bootstrap: { model: 'gemini-3.6-flash', effort: 'low' },
+      phase_a: { model: 'gemini-3.6-flash', effort: 'high' },
+      phase_b: { model: 'gemini-3.6-flash', effort: 'medium' },
+      phase_c_tl: { model: 'gemini-3.6-flash', effort: 'low' },
+      phase_c_adv: { model: 'gemini-3.6-flash', effort: 'low' },
+      phase_e: { model: 'gemini-3.6-flash', effort: 'low' },
     }
   },
   'copilot': {

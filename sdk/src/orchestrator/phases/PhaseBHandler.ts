@@ -70,7 +70,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
     const prompt = this.buildTddOrchestratorPrompt(payload, context, agent)
 
     await context.invokeAgent({
-      skill: 'tdd-orchestrator',
+      skill: 'harness-kit:tdd-orchestrator',
       agent,
       mode: 'autonomous',
       prompt,
