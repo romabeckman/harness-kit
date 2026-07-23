@@ -4,6 +4,7 @@ import { ContextAssembler } from "../../context-assembler/ContextAssembler";
 import type { Feature } from "../../file-state/types";
 import type { PhaseAPayload } from "../../context-assembler/types";
 import { join } from "node:path";
+import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
 export class PhaseAHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
@@ -34,6 +35,11 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     }
 
     await this.ensureTasksAppended(activeFeature, context, phase);
+
+    const specsDir = join(context.workingDir, 'docs', 'specs', activeFeature.domain)
+    const taskCount = context.fsm.loadDevelopmentState()
+      .filter(t => t.featureId === activeFeature.id).length
+    PhaseDecisionLogger.logPhaseA(context.fsm, activeFeature, specsDir, taskCount)
 
     return Phase.PHASE_B;
   }

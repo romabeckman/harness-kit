@@ -5,6 +5,7 @@ import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
 import type { Feature, Task } from '../../file-state/types'
 import type { PhaseBPayload } from '../../context-assembler/types'
+import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
 export class PhaseBHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
@@ -76,6 +77,8 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       prompt,
       phaseKey: 'phase_b',
     })
+
+    PhaseDecisionLogger.logPhaseB(context.fsm, activeFeature, tddOutputPath)
   }
 
   private buildTddOrchestratorPrompt(payload: PhaseBPayload, context: PhaseContext, agent: string): string {

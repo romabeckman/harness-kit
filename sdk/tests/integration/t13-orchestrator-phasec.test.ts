@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -193,7 +193,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
       let tddCallCount = 0
       const origRun = fake.run.bind(fake)
       fake.run = async (inv) => {
-        if (inv.skill === 'scope-refinement') {
+        if ((inv.skill ?? '').endsWith('scope-refinement')) {
           mkdirSync(specDir, { recursive: true })
           writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
           const devState = [
@@ -203,7 +203,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
           ].join('\n')
           writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), devState)
         }
-        if (inv.skill === 'tdd-orchestrator') {
+        if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
           tddCallCount++
           writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
         }
@@ -294,7 +294,7 @@ describe('T13 — HarnessOrchestrator PHASE_C', () => {
       let tddOutputDeleted = false
       const origRun = fake.run.bind(fake)
       fake.run = async (inv) => {
-        if (inv.skill === 'tdd-orchestrator') {
+        if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
           if (!existsSync(tddOutputPath)) {
             tddOutputDeleted = true
           }

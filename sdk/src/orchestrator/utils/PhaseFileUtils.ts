@@ -1,0 +1,69 @@
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
+
+/**
+ * File-system utilities shared across phase decision loggers and other
+ * orchestrator services. Pure functions — no side effects other than reads.
+ */
+
+/** Lists .md spec files in a specs directory, excluding REWORK files. */
+export function listSpecFiles(specsDir: string): string[] {
+  if (!existsSync(specsDir)) return []
+  try {
+    return readdirSync(specsDir)
+      .filter(f => f.endsWith('.md') && !f.startsWith('REWORK'))
+      .sort()
+  } catch {
+    return []
+  }
+}
+
+/** Lists .md files under a docs/feature directory, returning full paths (forward-slash). */
+export function listDocFiles(dir: string): string[] {
+  if (!existsSync(dir)) return []
+  try {
+    return readdirSync(dir)
+      .filter(f => f.endsWith('.md'))
+      .map(f => join(dir, f).replace(/\\/g, '/'))
+  } catch {
+    return []
+  }
+}
+
+export interface TddOutputSummary {
+  status: string
+  rationale: string
+}
+
+/** Reads and summarises TDD-OUTPUT.json, returning a safe default when absent or invalid. */
+export function readTddOutput(tddOutputPath: string): TddOutputSummary {
+  if (!existsSync(tddOutputPath)) {
+    return { status: 'UNKNOWN', rationale: 'TDD-OUTPUT.json not found.' }
+  }
+
+  try {
+    const raw = readFileSync(tddOutputPath, 'utf-8')
+    const data = JSON.parse(raw) as {
+      status?: string
+      metrics?: { totalTests?: number; passed?: number; failed?: number; coverage?: number }
+      modifiedFiles?: string[]
+      reworksCount?: number
+    }
+
+    const metrics = data.metrics
+    const metricStr = metrics
+      ? `tests: ${metrics.totalTests ?? '?'} total, ${metrics.passed ?? '?'} passed, ${metrics.failed ?? '?'} failed, coverage: ${metrics.coverage ?? '?'}`
+      : 'no metrics'
+
+    const files = data.modifiedFiles?.length
+      ? `modified: ${data.modifiedFiles.slice(0, 5).join(', ')}${data.modifiedFiles.length > 5 ? ` (+${data.modifiedFiles.length - 5} more)` : ''}`
+      : 'no modified files listed'
+
+    return {
+      status: data.status ?? 'UNKNOWN',
+      rationale: `${metricStr}. ${files}. Reworks: ${data.reworksCount ?? 0}.`,
+    }
+  } catch (err: any) {
+    return { status: 'PARSE_ERROR', rationale: `Failed to parse TDD-OUTPUT.json: ${err.message}` }
+  }
+}
