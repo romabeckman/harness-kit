@@ -60,14 +60,14 @@ function makeFullRunFake(specDir: string): void {
   ].join('\n')
   const origRun = fake.run.bind(fake)
   fake.run = async (inv) => {
-    if (inv.skill === 'scope-refinement') {
+    if ((inv.skill ?? '').endsWith('scope-refinement')) {
       // Create spec files for the current feature, including a proper tactical design
       // with Section 6 tasks so PhaseAHandler can extract tasks correctly.
       mkdirSync(specDir, { recursive: true })
       writeFileSync(join(specDir, '003-sdk_core-tactical-design.md'), tacticalDesignContent)
       writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
     }
-    if (inv.skill === 'tdd-orchestrator') {
+    if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
       tddCallCount++
       writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
     }
@@ -118,7 +118,7 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
       // On RETRY, tasks reset to NOT_STARTED → PHASE_B runs again → tdd-orchestrator creates TDD-OUTPUT
       const origRun = fake.run.bind(fake)
       fake.run = async (inv) => {
-        if (inv.skill === 'tdd-orchestrator') {
+        if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
           writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
         }
         return origRun(inv)

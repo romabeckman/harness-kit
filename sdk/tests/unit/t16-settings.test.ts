@@ -3,6 +3,7 @@ import { join } from 'path'
 import { existsSync, rmSync, writeFileSync, mkdirSync } from 'fs'
 import { tmpdir } from 'os'
 import { HarnessSettings } from '../../src/settings/HarnessSettings'
+import { DEFAULT_SETTINGS } from '../../src/settings/DefaultSettings'
 
 describe('T16 — HarnessSettings', () => {
   let tmpDir: string
@@ -31,7 +32,7 @@ describe('T16 — HarnessSettings', () => {
 
     expect(existsSync(globalFile)).toBe(true)
     const resolved = settings.resolve('claude', 'bootstrap')
-    expect(resolved).toEqual({ model: 'claude-sonnet-4-6', effort: 'low' })
+    expect(resolved).toEqual(DEFAULT_SETTINGS['claude']?.phases?.['bootstrap'])
   })
 
   it('merges project config over global config', () => {

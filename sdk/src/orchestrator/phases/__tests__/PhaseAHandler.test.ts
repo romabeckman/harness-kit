@@ -16,7 +16,9 @@ describe('PhaseAHandler', () => {
             appendTasks: vi.fn(),
             loadBootstrapConfig: vi.fn().mockReturnValue({ steeringRules: [] }),
             saveBootstrapConfig: vi.fn(),
+            appendDecision: vi.fn(),
         };
+
 
         mockContext = {
             workingDir: '/test/working-dir',

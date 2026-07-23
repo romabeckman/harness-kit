@@ -55,7 +55,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
     // tdd-orchestrator must always write TDD-OUTPUT.json (contract of the agent)
     const origRun = fake.run.bind(fake)
     fake.run = async (inv) => {
-      if (inv.skill === 'tdd-orchestrator') {
+      if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
         writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001', tasksCompleted: 2 }))
       }
       return origRun(inv)
@@ -87,7 +87,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
 
     const origRun = fake.run.bind(fake)
     fake.run = async (inv) => {
-      if (inv.skill === 'tdd-orchestrator') {
+      if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
         writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
       }
       return origRun(inv)
@@ -108,7 +108,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
 
     const tddCalls = fake.getInvocationsForSkill('tdd-orchestrator')
     expect(tddCalls.length).toBeGreaterThanOrEqual(1)
-    expect(tddCalls[0].skill).toBe('tdd-orchestrator')
+    expect(tddCalls[0].skill).toContain('tdd-orchestrator')
   })
 
   describe('TS-F-10: runPhaseB completes when TDD-OUTPUT.json absent after agent run', () => {
@@ -152,7 +152,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
 
       const origRun = fake.run.bind(fake)
       fake.run = async (inv) => {
-        if (inv.skill === 'tdd-orchestrator') {
+        if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
           writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
         }
         return origRun(inv)

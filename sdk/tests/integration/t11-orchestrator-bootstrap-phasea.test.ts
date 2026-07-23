@@ -114,7 +114,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     // Override FakeAgentRunner to create spec file on first scope-refinement call
     const origRun = fake.run.bind(fake)
     fake.run = async (inv) => {
-      if (inv.skill === 'scope-refinement' && scopeRefinementCallCount === 0) {
+      if ((inv.skill ?? '').endsWith('scope-refinement') && scopeRefinementCallCount === 0) {
         scopeRefinementCallCount++
         mkdirSync(specDir, { recursive: true })
         writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
@@ -126,7 +126,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
         ].join('\n')
         writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), devState)
       }
-      if (inv.skill === 'tdd-orchestrator') {
+      if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
         writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
       }
       return origRun(inv)
@@ -162,7 +162,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     let scopeCount = 0
     const origRun = fake.run.bind(fake)
     fake.run = async (inv) => {
-      if (inv.skill === 'scope-refinement') {
+      if ((inv.skill ?? '').endsWith('scope-refinement')) {
         scopeCount++
         mkdirSync(specDir, { recursive: true })
         writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
@@ -173,7 +173,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
         ].join('\n')
         writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), devState)
       }
-      if (inv.skill === 'tdd-orchestrator') {
+      if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
         writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
       }
       return origRun(inv)
@@ -452,7 +452,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     // Simulate scope-refinement agent creating spec files, but NO tasks in them
     const origRun = fake.run.bind(fake)
     fake.run = async (inv) => {
-      if (inv.skill === 'scope-refinement') {
+      if ((inv.skill ?? '').endsWith('scope-refinement')) {
         mkdirSync(specDir, { recursive: true })
         // Write the spec file but without "## Section 6" or tasks
         writeFileSync(
@@ -502,7 +502,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     const backlogPath = join(productDir, 'BACKLOG.md')
     const origRun = fake.run.bind(fake)
     fake.run = async (inv) => {
-      if (inv.skill === 'autonomous-orchestrator:bootstrap') {
+      if ((inv.skill ?? '').endsWith('bootstrap')) {
         writeFileSync(backlogPath, BACKLOG_WITH_ONE_FEATURE)
       }
       return origRun(inv)
