@@ -258,7 +258,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
             cacheReadTokens: parsed.usage?.cacheReadTokens ?? 0,
             costUsd: parsed.usage?.costUsd ?? 0,
             model: parsed.usage?.model ?? this.getModelName(invocation),
-            effort: parsed.usage?.effort,
+            effort: parsed.usage?.effort ?? invocation.effort,
           },
         })
       })

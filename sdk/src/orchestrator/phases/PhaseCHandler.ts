@@ -1,4 +1,4 @@
-import { existsSync, rmSync, readFileSync } from 'node:fs'
+import { existsSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Complexity, Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
@@ -9,6 +9,7 @@ import { ValidationGate } from '../../validation-gate/ValidationGate'
 import type { PhaseCPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
+import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
 type ValidationResult = ReturnType<typeof ValidationGate.evaluate>;
 
@@ -59,10 +60,18 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     const tlPrompt = this.buildTechLeadPrompt(payload, context.workingDir)
     const advPrompt = this.buildAdversarialQAPrompt(payload, context.workingDir)
 
+    const isSimple = context.config.complexity === Complexity.SIMPLE
+    const tlMock = { featureId: payload.featureId, score: 1, isCrashing: false, openPoints: [], architectureTip: '' }
+    const specsDir = join(context.workingDir, 'docs', 'specs', payload.domain)
+
+    if (isSimple && existsSync(specsDir)) {
+      writeFileSync(join(specsDir, 'TL.json'), JSON.stringify(tlMock, null, 2), 'utf8')
+    }
+
     return Promise.all([
-      context.config.complexity === Complexity.SIMPLE ?
-        { score: 1, openPoints: [], architectureTip: '' } :
-        context.invokeAgent({
+      isSimple
+        ? tlMock
+        : context.invokeAgent({
           skill: 'harness-kit:the-grumpy-tech-lead',
           agent: 'harness-kit:harness-tech-lead',
           mode: 'autonomous',
@@ -138,12 +147,14 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     scores: ValidationScores
   ): Phase {
     // Append verification decision log with scores and rationale
-    context.fsm.appendDecision({
-      featureId: activeFeature.id,
-      decision: `${phase} verdict: ${result.verdict}`,
-      scores: { tl: scores.scoreTL, adv: scores.scoreAdv },
-      rationale: result.reason,
-    })
+    PhaseDecisionLogger.logPhaseC(
+      context.fsm,
+      activeFeature,
+      result.verdict,
+      scores.scoreTL,
+      scores.scoreAdv,
+      result.reason
+    )
 
     const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
     if (existsSync(tddOutputPath)) rmSync(tddOutputPath, { force: true })

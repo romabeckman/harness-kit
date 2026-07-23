@@ -3,6 +3,7 @@ import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
 import type { PhaseEPayload } from '../../context-assembler/types'
 import { join } from 'node:path'
+import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
 export class PhaseEHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
@@ -34,6 +35,8 @@ export class PhaseEHandler extends AbstractPhaseHandler {
       prompt,
       phaseKey: 'phase_e',
     })
+
+    PhaseDecisionLogger.logPhaseE(context.fsm, activeFeature, context.config.projectPaths)
 
     return Phase.PHASE_F
   }

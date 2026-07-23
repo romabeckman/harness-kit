@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { Phase, CliCommand } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
+import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
 export class BootstrapHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
@@ -102,6 +103,9 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       prompt,
       phaseKey: 'bootstrap',
     })
+
+    const created = context.fsm.loadBacklog()
+    PhaseDecisionLogger.logBootstrap(context.fsm, created)
 
     return Phase.PHASE_A
   }
