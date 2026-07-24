@@ -92,11 +92,10 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
     const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
 
-    const specsDir = join(context.workingDir, 'docs', 'specs')
     const backlog = context.fsm.loadBacklog();
     const dependenciesText = backlog
       .filter((f) => feature.dependencies.includes(f.id))
-      .map((f) => join(specsDir, f.domain, '003-${PROJECT_NAME}-tactical-design.md'))
+      .map((f) => join('docs', 'specs', f.domain, '003-${PROJECT_NAME}-tactical-design.md'))
       .join(", ") || 'None';
 
     return [
