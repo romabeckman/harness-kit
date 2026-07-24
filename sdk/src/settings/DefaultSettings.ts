@@ -8,7 +8,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   'claude': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'claude-sonnet-5', effort: 'low' },
+      bootstrap: { model: 'claude-sonnet-5', effort: 'medium' },
       phase_a: { model: 'claude-sonnet-5', effort: 'high' },
       phase_b: { model: 'claude-sonnet-5', effort: 'medium' },
       phase_c_tl: { model: 'claude-sonnet-5', effort: 'low' },
@@ -19,18 +19,18 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   'antigravity': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'gemini-3.6-flash', effort: 'low' },
-      phase_a: { model: 'gemini-3.6-flash', effort: 'high' },
+      bootstrap: { model: 'gemini-3.6-flash', effort: 'high' },
+      phase_a: { model: 'gemini-3.1-pro', effort: 'high' },
       phase_b: { model: 'gemini-3.6-flash', effort: 'medium' },
-      phase_c_tl: { model: 'gemini-3.6-flash', effort: 'low' },
-      phase_c_adv: { model: 'gemini-3.6-flash', effort: 'low' },
+      phase_c_tl: { model: 'gemini-3.1-pro', effort: 'low' },
+      phase_c_adv: { model: 'gemini-3.1-pro', effort: 'low' },
       phase_e: { model: 'gemini-3.6-flash', effort: 'low' },
     }
   },
   'copilot': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'gpt-5.3-codex', effort: 'low' },
+      bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
       phase_a: { model: 'claude-sonnet-5', effort: 'high' },
       phase_b: { model: 'gpt-5.3-codex', effort: 'medium' },
       phase_c_tl: { model: 'gpt-5.3-codex', effort: 'low' },
@@ -41,7 +41,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   'cursor': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'gpt-5.3-codex', effort: 'low' },
+      bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
       phase_a: { model: 'claude-sonnet-5', effort: 'high' },
       phase_b: { model: 'gpt-5.3-codex', effort: 'medium' },
       phase_c_tl: { model: 'gpt-5.3-codex', effort: 'low' },
