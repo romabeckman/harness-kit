@@ -66,7 +66,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       config.steeringRules,
     );
 
-    const prompt = this.buildScopeRefinementPrompt(payload, feature, context.config.complexity);
+    const prompt = this.buildScopeRefinementPrompt(payload, feature, context);
 
     await context.invokeAgent({
       skill: "harness-kit:scope-refinement",
@@ -77,7 +77,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     });
   }
 
-  private buildScopeRefinementPrompt(payload: PhaseAPayload, feature: Feature, complexity: Complexity): string {
+  private buildScopeRefinementPrompt(payload: PhaseAPayload, feature: Feature, context: PhaseContext): string {
     const projectPathsList = payload.projectPaths
       .map((p) => `- ${p}`)
       .join("\n");
@@ -86,12 +86,18 @@ export class PhaseAHandler extends AbstractPhaseHandler {
         ? payload.steeringRules.map((r) => `- ${r}`).join("\n")
         : "- No additional rules provided";
 
+    const complexity = context.config.complexity
     const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
     const contextMapFile = join(payload.workingDir, '002-context-map.md');
     const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
     const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
 
-    const dependenciesText = feature.dependencies.length > 0 ? feature.dependencies.join(", ") : "None";
+    const specsDir = join(context.workingDir, 'docs', 'specs')
+    const backlog = context.fsm.loadBacklog();
+    const dependenciesText = backlog
+      .filter((f) => feature.dependencies.includes(f.id))
+      .map((f) => join(specsDir, f.domain, '003-${PROJECT_NAME}-tactical-design.md'))
+      .join(", ") || 'None';
 
     return [
       `## Objective`,
