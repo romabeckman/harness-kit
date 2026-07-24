@@ -10,6 +10,7 @@ USAGE
 COMMANDS
   run       Start or resume an orchestration session
   init      Initialize docs/product files and configure steering rules
+  settings  Manage settings (edit|renew|delete)
   report    Print token usage report for the current session
   version   Show version
   help      Show this help message

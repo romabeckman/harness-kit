@@ -38,6 +38,13 @@ async function main(): Promise<void> {
     return
   }
 
+  if (cmd === 'settings') {
+    const { cmdSettings } = await import('./services/settings-service')
+    const settingsArgs = args.slice(1)
+    await cmdSettings(cwd, settingsArgs)
+    return
+  }
+
   console.error(`Unknown command: ${cmd}\nRun "hrns help" for usage.`)
   process.exit(1)
 }
