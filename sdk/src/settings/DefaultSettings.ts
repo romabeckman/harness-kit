@@ -8,12 +8,12 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   'claude': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'claude-sonnet-5', effort: 'medium' },
-      phase_a: { model: 'claude-sonnet-5', effort: 'high' },
-      phase_b: { model: 'claude-sonnet-5', effort: 'medium' },
-      phase_c_tl: { model: 'claude-sonnet-5', effort: 'low' },
-      phase_c_adv: { model: 'claude-sonnet-5', effort: 'low' },
-      phase_e: { model: 'claude-sonnet-5', effort: 'low' },
+      bootstrap: { model: 'claude-5-sonnet', effort: 'medium' },
+      phase_a: { model: 'claude-5-sonnet', effort: 'high' },
+      phase_b: { model: 'claude-5-sonnet', effort: 'medium' },
+      phase_c_tl: { model: 'claude-5-sonnet', effort: 'low' },
+      phase_c_adv: { model: 'claude-5-sonnet', effort: 'low' },
+      phase_e: { model: 'claude-5-sonnet', effort: 'low' },
     }
   },
   'antigravity': {
@@ -31,7 +31,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
-      phase_a: { model: 'claude-sonnet-5', effort: 'high' },
+      phase_a: { model: 'claude-5-sonnet', effort: 'high' },
       phase_b: { model: 'gpt-5.3-codex', effort: 'medium' },
       phase_c_tl: { model: 'gpt-5.3-codex', effort: 'low' },
       phase_c_adv: { model: 'gpt-5.3-codex', effort: 'low' },
@@ -42,7 +42,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
-      phase_a: { model: 'claude-sonnet-5', effort: 'high' },
+      phase_a: { model: 'claude-5-sonnet', effort: 'high' },
       phase_b: { model: 'gpt-5.3-codex', effort: 'medium' },
       phase_c_tl: { model: 'gpt-5.3-codex', effort: 'low' },
       phase_c_adv: { model: 'gpt-5.3-codex', effort: 'low' },

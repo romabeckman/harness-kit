@@ -82,7 +82,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
       `1. Execute autonomously without pausing or asking for confirmation.`,
       `2. Invoke the \`/harness-kit:project-memory\` skill and read \`./references/DOCUMENT-TEMPLATE.md\` before writing anything.`,
       `3. List existing files under each project's \`docs/feature/\` folder.`,
-      `4. If an existing document already covers this feature's topic, update that file. Otherwise, create a new one.`,
+      `4. If an existing document already covers this feature's, fixes, updates or improvements, update that file. Otherwise, create a new one.`,
       `5. If architectural changes were introduced (new layers, patterns, integrations, test strategy changes), update the corresponding \`docs/adr/*.md\` file following its own rules file.`,
       ``,
       `## File Organization`,
