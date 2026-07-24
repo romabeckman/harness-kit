@@ -95,7 +95,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     const backlog = context.fsm.loadBacklog();
     const dependenciesText = backlog
       .filter((f) => feature.dependencies.includes(f.id))
-      .map((f) => join('docs', 'specs', f.domain, '003-${PROJECT_NAME}-tactical-design.md'))
+      .map((f) => join('docs', 'specs', f.domain))
       .join(", ") || 'None';
 
     return [
