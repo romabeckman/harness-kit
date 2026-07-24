@@ -73,14 +73,22 @@ export async function cmdSettings(cwd: string, args: string[] = []): Promise<voi
   console.log(`${AnsiHelpers.blue('►')} Opening in the default text editor...`);
   try {
     const isWindows = process.platform === 'win32';
-    const isMac = process.platform === 'darwin';
 
-    if (isWindows) {
+    let hasVsCode = false;
+    try {
+      execSync('code -v', { stdio: 'ignore' });
+      hasVsCode = true;
+    } catch (e) {
+      // VS Code not available
+    }
+
+    if (hasVsCode) {
+      execSync(`code "${settingsPath}"`);
+    } else if (isWindows) {
       execSync(`start "" "${settingsPath}"`);
-    } else if (isMac) {
-      execSync(`open "${settingsPath}"`);
     } else {
-      execSync(`xdg-open "${settingsPath}"`);
+      const editor = process.env.EDITOR || process.env.VISUAL || 'nano';
+      execSync(`${editor} "${settingsPath}"`, { stdio: 'inherit' });
     }
   } catch (err: any) {
     console.error(`Failed to open the editor. Please open the file manually: ${settingsPath}`);
