@@ -66,7 +66,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       ``,
       `# CONSTRAINTS & RULES`,
       `- ID: F001, F002, ... (sequential: F001, F002, F003, ...). Do not skip numbers.`,
-      `- Title: Feature Name with short description, limit of 250 characters.`,
+      `- Title: Feature Name with short description with objective, limit of 500 characters.`,
       `- Domain: snake_case of feature title without spaces, limit of 50 characters.`,
       `- Agent: Only names: \`backend\`, \`frontend\`, \`qa\` or \`devops\` — infer from the feature scope; use the project paths as hints`,
       `- Priority: CRITICAL, HIGH, MEDIUM, or LOW. Only use CRITICAL if the feature is mission critical, if it impacts the core functionality of the system, or if it is a security requirement.`,
