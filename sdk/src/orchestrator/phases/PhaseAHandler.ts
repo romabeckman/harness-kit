@@ -107,6 +107,12 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `Use \`the-grumpy-tech-lead\` skill, its optional, only use it if you have questions.`,
       `</skill_context>`,
       ``,
+      `<react_workflow>`,
+      `- THOUGHT: Analyze feature scope and architectural constraints.`,
+      `- ACTION: Draft tactical design and test scenarios.`,
+      `- OBSERVATION: Verify if specs strictly cover the target feature.`,
+      `</react_workflow>`,
+      ``,
       `<inputs>`,
       ``,
       `<rules>`,
@@ -167,7 +173,6 @@ export class PhaseAHandler extends AbstractPhaseHandler {
         ]),
       `- Execute autonomously without pausing or asking for confirmation.`,
       `- Write every file to disk before advancing to the next.`,
-      `- Do NOT output explanations   produce the spec files only.`,
       `</strict_rules>`,
     ].join("\n");
   }
