@@ -134,7 +134,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<background_context>`,
-      `\`\`\``,
+      `\`\`\`markdown`,
       payload.scope.trim(),
       `\`\`\``,
       `</background_context>`,

@@ -92,7 +92,9 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `</context>`,
       ``,
       `<scope>`,
-      context.config.scope,
+      `\`\`\`markdown`,
+      context.config.scope.trim(),
+      `\`\`\``,
       `</scope>`
     )
     const prompt = promptLines.join('\n')
