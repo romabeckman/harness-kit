@@ -17,6 +17,8 @@ describe('PhaseAHandler', () => {
             loadBootstrapConfig: vi.fn().mockReturnValue({ steeringRules: [] }),
             saveBootstrapConfig: vi.fn(),
             appendDecision: vi.fn(),
+            existScope: vi.fn().mockReturnValue(true),
+            loadScope: vi.fn().mockReturnValue('test scope'),
         };
 
 
@@ -125,6 +127,28 @@ describe('PhaseAHandler', () => {
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
             expect(invokedPrompt).not.toContain('Evaluate scope complexity between \'SIMPLE\' and \'COMPLEX\'');
+        });
+
+        it('reloads latest scope from SCOPE.md via fsm.loadScope', async () => {
+            mockFsm.existScope.mockReturnValue(true);
+            mockFsm.loadScope.mockReturnValue('updated scope from SCOPE.md');
+
+            await handler.handle(Phase.PHASE_A, mockContext);
+
+            expect(mockContext.config.scope).toBe('updated scope from SCOPE.md');
+        });
+
+        it('throws error if SCOPE.md does not exist', async () => {
+            mockFsm.existScope.mockReturnValue(false);
+
+            await expect(handler.handle(Phase.PHASE_A, mockContext)).rejects.toThrow('Scope file (SCOPE.md) does not exist');
+        });
+
+        it('throws error if SCOPE.md is empty', async () => {
+            mockFsm.existScope.mockReturnValue(true);
+            mockFsm.loadScope.mockReturnValue('');
+
+            await expect(handler.handle(Phase.PHASE_A, mockContext)).rejects.toThrow('Scope file (SCOPE.md) is empty');
         });
     });
 

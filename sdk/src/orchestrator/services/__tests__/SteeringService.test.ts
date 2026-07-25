@@ -23,7 +23,6 @@ function makeFeature(overrides: Partial<Feature> = {}): Feature {
 
 function makeConfig(overrides: Partial<BootstrapConfig> = {}): BootstrapConfig {
   return {
-    originalScope: 'test scope',
     projectPaths: [],
     scoreThresholdTL: 0.85,
     scoreThresholdAdv: 0.85,

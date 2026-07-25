@@ -46,7 +46,6 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 
 function makeConfig(): BootstrapConfig {
   return {
-    originalScope: 'scope',
     projectPaths: [],
     scoreThresholdTL: 0.85,
     scoreThresholdAdv: 0.85,

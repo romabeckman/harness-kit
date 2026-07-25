@@ -36,7 +36,7 @@ describe('T08 — ContextAssembler', () => {
       expect(Object.keys(payload)).toHaveLength(5)
     })
 
-    it('scope comes from feature.title when originalScope is not provided, domain from feature.domain', () => {
+    it('scope comes from feature.title when scope is not provided, domain from feature.domain', () => {
       const payload = ContextAssembler.buildPhaseAPayload(feature, '/path/to/workdir', ['/path/to/project'])
       expect(payload.scope).toBe('SDK Core')
       expect(payload.domain).toBe('sdk_core')
@@ -44,9 +44,9 @@ describe('T08 — ContextAssembler', () => {
       expect(payload.projectPaths).toEqual(['/path/to/project'])
     })
 
-    it('scope comes from originalScope when provided', () => {
-      const payload = ContextAssembler.buildPhaseAPayload(feature, '/path/to/workdir', ['/path/to/project'], 'My Original Scope')
-      expect(payload.scope).toBe('My Original Scope')
+    it('scope comes from scope parameter when provided', () => {
+      const payload = ContextAssembler.buildPhaseAPayload(feature, '/path/to/workdir', ['/path/to/project'], 'My Scope')
+      expect(payload.scope).toBe('My Scope')
       expect(payload.domain).toBe('sdk_core')
       expect(payload.featureTitle).toBe('SDK Core')
       expect(payload.projectPaths).toEqual(['/path/to/project'])

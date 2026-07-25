@@ -14,7 +14,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     const bootConfig = context.fsm.loadBootstrapConfig()
 
     if (context.config.cliCommand === CliCommand.INIT) {
-      bootConfig.originalScope = context.config.scope
       bootConfig.projectPaths = context.config.projectPaths
       if (context.config.score !== undefined) {
         bootConfig.scoreThresholdTL = context.config.score
@@ -75,6 +74,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `- Score (TL) & Score (Adv): -`,
       `- Status: NOT_STARTED`,
       `- Each row must represent exactly one deliverable feature.`,
+      `- Never add additional text outside the markdown table, only include the table.`
     ]
 
     if (rulesList.length > 0) {

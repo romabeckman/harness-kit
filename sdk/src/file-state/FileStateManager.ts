@@ -8,6 +8,11 @@ import { createDefaultSteeringRules } from './types'
 import { OrchestratorConfig, Phase } from '../orchestrator/types'
 
 export interface IFileStateManager {
+  // ─── Scope ───────────────────────────────────────────────────────────────
+  saveScope(scope: string): void
+  loadScope(): string
+  existScope(): boolean
+
   // ─── Bootstrap ──────────────────────────────────────────────────────────
   ensureProductFiles(config?: OrchestratorConfig): void
   loadBootstrapConfig(): BootstrapConfig
@@ -61,10 +66,31 @@ export class FileStateManager implements IFileStateManager {
     this.workingDir = options.workingDir ?? process.cwd()
   }
 
+  // ─── Scope ───────────────────────────────────────────────────────────────
+
+  saveScope(scope: string): void {
+    mkdirSync(this.productDir, { recursive: true })
+    const path = join(this.productDir, 'SCOPE.md')
+    atomicWrite(path, scope)
+  }
+
+  loadScope(): string {
+    const path = join(this.productDir, 'SCOPE.md')
+    if (!existsSync(path)) return ''
+    return readFileSync(path, 'utf-8').trim()
+  }
+
+  existScope(): boolean {
+    return existsSync(join(this.productDir, 'SCOPE.md'))
+  }
+
   // ─── Bootstrap ────────────────────────────────────────────────────────────
 
   ensureProductFiles(config?: OrchestratorConfig): void {
     mkdirSync(this.productDir, { recursive: true })
+    if (config?.scope) {
+      this.saveScope(config.scope)
+    }
     const files = ['BACKLOG.md', 'DEVELOPMENT-STATE.md', 'DECISIONS.md', 'BOOTSTRAP-CONFIG.json']
     for (const file of files) {
       const dest = join(this.productDir, file)
@@ -84,7 +110,6 @@ export class FileStateManager implements IFileStateManager {
         return '# Autonomous Decision Audit Trail\n\n| Timestamp | Feature | Decision | Scores | Rationale |\n| --- | --- | --- | --- | --- |\n'
       case 'BOOTSTRAP-CONFIG.json':
         return JSON.stringify({
-          originalScope: config?.scope,
           projectPaths: config?.projectPaths ?? [],
           currentPhase: Phase.BOOTSTRAP,
           scoreThresholdTL: config?.score ?? 0.70,

@@ -58,6 +58,16 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     const config = context.fsm.loadBootstrapConfig();
     const workingDir = join(context.workingDir, 'docs', 'specs', feature.domain)
 
+    if (!context.fsm.existScope()) {
+      throw new Error('Scope file (SCOPE.md) does not exist')
+    }
+
+    const scope = context.fsm.loadScope()
+    if (!scope) {
+      throw new Error('Scope file (SCOPE.md) is empty')
+    }
+    context.config.scope = scope
+
     const payload = ContextAssembler.buildPhaseAPayload(
       feature,
       workingDir,

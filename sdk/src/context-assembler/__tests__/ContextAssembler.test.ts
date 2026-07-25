@@ -13,8 +13,8 @@ describe('ContextAssembler', () => {
 
   it('should build phase A payload', () => {
     const feature = { title: 'feature title', domain: 'domain' }
-    const payload = ContextAssembler.buildPhaseAPayload(feature as any, 'workdir', ['path1'], 'original scope')
-    expect(payload.scope).toBe('original scope')
+    const payload = ContextAssembler.buildPhaseAPayload(feature as any, 'workdir', ['path1'], 'custom scope')
+    expect(payload.scope).toBe('custom scope')
     expect(payload.domain).toBe('domain')
     expect(payload.featureTitle).toBe('feature title')
     expect(payload.projectPaths).toEqual(['path1'])
