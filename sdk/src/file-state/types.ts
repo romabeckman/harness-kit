@@ -47,7 +47,6 @@ export interface DecisionEntry {
 }
 
 export interface BootstrapConfig {
-  originalScope?: string
   projectPaths?: string[]
   scoreThresholdTL: number
   scoreThresholdAdv: number

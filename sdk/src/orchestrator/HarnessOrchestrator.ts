@@ -204,24 +204,25 @@ export class HarnessOrchestrator implements PhaseContext {
    * If still not defined, exit the program.
    */
   private ensureConfig(): void {
-    if (this.config.scope && this.config.projectPaths) {
-      return
+    if (this.config.scope && this.config.scope.trim()) {
+      this.fsm.saveScope(this.config.scope)
+    } else if (this.fsm.existScope()) {
+      this.config.scope = this.fsm.loadScope()
     }
 
-    const bootConfig = this.fsm.loadBootstrapConfig()
-
-    if (!bootConfig.originalScope) {
+    if (!this.config.scope) {
       process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Scope is not defined`)}\n\n`)
       exit(1)
     }
 
-    if (!bootConfig.projectPaths || bootConfig.projectPaths.length === 0) {
-      process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Project paths are not defined`)}\n\n`)
-      exit(1)
+    if (!this.config.projectPaths || this.config.projectPaths.length === 0) {
+      const bootConfig = this.fsm.loadBootstrapConfig()
+      if (!bootConfig.projectPaths || bootConfig.projectPaths.length === 0) {
+        process.stderr.write(`\n\n${AnsiHelpers.red(`✗ [Error] Project paths are not defined`)}\n\n`)
+        exit(1)
+      }
+      this.config.projectPaths = bootConfig.projectPaths
     }
-
-    this.config.scope = bootConfig.originalScope
-    this.config.projectPaths = bootConfig.projectPaths
   }
 
   // ─── Phase dispatch ───────────────────────────────────────────────────────

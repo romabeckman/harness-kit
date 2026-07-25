@@ -28,16 +28,12 @@ export class BootstrapConfigParser {
       cycleCounter: {
         completedCycles: raw.cycleCounter.completedCycles,
       },
-      originalScope: raw.originalScope,
     }
     if (typeof raw.currentPhase === 'string') {
       result.currentPhase = raw.currentPhase
     }
     if (raw.activeFeatureId !== undefined) {
       result.activeFeatureId = raw.activeFeatureId
-    }
-    if (typeof raw.originalScope === 'string') {
-      result.originalScope = raw.originalScope
     }
     if (Array.isArray(raw.steeringRules)) {
       result.steeringRules = createDefaultSteeringRules()

@@ -15,8 +15,7 @@ describe('T27 — BootstrapConfigParser', () => {
         completedCycles: 1
       },
       currentPhase: 'PHASE_A',
-      activeFeatureId: 'F002',
-      originalScope: 'Define user authentication module'
+      activeFeatureId: 'F002'
     })
 
     // Act
@@ -30,7 +29,6 @@ describe('T27 — BootstrapConfigParser', () => {
     expect(config.cycleCounter.completedCycles).toBe(1)
     expect(config.currentPhase).toBe('PHASE_A')
     expect(config.activeFeatureId).toBe('F002')
-    expect(config.originalScope).toBe('Define user authentication module')
   })
 
   it('TC-BCP-02: clamps thresholds to [0,1] and maxReworks to >= 1', () => {

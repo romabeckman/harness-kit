@@ -6,7 +6,6 @@ import type { BootstrapConfig } from '../../file-state/types'
 
 function makeConfig(maxReworks = 3, thresholdTL = 0.85, thresholdAdv = 0.85): BootstrapConfig {
   return {
-    originalScope: 'scope',
     projectPaths: [],
     scoreThresholdTL: thresholdTL,
     scoreThresholdAdv: thresholdAdv,

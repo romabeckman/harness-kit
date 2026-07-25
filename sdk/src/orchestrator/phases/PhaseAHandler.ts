@@ -29,7 +29,6 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     if (this.hasCascadeBlock(activeFeature, features))
       return Phase.CASCADE_BLOCKED;
 
-    // If spec files are not present, run scope refinement to generate them.
     if (!context.checkSpecFilesPresent(activeFeature.domain)) {
       await this.runScopeRefinement(activeFeature, context);
     }
@@ -44,7 +43,6 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     return Phase.PHASE_B;
   }
 
-  // Returns true when any direct dependency is BLOCKED, triggering a cascade.
   private hasCascadeBlock(feature: Feature, allFeatures: Feature[]): boolean {
     return feature.dependencies.some((depId) => {
       const dep = allFeatures.find((f) => f.id === depId);
@@ -52,15 +50,24 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     });
   }
 
-  // Delegates scope-refinement to the software-architect agent and marks the feature IN_PROGRESS.
   private async runScopeRefinement(
     feature: Feature,
     context: PhaseContext,
   ): Promise<void> {
     context.fsm.updateFeatureStatus(feature.id, "IN_PROGRESS");
-
     const config = context.fsm.loadBootstrapConfig();
     const workingDir = join(context.workingDir, 'docs', 'specs', feature.domain)
+
+    if (!context.fsm.existScope()) {
+      throw new Error('Scope file (SCOPE.md) does not exist')
+    }
+
+    const scope = context.fsm.loadScope()
+    if (!scope) {
+      throw new Error('Scope file (SCOPE.md) is empty')
+    }
+    context.config.scope = scope
+
     const payload = ContextAssembler.buildPhaseAPayload(
       feature,
       workingDir,
@@ -69,7 +76,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       config.steeringRules,
     );
 
-    const prompt = this.buildScopeRefinementPrompt(payload, context.config.complexity);
+    const prompt = this.buildScopeRefinementPrompt(payload, feature, context);
 
     await context.invokeAgent({
       skill: "harness-kit:scope-refinement",
@@ -80,7 +87,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     });
   }
 
-  private buildScopeRefinementPrompt(payload: PhaseAPayload, complexity: Complexity): string {
+  private buildScopeRefinementPrompt(payload: PhaseAPayload, feature: Feature, context: PhaseContext): string {
     const projectPathsList = payload.projectPaths
       .map((p) => `- ${p}`)
       .join("\n");
@@ -89,10 +96,17 @@ export class PhaseAHandler extends AbstractPhaseHandler {
         ? payload.steeringRules.map((r) => `- ${r}`).join("\n")
         : "- No additional rules provided";
 
+    const complexity = context.config.complexity
     const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
     const contextMapFile = join(payload.workingDir, '002-context-map.md');
     const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
     const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
+
+    const backlog = context.fsm.loadBacklog();
+    const dependenciesText = backlog
+      .filter((f) => feature.dependencies.includes(f.id))
+      .map((f) => `\`${join('docs', 'specs', f.domain)}\``)
+      .join(", ") || 'None';
 
     return [
       `## Objective`,
@@ -103,34 +117,35 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `Use \`the-grumpy-tech-lead\` skill, its optional, only use it if you have questions.`,
       `</skill_context>`,
       ``,
+      `<react_workflow>`,
+      `- THOUGHT: Analyze feature scope and architectural constraints.`,
+      `- ACTION: Draft tactical design and test scenarios.`,
+      `- OBSERVATION: Verify if specs strictly cover the target feature.`,
+      `</react_workflow>`,
+      ``,
       `<inputs>`,
       ``,
-      ``,
-      `<background_context>`,
-      `\`\`\``,
-      payload.scope.trim(),
-      `\`\`\``,
-      `</background_context>`,
-      ``,
-      ``,
-      `<backlog_overview>`,
-      `Read the backlog file at \`docs/product/BACKLOG.md\` (a Markdown table). Locate the exact row matching the <target_feature> Title and Domain.`,
-      `Extract its ID, Priority, and Dependencies to inform your architecture. Do NOT process or extract data from any other rows.`,
-      `</backlog_overview>`,
-      ``,
-      ``,
-      `<target_feature>`,
-      `Title: ${payload.featureTitle}`,
-      `Domain: ${payload.domain}`,
-      `</target_feature>`,
+      `<rules>`,
+      rulesSection,
+      `</rules>`,
       ``,
       `<project_paths>`,
       projectPathsList,
       `</project_paths>`,
       ``,
-      `<rules>`,
-      rulesSection,
-      `</rules>`,
+      `<background_context>`,
+      `\`\`\`markdown`,
+      payload.scope.trim(),
+      `\`\`\``,
+      `</background_context>`,
+      ``,
+      `<target_feature>`,
+      `ID: ${feature.id}`,
+      `Title: ${payload.featureTitle}`,
+      `Domain: ${payload.domain}`,
+      `Priority: ${feature.priority || 'No priority set'}`,
+      `Dependencies: ${dependenciesText}`,
+      `</target_feature>`,
       ``,
       `</inputs>`,
       ``,
@@ -141,24 +156,24 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       ``,
       `<expected_outputs>`,
       `Produce, under \`${payload.workingDir}\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
-      `- \`${problemSpaceFile}\` — Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature)`,
-      `- \`${contextMapFile}\` — Bounded Contexts and Context Map`,
-      `- \`${tacticalDesignFile}\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array objects`,
-      `- \`${testScenariosFile}\` (one per project) — Test Scenarios`,
+      `- \`${problemSpaceFile}\`   Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature)`,
+      `- \`${contextMapFile}\`   Bounded Contexts and Context Map`,
+      `- \`${tacticalDesignFile}\` (one per project)   Tactical Design; must include \`## Section 6   Ordered Development Tasks\` with a fenced JSON array objects`,
+      `- \`${testScenariosFile}\` (one per project)   Test Scenarios`,
       `</expected_outputs>`,
       ``,
       `<strict_rules>`,
-      `- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features present in the <background_context> or the backlog file.`,
-      `- DEPENDENCY RULE: If the <target_feature> has dependencies listed in the backlog, acknowledge them as assumptions or interfaces in your design, but DO NOT design, spec, or generate tasks for the dependencies themselves.`,
+      `- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features present in the <background_context>.`,
+      `- DEPENDENCY RULE: If the <target_feature> has dependencies, acknowledge them as assumptions or interfaces in your design, but DO NOT design, spec, or generate tasks for the dependencies themselves.`,
       ...(complexity !== Complexity.AUTO
         ? (
           complexity === Complexity.SIMPLE ?
             [
-              `- COMPLEXITY OVERRIDE: Classify as 'SIMPLE' — do not re-evaluate scope complexity.`,
+              `- COMPLEXITY OVERRIDE: Classify as 'SIMPLE'   do not re-evaluate scope complexity.`,
               `- For 'SIMPLE': Do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
             ] :
             [
-              `- COMPLEXITY OVERRIDE: Classify as 'COMPLEX' — do not re-evaluate scope complexity.`,
+              `- COMPLEXITY OVERRIDE: Classify as 'COMPLEX'   do not re-evaluate scope complexity.`,
               `- For 'COMPLEX': Its required \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
             ]
         ) : [
@@ -168,13 +183,10 @@ export class PhaseAHandler extends AbstractPhaseHandler {
         ]),
       `- Execute autonomously without pausing or asking for confirmation.`,
       `- Write every file to disk before advancing to the next.`,
-      `- Do NOT output explanations — produce the spec files only.`,
       `</strict_rules>`,
     ].join("\n");
   }
 
-  // Appends dev tasks to DEVELOPMENT-STATE.md, falling back to a targeted agent call
-  // if the tactical-design file was written but the JSON block is unreadable by the parser.
   private async ensureTasksAppended(
     feature: Feature,
     context: PhaseContext,
@@ -183,13 +195,14 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     const existing = context.fsm
       .loadDevelopmentState()
       .filter((t) => t.featureId === feature.id);
+
     if (existing.length > 0) return;
 
     let extracted = context.extractTasksFromTacticalDesign(feature.domain);
 
     if (extracted.length === 0) {
-      // Agent writes rows directly into DEVELOPMENT-STATE.md; do not call appendTasks after.
       await this.recoverTasksViaAgent(feature, context);
+
       const recovered = context.fsm
         .loadDevelopmentState()
         .filter((t) => t.featureId === feature.id);
@@ -216,8 +229,6 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     );
   }
 
-  // Last-resort recovery: asks the agent to read the 003 doc and write the missing rows
-  // directly into DEVELOPMENT-STATE.md. Caller must reload state after this returns.
   private async recoverTasksViaAgent(
     feature: Feature,
     context: PhaseContext,
@@ -225,7 +236,6 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     const projectPathsList = context.config.projectPaths
       .map((p) => `- ${p}`)
       .join("\n");
-
     const tacticalDesignFile = join(context.workingDir, 'docs', 'specs', feature.domain, `003-*-tactical-design.md`)
 
     await context.invokeAgent({

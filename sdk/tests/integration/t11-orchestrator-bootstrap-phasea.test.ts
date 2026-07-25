@@ -395,11 +395,10 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
 
     await orchestrator.runBootstrapOnly()
 
-    // Verify it is saved in BOOTSTRAP-CONFIG.json
+    // Verify it is saved in SCOPE.md
     const { FileStateManager } = await import('../../src/file-state/FileStateManager')
     const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
-    const cfg = fsm.loadBootstrapConfig()
-    expect(cfg.originalScope).toBe('my-custom-original-project-scope')
+    expect(fsm.loadScope()).toBe('my-custom-original-project-scope')
 
     // 2. Re-create the orchestrator with an empty scope (simulating resume)
     const resumedOrchestrator = new HarnessOrchestrator({
@@ -525,8 +524,10 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     // Read the saved config and verify fields were merged
     const { readFileSync } = await import('fs')
     const savedConfig = JSON.parse(readFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), 'utf-8'))
+    const { FileStateManager } = await import('../../src/file-state/FileStateManager')
+    const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
 
-    expect(savedConfig.originalScope).toBe('my new scope')
+    expect(fsm.loadScope()).toBe('my new scope')
     expect(savedConfig.projectPaths).toEqual([tmpDir, '/another/path'])
     expect(savedConfig.scoreThresholdTL).toBe(0.85)
     expect(savedConfig.scoreThresholdAdv).toBe(0.85)

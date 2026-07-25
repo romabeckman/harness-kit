@@ -20,11 +20,11 @@ export class ContextAssembler {
     feature: Feature,
     workingDir: string,
     projectPaths: string[],
-    originalScope?: string,
+    scope?: string,
     steeringRules?: SteeringRulesConfig
   ): PhaseAPayload {
     const payload: PhaseAPayload = {
-      scope: originalScope || feature.title,
+      scope: scope || feature.title,
       workingDir: workingDir,
       domain: feature.domain,
       featureTitle: feature.title,

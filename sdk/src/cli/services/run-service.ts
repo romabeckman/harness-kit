@@ -43,7 +43,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     workingDir: cwd,
   })
   const bootConfig = fsm.existBootstrapConfig() ? fsm.loadBootstrapConfig() : undefined
-  const hasExistingSession = bootConfig && bootConfig.originalScope && bootConfig.projectPaths && bootConfig.projectPaths.length > 0
+  const hasExistingSession = bootConfig && fsm.existScope() && bootConfig.projectPaths && bootConfig.projectPaths.length > 0
 
   console.log(
     "\n" +

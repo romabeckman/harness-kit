@@ -18,11 +18,9 @@ export class PhaseBHandler extends AbstractPhaseHandler {
     if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
 
     const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
-
     let pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
 
     const shouldGoToPhaseC = this.shouldGoToPhaseC(activeFeature, tddOutputPath, context, pendingTasks)
-
     if (shouldGoToPhaseC) {
       return Phase.PHASE_C
     }
@@ -38,10 +36,8 @@ export class PhaseBHandler extends AbstractPhaseHandler {
           context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
         }
       }
-
       return true
     }
-
     return false
   }
 
@@ -58,6 +54,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
 
     const isRetry = activeFeature.reworks > 0
     const config = context.fsm.loadBootstrapConfig()
+
     const payload = ContextAssembler.buildPhaseBPayload(
       activeFeature,
       chunkTasks,
@@ -93,15 +90,15 @@ export class PhaseBHandler extends AbstractPhaseHandler {
 
     let tasksSection = ''
     let reworkSection = ''
+
     if (payload.isRetry) {
       const reworkLogPath = join(workingDir, 'REWORK-LOG.md')
-
       reworkSection = [
         `<rework>`,
         `You are working in a fixes from previous runs. Read the file \`${reworkLogPath}\` with tech lead and qa feedback.`,
         ``,
         `MANDATORY STEPS:`,
-        `1. Read \`${reworkLogPath}\` completely — every item is a required fix.`,
+        `1. Read \`${reworkLogPath}\` completely   every item is a required fix.`,
         `2. For EACH action items":`,
         `   a. Write a FAILING test that reproduces the issue described`,
         `   b. Implement the minimal fix to make the test pass`,
@@ -115,7 +112,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
         `   b. Implement handling for the edge case`,
         `   c. Set checked \`[X]\` when you're done in case`,
         `5. Architecture tips: evaluate and implement if relevant`,
-        `6. Run ALL tests (old + new) — all must pass`,
+        `6. Run ALL tests (old + new)   all must pass`,
         `7. Work on \`[ ] FIX\` for each pending task.`,
         ``,
         `DO NOT modify existing passing tests to force compliance.`,
@@ -136,18 +133,29 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `## Objective`,
       `Execute the TDD workflow for the tasks listed below. Follow steps 1, 2, 3, 4 and 6 of the \`harness-kit:tdd-orchestrator\` skill sequentially without pausing.`,
       ``,
-      reworkSection,
       `<skill_context>`,
       `Invoke the \`harness-kit:tdd-orchestrator\` skill before starting.`,
       `</skill_context>`,
-      `<inputs>`,
       ``,
-      `<feature>`,
-      `Feature ID: ${payload.featureId}`,
-      `Title: ${payload.featureTitle}`,
-      `Domain: ${payload.domain}`,
-      `</feature>`,
-      tasksSection,
+      `<react_workflow>`,
+      `- THOUGHT: Analyze the TDD cycle step (RED/GREEN/REFACTOR).`,
+      `- ACTION: Write code or execute tests in the terminal.`,
+      `- OBSERVATION: Analyze console outputs and errors to adjust the code.`,
+      `</react_workflow>`,
+      ``,
+      `<strict_rules>`,
+      `- You MUST read \`docs/README.md\` (It is a guide to all the documents; load them into memory as needed), \`docs/adr/ARCHITECTURE.md\`, and \`docs/adr/TESTS.md\` in each project before writing any code`,
+      `- Each project MUST have its own \`docs/adr\` and \`docs/feature\` folders where all ADRs and features are stored.`,
+      `- If exists "Socratic Questions" section in \`001-problem-space.md\`, use it to reflect and write the code in the best possible way.`,
+      `- Execute autonomously without pausing or asking for confirmation`,
+      `- NEVER change correct tests to force passing`,
+      `- NEVER run package installation commands automatically   instruct the user instead`,
+      `- CRITICAL: You MUST NOT run \`step 5\` (Update Documentation)`,
+      `</strict_rules>`,
+      ``,
+      `<rules>`,
+      rulesSection,
+      `</rules>`,
       ``,
       `<project_paths>`,
       projectPathsList,
@@ -159,12 +167,6 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `- Tactical design: \`${workingDir}/003-*-tactical-design.md\``,
       `- Test scenarios: \`${workingDir}/004-*-test-scenarios.md\``,
       `</development_specifications>`,
-      ``,
-      `<rules>`,
-      rulesSection,
-      `</rules>`,
-      ``,
-      `</inputs>`,
       ``,
       `<expected_output>`,
       `Write \`${workingDir}/TDD-OUTPUT.json\` upon completion:`,
@@ -179,15 +181,16 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       `\`\`\``,
       `</expected_output>`,
       ``,
-      `<strict_rules>`,
-      `- You MUST read \`docs/README.md\` (It is a guide to all the documents; load them into memory as needed), \`docs/adr/ARCHITECTURE.md\`, and \`docs/adr/TESTS.md\` in each project before writing any code`,
-      `- Each project MUST have its own \`docs/adr\` and \`docs/feature\` folders where all ADRs and features are stored.`,
-      `- If exists "Socratic Questions" section in \`001-problem-space.md\`, use it to reflect and write the code in the best possible way.`,
-      `- Execute autonomously without pausing or asking for confirmation`,
-      `- NEVER change correct tests to force passing`,
-      `- NEVER run package installation commands automatically — instruct the user instead`,
-      `- CRITICAL: You MUST NOT run \`step 5\` (Update Documentation)`,
-      `</strict_rules>`,
+      `<inputs>`,
+      `<feature>`,
+      `Feature ID: ${payload.featureId}`,
+      `Title: ${payload.featureTitle}`,
+      `Domain: ${payload.domain}`,
+      `</feature>`,
+      ``,
+      reworkSection,
+      tasksSection,
+      `</inputs>`,
     ].join('\n')
   }
 }

@@ -23,7 +23,6 @@ function makeFeature(overrides: Partial<Feature> = {}): Feature {
 
 function makeConfig(pendingStatus?: string): BootstrapConfig {
   return {
-    originalScope: 'scope',
     projectPaths: [],
     scoreThresholdTL: 0.70,
     scoreThresholdAdv: 0.70,

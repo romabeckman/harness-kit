@@ -14,7 +14,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     const bootConfig = context.fsm.loadBootstrapConfig()
 
     if (context.config.cliCommand === CliCommand.INIT) {
-      bootConfig.originalScope = context.config.scope
       bootConfig.projectPaths = context.config.projectPaths
       if (context.config.score !== undefined) {
         bootConfig.scoreThresholdTL = context.config.score
@@ -66,7 +65,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       ``,
       `# CONSTRAINTS & RULES`,
       `- ID: F001, F002, ... (sequential: F001, F002, F003, ...). Do not skip numbers.`,
-      `- Title: Feature Name with short description, limit of 250 characters.`,
+      `- Title: Feature Name with short description with objective, limit of 500 characters.`,
       `- Domain: snake_case of feature title without spaces, limit of 50 characters.`,
       `- Agent: Only names: \`backend\`, \`frontend\`, \`qa\` or \`devops\` — infer from the feature scope; use the project paths as hints`,
       `- Priority: CRITICAL, HIGH, MEDIUM, or LOW. Only use CRITICAL if the feature is mission critical, if it impacts the core functionality of the system, or if it is a security requirement.`,
@@ -75,6 +74,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `- Score (TL) & Score (Adv): -`,
       `- Status: NOT_STARTED`,
       `- Each row must represent exactly one deliverable feature.`,
+      `- Never add additional text outside the markdown table, only include the table.`
     ]
 
     if (rulesList.length > 0) {
@@ -92,7 +92,9 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `</context>`,
       ``,
       `<scope>`,
-      context.config.scope,
+      `\`\`\`markdown`,
+      context.config.scope.trim(),
+      `\`\`\``,
       `</scope>`
     )
     const prompt = promptLines.join('\n')
