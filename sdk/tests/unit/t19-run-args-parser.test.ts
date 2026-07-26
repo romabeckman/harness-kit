@@ -209,4 +209,48 @@ describe('T19 — parseRunArgs', () => {
     expect(result.complexity).toBe('SIMPLE')
     expect(result.debug).toBe(true)
   })
+
+  // ── --skip-validation ─────────────────────────────────────────────────────
+
+  it('parses --skip-validation flag', () => {
+    const result = parseRunArgs(['--skip-validation'])
+    expect(result.skipValidation).toBe(true)
+  })
+
+  it('skipValidation is undefined when flag not supplied', () => {
+    const result = parseRunArgs([])
+    expect(result.skipValidation).toBeUndefined()
+  })
+
+  it('--skip-validation coexists with other flags', () => {
+    const result = parseRunArgs(['--reset', '--skip-validation', '--debug'])
+    expect(result.action).toBe('reset')
+    expect(result.skipValidation).toBe(true)
+    expect(result.debug).toBe(true)
+  })
+
+  // ── --skip-steering ───────────────────────────────────────────────────────
+
+  it('parses --skip-steering flag', () => {
+    const result = parseRunArgs(['--skip-steering'])
+    expect(result.skipSteering).toBe(true)
+  })
+
+  it('skipSteering is undefined when flag not supplied', () => {
+    const result = parseRunArgs([])
+    expect(result.skipSteering).toBeUndefined()
+  })
+
+  it('--skip-steering coexists with other flags', () => {
+    const result = parseRunArgs(['--resume', '--skip-steering', '--debug'])
+    expect(result.action).toBe('resume')
+    expect(result.skipSteering).toBe(true)
+    expect(result.debug).toBe(true)
+  })
+
+  it('--skip-validation and --skip-steering can be combined', () => {
+    const result = parseRunArgs(['--skip-validation', '--skip-steering'])
+    expect(result.skipValidation).toBe(true)
+    expect(result.skipSteering).toBe(true)
+  })
 })

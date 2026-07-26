@@ -223,4 +223,18 @@ describe('PhaseCHandler', () => {
       mockConfig
     )
   })
+
+  it('deve pular Phase C inteira quando skipValidation=true no config', async () => {
+    mockContext.config = { projectPaths: ['/src'], skipValidation: true }
+
+    const result = await handler.handle(Phase.PHASE_C, mockContext)
+
+    // No agent must be called
+    expect(mockContext.invokeAgent).not.toHaveBeenCalled()
+    // Must mark feature COMPLETED with neutral scores
+    expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED', { tl: 1, adv: 1 })
+    expect(mockContext.fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
+    // Must go straight to Phase D
+    expect(result).toBe(Phase.PHASE_D)
+  })
 })

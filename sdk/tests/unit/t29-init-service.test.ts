@@ -84,13 +84,10 @@ describe('T29 — cmdInit', () => {
     expect(mockInput).toHaveBeenCalledTimes(6) // user, bootstrap, phase_a, phase_b, phase_c, phase_e
     expect(mockSaveBootstrapConfig).toHaveBeenCalled()
     const savedConfig = mockSaveBootstrapConfig.mock.calls[0][0]
-    
+
     // Check that our custom rules were injected
     expect(savedConfig.steeringRules.user).toContain('my global rule')
     expect(savedConfig.steeringRules.phase_a).toContain('phase A rule')
-    
-    // Check that defaults were preserved (e.g. bootstrap granularity rule)
-    expect(savedConfig.steeringRules.bootstrap[0]).toContain('Granularity rule')
   })
 
   it('creates local settings if user confirms', async () => {

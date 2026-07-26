@@ -15,6 +15,12 @@ export class PhaseEHandler extends AbstractPhaseHandler {
     const activeFeature = context.getActiveFeature(features)
     if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
 
+    // --skip-steering: bypass project-memory agent and jump straight to Phase F
+    if (context.config.skipSteering) {
+      process.stdout.write(`[phase_e] --skip-steering active — skipping project-memory for feature ${activeFeature.id}\n`)
+      return Phase.PHASE_F
+    }
+
     const config = context.fsm.loadBootstrapConfig()
     const decisions = context.fsm.loadRecentDecisions(5)
     const payload = ContextAssembler.buildPhaseEPayload(
