@@ -18,6 +18,8 @@ export interface OrchestratorConfig {
   cliCommand?: CliCommand
   /** When true, Phase C (validation) is skipped entirely and execution jumps to Phase D. */
   skipValidation?: boolean
+  /** When true, Phase E (project-memory) is skipped entirely and execution jumps to Phase F. */
+  skipSteering?: boolean
 }
 
 export enum Complexity {

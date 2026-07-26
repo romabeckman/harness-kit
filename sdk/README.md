@@ -162,6 +162,7 @@ Show version or help message.
 | `--steering <text>` | | Additional orchestration rules | `--steering "prefer async/await"` |
 | `--complexity <val>` | `-c` | Phase A complexity: `SIMPLE`/`S`, `COMPLEX`/`C`, or omit for `AUTO` | `--complexity S` |
 | `--skip-validation` | | Skip Phase C entirely — jump straight to Phase D | |
+| `--skip-steering` | | Skip Phase E entirely — jump straight to Phase F | |
 | `--debug` | | Enable debug output | |
 
 > [!NOTE]
@@ -169,6 +170,9 @@ Show version or help message.
 
 > [!TIP]
 > `--skip-validation` is useful for CI speed-runs or when you want to iterate on Phase B output without paying the cost of two agent reviews. All features are marked **COMPLETED** with neutral scores (TL: 1, Adv: 1) and the run proceeds directly to Phase D (state check) and then Phase E (memory).
+
+> [!TIP]
+> `--skip-steering` skips the Phase E `project-memory` agent entirely. Use it when you want a fast cycle (Bootstrap → A → B → C → D → F) without writing documentation memory, for example during exploration or early prototyping.
 
 ---
 

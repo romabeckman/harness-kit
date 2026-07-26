@@ -25,6 +25,9 @@ export interface ParsedRunArgs {
   // Skip Phase C (validation) entirely — jumps directly to Phase D
   skipValidation?: boolean
 
+  // Skip Phase E (project-memory / steering) entirely — jumps directly to Phase F
+  skipSteering?: boolean
+
   // Complexity hint for Phase A scope refinement ('SIMPLE' | 'COMPLEX' | undefined = AUTO)
   complexity: Complexity
 }
@@ -45,6 +48,7 @@ export interface ParsedRunArgs {
  * --steering <text>        Additional orchestration rules
  * --complexity, -c <val>   Force complexity: SIMPLE|S or COMPLEX|C (default: AUTO)
  * --skip-validation         Skip Phase C (validation) — jump directly to Phase D
+ * --skip-steering           Skip Phase E (project-memory) — jump directly to Phase F
  */
 export function parseRunArgs(args: string[]): ParsedRunArgs {
   const result: ParsedRunArgs = {
@@ -115,6 +119,10 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
 
       case '--skip-validation':
         result.skipValidation = true
+        break
+
+      case '--skip-steering':
+        result.skipSteering = true
         break
 
       case '--complexity':
