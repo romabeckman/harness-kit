@@ -73,11 +73,9 @@ export interface SteeringRulesConfig {
 export function createDefaultSteeringRules(initialRules?: string): SteeringRulesConfig {
   return {
     user: initialRules ? [initialRules] : [],
-    bootstrap: [
-      "Granularity rule: each feature is one deliverable chunk — one project per feature, or one flow including combined projects (frontend and backend for example), or one meaningful part of a large project if splitting is necessary. Never mix multiple unrelated projects in a single feature."
-    ],
+    bootstrap: [],
     phase_a: [
-      'Create a minimum of 1 and a maximum of 5 tasks for each `003-\${PROJECT_NAME}-tactical-design.md` (maximum of 10 tasks total)'
+      'Create a minimum of 1 and a maximum of 6 tasks for each `003-\${PROJECT_NAME}-tactical-design.md` (maximum of 12 tasks total)'
     ],
     phase_b: [],
     phase_c: [],
