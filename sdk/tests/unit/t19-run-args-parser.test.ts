@@ -209,4 +209,23 @@ describe('T19 — parseRunArgs', () => {
     expect(result.complexity).toBe('SIMPLE')
     expect(result.debug).toBe(true)
   })
+
+  // ── --skip-validation ─────────────────────────────────────────────────────
+
+  it('parses --skip-validation flag', () => {
+    const result = parseRunArgs(['--skip-validation'])
+    expect(result.skipValidation).toBe(true)
+  })
+
+  it('skipValidation is undefined when flag not supplied', () => {
+    const result = parseRunArgs([])
+    expect(result.skipValidation).toBeUndefined()
+  })
+
+  it('--skip-validation coexists with other flags', () => {
+    const result = parseRunArgs(['--reset', '--skip-validation', '--debug'])
+    expect(result.action).toBe('reset')
+    expect(result.skipValidation).toBe(true)
+    expect(result.debug).toBe(true)
+  })
 })

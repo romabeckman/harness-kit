@@ -131,6 +131,9 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
       `  steering:  ${steeringMessage.slice(0, DEFAULT_LINE_LENGTH)}${steeringMessage.length > DEFAULT_LINE_LENGTH ? "…" : ""}`,
     );
   }
+  if (parsed.skipValidation) {
+    console.log(`  skip-validation: true  (Phase C skipped)`);
+  }
   console.log("────────────────────────────────────────────────────────\n");
 
   if (action === "reset" && existsSync(productDir) && !isFromInit) {
@@ -155,6 +158,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     complexity: parsed.complexity,
     chain: ChainBuilder.buildDefault(),
     cliCommand: isFromInit ? CliCommand.INIT : CliCommand.RUN,
+    skipValidation: parsed.skipValidation,
   });
 
   if (action === "resume") {

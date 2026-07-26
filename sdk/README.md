@@ -161,10 +161,14 @@ Show version or help message.
 | `--reworks <1–10>` | | Max rework cycles before cascade fail | `--reworks 3` |
 | `--steering <text>` | | Additional orchestration rules | `--steering "prefer async/await"` |
 | `--complexity <val>` | `-c` | Phase A complexity: `SIMPLE`/`S`, `COMPLEX`/`C`, or omit for `AUTO` | `--complexity S` |
+| `--skip-validation` | | Skip Phase C entirely — jump straight to Phase D | |
 | `--debug` | | Enable debug output | |
 
 > [!NOTE]
 > `--model` overrides the default for **all** phases. For per-phase model tuning, use `settings.json` instead.
+
+> [!TIP]
+> `--skip-validation` is useful for CI speed-runs or when you want to iterate on Phase B output without paying the cost of two agent reviews. All features are marked **COMPLETED** with neutral scores (TL: 1, Adv: 1) and the run proceeds directly to Phase D (state check) and then Phase E (memory).
 
 ---
 

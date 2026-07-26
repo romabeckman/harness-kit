@@ -22,6 +22,9 @@ export interface ParsedRunArgs {
   // Debug mode
   debug?: boolean
 
+  // Skip Phase C (validation) entirely — jumps directly to Phase D
+  skipValidation?: boolean
+
   // Complexity hint for Phase A scope refinement ('SIMPLE' | 'COMPLEX' | undefined = AUTO)
   complexity: Complexity
 }
@@ -41,6 +44,7 @@ export interface ParsedRunArgs {
  * --reworks <1-10>         Max rework cycles before cascade fail
  * --steering <text>        Additional orchestration rules
  * --complexity, -c <val>   Force complexity: SIMPLE|S or COMPLEX|C (default: AUTO)
+ * --skip-validation         Skip Phase C (validation) — jump directly to Phase D
  */
 export function parseRunArgs(args: string[]): ParsedRunArgs {
   const result: ParsedRunArgs = {
@@ -107,6 +111,10 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
 
       case '--debug':
         result.debug = true
+        break
+
+      case '--skip-validation':
+        result.skipValidation = true
         break
 
       case '--complexity':

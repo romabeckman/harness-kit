@@ -16,6 +16,8 @@ export interface OrchestratorConfig {
   complexity: Complexity
   chain?: IPhaseHandler
   cliCommand?: CliCommand
+  /** When true, Phase C (validation) is skipped entirely and execution jumps to Phase D. */
+  skipValidation?: boolean
 }
 
 export enum Complexity {
