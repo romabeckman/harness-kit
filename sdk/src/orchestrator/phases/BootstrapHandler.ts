@@ -38,7 +38,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
 
     const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
     const backlogPath = join(productDir, 'BACKLOG.md')
-    const scopePath = join(productDir, 'SCOPE.md')
 
     const rulesList: string[] = []
     if (bootConfig && bootConfig.steeringRules) {
@@ -88,14 +87,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `F001 User Management — full CRUD (create, read, update, delete) with input validation | F002 Authentication & Authorization — login, session, middleware, role-based access | F003 Database & Infrastructure — connection setup, migrations, seeding`
     ]
 
-    if (rulesList.length > 0) {
-      promptLines.push(
-        ``,
-        `# STEERING RULES`,
-        ...rulesList.map(r => `- ${r}`)
-      )
-    }
-
     promptLines.push(
       ``,
       `<context>`,
@@ -103,9 +94,19 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `</context>`,
       ``,
       `<scope>`,
-      `Read the scope document at \`${scopePath}\``,
+      `\`\`\`markdown`,
+      context.config.scope.trim(),
+      `\`\`\``,
       `</scope>`
     )
+
+    if (rulesList.length > 0) {
+      promptLines.push(
+        ``,
+        `# STEERING RULES`,
+        ...rulesList.map(r => `- ${r}`)
+      )
+    }
     const prompt = promptLines.join('\n')
 
     await context.invokeAgent({
