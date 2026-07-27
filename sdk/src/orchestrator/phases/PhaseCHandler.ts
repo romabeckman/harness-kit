@@ -241,7 +241,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
 
     return [
       `## Objective`,
-      `Review the implementation for feature \`${payload.featureId}\` as a Senior Tech Lead. Your job is to give an HONEST, EVIDENCE-BASED verdict on the code's real state   not to guarantee a certain number of findings per run.`,
+      `Review the implementation for feature as a Senior Tech Lead. Your job is to give an HONEST, EVIDENCE-BASED verdict on the code's real state not to guarantee a certain number of findings per run.`,
       ``,
       `<skill_context>`,
       `Invoke the \`harness-kit:the-grumpy-tech-lead\` skill before starting for clarity and evaluation openPoints.`,
@@ -269,7 +269,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `- Each openPoint MUST start with [CRITICAL], [HIGH], [MEDIUM], or [LOW]`,
       `- score must be a float in [0.00, 1.00] rounded to 2 decimals, computed from severity weights of REAL findings only`,
       `- isCrashing: true ONLY if a CRITICAL finding causes application crash, data loss, downtime, or security breach`,
-      `- featureId MUST match: ${payload.featureId}`,
       `</strict_rules>`,
       ``,
       `<rules>`,
@@ -349,7 +348,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
 
     return [
       `## Objective`,
-      `Attempt to break the implementation for feature \`${payload.featureId}\` by probing edge cases, boundary faults, and security vulnerabilities that standard TDD might miss. Your verdict must reflect what you actually found in the CURRENT code   not a quota of vulnerabilities to report.`,
+      `Attempt to break the implementation for feature by probing edge cases, boundary faults, and security vulnerabilities that standard TDD might miss. Your verdict must reflect what you actually found in the CURRENT code   not a quota of vulnerabilities to report.`,
       ``,
       `<skill_context>`,
       `Invoke the \`harness-kit:adversarial-qa\` skill before starting.`,
@@ -375,7 +374,6 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       `- Any HIGH or CRITICAL vulnerability triggers RETRY regardless of score   but only report HIGH/CRITICAL when exploitability is demonstrated, not assumed`,
       `- Do NOT force a vulnerability or edge case finding when none genuinely exists   empty arrays with passedAdversarial: true is expected for solid code`,
       `- score must be a float in [0.00, 1.00] rounded to 2 decimals`,
-      `- featureId MUST match: ${payload.featureId}`,
       `</strict_rules>`,
       ``,
       `<rules>`,
