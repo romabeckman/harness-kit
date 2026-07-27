@@ -38,6 +38,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
 
     const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
     const backlogPath = join(productDir, 'BACKLOG.md')
+    const scopePath = join(productDir, 'SCOPE.md')
 
     const rulesList: string[] = []
     if (bootConfig && bootConfig.steeringRules) {
@@ -102,9 +103,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `</context>`,
       ``,
       `<scope>`,
-      `\`\`\`markdown`,
-      context.config.scope.trim(),
-      `\`\`\``,
+      `Read the scope document at \`${scopePath}\``,
       `</scope>`
     )
     const prompt = promptLines.join('\n')

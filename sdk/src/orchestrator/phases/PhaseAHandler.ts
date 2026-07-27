@@ -96,6 +96,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
         ? payload.steeringRules.map((r) => `- ${r}`).join("\n")
         : "- No additional rules provided";
 
+    const scopePath = join(context.workingDir, 'docs', 'product', 'SCOPE.md')
     const complexity = context.config.complexity
     const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
     const contextMapFile = join(payload.workingDir, '002-context-map.md');
@@ -134,9 +135,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<background_context>`,
-      `\`\`\`markdown`,
-      payload.scope.trim(),
-      `\`\`\``,
+      `Read the scope document at \`${scopePath}\``,
       `</background_context>`,
       ``,
       `<target_feature>`,
