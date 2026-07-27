@@ -142,7 +142,7 @@ export class PhaseGHandler extends AbstractPhaseHandler {
       `  1. MUST use one of the types above.`,
       `  2. scope is OPTIONAL — use it only when a module/domain is obvious (e.g. "auth", "api", "parser").`,
       `  3. description MUST use imperative mood: "add", "fix", "remove" — NOT "added", "fixes", "removes".`,
-      `  4. Total length MUST be ≤ 72 characters.`,
+      `  4. Total length MUST be <= 400 characters.`,
       `  5. No capital first letter in description (lowercase after the colon+space).`,
       `  6. No period at the end.`,
       `  7. BREAKING CHANGE: use a ! after type/scope ONLY if the changes break a public API.`,
