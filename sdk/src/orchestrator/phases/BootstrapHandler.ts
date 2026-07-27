@@ -66,7 +66,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `# COLUMN RULES`,
       `- ID: F001, F002, ... (sequential, no gaps)`,
       `- Title: short description with objective (max 500 chars)`,
-      `- Domain: snake_case, max 50 chars`,
+      `- Domain: is unique, never repeat, snake_case, max 50 characters`,
       `- Agent: \`backend\` | \`frontend\` | \`qa\` | \`devops\` — infer from feature scope and project paths`,
       `- Priority: CRITICAL (only if mission-critical, core functionality, or security), HIGH, MEDIUM, or LOW`,
       `- Dependencies: comma-separated IDs, or None`,
