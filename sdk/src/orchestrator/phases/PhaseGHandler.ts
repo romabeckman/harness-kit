@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
@@ -29,9 +29,18 @@ export class PhaseGHandler extends AbstractPhaseHandler {
       )
 
       try {
-        // Stage all changes
+        // Stage all changes (respects .gitignore)
         this.runGit(projectPath, ['add', '--all'])
         process.stdout.write(`  ${AnsiHelpers.dim('git add --all')} ${AnsiHelpers.green('✔')}\n`)
+
+        // Safety check: verify if any sensitive files/patterns were accidentally staged
+        const sensitiveFiles = this.detectStagedSensitiveFiles(projectPath)
+        if (sensitiveFiles.length > 0) {
+          this.runGit(projectPath, ['reset'])
+          throw new Error(
+            `Security pre-check blocked commit: sensitive file(s) staged [${sensitiveFiles.join(', ')}]. Please add them to .gitignore.`
+          )
+        }
 
         // Check if there is anything to commit
         if (!this.hasUncommittedChanges(projectPath)) {
@@ -100,7 +109,7 @@ export class PhaseGHandler extends AbstractPhaseHandler {
   private async generateCommitMessage(projectPath: string, context: PhaseContext): Promise<string> {
     let diffStat = ''
     try {
-      diffStat = execSync('git diff --staged --stat', {
+      diffStat = execFileSync('git', ['diff', '--staged', '--stat'], {
         cwd: projectPath,
         stdio: 'pipe',
         encoding: 'utf8',
@@ -177,7 +186,7 @@ export class PhaseGHandler extends AbstractPhaseHandler {
   }
 
   private runGit(cwd: string, args: string[]): void {
-    execSync(`git ${args.join(' ')}`, {
+    execFileSync('git', args, {
       cwd,
       stdio: 'pipe',
       encoding: 'utf8',
@@ -186,7 +195,7 @@ export class PhaseGHandler extends AbstractPhaseHandler {
 
   private hasUncommittedChanges(cwd: string): boolean {
     try {
-      const output = execSync('git status --porcelain', {
+      const output = execFileSync('git', ['status', '--porcelain'], {
         cwd,
         stdio: 'pipe',
         encoding: 'utf8',
@@ -194,6 +203,36 @@ export class PhaseGHandler extends AbstractPhaseHandler {
       return output.trim().length > 0
     } catch {
       return false
+    }
+  }
+
+  /**
+   * Checks staged files against a list of sensitive patterns (.env, *.pem, *.key, etc.)
+   * to prevent accidental credential leakage in automated commits.
+   */
+  private detectStagedSensitiveFiles(cwd: string): string[] {
+    try {
+      const output = execFileSync('git', ['diff', '--cached', '--name-only'], {
+        cwd,
+        stdio: 'pipe',
+        encoding: 'utf8',
+      })
+      const stagedFiles = output.split('\n').map(f => f.trim()).filter(Boolean)
+
+      const sensitivePatterns = [
+        /\.env($|\.)/i,
+        /\.pem$/i,
+        /\.key$/i,
+        /id_rsa/i,
+        /id_ed25519/i,
+        /credentials\.json$/i,
+        /service[-_]account.*\.json$/i,
+        /secrets?\.(json|yaml|yml)$/i,
+      ]
+
+      return stagedFiles.filter(file => sensitivePatterns.some(pattern => pattern.test(file)))
+    } catch {
+      return []
     }
   }
 }
