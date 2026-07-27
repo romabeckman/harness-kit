@@ -132,10 +132,13 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     );
   }
   if (parsed.skipValidation) {
-    console.log(`  skip-validation: true  (Phase C skipped)`);
+    console.log(`  skip-validation: true  (Phase REVIEW skipped)`);
   }
   if (parsed.skipSteering) {
-    console.log(`  skip-steering: true  (Phase E skipped)`);
+    console.log(`  skip-steering: true  (Phase MEMORY skipped)`);
+  }
+  if (parsed.skipDeploy) {
+    console.log(`  skip-deploy: true  (Phase DEPLOY skipped)`);
   }
   console.log("────────────────────────────────────────────────────────\n");
 
@@ -163,6 +166,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     cliCommand: isFromInit ? CliCommand.INIT : CliCommand.RUN,
     skipValidation: parsed.skipValidation,
     skipSteering: parsed.skipSteering,
+    skipDeploy: parsed.skipDeploy,
   });
 
   if (action === "resume") {

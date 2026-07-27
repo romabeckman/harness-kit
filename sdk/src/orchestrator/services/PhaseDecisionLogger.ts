@@ -49,7 +49,7 @@ export class PhaseDecisionLogger {
 
     fsm.appendDecision({
       featureId: feature.id,
-      decision: `Phase A: specs generated for domain '${feature.domain}' (${taskCount} task(s))`,
+      decision: `Planning: specs generated for domain '${feature.domain}' (${taskCount} task(s))`,
       rationale: `Spec files: ${fileList}.`,
     })
   }
@@ -65,7 +65,7 @@ export class PhaseDecisionLogger {
 
     fsm.appendDecision({
       featureId: feature.id,
-      decision: `Phase B: TDD execution for domain '${feature.domain}' — ${summary.status}`,
+      decision: `Development: TDD execution for domain '${feature.domain}' — ${summary.status}`,
       rationale: summary.rationale,
     })
   }
@@ -82,7 +82,7 @@ export class PhaseDecisionLogger {
   ): void {
     fsm.appendDecision({
       featureId: feature.id,
-      decision: `Phase C: validation verdict ${verdict} for domain '${feature.domain}'`,
+      decision: `Review: validation verdict ${verdict} for domain '${feature.domain}'`,
       scores: { tl: scoreTL, adv: scoreAdv },
       rationale: reason,
     })
@@ -103,7 +103,7 @@ export class PhaseDecisionLogger {
 
     fsm.appendDecision({
       featureId: feature.id,
-      decision: `Phase E: project memory written for domain '${feature.domain}'`,
+      decision: `Memory: project memory written for domain '${feature.domain}'`,
       rationale: `Documents created or updated: ${docList}.`,
     })
   }

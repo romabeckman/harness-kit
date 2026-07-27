@@ -57,7 +57,7 @@ export class PhaseFHandler extends AbstractPhaseHandler {
     }
 
     this.clearActiveFeatureTasks(context)
-    return Phase.HALTED
+    return Phase.PHASE_G
   }
 
   private retryableFeatures(features: Feature[], context: PhaseContext, phase: Phase) {

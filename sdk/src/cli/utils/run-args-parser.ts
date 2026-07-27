@@ -22,11 +22,14 @@ export interface ParsedRunArgs {
   // Debug mode
   debug?: boolean
 
-  // Skip Phase C (validation) entirely — jumps directly to Phase D
+  // Skip Phase C (review) entirely — jumps directly to Phase D
   skipValidation?: boolean
 
-  // Skip Phase E (project-memory / steering) entirely — jumps directly to Phase F
+  // Skip Phase E (memory / steering) entirely — jumps directly to Phase F
   skipSteering?: boolean
+
+  // Skip Phase DEPLOY (git stage/commit/push) — pipeline halts after Phase F
+  skipDeploy?: boolean
 
   // Complexity hint for Phase A scope refinement ('SIMPLE' | 'COMPLEX' | undefined = AUTO)
   complexity: Complexity
@@ -47,8 +50,9 @@ export interface ParsedRunArgs {
  * --reworks <1-10>         Max rework cycles before cascade fail
  * --steering <text>        Additional orchestration rules
  * --complexity, -c <val>   Force complexity: SIMPLE|S or COMPLEX|C (default: AUTO)
- * --skip-validation         Skip Phase C (validation) — jump directly to Phase D
- * --skip-steering           Skip Phase E (project-memory) — jump directly to Phase F
+ * --skip-validation         Skip Phase C (review) — jump directly to Phase D
+ * --skip-steering           Skip Phase E (memory) — jump directly to Phase F
+ * --skip-deploy             Skip Phase DEPLOY (git stage/commit/push) — halt after Phase F
  */
 export function parseRunArgs(args: string[]): ParsedRunArgs {
   const result: ParsedRunArgs = {
@@ -125,6 +129,9 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
         result.skipSteering = true
         break
 
+      case '--skip-deploy':
+        result.skipDeploy = true
+        break
       case '--complexity':
       case '-c': {
         const val = nextArg()?.toUpperCase()

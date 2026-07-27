@@ -17,7 +17,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
 
     // --skip-steering: bypass project-memory agent and jump straight to Phase F
     if (context.config.skipSteering) {
-      process.stdout.write(`[phase_e] --skip-steering active — skipping project-memory for feature ${activeFeature.id}\n`)
+      process.stdout.write(`[phase_memory] --skip-steering active — skipping project-memory for feature ${activeFeature.id}\n`)
       return Phase.PHASE_F
     }
 

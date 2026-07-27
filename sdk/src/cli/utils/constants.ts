@@ -33,8 +33,13 @@ RESET OPTIONS (all optional — omitting any triggers the interactive wizard)
 RESUME OPTIONS
   --steering <text>         Steering rules or state overrides
 
-PHASE A OPTIONS
+PHASE A (PLANNING) OPTIONS
   --complexity, -c <val>    Force complexity classification: SIMPLE|S or COMPLEX|C (default: AUTO)
+
+SKIP OPTIONS
+  --skip-validation         Skip Phase REVIEW (code review + QA) — jump directly to STATE_CHECK
+  --skip-steering           Skip Phase MEMORY (project-memory) — jump directly to TRANSITION
+  --skip-deploy             Skip Phase DEPLOY (git stage/commit/push) — halt after TRANSITION
 
 OPTIONS
   --help, -h                Show this help message
@@ -49,6 +54,7 @@ EXAMPLES
   hrns run --debug --reset --scope "My project"
   hrns run --reset --scope "Fix login bug" --path ./api --complexity S
   hrns run --reset --scope "New payment flow" --path ./api --complexity COMPLEX
+  hrns run --reset --scope "My app" --path ./api --skip-deploy
   hrns report
 
 DOCS

@@ -76,7 +76,7 @@ describe('T02 — Shared type definitions', () => {
     it('BootstrapConfig stores exact numeric values without mutation', () => {
       const cfg: BootstrapConfig = {
         scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+        scoreThresholdAdv: 0.70,
         completionCriteria: { maxReworks: 2 },
         cycleCounter: { completedCycles: 0 },
       }
@@ -90,11 +90,12 @@ describe('T02 — Shared type definitions', () => {
     it('Phase enum values are correct strings', () => {
       expect(Phase.BOOTSTRAP).toBe('BOOTSTRAP')
       expect(Phase.PHASE_A).toBe('PLANNING')
-      expect(Phase.PHASE_B).toBe('IMPLEMENTATION')
-      expect(Phase.PHASE_C).toBe('VALIDATION')
+      expect(Phase.PHASE_B).toBe('DEVELOPMENT')
+      expect(Phase.PHASE_C).toBe('REVIEW')
       expect(Phase.PHASE_D).toBe('STATE_CHECK')
-      expect(Phase.PHASE_E).toBe('STEERING')
-      expect(Phase.PHASE_F).toBe('DECISION')
+      expect(Phase.PHASE_E).toBe('MEMORY')
+      expect(Phase.PHASE_F).toBe('TRANSITION')
+      expect(Phase.PHASE_G).toBe('DEPLOY')
       expect(Phase.CASCADE_BLOCKED).toBe('CASCADE_BLOCKED')
       expect(Phase.HALTED).toBe('HALTED')
     })

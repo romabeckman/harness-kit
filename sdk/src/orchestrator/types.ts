@@ -16,10 +16,12 @@ export interface OrchestratorConfig {
   complexity: Complexity
   chain?: IPhaseHandler
   cliCommand?: CliCommand
-  /** When true, Phase C (validation) is skipped entirely and execution jumps to Phase D. */
+  /** When true, Phase C (review) is skipped entirely and execution jumps to Phase D. */
   skipValidation?: boolean
-  /** When true, Phase E (project-memory) is skipped entirely and execution jumps to Phase F. */
+  /** When true, Phase E (memory) is skipped entirely and execution jumps to Phase F. */
   skipSteering?: boolean
+  /** When true, Phase DEPLOY (git stage/commit/push) is skipped and pipeline halts after Phase F. */
+  skipDeploy?: boolean
 }
 
 export enum Complexity {
@@ -36,11 +38,12 @@ export enum CliCommand {
 export enum Phase {
   BOOTSTRAP = 'BOOTSTRAP',
   PHASE_A = 'PLANNING',
-  PHASE_B = 'IMPLEMENTATION',
-  PHASE_C = 'VALIDATION',
+  PHASE_B = 'DEVELOPMENT',
+  PHASE_C = 'REVIEW',
   PHASE_D = 'STATE_CHECK',
-  PHASE_E = 'STEERING',
-  PHASE_F = 'DECISION',
+  PHASE_E = 'MEMORY',
+  PHASE_F = 'TRANSITION',
+  PHASE_G = 'DEPLOY',
   CASCADE_BLOCKED = 'CASCADE_BLOCKED',
   HALTED = 'HALTED',
 }

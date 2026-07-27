@@ -248,9 +248,29 @@ describe('T19 — parseRunArgs', () => {
     expect(result.debug).toBe(true)
   })
 
+
   it('--skip-validation and --skip-steering can be combined', () => {
     const result = parseRunArgs(['--skip-validation', '--skip-steering'])
     expect(result.skipValidation).toBe(true)
     expect(result.skipSteering).toBe(true)
+  })
+
+  // ── --skip-deploy ─────────────────────────────────────────────────────────
+
+  it('parses --skip-deploy flag', () => {
+    const result = parseRunArgs(['--skip-deploy'])
+    expect(result.skipDeploy).toBe(true)
+  })
+
+  it('skipDeploy is undefined when flag not supplied', () => {
+    const result = parseRunArgs([])
+    expect(result.skipDeploy).toBeUndefined()
+  })
+
+  it('--skip-deploy coexists with other skip flags', () => {
+    const result = parseRunArgs(['--skip-validation', '--skip-steering', '--skip-deploy'])
+    expect(result.skipValidation).toBe(true)
+    expect(result.skipSteering).toBe(true)
+    expect(result.skipDeploy).toBe(true)
   })
 })

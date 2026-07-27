@@ -146,8 +146,8 @@ describe('PhaseFHandler', () => {
           decision: expect.stringContaining('F002'),
         })
       )
-      // No NOT_STARTED left → HALTED
-      expect(result).toBe(Phase.HALTED)
+      // No NOT_STARTED left → PHASE_G
+      expect(result).toBe(Phase.PHASE_G)
     })
 
     it('returns PHASE_A when unrelated features remain NOT_STARTED after cascade', async () => {
@@ -232,7 +232,7 @@ describe('PhaseFHandler', () => {
       const ctx = makeContext(fsm, f1)
       const result = await handler.handle(Phase.PHASE_F, ctx)
 
-      expect(result).toBe(Phase.HALTED)
+      expect(result).toBe(Phase.PHASE_G)
       const saveCalls = (fsm.saveBootstrapConfig as any).mock.calls
       const lastCallArg = saveCalls[saveCalls.length - 1][0]
       expect(lastCallArg.activeFeatureId).toBeUndefined()

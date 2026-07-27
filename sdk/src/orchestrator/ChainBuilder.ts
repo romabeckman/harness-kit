@@ -7,6 +7,7 @@ import {
   PhaseDHandler,
   PhaseEHandler,
   PhaseFHandler,
+  PhaseGHandler,
   CascadeBlockedHandler,
 } from './phases'
 
@@ -36,6 +37,7 @@ export class ChainBuilder {
       .addPhase(new PhaseDHandler())
       .addPhase(new PhaseEHandler())
       .addPhase(new PhaseFHandler())
+      .addPhase(new PhaseGHandler())
       .addPhase(new CascadeBlockedHandler())
       .build()
   }

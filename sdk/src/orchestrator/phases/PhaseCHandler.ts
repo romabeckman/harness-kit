@@ -27,7 +27,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
 
     // --skip-validation: bypass all agent calls and jump straight to Phase D
     if (context.config.skipValidation) {
-      process.stdout.write(`[phase_c] --skip-validation active — skipping validation for feature ${activeFeature.id}\n`)
+      process.stdout.write(`[phase_review] --skip-validation active — skipping review for feature ${activeFeature.id}\n`)
       context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED', { tl: 1, adv: 1 })
       context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'COMPLETED')
       return Phase.PHASE_D

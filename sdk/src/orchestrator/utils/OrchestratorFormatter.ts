@@ -22,6 +22,7 @@ export class OrchestratorFormatter {
       Phase.PHASE_D,
       Phase.PHASE_E,
       Phase.PHASE_F,
+      Phase.PHASE_G,
     ]
     const shortNames: Record<Phase, string> = {
       [Phase.BOOTSTRAP]: Phase.BOOTSTRAP,
@@ -31,6 +32,7 @@ export class OrchestratorFormatter {
       [Phase.PHASE_D]: Phase.PHASE_D,
       [Phase.PHASE_E]: Phase.PHASE_E,
       [Phase.PHASE_F]: Phase.PHASE_F,
+      [Phase.PHASE_G]: Phase.PHASE_G,
       [Phase.CASCADE_BLOCKED]: 'BLOCKED',
       [Phase.HALTED]: 'HALTED',
     }
