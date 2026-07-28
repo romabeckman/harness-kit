@@ -41,7 +41,7 @@ interface ResolvedMode {
 export function resolveMode(mode?: RunMode): ResolvedMode {
   switch (mode) {
     case RunMode.QUICK:
-      return { complexity: Complexity.AUTO, skipValidation: true, skipMemory: true }
+      return { complexity: Complexity.LOW, skipValidation: true, skipMemory: true }
     case RunMode.FAST:
       return { complexity: Complexity.LOW, skipValidation: false, skipMemory: false }
     case RunMode.SLOW:
