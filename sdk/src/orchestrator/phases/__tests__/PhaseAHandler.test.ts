@@ -1,10 +1,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PhaseAHandler } from '../PhaseAHandler';
+import { PlanningHandler } from '../PlanningHandler';
 import { Phase } from '../../types';
 
-describe('PhaseAHandler', () => {
-    let handler: PhaseAHandler;
+describe('PlanningHandler', () => {
+    let handler: PlanningHandler;
     let mockContext: any;
     let mockFsm: any;
 
@@ -36,7 +36,7 @@ describe('PhaseAHandler', () => {
             checkSpecFilesPresent: vi.fn().mockReturnValue(true),
         };
 
-        handler = new PhaseAHandler();
+        handler = new PlanningHandler();
     });
 
     it('should successfully append tasks after recovery via agent if initial extraction fails', async () => {
@@ -63,7 +63,7 @@ describe('PhaseAHandler', () => {
             return undefined;
         });
 
-        const result = await handler.handle(Phase.PHASE_A, mockContext);
+        const result = await handler.handle(Phase.PLANNING, mockContext);
 
         expect(result).not.toBe(Phase.HALTED);
 
@@ -78,7 +78,7 @@ describe('PhaseAHandler', () => {
             { featureId: 'F001', taskId: 'T001', description: 'Existing Task', domain: 'hello_world_cli', project: 'project', status: 'NOT_STARTED' }
         ]);
 
-        const result = await handler.handle(Phase.PHASE_A, mockContext);
+        const result = await handler.handle(Phase.PLANNING, mockContext);
 
         expect(result).not.toBe(Phase.HALTED);
         expect(mockContext.extractTasksFromTacticalDesign).not.toHaveBeenCalled();
@@ -88,7 +88,7 @@ describe('PhaseAHandler', () => {
     it('should halt if no active feature is found', async () => {
         mockContext.getActiveFeature.mockReturnValueOnce(null);
 
-        const result = await handler.handle(Phase.PHASE_A, mockContext);
+        const result = await handler.handle(Phase.PLANNING, mockContext);
 
         expect(result).toBe(Phase.HALTED);
         expect(mockFsm.appendTasks).not.toHaveBeenCalled();
@@ -102,38 +102,38 @@ describe('PhaseAHandler', () => {
             ]);
         });
 
-        it('includes SIMPLE override rule when config.complexity is SIMPLE', async () => {
-            mockContext.config = { ...mockContext.config, complexity: 'SIMPLE' };
+        it('includes LOW override rule when config.complexity is LOW', async () => {
+            mockContext.config = { ...mockContext.config, complexity: 'LOW' };
 
-            await handler.handle(Phase.PHASE_A, mockContext);
-
-            const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'SIMPLE'");
-        });
-
-        it('includes COMPLEX override rule when config.complexity is COMPLEX', async () => {
-            mockContext.config = { ...mockContext.config, complexity: 'COMPLEX' };
-
-            await handler.handle(Phase.PHASE_A, mockContext);
+            await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'COMPLEX'");
+            expect(invokedPrompt).toContain("HIGHITY OVERRIDE: Classify as 'LOW'");
         });
 
-        it('omits COMPLEXITY OVERRIDE rule when config.complexity is undefined (AUTO)', async () => {
+        it('includes HIGH override rule when config.complexity is HIGH', async () => {
+            mockContext.config = { ...mockContext.config, complexity: 'HIGH' };
+
+            await handler.handle(Phase.PLANNING, mockContext);
+
+            const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
+            expect(invokedPrompt).toContain("HIGHITY OVERRIDE: Classify as 'HIGH'");
+        });
+
+        it('omits HIGHITY OVERRIDE rule when config.complexity is undefined (AUTO)', async () => {
             mockContext.config = { ...mockContext.config, complexity: undefined };
 
-            await handler.handle(Phase.PHASE_A, mockContext);
+            await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).not.toContain('Evaluate scope complexity between \'SIMPLE\' and \'COMPLEX\'');
+            expect(invokedPrompt).not.toContain('Evaluate scope complexity between \'LOW\' and \'HIGH\'');
         });
 
         it('reloads latest scope from SCOPE.md via fsm.loadScope', async () => {
             mockFsm.existScope.mockReturnValue(true);
             mockFsm.loadScope.mockReturnValue('updated scope from SCOPE.md');
 
-            await handler.handle(Phase.PHASE_A, mockContext);
+            await handler.handle(Phase.PLANNING, mockContext);
 
             expect(mockContext.config.scope).toBe('updated scope from SCOPE.md');
         });
@@ -141,14 +141,14 @@ describe('PhaseAHandler', () => {
         it('throws error if SCOPE.md does not exist', async () => {
             mockFsm.existScope.mockReturnValue(false);
 
-            await expect(handler.handle(Phase.PHASE_A, mockContext)).rejects.toThrow('Scope file (SCOPE.md) does not exist');
+            await expect(handler.handle(Phase.PLANNING, mockContext)).rejects.toThrow('Scope file (SCOPE.md) does not exist');
         });
 
         it('throws error if SCOPE.md is empty', async () => {
             mockFsm.existScope.mockReturnValue(true);
             mockFsm.loadScope.mockReturnValue('');
 
-            await expect(handler.handle(Phase.PHASE_A, mockContext)).rejects.toThrow('Scope file (SCOPE.md) is empty');
+            await expect(handler.handle(Phase.PLANNING, mockContext)).rejects.toThrow('Scope file (SCOPE.md) is empty');
         });
     });
 

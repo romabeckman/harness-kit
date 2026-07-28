@@ -75,19 +75,19 @@ describe('T29 — cmdInit', () => {
   it('collects rules and merges with defaults', async () => {
     mockInput.mockImplementation(async (args) => {
       if (args.message.includes('[Global (user)]')) return 'my global rule'
-      if (args.message.includes('[Phase A (Planning)]')) return 'phase A rule'
+      if (args.message.includes('[Planning]')) return 'phase A rule'
       return ''
     })
 
     await cmdInit(cwd, [])
 
-    expect(mockInput).toHaveBeenCalledTimes(6) // user, bootstrap, phase_a, phase_b, phase_c, phase_e
+    expect(mockInput).toHaveBeenCalledTimes(6) // user, bootstrap, planning, implementation, review, memory
     expect(mockSaveBootstrapConfig).toHaveBeenCalled()
     const savedConfig = mockSaveBootstrapConfig.mock.calls[0][0]
 
     // Check that our custom rules were injected
     expect(savedConfig.steeringRules.user).toContain('my global rule')
-    expect(savedConfig.steeringRules.phase_a).toContain('phase A rule')
+    expect(savedConfig.steeringRules.planning).toContain('phase A rule')
   })
 
   it('creates local settings if user confirms', async () => {

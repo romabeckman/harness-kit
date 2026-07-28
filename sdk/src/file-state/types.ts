@@ -64,21 +64,23 @@ export interface BootstrapConfig {
 export interface SteeringRulesConfig {
   user?: string[]
   bootstrap?: string[]
-  phase_a?: string[]
-  phase_b?: string[]
-  phase_c?: string[]
-  phase_e?: string[]
+  planning?: string[]
+  implementation?: string[]
+  review?: string[]
+  state_check?: string[]
+  memory?: string[]
 }
 
 export function createDefaultSteeringRules(initialRules?: string): SteeringRulesConfig {
   return {
     user: initialRules ? [initialRules] : [],
     bootstrap: [],
-    phase_a: [
+    planning: [
       'Create a minimum of 1 and a maximum of 6 tasks for each `003-\${PROJECT_NAME}-tactical-design.md` (maximum of 12 tasks total)'
     ],
-    phase_b: [],
-    phase_c: [],
-    phase_e: []
+    implementation: [],
+    review: [],
+    state_check: [],
+    memory: []
   }
 }

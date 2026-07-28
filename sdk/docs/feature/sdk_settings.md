@@ -21,11 +21,11 @@ Structure settings in a nested object. Use the first level for the runner type a
   "claude-cli": {
     "phases": {
       "bootstrap":   { "model": "claude-sonnet-4-6", "effort": "high" },
-      "phase_a":     { "model": "claude-sonnet-4-6", "effort": "high" },
-      "phase_b":     { "model": "claude-sonnet-4-6", "effort": "medium" },
-      "phase_c_tl":  { "model": "claude-sonnet-4-6", "effort": "low" },
-      "phase_c_adv": { "model": "claude-sonnet-4-6", "effort": "low" },
-      "phase_e":     { "model": "claude-sonnet-4-6", "effort": "medium" }
+      "PLANNING":     { "model": "claude-sonnet-4-6", "effort": "high" },
+      "implementation":     { "model": "claude-sonnet-4-6", "effort": "medium" },
+      "review_tl":  { "model": "claude-sonnet-4-6", "effort": "low" },
+      "review_adv": { "model": "claude-sonnet-4-6", "effort": "low" },
+      "memory":     { "model": "claude-sonnet-4-6", "effort": "medium" }
     }
   },
   "antigravity-cli": {
@@ -38,11 +38,11 @@ Structure settings in a nested object. Use the first level for the runner type a
 
 ### Supported Phase Keys
 - `bootstrap`: Bootstrap Handler
-- `phase_a`: Scope Refinement Handler
-- `phase_b`: TDD Implementation Handler
-- `phase_c_tl`: Grumpy Tech Lead Handler (Phase C #1)
-- `phase_c_adv`: Adversarial QA Handler (Phase C #2)
-- `phase_e`: Project Memory/Documentation Handler
+- `PLANNING`: Scope Refinement Handler
+- `implementation`: TDD Implementation Handler
+- `review_tl`: Grumpy Tech Lead Handler (Phase C #1)
+- `review_adv`: Adversarial QA Handler (Phase C #2)
+- `memory`: Project Memory/Documentation Handler
 
 ## PLATFORM-SPECIFIC SETTINGS PATHS
 Resolve global configurations automatically depending on the operating system environment variables:

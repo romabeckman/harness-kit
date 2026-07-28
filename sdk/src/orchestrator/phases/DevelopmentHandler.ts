@@ -7,9 +7,9 @@ import type { Feature, Task } from '../../file-state/types'
 import type { PhaseBPayload } from '../../context-assembler/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
-export class PhaseBHandler extends AbstractPhaseHandler {
+export class DevelopmentHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
-    if (phase !== Phase.PHASE_B) {
+    if (phase !== Phase.DEVELOPMENT) {
       return super.handle(phase, context)
     }
 
@@ -22,11 +22,11 @@ export class PhaseBHandler extends AbstractPhaseHandler {
 
     const shouldGoToPhaseC = this.shouldGoToPhaseC(activeFeature, tddOutputPath, context, pendingTasks)
     if (shouldGoToPhaseC) {
-      return Phase.PHASE_C
+      return Phase.REVIEW
     }
 
     await this.executeChunk(activeFeature, pendingTasks, tddOutputPath, context)
-    return Phase.PHASE_C
+    return Phase.REVIEW
   }
 
   private shouldGoToPhaseC(activeFeature: Feature, tddOutputPath: string, context: PhaseContext, pendingTasks: Task[]): boolean {
@@ -72,7 +72,7 @@ export class PhaseBHandler extends AbstractPhaseHandler {
       agent,
       mode: 'autonomous',
       prompt,
-      phaseKey: 'phase_b',
+      phaseKey: 'implementation',
     })
 
     PhaseDecisionLogger.logPhaseB(context.fsm, activeFeature, tddOutputPath)

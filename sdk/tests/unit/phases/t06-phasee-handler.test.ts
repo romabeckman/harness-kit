@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { PhaseEHandler } from '../../../src/orchestrator/phases/PhaseEHandler'
+import { MemoryHandler } from '../../../src/orchestrator/phases/MemoryHandler'
 import { Phase } from '../../../src/orchestrator/types'
 
 vi.mock('../../../src/context-assembler/ContextAssembler', () => ({
@@ -20,17 +20,17 @@ vi.mock('../../../src/orchestrator/services/PhaseDecisionLogger', () => ({
   },
 }))
 
-describe('PhaseEHandler', () => {
-  let handler: PhaseEHandler
+describe('MemoryHandler', () => {
+  let handler: MemoryHandler
   let mockContext: any
 
   beforeEach(() => {
     vi.clearAllMocks()
-    handler = new PhaseEHandler()
+    handler = new MemoryHandler()
 
     mockContext = {
       workingDir: '/mock/dir',
-      config: { projectPaths: ['/src'] },
+      config: { projectPaths: ['/src'], scope: 'mock scope' },
       invokeAgent: vi.fn().mockResolvedValue({ raw: '{}', artefacts: {} }),
       getActiveFeature: vi.fn().mockReturnValue({ id: 'F001', domain: 'cli', reworks: 0 }),
       fsm: {
@@ -44,30 +44,30 @@ describe('PhaseEHandler', () => {
     }
   })
 
-  it('delegates to next handler when phase is not PHASE_E', async () => {
-    const next = { handle: vi.fn().mockResolvedValue(Phase.PHASE_F) }
+  it('delegates to next handler when phase is not MEMORY', async () => {
+    const next = { handle: vi.fn().mockResolvedValue(Phase.TRANSITION) }
     handler.setNext(next as any)
-    const result = await handler.handle(Phase.PHASE_D, mockContext)
+    const result = await handler.handle(Phase.STATE_CHECK, mockContext)
     expect(next.handle).toHaveBeenCalled()
-    expect(result).toBe(Phase.PHASE_F)
+    expect(result).toBe(Phase.TRANSITION)
   })
 
-  it('invokes project-memory agent and proceeds to PHASE_F normally', async () => {
-    const result = await handler.handle(Phase.PHASE_E, mockContext)
+  it('invokes project-memory agent and proceeds to TRANSITION normally', async () => {
+    const result = await handler.handle(Phase.MEMORY, mockContext)
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
-      expect.objectContaining({ phaseKey: 'phase_e' })
+      expect.objectContaining({ phaseKey: 'memory' })
     )
-    expect(result).toBe(Phase.PHASE_F)
+    expect(result).toBe(Phase.DEPLOY)
   })
 
-  it('deve pular Phase E inteira quando skipSteering=true no config', async () => {
-    mockContext.config = { projectPaths: ['/src'], skipSteering: true }
+  it('deve pular Phase E inteira quando skipMemory=true no config', async () => {
+    mockContext.config = { projectPaths: ['/src'], skipMemory: true }
 
-    const result = await handler.handle(Phase.PHASE_E, mockContext)
+    const result = await handler.handle(Phase.MEMORY, mockContext)
 
     // No agent must be called
     expect(mockContext.invokeAgent).not.toHaveBeenCalled()
     // Must jump directly to Phase F
-    expect(result).toBe(Phase.PHASE_F)
+    expect(result).toBe(Phase.DEPLOY)
   })
 })

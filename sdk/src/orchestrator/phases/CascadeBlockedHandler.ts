@@ -17,6 +17,6 @@ export class CascadeBlockedHandler extends AbstractPhaseHandler {
       featureId: activeFeature.id,
       decision: `Cascade block: blocked because dependency is BLOCKED.`,
     })
-    return Phase.PHASE_D
+    return Phase.STATE_CHECK
   }
 }

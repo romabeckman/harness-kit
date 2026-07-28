@@ -36,7 +36,7 @@ describe('T24 — AgentInvocationService', () => {
 
     // Act
     const runSpy = vi.spyOn(fakeRunner, 'run')
-    await service.invokeAgent(invocation, Phase.PHASE_A, config, settings)
+    await service.invokeAgent(invocation, Phase.PLANNING, config, settings)
 
     // Assert
     expect(runSpy).toHaveBeenCalledWith(
@@ -59,7 +59,7 @@ describe('T24 — AgentInvocationService', () => {
 
     // Act
     const runSpy = vi.spyOn(fakeRunner, 'run')
-    await service.invokeAgent(invocation, Phase.PHASE_A, config, settings)
+    await service.invokeAgent(invocation, Phase.PLANNING, config, settings)
 
     // Assert
     expect(runSpy).toHaveBeenCalledWith(
@@ -94,7 +94,7 @@ describe('T24 — AgentInvocationService', () => {
 
     // Act
     const runSpy = vi.spyOn(fakeRunner, 'run')
-    await service.invokeAgent(invocation, Phase.PHASE_B, config, settings)
+    await service.invokeAgent(invocation, Phase.DEVELOPMENT, config, settings)
 
     // Assert
     expect(runSpy).toHaveBeenCalledWith(
@@ -120,7 +120,7 @@ describe('T24 — AgentInvocationService', () => {
 
     // Act
     const runSpy = vi.spyOn(fakeRunner, 'run')
-    await service.invokeAgent(invocation, Phase.PHASE_A, config, settings)
+    await service.invokeAgent(invocation, Phase.PLANNING, config, settings)
 
     // Assert
     expect(runSpy).toHaveBeenCalledWith(
@@ -141,7 +141,7 @@ describe('T24 — AgentInvocationService', () => {
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
 
     // Act
-    await service.invokeAgent(invocation, Phase.PHASE_A, config, settings)
+    await service.invokeAgent(invocation, Phase.PLANNING, config, settings)
 
     // Assert
     const debugOutput = stderrSpy.mock.calls.map(c => String(c[0])).join('')
@@ -163,7 +163,7 @@ describe('T24 — AgentInvocationService', () => {
     })
 
     // Act
-    await service.invokeAgent(invocation, Phase.PHASE_A, config, settings)
+    await service.invokeAgent(invocation, Phase.PLANNING, config, settings)
 
     // Assert
     expect(mockLedger.record).toHaveBeenCalledWith('my-skill', 'my-agent', mockUsage)

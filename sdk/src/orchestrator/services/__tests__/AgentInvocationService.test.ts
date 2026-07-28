@@ -86,13 +86,13 @@ describe('AgentInvocationService', () => {
       const service = new AgentInvocationService(runner, makeLedger())
 
       await service.invokeAgent(
-        makeInvocation({ phaseKey: 'phase_c_adv' }),
-        Phase.PHASE_C,
+        makeInvocation({ phaseKey: 'review_adv' }),
+        Phase.REVIEW,
         makeConfig(),
         settings
       )
 
-      expect(settings.resolve).toHaveBeenCalledWith('claude', 'phase_c_adv')
+      expect(settings.resolve).toHaveBeenCalledWith('claude', 'review_adv')
     })
   })
 
@@ -103,8 +103,8 @@ describe('AgentInvocationService', () => {
       const service = new AgentInvocationService(runner, makeLedger())
 
       await service.invokeAgent(
-        makeInvocation({ model: 'claude-haiku-4-5', phaseKey: 'phase_a' }),
-        Phase.PHASE_A,
+        makeInvocation({ model: 'claude-haiku-4-5', phaseKey: 'PLANNING' }),
+        Phase.PLANNING,
         makeConfig(),
         settings
       )
@@ -119,8 +119,8 @@ describe('AgentInvocationService', () => {
       const service = new AgentInvocationService(runner, makeLedger())
 
       await service.invokeAgent(
-        makeInvocation({ effort: 'low', phaseKey: 'phase_b' }),
-        Phase.PHASE_B,
+        makeInvocation({ effort: 'low', phaseKey: 'implementation' }),
+        Phase.DEVELOPMENT,
         makeConfig(),
         settings
       )
@@ -135,8 +135,8 @@ describe('AgentInvocationService', () => {
       const service = new AgentInvocationService(runner, makeLedger())
 
       await service.invokeAgent(
-        makeInvocation({ model: 'original-model', effort: 'high', phaseKey: 'phase_a' }),
-        Phase.PHASE_A,
+        makeInvocation({ model: 'original-model', effort: 'high', phaseKey: 'PLANNING' }),
+        Phase.PLANNING,
         makeConfig(),
         settings
       )
@@ -154,7 +154,7 @@ describe('AgentInvocationService', () => {
 
       await service.invokeAgent(
         makeInvocation({ additionalDirs: ['/existing/dir'] }),
-        Phase.PHASE_B,
+        Phase.DEVELOPMENT,
         makeConfig({ projectPaths: ['/proj/one', '/proj/two'] }),
         makeSettings()
       )
@@ -169,7 +169,7 @@ describe('AgentInvocationService', () => {
 
       await service.invokeAgent(
         makeInvocation({ additionalDirs: ['/dir'] }),
-        Phase.PHASE_B,
+        Phase.DEVELOPMENT,
         makeConfig({ projectPaths: [] }),
         makeSettings()
       )
@@ -191,7 +191,7 @@ describe('AgentInvocationService', () => {
 
       await service.invokeAgent(
         makeInvocation(),
-        Phase.PHASE_A,
+        Phase.PLANNING,
         makeConfig({ timeoutMs: 12345 }),
         settings
       )
@@ -210,13 +210,13 @@ describe('AgentInvocationService', () => {
       const service = new AgentInvocationService(runner, makeLedger())
 
       await service.invokeAgent(
-        makeInvocation({ phaseKey: 'phase_a' }),
-        Phase.PHASE_A,
+        makeInvocation({ phaseKey: 'PLANNING' }),
+        Phase.PLANNING,
         makeConfig({ timeoutMs: undefined }),
         settings
       )
 
-      expect(settings.getTimeoutMs).toHaveBeenCalledWith('claude', 'phase_a')
+      expect(settings.getTimeoutMs).toHaveBeenCalledWith('claude', 'PLANNING')
     })
 
     it('falls back to DEFAULT_PHASE_TIMEOUT_MS when both config and settings return undefined', async () => {
@@ -232,7 +232,7 @@ describe('AgentInvocationService', () => {
 
       await service.invokeAgent(
         makeInvocation(),
-        Phase.PHASE_B,
+        Phase.DEVELOPMENT,
         makeConfig({ timeoutMs: undefined }),
         settings
       )
@@ -258,7 +258,7 @@ describe('AgentInvocationService', () => {
 
       await service.invokeAgent(
         makeInvocation({ skill: 'tdd-orchestrator', agent: 'developer-backend' }),
-        Phase.PHASE_B,
+        Phase.DEVELOPMENT,
         makeConfig(),
         makeSettings()
       )
@@ -271,7 +271,7 @@ describe('AgentInvocationService', () => {
       const ledger = makeLedger()
       const service = new AgentInvocationService(runner, ledger)
 
-      await service.invokeAgent(makeInvocation(), Phase.PHASE_B, makeConfig(), makeSettings())
+      await service.invokeAgent(makeInvocation(), Phase.DEVELOPMENT, makeConfig(), makeSettings())
 
       expect(ledger.record).not.toHaveBeenCalled()
     })
@@ -287,7 +287,7 @@ describe('AgentInvocationService', () => {
       const service = new AgentInvocationService(runner, makeLedger())
 
       await expect(
-        service.invokeAgent(makeInvocation(), Phase.PHASE_B, makeConfig({ timeoutMs: 0 }), makeSettings())
+        service.invokeAgent(makeInvocation(), Phase.DEVELOPMENT, makeConfig({ timeoutMs: 0 }), makeSettings())
       ).rejects.toThrow('runner crashed')
     })
   })

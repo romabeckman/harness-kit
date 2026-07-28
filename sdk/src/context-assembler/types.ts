@@ -38,10 +38,6 @@ export interface PhaseCPayload extends ContextPayload {
 }
 
 export interface PhaseEPayload extends ContextPayload {
-  domain: string
-  scopeDescription: string
-  completedCycles: number
-  recentDecisions: string[]
   projectPaths: string[]
   workingDir: string
   steeringRules?: string[]

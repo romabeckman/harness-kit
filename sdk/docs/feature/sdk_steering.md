@@ -23,7 +23,7 @@ docs/product/
 | Action Type | Fields | Effect |
 |---|---|---|
 | `add_rule` | `rule: string` | Appends the rule string to `BOOTSTRAP-CONFIG.json#steeringRules[]`. Injected into all future phase payloads via `ContextAssembler`. |
-| `rollback` | `targetPhase: Phase` | Sets `currentPhase` to the target phase in both in-memory state and `BOOTSTRAP-CONFIG.json`. Resets all active tasks to `NOT_STARTED` when rolling back to `PHASE_A` or `PHASE_B`. |
+| `rollback` | `targetPhase: Phase` | Sets `currentPhase` to the target phase in both in-memory state and `BOOTSTRAP-CONFIG.json`. Resets all active tasks to `NOT_STARTED` when rolling back to `PLANNING` or `DEVELOPMENT`. |
 | `override_score` | `tl?: number; adv?: number` | Overwrites `scoreTL` and `scoreAdv` on the active feature. Forces the next validation to use the provided scores. |
 
 ---

@@ -46,7 +46,7 @@ afterEach(() => {
   rmSync(tmpDir, { recursive: true, force: true })
 })
 
-describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
+describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
   it('runBootstrap creates product files when none exist', async () => {
     // No product files — should trigger ensureProductFiles
     const orchestrator = new HarnessOrchestrator({
@@ -57,14 +57,14 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
-    // Setup fake so PHASE_A calls succeed and halt
+    // Setup fake so PLANNING calls succeed and halt
     // Phase A invokes scope-refinement, then we need spec files to advance to B
     // For this test we just verify BOOTSTRAP creates files and transitions
     fake.setResponse('scope-refinement', {
       raw: JSON.stringify({ specFilesCreated: true }),
     })
 
-    // We'll test that BOOTSTRAP runs and PHASE_A is invoked
+    // We'll test that BOOTSTRAP runs and PLANNING is invoked
     // after which without spec files it loops — we limit by checking state
     await orchestrator.runBootstrapOnly()
 
@@ -86,7 +86,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     expect(state.currentPhase).toBe(Phase.BOOTSTRAP)
   })
 
-  it('getState returns PHASE_A after BOOTSTRAP when product files present', async () => {
+  it('getState returns PLANNING after BOOTSTRAP when product files present', async () => {
     setupProductFiles()
     const orchestrator = new HarnessOrchestrator({
       scope: 'test-scope',
@@ -95,12 +95,12 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
-    // With product files present, re-entry resolves to PHASE_A
+    // With product files present, re-entry resolves to PLANNING
     const state = orchestrator.getState()
-    expect(state.currentPhase).toBe(Phase.PHASE_A)
+    expect(state.currentPhase).toBe(Phase.PLANNING)
   })
 
-  it('PHASE_A invokes scope-refinement agent with correct payload', async () => {
+  it('PLANNING invokes scope-refinement agent with correct payload', async () => {
     // Use fresh files with NOT_STARTED feature and no tasks yet
     setupProductFiles()
 
@@ -155,8 +155,8 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
 
   it('persistPhase writes currentPhase to BOOTSTRAP-CONFIG.json before executing phase', async () => {
     setupProductFiles()
-    // Orchestrator reads product files → resolves to PHASE_A
-    // On first iteration it calls persistPhase() then dispatch(PHASE_A)
+    // Orchestrator reads product files → resolves to PLANNING
+    // On first iteration it calls persistPhase() then dispatch(PLANNING)
     // After run() we should see currentPhase in BOOTSTRAP-CONFIG.json
     const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
     let scopeCount = 0
@@ -218,8 +218,8 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
-    // Feature is IN_PROGRESS, no spec files yet → PHASE_A
-    expect(orchestrator.getState().currentPhase).toBe(Phase.PHASE_A)
+    // Feature is IN_PROGRESS, no spec files yet → PLANNING
+    expect(orchestrator.getState().currentPhase).toBe(Phase.PLANNING)
   })
 
   it('dispatch() calls runBootstrap() before loadBacklog() when phase is BOOTSTRAP (no ENOENT)', async () => {
@@ -251,7 +251,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
-    // State resolved to PHASE_A (product files exist), so runBootstrapOnly is a no-op
+    // State resolved to PLANNING (product files exist), so runBootstrapOnly is a no-op
     // To test runBootstrap behaviour directly we construct one with BOOTSTRAP phase:
     // ... build fresh orchestrator without product files, call ensureProductFiles manually,
     // then populate the backlog so runBootstrap skips the agent.
@@ -274,8 +274,8 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir2 })
 
-      // Resolved to PHASE_A because backlog already has features
-      expect(orc2.getState().currentPhase).toBe(Phase.PHASE_A)
+      // Resolved to PLANNING because backlog already has features
+      expect(orc2.getState().currentPhase).toBe(Phase.PLANNING)
 
       // No bootstrap agent invocation should have happened
       const bootstrapCalls = fake2.invocations.filter(i => i.agent === 'software-architect')
@@ -413,7 +413,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
     expect(resumedOrchestrator.config.scope).toBe('my-custom-original-project-scope')
   })
 
-  it('re-entry resolves to PHASE_B when spec directory exists, even if empty', () => {
+  it('re-entry resolves to DEVELOPMENT when spec directory exists, even if empty', () => {
     setupProductFiles()
     // Mark feature IN_PROGRESS in backlog to ensure we're not in bootstrap
     const backlogInProgress = [
@@ -435,12 +435,12 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PHASE_A', () => {
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
-    // With spec dir present, re-entry should resolve to PHASE_B.
+    // With spec dir present, re-entry should resolve to DEVELOPMENT.
     // This will fail with the old implementation because the dir is empty.
-    expect(orchestrator.getState().currentPhase).toBe(Phase.PHASE_B)
+    expect(orchestrator.getState().currentPhase).toBe(Phase.DEVELOPMENT)
   })
 
-  it('PHASE_A throws an error if no tasks are extracted and no existing tasks exist', async () => {
+  it('PLANNING throws an error if no tasks are extracted and no existing tasks exist', async () => {
     setupProductFiles()
 
     const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')

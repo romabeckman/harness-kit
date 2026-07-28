@@ -6,7 +6,7 @@ import type { Feature, Task, BootstrapConfig } from '../../src/file-state/types'
 
 const defaultConfig: BootstrapConfig = {
   scoreThresholdTL: 0.70,
-      scoreThresholdAdv: 0.70,
+  scoreThresholdAdv: 0.70,
   completionCriteria: { maxReworks: 2 },
   cycleCounter: { completedCycles: 0 },
 }
@@ -41,9 +41,9 @@ describe('T09 — ReentryResolver', () => {
   describe('TS-U-37: Persisted currentPhase in config takes precedence', () => {
     it('returns the persisted phase', () => {
       const state = makeState({
-        config: { ...defaultConfig, currentPhase: Phase.PHASE_E },
+        config: { ...defaultConfig, currentPhase: Phase.MEMORY },
       })
-      expect(ReentryResolver.resolve(state)).toBe(Phase.PHASE_E)
+      expect(ReentryResolver.resolve(state)).toBe(Phase.MEMORY)
     })
   })
 
@@ -54,19 +54,19 @@ describe('T09 — ReentryResolver', () => {
     })
   })
 
-  describe('TS-U-39: All files exist, feature NOT_STARTED, spec absent → PHASE_A', () => {
-    it('returns PHASE_A', () => {
+  describe('TS-U-39: All files exist, feature NOT_STARTED, spec absent → PLANNING', () => {
+    it('returns PLANNING', () => {
       const state = makeState({
         activeFeature: { ...baseFeature, status: 'NOT_STARTED' },
         specFilesPresent: false,
         tddOutputPresent: false,
       })
-      expect(ReentryResolver.resolve(state)).toBe(Phase.PHASE_A)
+      expect(ReentryResolver.resolve(state)).toBe(Phase.PLANNING)
     })
   })
 
-  describe('TS-U-40: Spec files present → PHASE_B', () => {
-    it('returns PHASE_B when spec present, tasks NOT_STARTED, TDD-OUTPUT absent', () => {
+  describe('TS-U-40: Spec files present → DEVELOPMENT', () => {
+    it('returns DEVELOPMENT when spec present, tasks NOT_STARTED, TDD-OUTPUT absent', () => {
       const state = makeState({
         specFilesPresent: true,
         tddOutputPresent: false,
@@ -74,24 +74,24 @@ describe('T09 — ReentryResolver', () => {
         allTasksCompleted: false,
         activeFeature: { ...baseFeature, status: 'IN_PROGRESS' },
       })
-      expect(ReentryResolver.resolve(state)).toBe(Phase.PHASE_B)
+      expect(ReentryResolver.resolve(state)).toBe(Phase.DEVELOPMENT)
     })
   })
 
-  describe('TS-U-41: TDD-OUTPUT present and all tasks COMPLETED → PHASE_C', () => {
-    it('returns PHASE_C', () => {
+  describe('TS-U-41: TDD-OUTPUT present and all tasks COMPLETED → REVIEW', () => {
+    it('returns REVIEW', () => {
       const state = makeState({
         tddOutputPresent: true,
         allTasksCompleted: true,
         tasks: [{ ...baseTask, status: 'COMPLETED' }],
         activeFeature: { ...baseFeature, status: 'IN_PROGRESS' },
       })
-      expect(ReentryResolver.resolve(state)).toBe(Phase.PHASE_C)
+      expect(ReentryResolver.resolve(state)).toBe(Phase.REVIEW)
     })
   })
 
-  describe('TS-U-42: Feature COMPLETED, more NOT_STARTED features → PHASE_D', () => {
-    it('returns PHASE_D', () => {
+  describe('TS-U-42: Feature COMPLETED, more NOT_STARTED features → STATE_CHECK', () => {
+    it('returns STATE_CHECK', () => {
       const features = [
         { ...baseFeature, id: 'F001', status: 'COMPLETED' as const },
         { ...baseFeature, id: 'F002', status: 'NOT_STARTED' as const },
@@ -101,18 +101,18 @@ describe('T09 — ReentryResolver', () => {
         activeFeature: features[0],
         allTasksCompleted: true,
       })
-      expect(ReentryResolver.resolve(state)).toBe(Phase.PHASE_D)
+      expect(ReentryResolver.resolve(state)).toBe(Phase.STATE_CHECK)
     })
   })
 
-  describe('TS-U-43: All features terminal → PHASE_D (final loop pass)', () => {
-    it('returns PHASE_D when no NOT_STARTED feature', () => {
+  describe('TS-U-43: All features terminal → STATE_CHECK (final loop pass)', () => {
+    it('returns STATE_CHECK when no NOT_STARTED feature', () => {
       const features = [
         { ...baseFeature, id: 'F001', status: 'COMPLETED' as const },
         { ...baseFeature, id: 'F002', status: 'FAILED' as const },
       ]
       const state = makeState({ features, activeFeature: features[0] })
-      expect(ReentryResolver.resolve(state)).toBe(Phase.PHASE_D)
+      expect(ReentryResolver.resolve(state)).toBe(Phase.STATE_CHECK)
     })
   })
 
@@ -131,9 +131,9 @@ describe('T09 — ReentryResolver', () => {
   })
 
   describe('TS-U-45: Table is ordered — first matching condition wins', () => {
-    it('specFilesPresent AND allTasksCompleted returns PHASE_C (tdd-output condition first)', () => {
-      // Both PHASE_B condition (spec present) and PHASE_C condition (tdd-output+completed) match.
-      // PHASE_C condition must come before PHASE_B in table → returns PHASE_C
+    it('specFilesPresent AND allTasksCompleted returns REVIEW (tdd-output condition first)', () => {
+      // Both DEVELOPMENT condition (spec present) and REVIEW condition (tdd-output+completed) match.
+      // REVIEW condition must come before DEVELOPMENT in table → returns REVIEW
       const state = makeState({
         specFilesPresent: true,
         tddOutputPresent: true,
@@ -141,7 +141,7 @@ describe('T09 — ReentryResolver', () => {
         tasks: [{ ...baseTask, status: 'COMPLETED' }],
         activeFeature: { ...baseFeature, status: 'IN_PROGRESS' },
       })
-      expect(ReentryResolver.resolve(state)).toBe(Phase.PHASE_C)
+      expect(ReentryResolver.resolve(state)).toBe(Phase.REVIEW)
     })
   })
 })

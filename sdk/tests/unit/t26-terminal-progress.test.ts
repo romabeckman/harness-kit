@@ -37,9 +37,9 @@ describe('T26 — TerminalProgress', () => {
 
   it('TC-TP-02: startSpinner cleans up previous timer if called again', () => {
     // Arrange & Act
-    TerminalProgress.startSpinner('PHASE_A', 'msg A')
+    TerminalProgress.startSpinner('PLANNING', 'msg A')
     const stopSpy = vi.spyOn(TerminalProgress, 'stopSpinner')
-    TerminalProgress.startSpinner('PHASE_B', 'msg B')
+    TerminalProgress.startSpinner('DEVELOPMENT', 'msg B')
 
     // Assert
     expect(stopSpy).toHaveBeenCalled()
@@ -48,7 +48,7 @@ describe('T26 — TerminalProgress', () => {
 
   it('TC-TP-03: stopSpinner stops interval, clears line and shows cursor', () => {
     // Arrange
-    TerminalProgress.startSpinner('PHASE_C', 'validating')
+    TerminalProgress.startSpinner('REVIEW', 'validating')
     stderrSpy.mockClear()
 
     // Act
@@ -61,18 +61,18 @@ describe('T26 — TerminalProgress', () => {
 
   it('TC-TP-04: drawProgressBar draws progress bar to stdout', () => {
     // Arrange & Act
-    TerminalProgress.drawProgressBar('PHASE_B', 10, 5, 'Progress description')
+    TerminalProgress.drawProgressBar('DEVELOPMENT', 10, 5, 'Progress description')
 
     // Assert
     const output = stdoutSpy.mock.calls.map((c: any[]) => String(c[0])).join('')
-    expect(output).toContain('PHASE_B')
+    expect(output).toContain('DEVELOPMENT')
     expect(output).toContain('50%')
     expect(output).toContain('Progress description')
   })
 
   it('TC-TP-05: drawProgressBar clamps ratio when total is 0 or less', () => {
     // Arrange & Act
-    TerminalProgress.drawProgressBar('PHASE_B', 0, 5, 'Zero total')
+    TerminalProgress.drawProgressBar('DEVELOPMENT', 0, 5, 'Zero total')
 
     // Assert
     const output = stdoutSpy.mock.calls.map((c: any[]) => String(c[0])).join('')

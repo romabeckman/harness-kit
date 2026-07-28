@@ -8,45 +8,45 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   'claude': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'claude-5-sonnet', effort: 'medium' },
-      phase_a: { model: 'claude-5-sonnet', effort: 'high' },
-      phase_b: { model: 'claude-5-sonnet', effort: 'medium' },
-      phase_c_tl: { model: 'claude-5-sonnet', effort: 'low' },
-      phase_c_adv: { model: 'claude-5-sonnet', effort: 'low' },
-      phase_e: { model: 'claude-5-sonnet', effort: 'low' },
+      bootstrap: { model: 'anthropic.claude-5-sonnet', effort: 'medium' },
+      planning: { model: 'anthropic.claude-5-sonnet', effort: 'high' },
+      implementation: { model: 'anthropic.claude-5-sonnet', effort: 'medium' },
+      review_tl: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
+      review_adv: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
+      memory: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
     }
   },
   'antigravity': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gemini-3.6-flash', effort: 'high' },
-      phase_a: { model: 'gemini-3.1-pro', effort: 'high' },
-      phase_b: { model: 'gemini-3.6-flash', effort: 'medium' },
-      phase_c_tl: { model: 'gemini-3.1-pro', effort: 'low' },
-      phase_c_adv: { model: 'gemini-3.1-pro', effort: 'low' },
-      phase_e: { model: 'gemini-3.6-flash', effort: 'low' },
+      planning: { model: 'gemini-3.1-pro', effort: 'high' },
+      implementation: { model: 'gemini-3.6-flash', effort: 'medium' },
+      review_tl: { model: 'gemini-3.1-pro', effort: 'low' },
+      review_adv: { model: 'gemini-3.1-pro', effort: 'low' },
+      memory: { model: 'gemini-3.6-flash', effort: 'low' },
     }
   },
   'copilot': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
-      phase_a: { model: 'claude-5-sonnet', effort: 'high' },
-      phase_b: { model: 'gpt-5.3-codex', effort: 'medium' },
-      phase_c_tl: { model: 'gpt-5.3-codex', effort: 'low' },
-      phase_c_adv: { model: 'gpt-5.3-codex', effort: 'low' },
-      phase_e: { model: 'gpt-5.3-codex', effort: 'low' },
+      planning: { model: 'anthropic.claude-5-sonnet', effort: 'high' },
+      implementation: { model: 'gpt-5.3-codex', effort: 'medium' },
+      review_tl: { model: 'gpt-5.3-codex', effort: 'low' },
+      review_adv: { model: 'gpt-5.3-codex', effort: 'low' },
+      memory: { model: 'gpt-5.3-codex', effort: 'low' },
     }
   },
   'cursor': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
-      phase_a: { model: 'claude-5-sonnet', effort: 'high' },
-      phase_b: { model: 'gpt-5.3-codex', effort: 'medium' },
-      phase_c_tl: { model: 'gpt-5.3-codex', effort: 'low' },
-      phase_c_adv: { model: 'gpt-5.3-codex', effort: 'low' },
-      phase_e: { model: 'gpt-5.3-codex', effort: 'low' },
+      planning: { model: 'anthropic.claude-5-sonnet', effort: 'high' },
+      implementation: { model: 'gpt-5.3-codex', effort: 'medium' },
+      review_tl: { model: 'gpt-5.3-codex', effort: 'low' },
+      review_adv: { model: 'gpt-5.3-codex', effort: 'low' },
+      memory: { model: 'gpt-5.3-codex', effort: 'low' },
     }
   }
 }

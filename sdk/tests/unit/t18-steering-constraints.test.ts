@@ -36,7 +36,7 @@ describe('Steering Rules Injection', () => {
     expect(payloadC.steeringRules).toContain('User Rule 1')
     expect(payloadC.steeringRules).toContain('User Rule 2')
 
-    const payloadE = ContextAssembler.buildPhaseEPayload(feature, [], 1, [], 'workdir', rules)
+    const payloadE = ContextAssembler.buildPhaseEPayload(['/path'], 'workdir', rules)
     expect(payloadE.steeringRules).toContain('User Rule 1')
     expect(payloadE.steeringRules).toContain('User Rule 2')
   })
@@ -44,7 +44,7 @@ describe('Steering Rules Injection', () => {
   it('should include Phase B specific rule in Phase B payload rules list', () => {
     const rules: SteeringRulesConfig = {
       user: ['User Rule 1'],
-      phase_b: ['Limit of 5 tasks for feature']
+      implementation: ['Limit of 5 tasks for feature']
     }
     const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, 0, rules)
     expect(payloadB.steeringRules).toEqual([
@@ -55,7 +55,7 @@ describe('Steering Rules Injection', () => {
 
   it('should include phase-specific rules without formatting or prefixing', () => {
     const rules: SteeringRulesConfig = {
-      phase_b: ['Phase B: Limit of 5 tasks for feature']
+      implementation: ['Phase B: Limit of 5 tasks for feature']
     }
     const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, 0, rules)
     expect(payloadB.steeringRules).toEqual([
@@ -65,7 +65,7 @@ describe('Steering Rules Injection', () => {
 
   it('should not affect Phase A, C, or E payloads with Phase B rules', () => {
     const rules: SteeringRulesConfig = {
-      phase_b: ['Limit of 5 tasks for feature']
+      implementation: ['Limit of 5 tasks for feature']
     }
     const payloadA = ContextAssembler.buildPhaseAPayload(feature, '/dummy/workdir', ['/path'], 'Original Scope', rules)
     expect(payloadA.steeringRules).toBeUndefined()
@@ -73,7 +73,7 @@ describe('Steering Rules Injection', () => {
     const payloadC = ContextAssembler.buildPhaseCPayload(feature, ['/path'], rules)
     expect(payloadC.steeringRules).toBeUndefined()
 
-    const payloadE = ContextAssembler.buildPhaseEPayload(feature, [], 1, [], 'workdir', rules)
+    const payloadE = ContextAssembler.buildPhaseEPayload(['/path'], 'workdir', rules)
     expect(payloadE.steeringRules).toBeUndefined()
   })
 

@@ -9,12 +9,14 @@ Reference for all `invokeAgent` calls executed during the orchestrator lifecycle
 | Phase | Skill (metadata) | Agent | Prompt Source | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | **Bootstrap** | `autonomous-orchestrator:bootstrap` | `software-architect` | Custom `prompt` string | Parses project scope and generates `BACKLOG.md` with feature IDs, priorities and statuses. |
-| **Phase A** — Planning | `scope-refinement` | `software-architect` | `ContextAssembler.buildPhaseAPayload()` | Refines feature scope, generates tactical design specs and test scenarios under `docs/specs/{domain}/`. |
-| **Phase B** — Implementation | `tdd-orchestrator` | `developer-backend` | `ContextAssembler.buildPhaseBPayload()` | Executes TDD cycles (red → green → refactor). Re-runs with rework log on retry. |
-| **Phase C** — Tech Lead review | `the-grumpy-tech-lead` | `harness-tech-lead` | `ContextAssembler.buildPhaseCPayload()` | Technical code review. Returns `scoreTL` in JSON. |
-| **Phase C** — Adversarial QA | `adversarial-qa` | `harness-qa` | `ContextAssembler.buildPhaseCPayload()` | Edge-case and security testing. Returns `scoreAdv`, `hasHighCriticalVuln`, `isCrashing` in JSON. |
-| **Phase D** — State Check | _(none)_ | _(none)_ | _(none)_ | Pure state management — evaluates completion criteria, no agent call. |
-| **Phase E** — Memory | `project-memory` | `developer-backend` | `ContextAssembler.buildPhaseEPayload()` | Writes permanent feature records to `docs/feature/{domain}.md`. |
+| **Planning** (Phase A) | `scope-refinement` | `software-architect` | `ContextAssembler.buildPhaseAPayload()` | Refines feature scope, generates tactical design specs and test scenarios under `docs/specs/{domain}/`. |
+| **Development** (Phase B) | `tdd-orchestrator` | `developer-backend` | `ContextAssembler.buildPhaseBPayload()` | Executes TDD cycles (red → green → refactor). Re-runs with rework log on retry. |
+| **Review** (Phase C) — Tech Lead | `the-grumpy-tech-lead` | `harness-tech-lead` | `ContextAssembler.buildPhaseCPayload()` | Technical code review. Returns `scoreTL` in JSON. |
+| **Review** (Phase C) — Adversarial QA | `adversarial-qa` | `harness-qa` | `ContextAssembler.buildPhaseCPayload()` | Edge-case and security testing. Returns `scoreAdv`, `hasHighCriticalVuln`, `isCrashing` in JSON. |
+| **State Check** (Phase D) | _(none)_ | _(none)_ | _(none)_ | Pure state management — evaluates completion criteria, no agent call. |
+| **Memory** (Phase E) | `project-memory` | `developer-backend` | `ContextAssembler.buildPhaseEPayload()` | Writes permanent feature records to `docs/feature/{domain}.md`. |
+| **Transition** (Phase F) | _(none)_ | _(none)_ | _(none)_ | Advances to next NOT_STARTED feature or cascades BLOCKED status. When all features done → DEPLOY. |
+| **Deploy** (Phase DEPLOY) | _(none)_ | _(none)_ | _(none)_ | Runs `git add --all`, `git commit`, `git push` for each project path. No conflict resolution. Skippable via `--skip-deploy`. |
 
 > [!IMPORTANT]
 > **Phase C calls are sequential, not parallel.** The tech lead agent completes before the adversarial QA agent starts. Both receive the same payload.
@@ -34,10 +36,10 @@ Every phase payload is enriched with **steering rules** at the moment the phase 
 interface SteeringRulesConfig {
   user?:      string[]   // global — injected into every phase
   bootstrap?: string[]
-  phase_a?:   string[]
-  phase_b?:   string[]
-  phase_c?:   string[]
-  phase_e?:   string[]
+  planning?:   string[]
+  implementation?:   string[]
+  review?:   string[]
+  memory?:   string[]
 }
 ```
 
@@ -51,10 +53,10 @@ Defined in [`src/file-state/types.ts`](./src/file-state/types.ts):
 | :--- | :--- |
 | `user` | _(empty — populated via `--steering` flag or `hrns init` wizard)_ |
 | `bootstrap` | Granularity rule: each feature is one deliverable chunk. Never mix multiple unrelated projects in a single feature. |
-| `phase_a` | • Min 1 / max 5 tasks per tactical-design doc (10 total max)<br>• Classify scope as `SIMPLE` (basic CRUD, minor enhancements) → generate only `003` + `004` docs<br>• Classify scope as `COMPLEX` (new core features, cross-domain, integrations) → generate all docs (`001`–`004`) |
-| `phase_b` | _(empty by default)_ |
-| `phase_c` | • `harness-tech-lead` must write its review JSON to `docs/specs/${domain}/TL.json`<br>• `harness-qa` must write its review JSON to `docs/specs/${domain}/QA.json` |
-| `phase_e` | _(empty by default)_ |
+| `planning` | • Min 1 / max 5 tasks per tactical-design doc (10 total max)<br>• Classify scope as `LOW` (basic CRUD, minor enhancements) → generate only `003` + `004` docs<br>• Classify scope as `HIGH` (new core features, cross-domain, integrations) → generate all docs (`001`–`004`) |
+| `implementation` | _(empty by default)_ |
+| `review` | • `harness-tech-lead` must write its review JSON to `docs/specs/${domain}/TL.json`<br>• `harness-qa` must write its review JSON to `docs/specs/${domain}/QA.json` |
+| `memory` | _(empty by default)_ |
 
 ### Adding rules
 
@@ -69,7 +71,7 @@ Rules can be added in three ways:
    ```json
    {
      "steeringRules": {
-       "phase_b": ["Always write JSDoc for public functions"]
+       "implementation": ["Always write JSDoc for public functions"]
      }
    }
    ```
@@ -105,7 +107,7 @@ The orchestrator re-enters at the exact phase that was interrupted. To increase 
 {
   "claude": {
     "phases": {
-      "phase_b": { "timeoutMs": 3600000 }
+      "implementation": { "timeoutMs": 3600000 }
     }
   }
 }

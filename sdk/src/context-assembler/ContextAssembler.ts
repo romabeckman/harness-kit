@@ -30,7 +30,7 @@ export class ContextAssembler {
       featureTitle: feature.title,
       projectPaths,
     }
-    const flattened = this.flattenRules(Phase.PHASE_A, steeringRules)
+    const flattened = this.flattenRules(Phase.PLANNING, steeringRules)
     if (flattened) {
       payload.steeringRules = flattened
     }
@@ -60,7 +60,7 @@ export class ContextAssembler {
     if (isRetry) {
       payload.reworkLogPath = join('docs', 'specs', feature.domain, 'REWORK-LOG.md')
     }
-    const flattened = this.flattenRules(Phase.PHASE_B, steeringRules)
+    const flattened = this.flattenRules(Phase.DEVELOPMENT, steeringRules)
     if (flattened) {
       payload.steeringRules = flattened
     }
@@ -78,7 +78,7 @@ export class ContextAssembler {
       projectPaths,
       totalReworks: feature.reworks || 0
     }
-    const flattened = this.flattenRules(Phase.PHASE_C, steeringRules)
+    const flattened = this.flattenRules(Phase.REVIEW, steeringRules)
     if (flattened) {
       payload.steeringRules = flattened
     }
@@ -89,22 +89,15 @@ export class ContextAssembler {
    * Phase E: project memory — domain, scopeDescription, completedCycles, recentDecisions
    */
   static buildPhaseEPayload(
-    feature: Feature,
     projectPaths: string[],
-    completedCycles: number,
-    decisions: string[],
     workingDir: string,
     steeringRules?: SteeringRulesConfig,
   ): PhaseEPayload {
     const payload: PhaseEPayload = {
-      domain: feature.domain,
       projectPaths,
-      scopeDescription: feature.title,
-      completedCycles,
       workingDir,
-      recentDecisions: decisions
     }
-    const flattened = this.flattenRules(Phase.PHASE_E, steeringRules)
+    const flattened = this.flattenRules(Phase.MEMORY, steeringRules)
     if (flattened) {
       payload.steeringRules = flattened
     }
@@ -119,14 +112,14 @@ export class ContextAssembler {
 
     if (phase === Phase.BOOTSTRAP) {
       phaseRules = configRules.bootstrap
-    } else if (phase === Phase.PHASE_A) {
-      phaseRules = configRules.phase_a
-    } else if (phase === Phase.PHASE_B) {
-      phaseRules = configRules.phase_b
-    } else if (phase === Phase.PHASE_C) {
-      phaseRules = configRules.phase_c
-    } else if (phase === Phase.PHASE_E) {
-      phaseRules = configRules.phase_e
+    } else if (phase === Phase.PLANNING) {
+      phaseRules = configRules.planning
+    } else if (phase === Phase.DEVELOPMENT) {
+      phaseRules = configRules.implementation
+    } else if (phase === Phase.REVIEW) {
+      phaseRules = configRules.review
+    } else if (phase === Phase.MEMORY) {
+      phaseRules = configRules.memory
     }
 
     if (phaseRules && phaseRules.length > 0) {

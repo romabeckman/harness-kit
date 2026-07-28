@@ -1,6 +1,6 @@
 {
   "name": "@romabeckman/hrns",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "CLI and SDK for harness-kit autonomous TDD orchestration",
   "license": "MIT",
   "main": "dist/index.js",
@@ -45,5 +45,8 @@
   },
   "overrides": {
     "undici": "^6.27.0"
+  },
+  "allowScripts": {
+    "koffi@3.1.2": true
   }
 }

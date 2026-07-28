@@ -34,7 +34,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
 
     const existing = context.fsm.loadBacklog()
 
-    if (existing.length > 0) return Phase.PHASE_A
+    if (existing.length > 0) return Phase.PLANNING
 
     const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
     const backlogPath = join(productDir, 'BACKLOG.md')
@@ -66,7 +66,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `# COLUMN RULES`,
       `- ID: F001, F002, ... (sequential, no gaps)`,
       `- Title: short description with objective (max 500 chars)`,
-      `- Domain: snake_case, max 50 chars`,
+      `- Domain: is unique, never repeat, snake_case, max 50 characters`,
       `- Agent: \`backend\` | \`frontend\` | \`qa\` | \`devops\` — infer from feature scope and project paths`,
       `- Priority: CRITICAL (only if mission-critical, core functionality, or security), HIGH, MEDIUM, or LOW`,
       `- Dependencies: comma-separated IDs, or None`,
@@ -87,14 +87,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `F001 User Management — full CRUD (create, read, update, delete) with input validation | F002 Authentication & Authorization — login, session, middleware, role-based access | F003 Database & Infrastructure — connection setup, migrations, seeding`
     ]
 
-    if (rulesList.length > 0) {
-      promptLines.push(
-        ``,
-        `# STEERING RULES`,
-        ...rulesList.map(r => `- ${r}`)
-      )
-    }
-
     promptLines.push(
       ``,
       `<context>`,
@@ -107,6 +99,14 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `\`\`\``,
       `</scope>`
     )
+
+    if (rulesList.length > 0) {
+      promptLines.push(
+        ``,
+        `# STEERING RULES`,
+        ...rulesList.map(r => `- ${r}`)
+      )
+    }
     const prompt = promptLines.join('\n')
 
     await context.invokeAgent({
@@ -119,6 +119,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     const created = context.fsm.loadBacklog()
     PhaseDecisionLogger.logBootstrap(context.fsm, created)
 
-    return Phase.PHASE_A
+    return Phase.PLANNING
   }
 }

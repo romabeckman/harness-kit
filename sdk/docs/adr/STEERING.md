@@ -35,7 +35,7 @@ if (action.type === 'rollback') {
   const target = action.targetPhase as Phase
   this.state.currentPhase = target
   config.currentPhase = target
-  if (target === Phase.PHASE_B || target === Phase.PHASE_A) {
+  if (target === Phase.DEVELOPMENT || target === Phase.PLANNING) {
     this.fsm.updateTaskStatus(active.id, t.taskId, '-', 'NOT_STARTED')
   }
 }
@@ -51,8 +51,8 @@ if (action.type === 'rollback') {
 |------|------|----------|-------------|---------|
 | steeringRules.user | string[] | No | Custom runtime rules injected by the user | [] |
 | steeringRules.bootstrap | string[] | No | Rules applied during bootstrap initialization | [...] |
-| steeringRules.phase_a | string[] | No | Rules applied during Phase A scope refinement | [...] |
-| steeringRules.phase_b | string[] | No | Rules applied during Phase B implementation | [...] |
+| steeringRules.PLANNING | string[] | No | Rules applied during Phase A scope refinement | [...] |
+| steeringRules.implementation | string[] | No | Rules applied during Phase B implementation | [...] |
 
 ## BEST PRACTICES
 REQUIRED: Use rollbacks to reset implementation states when refactoring existing tasks.

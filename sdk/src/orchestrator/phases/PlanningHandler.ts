@@ -6,9 +6,9 @@ import type { PhaseAPayload } from "../../context-assembler/types";
 import { join } from "node:path";
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
-export class PhaseAHandler extends AbstractPhaseHandler {
+export class PlanningHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
-    if (phase !== Phase.PHASE_A) {
+    if (phase !== Phase.PLANNING) {
       return super.handle(phase, context);
     }
 
@@ -40,7 +40,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       .filter(t => t.featureId === activeFeature.id).length
     PhaseDecisionLogger.logPhaseA(context.fsm, activeFeature, specsDir, taskCount)
 
-    return Phase.PHASE_B;
+    return Phase.DEVELOPMENT;
   }
 
   private hasCascadeBlock(feature: Feature, allFeatures: Feature[]): boolean {
@@ -83,7 +83,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       agent: "harness-kit:software-architect",
       mode: "autonomous",
       prompt,
-      phaseKey: "phase_a",
+      phaseKey: "PLANNING",
     });
   }
 
@@ -110,7 +110,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
 
     return [
       `## Objective`,
-      `Perform scope refinement STRICTLY for the <target_feature>. Use the <background_context> ONLY for system alignment and contextual awareness. Do NOT refine or generate specifications for the entire background context.`,
+      `Perform scope refinement STRICTLY for the <target_feature>. Use the <scope> ONLY for system alignment and contextual awareness. Do NOT refine or generate specifications for the entire background context.`,
       ``,
       `<skill_context>`,
       `Invoke the \`harness-kit:scope-refinement\` skill before starting.`,
@@ -122,32 +122,6 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `- ACTION: Draft tactical design and test scenarios.`,
       `- OBSERVATION: Verify if specs strictly cover the target feature.`,
       `</react_workflow>`,
-      ``,
-      `<inputs>`,
-      ``,
-      `<rules>`,
-      rulesSection,
-      `</rules>`,
-      ``,
-      `<project_paths>`,
-      projectPathsList,
-      `</project_paths>`,
-      ``,
-      `<background_context>`,
-      `\`\`\`markdown`,
-      payload.scope.trim(),
-      `\`\`\``,
-      `</background_context>`,
-      ``,
-      `<target_feature>`,
-      `ID: ${feature.id}`,
-      `Title: ${payload.featureTitle}`,
-      `Domain: ${payload.domain}`,
-      `Priority: ${feature.priority || 'No priority set'}`,
-      `Dependencies: ${dependenciesText}`,
-      `</target_feature>`,
-      ``,
-      `</inputs>`,
       ``,
       `<workflow>`,
       `- Step 1: (Is Optional) Invoke the \`harness-kit:the-grumpy-tech-lead\` skill to make questions to clarify the scope if something is not clear. Save in memory the questions and answers for next step. If no questions are made, it means the feature is clear and we can proceed.`,
@@ -163,27 +137,53 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       `</expected_outputs>`,
       ``,
       `<strict_rules>`,
-      `- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features present in the <background_context>.`,
+      `- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features present in the <scope>.`,
       `- DEPENDENCY RULE: If the <target_feature> has dependencies, acknowledge them as assumptions or interfaces in your design, but DO NOT design, spec, or generate tasks for the dependencies themselves.`,
       ...(complexity !== Complexity.AUTO
         ? (
-          complexity === Complexity.SIMPLE ?
+          complexity === Complexity.LOW ?
             [
-              `- COMPLEXITY OVERRIDE: Classify as 'SIMPLE'   do not re-evaluate scope complexity.`,
-              `- For 'SIMPLE': Do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
+              `- HIGHITY OVERRIDE: Classify as 'LOW'   do not re-evaluate scope complexity.`,
+              `- For 'LOW': Do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
             ] :
             [
-              `- COMPLEXITY OVERRIDE: Classify as 'COMPLEX'   do not re-evaluate scope complexity.`,
-              `- For 'COMPLEX': Its required \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
+              `- HIGHITY OVERRIDE: Classify as 'HIGH'   do not re-evaluate scope complexity.`,
+              `- For 'HIGH': Its required \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
             ]
         ) : [
-          `- Evaluate scope complexity between 'SIMPLE' and 'COMPLEX'. SIMPLE is characterized by crystal-clear requirements, zero structural ambiguities, isolated changes, zero cross-team dependencies, use of existing patterns, straightforward flows, zero backward compatibility risks, and standard unit testing without complex integrations.`,
-          `- If SIMPLE: do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
-          `- If COMPLEX: invoke \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
+          `- Evaluate scope complexity between 'LOW' and 'HIGH'. LOW is characterized by crystal-clear requirements, zero structural ambiguities, isolated changes, zero cross-team dependencies, use of existing patterns, straightforward flows, zero backward compatibility risks, and standard unit testing without complex integrations.`,
+          `- If LOW: do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
+          `- If HIGH: invoke \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
         ]),
       `- Execute autonomously without pausing or asking for confirmation.`,
       `- Write every file to disk before advancing to the next.`,
       `</strict_rules>`,
+      ``,
+      `<inputs>`,
+      ``,
+      `<rules>`,
+      rulesSection,
+      `</rules>`,
+      ``,
+      `<project_paths>`,
+      projectPathsList,
+      `</project_paths>`,
+      ``,
+      `<scope>`,
+      `\`\`\`markdown`,
+      payload.scope.trim(),
+      `\`\`\``,
+      `</scope>`,
+      ``,
+      `<target_feature>`,
+      `ID: ${feature.id}`,
+      `Title: ${payload.featureTitle}`,
+      `Domain: ${payload.domain}`,
+      `Priority: ${feature.priority || 'No priority set'}`,
+      `Dependencies: ${dependenciesText}`,
+      `</target_feature>`,
+      ``,
+      `</inputs>`,
     ].join("\n");
   }
 
@@ -241,7 +241,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     await context.invokeAgent({
       agent: "harness-kit:software-architect",
       mode: "autonomous",
-      phaseKey: "phase_a",
+      phaseKey: "PLANNING",
       prompt: [
         `## Objective`,
         `Extract ordered development tasks from the tactical design and append them to DEVELOPMENT-STATE.md.`,

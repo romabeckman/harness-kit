@@ -90,7 +90,7 @@ The following limitations documented in `sdk_core` remain unresolved:
 
 ## BEST PRACTICES
 
-REQUIRED: Call `resetTasksForRetry(featureId)` before re-entering PHASE_B — ensures all tasks are at `IMPLEMENTATION / NOT_STARTED` before the developer agent reads them.
+REQUIRED: Call `resetTasksForRetry(featureId)` before re-entering DEVELOPMENT — ensures all tasks are at `IMPLEMENTATION / NOT_STARTED` before the developer agent reads them.
 
 REQUIRED: Pass `DecisionEntry` with `featureId` set to the active feature ID so the audit trail in `DECISIONS.md` remains queryable per feature.
 

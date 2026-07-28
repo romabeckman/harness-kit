@@ -149,6 +149,7 @@ describe('T19 — parseRunArgs', () => {
     expect(result.score).toBeUndefined()
     expect(result.reworks).toBeUndefined()
     expect(result.steeringMessage).toBeUndefined()
+    expect(result.mode).toBeUndefined()
   })
 
   it('ignores unknown flags gracefully', () => {
@@ -160,53 +161,49 @@ describe('T19 — parseRunArgs', () => {
     expect(Number.isNaN(result.score)).toBe(true)
   })
 
-  // ── --complexity / -c ─────────────────────────────────────────────────────
+  // ── --mode / -M ──────────────────────────────────────────────────────────
 
-  it('complexity is undefined when flag is omitted (AUTO)', () => {
+  it('mode is undefined when flag is omitted', () => {
     const result = parseRunArgs(['--reset'])
-    expect(result.complexity).toBe('AUTO')
+    expect(result.mode).toBeUndefined()
   })
 
-  it('parses --complexity SIMPLE', () => {
-    expect(parseRunArgs(['--complexity', 'SIMPLE']).complexity).toBe('SIMPLE')
+  it('parses --mode quick', () => {
+    expect(parseRunArgs(['--mode', 'quick']).mode).toBe('quick')
   })
 
-  it('parses --complexity S (shorthand)', () => {
-    expect(parseRunArgs(['--complexity', 'S']).complexity).toBe('SIMPLE')
+  it('parses --mode fast', () => {
+    expect(parseRunArgs(['--mode', 'fast']).mode).toBe('fast')
   })
 
-  it('parses --complexity simple (case-insensitive)', () => {
-    expect(parseRunArgs(['--complexity', 'simple']).complexity).toBe('SIMPLE')
+  it('parses --mode default', () => {
+    expect(parseRunArgs(['--mode', 'default']).mode).toBe('default')
   })
 
-  it('parses --complexity COMPLEX', () => {
-    expect(parseRunArgs(['--complexity', 'COMPLEX']).complexity).toBe('COMPLEX')
+  it('parses --mode slow', () => {
+    expect(parseRunArgs(['--mode', 'slow']).mode).toBe('slow')
   })
 
-  it('parses --complexity C (shorthand)', () => {
-    expect(parseRunArgs(['--complexity', 'C']).complexity).toBe('COMPLEX')
+  it('parses -M alias for mode', () => {
+    expect(parseRunArgs(['-M', 'fast']).mode).toBe('fast')
   })
 
-  it('parses --complexity complex (case-insensitive)', () => {
-    expect(parseRunArgs(['--complexity', 'complex']).complexity).toBe('COMPLEX')
+  it('supports --mode=quick inline syntax', () => {
+    expect(parseRunArgs(['--mode=quick']).mode).toBe('quick')
   })
 
-  it('parses -c SIMPLE via short flag', () => {
-    expect(parseRunArgs(['-c', 'SIMPLE']).complexity).toBe('SIMPLE')
+  it('is case-insensitive for --mode value', () => {
+    expect(parseRunArgs(['--mode', 'QUICK']).mode).toBe('quick')
   })
 
-  it('parses -c C via short flag', () => {
-    expect(parseRunArgs(['-c', 'C']).complexity).toBe('COMPLEX')
+  it('ignores unknown mode value, leaves mode undefined', () => {
+    expect(parseRunArgs(['--mode', 'turbo']).mode).toBeUndefined()
   })
 
-  it('ignores unknown complexity value, leaves complexity undefined', () => {
-    expect(parseRunArgs(['--complexity', 'MEDIUM']).complexity).toBe('AUTO')
-  })
-
-  it('--complexity coexists with other flags without interference', () => {
-    const result = parseRunArgs(['--reset', '--complexity', 'SIMPLE', '--debug'])
+  it('--mode coexists with other flags without interference', () => {
+    const result = parseRunArgs(['--reset', '--mode', 'fast', '--debug'])
     expect(result.action).toBe('reset')
-    expect(result.complexity).toBe('SIMPLE')
+    expect(result.mode).toBe('fast')
     expect(result.debug).toBe(true)
   })
 
@@ -229,28 +226,48 @@ describe('T19 — parseRunArgs', () => {
     expect(result.debug).toBe(true)
   })
 
-  // ── --skip-steering ───────────────────────────────────────────────────────
+  // ── --skip-memory ───────────────────────────────────────────────────────
 
-  it('parses --skip-steering flag', () => {
-    const result = parseRunArgs(['--skip-steering'])
-    expect(result.skipSteering).toBe(true)
+  it('parses --skip-memory flag', () => {
+    const result = parseRunArgs(['--skip-memory'])
+    expect(result.skipMemory).toBe(true)
   })
 
-  it('skipSteering is undefined when flag not supplied', () => {
+  it('skipMemory is undefined when flag not supplied', () => {
     const result = parseRunArgs([])
-    expect(result.skipSteering).toBeUndefined()
+    expect(result.skipMemory).toBeUndefined()
   })
 
-  it('--skip-steering coexists with other flags', () => {
-    const result = parseRunArgs(['--resume', '--skip-steering', '--debug'])
+  it('--skip-memory coexists with other flags', () => {
+    const result = parseRunArgs(['--resume', '--skip-memory', '--debug'])
     expect(result.action).toBe('resume')
-    expect(result.skipSteering).toBe(true)
+    expect(result.skipMemory).toBe(true)
     expect(result.debug).toBe(true)
   })
 
-  it('--skip-validation and --skip-steering can be combined', () => {
-    const result = parseRunArgs(['--skip-validation', '--skip-steering'])
+
+  it('--skip-validation and --skip-memory can be combined', () => {
+    const result = parseRunArgs(['--skip-validation', '--skip-memory'])
     expect(result.skipValidation).toBe(true)
-    expect(result.skipSteering).toBe(true)
+    expect(result.skipMemory).toBe(true)
+  })
+
+  // ── --skip-deploy ─────────────────────────────────────────────────────────
+
+  it('parses --skip-deploy flag', () => {
+    const result = parseRunArgs(['--skip-deploy'])
+    expect(result.skipDeploy).toBe(true)
+  })
+
+  it('skipDeploy is undefined when flag not supplied', () => {
+    const result = parseRunArgs([])
+    expect(result.skipDeploy).toBeUndefined()
+  })
+
+  it('--skip-deploy coexists with other skip flags', () => {
+    const result = parseRunArgs(['--skip-validation', '--skip-memory', '--skip-deploy'])
+    expect(result.skipValidation).toBe(true)
+    expect(result.skipMemory).toBe(true)
+    expect(result.skipDeploy).toBe(true)
   })
 })

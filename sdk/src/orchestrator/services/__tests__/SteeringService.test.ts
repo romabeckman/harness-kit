@@ -60,7 +60,7 @@ function makeFsm(config: BootstrapConfig, features: Feature[] = [], tasks: Task[
 
 function makeState(overrides: Partial<OrchestratorState> = {}): OrchestratorState {
   return {
-    currentPhase: Phase.PHASE_B,
+    currentPhase: Phase.DEVELOPMENT,
     activeFeatureId: null,
     completedCycles: 0,
     ...overrides,
@@ -122,27 +122,27 @@ describe('SteeringService', () => {
     it('updates state.currentPhase and config.currentPhase to the target phase', () => {
       const config = makeConfig()
       const fsm = makeFsm(config)
-      const state = makeState({ currentPhase: Phase.PHASE_C })
+      const state = makeState({ currentPhase: Phase.REVIEW })
       const service = new SteeringService(fsm, state)
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_B }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.DEVELOPMENT }])
 
-      expect(state.currentPhase).toBe(Phase.PHASE_B)
-      expect(config.currentPhase).toBe(Phase.PHASE_B)
+      expect(state.currentPhase).toBe(Phase.DEVELOPMENT)
+      expect(config.currentPhase).toBe(Phase.DEVELOPMENT)
     })
 
     it('appends a decision entry referencing the target phase', () => {
       const fsm = makeFsm(makeConfig())
       const service = new SteeringService(fsm, makeState())
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_A }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PLANNING }])
 
       expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({
-        decision: expect.stringContaining(Phase.PHASE_A),
+        decision: expect.stringContaining(Phase.PLANNING),
       }))
     })
 
-    it('resets all tasks of the active feature to NOT_STARTED when rolling back to PHASE_B', () => {
+    it('resets all tasks of the active feature to NOT_STARTED when rolling back to DEVELOPMENT', () => {
       const feature = makeFeature({ status: 'IN_PROGRESS' })
       const tasks: Task[] = [
         makeTask({ taskId: 'T01', featureId: 'F001', status: 'COMPLETED' }),
@@ -153,33 +153,33 @@ describe('SteeringService', () => {
       const state = makeState({ activeFeatureId: 'F001' })
       const service = new SteeringService(fsm, state)
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_B }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.DEVELOPMENT }])
 
       expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T01', '-', 'NOT_STARTED')
       expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T02', '-', 'NOT_STARTED')
       expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F002', expect.anything(), expect.anything(), expect.anything())
     })
 
-    it('resets tasks when rolling back to PHASE_A', () => {
+    it('resets tasks when rolling back to PLANNING', () => {
       const feature = makeFeature()
       const tasks: Task[] = [makeTask({ taskId: 'T01', status: 'IN_PROGRESS' })]
       const fsm = makeFsm(makeConfig(), [feature], tasks)
       const state = makeState({ activeFeatureId: 'F001' })
       const service = new SteeringService(fsm, state)
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_A }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PLANNING }])
 
       expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T01', '-', 'NOT_STARTED')
     })
 
-    it('does NOT reset tasks when rolling back to PHASE_C (only PHASE_A/B reset tasks)', () => {
+    it('does NOT reset tasks when rolling back to REVIEW (only PLANNING/B reset tasks)', () => {
       const feature = makeFeature()
       const tasks: Task[] = [makeTask({ taskId: 'T01' })]
       const fsm = makeFsm(makeConfig(), [feature], tasks)
       const state = makeState({ activeFeatureId: 'F001' })
       const service = new SteeringService(fsm, state)
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_C }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.REVIEW }])
 
       expect(fsm.updateTaskStatus).not.toHaveBeenCalled()
     })
@@ -189,7 +189,7 @@ describe('SteeringService', () => {
       const state = makeState({ activeFeatureId: null })
       const service = new SteeringService(fsm, state)
 
-      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.PHASE_B }])
+      service.applySteeringActions([{ type: 'rollback', targetPhase: Phase.DEVELOPMENT }])
 
       expect(fsm.updateTaskStatus).not.toHaveBeenCalled()
     })

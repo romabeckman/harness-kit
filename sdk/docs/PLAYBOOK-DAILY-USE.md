@@ -146,7 +146,7 @@ For tighter control, add steering rules that apply only to specific phases:
     "user": [
       "The api/ directory is a Node.js + Express project. The web/ directory is a React + TypeScript project."
     ],
-    "phase_b": [
+    "implementation": [
       "When implementing API endpoints in api/, always create corresponding TypeScript interfaces in web/src/types/ so the frontend can consume them type-safely.",
       "Run tests for both projects: 'cd api && npm test' and 'cd web && npm test'."
     ]
@@ -238,7 +238,7 @@ Or add granular rules directly in `BOOTSTRAP-CONFIG.json`:
     "user": [
       "This is a proof-of-concept. Prioritize working demos over production quality."
     ],
-    "phase_c": [
+    "review": [
       "Be lenient on error handling, logging, and edge-case coverage. Focus review on whether the feature works end-to-end.",
       "Do not fail a feature for missing input validation or incomplete error messages."
     ]
@@ -278,7 +278,7 @@ Open `docs/product/BOOTSTRAP-CONFIG.json` and make your changes:
 ```json
 {
   "steeringRules": {
-    "phase_b": [
+    "implementation": [
       "Always validate request bodies using Zod schemas before processing.",
       "Use repository pattern for database access — never call the ORM directly from route handlers."
     ]
@@ -287,7 +287,7 @@ Open `docs/product/BOOTSTRAP-CONFIG.json` and make your changes:
 ```
 
 > [!NOTE]
-> Rules in `phase_b` are only injected into implementation agent payloads. Bootstrap, planning, and validation agents never see them.
+> Rules in `implementation` are only injected into implementation agent payloads. Bootstrap, planning, and validation agents never see them.
 
 #### Rollback the current phase to implementation
 
@@ -295,12 +295,12 @@ Change `currentPhase` to force the orchestrator back to a specific phase:
 
 ```json
 {
-  "currentPhase": "PHASE_B"
+  "currentPhase": "DEVELOPMENT"
 }
 ```
 
 > [!WARNING]
-> When you manually roll back to `PHASE_B` or `PHASE_A`, the orchestrator will **not** automatically reset task statuses. You may need to also edit `DEVELOPMENT-STATE.md` to set task statuses back to `NOT_STARTED`. Alternatively, use the steering prompt when resuming to trigger a proper rollback.
+> When you manually roll back to `DEVELOPMENT` or `PLANNING`, the orchestrator will **not** automatically reset task statuses. You may need to also edit `DEVELOPMENT-STATE.md` to set task statuses back to `NOT_STARTED`. Alternatively, use the steering prompt when resuming to trigger a proper rollback.
 
 ### Step 3 — Edit BACKLOG.md (add a missing feature)
 
@@ -349,7 +349,7 @@ The `SteeringAnalyzer` will parse your natural language into structured actions:
 
 ```json
 [
-  { "type": "rollback", "targetPhase": "PHASE_B" },
+  { "type": "rollback", "targetPhase": "DEVELOPMENT" },
   { "type": "add_rule", "rule": "use Zod for all request validation" }
 ]
 ```
@@ -360,7 +360,7 @@ This is the **preferred approach** for rollbacks because it automatically resets
 
 - The orchestrator's state is entirely file-based (`BACKLOG.md`, `DEVELOPMENT-STATE.md`, `BOOTSTRAP-CONFIG.json`). You can edit any of them between runs.
 - `--resume` reads the current state from disk — it does not rely on in-memory state from the previous session.
-- Phase-scoped steering rules (`phase_b`, `phase_c`, etc.) give fine-grained control over specific agents without affecting others.
+- Phase-scoped steering rules (`implementation`, `review`, etc.) give fine-grained control over specific agents without affecting others.
 - The `SteeringAnalyzer` handles natural-language rollback instructions, saving you from manual file surgery.
 
 ---

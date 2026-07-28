@@ -45,7 +45,7 @@ afterEach(() => {
   rmSync(tmpDir, { recursive: true, force: true })
 })
 
-describe('T12 — HarnessOrchestrator PHASE_B', () => {
+describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
   it('iterates NOT_STARTED tasks and marks each COMPLETED after tdd-orchestrator call', async () => {
     setupProductFiles()
     const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
@@ -64,7 +64,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
     fake.setResponse('adversarial-qa', { raw: '```json\n{"scoreAdv": 0.80}\n```' })
     fake.setResponse('project-memory', { raw: 'done' })
 
-    // Start from PHASE_B (spec files present)
+    // Start from DEVELOPMENT (spec files present)
     const orchestrator = new HarnessOrchestrator({
       scope: 'sdk_core',
       projectPaths: [tmpDir],
@@ -136,7 +136,7 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
   })
 
   describe('TS-F-07: Resume after crash during Phase B', () => {
-    it('re-entry picks up at PHASE_B, no duplicate task rows', async () => {
+    it('re-entry picks up at DEVELOPMENT, no duplicate task rows', async () => {
       // Simulate crash recovery: product files exist, feature IN_PROGRESS, one task IN_PROGRESS
       const devStateInProgress = [
         '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |',
@@ -170,9 +170,9 @@ describe('T12 — HarnessOrchestrator PHASE_B', () => {
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
-      // Re-entry: spec files present, tasks not all completed → PHASE_B
+      // Re-entry: spec files present, tasks not all completed → DEVELOPMENT
       const { Phase } = await import('../../src/orchestrator/types')
-      expect(orchestrator.getState().currentPhase).toBe(Phase.PHASE_B)
+      expect(orchestrator.getState().currentPhase).toBe(Phase.DEVELOPMENT)
 
       await orchestrator.run()
 

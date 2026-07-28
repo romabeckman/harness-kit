@@ -104,7 +104,7 @@ Exposes two CLI entry points: `hrns` (short alias) and `harness-kit` (full alias
 | Field | Location | Required | Value | Notes |
 |---|---|---|---|---|
 | `name` | `package.json` | Yes | `@romabeckman/hrns` | Scoped package name for npm registry |
-| `version` | `package.json` | Yes | `0.1.6` | Semantic version — current beta release |
+| `version` | `package.json` | Yes | `0.2.0` | Semantic version — current beta release |
 | `main` | `package.json` | Yes | `dist/index.js` | CJS entry point (legacy `require` fallback) |
 | `types` | `package.json` | Yes | `dist/index.d.ts` | TypeScript declaration entry |
 | `exports["."].require` | `package.json` | Yes | `./dist/index.js` | CJS entry via `exports` map |

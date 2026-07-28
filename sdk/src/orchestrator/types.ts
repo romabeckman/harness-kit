@@ -16,16 +16,33 @@ export interface OrchestratorConfig {
   complexity: Complexity
   chain?: IPhaseHandler
   cliCommand?: CliCommand
-  /** When true, Phase C (validation) is skipped entirely and execution jumps to Phase D. */
+  /** When true, Phase C (review) is skipped entirely and execution jumps to Phase D. */
   skipValidation?: boolean
-  /** When true, Phase E (project-memory) is skipped entirely and execution jumps to Phase F. */
-  skipSteering?: boolean
+  /** When true, Phase E (memory) is skipped entirely and execution jumps to Phase F. */
+  skipMemory?: boolean
+  /** When true, Phase DEPLOY (git stage/commit/push) is skipped and pipeline halts after Phase F. */
+  skipDeploy?: boolean
 }
 
 export enum Complexity {
   AUTO = 'AUTO',
-  SIMPLE = 'SIMPLE',
-  COMPLEX = 'COMPLEX'
+  LOW = 'LOW',
+  HIGH = 'HIGH'
+}
+
+/**
+ * Execution mode for `hrns run --mode <mode>`.
+ *
+ * quick   — Bootstrap → Planning → Development → Deploy  (skips Review and Memory)
+ * fast    — All phases, complexity forced to LOW
+ * default — All phases, complexity AUTO  (default when --mode is omitted)
+ * slow    — All phases, complexity forced to HIGH
+ */
+export enum RunMode {
+  QUICK = 'quick',
+  FAST = 'fast',
+  DEFAULT = 'default',
+  SLOW = 'slow',
 }
 
 export enum CliCommand {
@@ -35,12 +52,13 @@ export enum CliCommand {
 
 export enum Phase {
   BOOTSTRAP = 'BOOTSTRAP',
-  PHASE_A = 'PLANNING',
-  PHASE_B = 'IMPLEMENTATION',
-  PHASE_C = 'VALIDATION',
-  PHASE_D = 'STATE_CHECK',
-  PHASE_E = 'STEERING',
-  PHASE_F = 'DECISION',
+  PLANNING = 'PLANNING',
+  DEVELOPMENT = 'DEVELOPMENT',
+  REVIEW = 'REVIEW',
+  STATE_CHECK = 'STATE_CHECK',
+  MEMORY = 'MEMORY',
+  TRANSITION = 'TRANSITION',
+  DEPLOY = 'DEPLOY',
   CASCADE_BLOCKED = 'CASCADE_BLOCKED',
   HALTED = 'HALTED',
 }

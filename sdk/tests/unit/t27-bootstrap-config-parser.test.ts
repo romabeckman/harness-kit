@@ -14,7 +14,7 @@ describe('T27 — BootstrapConfigParser', () => {
       cycleCounter: {
         completedCycles: 1
       },
-      currentPhase: 'PHASE_A',
+      currentPhase: 'PLANNING',
       activeFeatureId: 'F002'
     })
 
@@ -27,7 +27,7 @@ describe('T27 — BootstrapConfigParser', () => {
     expect(config.scoreThresholdAdv).toBe(0.9)
     expect(config.completionCriteria.maxReworks).toBe(3)
     expect(config.cycleCounter.completedCycles).toBe(1)
-    expect(config.currentPhase).toBe('PHASE_A')
+    expect(config.currentPhase).toBe('PLANNING')
     expect(config.activeFeatureId).toBe('F002')
   })
 
@@ -78,10 +78,10 @@ describe('T27 — BootstrapConfigParser', () => {
       steeringRules: {
         user: ['u1'],
         bootstrap: ['b1'],
-        phase_a: ['a1'],
-        phase_b: ['b2'],
-        phase_c: ['c1'],
-        phase_e: ['e1']
+        planning: ['a1'],
+        implementation: ['b2'],
+        review: ['c1'],
+        memory: ['e1']
       }
     })
 
@@ -92,10 +92,10 @@ describe('T27 — BootstrapConfigParser', () => {
     expect(config.steeringRules).toEqual({
       user: ['u1'],
       bootstrap: ['b1'],
-      phase_a: ['a1'],
-      phase_b: ['b2'],
-      phase_c: ['c1'],
-      phase_e: ['e1']
+      planning: ['a1'],
+      implementation: ['b2'],
+      review: ['c1'],
+      memory: ['e1']
     })
   })
 
