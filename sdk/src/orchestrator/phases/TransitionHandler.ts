@@ -57,7 +57,7 @@ export class TransitionHandler extends AbstractPhaseHandler {
     }
 
     this.clearActiveFeatureTasks(context)
-    return Phase.DEPLOY
+    return Phase.MEMORY
   }
 
   private retryableFeatures(features: Feature[], context: PhaseContext, phase: Phase) {

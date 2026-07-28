@@ -37,6 +37,6 @@ export class StateCheckHandler extends AbstractPhaseHandler {
 
     context.fsm.appendDecision({ featureId: null, decision })
 
-    return Phase.MEMORY
+    return Phase.TRANSITION
   }
 }

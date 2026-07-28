@@ -354,8 +354,9 @@ import {
   DevelopmentHandler,
   ReviewHandler,
   StateCheckHandler,
-  MemoryHandler,
   TransitionHandler,
+  MemoryHandler,
+  DeployHandler,
   CascadeBlockedHandler,
 } from '@romabeckman/hrns'
 
@@ -368,12 +369,13 @@ const runner = AgentRunnerFactory.create({
 // Build a custom phase chain (or use ChainBuilder.buildDefault())
 const chain = new ChainBuilder()
   .addPhase(new PlanningHandler())
-  .addPhase(new DevelopmentHandler())
-  .addPhase(new ReviewHandler())
-  .addPhase(new StateCheckHandler())
-  .addPhase(new MemoryHandler())
-  .addPhase(new TransitionHandler())
-  .addPhase(new CascadeBlockedHandler())
+      .addPhase(new DevelopmentHandler())
+      .addPhase(new ReviewHandler())
+      .addPhase(new StateCheckHandler())
+      .addPhase(new TransitionHandler())
+      .addPhase(new MemoryHandler())
+      .addPhase(new DeployHandler())
+      .addPhase(new CascadeBlockedHandler())
   .build()
 
 const orchestrator = new HarnessOrchestrator({
