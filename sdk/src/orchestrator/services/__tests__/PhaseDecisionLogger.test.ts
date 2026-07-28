@@ -199,13 +199,13 @@ describe('PhaseDecisionLogger', () => {
       const feature = makeFeature()
       const projectPaths = ['/project-a', '/project-b']
 
-      PhaseDecisionLogger.logPhaseE(fsm, feature, projectPaths)
+      PhaseDecisionLogger.logPhaseE(fsm, projectPaths)
 
       expect(PhaseFileUtils.listDocFiles).toHaveBeenCalledWith(join('/project-a', 'docs', 'feature'))
       expect(PhaseFileUtils.listDocFiles).toHaveBeenCalledWith(join('/project-b', 'docs', 'feature'))
       const call = (fsm.appendDecision as any).mock.calls[0][0]
-      expect(call.featureId).toBe('F001')
-      expect(call.decision).toContain('sdk_core')
+      expect(call.featureId).toBeNull()
+      expect(call.decision).toBe('Memory: project memory written')
       expect(call.rationale).toContain('AUTH.md')
       expect(call.rationale).toContain('USERS.md')
     })
@@ -214,9 +214,11 @@ describe('PhaseDecisionLogger', () => {
       vi.mocked(PhaseFileUtils.listDocFiles).mockReturnValue([])
       const fsm = makeFsm()
 
-      PhaseDecisionLogger.logPhaseE(fsm, makeFeature(), ['/project-x'])
+      PhaseDecisionLogger.logPhaseE(fsm, ['/project-x'])
 
       const call = (fsm.appendDecision as any).mock.calls[0][0]
+      expect(call.featureId).toBeNull()
+      expect(call.decision).toBe('Memory: project memory written')
       expect(call.rationale).toContain('no new files detected')
     })
   })

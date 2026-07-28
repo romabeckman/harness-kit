@@ -36,7 +36,7 @@ describe('Steering Rules Injection', () => {
     expect(payloadC.steeringRules).toContain('User Rule 1')
     expect(payloadC.steeringRules).toContain('User Rule 2')
 
-    const payloadE = ContextAssembler.buildPhaseEPayload(feature, [], 1, [], 'workdir', rules)
+    const payloadE = ContextAssembler.buildPhaseEPayload(['/path'], 'workdir', rules)
     expect(payloadE.steeringRules).toContain('User Rule 1')
     expect(payloadE.steeringRules).toContain('User Rule 2')
   })
@@ -73,7 +73,7 @@ describe('Steering Rules Injection', () => {
     const payloadC = ContextAssembler.buildPhaseCPayload(feature, ['/path'], rules)
     expect(payloadC.steeringRules).toBeUndefined()
 
-    const payloadE = ContextAssembler.buildPhaseEPayload(feature, [], 1, [], 'workdir', rules)
+    const payloadE = ContextAssembler.buildPhaseEPayload(['/path'], 'workdir', rules)
     expect(payloadE.steeringRules).toBeUndefined()
   })
 

@@ -147,7 +147,7 @@ describe('TransitionHandler', () => {
         })
       )
       // No NOT_STARTED left → DEPLOY
-      expect(result).toBe(Phase.DEPLOY)
+      expect(result).toBe(Phase.MEMORY)
     })
 
     it('returns PLANNING when unrelated features remain NOT_STARTED after cascade', async () => {
@@ -232,7 +232,7 @@ describe('TransitionHandler', () => {
       const ctx = makeContext(fsm, f1)
       const result = await handler.handle(Phase.TRANSITION, ctx)
 
-      expect(result).toBe(Phase.DEPLOY)
+      expect(result).toBe(Phase.MEMORY)
       const saveCalls = (fsm.saveBootstrapConfig as any).mock.calls
       const lastCallArg = saveCalls[saveCalls.length - 1][0]
       expect(lastCallArg.activeFeatureId).toBeUndefined()

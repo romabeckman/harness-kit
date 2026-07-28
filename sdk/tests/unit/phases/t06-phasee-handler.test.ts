@@ -30,7 +30,7 @@ describe('MemoryHandler', () => {
 
     mockContext = {
       workingDir: '/mock/dir',
-      config: { projectPaths: ['/src'] },
+      config: { projectPaths: ['/src'], scope: 'mock scope' },
       invokeAgent: vi.fn().mockResolvedValue({ raw: '{}', artefacts: {} }),
       getActiveFeature: vi.fn().mockReturnValue({ id: 'F001', domain: 'cli', reworks: 0 }),
       fsm: {
@@ -57,7 +57,7 @@ describe('MemoryHandler', () => {
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({ phaseKey: 'memory' })
     )
-    expect(result).toBe(Phase.TRANSITION)
+    expect(result).toBe(Phase.DEPLOY)
   })
 
   it('deve pular Phase E inteira quando skipMemory=true no config', async () => {
@@ -68,6 +68,6 @@ describe('MemoryHandler', () => {
     // No agent must be called
     expect(mockContext.invokeAgent).not.toHaveBeenCalled()
     // Must jump directly to Phase F
-    expect(result).toBe(Phase.TRANSITION)
+    expect(result).toBe(Phase.DEPLOY)
   })
 })

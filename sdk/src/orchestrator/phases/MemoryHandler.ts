@@ -13,7 +13,7 @@ export class MemoryHandler extends AbstractPhaseHandler {
 
     // --skip-memory: bypass project-memory agent and jump straight to Phase F
     if (context.config.skipMemory) {
-      process.stdout.write(`[phase_memory] --skip-memory active — skipping project-memory for feature ${activeFeature.id}\n`)
+      process.stdout.write(`[phase_memory] --skip-memory active — skipping project-memory\n`)
       return Phase.DEPLOY
     }
 

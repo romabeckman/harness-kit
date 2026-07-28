@@ -56,7 +56,7 @@ sdk/
 | `run.ts` | Main CLI entry point. Parses flags, handles input rules, and boots the HarnessOrchestrator. | `src/cli/` |
 | `AgentRunnerRegistry` | Singleton registry storing strategies constructors and validator functions. | `src/agent-runner/` |
 | `AgentRunnerFactory` | Instantiates runners and executes strategy validations. Force-imports all built-in runners to trigger self-registration. | `src/agent-runner/` |
-| `HarnessOrchestrator` | Core phase transitions and Chain-of-Responsibility dispatch loop. | `src/orchestrator/` |
+| `HarnessOrchestrator` | Core phase transitions and Chain-of-Responsibility dispatch loop. The correct phase flow is: PlanningHandler -> DevelopmentHandler -> ReviewHandler -> StateCheckHandler -> TransitionHandler -> MemoryHandler -> DeployHandler -> HALTED. | `src/orchestrator/` |
 | `AgentInvocationService` | Service that encapsulates agent runner execution, timeout scheduling, and interactive prompt timeouts. | `src/orchestrator/services/` |
 | `ProjectStateService` | Service that handles task extraction from specs, spec existence checks, and on-disk state verification. | `src/orchestrator/services/` |
 | `OrchestratorFormatter` | Utility containing static layout formatters, duration formatting, and phase descriptions. | `src/orchestrator/utils/` |

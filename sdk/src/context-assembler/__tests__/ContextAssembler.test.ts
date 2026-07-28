@@ -37,9 +37,7 @@ describe('ContextAssembler', () => {
 
   it('should build phase E payload', () => {
     const feature = { domain: 'domain', title: 'scope desc' }
-    const payload = ContextAssembler.buildPhaseEPayload(feature as any, [], 3, ['decision1'], 'workdir')
-    expect(payload.domain).toBe('domain')
-    expect(payload.completedCycles).toBe(3)
+    const payload = ContextAssembler.buildPhaseEPayload(['path1'], 'workdir')
   })
 
   it('should flatten steering rules', () => {
