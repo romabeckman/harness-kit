@@ -45,5 +45,8 @@
   },
   "overrides": {
     "undici": "^6.27.0"
+  },
+  "allowScripts": {
+    "koffi@3.1.2": true
   }
 }
