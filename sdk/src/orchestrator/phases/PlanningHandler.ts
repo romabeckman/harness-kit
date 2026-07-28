@@ -141,19 +141,19 @@ export class PlanningHandler extends AbstractPhaseHandler {
       `- DEPENDENCY RULE: If the <target_feature> has dependencies, acknowledge them as assumptions or interfaces in your design, but DO NOT design, spec, or generate tasks for the dependencies themselves.`,
       ...(complexity !== Complexity.AUTO
         ? (
-          complexity === Complexity.SIMPLE ?
+          complexity === Complexity.LOW ?
             [
-              `- COMPLEXITY OVERRIDE: Classify as 'SIMPLE'   do not re-evaluate scope complexity.`,
-              `- For 'SIMPLE': Do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
+              `- HIGHITY OVERRIDE: Classify as 'LOW'   do not re-evaluate scope complexity.`,
+              `- For 'LOW': Do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
             ] :
             [
-              `- COMPLEXITY OVERRIDE: Classify as 'COMPLEX'   do not re-evaluate scope complexity.`,
-              `- For 'COMPLEX': Its required \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
+              `- HIGHITY OVERRIDE: Classify as 'HIGH'   do not re-evaluate scope complexity.`,
+              `- For 'HIGH': Its required \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
             ]
         ) : [
-          `- Evaluate scope complexity between 'SIMPLE' and 'COMPLEX'. SIMPLE is characterized by crystal-clear requirements, zero structural ambiguities, isolated changes, zero cross-team dependencies, use of existing patterns, straightforward flows, zero backward compatibility risks, and standard unit testing without complex integrations.`,
-          `- If SIMPLE: do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
-          `- If COMPLEX: invoke \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
+          `- Evaluate scope complexity between 'LOW' and 'HIGH'. LOW is characterized by crystal-clear requirements, zero structural ambiguities, isolated changes, zero cross-team dependencies, use of existing patterns, straightforward flows, zero backward compatibility risks, and standard unit testing without complex integrations.`,
+          `- If LOW: do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
+          `- If HIGH: invoke \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
         ]),
       `- Execute autonomously without pausing or asking for confirmation.`,
       `- Write every file to disk before advancing to the next.`,

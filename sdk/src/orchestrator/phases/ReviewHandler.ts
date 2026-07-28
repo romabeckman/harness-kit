@@ -66,7 +66,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
   private async executeAgents(context: PhaseContext, payload: PhaseCPayload, config: BootstrapConfig) {
     const tlPrompt = this.buildTechLeadPrompt(payload, context.workingDir)
     const advPrompt = this.buildAdversarialQAPrompt(payload, context.workingDir)
-    const isSimple = context.config.complexity === Complexity.SIMPLE
+    const isSimple = context.config.complexity === Complexity.LOW
 
     const tlMock = { featureId: payload.featureId, score: 1, isCrashing: false, openPoints: [], architectureTip: '' }
     const specsDir = join(context.workingDir, 'docs', 'specs', payload.domain)

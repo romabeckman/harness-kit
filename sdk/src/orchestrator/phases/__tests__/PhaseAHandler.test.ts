@@ -102,31 +102,31 @@ describe('PlanningHandler', () => {
             ]);
         });
 
-        it('includes SIMPLE override rule when config.complexity is SIMPLE', async () => {
-            mockContext.config = { ...mockContext.config, complexity: 'SIMPLE' };
+        it('includes LOW override rule when config.complexity is LOW', async () => {
+            mockContext.config = { ...mockContext.config, complexity: 'LOW' };
 
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'SIMPLE'");
+            expect(invokedPrompt).toContain("HIGHITY OVERRIDE: Classify as 'LOW'");
         });
 
-        it('includes COMPLEX override rule when config.complexity is COMPLEX', async () => {
-            mockContext.config = { ...mockContext.config, complexity: 'COMPLEX' };
+        it('includes HIGH override rule when config.complexity is HIGH', async () => {
+            mockContext.config = { ...mockContext.config, complexity: 'HIGH' };
 
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'COMPLEX'");
+            expect(invokedPrompt).toContain("HIGHITY OVERRIDE: Classify as 'HIGH'");
         });
 
-        it('omits COMPLEXITY OVERRIDE rule when config.complexity is undefined (AUTO)', async () => {
+        it('omits HIGHITY OVERRIDE rule when config.complexity is undefined (AUTO)', async () => {
             mockContext.config = { ...mockContext.config, complexity: undefined };
 
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).not.toContain('Evaluate scope complexity between \'SIMPLE\' and \'COMPLEX\'');
+            expect(invokedPrompt).not.toContain('Evaluate scope complexity between \'LOW\' and \'HIGH\'');
         });
 
         it('reloads latest scope from SCOPE.md via fsm.loadScope', async () => {

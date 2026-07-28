@@ -183,7 +183,7 @@ Show version or help message.
 | `--score <0–1>` | | Acceptance score threshold | `--score 0.8` |
 | `--reworks <1–10>` | | Max rework cycles before cascade fail | `--reworks 3` |
 | `--steering <text>` | | Additional orchestration rules | `--steering "prefer async/await"` |
-| `--complexity <val>` | `-c` | Phase A complexity: `SIMPLE`/`S`, `COMPLEX`/`C`, or omit for `AUTO` | `--complexity S` |
+| `--mode <mode>` | `-M` | Execution mode: `quick`, `fast`, `default` (omit = default), `slow` | `--mode fast` |
 | `--skip-validation` | | Skip Phase C entirely — jump straight to Phase D | |
 | `--skip-memory` | | Skip Phase E entirely — jump straight to Phase F | |
 | `--skip-deploy` | | Skip DEPLOY phase — pipeline halts after Phase F | |
@@ -196,7 +196,16 @@ Show version or help message.
 > `--skip-validation` is useful for CI speed-runs or when you want to iterate on Phase B output without paying the cost of two agent reviews. All features are marked **COMPLETED** with neutral scores (TL: 1, Adv: 1) and the run proceeds directly to Phase D (state check) and then Phase E (memory).
 
 > [!TIP]
-> `--skip-memory` skips the Phase E `project-memory` agent entirely. Use it when you want a fast cycle (Bootstrap → A → B → C → D → F) without writing documentation memory, for example during exploration or early prototyping.
+> `--mode quick` is the fastest cycle: it runs Bootstrap → Planning → Development → Deploy, skipping both the Review (Phase C) and Memory (Phase E) phases. Ideal for rapid prototyping.
+
+> [!TIP]
+> `--mode fast` forces complexity `LOW` on Phase A (scope refinement generates only docs `003` + `004`, skipping `001`–`002`). Use it for straightforward bug fixes or minor enhancements.
+
+> [!TIP]
+> `--mode slow` forces complexity `HIGH` on Phase A, generating the full spec suite (`001`–`004`). Use it for large features or cross-domain integrations.
+
+> [!TIP]
+> `--skip-memory` skips the Phase E `project-memory` agent entirely. Use it when you want a fast cycle without writing documentation memory, for example during exploration or early prototyping.
 
 > [!TIP]
 > `--skip-deploy` skips the git stage/commit/push step. Useful when you want the orchestrator to finish implementation without touching version control.

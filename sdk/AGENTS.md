@@ -53,7 +53,7 @@ Defined in [`src/file-state/types.ts`](./src/file-state/types.ts):
 | :--- | :--- |
 | `user` | _(empty — populated via `--steering` flag or `hrns init` wizard)_ |
 | `bootstrap` | Granularity rule: each feature is one deliverable chunk. Never mix multiple unrelated projects in a single feature. |
-| `planning` | • Min 1 / max 5 tasks per tactical-design doc (10 total max)<br>• Classify scope as `SIMPLE` (basic CRUD, minor enhancements) → generate only `003` + `004` docs<br>• Classify scope as `COMPLEX` (new core features, cross-domain, integrations) → generate all docs (`001`–`004`) |
+| `planning` | • Min 1 / max 5 tasks per tactical-design doc (10 total max)<br>• Classify scope as `LOW` (basic CRUD, minor enhancements) → generate only `003` + `004` docs<br>• Classify scope as `HIGH` (new core features, cross-domain, integrations) → generate all docs (`001`–`004`) |
 | `implementation` | _(empty by default)_ |
 | `review` | • `harness-tech-lead` must write its review JSON to `docs/specs/${domain}/TL.json`<br>• `harness-qa` must write its review JSON to `docs/specs/${domain}/QA.json` |
 | `memory` | _(empty by default)_ |

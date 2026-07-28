@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { HarnessOrchestrator } from "../../orchestrator/HarnessOrchestrator";
 import { ChainBuilder } from "../../orchestrator/ChainBuilder";
-import { CliCommand } from "../../orchestrator/types";
+import { CliCommand, Complexity, RunMode } from "../../orchestrator/types";
 import { AgentRunnerFactory } from "../../agent-runner/AgentRunnerFactory";
 import { HarnessSettings } from "../../settings/HarnessSettings";
 import { StartupBanner } from "../../ui/StartupBanner";
@@ -26,11 +26,44 @@ export interface RunOptions {
 
 export type RunAction = "reset" | "resume"
 
+interface ResolvedMode {
+  complexity: Complexity
+  skipValidation: boolean
+  skipMemory: boolean
+}
+
+/**
+ * Maps `--mode` to the complexity level and skip flags it implies.
+ *
+ * Individual `--skip-*` flags passed at the CLI are OR'd on top of these
+ * defaults inside `cmdRun`, so the user can always add extra skips.
+ */
+export function resolveMode(mode?: RunMode): ResolvedMode {
+  switch (mode) {
+    case RunMode.QUICK:
+      return { complexity: Complexity.AUTO, skipValidation: true, skipMemory: true }
+    case RunMode.FAST:
+      return { complexity: Complexity.LOW, skipValidation: false, skipMemory: false }
+    case RunMode.SLOW:
+      return { complexity: Complexity.HIGH, skipValidation: false, skipMemory: false }
+    case RunMode.DEFAULT:
+    default:
+      return { complexity: Complexity.AUTO, skipValidation: false, skipMemory: false }
+  }
+}
+
 export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolean): Promise<void> {
   const parsed = parseRunArgs(runArgs)
   if (parsed.debug) {
     DebugContext.enable()
   }
+
+  const resolved = resolveMode(parsed.mode)
+  // Individual --skip-* flags are OR'd on top of the mode defaults
+  const skipValidation = resolved.skipValidation || !!parsed.skipValidation
+  const skipMemory = resolved.skipMemory || !!parsed.skipMemory
+  const skipDeploy = !!parsed.skipDeploy
+
   const options: RunOptions = {
     agentType: parsed.agentType,
     model: parsed.model,
@@ -131,13 +164,15 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
       `  steering:  ${steeringMessage.slice(0, DEFAULT_LINE_LENGTH)}${steeringMessage.length > DEFAULT_LINE_LENGTH ? "…" : ""}`,
     );
   }
-  if (parsed.skipValidation) {
+  const modeLabel = parsed.mode ?? RunMode.DEFAULT
+  console.log(`  mode:     ${modeLabel}`);
+  if (skipValidation) {
     console.log(`  skip-validation: true  (Phase REVIEW skipped)`);
   }
-  if (parsed.skipMemory) {
+  if (skipMemory) {
     console.log(`  skip-memory: true  (Phase MEMORY skipped)`);
   }
-  if (parsed.skipDeploy) {
+  if (skipDeploy) {
     console.log(`  skip-deploy: true  (Phase DEPLOY skipped)`);
   }
   console.log("────────────────────────────────────────────────────────\n");
@@ -161,12 +196,12 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     agentRunner,
     settings,
     initialRules: steeringMessage.length > 0 ? steeringMessage : undefined,
-    complexity: parsed.complexity,
+    complexity: resolved.complexity,
     chain: ChainBuilder.buildDefault(),
     cliCommand: isFromInit ? CliCommand.INIT : CliCommand.RUN,
-    skipValidation: parsed.skipValidation,
-    skipMemory: parsed.skipMemory,
-    skipDeploy: parsed.skipDeploy,
+    skipValidation,
+    skipMemory,
+    skipDeploy,
   });
 
   if (action === "resume") {

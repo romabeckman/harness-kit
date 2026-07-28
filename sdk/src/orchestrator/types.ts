@@ -26,8 +26,23 @@ export interface OrchestratorConfig {
 
 export enum Complexity {
   AUTO = 'AUTO',
-  SIMPLE = 'SIMPLE',
-  COMPLEX = 'COMPLEX'
+  LOW = 'LOW',
+  HIGH = 'HIGH'
+}
+
+/**
+ * Execution mode for `hrns run --mode <mode>`.
+ *
+ * quick   — Bootstrap → Planning → Development → Deploy  (skips Review and Memory)
+ * fast    — All phases, complexity forced to LOW
+ * default — All phases, complexity AUTO  (default when --mode is omitted)
+ * slow    — All phases, complexity forced to HIGH
+ */
+export enum RunMode {
+  QUICK = 'quick',
+  FAST = 'fast',
+  DEFAULT = 'default',
+  SLOW = 'slow',
 }
 
 export enum CliCommand {

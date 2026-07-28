@@ -1,4 +1,4 @@
-import { Complexity } from "../../orchestrator/types"
+import { RunMode } from "../../orchestrator/types"
 
 /**
  * Parsed result of CLI run arguments.
@@ -31,8 +31,9 @@ export interface ParsedRunArgs {
   // Skip Phase DEPLOY (git stage/commit/push) — pipeline halts after Phase F
   skipDeploy?: boolean
 
-  // Complexity hint for Phase A scope refinement ('SIMPLE' | 'COMPLEX' | undefined = AUTO)
-  complexity: Complexity
+  // Complexity hint for Phase A scope refinement ('LOW' | 'HIGH' | undefined = AUTO)
+  // Controlled via --mode; kept here for backward-compat when set programmatically
+  mode?: RunMode
 }
 
 /**
@@ -49,7 +50,7 @@ export interface ParsedRunArgs {
  * --score <0.1-1>          Acceptance score threshold
  * --reworks <1-10>         Max rework cycles before cascade fail
  * --steering <text>        Additional orchestration rules
- * --complexity, -c <val>   Force complexity: SIMPLE|S or COMPLEX|C (default: AUTO)
+ * --mode, -M <val>         Execution mode: quick | fast | default | slow (default: default)
  * --skip-validation         Skip Phase C (review) — jump directly to Phase D
  * --skip-memory           Skip Phase E (memory) — jump directly to Phase F
  * --skip-deploy             Skip Phase DEPLOY (git stage/commit/push) — halt after Phase F
@@ -57,7 +58,6 @@ export interface ParsedRunArgs {
 export function parseRunArgs(args: string[]): ParsedRunArgs {
   const result: ParsedRunArgs = {
     projectPaths: [],
-    complexity: Complexity.AUTO,
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -132,11 +132,13 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
       case '--skip-deploy':
         result.skipDeploy = true
         break
-      case '--complexity':
-      case '-c': {
-        const val = nextArg()?.toUpperCase()
-        if (val === 'S' || val === Complexity.SIMPLE) result.complexity = Complexity.SIMPLE
-        else if (val === 'C' || val === Complexity.COMPLEX) result.complexity = Complexity.COMPLEX
+      case '--mode':
+      case '-M': {
+        const val = nextArg()?.toLowerCase()
+        if (val === RunMode.QUICK) result.mode = RunMode.QUICK
+        else if (val === RunMode.FAST) result.mode = RunMode.FAST
+        else if (val === RunMode.DEFAULT) result.mode = RunMode.DEFAULT
+        else if (val === RunMode.SLOW) result.mode = RunMode.SLOW
         break
       }
 

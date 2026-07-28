@@ -33,8 +33,12 @@ RESET OPTIONS (all optional — omitting any triggers the interactive wizard)
 RESUME OPTIONS
   --steering <text>         Steering rules or state overrides
 
-PHASE A (PLANNING) OPTIONS
-  --complexity, -c <val>    Force complexity classification: SIMPLE|S or COMPLEX|C (default: AUTO)
+EXECUTION MODE
+  --mode, -M <mode>         Controls which phases run and which complexity is forced:
+                              quick   — Bootstrap → Planning → Development → Deploy (skip Review + Memory)
+                              fast    — All phases, simplify planning and only QA review
+                              default — All phases, LLM decide complexity [default]
+                              slow    — All phases, forced to high planning and deep review
 
 SKIP OPTIONS
   --skip-validation         Skip Phase REVIEW (code review + QA) — jump directly to STATE_CHECK
@@ -52,8 +56,9 @@ EXAMPLES
   hrns run --reset --scope "Build a REST API" --path ./api --path ./web --score 0.9
   hrns run --resume --steering "focus on security hardening"
   hrns run --debug --reset --scope "My project"
-  hrns run --reset --scope "Fix login bug" --path ./api --complexity S
-  hrns run --reset --scope "New payment flow" --path ./api --complexity COMPLEX
+  hrns run --reset --scope "Fix login bug" --path ./api --mode fast
+  hrns run --reset --scope "New payment flow" --path ./api --mode slow
+  hrns run --reset --scope "My app" --path ./api --mode quick
   hrns run --reset --scope "My app" --path ./api --skip-deploy
   hrns report
 
