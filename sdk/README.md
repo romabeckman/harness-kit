@@ -219,7 +219,7 @@ Each runner is a self-contained strategy for invoking a specific AI backend. The
 | Type | Binary / SDK | Default model |
 |---|---|---|
 | `claude-cli` | `claude` CLI | _(from settings)_ |
-| `claude-sdk` | `@anthropic-ai/sdk` | `claude-5-sonnet` |
+| `claude-sdk` | `@anthropic-ai/sdk` | `anthropic.claude-5-sonnet` |
 | `antigravity-cli` | `agy` CLI | `gemini-3.6-flash` |
 | `copilot-cli` | `copilot` CLI | _(from settings)_ |
 | `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.3-codex` |
@@ -266,7 +266,7 @@ The global file is created automatically on first run. You can also set `HARNESS
     "timeoutMs": 1800000,
     "phases": {
       "<phase-key>": {
-        "model": "claude-5-sonnet",
+        "model": "anthropic.claude-5-sonnet",
         "effort": "high",
         "timeoutMs": 3600000
       }
@@ -309,12 +309,12 @@ The global file is created automatically on first run. You can also set `HARNESS
   "claude": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":      { "model": "claude-5-sonnet", "effort": "medium" },
-      "planning":       { "model": "claude-5-sonnet", "effort": "high"   },
-      "implementation": { "model": "claude-5-sonnet", "effort": "medium" },
-      "review_tl":      { "model": "claude-5-sonnet", "effort": "low"    },
-      "review_adv":     { "model": "claude-5-sonnet", "effort": "low"    },
-      "memory":         { "model": "claude-5-sonnet", "effort": "low"    }
+      "bootstrap":      { "model": "anthropic.claude-5-sonnet", "effort": "medium" },
+      "planning":       { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
+      "implementation": { "model": "anthropic.claude-5-sonnet", "effort": "medium" },
+      "review_tl":      { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
+      "review_adv":     { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
+      "memory":         { "model": "anthropic.claude-5-sonnet", "effort": "low"    }
     }
   },
   "antigravity": {
@@ -332,7 +332,7 @@ The global file is created automatically on first run. You can also set `HARNESS
     "timeoutMs": 1800000,
     "phases": {
       "bootstrap":      { "model": "gpt-5.3-codex",  "effort": "medium" },
-      "planning":       { "model": "claude-5-sonnet", "effort": "high"   },
+      "planning":       { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
       "implementation": { "model": "gpt-5.3-codex",  "effort": "medium" },
       "review_tl":      { "model": "gpt-5.3-codex",  "effort": "low"    },
       "review_adv":     { "model": "gpt-5.3-codex",  "effort": "low"    },
@@ -343,7 +343,7 @@ The global file is created automatically on first run. You can also set `HARNESS
     "timeoutMs": 1800000,
     "phases": {
       "bootstrap":      { "model": "gpt-5.3-codex",  "effort": "medium" },
-      "planning":       { "model": "claude-5-sonnet", "effort": "high"   },
+      "planning":       { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
       "implementation": { "model": "gpt-5.3-codex",  "effort": "medium" },
       "review_tl":      { "model": "gpt-5.3-codex",  "effort": "low"    },
       "review_adv":     { "model": "gpt-5.3-codex",  "effort": "low"    },
@@ -392,7 +392,7 @@ import { Complexity } from '@romabeckman/hrns'
 // Pick any registered runner (claude-cli, claude-sdk, antigravity-cli, copilot-sdk, etc.)
 const runner = AgentRunnerFactory.create({
   type: 'claude-sdk',   // reads ANTHROPIC_API_KEY from env
-  model: 'claude-5-sonnet',
+  model: 'anthropic.claude-5-sonnet',
 })
 
 const orchestrator = new HarnessOrchestrator({

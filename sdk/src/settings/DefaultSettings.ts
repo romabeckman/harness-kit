@@ -8,12 +8,12 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   'claude': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'claude-5-sonnet', effort: 'medium' },
-      planning: { model: 'claude-5-sonnet', effort: 'high' },
-      implementation: { model: 'claude-5-sonnet', effort: 'medium' },
-      review_tl: { model: 'claude-5-sonnet', effort: 'low' },
-      review_adv: { model: 'claude-5-sonnet', effort: 'low' },
-      memory: { model: 'claude-5-sonnet', effort: 'low' },
+      bootstrap: { model: 'anthropic.claude-5-sonnet', effort: 'medium' },
+      planning: { model: 'anthropic.claude-5-sonnet', effort: 'high' },
+      implementation: { model: 'anthropic.claude-5-sonnet', effort: 'medium' },
+      review_tl: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
+      review_adv: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
+      memory: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
     }
   },
   'antigravity': {
@@ -31,7 +31,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
-      planning: { model: 'claude-5-sonnet', effort: 'high' },
+      planning: { model: 'anthropic.claude-5-sonnet', effort: 'high' },
       implementation: { model: 'gpt-5.3-codex', effort: 'medium' },
       review_tl: { model: 'gpt-5.3-codex', effort: 'low' },
       review_adv: { model: 'gpt-5.3-codex', effort: 'low' },
@@ -42,7 +42,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
-      planning: { model: 'claude-5-sonnet', effort: 'high' },
+      planning: { model: 'anthropic.claude-5-sonnet', effort: 'high' },
       implementation: { model: 'gpt-5.3-codex', effort: 'medium' },
       review_tl: { model: 'gpt-5.3-codex', effort: 'low' },
       review_adv: { model: 'gpt-5.3-codex', effort: 'low' },
