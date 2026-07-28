@@ -50,21 +50,28 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
                                  │
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  Phase E  ·  project-memory skill                                    │
-  │  Persists learnings, decisions, and patterns to long-term memory     │
-  └──────────────────────────────┬───────────────────────────────────────┘
-                                 │
-                                 ▼
-  ┌──────────────────────────────────────────────────────────────────────┐
   │  Phase F  ·  transition (no agent)                                   │
-  │  Advances to next NOT_STARTED feature, or cascades BLOCKED status    │
-  │  to dependents. When all features are done → HALTED                  │
-  └──────────────────────────────┬───────────────────────────────────────┘
-                                 │
-                    ┌────────────┴────────────┐
-                    ▼                         ▼
-             next feature               all done
-          (loops to Phase A)           (session end)
+  │  If next NOT_STARTED feature found → returns to PLANNING (loop)      │
+  │  If all features done → advances to MEMORY                           │
+  │  BLOCKED features cascade their status to dependents                 │
+  └──────┬──────────────────────────────────────────────────────┬────────┘
+         │  next feature                          all features done
+         ▼                                                       │
+  (loops to Phase A — PLANNING)                                  ▼
+                                 ┌──────────────────────────────────────────────────────────────────────┐
+                                 │  Phase E  ·  project-memory skill                                    │
+                                 │  Persists learnings, decisions, and patterns to long-term memory     │
+                                 └──────────────────────────────┬───────────────────────────────────────┘
+                                                                │
+                                                                ▼
+                                 ┌──────────────────────────────────────────────────────────────────────┐
+                                 │  DEPLOY  ·  (no agent)                                               │
+                                 │  Runs git add/commit/push for each project path                      │
+                                 │  Skippable via --skip-deploy → jumps straight to HALTED              │
+                                 └──────────────────────────────┬───────────────────────────────────────┘
+                                                                │
+                                                                ▼
+                                                            (HALTED)
 ```
 
 > Phases B → C loop per rework. A feature can cycle back from C to B up to `maxReworks` times before being marked BLOCKED. BLOCKED features cascade to dependents; FAILED features do not.
@@ -128,13 +135,30 @@ node dist/cli/run.js
 Runs an interactive wizard to initialize your workspace:
 
 1. **Creates tracking files** — `BACKLOG.md`, `DEVELOPMENT-STATE.md`, `DECISIONS.md`, and `BOOTSTRAP-CONFIG.json` under `docs/product/`.
-2. **Steering wizard** — prompts for optional custom steering rules per phase (global, bootstrap, planning, implementation, validation, memory).
+2. **Steering wizard** — prompts for optional custom steering rules per phase (global, bootstrap, planning, implementation, review, memory).
 3. **Local settings** — prompts to create `.harness-kit/settings.json` if it does not exist.
 4. **Run follow-up** — offers to trigger `hrns run` immediately. Any arguments passed to `init` (e.g. `--agent gemini`) are forwarded automatically.
 
 ### `hrns run`
 
 Starts or resumes an orchestration session. If a backlog exists on disk, it picks up exactly where the previous run stopped.
+
+### `hrns settings`
+
+Manages the `settings.json` configuration file interactively. Supports three subcommands:
+
+- `edit` — opens `settings.json` in the default text editor (creates it if missing)
+- `renew` — recreates `settings.json` with default values
+- `delete` — removes `settings.json`
+
+Prompts to target either the **global** (`~/.config/harness-kit/settings.json`) or **local** (`.harness-kit/settings.json`) file.
+
+```bash
+hrns settings           # interactive menu
+hrns settings edit      # open in editor directly
+hrns settings renew     # recreate with defaults
+hrns settings delete    # remove the file
+```
 
 ### `hrns report`
 
@@ -152,7 +176,6 @@ Show version or help message.
 |---|---|---|---|
 | `--agent <type>` | `-a` | Agent runner type (see table below) | `--agent copilot-sdk` |
 | `--model <name>` | `-m` | Model override for all phases | `--model gpt-4o` |
-| `--copilot-sdk` | | Shorthand for `--agent copilot-sdk` | |
 | `--reset` | | Force reset (skip interactive prompt) | |
 | `--resume` | | Force resume (skip interactive prompt) | |
 | `--scope <text>` | | Project scope / PRD (skips editor prompt) | `--scope "REST API with JWT"` |
@@ -163,6 +186,7 @@ Show version or help message.
 | `--complexity <val>` | `-c` | Phase A complexity: `SIMPLE`/`S`, `COMPLEX`/`C`, or omit for `AUTO` | `--complexity S` |
 | `--skip-validation` | | Skip Phase C entirely — jump straight to Phase D | |
 | `--skip-steering` | | Skip Phase E entirely — jump straight to Phase F | |
+| `--skip-deploy` | | Skip DEPLOY phase — pipeline halts after Phase F | |
 | `--debug` | | Enable debug output | |
 
 > [!NOTE]
@@ -174,6 +198,9 @@ Show version or help message.
 > [!TIP]
 > `--skip-steering` skips the Phase E `project-memory` agent entirely. Use it when you want a fast cycle (Bootstrap → A → B → C → D → F) without writing documentation memory, for example during exploration or early prototyping.
 
+> [!TIP]
+> `--skip-deploy` skips the git stage/commit/push step. Useful when you want the orchestrator to finish implementation without touching version control.
+
 ---
 
 ## Agent runners
@@ -183,12 +210,12 @@ Each runner is a self-contained strategy for invoking a specific AI backend. The
 | Type | Binary / SDK | Default model |
 |---|---|---|
 | `claude-cli` | `claude` CLI | _(from settings)_ |
-| `claude-sdk` | `@anthropic-ai/sdk` | `claude-sonnet-4-6` |
-| `antigravity-cli` | `agy` CLI | `gemini-3.5-flash` |
+| `claude-sdk` | `@anthropic-ai/sdk` | `claude-5-sonnet` |
+| `antigravity-cli` | `agy` CLI | `gemini-3.6-flash` |
 | `copilot-cli` | `copilot` CLI | _(from settings)_ |
 | `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.3-codex` |
 | `cursor-cli` | `agent` CLI | _(from settings)_ |
-| `cursor-sdk` | `@cursor/sdk` | `composer-2.5` |
+| `cursor-sdk` | `@cursor/sdk` | `gpt-5.3-codex` |
 
 ### Auto-selection
 
@@ -230,7 +257,7 @@ The global file is created automatically on first run. You can also set `HARNESS
     "timeoutMs": 1800000,
     "phases": {
       "<phase-key>": {
-        "model": "claude-sonnet-4-6",
+        "model": "claude-5-sonnet",
         "effort": "high",
         "timeoutMs": 3600000
       }
@@ -273,45 +300,45 @@ The global file is created automatically on first run. You can also set `HARNESS
   "claude": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":   { "model": "claude-sonnet-4-6", "effort": "low"    },
-      "planning":     { "model": "claude-sonnet-4-6", "effort": "high"   },
-      "implementation":     { "model": "claude-sonnet-4-6", "effort": "medium" },
-      "review_tl":  { "model": "claude-sonnet-4-6", "effort": "low"    },
-      "review_adv": { "model": "claude-sonnet-4-6", "effort": "low"    },
-      "memory":     { "model": "claude-sonnet-4-6", "effort": "low"    }
+      "bootstrap":      { "model": "claude-5-sonnet", "effort": "medium" },
+      "planning":       { "model": "claude-5-sonnet", "effort": "high"   },
+      "implementation": { "model": "claude-5-sonnet", "effort": "medium" },
+      "review_tl":      { "model": "claude-5-sonnet", "effort": "low"    },
+      "review_adv":     { "model": "claude-5-sonnet", "effort": "low"    },
+      "memory":         { "model": "claude-5-sonnet", "effort": "low"    }
     }
   },
   "antigravity": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":   { "model": "gemini-3.5-flash" },
-      "planning":     { "model": "gemini-3.5-flash" },
-      "implementation":     { "model": "gemini-3.5-flash" },
-      "review_tl":  { "model": "gemini-3.5-flash" },
-      "review_adv": { "model": "gemini-3.5-flash" },
-      "memory":     { "model": "gemini-3.5-flash" }
+      "bootstrap":      { "model": "gemini-3.6-flash", "effort": "high"   },
+      "planning":       { "model": "gemini-3.1-pro",   "effort": "high"   },
+      "implementation": { "model": "gemini-3.6-flash", "effort": "medium" },
+      "review_tl":      { "model": "gemini-3.1-pro",   "effort": "low"    },
+      "review_adv":     { "model": "gemini-3.1-pro",   "effort": "low"    },
+      "memory":         { "model": "gemini-3.6-flash", "effort": "low"    }
     }
   },
   "copilot": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":   { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "planning":     { "model": "claude-sonnet-4-6", "effort": "high"   },
-      "implementation":     { "model": "gpt-5.3-codex",    "effort": "medium" },
-      "review_tl":  { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "review_adv": { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "memory":     { "model": "gpt-5.3-codex",    "effort": "low"    }
+      "bootstrap":      { "model": "gpt-5.3-codex",  "effort": "medium" },
+      "planning":       { "model": "claude-5-sonnet", "effort": "high"   },
+      "implementation": { "model": "gpt-5.3-codex",  "effort": "medium" },
+      "review_tl":      { "model": "gpt-5.3-codex",  "effort": "low"    },
+      "review_adv":     { "model": "gpt-5.3-codex",  "effort": "low"    },
+      "memory":         { "model": "gpt-5.3-codex",  "effort": "low"    }
     }
   },
   "cursor": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":   { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "planning":     { "model": "claude-sonnet-4-6", "effort": "high"   },
-      "implementation":     { "model": "gpt-5.3-codex",    "effort": "medium" },
-      "review_tl":  { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "review_adv": { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "memory":     { "model": "gpt-5.3-codex",    "effort": "low"    }
+      "bootstrap":      { "model": "gpt-5.3-codex",  "effort": "medium" },
+      "planning":       { "model": "claude-5-sonnet", "effort": "high"   },
+      "implementation": { "model": "gpt-5.3-codex",  "effort": "medium" },
+      "review_tl":      { "model": "gpt-5.3-codex",  "effort": "low"    },
+      "review_adv":     { "model": "gpt-5.3-codex",  "effort": "low"    },
+      "memory":         { "model": "gpt-5.3-codex",  "effort": "low"    }
     }
   }
 }
@@ -343,12 +370,43 @@ Install as a dependency:
 npm install @romabeckman/hrns
 ```
 
-### Example — custom chain with pluggable runner
+### Example — run with default chain
 
 ```typescript
 import {
   HarnessOrchestrator,
   AgentRunnerFactory,
+  ChainBuilder,
+} from '@romabeckman/hrns'
+import { Complexity } from '@romabeckman/hrns'
+
+// Pick any registered runner (claude-cli, claude-sdk, antigravity-cli, copilot-sdk, etc.)
+const runner = AgentRunnerFactory.create({
+  type: 'claude-sdk',   // reads ANTHROPIC_API_KEY from env
+  model: 'claude-5-sonnet',
+})
+
+const orchestrator = new HarnessOrchestrator({
+  scope: 'REST API with JWT auth and PostgreSQL',
+  projectPaths: ['/path/to/my-api'],
+  score: 0.7,           // minimum acceptance score (0–1)
+  reworks: 3,           // max rework cycles before cascade-blocking
+  complexity: Complexity.AUTO,
+  agentRunner: runner,
+  chain: ChainBuilder.buildDefault(),
+})
+
+await orchestrator.run()
+orchestrator.tokenReport()
+```
+
+> When a backlog already exists on disk, the orchestrator re-enters at the last persisted phase automatically. The `scope` value is overridden by the persisted scope.
+
+### Example — custom phase chain
+
+```typescript
+import {
+  HarnessOrchestrator,
   ChainBuilder,
   PlanningHandler,
   DevelopmentHandler,
@@ -359,23 +417,17 @@ import {
   DeployHandler,
   CascadeBlockedHandler,
 } from '@romabeckman/hrns'
+import { Complexity } from '@romabeckman/hrns'
 
-// Pick any registered runner (claude-cli, claude-sdk, antigravity-cli, copilot-sdk, etc.)
-const runner = AgentRunnerFactory.create({
-  type: 'claude-sdk',   // reads ANTHROPIC_API_KEY from env
-  model: 'claude-sonnet-4-6',
-})
-
-// Build a custom phase chain (or use ChainBuilder.buildDefault())
 const chain = new ChainBuilder()
   .addPhase(new PlanningHandler())
-      .addPhase(new DevelopmentHandler())
-      .addPhase(new ReviewHandler())
-      .addPhase(new StateCheckHandler())
-      .addPhase(new TransitionHandler())
-      .addPhase(new MemoryHandler())
-      .addPhase(new DeployHandler())
-      .addPhase(new CascadeBlockedHandler())
+  .addPhase(new DevelopmentHandler())
+  .addPhase(new ReviewHandler())
+  .addPhase(new StateCheckHandler())
+  .addPhase(new TransitionHandler())
+  .addPhase(new MemoryHandler())
+  .addPhase(new DeployHandler())
+  .addPhase(new CascadeBlockedHandler())
   .build()
 
 const orchestrator = new HarnessOrchestrator({
