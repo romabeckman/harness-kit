@@ -9,7 +9,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'claude-5-sonnet', effort: 'medium' },
-      PLANNING: { model: 'claude-5-sonnet', effort: 'high' },
+      planning: { model: 'claude-5-sonnet', effort: 'high' },
       implementation: { model: 'claude-5-sonnet', effort: 'medium' },
       review_tl: { model: 'claude-5-sonnet', effort: 'low' },
       review_adv: { model: 'claude-5-sonnet', effort: 'low' },
@@ -20,7 +20,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gemini-3.6-flash', effort: 'high' },
-      PLANNING: { model: 'gemini-3.1-pro', effort: 'high' },
+      planning: { model: 'gemini-3.1-pro', effort: 'high' },
       implementation: { model: 'gemini-3.6-flash', effort: 'medium' },
       review_tl: { model: 'gemini-3.1-pro', effort: 'low' },
       review_adv: { model: 'gemini-3.1-pro', effort: 'low' },
@@ -31,7 +31,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
-      PLANNING: { model: 'claude-5-sonnet', effort: 'high' },
+      planning: { model: 'claude-5-sonnet', effort: 'high' },
       implementation: { model: 'gpt-5.3-codex', effort: 'medium' },
       review_tl: { model: 'gpt-5.3-codex', effort: 'low' },
       review_adv: { model: 'gpt-5.3-codex', effort: 'low' },
@@ -42,7 +42,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
       bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
-      PLANNING: { model: 'claude-5-sonnet', effort: 'high' },
+      planning: { model: 'claude-5-sonnet', effort: 'high' },
       implementation: { model: 'gpt-5.3-codex', effort: 'medium' },
       review_tl: { model: 'gpt-5.3-codex', effort: 'low' },
       review_adv: { model: 'gpt-5.3-codex', effort: 'low' },
