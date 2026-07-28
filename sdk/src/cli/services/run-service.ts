@@ -134,8 +134,8 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
   if (parsed.skipValidation) {
     console.log(`  skip-validation: true  (Phase REVIEW skipped)`);
   }
-  if (parsed.skipSteering) {
-    console.log(`  skip-steering: true  (Phase MEMORY skipped)`);
+  if (parsed.skipMemory) {
+    console.log(`  skip-memory: true  (Phase MEMORY skipped)`);
   }
   if (parsed.skipDeploy) {
     console.log(`  skip-deploy: true  (Phase DEPLOY skipped)`);
@@ -165,7 +165,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     chain: ChainBuilder.buildDefault(),
     cliCommand: isFromInit ? CliCommand.INIT : CliCommand.RUN,
     skipValidation: parsed.skipValidation,
-    skipSteering: parsed.skipSteering,
+    skipMemory: parsed.skipMemory,
     skipDeploy: parsed.skipDeploy,
   });
 

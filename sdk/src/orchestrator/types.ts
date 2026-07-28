@@ -19,7 +19,7 @@ export interface OrchestratorConfig {
   /** When true, Phase C (review) is skipped entirely and execution jumps to Phase D. */
   skipValidation?: boolean
   /** When true, Phase E (memory) is skipped entirely and execution jumps to Phase F. */
-  skipSteering?: boolean
+  skipMemory?: boolean
   /** When true, Phase DEPLOY (git stage/commit/push) is skipped and pipeline halts after Phase F. */
   skipDeploy?: boolean
 }

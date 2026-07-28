@@ -15,9 +15,9 @@ export class MemoryHandler extends AbstractPhaseHandler {
     const activeFeature = context.getActiveFeature(features)
     if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
 
-    // --skip-steering: bypass project-memory agent and jump straight to Phase F
-    if (context.config.skipSteering) {
-      process.stdout.write(`[phase_memory] --skip-steering active — skipping project-memory for feature ${activeFeature.id}\n`)
+    // --skip-memory: bypass project-memory agent and jump straight to Phase F
+    if (context.config.skipMemory) {
+      process.stdout.write(`[phase_memory] --skip-memory active — skipping project-memory for feature ${activeFeature.id}\n`)
       return Phase.DEPLOY
     }
 

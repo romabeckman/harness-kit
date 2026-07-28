@@ -60,8 +60,8 @@ describe('MemoryHandler', () => {
     expect(result).toBe(Phase.TRANSITION)
   })
 
-  it('deve pular Phase E inteira quando skipSteering=true no config', async () => {
-    mockContext.config = { projectPaths: ['/src'], skipSteering: true }
+  it('deve pular Phase E inteira quando skipMemory=true no config', async () => {
+    mockContext.config = { projectPaths: ['/src'], skipMemory: true }
 
     const result = await handler.handle(Phase.MEMORY, mockContext)
 

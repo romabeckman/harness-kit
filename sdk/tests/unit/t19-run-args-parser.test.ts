@@ -229,30 +229,30 @@ describe('T19 — parseRunArgs', () => {
     expect(result.debug).toBe(true)
   })
 
-  // ── --skip-steering ───────────────────────────────────────────────────────
+  // ── --skip-memory ───────────────────────────────────────────────────────
 
-  it('parses --skip-steering flag', () => {
-    const result = parseRunArgs(['--skip-steering'])
-    expect(result.skipSteering).toBe(true)
+  it('parses --skip-memory flag', () => {
+    const result = parseRunArgs(['--skip-memory'])
+    expect(result.skipMemory).toBe(true)
   })
 
-  it('skipSteering is undefined when flag not supplied', () => {
+  it('skipMemory is undefined when flag not supplied', () => {
     const result = parseRunArgs([])
-    expect(result.skipSteering).toBeUndefined()
+    expect(result.skipMemory).toBeUndefined()
   })
 
-  it('--skip-steering coexists with other flags', () => {
-    const result = parseRunArgs(['--resume', '--skip-steering', '--debug'])
+  it('--skip-memory coexists with other flags', () => {
+    const result = parseRunArgs(['--resume', '--skip-memory', '--debug'])
     expect(result.action).toBe('resume')
-    expect(result.skipSteering).toBe(true)
+    expect(result.skipMemory).toBe(true)
     expect(result.debug).toBe(true)
   })
 
 
-  it('--skip-validation and --skip-steering can be combined', () => {
-    const result = parseRunArgs(['--skip-validation', '--skip-steering'])
+  it('--skip-validation and --skip-memory can be combined', () => {
+    const result = parseRunArgs(['--skip-validation', '--skip-memory'])
     expect(result.skipValidation).toBe(true)
-    expect(result.skipSteering).toBe(true)
+    expect(result.skipMemory).toBe(true)
   })
 
   // ── --skip-deploy ─────────────────────────────────────────────────────────
@@ -268,9 +268,9 @@ describe('T19 — parseRunArgs', () => {
   })
 
   it('--skip-deploy coexists with other skip flags', () => {
-    const result = parseRunArgs(['--skip-validation', '--skip-steering', '--skip-deploy'])
+    const result = parseRunArgs(['--skip-validation', '--skip-memory', '--skip-deploy'])
     expect(result.skipValidation).toBe(true)
-    expect(result.skipSteering).toBe(true)
+    expect(result.skipMemory).toBe(true)
     expect(result.skipDeploy).toBe(true)
   })
 })

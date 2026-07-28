@@ -26,7 +26,7 @@ export interface ParsedRunArgs {
   skipValidation?: boolean
 
   // Skip Phase E (memory / steering) entirely — jumps directly to Phase F
-  skipSteering?: boolean
+  skipMemory?: boolean
 
   // Skip Phase DEPLOY (git stage/commit/push) — pipeline halts after Phase F
   skipDeploy?: boolean
@@ -51,7 +51,7 @@ export interface ParsedRunArgs {
  * --steering <text>        Additional orchestration rules
  * --complexity, -c <val>   Force complexity: SIMPLE|S or COMPLEX|C (default: AUTO)
  * --skip-validation         Skip Phase C (review) — jump directly to Phase D
- * --skip-steering           Skip Phase E (memory) — jump directly to Phase F
+ * --skip-memory           Skip Phase E (memory) — jump directly to Phase F
  * --skip-deploy             Skip Phase DEPLOY (git stage/commit/push) — halt after Phase F
  */
 export function parseRunArgs(args: string[]): ParsedRunArgs {
@@ -125,8 +125,8 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
         result.skipValidation = true
         break
 
-      case '--skip-steering':
-        result.skipSteering = true
+      case '--skip-memory':
+        result.skipMemory = true
         break
 
       case '--skip-deploy':
