@@ -92,7 +92,6 @@ export class PhaseDecisionLogger {
 
   static logPhaseE(
     fsm: IFileStateManager,
-    feature: Feature,
     projectPaths: string[]
   ): void {
     const docPaths = projectPaths.flatMap(p => listDocFiles(join(p, 'docs', 'feature')))
@@ -102,8 +101,8 @@ export class PhaseDecisionLogger {
       : 'no new files detected'
 
     fsm.appendDecision({
-      featureId: feature.id,
-      decision: `Memory: project memory written for domain '${feature.domain}'`,
+      featureId: null,
+      decision: `Memory: project memory written`,
       rationale: `Documents created or updated: ${docList}.`,
     })
   }

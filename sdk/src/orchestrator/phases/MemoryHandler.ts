@@ -11,23 +11,15 @@ export class MemoryHandler extends AbstractPhaseHandler {
       return super.handle(phase, context)
     }
 
-    const features = context.fsm.loadBacklog()
-    const activeFeature = context.getActiveFeature(features)
-    if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
-
     // --skip-memory: bypass project-memory agent and jump straight to Phase F
     if (context.config.skipMemory) {
       process.stdout.write(`[phase_memory] --skip-memory active — skipping project-memory for feature ${activeFeature.id}\n`)
       return Phase.DEPLOY
     }
 
-    const config = context.fsm.loadBootstrapConfig()
-    const decisions = context.fsm.loadRecentDecisions(5)
+    const config = context.fsm.loadBootstrapConfig();
     const payload = ContextAssembler.buildPhaseEPayload(
-      activeFeature,
       context.config.projectPaths,
-      config.cycleCounter.completedCycles,
-      decisions,
       context.workingDir,
       config.steeringRules
     )
@@ -42,7 +34,7 @@ export class MemoryHandler extends AbstractPhaseHandler {
       phaseKey: 'memory',
     })
 
-    PhaseDecisionLogger.logPhaseE(context.fsm, activeFeature, context.config.projectPaths)
+    PhaseDecisionLogger.logPhaseE(context.fsm, context.config.projectPaths)
 
     return Phase.DEPLOY
   }
