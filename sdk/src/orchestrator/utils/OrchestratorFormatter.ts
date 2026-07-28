@@ -20,8 +20,8 @@ export class OrchestratorFormatter {
       Phase.DEVELOPMENT,
       Phase.REVIEW,
       Phase.STATE_CHECK,
-      Phase.MEMORY,
       Phase.TRANSITION,
+      Phase.MEMORY,
       Phase.DEPLOY,
     ]
     const shortNames: Record<Phase, string> = {
