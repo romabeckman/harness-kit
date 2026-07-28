@@ -12,7 +12,7 @@ The `sdk_core` module is a TypeScript npm package (`harness-kit-sdk`) that imple
 |---|---|---|
 | `HarnessOrchestrator` | class | Main entry point. Drives the state machine loop. Methods: `run()`, `getState()`, `tokenReport()`, `applySteeringActions(actions)`, `getPhaseDescription(phase)`. |
 | `HarnessOrchestratorOptions` | type | Constructor options for `HarnessOrchestrator`. |
-| `Phase` | enum | `BOOTSTRAP \| PHASE_A \| PHASE_B \| PHASE_C \| PHASE_D \| PHASE_E \| CASCADE_BLOCKED \| HALTED` |
+| `Phase` | enum | `BOOTSTRAP \| PLANNING \| DEVELOPMENT \| REVIEW \| STATE_CHECK \| MEMORY \| CASCADE_BLOCKED \| HALTED` |
 | `OrchestratorConfig` | type | `scope`, `projectPaths`, `agentRunner?` (optional — auto-detected), `productDir?` |
 | `OrchestratorState` | type | `currentPhase`, `activeFeatureId`, `completedCycles` |
 | `PhaseTransition` | type | `from`, `condition`, `to` |

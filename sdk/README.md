@@ -260,11 +260,11 @@ The global file is created automatically on first run. You can also set `HARNESS
 | Key | Phase |
 |---|---|
 | `bootstrap` | Bootstrap — software-architect agent |
-| `phase_a` | Phase A — scope-refinement |
-| `phase_b` | Phase B — tdd-orchestrator |
-| `phase_c_tl` | Phase C — tech-lead review |
-| `phase_c_adv` | Phase C — adversarial-qa review |
-| `phase_e` | Phase E — project-memory |
+| `planning` | Phase A — scope-refinement |
+| `implementation` | Phase B — tdd-orchestrator |
+| `review_tl` | Phase C — tech-lead review |
+| `review_adv` | Phase C — adversarial-qa review |
+| `memory` | Phase E — project-memory |
 
 ### Default settings
 
@@ -274,44 +274,44 @@ The global file is created automatically on first run. You can also set `HARNESS
     "timeoutMs": 1800000,
     "phases": {
       "bootstrap":   { "model": "claude-sonnet-4-6", "effort": "low"    },
-      "phase_a":     { "model": "claude-sonnet-4-6", "effort": "high"   },
-      "phase_b":     { "model": "claude-sonnet-4-6", "effort": "medium" },
-      "phase_c_tl":  { "model": "claude-sonnet-4-6", "effort": "low"    },
-      "phase_c_adv": { "model": "claude-sonnet-4-6", "effort": "low"    },
-      "phase_e":     { "model": "claude-sonnet-4-6", "effort": "low"    }
+      "planning":     { "model": "claude-sonnet-4-6", "effort": "high"   },
+      "implementation":     { "model": "claude-sonnet-4-6", "effort": "medium" },
+      "review_tl":  { "model": "claude-sonnet-4-6", "effort": "low"    },
+      "review_adv": { "model": "claude-sonnet-4-6", "effort": "low"    },
+      "memory":     { "model": "claude-sonnet-4-6", "effort": "low"    }
     }
   },
   "antigravity": {
     "timeoutMs": 1800000,
     "phases": {
       "bootstrap":   { "model": "gemini-3.5-flash" },
-      "phase_a":     { "model": "gemini-3.5-flash" },
-      "phase_b":     { "model": "gemini-3.5-flash" },
-      "phase_c_tl":  { "model": "gemini-3.5-flash" },
-      "phase_c_adv": { "model": "gemini-3.5-flash" },
-      "phase_e":     { "model": "gemini-3.5-flash" }
+      "planning":     { "model": "gemini-3.5-flash" },
+      "implementation":     { "model": "gemini-3.5-flash" },
+      "review_tl":  { "model": "gemini-3.5-flash" },
+      "review_adv": { "model": "gemini-3.5-flash" },
+      "memory":     { "model": "gemini-3.5-flash" }
     }
   },
   "copilot": {
     "timeoutMs": 1800000,
     "phases": {
       "bootstrap":   { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "phase_a":     { "model": "claude-sonnet-4-6", "effort": "high"   },
-      "phase_b":     { "model": "gpt-5.3-codex",    "effort": "medium" },
-      "phase_c_tl":  { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "phase_c_adv": { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "phase_e":     { "model": "gpt-5.3-codex",    "effort": "low"    }
+      "planning":     { "model": "claude-sonnet-4-6", "effort": "high"   },
+      "implementation":     { "model": "gpt-5.3-codex",    "effort": "medium" },
+      "review_tl":  { "model": "gpt-5.3-codex",    "effort": "low"    },
+      "review_adv": { "model": "gpt-5.3-codex",    "effort": "low"    },
+      "memory":     { "model": "gpt-5.3-codex",    "effort": "low"    }
     }
   },
   "cursor": {
     "timeoutMs": 1800000,
     "phases": {
       "bootstrap":   { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "phase_a":     { "model": "claude-sonnet-4-6", "effort": "high"   },
-      "phase_b":     { "model": "gpt-5.3-codex",    "effort": "medium" },
-      "phase_c_tl":  { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "phase_c_adv": { "model": "gpt-5.3-codex",    "effort": "low"    },
-      "phase_e":     { "model": "gpt-5.3-codex",    "effort": "low"    }
+      "planning":     { "model": "claude-sonnet-4-6", "effort": "high"   },
+      "implementation":     { "model": "gpt-5.3-codex",    "effort": "medium" },
+      "review_tl":  { "model": "gpt-5.3-codex",    "effort": "low"    },
+      "review_adv": { "model": "gpt-5.3-codex",    "effort": "low"    },
+      "memory":     { "model": "gpt-5.3-codex",    "effort": "low"    }
     }
   }
 }
@@ -325,7 +325,7 @@ Create `.harness-kit/settings.json` inside your project root:
 {
   "claude": {
     "phases": {
-      "phase_b": { "model": "claude-opus-4-8", "effort": "high" }
+      "implementation": { "model": "claude-opus-4-8", "effort": "high" }
     }
   }
 }
@@ -350,12 +350,12 @@ import {
   HarnessOrchestrator,
   AgentRunnerFactory,
   ChainBuilder,
-  PhaseAHandler,
-  PhaseBHandler,
-  PhaseCHandler,
-  PhaseDHandler,
-  PhaseEHandler,
-  PhaseFHandler,
+  PlanningHandler,
+  DevelopmentHandler,
+  ReviewHandler,
+  StateCheckHandler,
+  MemoryHandler,
+  TransitionHandler,
   CascadeBlockedHandler,
 } from '@romabeckman/hrns'
 
@@ -367,12 +367,12 @@ const runner = AgentRunnerFactory.create({
 
 // Build a custom phase chain (or use ChainBuilder.buildDefault())
 const chain = new ChainBuilder()
-  .addPhase(new PhaseAHandler())
-  .addPhase(new PhaseBHandler())
-  .addPhase(new PhaseCHandler())
-  .addPhase(new PhaseDHandler())
-  .addPhase(new PhaseEHandler())
-  .addPhase(new PhaseFHandler())
+  .addPhase(new PlanningHandler())
+  .addPhase(new DevelopmentHandler())
+  .addPhase(new ReviewHandler())
+  .addPhase(new StateCheckHandler())
+  .addPhase(new MemoryHandler())
+  .addPhase(new TransitionHandler())
   .addPhase(new CascadeBlockedHandler())
   .build()
 

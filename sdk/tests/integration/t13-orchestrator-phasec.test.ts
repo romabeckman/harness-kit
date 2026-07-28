@@ -56,7 +56,7 @@ afterEach(() => {
   rmSync(tmpDir, { recursive: true, force: true })
 })
 
-describe('T13 — HarnessOrchestrator PHASE_C', () => {
+describe('T13 — HarnessOrchestrator REVIEW', () => {
   describe('TS-F-01: PASS on first attempt', () => {
     it('feature COMPLETED with correct scores after PASS', async () => {
       setupFullRun()

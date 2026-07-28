@@ -103,10 +103,10 @@ const groups = Math.ceil(tasks.length / 5) // Magic number 5
 const limit = groups * 2 // Magic number 2
 
 # CORRECT: Extract cohesive private methods and helper services
-class PhaseBHandler extends AbstractPhaseHandler {
+class DevelopmentHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
     const shouldGoToPhaseC = this.handleResumedExecution(activeFeature, tddOutputPath, context)
-    if (shouldGoToPhaseC) return Phase.PHASE_C
+    if (shouldGoToPhaseC) return Phase.REVIEW
     // ...
   }
 
@@ -116,7 +116,7 @@ class PhaseBHandler extends AbstractPhaseHandler {
 }
 
 # WRONG: Monolithic long methods mixing resumption, pagination, and file handling
-class PhaseBHandler extends AbstractPhaseHandler {
+class DevelopmentHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
     // 150 lines of mixed concerns directly inside handle
     const allTasks = context.fsm.loadDevelopmentState().filter(...)

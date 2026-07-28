@@ -1,9 +1,9 @@
 import { Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 
-export class PhaseDHandler extends AbstractPhaseHandler {
+export class StateCheckHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
-    if (phase !== Phase.PHASE_D) {
+    if (phase !== Phase.STATE_CHECK) {
       return super.handle(phase, context)
     }
 
@@ -37,6 +37,6 @@ export class PhaseDHandler extends AbstractPhaseHandler {
 
     context.fsm.appendDecision({ featureId: null, decision })
 
-    return Phase.PHASE_E
+    return Phase.MEMORY
   }
 }

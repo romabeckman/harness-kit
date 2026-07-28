@@ -1,13 +1,13 @@
 import {
   IPhaseHandler,
   BootstrapHandler,
-  PhaseAHandler,
-  PhaseBHandler,
-  PhaseCHandler,
-  PhaseDHandler,
-  PhaseEHandler,
-  PhaseFHandler,
-  PhaseGHandler,
+  PlanningHandler,
+  DevelopmentHandler,
+  ReviewHandler,
+  StateCheckHandler,
+  MemoryHandler,
+  TransitionHandler,
+  DeployHandler,
   CascadeBlockedHandler,
 } from './phases'
 
@@ -31,13 +31,13 @@ export class ChainBuilder {
 
   static buildDefault(): IPhaseHandler {
     return new ChainBuilder()
-      .addPhase(new PhaseAHandler())
-      .addPhase(new PhaseBHandler())
-      .addPhase(new PhaseCHandler())
-      .addPhase(new PhaseDHandler())
-      .addPhase(new PhaseEHandler())
-      .addPhase(new PhaseFHandler())
-      .addPhase(new PhaseGHandler())
+      .addPhase(new PlanningHandler())
+      .addPhase(new DevelopmentHandler())
+      .addPhase(new ReviewHandler())
+      .addPhase(new StateCheckHandler())
+      .addPhase(new MemoryHandler())
+      .addPhase(new TransitionHandler())
+      .addPhase(new DeployHandler())
       .addPhase(new CascadeBlockedHandler())
       .build()
   }

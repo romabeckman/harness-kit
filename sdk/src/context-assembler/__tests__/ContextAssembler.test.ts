@@ -45,7 +45,7 @@ describe('ContextAssembler', () => {
   it('should flatten steering rules', () => {
     const feature = { title: 'feature title', domain: 'domain' }
     const steeringRules = {
-      phase_a: ['rule a'],
+      planning: ['rule a'],
       user: ['user rule']
     }
     const payload = ContextAssembler.buildPhaseAPayload(feature as any, 'workdir', [], undefined, steeringRules)

@@ -62,7 +62,7 @@ function makeFullRunFake(specDir: string): void {
   fake.run = async (inv) => {
     if ((inv.skill ?? '').endsWith('scope-refinement')) {
       // Create spec files for the current feature, including a proper tactical design
-      // with Section 6 tasks so PhaseAHandler can extract tasks correctly.
+      // with Section 6 tasks so PlanningHandler can extract tasks correctly.
       mkdirSync(specDir, { recursive: true })
       writeFileSync(join(specDir, '003-sdk_core-tactical-design.md'), tacticalDesignContent)
       writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
@@ -79,10 +79,10 @@ function makeFullRunFake(specDir: string): void {
   fake.setResponse('project-memory', { raw: 'done' })
 }
 
-describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
+describe('T14 — HarnessOrchestrator STATE_CHECK + MEMORY', () => {
   describe('TS-F-02: RETRY once then PASS — reworks counter reflects one retry', () => {
     it('feature COMPLETED, Reworks=1, REWORK-LOG.md exists, completedCycles=1', async () => {
-      // Setup at PHASE_C starting point (TDD-OUTPUT present, tasks completed)
+      // Setup at REVIEW starting point (TDD-OUTPUT present, tasks completed)
       const backlog = [
         '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
         '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
@@ -115,7 +115,7 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
       fake.setResponse('adversarial-qa', { raw: '```json\n{"scoreAdv": 0.80}\n```' })
       fake.setResponse('project-memory', { raw: 'done' })
 
-      // On RETRY, tasks reset to NOT_STARTED → PHASE_B runs again → tdd-orchestrator creates TDD-OUTPUT
+      // On RETRY, tasks reset to NOT_STARTED → DEVELOPMENT runs again → tdd-orchestrator creates TDD-OUTPUT
       const origRun = fake.run.bind(fake)
       fake.run = async (inv) => {
         if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
@@ -175,9 +175,9 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
   })
 
   describe('TS-F-06: Two features, first BLOCKED causes cascade', () => {
-    it('F001 pre-BLOCKED → F002 CASCADE_BLOCKED when processing F002 in PHASE_A', async () => {
+    it('F001 pre-BLOCKED → F002 CASCADE_BLOCKED when processing F002 in PLANNING', async () => {
       // Pre-set F001 as BLOCKED, F002 depends on F001
-      // Orchestrator starts at PHASE_A for F002, discovers dependency is BLOCKED → CASCADE_BLOCKED
+      // Orchestrator starts at PLANNING for F002, discovers dependency is BLOCKED → CASCADE_BLOCKED
       const backlog = [
         '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
         '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
@@ -221,7 +221,7 @@ describe('T14 — HarnessOrchestrator PHASE_D + PHASE_E', () => {
     })
   })
 
-  describe('PHASE_E invokes project-memory', () => {
+  describe('MEMORY invokes project-memory', () => {
     it('project-memory skill called after completion', async () => {
       const backlog = [
         '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',

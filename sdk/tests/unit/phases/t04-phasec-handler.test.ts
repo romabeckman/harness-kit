@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { existsSync, rmSync, readFileSync } from 'node:fs'
-import { PhaseCHandler } from '../../../src/orchestrator/phases/PhaseCHandler'
+import { ReviewHandler } from '../../../src/orchestrator/phases/ReviewHandler'
 import { ValidationGate } from '../../../src/validation-gate/ValidationGate'
 import { Phase } from '../../../src/orchestrator/types'
 import { Verdict } from '../../../src/validation-gate/types'
@@ -8,8 +8,8 @@ import { Verdict } from '../../../src/validation-gate/types'
 vi.mock('node:fs')
 vi.mock('../../../src/validation-gate/ValidationGate')
 
-describe('PhaseCHandler', () => {
-  let handler: PhaseCHandler
+describe('ReviewHandler', () => {
+  let handler: ReviewHandler
   let mockContext: any
   let mockActiveFeature: any
   let mockConfig: any
@@ -31,11 +31,13 @@ describe('PhaseCHandler', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    handler = new PhaseCHandler()
+    handler = new ReviewHandler()
 
     mockActiveFeature = { id: 'F001', domain: 'cli', reworks: 0 }
-    mockConfig = { scoreThresholdTL: 0.8,
-      scoreThresholdAdv: 0.8 }
+    mockConfig = {
+      scoreThresholdTL: 0.8,
+      scoreThresholdAdv: 0.8
+    }
 
     mockContext = {
       workingDir: '/mock/dir',
@@ -65,13 +67,13 @@ describe('PhaseCHandler', () => {
 
     vi.mocked(ValidationGate.evaluate).mockReturnValue({ verdict: Verdict.PASS, reason: 'Passed thresholds' })
 
-    const result = await handler.handle(Phase.PHASE_C, mockContext)
+    const result = await handler.handle(Phase.REVIEW, mockContext)
 
     expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining('TL.json'), 'utf8')
     expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining('QA.json'), 'utf8')
     expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED', { tl: 0.9, adv: 0.9 })
     expect(mockContext.fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
-    expect(result).toBe(Phase.PHASE_D)
+    expect(result).toBe(Phase.STATE_CHECK)
   })
 
   it('deve solicitar RETRY se QA identificar falha grave no payload', async () => {
@@ -86,7 +88,7 @@ describe('PhaseCHandler', () => {
 
     vi.mocked(ValidationGate.evaluate).mockReturnValue({ verdict: Verdict.RETRY, reason: 'Critical Vuln' })
 
-    const result = await handler.handle(Phase.PHASE_C, mockContext)
+    const result = await handler.handle(Phase.REVIEW, mockContext)
 
     expect(mockContext.fsm.incrementReworks).toHaveBeenCalledWith('F001')
     // Content must be structured markdown built from raw score arrays — not a flat string
@@ -97,7 +99,7 @@ describe('PhaseCHandler', () => {
     expect(content).toContain('### Vulnerabilities')
     expect(content).toContain('[CRITICAL]')
     expect(content).toContain('Missing auth check')
-    expect(result).toBe(Phase.PHASE_B)
+    expect(result).toBe(Phase.DEVELOPMENT)
   })
 
   it('deve usar writeReworkLog com fallback quando todos os arrays estão vazios em RETRY', async () => {
@@ -113,7 +115,7 @@ describe('PhaseCHandler', () => {
 
     vi.mocked(ValidationGate.evaluate).mockReturnValue({ verdict: Verdict.RETRY, reason: 'Scores below threshold' })
 
-    await handler.handle(Phase.PHASE_C, mockContext)
+    await handler.handle(Phase.REVIEW, mockContext)
 
     const [, content] = mockContext.fsm.writeReworkLog.mock.calls[0] as [string, string]
     expect(typeof content).toBe('string')
@@ -159,13 +161,13 @@ describe('PhaseCHandler', () => {
 
     vi.mocked(ValidationGate.evaluate).mockReturnValue({ verdict: Verdict.PASS, reason: 'Passed complex thresholds' })
 
-    const result = await handler.handle(Phase.PHASE_C, mockContext)
+    const result = await handler.handle(Phase.REVIEW, mockContext)
 
     expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining('TL.json'), 'utf8')
     expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining('QA.json'), 'utf8')
     expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED', { tl: 0.9, adv: 0.9 })
     expect(mockContext.fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
-    expect(result).toBe(Phase.PHASE_D)
+    expect(result).toBe(Phase.STATE_CHECK)
   })
 
   it('deve limpar TL.json e QA.json no início de cada execução para evitar decisão com dados stale em retry', async () => {
@@ -179,7 +181,7 @@ describe('PhaseCHandler', () => {
     })
     vi.mocked(ValidationGate.evaluate).mockReturnValue({ verdict: Verdict.PASS, reason: 'Passed' })
 
-    await handler.handle(Phase.PHASE_C, mockContext)
+    await handler.handle(Phase.REVIEW, mockContext)
 
     expect(removedFiles.some(p => p.endsWith('TL.json'))).toBe(true)
     expect(removedFiles.some(p => p.endsWith('QA.json'))).toBe(true)
@@ -210,7 +212,7 @@ describe('PhaseCHandler', () => {
 
     vi.mocked(ValidationGate.evaluate).mockReturnValue({ verdict: Verdict.PASS, reason: 'Passed' })
 
-    await handler.handle(Phase.PHASE_C, mockContext)
+    await handler.handle(Phase.REVIEW, mockContext)
 
     expect(ValidationGate.evaluate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -227,7 +229,7 @@ describe('PhaseCHandler', () => {
   it('deve pular Phase C inteira quando skipValidation=true no config', async () => {
     mockContext.config = { projectPaths: ['/src'], skipValidation: true }
 
-    const result = await handler.handle(Phase.PHASE_C, mockContext)
+    const result = await handler.handle(Phase.REVIEW, mockContext)
 
     // No agent must be called
     expect(mockContext.invokeAgent).not.toHaveBeenCalled()
@@ -235,6 +237,6 @@ describe('PhaseCHandler', () => {
     expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED', { tl: 1, adv: 1 })
     expect(mockContext.fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
     // Must go straight to Phase D
-    expect(result).toBe(Phase.PHASE_D)
+    expect(result).toBe(Phase.STATE_CHECK)
   })
 })

@@ -46,7 +46,7 @@ describe('T16 — HarnessSettings', () => {
       'claude': {
         phases: {
           bootstrap: { model: 'claude-3-5-sonnet-latest', effort: 'high' },
-          phase_a: { model: 'claude-3-5-sonnet-latest', effort: 'high' }
+          PLANNING: { model: 'claude-3-5-sonnet-latest', effort: 'high' }
         }
       }
     }))
@@ -57,7 +57,7 @@ describe('T16 — HarnessSettings', () => {
     writeFileSync(join(projectDir, 'settings.json'), JSON.stringify({
       'claude': {
         phases: {
-          phase_a: { model: 'claude-opus-override', effort: 'medium' }
+          PLANNING: { model: 'claude-opus-override', effort: 'medium' }
         }
       }
     }))
@@ -71,7 +71,7 @@ describe('T16 — HarnessSettings', () => {
     })
 
     // Overridden resolves to project
-    expect(settings.resolve('claude', 'phase_a')).toEqual({
+    expect(settings.resolve('claude', 'PLANNING')).toEqual({
       model: 'claude-opus-override',
       effort: 'medium'
     })
@@ -84,7 +84,7 @@ describe('T16 — HarnessSettings', () => {
 
     const settings = HarnessSettings.load(tmpDir)
 
-    expect(settings.resolve('non-existent-runner', 'phase_a')).toEqual({})
+    expect(settings.resolve('non-existent-runner', 'PLANNING')).toEqual({})
     expect(settings.resolve('claude', 'non-existent-phase')).toEqual({})
   })
 })

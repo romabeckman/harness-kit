@@ -5,9 +5,9 @@ import type { PhaseEPayload } from '../../context-assembler/types'
 import { join } from 'node:path'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
-export class PhaseEHandler extends AbstractPhaseHandler {
+export class MemoryHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
-    if (phase !== Phase.PHASE_E) {
+    if (phase !== Phase.MEMORY) {
       return super.handle(phase, context)
     }
 
@@ -18,7 +18,7 @@ export class PhaseEHandler extends AbstractPhaseHandler {
     // --skip-steering: bypass project-memory agent and jump straight to Phase F
     if (context.config.skipSteering) {
       process.stdout.write(`[phase_memory] --skip-steering active — skipping project-memory for feature ${activeFeature.id}\n`)
-      return Phase.PHASE_F
+      return Phase.TRANSITION
     }
 
     const config = context.fsm.loadBootstrapConfig()
@@ -39,12 +39,12 @@ export class PhaseEHandler extends AbstractPhaseHandler {
       agent: 'harness-kit:software-architect',
       mode: 'autonomous',
       prompt,
-      phaseKey: 'phase_e',
+      phaseKey: 'memory',
     })
 
     PhaseDecisionLogger.logPhaseE(context.fsm, activeFeature, context.config.projectPaths)
 
-    return Phase.PHASE_F
+    return Phase.TRANSITION
   }
 
   private buildProjectMemoryPrompt(payload: PhaseEPayload): string {

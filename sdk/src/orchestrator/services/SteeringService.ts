@@ -49,7 +49,7 @@ export class SteeringService {
       featureId: null,
       decision: `Steering override: State rollback to phase ${target}`
     })
-    if (target === Phase.PHASE_B || target === Phase.PHASE_A) {
+    if (target === Phase.DEVELOPMENT || target === Phase.PLANNING) {
       const features = this.fsm.loadBacklog()
       const active = this.getActiveFeature(features)
       if (active) {

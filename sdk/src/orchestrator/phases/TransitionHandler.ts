@@ -2,9 +2,9 @@ import { Feature } from '../../file-state/types'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 
-export class PhaseFHandler extends AbstractPhaseHandler {
+export class TransitionHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
-    if (phase !== Phase.PHASE_F) {
+    if (phase !== Phase.TRANSITION) {
       return super.handle(phase, context)
     }
 
@@ -53,11 +53,11 @@ export class PhaseFHandler extends AbstractPhaseHandler {
     if (nextFeature) {
       config.activeFeatureId = nextFeature.id
       context.fsm.saveBootstrapConfig(config)
-      return Phase.PHASE_A
+      return Phase.PLANNING
     }
 
     this.clearActiveFeatureTasks(context)
-    return Phase.PHASE_G
+    return Phase.DEPLOY
   }
 
   private retryableFeatures(features: Feature[], context: PhaseContext, phase: Phase) {
@@ -79,7 +79,7 @@ export class PhaseFHandler extends AbstractPhaseHandler {
 
       config.activeFeatureId = retryable[0].id
       context.fsm.saveBootstrapConfig(config)
-      return Phase.PHASE_B
+      return Phase.DEVELOPMENT
     }
     throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
   }

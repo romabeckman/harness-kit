@@ -3,21 +3,21 @@ import { Phase } from '../types'
 import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
 
-export class PhaseGHandler extends AbstractPhaseHandler {
+export class DeployHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
-    if (phase !== Phase.PHASE_G) {
+    if (phase !== Phase.DEPLOY) {
       return super.handle(phase, context)
     }
 
     // --skip-deploy: bypass git operations entirely
     if (context.config.skipDeploy) {
-      process.stdout.write(`[PHASE_G] --skip-deploy active — skipping git deployment\n`)
+      process.stdout.write(`[DEPLOY] --skip-deploy active — skipping git deployment\n`)
       return Phase.HALTED
     }
 
     const projectPaths = context.config.projectPaths
     if (!projectPaths || projectPaths.length === 0) {
-      process.stdout.write(`[PHASE_G] No project paths configured — skipping deploy\n`)
+      process.stdout.write(`[DEPLOY] No project paths configured — skipping deploy\n`)
       return Phase.HALTED
     }
 
@@ -152,7 +152,7 @@ export class PhaseGHandler extends AbstractPhaseHandler {
       `  fix(parser): handle empty array edge case`,
       `  refactor: extract config loader into separate module`,
       `  chore(deps): bump vitest to 3.1.0`,
-      `  docs: add PhaseGHandler usage to README`,
+      `  docs: add DeployHandler usage to README`,
       `  test(orchestrator): cover phase transition to DEPLOY`,
       `  feat!: remove deprecated PhaseDeployHandler`,
       ``,
@@ -164,7 +164,7 @@ export class PhaseGHandler extends AbstractPhaseHandler {
       const output = await context.invokeAgent({
         agent: 'harness-kit:developer-backend',
         mode: 'autonomous',
-        phaseKey: 'phase_e',
+        phaseKey: 'memory',
         prompt,
       })
 

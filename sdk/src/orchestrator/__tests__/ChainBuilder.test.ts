@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import { ChainBuilder } from '../ChainBuilder'
 import {
-  PhaseAHandler,
-  PhaseBHandler,
-  PhaseCHandler,
-  PhaseDHandler,
-  PhaseEHandler,
-  PhaseFHandler,
+  PlanningHandler,
+  DevelopmentHandler,
+  ReviewHandler,
+  StateCheckHandler,
+  MemoryHandler,
+  TransitionHandler,
   CascadeBlockedHandler,
 } from '../phases'
 import { Phase } from '../types'
@@ -44,91 +44,91 @@ describe('ChainBuilder', () => {
     const chain = new ChainBuilder().build()
     const ctx = makeContext()
     const result = await chain.handle(Phase.BOOTSTRAP, ctx)
-    expect(result).toBe(Phase.PHASE_A)
+    expect(result).toBe(Phase.PLANNING)
   })
 
-  it('build() with no extra phases returns null for PHASE_A (no handler registered)', async () => {
+  it('build() with no extra phases returns null for PLANNING (no handler registered)', async () => {
     const chain = new ChainBuilder().build()
     const ctx = makeContext()
-    const result = await chain.handle(Phase.PHASE_A, ctx)
+    const result = await chain.handle(Phase.PLANNING, ctx)
     expect(result).toBeNull()
   })
 
-  it('addPhase registers a handler — it responds to the registered phase (PHASE_A)', async () => {
-    const stub = makeStubHandler(Phase.PHASE_A, Phase.PHASE_B)
+  it('addPhase registers a handler — it responds to the registered phase (PLANNING)', async () => {
+    const stub = makeStubHandler(Phase.PLANNING, Phase.DEVELOPMENT)
     const chain = new ChainBuilder().addPhase(stub).build()
-    const result = await chain.handle(Phase.PHASE_A, makeContext())
-    expect(result).toBe(Phase.PHASE_B)
-    expect(stub.handle).toHaveBeenCalledWith(Phase.PHASE_A, expect.anything())
+    const result = await chain.handle(Phase.PLANNING, makeContext())
+    expect(result).toBe(Phase.DEVELOPMENT)
+    expect(stub.handle).toHaveBeenCalledWith(Phase.PLANNING, expect.anything())
   })
 
-  it('addPhase registers a handler — it responds to the registered phase (PHASE_B)', async () => {
-    const stub = makeStubHandler(Phase.PHASE_B, Phase.PHASE_C)
+  it('addPhase registers a handler — it responds to the registered phase (DEVELOPMENT)', async () => {
+    const stub = makeStubHandler(Phase.DEVELOPMENT, Phase.REVIEW)
     const chain = new ChainBuilder().addPhase(stub).build()
-    const result = await chain.handle(Phase.PHASE_B, makeContext())
-    expect(result).toBe(Phase.PHASE_C)
-    expect(stub.handle).toHaveBeenCalledWith(Phase.PHASE_B, expect.anything())
+    const result = await chain.handle(Phase.DEVELOPMENT, makeContext())
+    expect(result).toBe(Phase.REVIEW)
+    expect(stub.handle).toHaveBeenCalledWith(Phase.DEVELOPMENT, expect.anything())
   })
 
-  it('addPhase registers a handler — it responds to the registered phase (PHASE_C)', async () => {
-    const stub = makeStubHandler(Phase.PHASE_C, Phase.PHASE_D)
+  it('addPhase registers a handler — it responds to the registered phase (REVIEW)', async () => {
+    const stub = makeStubHandler(Phase.REVIEW, Phase.STATE_CHECK)
     const chain = new ChainBuilder().addPhase(stub).build()
-    const result = await chain.handle(Phase.PHASE_C, makeContext())
-    expect(result).toBe(Phase.PHASE_D)
+    const result = await chain.handle(Phase.REVIEW, makeContext())
+    expect(result).toBe(Phase.STATE_CHECK)
   })
 
-  it('addPhase registers a handler — it responds to the registered phase (PHASE_D)', async () => {
-    const stub = makeStubHandler(Phase.PHASE_D, Phase.PHASE_E)
+  it('addPhase registers a handler — it responds to the registered phase (STATE_CHECK)', async () => {
+    const stub = makeStubHandler(Phase.STATE_CHECK, Phase.MEMORY)
     const chain = new ChainBuilder().addPhase(stub).build()
-    const result = await chain.handle(Phase.PHASE_D, makeContext())
-    expect(result).toBe(Phase.PHASE_E)
+    const result = await chain.handle(Phase.STATE_CHECK, makeContext())
+    expect(result).toBe(Phase.MEMORY)
   })
 
-  it('addPhase registers a handler — it responds to the registered phase (PHASE_E)', async () => {
-    const stub = makeStubHandler(Phase.PHASE_E, Phase.PHASE_F)
+  it('addPhase registers a handler — it responds to the registered phase (MEMORY)', async () => {
+    const stub = makeStubHandler(Phase.MEMORY, Phase.TRANSITION)
     const chain = new ChainBuilder().addPhase(stub).build()
-    const result = await chain.handle(Phase.PHASE_E, makeContext())
-    expect(result).toBe(Phase.PHASE_F)
+    const result = await chain.handle(Phase.MEMORY, makeContext())
+    expect(result).toBe(Phase.TRANSITION)
   })
 
-  it('addPhase registers a handler — it responds to the registered phase (PHASE_F)', async () => {
-    const stub = makeStubHandler(Phase.PHASE_F, Phase.HALTED)
+  it('addPhase registers a handler — it responds to the registered phase (TRANSITION)', async () => {
+    const stub = makeStubHandler(Phase.TRANSITION, Phase.HALTED)
     const chain = new ChainBuilder().addPhase(stub).build()
-    const result = await chain.handle(Phase.PHASE_F, makeContext())
+    const result = await chain.handle(Phase.TRANSITION, makeContext())
     expect(result).toBe(Phase.HALTED)
   })
 
   it('addPhase registers a handler — it responds to the registered phase (CASCADE_BLOCKED)', async () => {
-    const stub = makeStubHandler(Phase.CASCADE_BLOCKED, Phase.PHASE_D)
+    const stub = makeStubHandler(Phase.CASCADE_BLOCKED, Phase.STATE_CHECK)
     const chain = new ChainBuilder().addPhase(stub).build()
     const result = await chain.handle(Phase.CASCADE_BLOCKED, makeContext())
-    expect(result).toBe(Phase.PHASE_D)
+    expect(result).toBe(Phase.STATE_CHECK)
   })
 
   it('two handlers for same phase are chained — second is reached if first passes through', async () => {
-    const first = makeStubHandler(Phase.PHASE_A, Phase.PHASE_B)
-    const second = makeStubHandler(Phase.PHASE_A, Phase.PHASE_C)
+    const first = makeStubHandler(Phase.PLANNING, Phase.DEVELOPMENT)
+    const second = makeStubHandler(Phase.PLANNING, Phase.REVIEW)
     const chain = new ChainBuilder().addPhase(first).addPhase(second).build()
-    const result = await chain.handle(Phase.PHASE_A, makeContext())
-    expect(result).toBe(Phase.PHASE_B)
+    const result = await chain.handle(Phase.PLANNING, makeContext())
+    expect(result).toBe(Phase.DEVELOPMENT)
     expect(first.handle).toHaveBeenCalled()
   })
 
-  it('buildDefault() builds with all real handlers — BOOTSTRAP resolves to PHASE_A', async () => {
+  it('buildDefault() builds with all real handlers — BOOTSTRAP resolves to PLANNING', async () => {
     const chain = ChainBuilder.buildDefault()
     const ctx = makeContext()
     const result = await chain.handle(Phase.BOOTSTRAP, ctx)
-    expect(result).toBe(Phase.PHASE_A)
+    expect(result).toBe(Phase.PLANNING)
   })
 
-  it('buildDefault() registers PhaseAHandler — class instance present in chain', () => {
+  it('buildDefault() registers PlanningHandler — class instance present in chain', () => {
     const builder = new ChainBuilder()
-      .addPhase(new PhaseAHandler())
-      .addPhase(new PhaseBHandler())
-      .addPhase(new PhaseCHandler())
-      .addPhase(new PhaseDHandler())
-      .addPhase(new PhaseEHandler())
-      .addPhase(new PhaseFHandler())
+      .addPhase(new PlanningHandler())
+      .addPhase(new DevelopmentHandler())
+      .addPhase(new ReviewHandler())
+      .addPhase(new StateCheckHandler())
+      .addPhase(new MemoryHandler())
+      .addPhase(new TransitionHandler())
       .addPhase(new CascadeBlockedHandler())
     const chain = builder.build()
     expect(chain).toBeDefined()
@@ -136,14 +136,14 @@ describe('ChainBuilder', () => {
 
   it('supports method chaining — addPhase returns the same builder instance', () => {
     const builder = new ChainBuilder()
-    const stub = makeStubHandler(Phase.PHASE_A, Phase.PHASE_B)
+    const stub = makeStubHandler(Phase.PLANNING, Phase.DEVELOPMENT)
     expect(builder.addPhase(stub)).toBe(builder)
-    expect(builder.addPhase(makeStubHandler(Phase.PHASE_B, Phase.PHASE_C))).toBe(builder)
-    expect(builder.addPhase(makeStubHandler(Phase.CASCADE_BLOCKED, Phase.PHASE_D))).toBe(builder)
+    expect(builder.addPhase(makeStubHandler(Phase.DEVELOPMENT, Phase.REVIEW))).toBe(builder)
+    expect(builder.addPhase(makeStubHandler(Phase.CASCADE_BLOCKED, Phase.STATE_CHECK))).toBe(builder)
   })
 
   it('build() can be called multiple times returning independent chain instances', () => {
-    const builder = new ChainBuilder().addPhase(makeStubHandler(Phase.PHASE_A, Phase.PHASE_B))
+    const builder = new ChainBuilder().addPhase(makeStubHandler(Phase.PLANNING, Phase.DEVELOPMENT))
     const chainA = builder.build()
     const chainB = builder.build()
     expect(chainA).not.toBe(chainB)

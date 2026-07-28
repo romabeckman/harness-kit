@@ -46,10 +46,10 @@ export async function cmdInit(cwd: string, args: string[]): Promise<void> {
   const phases = [
     { key: 'user', name: 'Global (user)', desc: 'Rules applied across all phases' },
     { key: 'bootstrap', name: 'Bootstrap', desc: 'Project initialization & backlog generation' },
-    { key: 'phase_a', name: 'Phase A (Planning)', desc: 'Tactical design & Test scenarios' },
-    { key: 'phase_b', name: 'Phase B (Implementation)', desc: 'TDD loops (RED, GREEN, REFACTOR)' },
-    { key: 'phase_c', name: 'Phase C (Validation)', desc: 'Tech Lead & QA code reviews' },
-    { key: 'phase_e', name: 'Phase E (Steering)', desc: 'Documentation & Memory updates' }
+    { key: 'planning', name: 'Planning', desc: 'Tactical design & Test scenarios' },
+    { key: 'implementation', name: 'Implementation', desc: 'TDD loops (RED, GREEN, REFACTOR)' },
+    { key: 'review', name: 'Review', desc: 'Tech Lead & QA code reviews' },
+    { key: 'memory', name: 'Memory', desc: 'Documentation & Memory updates' }
   ] as const
 
   const customRules: Record<string, string[]> = {}
@@ -70,10 +70,10 @@ export async function cmdInit(cwd: string, args: string[]): Promise<void> {
   const mergedSteeringRules = {
     user: [...(defaultRules.user || []), ...(customRules.user || [])],
     bootstrap: [...(defaultRules.bootstrap || []), ...(customRules.bootstrap || [])],
-    phase_a: [...(defaultRules.phase_a || []), ...(customRules.phase_a || [])],
-    phase_b: [...(defaultRules.phase_b || []), ...(customRules.phase_b || [])],
-    phase_c: [...(defaultRules.phase_c || []), ...(customRules.phase_c || [])],
-    phase_e: [...(defaultRules.phase_e || []), ...(customRules.phase_e || [])]
+    planning: [...(defaultRules.planning || []), ...(customRules.planning || [])],
+    implementation: [...(defaultRules.implementation || []), ...(customRules.implementation || [])],
+    review: [...(defaultRules.review || []), ...(customRules.review || [])],
+    memory: [...(defaultRules.memory || []), ...(customRules.memory || [])]
   }
 
   currentConfig.steeringRules = mergedSteeringRules

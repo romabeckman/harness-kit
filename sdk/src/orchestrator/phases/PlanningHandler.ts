@@ -6,9 +6,9 @@ import type { PhaseAPayload } from "../../context-assembler/types";
 import { join } from "node:path";
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
-export class PhaseAHandler extends AbstractPhaseHandler {
+export class PlanningHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
-    if (phase !== Phase.PHASE_A) {
+    if (phase !== Phase.PLANNING) {
       return super.handle(phase, context);
     }
 
@@ -40,7 +40,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       .filter(t => t.featureId === activeFeature.id).length
     PhaseDecisionLogger.logPhaseA(context.fsm, activeFeature, specsDir, taskCount)
 
-    return Phase.PHASE_B;
+    return Phase.DEVELOPMENT;
   }
 
   private hasCascadeBlock(feature: Feature, allFeatures: Feature[]): boolean {
@@ -83,7 +83,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
       agent: "harness-kit:software-architect",
       mode: "autonomous",
       prompt,
-      phaseKey: "phase_a",
+      phaseKey: "PLANNING",
     });
   }
 
@@ -241,7 +241,7 @@ export class PhaseAHandler extends AbstractPhaseHandler {
     await context.invokeAgent({
       agent: "harness-kit:software-architect",
       mode: "autonomous",
-      phaseKey: "phase_a",
+      phaseKey: "PLANNING",
       prompt: [
         `## Objective`,
         `Extract ordered development tasks from the tactical design and append them to DEVELOPMENT-STATE.md.`,

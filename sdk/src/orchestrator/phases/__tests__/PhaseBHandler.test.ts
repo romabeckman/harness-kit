@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
-import { PhaseBHandler } from '../PhaseBHandler'
+import { DevelopmentHandler } from '../DevelopmentHandler'
 import { Complexity, Phase } from '../../types'
 import type { PhaseContext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
@@ -89,22 +89,22 @@ function makeContext(workingDir: string, fsm: IFileStateManager, invokeAgentImpl
   }
 }
 
-describe('PhaseBHandler', () => {
-  let handler: PhaseBHandler
+describe('DevelopmentHandler', () => {
+  let handler: DevelopmentHandler
   let workingDir: string
 
   beforeEach(() => {
-    handler = new PhaseBHandler()
+    handler = new DevelopmentHandler()
     workingDir = makeTempDir()
     mkdirSync(join(workingDir, 'docs', 'specs', 'sdk_core'), { recursive: true })
   })
 
-  describe('handle — delegates to next handler when phase is not PHASE_B', () => {
-    it('returns null when no next handler is set and phase is PHASE_A', async () => {
+  describe('handle — delegates to next handler when phase is not DEVELOPMENT', () => {
+    it('returns null when no next handler is set and phase is PLANNING', async () => {
       const fsm = makeFsm()
       const context = makeContext(workingDir, fsm)
 
-      const result = await handler.handle(Phase.PHASE_A, context)
+      const result = await handler.handle(Phase.PLANNING, context)
       expect(result).toBeNull()
     })
   })
@@ -115,12 +115,12 @@ describe('PhaseBHandler', () => {
       const context = makeContext(workingDir, fsm)
       context.getActiveFeature = vi.fn().mockReturnValue(null)
 
-      await expect(handler.handle(Phase.PHASE_B, context)).rejects.toThrow('Illegal state')
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).rejects.toThrow('Illegal state')
     })
   })
 
-  describe('handle — handleResumedExecution transitions to PHASE_C', () => {
-    it('returns PHASE_C when TDD-OUTPUT.json exists', async () => {
+  describe('handle — handleResumedExecution transitions to REVIEW', () => {
+    it('returns REVIEW when TDD-OUTPUT.json exists', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
       writeFileSync(tddPath, JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0.9 } }))
 
@@ -130,14 +130,14 @@ describe('PhaseBHandler', () => {
       })
 
       const context = makeContext(workingDir, fsm)
-      const result = await handler.handle(Phase.PHASE_B, context)
+      const result = await handler.handle(Phase.DEVELOPMENT, context)
 
-      expect(result).toBe(Phase.PHASE_C)
+      expect(result).toBe(Phase.REVIEW)
     })
   })
 
   describe('handle — chunk execution', () => {
-    it('returns PHASE_C after agent runs', async () => {
+    it('returns REVIEW after agent runs', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
 
       const tasks = [makeTask({ taskId: 'T01', status: 'NOT_STARTED' })]
@@ -157,9 +157,9 @@ describe('PhaseBHandler', () => {
         return { success: true, stdout: '', stderr: '', raw: '' }
       })
 
-      const result = await handler.handle(Phase.PHASE_B, context)
+      const result = await handler.handle(Phase.DEVELOPMENT, context)
 
-      expect(result).toBe(Phase.PHASE_C)
+      expect(result).toBe(Phase.REVIEW)
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
     })
 
@@ -185,7 +185,7 @@ describe('PhaseBHandler', () => {
       })
       context.getActiveFeature = vi.fn().mockReturnValue(makeFeature({ reworks: 1 }))
 
-      await handler.handle(Phase.PHASE_B, context)
+      await handler.handle(Phase.DEVELOPMENT, context)
 
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
       const invokeCall = (context.invokeAgent as any).mock.calls[0][0]

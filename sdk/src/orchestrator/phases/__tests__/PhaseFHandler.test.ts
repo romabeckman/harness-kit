@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { PhaseFHandler } from '../PhaseFHandler'
+import { TransitionHandler } from '../TransitionHandler'
 import { Complexity, Phase } from '../../types'
 import type { PhaseContext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
@@ -76,24 +76,24 @@ function makeContext(fsm: IFileStateManager, activeFeature: Feature | null = mak
   }
 }
 
-describe('PhaseFHandler', () => {
-  let handler: PhaseFHandler
+describe('TransitionHandler', () => {
+  let handler: TransitionHandler
 
   beforeEach(() => {
-    handler = new PhaseFHandler()
+    handler = new TransitionHandler()
   })
 
-  it('delegates to next handler when phase is not PHASE_F', async () => {
+  it('delegates to next handler when phase is not TRANSITION', async () => {
     const fsm = makeFsm([makeFeature()], 'COMPLETED')
     const ctx = makeContext(fsm)
-    const result = await handler.handle(Phase.PHASE_A, ctx)
+    const result = await handler.handle(Phase.PLANNING, ctx)
     expect(result).toBeNull()
   })
 
   it('throws when no active feature and no retryable features exist', async () => {
     const fsm = makeFsm([makeFeature({ status: 'COMPLETED' })], 'COMPLETED')
     const ctx = makeContext(fsm, null)
-    await expect(handler.handle(Phase.PHASE_F, ctx)).rejects.toThrow('Illegal state')
+    await expect(handler.handle(Phase.TRANSITION, ctx)).rejects.toThrow('Illegal state')
   })
 
   describe('COMPLETED — no cascade', () => {
@@ -112,10 +112,10 @@ describe('PhaseFHandler', () => {
         .mockReturnValueOnce(updatedFeatures) // reload after cascade
 
       const ctx = makeContext(fsm, f1)
-      const result = await handler.handle(Phase.PHASE_F, ctx)
+      const result = await handler.handle(Phase.TRANSITION, ctx)
 
       expect(fsm.blockDependents).not.toHaveBeenCalled()
-      expect(result).toBe(Phase.PHASE_A)
+      expect(result).toBe(Phase.PLANNING)
       expect(fsm.saveBootstrapConfig).toHaveBeenCalledWith(
         expect.objectContaining({ activeFeatureId: 'F002' })
       )
@@ -138,7 +138,7 @@ describe('PhaseFHandler', () => {
         .mockReturnValueOnce(afterCascade) // find next
 
       const ctx = makeContext(fsm, f1)
-      const result = await handler.handle(Phase.PHASE_F, ctx)
+      const result = await handler.handle(Phase.TRANSITION, ctx)
 
       expect(fsm.blockDependents).toHaveBeenCalledWith('F001', [f1, f2])
       expect(fsm.appendDecision).toHaveBeenCalledWith(
@@ -146,11 +146,11 @@ describe('PhaseFHandler', () => {
           decision: expect.stringContaining('F002'),
         })
       )
-      // No NOT_STARTED left → PHASE_G
-      expect(result).toBe(Phase.PHASE_G)
+      // No NOT_STARTED left → DEPLOY
+      expect(result).toBe(Phase.DEPLOY)
     })
 
-    it('returns PHASE_A when unrelated features remain NOT_STARTED after cascade', async () => {
+    it('returns PLANNING when unrelated features remain NOT_STARTED after cascade', async () => {
       const f1 = makeFeature({ id: 'F001', status: 'BLOCKED' })
       const f2 = makeFeature({ id: 'F002', status: 'NOT_STARTED', dependencies: ['F001'] })
       const f3 = makeFeature({ id: 'F003', status: 'NOT_STARTED', dependencies: [] })
@@ -166,9 +166,9 @@ describe('PhaseFHandler', () => {
         .mockReturnValueOnce(afterCascade)
 
       const ctx = makeContext(fsm, f1)
-      const result = await handler.handle(Phase.PHASE_F, ctx)
+      const result = await handler.handle(Phase.TRANSITION, ctx)
 
-      expect(result).toBe(Phase.PHASE_A)
+      expect(result).toBe(Phase.PLANNING)
       expect(fsm.saveBootstrapConfig).toHaveBeenCalledWith(
         expect.objectContaining({ activeFeatureId: 'F003' })
       )
@@ -184,7 +184,7 @@ describe('PhaseFHandler', () => {
         .mockReturnValueOnce([{ ...f1, status: 'BLOCKED' as const }])
 
       const ctx = makeContext(fsm, f1)
-      await handler.handle(Phase.PHASE_F, ctx)
+      await handler.handle(Phase.TRANSITION, ctx)
 
       // appendDecision is called for onFeatureTransition but NOT for cascade
       const cascadeCall = (fsm.appendDecision as ReturnType<typeof vi.fn>).mock.calls
@@ -208,10 +208,10 @@ describe('PhaseFHandler', () => {
         .mockReturnValueOnce(afterFail)
 
       const ctx = makeContext(fsm, f1)
-      const result = await handler.handle(Phase.PHASE_F, ctx)
+      const result = await handler.handle(Phase.TRANSITION, ctx)
 
       expect(fsm.blockDependents).not.toHaveBeenCalled()
-      expect(result).toBe(Phase.PHASE_A)
+      expect(result).toBe(Phase.PLANNING)
       expect(fsm.saveBootstrapConfig).toHaveBeenCalledWith(
         expect.objectContaining({ activeFeatureId: 'F002' })
       )
@@ -230,9 +230,9 @@ describe('PhaseFHandler', () => {
         .mockReturnValueOnce([completedF1])  // for saveBootstrapConfig reload
 
       const ctx = makeContext(fsm, f1)
-      const result = await handler.handle(Phase.PHASE_F, ctx)
+      const result = await handler.handle(Phase.TRANSITION, ctx)
 
-      expect(result).toBe(Phase.PHASE_G)
+      expect(result).toBe(Phase.DEPLOY)
       const saveCalls = (fsm.saveBootstrapConfig as any).mock.calls
       const lastCallArg = saveCalls[saveCalls.length - 1][0]
       expect(lastCallArg.activeFeatureId).toBeUndefined()
@@ -240,16 +240,16 @@ describe('PhaseFHandler', () => {
   })
 
   describe('unblock-retry (reentry) — BLOCKED features with reworks < maxReworks when activeFeature is null', () => {
-    it('resets all BLOCKED features (root + dependents) and returns PHASE_B', async () => {
+    it('resets all BLOCKED features (root + dependents) and returns DEVELOPMENT', async () => {
       // maxReworks=2 in makeConfig; features have reworks=0 (below max)
       const f1 = makeFeature({ id: 'F001', status: 'BLOCKED', reworks: 0 })
       const f2 = makeFeature({ id: 'F002', status: 'BLOCKED', reworks: 0, dependencies: ['F001'] })
       const fsm = makeFsm([f1, f2], 'BLOCKED')
 
       const ctx = makeContext(fsm, null)
-      const result = await handler.handle(Phase.PHASE_F, ctx)
+      const result = await handler.handle(Phase.TRANSITION, ctx)
 
-      expect(result).toBe(Phase.PHASE_B)
+      expect(result).toBe(Phase.DEVELOPMENT)
       expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'NOT_STARTED')
       expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F002', 'NOT_STARTED')
       expect(fsm.resetReworks).toHaveBeenCalledWith('F001')
@@ -272,7 +272,7 @@ describe('PhaseFHandler', () => {
 
       const ctx = makeContext(fsm, null)
       
-      await expect(handler.handle(Phase.PHASE_F, ctx)).rejects.toThrow('Illegal state')
+      await expect(handler.handle(Phase.TRANSITION, ctx)).rejects.toThrow('Illegal state')
       expect(fsm.resetReworks).not.toHaveBeenCalled()
     })
 
@@ -283,9 +283,9 @@ describe('PhaseFHandler', () => {
       const fsm = makeFsm([f1, f2], 'BLOCKED')
 
       const ctx = makeContext(fsm, null)
-      const result = await handler.handle(Phase.PHASE_F, ctx)
+      const result = await handler.handle(Phase.TRANSITION, ctx)
 
-      expect(result).toBe(Phase.PHASE_B)
+      expect(result).toBe(Phase.DEVELOPMENT)
       expect(fsm.updateFeatureStatus).not.toHaveBeenCalledWith('F001', 'NOT_STARTED')
       expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F002', 'NOT_STARTED')
       expect(fsm.resetReworks).not.toHaveBeenCalledWith('F001')

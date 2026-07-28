@@ -13,9 +13,9 @@ import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
 type ValidationResult = ReturnType<typeof ValidationGate.evaluate>;
 
-export class PhaseCHandler extends AbstractPhaseHandler {
+export class ReviewHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
-    if (phase !== Phase.PHASE_C) {
+    if (phase !== Phase.REVIEW) {
       return super.handle(phase, context)
     }
 
@@ -30,7 +30,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
       process.stdout.write(`[phase_review] --skip-validation active — skipping review for feature ${activeFeature.id}\n`)
       context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED', { tl: 1, adv: 1 })
       context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'COMPLETED')
-      return Phase.PHASE_D
+      return Phase.STATE_CHECK
     }
 
     this.cleanTemporaryFiles(context, activeFeature.domain)
@@ -83,22 +83,22 @@ export class PhaseCHandler extends AbstractPhaseHandler {
           agent: 'harness-kit:harness-tech-lead',
           mode: 'autonomous',
           prompt: tlPrompt,
-          phaseKey: 'phase_c_tl',
+          phaseKey: 'review_tl',
         }),
       context.invokeAgent({
         skill: 'harness-kit:adversarial-qa',
         agent: 'harness-kit:harness-qa',
         mode: 'autonomous',
         prompt: advPrompt,
-        phaseKey: 'phase_c_adv',
+        phaseKey: 'review_adv',
       })
     ])
   }
 
   private extractScores(context: PhaseContext, domain: string, tlOutput: any, advOutput: any) {
     const specsDir = join(context.workingDir, 'docs', 'specs', domain)
-    const tlData = this.parseAgentOutput(join(specsDir, 'TL.json'), tlOutput, 'phase_c_tl')
-    const advData = this.parseAgentOutput(join(specsDir, 'QA.json'), advOutput, 'phase_c_adv')
+    const tlData = this.parseAgentOutput(join(specsDir, 'TL.json'), tlOutput, 'review_tl')
+    const advData = this.parseAgentOutput(join(specsDir, 'QA.json'), advOutput, 'review_adv')
 
     return {
       scoreTL: typeof tlData['score'] === 'number' ? tlData['score'] : (typeof tlData['scoreTL'] === 'number' ? tlData['scoreTL'] : 0),
@@ -140,7 +140,7 @@ export class PhaseCHandler extends AbstractPhaseHandler {
 
   /**
    * Processes the validation gate evaluation result and decides the next workflow step.
-   * Logs decisions, manages feature state transitions, and moves to PHASE_D or retries.
+   * Logs decisions, manages feature state transitions, and moves to STATE_CHECK or retries.
    */
   private processDecision(
     context: PhaseContext,
@@ -178,15 +178,15 @@ export class PhaseCHandler extends AbstractPhaseHandler {
     context.fsm.updateFeatureStatus(activeFeature.id, activeFeature.status, { tl: scores.scoreTL, adv: scores.scoreAdv })
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', activeFeature.status)
 
-    // Proceed to PHASE_D (documentation generation/completion check)
-    return Phase.PHASE_D
+    // Proceed to STATE_CHECK (documentation generation/completion check)
+    return Phase.STATE_CHECK
   }
 
   private handleRetry(context: PhaseContext, activeFeature: Feature, scores: ValidationScores): Phase {
     context.fsm.incrementReworks(activeFeature.id)
     context.fsm.writeReworkLog(activeFeature.domain, this.buildReworkContent(scores))
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'NOT_STARTED')
-    return Phase.PHASE_B
+    return Phase.DEVELOPMENT
   }
 
   private buildReworkContent(scores: ValidationScores): string {

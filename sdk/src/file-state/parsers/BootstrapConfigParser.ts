@@ -50,10 +50,10 @@ export class BootstrapConfigParser {
       result.steeringRules = {
         user: parseRuleArray(raw.steeringRules.user),
         bootstrap: parseRuleArray(raw.steeringRules.bootstrap),
-        phase_a: parseRuleArray(raw.steeringRules.phase_a),
-        phase_b: parseRuleArray(raw.steeringRules.phase_b),
-        phase_c: parseRuleArray(raw.steeringRules.phase_c),
-        phase_e: parseRuleArray(raw.steeringRules.phase_e),
+        planning: parseRuleArray(raw.steeringRules.planning),
+        implementation: parseRuleArray(raw.steeringRules.implementation),
+        review: parseRuleArray(raw.steeringRules.review),
+        memory: parseRuleArray(raw.steeringRules.memory),
       }
     } else {
       result.steeringRules = createDefaultSteeringRules()

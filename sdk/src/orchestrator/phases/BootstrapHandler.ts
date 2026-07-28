@@ -34,7 +34,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
 
     const existing = context.fsm.loadBacklog()
 
-    if (existing.length > 0) return Phase.PHASE_A
+    if (existing.length > 0) return Phase.PLANNING
 
     const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
     const backlogPath = join(productDir, 'BACKLOG.md')
@@ -119,6 +119,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     const created = context.fsm.loadBacklog()
     PhaseDecisionLogger.logBootstrap(context.fsm, created)
 
-    return Phase.PHASE_A
+    return Phase.PLANNING
   }
 }
