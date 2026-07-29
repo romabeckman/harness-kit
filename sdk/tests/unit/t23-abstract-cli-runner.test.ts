@@ -77,6 +77,24 @@ describe('T23 — AbstractCliRunner', () => {
     expect(runnerWithoutModel.exposeGetModelName({ model: 'inv-model' })).toBe('inv-model')
   })
 
+  it('TC-AB-02b: getEffort prioritizes runner config and cancels when empty string is passed', async () => {
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    class TestCliRunner extends AbstractCliRunner {
+      protected readonly binaryName = 'test-cli'
+      protected buildArgs(prompt: string, invocation: any): string[] { return [] }
+      public exposeGetEffort(inv: any) { return this.getEffort(inv) }
+    }
+    const runnerWithEmptyEffort = new TestCliRunner({ effort: '' })
+    expect(runnerWithEmptyEffort.exposeGetEffort({ effort: 'high' })).toBeUndefined()
+
+    const runnerWithEffort = new TestCliRunner({ effort: 'low' })
+    expect(runnerWithEffort.exposeGetEffort({ effort: 'high' })).toBe('low')
+
+    const runnerWithoutEffort = new TestCliRunner()
+    expect(runnerWithoutEffort.exposeGetEffort({ effort: 'high' })).toBe('high')
+    expect(runnerWithoutEffort.exposeGetEffort({ effort: '' })).toBeUndefined()
+  })
+
   it('TC-AB-03: parseOutput default is empty object', async () => {
     const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
     class TestCliRunner extends AbstractCliRunner {

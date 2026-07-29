@@ -20,7 +20,8 @@ export class CopilotCLIRunner extends AbstractCliRunner {
 
     const model = this.getModelName(invocation)
     if (model) args.push('--model', model)
-    if (invocation.effort) args.push('--reasoning-effort', invocation.effort)
+    const effort = this.getEffort(invocation)
+    if (effort) args.push('--reasoning-effort', effort)
     if (invocation.agent) args.push('--agent', invocation.agent)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
 
@@ -99,7 +100,7 @@ export class CopilotCLIRunner extends AbstractCliRunner {
       stdout: finalContent || stdout,
       stderr: stderr,
       raw: finalContent || stdout,
-      usage: outputTokens ? { inputTokens: 0, outputTokens, cacheCreationTokens: 0, cacheReadTokens: 0, costUsd: 0, model: invocation.model } : undefined,
+      usage: outputTokens ? { inputTokens: 0, outputTokens, cacheCreationTokens: 0, cacheReadTokens: 0, costUsd: 0, model: this.getModelName(invocation), effort: this.getEffort(invocation) } : undefined,
       artefacts: extractJsonOrNull(finalContent || stdout) as Record<string, string> | undefined,
     }
   }

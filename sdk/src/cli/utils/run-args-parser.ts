@@ -8,6 +8,7 @@ export interface ParsedRunArgs {
   // RunOptions (agent runner)
   agentType?: string
   model?: string
+  effort?: string
 
   // Action selector (skip interactive prompt when provided)
   action?: 'reset' | 'resume'
@@ -85,6 +86,11 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
       case '--model':
       case '-m':
         result.model = nextArg()
+        break
+
+      case '--effort':
+      case '-e':
+        result.effort = nextArg()
         break
 
       // ── action selector ──────────────────────────────────────────────────

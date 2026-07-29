@@ -18,7 +18,8 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
 
     const model = this.getModelName(invocation)
     if (model) args.push('--model', model)
-    if (invocation.effort) args.push('--effort', invocation.effort)
+    const effort = this.getEffort(invocation)
+    if (effort) args.push('--effort', effort)
 
     // add 1000ms to timeout to avoid throw error for 1sec difference
     args.push('--print-timeout', `${timeout + 1000}ms`)

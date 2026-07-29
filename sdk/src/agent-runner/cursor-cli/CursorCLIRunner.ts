@@ -26,6 +26,8 @@ export class CursorCLIRunner extends AbstractCliRunner {
 
     const model = this.getModelName(invocation)
     if (model) args.push('--model', model)
+    const effort = this.getEffort(invocation)
+    if (effort) args.push('--effort', effort)
     if (invocation.workspacePath) args.push('--workspace', invocation.workspacePath)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
     return args
@@ -123,8 +125,8 @@ export class CursorCLIRunner extends AbstractCliRunner {
             cacheCreationTokens: u.cacheWriteTokens ?? 0,
             cacheReadTokens: u.cacheReadTokens ?? 0,
             costUsd: typeof event.total_cost_usd === 'number' ? event.total_cost_usd : 0,
-            model: (invocation.model ?? 'default'),
-            effort: invocation.effort ?? '',
+            model: this.getModelName(invocation) ?? 'default',
+            effort: this.getEffort(invocation) ?? '',
           }
         }
       }

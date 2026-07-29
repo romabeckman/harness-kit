@@ -54,7 +54,17 @@ export interface FileStateManagerOptions {
 function atomicWrite(filePath: string, content: string): void {
   const tmpPath = `${filePath}.tmp`
   writeFileSync(tmpPath, content, 'utf-8')
-  renameSync(tmpPath, filePath)
+  try {
+    renameSync(tmpPath, filePath)
+  } catch (err: any) {
+    if (err?.code === 'EPERM' || err?.code === 'EBUSY') {
+      const { copyFileSync, unlinkSync } = require('fs')
+      copyFileSync(tmpPath, filePath)
+      try { unlinkSync(tmpPath) } catch {}
+    } else {
+      throw err
+    }
+  }
 }
 
 export class FileStateManager implements IFileStateManager {

@@ -143,11 +143,11 @@ export class PlanningHandler extends AbstractPhaseHandler {
         ? (
           complexity === Complexity.LOW ?
             [
-              `- HIGHITY OVERRIDE: Classify as 'LOW'   do not re-evaluate scope complexity.`,
+              `- COMPLEXITY OVERRIDE: Classify as 'LOW'   do not re-evaluate scope complexity.`,
               `- For 'LOW': Do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
             ] :
             [
-              `- HIGHITY OVERRIDE: Classify as 'HIGH'   do not re-evaluate scope complexity.`,
+              `- COMPLEXITY OVERRIDE: Classify as 'HIGH'   do not re-evaluate scope complexity.`,
               `- For 'HIGH': Its required \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
             ]
         ) : [
@@ -256,7 +256,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
         `| ${feature.id} | T<zero-padded id> | <project path> | <title> | ${feature.domain} | - | NOT_STARTED |`,
         `where <project> is one of the last folder segment of the project path: \`project_paths\`.`,
         `Do not output anything else.`,
-      ].join(" "),
+      ].join("\n"),
     });
   }
 }

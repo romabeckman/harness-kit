@@ -22,6 +22,7 @@ import { FileStateManager } from "../../file-state/FileStateManager";
 export interface RunOptions {
   agentType?: string;
   model?: string;
+  effort?: string;
 }
 
 export type RunAction = "reset" | "resume"
@@ -67,6 +68,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
   const options: RunOptions = {
     agentType: parsed.agentType,
     model: parsed.model,
+    effort: parsed.effort,
   }
 
   const settings = HarnessSettings.load(cwd)
@@ -185,6 +187,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
   const agentRunner = AgentRunnerFactory.create({
     type: options.agentType ?? Runner.CLAUDE_CLI,
     model: options.model,
+    effort: options.effort,
   })
 
   const orchestrator = new HarnessOrchestrator({

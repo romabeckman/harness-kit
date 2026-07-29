@@ -26,7 +26,8 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
     ]
     const model = this.getModelName(invocation)
     if (model) args.push('--model', model)
-    if (invocation.effort) args.push('--effort', invocation.effort)
+    const effort = this.getEffort(invocation)
+    if (effort) args.push('--effort', effort)
     if (invocation.agent) args.push('--agent', invocation.agent)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
 
@@ -113,7 +114,7 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
             cacheReadTokens: u.cache_read_input_tokens ?? 0,
             costUsd: typeof event.total_cost_usd === 'number' ? event.total_cost_usd : 0,
             model: detectedModel,
-            effort: invocation.effort ?? "",
+            effort: this.getEffort(invocation) ?? "",
           }
         }
       }

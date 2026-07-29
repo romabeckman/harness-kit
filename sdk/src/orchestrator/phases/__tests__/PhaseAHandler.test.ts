@@ -108,7 +108,7 @@ describe('PlanningHandler', () => {
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain("HIGHITY OVERRIDE: Classify as 'LOW'");
+            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'LOW'");
         });
 
         it('includes HIGH override rule when config.complexity is HIGH', async () => {
@@ -117,10 +117,10 @@ describe('PlanningHandler', () => {
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain("HIGHITY OVERRIDE: Classify as 'HIGH'");
+            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'HIGH'");
         });
 
-        it('omits HIGHITY OVERRIDE rule when config.complexity is undefined (AUTO)', async () => {
+        it('omits COMPLEXITY OVERRIDE rule when config.complexity is undefined (AUTO)', async () => {
             mockContext.config = { ...mockContext.config, complexity: undefined };
 
             await handler.handle(Phase.PLANNING, mockContext);

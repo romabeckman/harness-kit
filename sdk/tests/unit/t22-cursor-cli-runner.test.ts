@@ -149,7 +149,7 @@ describe('T22 — CursorCLIRunner', () => {
       cacheCreationTokens: 200,
       cacheReadTokens: 100,
       costUsd: 0.02,
-      model: 'gpt-4',
+      model: 'cursor-fallback-model',
       effort: ''
     })
     expect(parsed.artefacts).toEqual({ score: 0.99 })

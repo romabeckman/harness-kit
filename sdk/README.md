@@ -176,6 +176,7 @@ Show version or help message.
 |---|---|---|---|
 | `--agent <type>` | `-a` | Agent runner type (see table below) | `--agent copilot-sdk` |
 | `--model <name>` | `-m` | Model override for all phases | `--model gpt-4o` |
+| `--effort <level>` | `-e` | Effort level override for all phases | `--effort high` |
 | `--reset` | | Force reset (skip interactive prompt) | |
 | `--resume` | | Force resume (skip interactive prompt) | |
 | `--scope <text>` | | Project scope / PRD (skips editor prompt) | `--scope "REST API with JWT"` |
