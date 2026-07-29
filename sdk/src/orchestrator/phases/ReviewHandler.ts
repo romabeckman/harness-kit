@@ -65,7 +65,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
 
   private async executeAgents(context: PhaseContext, payload: PhaseCPayload, config: BootstrapConfig) {
     const tlPrompt = this.buildTechLeadPrompt(payload, context.workingDir)
-    const advPrompt = this.buildAdversarialQAPrompt(payload, context.workingDir)
+    const advPrompt = this.buildAdversarialQAPrompt(payload, context)
     const isSimple = context.config.complexity === Complexity.LOW
 
     const tlMock = { featureId: payload.featureId, score: 1, isCrashing: false, openPoints: [], architectureTip: '' }
@@ -316,7 +316,8 @@ export class ReviewHandler extends AbstractPhaseHandler {
     ].join('\n')
   }
 
-  private buildAdversarialQAPrompt(payload: PhaseCPayload, workingDir: string): string {
+  private buildAdversarialQAPrompt(payload: PhaseCPayload, context: PhaseContext): string {
+    const workingDir = context.workingDir
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
@@ -411,6 +412,12 @@ export class ReviewHandler extends AbstractPhaseHandler {
       `</expected_output>`,
       ``,
       `<inputs>`,
+      `<scope>`,
+      `\`\`\`markdown`,
+      context.config.scope.trim(),
+      `\`\`\``,
+      `</scope>`,
+      ``,
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,

@@ -15,51 +15,51 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
                                  │
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  Bootstrap  ·  software-architect agent                              │
+  │  BOOTSTRAP  ·  software-architect agent                              │
   │  Parses scope → writes BACKLOG.md with features, layers, priorities  │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │  (for each feature)
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  Phase A  ·  scope-refinement skill                                  │
+  │  PLANNING  ·  scope-refinement skill                                 │
   │  Writes spec files (user stories, tactical design, test scenarios)   │
   │  Extracts task list into DEVELOPMENT-STATE.md                        │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  Phase B  ·  tdd-orchestrator skill                                  │
+  │  DEVELOPMENT  ·  tdd-orchestrator skill                              │
   │  Implements tasks in strict TDD order (red → green → refactor)       │
   │  Each task must pass its tests before the next begins                │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  Phase C  ·  the-grumpy-tech-lead + adversarial-qa skills            │
+  │  REVIEW  ·  the-grumpy-tech-lead + adversarial-qa skills             │
   │  Code review scores implementation quality (0–10)                    │
   │  QA agent hunts security vulnerabilities and missing edge cases      │
-  │  Scores below threshold → feature returns to Phase B (rework)        │
+  │  Scores below threshold → feature returns to DEVELOPMENT (rework)    │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  Phase D  ·  completion gate (no agent)                              │
+  │  STATE_CHECK  ·  completion gate (no agent)                          │
   │  Checks all features meet score thresholds and rework limits         │
   │  Violations are logged to DECISIONS.md                               │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  Phase F  ·  transition (no agent)                                   │
+  │  TRANSITION  ·  (no agent)                                           │
   │  If next NOT_STARTED feature found → returns to PLANNING (loop)      │
   │  If all features done → advances to MEMORY                           │
   │  BLOCKED features cascade their status to dependents                 │
   └──────┬──────────────────────────────────────────────────────┬────────┘
          │  next feature                          all features done
-         ▼                                                       │
-  (loops to Phase A — PLANNING)                                  ▼
+         ▼                                                      │
+  (loops to PLANNING)                                           ▼
                                  ┌──────────────────────────────────────────────────────────────────────┐
-                                 │  Phase E  ·  project-memory skill                                    │
+                                 │  MEMORY  ·  project-memory skill                                     │
                                  │  Persists learnings, decisions, and patterns to long-term memory     │
                                  └──────────────────────────────┬───────────────────────────────────────┘
                                                                 │
@@ -74,7 +74,7 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
                                                             (HALTED)
 ```
 
-> Phases B → C loop per rework. A feature can cycle back from C to B up to `maxReworks` times before being marked BLOCKED. BLOCKED features cascade to dependents; FAILED features do not.
+> Phases DEVELOPMENT → REVIEW loop per rework. A feature can cycle back from REVIEW to DEVELOPMENT up to `maxReworks` times before being marked BLOCKED. BLOCKED features cascade to dependents; FAILED features do not.
 
 ---
 

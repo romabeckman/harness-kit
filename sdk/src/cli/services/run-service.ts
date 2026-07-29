@@ -53,17 +53,141 @@ export function resolveMode(mode?: RunMode): ResolvedMode {
   }
 }
 
+async function promptForMode(parsedMode?: RunMode): Promise<RunMode> {
+  if (parsedMode) return parsedMode;
+  return select({
+    message: "Select execution mode:",
+    choices: [
+      { name: "quick", value: RunMode.QUICK, description: "Bootstrap → Planning → Development → Deploy (skips Review and Memory)" },
+      { name: "fast", value: RunMode.FAST, description: "Bootstrap → Planning → Development → Review (Only QA) → Memory → Deploy" },
+      { name: "default", value: RunMode.DEFAULT, description: "Bootstrap → Planning → Development → Review → Memory → Deploy" },
+      { name: "slow", value: RunMode.SLOW, description: "Bootstrap → Planning (Deep Dive) → Development → Review → Memory → Deploy" },
+    ],
+    default: RunMode.DEFAULT,
+  });
+}
+
+async function determineAction(parsedAction?: RunAction, hasExistingSession?: boolean): Promise<RunAction> {
+  if (!hasExistingSession) return "reset";
+  if (parsedAction) return parsedAction;
+  return select({
+    message: "What would you like to do?",
+    choices: [
+      { name: "resume — continue from last session", value: "resume" },
+      { name: "reset  — discard current session and start a new cycle", value: "reset" },
+    ],
+  });
+}
+
+async function resolveResetOptions(
+  cwd: string,
+  parsed: ReturnType<typeof parseRunArgs>
+): Promise<{ optionsReset: ResetOptions; steeringMessage: string }> {
+  const hasCliResetArgs =
+    parsed.scope !== undefined ||
+    parsed.projectPaths.length > 0 ||
+    parsed.score !== undefined ||
+    parsed.reworks !== undefined;
+
+  if (hasCliResetArgs) {
+    const optionsReset = {
+      scope: parsed.scope ?? "",
+      projectPaths: parsed.projectPaths.length > 0 ? parsed.projectPaths : [cwd],
+      score: parsed.score ?? DEFAULT_SCORE,
+      reworks: parsed.reworks ?? DEFAULT_REWORKS,
+      steeringMessage: parsed.steeringMessage ?? "",
+    };
+    return { optionsReset, steeringMessage: optionsReset.steeringMessage };
+  } else {
+    const optionsReset = await resetOptions(cwd);
+    let steeringMessage = optionsReset.steeringMessage;
+    if (parsed.steeringMessage !== undefined) {
+      steeringMessage = parsed.steeringMessage;
+      optionsReset.steeringMessage = steeringMessage;
+    }
+    return { optionsReset, steeringMessage };
+  }
+}
+
+async function resolveResumeOptions(parsed: ReturnType<typeof parseRunArgs>): Promise<string> {
+  if (parsed.steeringMessage !== undefined) return parsed.steeringMessage;
+  return input({
+    message: "Steering rules or state overrides (optional):",
+    default: "",
+  });
+}
+
+function logOrchestrationStart(
+  action: RunAction,
+  optionsReset: ResetOptions | null,
+  steeringMessage: string,
+  modeLabel: RunMode | string,
+  skipValidation: boolean,
+  skipMemory: boolean,
+  skipDeploy: boolean
+) {
+  console.log("\n── Starting orchestration ──────────────────────────────");
+  if (action === "reset") {
+    console.log(
+      `  scope:  ${optionsReset?.scope.slice(0, DEFAULT_LINE_LENGTH)}${optionsReset?.scope ? (optionsReset.scope.length > DEFAULT_LINE_LENGTH ? "…" : "") : ""}`,
+    );
+    console.log(`  paths:  ${optionsReset?.projectPaths?.join(", ")}`);
+    console.log(`  score:  ${optionsReset?.score}`);
+    console.log(`  reworks: ${optionsReset?.reworks}`);
+  } else {
+    console.log("  resuming from existing session");
+  }
+  if (steeringMessage) {
+    console.log(
+      `  steering:  ${steeringMessage.slice(0, DEFAULT_LINE_LENGTH)}${steeringMessage.length > DEFAULT_LINE_LENGTH ? "…" : ""}`,
+    );
+  }
+  console.log(`  mode:     ${modeLabel}`);
+  if (skipValidation) {
+    console.log(`  skip-validation: true  (Phase REVIEW skipped)`);
+  }
+  if (skipMemory) {
+    console.log(`  skip-memory: true  (Phase MEMORY skipped)`);
+  }
+  if (skipDeploy) {
+    console.log(`  skip-deploy: true  (Phase DEPLOY skipped)`);
+  }
+  console.log("────────────────────────────────────────────────────────\n");
+}
+
+async function applySteeringRules(
+  orchestrator: HarnessOrchestrator,
+  agentRunner: any,
+  options: RunOptions,
+  steeringMessage: string
+) {
+  if (!steeringMessage.trim()) return;
+
+  if (options.agentType === "antigravity-cli") {
+    console.log(`\n${AnsiHelpers.green("✓")} Applying steering rule directly for antigravity-cli...`);
+    const actions = [{ type: "add_rule" as const, rule: steeringMessage }];
+    orchestrator.applySteeringActions(actions);
+    console.log();
+  } else {
+    console.log("\nAnalyzing steering message...");
+    const { SteeringAnalyzer } = require("../../orchestrator/SteeringAnalyzer") as typeof import("../../orchestrator/SteeringAnalyzer");
+    const steeringRunner = agentRunner ?? AgentRunnerFactory.create({ type: "claude-cli" });
+    const actions = await SteeringAnalyzer.analyze(steeringMessage, steeringRunner);
+    if (actions.length > 0) {
+      console.log(`${AnsiHelpers.green("✓")} Applying ${actions.length} steering action(s)...`);
+      orchestrator.applySteeringActions(actions);
+      console.log();
+    } else {
+      console.log("No actionable steering instructions detected.\n");
+    }
+  }
+}
+
 export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolean): Promise<void> {
   const parsed = parseRunArgs(runArgs)
   if (parsed.debug) {
     DebugContext.enable()
   }
-
-  const resolved = resolveMode(parsed.mode)
-  // Individual --skip-* flags are OR'd on top of the mode defaults
-  const skipValidation = resolved.skipValidation || !!parsed.skipValidation
-  const skipMemory = resolved.skipMemory || !!parsed.skipMemory
-  const skipDeploy = !!parsed.skipDeploy
 
   const options: RunOptions = {
     agentType: parsed.agentType,
@@ -86,98 +210,35 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     "\n",
   )
 
-  let action: RunAction = "reset"
+  parsed.mode = await promptForMode(parsed.mode);
 
-  if (hasExistingSession) {
-    action = parsed.action ?? await select({
-      message: "What would you like to do?",
-      choices: [
-        { name: "resume — continue from last session", value: "resume" },
-        { name: "reset  — discard current session and start a new cycle", value: "reset" },
-      ],
-    })
-  }
+  const resolved = resolveMode(parsed.mode)
+  const skipValidation = resolved.skipValidation || !!parsed.skipValidation
+  const skipMemory = resolved.skipMemory || !!parsed.skipMemory
+  const skipDeploy = !!parsed.skipDeploy
 
-  // Determine action: use CLI flag when provided, otherwise prompt interactively.
-  // let action: "reset" | "resume" = parsed.action ??
-  //   (hasExistingSession ?
-  //     await select({
-  //       message: "What would you like to do?",
-  //       choices: [
-  //         { name: "resume — continue from last session", value: "resume" },
-  //         {
-  //           name: "reset  — discard current session and start a new cycle",
-  //           value: "reset",
-  //         },
-  //       ],
-  //     })
-  //     : "reset");
+  const action = await determineAction(parsed.action, !!hasExistingSession);
 
   let steeringMessage = "";
   let optionsReset: ResetOptions | null = null;
-  if (action === "reset") {
-    // When reset fields are fully supplied via CLI args, skip the interactive wizard.
-    const hasCliResetArgs =
-      parsed.scope !== undefined ||
-      parsed.projectPaths.length > 0 ||
-      parsed.score !== undefined ||
-      parsed.reworks !== undefined;
 
-    if (hasCliResetArgs) {
-      optionsReset = {
-        scope: parsed.scope ?? "",
-        projectPaths: parsed.projectPaths.length > 0 ? parsed.projectPaths : [cwd],
-        score: parsed.score ?? DEFAULT_SCORE,
-        reworks: parsed.reworks ?? DEFAULT_REWORKS,
-        steeringMessage: parsed.steeringMessage ?? "",
-      };
-      steeringMessage = optionsReset.steeringMessage;
-    } else {
-      optionsReset = await resetOptions(cwd);
-      steeringMessage = optionsReset.steeringMessage;
-      // CLI --steering overrides the interactive prompt value.
-      if (parsed.steeringMessage !== undefined) {
-        steeringMessage = parsed.steeringMessage;
-        optionsReset.steeringMessage = steeringMessage;
-      }
-    }
+  if (action === "reset") {
+    const resetResult = await resolveResetOptions(cwd, parsed);
+    optionsReset = resetResult.optionsReset;
+    steeringMessage = resetResult.steeringMessage;
   } else {
-    // resume: use CLI --steering when supplied, otherwise prompt.
-    steeringMessage = parsed.steeringMessage
-      ?? await input({
-        message: "Steering rules or state overrides (optional):",
-        default: "",
-      });
+    steeringMessage = await resolveResumeOptions(parsed);
   }
 
-  console.log("\n── Starting orchestration ──────────────────────────────");
-  if (action === "reset") {
-    console.log(
-      `  scope:  ${optionsReset?.scope.slice(0, DEFAULT_LINE_LENGTH)}${optionsReset?.scope ? (optionsReset.scope.length > DEFAULT_LINE_LENGTH ? "…" : "") : ""}`,
-    );
-    console.log(`  paths:  ${optionsReset?.projectPaths?.join(", ")}`);
-    console.log(`  score:  ${optionsReset?.score}`);
-    console.log(`  reworks: ${optionsReset?.reworks}`);
-  } else {
-    console.log("  resuming from existing session");
-  }
-  if (steeringMessage) {
-    console.log(
-      `  steering:  ${steeringMessage.slice(0, DEFAULT_LINE_LENGTH)}${steeringMessage.length > DEFAULT_LINE_LENGTH ? "…" : ""}`,
-    );
-  }
-  const modeLabel = parsed.mode ?? RunMode.DEFAULT
-  console.log(`  mode:     ${modeLabel}`);
-  if (skipValidation) {
-    console.log(`  skip-validation: true  (Phase REVIEW skipped)`);
-  }
-  if (skipMemory) {
-    console.log(`  skip-memory: true  (Phase MEMORY skipped)`);
-  }
-  if (skipDeploy) {
-    console.log(`  skip-deploy: true  (Phase DEPLOY skipped)`);
-  }
-  console.log("────────────────────────────────────────────────────────\n");
+  logOrchestrationStart(
+    action,
+    optionsReset,
+    steeringMessage,
+    parsed.mode ?? RunMode.DEFAULT,
+    skipValidation,
+    skipMemory,
+    skipDeploy
+  );
 
   if (action === "reset" && existsSync(productDir) && !isFromInit) {
     const { rmSync } = await import("node:fs");
@@ -217,37 +278,8 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
         `  ${AnsiHelpers.dim("Active Feature:")} ${state.activeFeatureId}`,
       );
     }
-  }
 
-  if (action === "resume" && steeringMessage.trim()) {
-    if (options.agentType === "antigravity-cli") {
-      console.log(
-        `\n${AnsiHelpers.green("✓")} Applying steering rule directly for antigravity-cli...`,
-      );
-      const actions = [{ type: "add_rule" as const, rule: steeringMessage }];
-      orchestrator.applySteeringActions(actions);
-      console.log();
-    } else {
-      console.log("\nAnalyzing steering message...");
-      const { SteeringAnalyzer } =
-        require("../../orchestrator/SteeringAnalyzer") as typeof import("../../orchestrator/SteeringAnalyzer");
-      // Use explicit agentRunner or fall back to a default runner for steering analysis
-      const steeringRunner =
-        agentRunner ?? AgentRunnerFactory.create({ type: "claude-cli" });
-      const actions = await SteeringAnalyzer.analyze(
-        steeringMessage,
-        steeringRunner,
-      );
-      if (actions.length > 0) {
-        console.log(
-          `${AnsiHelpers.green("✓")} Applying ${actions.length} steering action(s)...`,
-        );
-        orchestrator.applySteeringActions(actions);
-        console.log();
-      } else {
-        console.log("No actionable steering instructions detected.\n");
-      }
-    }
+    await applySteeringRules(orchestrator, agentRunner, options, steeringMessage);
   }
 
   await orchestrator.run();
