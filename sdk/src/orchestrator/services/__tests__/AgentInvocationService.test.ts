@@ -291,4 +291,27 @@ describe('AgentInvocationService', () => {
       ).rejects.toThrow('runner crashed')
     })
   })
+
+  describe('timeout guard timer', () => {
+    it('aborts automatically in non-interactive mode when timeout expires', async () => {
+      const runner: IAgentRunner = {
+        type: 'claude',
+        run: vi.fn().mockImplementation((inv, controller) => {
+          return new Promise((resolve, reject) => {
+            if (controller?.signal) {
+              controller.signal.onabort = () => reject(new Error('Aborted'))
+            } else {
+              setTimeout(() => reject(new Error('Aborted')), 20)
+            }
+          })
+        }),
+      } as unknown as IAgentRunner
+
+      const service = new AgentInvocationService(runner, makeLedger())
+
+      await expect(
+        service.invokeAgent(makeInvocation(), Phase.DEVELOPMENT, makeConfig({ timeoutMs: 10 }), makeSettings())
+      ).rejects.toThrow('Agent aborted by user after timeout')
+    })
+  })
 })
