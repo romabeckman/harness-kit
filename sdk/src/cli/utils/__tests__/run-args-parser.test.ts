@@ -12,6 +12,12 @@ describe('parseRunArgs', () => {
       expect(result.mode).toBeUndefined()
     })
 
+    it('parses --effort and -e flags', () => {
+      expect(parseRunArgs(['--effort', 'high']).effort).toBe('high')
+      expect(parseRunArgs(['-e', 'medium']).effort).toBe('medium')
+      expect(parseRunArgs(['--effort=low']).effort).toBe('low')
+    })
+
     it.each([
       ['--mode quick', 'quick', RunMode.QUICK],
       ['--mode fast', 'fast', RunMode.FAST],
@@ -84,9 +90,9 @@ describe('resolveMode', () => {
     expect(r.skipMemory).toBe(false)
   })
 
-  it('quick mode → AUTO + skipValidation + skipMemory', () => {
+  it('quick mode → LOW + skipValidation + skipMemory', () => {
     const r = resolveMode(RunMode.QUICK)
-    expect(r.complexity).toBe(Complexity.AUTO)
+    expect(r.complexity).toBe(Complexity.LOW)
     expect(r.skipValidation).toBe(true)
     expect(r.skipMemory).toBe(true)
   })

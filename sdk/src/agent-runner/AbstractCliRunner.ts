@@ -10,6 +10,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   private static readonly activeKillFns = new Set<() => void>()
   private static signalsRegistered = false
   #model?: string
+  #effort?: string
   #timeoutMs: number = DEFAULT_PHASE_TIMEOUT_MS
 
   private static registerSignalHandlers(): void {
@@ -36,7 +37,8 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   protected abstract buildArgs(prompt: string, invocation: AgentInvocation): string[]
 
   constructor(config?: Record<string, unknown>) {
-    if (config?.model) this.#model = String(config.model)
+    if (config && 'model' in config && config.model !== undefined) this.#model = String(config.model)
+    if (config && 'effort' in config && config.effort !== undefined) this.#effort = String(config.effort)
   }
 
   /**
@@ -54,6 +56,14 @@ export abstract class AbstractCliRunner implements IAgentRunner {
    */
   protected getModelName(invocation: AgentInvocation): string | undefined {
     return this.#model ?? invocation.model
+  }
+
+  /**
+   * Returns the reasoning effort to use when appending CLI flags or logging.
+   */
+  protected getEffort(invocation: AgentInvocation): string | undefined {
+    const effort = this.#effort ?? invocation.effort
+    return effort && effort.trim().length > 0 ? effort : undefined
   }
 
   /**
@@ -143,14 +153,18 @@ export abstract class AbstractCliRunner implements IAgentRunner {
         AbstractCliRunner.activeKillFns.delete(killProcessGroup)
         if (child.pid) {
           if (process.platform === 'win32') {
-            try { spawn('taskkill', ['/pid', child.pid.toString(), '/f', '/t']) }
-            catch { child.kill() }
+            try {
+              const k = spawn('taskkill', ['/pid', child.pid.toString(), '/f', '/t'])
+              k.on('error', () => { try { child.kill() } catch { } })
+            } catch {
+              try { child.kill() } catch { }
+            }
           } else {
             try { process.kill(-child.pid, 'SIGKILL') }
-            catch { child.kill() }
+            catch { try { child.kill() } catch { } }
           }
         } else {
-          child.kill()
+          try { child.kill() } catch { }
         }
       }
 
@@ -258,7 +272,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
             cacheReadTokens: parsed.usage?.cacheReadTokens ?? 0,
             costUsd: parsed.usage?.costUsd ?? 0,
             model: parsed.usage?.model ?? this.getModelName(invocation),
-            effort: parsed.usage?.effort ?? invocation.effort,
+            effort: parsed.usage?.effort ?? this.getEffort(invocation),
           },
         })
       })

@@ -10,6 +10,7 @@ export function printVersion(): void {
 }
 
 export function expandPath(p: string): string {
+  if (!p || p.trim() === '') return ''
   if (p === '~') return homedir()
   if (p.startsWith('~/') || p.startsWith('~\\')) return join(homedir(), p.slice(2))
   if (p.startsWith('/')) return p
@@ -19,7 +20,7 @@ export function expandPath(p: string): string {
 }
 
 export function resolveDirs(input: string): string[] {
-  return input.split(',').map((p) => expandPath(p.trim())).filter(Boolean)
+  return input.split(',').map((p) => expandPath(p.trim())).filter((p) => p.trim().length > 0)
 }
 
 export function validateDirs(input: string): true | string {

@@ -15,12 +15,15 @@ export class JsonExtractionProtocol {
       // Strip ANSI escape codes
       const cleanRaw = raw.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, '')
 
-      // Step 1: search for Markdown fences
+      // Step 1: search for Markdown fences and try parsing each
       FENCE_REGEX.lastIndex = 0
-      const fenceMatch = FENCE_REGEX.exec(cleanRaw)
-      if (fenceMatch) {
-        const candidate = fenceMatch[1].trim()
-        return JsonExtractionProtocol.tryParse(candidate, raw)
+      let match: RegExpExecArray | null
+      while ((match = FENCE_REGEX.exec(cleanRaw)) !== null) {
+        const candidate = match[1].trim()
+        const parsed = JsonExtractionProtocol.tryParse(candidate, raw)
+        if ('data' in parsed) {
+          return parsed
+        }
       }
 
       // Step 2: fallback — first '{' or '[' to last matching '}' or ']'

@@ -169,10 +169,10 @@ export class DeployHandler extends AbstractPhaseHandler {
       })
 
       const raw = (output.raw ?? '').trim()
-      // Take only the first non-empty line — strip any accidental markdown or quotes
+      // Take only the first non-empty line — strip control chars, markdown, and quotes
       const firstLine = raw
         .split('\n')
-        .map((l: string) => l.trim().replace(/^["'`]+|["'`]+$/g, ''))
+        .map((l: string) => l.trim().replace(/[\r\n\t\x00-\x1f]/g, '').replace(/^["'`]+|["'`]+$/g, ''))
         .find((l: string) => l.length > 0 && l.length <= 120)
 
       if (firstLine) return firstLine
@@ -223,11 +223,16 @@ export class DeployHandler extends AbstractPhaseHandler {
         /\.env($|\.)/i,
         /\.pem$/i,
         /\.key$/i,
-        /id_rsa/i,
-        /id_ed25519/i,
-        /credentials\.json$/i,
+        /\.pfx$/i,
+        /\.p12$/i,
+        /\.crt$/i,
+        /\.cer$/i,
+        /\.kdbx$/i,
+        /id_(rsa|dsa|ecdsa|ed25519)/i,
+        /credentials(\.json)?$/i,
         /service[-_]account.*\.json$/i,
         /secrets?\.(json|yaml|yml)$/i,
+        /\.aws\/credentials/i,
       ]
 
       return stagedFiles.filter(file => sensitivePatterns.some(pattern => pattern.test(file)))

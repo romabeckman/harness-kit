@@ -102,7 +102,8 @@ describe('T21 — CopilotCLIRunner', () => {
       cacheCreationTokens: 0,
       cacheReadTokens: 0,
       costUsd: 0,
-      model: undefined
+      model: 'fallback-model',
+      effort: undefined,
     })
   })
 
