@@ -92,7 +92,6 @@ describe('T02 — Shared type definitions', () => {
       expect(Phase.PLANNING).toBe('PLANNING')
       expect(Phase.DEVELOPMENT).toBe('DEVELOPMENT')
       expect(Phase.REVIEW).toBe('REVIEW')
-      expect(Phase.STATE_CHECK).toBe('STATE_CHECK')
       expect(Phase.MEMORY).toBe('MEMORY')
       expect(Phase.TRANSITION).toBe('TRANSITION')
       expect(Phase.DEPLOY).toBe('DEPLOY')

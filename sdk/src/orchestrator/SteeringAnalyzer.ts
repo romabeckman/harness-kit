@@ -18,7 +18,7 @@ export class SteeringAnalyzer {
       `SteeringAction JSON schema:`,
       `[`,
       `  { "type": "add_rule", "rule": "string" },`,
-      `  { "type": "rollback", "targetPhase": "BOOTSTRAP" | "PLANNING" | "DEVELOPMENT" | "REVIEW" | "STATE_CHECK" | "MEMORY" },`,
+      `  { "type": "rollback", "targetPhase": "BOOTSTRAP" | "PLANNING" | "DEVELOPMENT" | "REVIEW" | "MEMORY" },`,
       `  { "type": "override_score", "tl": number, "adv": number }`,
       `]`,
       ``,

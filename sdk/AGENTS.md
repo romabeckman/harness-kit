@@ -9,12 +9,12 @@ Reference for all `invokeAgent` calls executed during the orchestrator lifecycle
 | Phase | Skill (metadata) | Agent | Prompt Source | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | **Bootstrap** | `autonomous-orchestrator:bootstrap` | `software-architect` | Custom `prompt` string | Parses project scope and generates `BACKLOG.md` with feature IDs, priorities and statuses. |
-| **Planning** (Phase A) | `scope-refinement` | `software-architect` | `ContextAssembler.buildPhaseAPayload()` | Refines feature scope, generates tactical design specs and test scenarios under `docs/specs/{domain}/`. |
-| **Development** (Phase B) | `tdd-orchestrator` | `developer-backend` | `ContextAssembler.buildPhaseBPayload()` | Executes TDD cycles (red → green → refactor). Re-runs with rework log on retry. |
-| **Review** (Phase C) — Tech Lead | `the-grumpy-tech-lead` | `harness-tech-lead` | `ContextAssembler.buildPhaseCPayload()` | Technical code review. Returns `scoreTL` in JSON. |
-| **Review** (Phase C) — Adversarial QA | `adversarial-qa` | `harness-qa` | `ContextAssembler.buildPhaseCPayload()` | Edge-case and security testing. Returns `scoreAdv`, `hasHighCriticalVuln`, `isCrashing` in JSON. |
+| **Planning** (Phase A) | `scope-refinement` | `software-architect` | `ContextAssembler.buildPlanningPayload()` | Refines feature scope, generates tactical design specs and test scenarios under `docs/specs/{domain}/`. |
+| **Development** (Phase B) | `tdd-orchestrator` | `developer-backend` | `ContextAssembler.buildDevelopmenPayload()` | Executes TDD cycles (red → green → refactor). Re-runs with rework log on retry. |
+| **Review** (Phase C) — Tech Lead | `the-grumpy-tech-lead` | `harness-tech-lead` | `ContextAssembler.buildReviewPayload()` | Technical code review. Returns `scoreTL` in JSON. |
+| **Review** (Phase C) — Adversarial QA | `adversarial-qa` | `harness-qa` | `ContextAssembler.buildReviewPayload()` | Edge-case and security testing. Returns `scoreAdv`, `hasHighCriticalVuln`, `isCrashing` in JSON. |
 | **State Check** (Phase D) | _(none)_ | _(none)_ | _(none)_ | Pure state management — evaluates completion criteria, no agent call. |
-| **Memory** (Phase E) | `project-memory` | `developer-backend` | `ContextAssembler.buildPhaseEPayload()` | Writes permanent feature records to `docs/feature/{domain}.md`. |
+| **Memory** (Phase E) | `project-memory` | `developer-backend` | `ContextAssembler.buildMemoryPayload()` | Writes permanent feature records to `docs/feature/{domain}.md`. |
 | **Transition** (Phase F) | _(none)_ | _(none)_ | _(none)_ | Advances to next NOT_STARTED feature or cascades BLOCKED status. When all features done → DEPLOY. |
 | **Deploy** (Phase DEPLOY) | _(none)_ | _(none)_ | _(none)_ | Runs `git add --all`, `git commit`, `git push` for each project path. No conflict resolution. Skippable via `--skip-deploy`. |
 

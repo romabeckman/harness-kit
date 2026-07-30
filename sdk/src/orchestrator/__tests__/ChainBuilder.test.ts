@@ -4,13 +4,12 @@ import {
   PlanningHandler,
   DevelopmentHandler,
   ReviewHandler,
-  StateCheckHandler,
   MemoryHandler,
   TransitionHandler,
   CascadeBlockedHandler,
 } from '../phases'
 import { Phase } from '../types'
-import type { IPhaseHandler, PhaseContext } from '../phases/AbstractPhaseHandler'
+import type { IPhaseHandler, Reviewontext } from '../phases/AbstractPhaseHandler'
 
 function makeStubHandler(respondTo: Phase, returns: Phase): IPhaseHandler {
   return {
@@ -22,7 +21,7 @@ function makeStubHandler(respondTo: Phase, returns: Phase): IPhaseHandler {
   }
 }
 
-function makeContext(): PhaseContext {
+function makeContext(): Reviewontext {
   return {
     config: { scope: '', score: 0, reworks: 0, projectPaths: [] },
     workingDir: '/tmp',
@@ -31,12 +30,12 @@ function makeContext(): PhaseContext {
       loadBootstrapConfig: vi.fn().mockReturnValue({ steeringRules: [] }),
       saveBootstrapConfig: vi.fn(),
       loadBacklog: vi.fn().mockReturnValue([{ id: 'F001', domain: 'd', dependencies: [] }]),
-    } as unknown as PhaseContext['fsm'],
+    } as unknown as Reviewontext['fsm'],
     invokeAgent: vi.fn().mockResolvedValue(undefined),
     getActiveFeature: vi.fn().mockReturnValue(null),
     checkSpecFilesPresent: vi.fn().mockReturnValue(true),
     extractTasksFromTacticalDesign: vi.fn().mockReturnValue([]),
-  } as unknown as PhaseContext
+  } as unknown as Reviewontext
 }
 
 describe('ChainBuilder', () => {
@@ -71,16 +70,16 @@ describe('ChainBuilder', () => {
   })
 
   it('addPhase registers a handler — it responds to the registered phase (REVIEW)', async () => {
-    const stub = makeStubHandler(Phase.REVIEW, Phase.STATE_CHECK)
+    const stub = makeStubHandler(Phase.REVIEW, Phase.TRANSITION)
     const chain = new ChainBuilder().addPhase(stub).build()
     const result = await chain.handle(Phase.REVIEW, makeContext())
-    expect(result).toBe(Phase.STATE_CHECK)
+    expect(result).toBe(Phase.TRANSITION)
   })
 
-  it('addPhase registers a handler — it responds to the registered phase (STATE_CHECK)', async () => {
-    const stub = makeStubHandler(Phase.STATE_CHECK, Phase.MEMORY)
+  it('addPhase registers a handler — it responds to the registered phase (TRANSITION)', async () => {
+    const stub = makeStubHandler(Phase.TRANSITION, Phase.MEMORY)
     const chain = new ChainBuilder().addPhase(stub).build()
-    const result = await chain.handle(Phase.STATE_CHECK, makeContext())
+    const result = await chain.handle(Phase.TRANSITION, makeContext())
     expect(result).toBe(Phase.MEMORY)
   })
 
@@ -99,10 +98,10 @@ describe('ChainBuilder', () => {
   })
 
   it('addPhase registers a handler — it responds to the registered phase (CASCADE_BLOCKED)', async () => {
-    const stub = makeStubHandler(Phase.CASCADE_BLOCKED, Phase.STATE_CHECK)
+    const stub = makeStubHandler(Phase.CASCADE_BLOCKED, Phase.TRANSITION)
     const chain = new ChainBuilder().addPhase(stub).build()
     const result = await chain.handle(Phase.CASCADE_BLOCKED, makeContext())
-    expect(result).toBe(Phase.STATE_CHECK)
+    expect(result).toBe(Phase.TRANSITION)
   })
 
   it('two handlers for same phase are chained — second is reached if first passes through', async () => {
@@ -126,7 +125,6 @@ describe('ChainBuilder', () => {
       .addPhase(new PlanningHandler())
       .addPhase(new DevelopmentHandler())
       .addPhase(new ReviewHandler())
-      .addPhase(new StateCheckHandler())
       .addPhase(new MemoryHandler())
       .addPhase(new TransitionHandler())
       .addPhase(new CascadeBlockedHandler())
@@ -139,7 +137,7 @@ describe('ChainBuilder', () => {
     const stub = makeStubHandler(Phase.PLANNING, Phase.DEVELOPMENT)
     expect(builder.addPhase(stub)).toBe(builder)
     expect(builder.addPhase(makeStubHandler(Phase.DEVELOPMENT, Phase.REVIEW))).toBe(builder)
-    expect(builder.addPhase(makeStubHandler(Phase.CASCADE_BLOCKED, Phase.STATE_CHECK))).toBe(builder)
+    expect(builder.addPhase(makeStubHandler(Phase.CASCADE_BLOCKED, Phase.TRANSITION))).toBe(builder)
   })
 
   it('build() can be called multiple times returning independent chain instances', () => {

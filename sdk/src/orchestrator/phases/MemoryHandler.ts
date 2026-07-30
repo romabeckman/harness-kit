@@ -1,12 +1,12 @@
 import { Phase } from '../types'
-import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
+import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
-import type { PhaseEPayload } from '../../context-assembler/types'
+import type { MemoryPayload } from '../../context-assembler/types'
 import { join } from 'node:path'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
 export class MemoryHandler extends AbstractPhaseHandler {
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.MEMORY) {
       return super.handle(phase, context)
     }
@@ -18,7 +18,7 @@ export class MemoryHandler extends AbstractPhaseHandler {
     }
 
     const config = context.fsm.loadBootstrapConfig();
-    const payload = ContextAssembler.buildPhaseEPayload(
+    const payload = ContextAssembler.buildMemoryPayload(
       context.config.projectPaths,
       context.workingDir,
       config.steeringRules
@@ -34,12 +34,12 @@ export class MemoryHandler extends AbstractPhaseHandler {
       phaseKey: 'memory',
     })
 
-    PhaseDecisionLogger.logPhaseE(context.fsm, context.config.projectPaths)
+    PhaseDecisionLogger.logMemory(context.fsm, context.config.projectPaths)
 
     return Phase.DEPLOY
   }
 
-  private buildProjectMemoryPrompt(payload: PhaseEPayload, context: PhaseContext): string {
+  private buildProjectMemoryPrompt(payload: MemoryPayload, context: Reviewontext): string {
     const backlogFile = join(context.workingDir, 'docs', 'product', 'BACKLOG.md')
     const specsPattern = join(context.workingDir, 'docs', 'product', 'specs', '[domain]', '*.md')
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')

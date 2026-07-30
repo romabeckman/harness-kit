@@ -82,10 +82,10 @@ FORBIDDEN: Do not call `applySteeringActions` with an empty array — check `act
 
 ```typescript
 // CORRECT: rules automatically included in phase payload
-const payload = ContextAssembler.buildPhaseAPayload(feature, paths, steeringRules)
+const payload = ContextAssembler.buildPlanningPayload(feature, paths, steeringRules)
 
 // WRONG: omit rules — agents never see the developer's constraints
-const payload = ContextAssembler.buildPhaseAPayload(feature, paths)
+const payload = ContextAssembler.buildPlanningPayload(feature, paths)
 ```
 
 ### Default Phase Rules

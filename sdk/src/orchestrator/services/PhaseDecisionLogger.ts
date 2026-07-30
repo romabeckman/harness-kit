@@ -38,7 +38,7 @@ export class PhaseDecisionLogger {
 
   // ─── Phase A ──────────────────────────────────────────────────────────────
 
-  static logPhaseA(
+  static logPlanning(
     fsm: IFileStateManager,
     feature: Feature,
     specsDir: string,
@@ -56,7 +56,7 @@ export class PhaseDecisionLogger {
 
   // ─── Phase B ──────────────────────────────────────────────────────────────
 
-  static logPhaseB(
+  static logDevelopmen(
     fsm: IFileStateManager,
     feature: Feature,
     tddOutputPath: string
@@ -72,7 +72,7 @@ export class PhaseDecisionLogger {
 
   // ─── Phase C ──────────────────────────────────────────────────────────────
 
-  static logPhaseC(
+  static logReview(
     fsm: IFileStateManager,
     feature: Feature,
     verdict: string,
@@ -90,7 +90,7 @@ export class PhaseDecisionLogger {
 
   // ─── Phase E ──────────────────────────────────────────────────────────────
 
-  static logPhaseE(
+  static logMemory(
     fsm: IFileStateManager,
     projectPaths: string[]
   ): void {

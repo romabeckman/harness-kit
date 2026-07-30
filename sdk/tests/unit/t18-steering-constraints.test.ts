@@ -24,19 +24,19 @@ describe('Steering Rules Injection', () => {
       user: ['User Rule 1', 'User Rule 2']
     }
 
-    const payloadA = ContextAssembler.buildPhaseAPayload(feature, '/dummy/workdir', ['/path'], 'Original Scope', rules)
+    const payloadA = ContextAssembler.buildPlanningPayload(feature, '/dummy/workdir', ['/path'], 'Original Scope', rules)
     expect(payloadA.steeringRules).toContain('User Rule 1')
     expect(payloadA.steeringRules).toContain('User Rule 2')
 
-    const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, 0, rules)
+    const payloadB = ContextAssembler.buildDevelopmenPayload(feature, 'workdir', tasks, ['/path'], false, 0, rules)
     expect(payloadB.steeringRules).toContain('User Rule 1')
     expect(payloadB.steeringRules).toContain('User Rule 2')
 
-    const payloadC = ContextAssembler.buildPhaseCPayload(feature, ['/path'], rules)
+    const payloadC = ContextAssembler.buildReviewPayload(feature, 'workdir', ['/path'], rules)
     expect(payloadC.steeringRules).toContain('User Rule 1')
     expect(payloadC.steeringRules).toContain('User Rule 2')
 
-    const payloadE = ContextAssembler.buildPhaseEPayload(['/path'], 'workdir', rules)
+    const payloadE = ContextAssembler.buildMemoryPayload(['/path'], 'workdir', rules)
     expect(payloadE.steeringRules).toContain('User Rule 1')
     expect(payloadE.steeringRules).toContain('User Rule 2')
   })
@@ -46,7 +46,7 @@ describe('Steering Rules Injection', () => {
       user: ['User Rule 1'],
       implementation: ['Limit of 5 tasks for feature']
     }
-    const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, 0, rules)
+    const payloadB = ContextAssembler.buildDevelopmenPayload(feature, 'workdir', tasks, ['/path'], false, 0, rules)
     expect(payloadB.steeringRules).toEqual([
       'Limit of 5 tasks for feature',
       'User Rule 1'
@@ -57,7 +57,7 @@ describe('Steering Rules Injection', () => {
     const rules: SteeringRulesConfig = {
       implementation: ['Phase B: Limit of 5 tasks for feature']
     }
-    const payloadB = ContextAssembler.buildPhaseBPayload(feature, tasks, ['/path'], false, 0, rules)
+    const payloadB = ContextAssembler.buildDevelopmenPayload(feature, 'workdir', tasks, ['/path'], false, 0, rules)
     expect(payloadB.steeringRules).toEqual([
       'Phase B: Limit of 5 tasks for feature'
     ])
@@ -67,13 +67,13 @@ describe('Steering Rules Injection', () => {
     const rules: SteeringRulesConfig = {
       implementation: ['Limit of 5 tasks for feature']
     }
-    const payloadA = ContextAssembler.buildPhaseAPayload(feature, '/dummy/workdir', ['/path'], 'Original Scope', rules)
+    const payloadA = ContextAssembler.buildPlanningPayload(feature, '/dummy/workdir', ['/path'], 'Original Scope', rules)
     expect(payloadA.steeringRules).toBeUndefined()
 
-    const payloadC = ContextAssembler.buildPhaseCPayload(feature, ['/path'], rules)
+    const payloadC = ContextAssembler.buildReviewPayload(feature, 'workdir', ['/path'], rules)
     expect(payloadC.steeringRules).toBeUndefined()
 
-    const payloadE = ContextAssembler.buildPhaseEPayload(['/path'], 'workdir', rules)
+    const payloadE = ContextAssembler.buildMemoryPayload(['/path'], 'workdir', rules)
     expect(payloadE.steeringRules).toBeUndefined()
   })
 
@@ -82,7 +82,7 @@ describe('Steering Rules Injection', () => {
       bootstrap: ['Limit features generated'],
       user: ['Global Rule']
     }
-    // @ts-expect-error - flattenRules is private but we test it via buildPhaseAPayload with custom mapping or directly via reflection
+    // @ts-expect-error - flattenRules is private but we test it via buildPlanningPayload with custom mapping or directly via reflection
     const flattened = ContextAssembler['flattenRules']('BOOTSTRAP', rules)
     expect(flattened).toEqual([
       'Limit features generated',

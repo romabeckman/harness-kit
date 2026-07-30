@@ -10,7 +10,7 @@ export interface ExtractedTask {
   file: string
 }
 
-export interface PhaseContext {
+export interface Reviewontext {
   readonly config: OrchestratorConfig
   readonly workingDir: string
   readonly fsm: IFileStateManager
@@ -23,7 +23,7 @@ export interface PhaseContext {
 
 export interface IPhaseHandler {
   setNext(handler: IPhaseHandler): IPhaseHandler
-  handle(phase: Phase, context: PhaseContext): Promise<Phase | null>
+  handle(phase: Phase, context: Reviewontext): Promise<Phase | null>
 }
 
 export abstract class AbstractPhaseHandler implements IPhaseHandler {
@@ -34,7 +34,7 @@ export abstract class AbstractPhaseHandler implements IPhaseHandler {
     return handler
   }
 
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (this.nextHandler) {
       return this.nextHandler.handle(phase, context)
     }

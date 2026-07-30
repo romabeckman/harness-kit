@@ -7,7 +7,14 @@ export interface BootstrapPayload extends ContextPayload {
   backlogPath: string
 }
 
-export interface PhaseAPayload extends ContextPayload {
+export interface DomainSpecs {
+  problemSpace?: string;
+  contextMap?: string;
+  tacticalDesign?: string;
+  testScenarios?: string;
+}
+
+export interface PlanningPayload extends ContextPayload {
   scope: string
   domain: string
   featureTitle: string
@@ -16,7 +23,7 @@ export interface PhaseAPayload extends ContextPayload {
   steeringRules?: string[]
 }
 
-export interface PhaseBPayload extends ContextPayload {
+export interface DevelopmenPayload extends ContextPayload {
   featureId: string
   featureTitle: string
   domain: string
@@ -26,41 +33,43 @@ export interface PhaseBPayload extends ContextPayload {
   reworks: number
   reworkLogPath?: string
   steeringRules?: string[]
+  specsContent?: DomainSpecs
 }
 
-export interface PhaseCPayload extends ContextPayload {
+export interface ReviewPayload extends ContextPayload {
   featureId: string
   featureTitle: string
   domain: string
   projectPaths: string[]
   steeringRules?: string[]
   totalReworks: number
+  specsContent?: DomainSpecs
 }
 
-export interface PhaseEPayload extends ContextPayload {
+export interface MemoryPayload extends ContextPayload {
   projectPaths: string[]
   workingDir: string
   steeringRules?: string[]
 }
 
-export interface PhaseAPayloadRequest {
+export interface PlanningPayloadRequest {
   feature: Feature
   projectPaths: string[]
 }
 
-export interface PhaseBPayloadRequest {
+export interface DevelopmenPayloadRequest {
   feature: Feature
   tasks: Task[]
   projectPaths: string[]
   isRetry: boolean
 }
 
-export interface PhaseCPayloadRequest {
+export interface ReviewPayloadRequest {
   feature: Feature
   projectPaths: string[]
 }
 
-export interface PhaseEPayloadRequest {
+export interface MemoryPayloadRequest {
   feature: Feature
   completedCycles: number
   decisions: string[]

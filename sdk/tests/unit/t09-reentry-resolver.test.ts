@@ -90,8 +90,8 @@ describe('T09 — ReentryResolver', () => {
     })
   })
 
-  describe('TS-U-42: Feature COMPLETED, more NOT_STARTED features → STATE_CHECK', () => {
-    it('returns STATE_CHECK', () => {
+  describe('TS-U-42: Feature COMPLETED, more NOT_STARTED features -> TRANSITION', () => {
+    it('returns TRANSITION', () => {
       const features = [
         { ...baseFeature, id: 'F001', status: 'COMPLETED' as const },
         { ...baseFeature, id: 'F002', status: 'NOT_STARTED' as const },
@@ -101,18 +101,18 @@ describe('T09 — ReentryResolver', () => {
         activeFeature: features[0],
         allTasksCompleted: true,
       })
-      expect(ReentryResolver.resolve(state)).toBe(Phase.STATE_CHECK)
+      expect(ReentryResolver.resolve(state)).toBe(Phase.TRANSITION)
     })
   })
 
-  describe('TS-U-43: All features terminal → STATE_CHECK (final loop pass)', () => {
-    it('returns STATE_CHECK when no NOT_STARTED feature', () => {
+  describe('TS-U-43: All features terminal -> TRANSITION (final loop pass)', () => {
+    it('returns TRANSITION when no NOT_STARTED feature', () => {
       const features = [
         { ...baseFeature, id: 'F001', status: 'COMPLETED' as const },
         { ...baseFeature, id: 'F002', status: 'FAILED' as const },
       ]
       const state = makeState({ features, activeFeature: features[0] })
-      expect(ReentryResolver.resolve(state)).toBe(Phase.STATE_CHECK)
+      expect(ReentryResolver.resolve(state)).toBe(Phase.TRANSITION)
     })
   })
 

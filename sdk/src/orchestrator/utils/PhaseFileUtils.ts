@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import type { DomainSpecs } from '../../context-assembler/types'
 
 /**
  * File-system utilities shared across phase decision loggers and other
@@ -16,6 +17,33 @@ export function listSpecFiles(specsDir: string): string[] {
   } catch {
     return []
   }
+}
+
+export function loadDomainSpecsContent(specsDir: string): DomainSpecs {
+  const specs: DomainSpecs = {};
+  if (!existsSync(specsDir)) return specs;
+  
+  try {
+    const files = readdirSync(specsDir).filter(f => f.endsWith('.md'));
+    for (const f of files) {
+      const fullPath = join(specsDir, f);
+      const content = readFileSync(fullPath, 'utf-8');
+      if (f.startsWith('001-')) {
+        specs.problemSpace = content;
+      } else if (f.startsWith('002-')) {
+        specs.contextMap = content;
+      } else if (f.startsWith('003-') && f.includes('-tactical-design')) {
+        const prefix = `<!-- File: ${f} -->\n`;
+        specs.tacticalDesign = (specs.tacticalDesign ? specs.tacticalDesign + '\n\n' : '') + prefix + content;
+      } else if (f.startsWith('004-') && f.includes('-test-scenarios')) {
+        const prefix = `<!-- File: ${f} -->\n`;
+        specs.testScenarios = (specs.testScenarios ? specs.testScenarios + '\n\n' : '') + prefix + content;
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+  return specs;
 }
 
 /** Lists .md files under a docs/feature directory, returning full paths (forward-slash). */
