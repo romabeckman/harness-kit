@@ -24,11 +24,11 @@ sdk/
 │   │   │   └── ProjectStateService.ts    # Manages disk state queries and spec verification
 │   │   ├── utils/                # Orchestrator-specific utility functions
 │   │   │   └── OrchestratorFormatter.ts  # Handles CLI/UI text and box card formatting
-│   │   ├── HarnessOrchestrator.ts# Main orchestrator implementing PhaseContext
+│   │   ├── HarnessOrchestrator.ts# Main orchestrator implementing Reviewontext
 │   │   ├── SteeringAnalyzer.ts   # LLM-based session steering message parser
 │   │   └── ReentryResolver.ts    # Ordered predicate table for phase re-entry
 │   ├── context-assembler/        # Per-phase structured payload builders
-│   │   └── ContextAssembler.ts   # Builds PhaseAPayload, PhaseBPayload, etc.
+│   │   └── ContextAssembler.ts   # Builds PlanningPayload, DevelopmenPayload, etc.
 │   ├── file-state/               # Filesystem reading and writing port/adapter
 │   │   └── parsers/              # Markdown/JSON to domain object parsers
 │   ├── json-extraction/          # Defensive JSON parser — never throws
@@ -104,20 +104,20 @@ const limit = groups * 2 // Magic number 2
 
 # CORRECT: Extract cohesive private methods and helper services
 class DevelopmentHandler extends AbstractPhaseHandler {
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
-    const shouldGoToPhaseC = this.handleResumedExecution(activeFeature, tddOutputPath, context)
-    if (shouldGoToPhaseC) return Phase.REVIEW
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
+    const shouldGoToReview = this.handleResumedExecution(activeFeature, tddOutputPath, context)
+    if (shouldGoToReview) return Phase.REVIEW
     // ...
   }
 
-  private handleResumedExecution(activeFeature: Feature, tddOutputPath: string, context: PhaseContext): boolean {
+  private handleResumedExecution(activeFeature: Feature, tddOutputPath: string, context: Reviewontext): boolean {
     // ...
   }
 }
 
 # WRONG: Monolithic long methods mixing resumption, pagination, and file handling
 class DevelopmentHandler extends AbstractPhaseHandler {
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     // 150 lines of mixed concerns directly inside handle
     const allTasks = context.fsm.loadDevelopmentState().filter(...)
     const inProgressTasks = allTasks.filter(...)

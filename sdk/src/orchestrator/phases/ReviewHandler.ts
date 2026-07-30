@@ -1,12 +1,12 @@
 import { existsSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Complexity, Phase } from '../types'
-import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
+import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../../json-extraction/types'
 import { ValidationGate } from '../../validation-gate/ValidationGate'
-import type { PhaseCPayload } from '../../context-assembler/types'
+import type { ReviewPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
@@ -14,7 +14,7 @@ import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 type ValidationResult = ReturnType<typeof ValidationGate.evaluate>;
 
 export class ReviewHandler extends AbstractPhaseHandler {
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.REVIEW) {
       return super.handle(phase, context)
     }
@@ -36,8 +36,9 @@ export class ReviewHandler extends AbstractPhaseHandler {
     this.cleanTemporaryFiles(context, activeFeature.domain)
 
     const config = context.fsm.loadBootstrapConfig()
-    const payload = ContextAssembler.buildPhaseCPayload(
+    const payload = ContextAssembler.buildReviewPayload(
       activeFeature,
+      context.workingDir,
       context.config.projectPaths,
       config.steeringRules
     )
@@ -55,7 +56,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     return this.processDecision(context, activeFeature, phase, result, scores)
   }
 
-  private cleanTemporaryFiles(context: PhaseContext, domain: string): void {
+  private cleanTemporaryFiles(context: Reviewontext, domain: string): void {
     const specsDir = join(context.workingDir, 'docs', 'specs', domain)
     for (const file of ['TL.json', 'QA.json']) {
       const p = join(specsDir, file)
@@ -63,7 +64,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     }
   }
 
-  private async executeAgents(context: PhaseContext, payload: PhaseCPayload, config: BootstrapConfig) {
+  private async executeAgents(context: Reviewontext, payload: ReviewPayload, config: BootstrapConfig) {
     const tlPrompt = this.buildTechLeadPrompt(payload, context.workingDir)
     const advPrompt = this.buildAdversarialQAPrompt(payload, context)
     const isSimple = context.config.complexity === Complexity.LOW
@@ -95,7 +96,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     ])
   }
 
-  private extractScores(context: PhaseContext, domain: string, tlOutput: any, advOutput: any) {
+  private extractScores(context: Reviewontext, domain: string, tlOutput: any, advOutput: any) {
     const specsDir = join(context.workingDir, 'docs', 'specs', domain)
     const tlData = this.parseAgentOutput(join(specsDir, 'TL.json'), tlOutput, 'review_tl')
     const advData = this.parseAgentOutput(join(specsDir, 'QA.json'), advOutput, 'review_adv')
@@ -143,14 +144,14 @@ export class ReviewHandler extends AbstractPhaseHandler {
    * Logs decisions, manages feature state transitions, and moves to STATE_CHECK or retries.
    */
   private processDecision(
-    context: PhaseContext,
+    context: Reviewontext,
     activeFeature: Feature,
     phase: Phase,
     result: ValidationResult,
     scores: ValidationScores
   ): Phase {
     // Append verification decision log with scores and rationale
-    PhaseDecisionLogger.logPhaseC(
+    PhaseDecisionLogger.logReview(
       context.fsm,
       activeFeature,
       result.verdict,
@@ -182,7 +183,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     return Phase.STATE_CHECK
   }
 
-  private handleRetry(context: PhaseContext, activeFeature: Feature, scores: ValidationScores): Phase {
+  private handleRetry(context: Reviewontext, activeFeature: Feature, scores: ValidationScores): Phase {
     context.fsm.incrementReworks(activeFeature.id)
     context.fsm.writeReworkLog(activeFeature.domain, this.buildReworkContent(scores))
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'NOT_STARTED')
@@ -209,7 +210,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     return sections.length > 0 ? sections.join('\n\n') : `Score TL: ${scores.scoreTL}, Score Adv: ${scores.scoreAdv}`
   }
 
-  private buildTechLeadPrompt(payload: PhaseCPayload, workingDir: string): string {
+  private buildTechLeadPrompt(payload: ReviewPayload, workingDir: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
@@ -281,8 +282,10 @@ export class ReviewHandler extends AbstractPhaseHandler {
       ``,
       `<spec_sources>`,
       `- Development log: \`${specsDir}/TDD-OUTPUT.json\` or \`git status -s\` to list all modified files in each project.`,
-      `- Architecture blueprint: \`${specsDir}/003-*-tactical-design.md\``,
-      `- Read \`${workingDir}/docs/README.md\`. You MUST read all files marked as 'Mandatory' or 'Required', and read optional files ONLY IF their context is required for the current task.`,
+      ...(payload.specsContent?.problemSpace ? [`<problem_space>`, `\`\`\`markdown`, payload.specsContent.problemSpace, `\`\`\``, `</problem_space>`] : []),
+      ...(payload.specsContent?.contextMap ? [`<context_map>`, `\`\`\`markdown`, payload.specsContent.contextMap, `\`\`\``, `</context_map>`] : []),
+      ...(payload.specsContent?.tacticalDesign ? [`<tactical_design>`, `\`\`\`markdown`, payload.specsContent.tacticalDesign, `\`\`\``, `</tactical_design>`] : []),
+      ...(payload.specsContent?.testScenarios ? [`<test_scenarios>`, `\`\`\`markdown`, payload.specsContent.testScenarios, `\`\`\``, `</test_scenarios>`] : []),
       `</spec_sources>`,
       ``,
       `<expected_output>`,
@@ -316,7 +319,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     ].join('\n')
   }
 
-  private buildAdversarialQAPrompt(payload: PhaseCPayload, context: PhaseContext): string {
+  private buildAdversarialQAPrompt(payload: ReviewPayload, context: Reviewontext): string {
     const workingDir = context.workingDir
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const rulesSection = payload.steeringRules?.length
@@ -387,10 +390,10 @@ export class ReviewHandler extends AbstractPhaseHandler {
       ``,
       `<spec_sources>`,
       `- Development log: \`${specsDir}/TDD-OUTPUT.json\` or \`git status -s\` to list all modified files in each project.`,
-      `- Test scenarios (acceptance criteria, boundary values, security): \`${specsDir}/004-*-test-scenarios.md\``,
-      `- Architecture contract: \`${specsDir}/003-*-tactical-design.md\``,
-      `- Problem space (if exists): \`${specsDir}/001-problem-space.md\``,
-      `- Context map (if exists): \`${specsDir}/002-context-map.md\``,
+      ...(payload.specsContent?.problemSpace ? [`<problem_space>`, `\`\`\`markdown`, payload.specsContent.problemSpace, `\`\`\``, `</problem_space>`] : []),
+      ...(payload.specsContent?.contextMap ? [`<context_map>`, `\`\`\`markdown`, payload.specsContent.contextMap, `\`\`\``, `</context_map>`] : []),
+      ...(payload.specsContent?.tacticalDesign ? [`<tactical_design>`, `\`\`\`markdown`, payload.specsContent.tacticalDesign, `\`\`\``, `</tactical_design>`] : []),
+      ...(payload.specsContent?.testScenarios ? [`<test_scenarios>`, `\`\`\`markdown`, payload.specsContent.testScenarios, `\`\`\``, `</test_scenarios>`] : []),
       `</spec_sources>`,
       ``,
       `<expected_output>`,
@@ -414,7 +417,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       `<inputs>`,
       `<scope>`,
       `\`\`\`markdown`,
-      context.config.scope.trim(),
+      (context.config.scope || '').trim(),
       `\`\`\``,
       `</scope>`,
       ``,

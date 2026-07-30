@@ -92,9 +92,9 @@ describe('PhaseDecisionLogger', () => {
     })
   })
 
-  // ─── logPhaseA ────────────────────────────────────────────────────────────
+  // ─── logPlanning ────────────────────────────────────────────────────────────
 
-  describe('logPhaseA', () => {
+  describe('logPlanning', () => {
     it('records spec files and task count', () => {
       vi.mocked(PhaseFileUtils.listSpecFiles).mockReturnValue([
         '001-problem-space.md',
@@ -103,7 +103,7 @@ describe('PhaseDecisionLogger', () => {
       const fsm = makeFsm()
       const feature = makeFeature()
 
-      PhaseDecisionLogger.logPhaseA(fsm, feature, '/some/specs/dir', 4)
+      PhaseDecisionLogger.logPlanning(fsm, feature, '/some/specs/dir', 4)
 
       expect(PhaseFileUtils.listSpecFiles).toHaveBeenCalledWith('/some/specs/dir')
       const call = (fsm.appendDecision as any).mock.calls[0][0]
@@ -118,16 +118,16 @@ describe('PhaseDecisionLogger', () => {
       vi.mocked(PhaseFileUtils.listSpecFiles).mockReturnValue([])
       const fsm = makeFsm()
 
-      PhaseDecisionLogger.logPhaseA(fsm, makeFeature(), '/empty/dir', 0)
+      PhaseDecisionLogger.logPlanning(fsm, makeFeature(), '/empty/dir', 0)
 
       const call = (fsm.appendDecision as any).mock.calls[0][0]
       expect(call.rationale).toContain('none')
     })
   })
 
-  // ─── logPhaseB ────────────────────────────────────────────────────────────
+  // ─── logDevelopmen ────────────────────────────────────────────────────────────
 
-  describe('logPhaseB', () => {
+  describe('logDevelopmen', () => {
     it('records TDD status and rationale from readTddOutput', () => {
       vi.mocked(PhaseFileUtils.readTddOutput).mockReturnValue({
         status: 'SUCCESS',
@@ -136,7 +136,7 @@ describe('PhaseDecisionLogger', () => {
       const fsm = makeFsm()
       const tddPath = '/some/TDD-OUTPUT.json'
 
-      PhaseDecisionLogger.logPhaseB(fsm, makeFeature(), tddPath)
+      PhaseDecisionLogger.logDevelopmen(fsm, makeFeature(), tddPath)
 
       expect(PhaseFileUtils.readTddOutput).toHaveBeenCalledWith(tddPath)
       const call = (fsm.appendDecision as any).mock.calls[0][0]
@@ -152,20 +152,20 @@ describe('PhaseDecisionLogger', () => {
       })
       const fsm = makeFsm()
 
-      PhaseDecisionLogger.logPhaseB(fsm, makeFeature(), '/missing/TDD-OUTPUT.json')
+      PhaseDecisionLogger.logDevelopmen(fsm, makeFeature(), '/missing/TDD-OUTPUT.json')
 
       const call = (fsm.appendDecision as any).mock.calls[0][0]
       expect(call.decision).toContain('UNKNOWN')
     })
   })
 
-  // ─── logPhaseC ────────────────────────────────────────────────────────────
+  // ─── logReview ────────────────────────────────────────────────────────────
 
-  describe('logPhaseC', () => {
+  describe('logReview', () => {
     it('records verdict, scores and reason', () => {
       const fsm = makeFsm()
 
-      PhaseDecisionLogger.logPhaseC(fsm, makeFeature(), 'PASS', 0.92, 0.88, 'All checks passed.')
+      PhaseDecisionLogger.logReview(fsm, makeFeature(), 'PASS', 0.92, 0.88, 'All checks passed.')
 
       const call = (fsm.appendDecision as any).mock.calls[0][0]
       expect(call.featureId).toBe('F001')
@@ -178,7 +178,7 @@ describe('PhaseDecisionLogger', () => {
     it('records RETRY verdict with scores', () => {
       const fsm = makeFsm()
 
-      PhaseDecisionLogger.logPhaseC(fsm, makeFeature(), 'RETRY', 0.60, 0.55, 'Score below threshold.')
+      PhaseDecisionLogger.logReview(fsm, makeFeature(), 'RETRY', 0.60, 0.55, 'Score below threshold.')
 
       const call = (fsm.appendDecision as any).mock.calls[0][0]
       expect(call.decision).toContain('RETRY')
@@ -186,9 +186,9 @@ describe('PhaseDecisionLogger', () => {
     })
   })
 
-  // ─── logPhaseE ────────────────────────────────────────────────────────────
+  // ─── logMemory ────────────────────────────────────────────────────────────
 
-  describe('logPhaseE', () => {
+  describe('logMemory', () => {
     it('records documents found in project feature dirs', () => {
       vi.mocked(PhaseFileUtils.listDocFiles).mockImplementation((dir: string) => {
         if (dir.includes('project-a')) return ['/project-a/docs/feature/AUTH.md']
@@ -199,7 +199,7 @@ describe('PhaseDecisionLogger', () => {
       const feature = makeFeature()
       const projectPaths = ['/project-a', '/project-b']
 
-      PhaseDecisionLogger.logPhaseE(fsm, projectPaths)
+      PhaseDecisionLogger.logMemory(fsm, projectPaths)
 
       expect(PhaseFileUtils.listDocFiles).toHaveBeenCalledWith(join('/project-a', 'docs', 'feature'))
       expect(PhaseFileUtils.listDocFiles).toHaveBeenCalledWith(join('/project-b', 'docs', 'feature'))
@@ -214,7 +214,7 @@ describe('PhaseDecisionLogger', () => {
       vi.mocked(PhaseFileUtils.listDocFiles).mockReturnValue([])
       const fsm = makeFsm()
 
-      PhaseDecisionLogger.logPhaseE(fsm, ['/project-x'])
+      PhaseDecisionLogger.logMemory(fsm, ['/project-x'])
 
       const call = (fsm.appendDecision as any).mock.calls[0][0]
       expect(call.featureId).toBeNull()

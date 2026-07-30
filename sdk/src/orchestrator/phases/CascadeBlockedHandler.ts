@@ -1,8 +1,8 @@
 import { Phase } from '../types'
-import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
+import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 
 export class CascadeBlockedHandler extends AbstractPhaseHandler {
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.CASCADE_BLOCKED) {
       return super.handle(phase, context)
     }

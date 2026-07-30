@@ -1,13 +1,13 @@
 import { Complexity, Phase } from "../types";
-import { AbstractPhaseHandler, PhaseContext } from "./AbstractPhaseHandler";
+import { AbstractPhaseHandler, Reviewontext } from "./AbstractPhaseHandler";
 import { ContextAssembler } from "../../context-assembler/ContextAssembler";
 import type { Feature } from "../../file-state/types";
-import type { PhaseAPayload } from "../../context-assembler/types";
+import type { PlanningPayload } from "../../context-assembler/types";
 import { join } from "node:path";
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
 export class PlanningHandler extends AbstractPhaseHandler {
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.PLANNING) {
       return super.handle(phase, context);
     }
@@ -38,7 +38,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const specsDir = join(context.workingDir, 'docs', 'specs', activeFeature.domain)
     const taskCount = context.fsm.loadDevelopmentState()
       .filter(t => t.featureId === activeFeature.id).length
-    PhaseDecisionLogger.logPhaseA(context.fsm, activeFeature, specsDir, taskCount)
+    PhaseDecisionLogger.logPlanning(context.fsm, activeFeature, specsDir, taskCount)
 
     return Phase.DEVELOPMENT;
   }
@@ -52,7 +52,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
 
   private async runScopeRefinement(
     feature: Feature,
-    context: PhaseContext,
+    context: Reviewontext,
   ): Promise<void> {
     context.fsm.updateFeatureStatus(feature.id, "IN_PROGRESS");
     const config = context.fsm.loadBootstrapConfig();
@@ -68,7 +68,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
     }
     context.config.scope = scope
 
-    const payload = ContextAssembler.buildPhaseAPayload(
+    const payload = ContextAssembler.buildPlanningPayload(
       feature,
       workingDir,
       context.config.projectPaths,
@@ -87,7 +87,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
     });
   }
 
-  private buildScopeRefinementPrompt(payload: PhaseAPayload, feature: Feature, context: PhaseContext): string {
+  private buildScopeRefinementPrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
     const projectPathsList = payload.projectPaths
       .map((p) => `- ${p}`)
       .join("\n");
@@ -189,7 +189,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
 
   private async ensureTasksAppended(
     feature: Feature,
-    context: PhaseContext,
+    context: Reviewontext,
     phase: Phase
   ): Promise<void> {
     const existing = context.fsm
@@ -231,7 +231,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
 
   private async recoverTasksViaAgent(
     feature: Feature,
-    context: PhaseContext,
+    context: Reviewontext,
   ): Promise<void> {
     const projectPathsList = context.config.projectPaths
       .map((p) => `- ${p}`)

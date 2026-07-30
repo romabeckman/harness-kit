@@ -1,10 +1,10 @@
 import { join } from 'node:path'
 import { Phase, CliCommand } from '../types'
-import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
+import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
 export class BootstrapHandler extends AbstractPhaseHandler {
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.BOOTSTRAP) {
       return super.handle(phase, context)
     }

@@ -48,7 +48,7 @@ describe('T15 — Public API (src/index.ts)', () => {
   it('ContextAssembler is exported from index', async () => {
     const mod = await import('../../src/index')
     expect(mod.ContextAssembler).toBeDefined()
-    expect(typeof mod.ContextAssembler.buildPhaseAPayload).toBe('function')
+    expect(typeof mod.ContextAssembler.buildPlanningPayload).toBe('function')
   })
 
   it('isExtractionError type guard is exported', async () => {

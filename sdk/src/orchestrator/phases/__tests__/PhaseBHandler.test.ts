@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { DevelopmentHandler } from '../DevelopmentHandler'
 import { Complexity, Phase } from '../../types'
-import type { PhaseContext } from '../AbstractPhaseHandler'
+import type { Reviewontext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
 import type { Feature, Task, BootstrapConfig } from '../../../file-state/types'
 
@@ -77,7 +77,7 @@ function makeFsm(overrides: Partial<IFileStateManager> = {}): IFileStateManager 
   return fsm as unknown as IFileStateManager
 }
 
-function makeContext(workingDir: string, fsm: IFileStateManager, invokeAgentImpl?: () => Promise<any>): PhaseContext {
+function makeContext(workingDir: string, fsm: IFileStateManager, invokeAgentImpl?: () => Promise<any>): Reviewontext {
   return {
     config: { scope: 'test', score: 0.85, reworks: 3, projectPaths: [], complexity: Complexity.AUTO },
     workingDir,

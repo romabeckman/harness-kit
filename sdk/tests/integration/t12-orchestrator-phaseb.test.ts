@@ -111,7 +111,7 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
     expect(tddCalls[0].skill).toContain('tdd-orchestrator')
   })
 
-  describe('TS-F-10: runPhaseB completes when TDD-OUTPUT.json absent after agent run', () => {
+  describe('TS-F-10: runDevelopmen completes when TDD-OUTPUT.json absent after agent run', () => {
     it('run() resolves successfully when tdd-orchestrator does NOT create TDD-OUTPUT.json', async () => {
       setupProductFiles()
       const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')

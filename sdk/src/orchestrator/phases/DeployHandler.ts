@@ -1,10 +1,10 @@
 import { execFileSync } from 'node:child_process'
 import { Phase } from '../types'
-import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
+import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
 
 export class DeployHandler extends AbstractPhaseHandler {
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.DEPLOY) {
       return super.handle(phase, context)
     }
@@ -106,25 +106,32 @@ export class DeployHandler extends AbstractPhaseHandler {
    * Commit message based on the staged diff stat for the given project path.
    * Falls back to a deterministic message if the agent returns nothing usable.
    */
-  private async generateCommitMessage(projectPath: string, context: PhaseContext): Promise<string> {
-    let diffStat = ''
+  private async generateCommitMessage(projectPath: string, context: Reviewontext): Promise<string> {
+    let diffOutput = ''
     try {
-      diffStat = execFileSync('git', ['diff', '--staged', '--stat'], {
+      diffOutput = execFileSync('git', ['diff', '--staged'], {
         cwd: projectPath,
         stdio: 'pipe',
         encoding: 'utf8',
       }).trim()
+
+      if (diffOutput.length > 8000) {
+        diffOutput = diffOutput.slice(0, 8000) + '\n... (diff truncated)'
+      }
     } catch {
-      // ignore — diffStat stays empty
+      // ignore — diffOutput stays empty
     }
 
     const prompt = [
       `## Task`,
       `Produce exactly ONE Conventional Commit message for the staged changes listed below.`,
-      `Output ONLY the commit message — no explanation, no bullet points, no markdown fences, no quotes, no trailing punctuation.`,
+      `The commit message MUST include a brief subject line, a blank line, and a body with bullet points detailing the changes.`,
+      `Output ONLY the commit message — no explanation, no markdown fences, no quotes.`,
       ``,
       `## Conventional Commits format`,
       `<type>[(<scope>)]: <description>`,
+      ``,
+      `<body>`,
       ``,
       `Allowed types (choose the best fit):`,
       `  feat     — new feature visible to users or consumers`,
@@ -142,22 +149,23 @@ export class DeployHandler extends AbstractPhaseHandler {
       `  1. MUST use one of the types above.`,
       `  2. scope is OPTIONAL — use it only when a module/domain is obvious (e.g. "auth", "api", "parser").`,
       `  3. description MUST use imperative mood: "add", "fix", "remove" — NOT "added", "fixes", "removes".`,
-      `  4. Total length MUST be <= 400 characters.`,
-      `  5. No capital first letter in description (lowercase after the colon+space).`,
-      `  6. No period at the end.`,
-      `  7. BREAKING CHANGE: use a ! after type/scope ONLY if the changes break a public API.`,
+      `  4. The body MUST use bullet points (-) for each significant change. Keep it to a maximum of 5 bullet points.`,
+      `  5. Each bullet point MUST NOT exceed 100 characters.`,
+      `  6. The entire subject line (type + scope + description) MUST NOT exceed 72 characters.`,
+      `  7. No capital first letter in description (lowercase after the colon+space) for the subject line.`,
+      `  8. No period at the end of the subject line.`,
+      `  9. BREAKING CHANGE: use a ! after type/scope ONLY if the changes break a public API.`,
       ``,
-      `## Correct examples`,
-      `  feat(auth): add OAuth2 PKCE flow`,
-      `  fix(parser): handle empty array edge case`,
-      `  refactor: extract config loader into separate module`,
-      `  chore(deps): bump vitest to 3.1.0`,
-      `  docs: add DeployHandler usage to README`,
-      `  test(orchestrator): cover phase transition to DEPLOY`,
-      `  feat!: remove deprecated PhaseDeployHandler`,
+      `## Correct example`,
+      `refactor: update phase handlers to use Reviewontext and rename payload types`,
       ``,
-      `## Staged diff stat`,
-      diffStat || '(no diff stat available)',
+      `- Changed PhaseContext to Reviewontext in DevelopmentHandler and others.`,
+      `- Renamed payload types to PlanningPayload, DevelopmenPayload, ReviewPayload, and MemoryPayload.`,
+      `- Updated method calls in ContextAssembler and PhaseDecisionLogger to reflect new naming conventions.`,
+      `- Adjusted tests to accommodate changes in context and payload types.`,
+      ``,
+      `## Staged diff`,
+      diffOutput || '(no diff available)',
     ].join('\n')
 
     try {
@@ -169,13 +177,10 @@ export class DeployHandler extends AbstractPhaseHandler {
       })
 
       const raw = (output.raw ?? '').trim()
-      // Take only the first non-empty line — strip control chars, markdown, and quotes
-      const firstLine = raw
-        .split('\n')
-        .map((l: string) => l.trim().replace(/[\r\n\t\x00-\x1f]/g, '').replace(/^["'`]+|["'`]+$/g, ''))
-        .find((l: string) => l.length > 0 && l.length <= 120)
+      // Clean up markdown fences if present
+      const cleanMessage = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim()
 
-      if (firstLine) return firstLine
+      if (cleanMessage) return cleanMessage
     } catch {
       // fall through to fallback
     }

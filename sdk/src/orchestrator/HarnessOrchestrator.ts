@@ -12,7 +12,7 @@ import { TokenLedger } from '../telemetry/TokenLedger'
 import { AnsiHelpers } from '../ui/AnsiHelpers'
 import {
   IPhaseHandler,
-  PhaseContext,
+  Reviewontext,
   ExtractedTask
 } from './phases'
 import { ChainBuilder } from './ChainBuilder'
@@ -29,7 +29,7 @@ export interface HarnessOrchestratorOptions {
   workingDir?: string
 }
 
-export class HarnessOrchestrator implements PhaseContext {
+export class HarnessOrchestrator implements Reviewontext {
   readonly config: OrchestratorConfig
   readonly workingDir: string
   readonly fsm: IFileStateManager

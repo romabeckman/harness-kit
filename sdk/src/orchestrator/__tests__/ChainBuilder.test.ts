@@ -10,7 +10,7 @@ import {
   CascadeBlockedHandler,
 } from '../phases'
 import { Phase } from '../types'
-import type { IPhaseHandler, PhaseContext } from '../phases/AbstractPhaseHandler'
+import type { IPhaseHandler, Reviewontext } from '../phases/AbstractPhaseHandler'
 
 function makeStubHandler(respondTo: Phase, returns: Phase): IPhaseHandler {
   return {
@@ -22,7 +22,7 @@ function makeStubHandler(respondTo: Phase, returns: Phase): IPhaseHandler {
   }
 }
 
-function makeContext(): PhaseContext {
+function makeContext(): Reviewontext {
   return {
     config: { scope: '', score: 0, reworks: 0, projectPaths: [] },
     workingDir: '/tmp',
@@ -31,12 +31,12 @@ function makeContext(): PhaseContext {
       loadBootstrapConfig: vi.fn().mockReturnValue({ steeringRules: [] }),
       saveBootstrapConfig: vi.fn(),
       loadBacklog: vi.fn().mockReturnValue([{ id: 'F001', domain: 'd', dependencies: [] }]),
-    } as unknown as PhaseContext['fsm'],
+    } as unknown as Reviewontext['fsm'],
     invokeAgent: vi.fn().mockResolvedValue(undefined),
     getActiveFeature: vi.fn().mockReturnValue(null),
     checkSpecFilesPresent: vi.fn().mockReturnValue(true),
     extractTasksFromTacticalDesign: vi.fn().mockReturnValue([]),
-  } as unknown as PhaseContext
+  } as unknown as Reviewontext
 }
 
 describe('ChainBuilder', () => {

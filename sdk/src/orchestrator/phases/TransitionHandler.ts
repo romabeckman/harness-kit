@@ -1,9 +1,9 @@
 import { Feature } from '../../file-state/types'
 import { Phase } from '../types'
-import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
+import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 
 export class TransitionHandler extends AbstractPhaseHandler {
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.TRANSITION) {
       return super.handle(phase, context)
     }
@@ -60,7 +60,7 @@ export class TransitionHandler extends AbstractPhaseHandler {
     return Phase.MEMORY
   }
 
-  private retryableFeatures(features: Feature[], context: PhaseContext, phase: Phase) {
+  private retryableFeatures(features: Feature[], context: Reviewontext, phase: Phase) {
     const config = context.fsm.loadBootstrapConfig()
     const maxReworks = config.completionCriteria.maxReworks
     const retryable = features.filter(f => f.status === 'BLOCKED')
@@ -84,7 +84,7 @@ export class TransitionHandler extends AbstractPhaseHandler {
     throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
   }
 
-  private clearActiveFeatureTasks(context: PhaseContext): void {
+  private clearActiveFeatureTasks(context: Reviewontext): void {
     const finalConfig = context.fsm.loadBootstrapConfig()
     delete finalConfig.activeFeatureId
     context.fsm.saveBootstrapConfig(finalConfig)

@@ -67,7 +67,7 @@ The `sdk_core` module is a TypeScript npm package (`harness-kit-sdk`) that imple
 | Export | Kind | Description |
 |---|---|---|
 | `ContextAssembler` | class | Builds per-phase `ContextPayload` objects from current state. |
-| `PhaseAPayload`, `PhaseBPayload`, `PhaseCPayload`, `PhaseEPayload` | types | Typed payload shapes per phase. |
+| `PlanningPayload`, `DevelopmenPayload`, `ReviewPayload`, `MemoryPayload` | types | Typed payload shapes per phase. |
 
 ---
 

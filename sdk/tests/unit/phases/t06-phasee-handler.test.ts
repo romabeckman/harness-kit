@@ -4,7 +4,7 @@ import { Phase } from '../../../src/orchestrator/types'
 
 vi.mock('../../../src/context-assembler/ContextAssembler', () => ({
   ContextAssembler: {
-    buildPhaseEPayload: vi.fn().mockReturnValue({
+    buildMemoryPayload: vi.fn().mockReturnValue({
       domain: 'cli',
       scopeDescription: 'some scope',
       projectPaths: ['/src'],
@@ -16,7 +16,7 @@ vi.mock('../../../src/context-assembler/ContextAssembler', () => ({
 
 vi.mock('../../../src/orchestrator/services/PhaseDecisionLogger', () => ({
   PhaseDecisionLogger: {
-    logPhaseE: vi.fn(),
+    logMemory: vi.fn(),
   },
 }))
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TransitionHandler } from '../TransitionHandler'
 import { Complexity, Phase } from '../../types'
-import type { PhaseContext } from '../AbstractPhaseHandler'
+import type { Reviewontext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
 import type { Feature, BootstrapConfig } from '../../../file-state/types'
 
@@ -64,7 +64,7 @@ function makeFsm(
   } as unknown as IFileStateManager
 }
 
-function makeContext(fsm: IFileStateManager, activeFeature: Feature | null = makeFeature()): PhaseContext {
+function makeContext(fsm: IFileStateManager, activeFeature: Feature | null = makeFeature()): Reviewontext {
   return {
     config: { scope: 'test', score: 0.7, reworks: 2, projectPaths: [], complexity: Complexity.AUTO },
     workingDir: '/tmp/test',

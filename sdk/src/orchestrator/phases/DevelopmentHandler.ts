@@ -1,14 +1,14 @@
 import { existsSync, rmSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Phase } from '../types'
-import { AbstractPhaseHandler, PhaseContext } from './AbstractPhaseHandler'
+import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
 import type { Feature, Task } from '../../file-state/types'
-import type { PhaseBPayload } from '../../context-assembler/types'
+import type { DevelopmenPayload } from '../../context-assembler/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
 export class DevelopmentHandler extends AbstractPhaseHandler {
-  async handle(phase: Phase, context: PhaseContext): Promise<Phase | null> {
+  async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.DEVELOPMENT) {
       return super.handle(phase, context)
     }
@@ -20,8 +20,8 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
     let pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
 
-    const shouldGoToPhaseC = this.shouldGoToPhaseC(activeFeature, tddOutputPath, context, pendingTasks)
-    if (shouldGoToPhaseC) {
+    const shouldGoToReview = this.shouldGoToReview(activeFeature, tddOutputPath, context, pendingTasks)
+    if (shouldGoToReview) {
       return Phase.REVIEW
     }
 
@@ -29,7 +29,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     return Phase.REVIEW
   }
 
-  private shouldGoToPhaseC(activeFeature: Feature, tddOutputPath: string, context: PhaseContext, pendingTasks: Task[]): boolean {
+  private shouldGoToReview(activeFeature: Feature, tddOutputPath: string, context: Reviewontext, pendingTasks: Task[]): boolean {
     if (existsSync(tddOutputPath)) {
       if (pendingTasks.length > 0) {
         for (const task of pendingTasks) {
@@ -41,7 +41,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     return false
   }
 
-  private async executeChunk(activeFeature: Feature, chunkTasks: Task[], tddOutputPath: string, context: PhaseContext): Promise<void> {
+  private async executeChunk(activeFeature: Feature, chunkTasks: Task[], tddOutputPath: string, context: Reviewontext): Promise<void> {
     // Delete any stale tdd-output before invoking agent to ensure it runs
     if (existsSync(tddOutputPath)) {
       rmSync(tddOutputPath)
@@ -55,8 +55,9 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const isRetry = activeFeature.reworks > 0
     const config = context.fsm.loadBootstrapConfig()
 
-    const payload = ContextAssembler.buildPhaseBPayload(
+    const payload = ContextAssembler.buildDevelopmenPayload(
       activeFeature,
+      context.workingDir,
       chunkTasks,
       context.config.projectPaths,
       isRetry,
@@ -75,10 +76,10 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       phaseKey: 'implementation',
     })
 
-    PhaseDecisionLogger.logPhaseB(context.fsm, activeFeature, tddOutputPath)
+    PhaseDecisionLogger.logDevelopmen(context.fsm, activeFeature, tddOutputPath)
   }
 
-  private buildTddOrchestratorPrompt(payload: PhaseBPayload, context: PhaseContext, agent: string): string {
+  private buildTddOrchestratorPrompt(payload: DevelopmenPayload, context: Reviewontext, agent: string): string {
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const tasksList = payload.tasks.map(t => `- [${t.taskId}] ${t.description}`).join('\n')
     const rulesSection =
@@ -146,7 +147,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       `<strict_rules>`,
       `- You MUST read \`docs/README.md\` (It is a guide to all the documents; load them into memory as needed), \`docs/adr/ARCHITECTURE.md\`, and \`docs/adr/TESTS.md\` in each project before writing any code`,
       `- Each project MUST have its own \`docs/adr\` and \`docs/feature\` folders where all ADRs and features are stored.`,
-      `- If exists "Socratic Questions" section in \`001-problem-space.md\`, use it to reflect and write the code in the best possible way.`,
+      `- If exists "Socratic Questions" section in the problem space, use it to reflect and write the code in the best possible way.`,
       `- Execute autonomously without pausing or asking for confirmation`,
       `- NEVER change correct tests to force passing`,
       `- NEVER run package installation commands automatically   instruct the user instead`,
@@ -162,10 +163,10 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       `</project_paths>`,
       ``,
       `<development_specifications>`,
-      `- Problem: \`${workingDir}/001-problem-space.md\``,
-      `- Context: \`${workingDir}/002-context-map.md\``,
-      `- Tactical design: \`${workingDir}/003-*-tactical-design.md\``,
-      `- Test scenarios: \`${workingDir}/004-*-test-scenarios.md\``,
+      ...(payload.specsContent?.problemSpace ? [`<problem_space>`, `\`\`\`markdown`, payload.specsContent.problemSpace, `\`\`\``, `</problem_space>`] : []),
+      ...(payload.specsContent?.contextMap ? [`<context_map>`, `\`\`\`markdown`, payload.specsContent.contextMap, `\`\`\``, `</context_map>`] : []),
+      ...(payload.specsContent?.tacticalDesign ? [`<tactical_design>`, `\`\`\`markdown`, payload.specsContent.tacticalDesign, `\`\`\``, `</tactical_design>`] : []),
+      ...(payload.specsContent?.testScenarios ? [`<test_scenarios>`, `\`\`\`markdown`, payload.specsContent.testScenarios, `\`\`\``, `</test_scenarios>`] : []),
       `</development_specifications>`,
       ``,
       `<expected_output>`,

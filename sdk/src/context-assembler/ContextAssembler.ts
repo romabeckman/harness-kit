@@ -1,7 +1,8 @@
 import { join } from 'path'
 import type { Feature, Task, SteeringRulesConfig } from '../file-state/types'
-import type { BootstrapPayload, PhaseAPayload, PhaseBPayload, PhaseCPayload, PhaseEPayload } from './types'
+import type { BootstrapPayload, PlanningPayload, DevelopmenPayload, ReviewPayload, MemoryPayload } from './types'
 import { Phase } from '../orchestrator/types'
+import { loadDomainSpecsContent } from '../orchestrator/utils/PhaseFileUtils'
 
 
 export class ContextAssembler {
@@ -16,14 +17,14 @@ export class ContextAssembler {
   /**
    * Phase A: scope refinement — scope, domain, projectPaths, featureTitle
    */
-  static buildPhaseAPayload(
+  static buildPlanningPayload(
     feature: Feature,
     workingDir: string,
     projectPaths: string[],
     scope?: string,
     steeringRules?: SteeringRulesConfig
-  ): PhaseAPayload {
-    const payload: PhaseAPayload = {
+  ): PlanningPayload {
+    const payload: PlanningPayload = {
       scope: scope || feature.title,
       workingDir: workingDir,
       domain: feature.domain,
@@ -40,15 +41,16 @@ export class ContextAssembler {
   /**
    * Phase B: TDD orchestration — tasks, isRetry, optional reworkLogPath
    */
-  static buildPhaseBPayload(
+  static buildDevelopmenPayload(
     feature: Feature,
+    workingDir: string,
     tasks: Task[],
     projectPaths: string[],
     isRetry: boolean,
     reworks?: number,
     steeringRules?: SteeringRulesConfig
-  ): PhaseBPayload {
-    const payload: PhaseBPayload = {
+  ): DevelopmenPayload {
+    const payload: DevelopmenPayload = {
       featureId: feature.id,
       featureTitle: feature.title,
       domain: feature.domain,
@@ -56,6 +58,7 @@ export class ContextAssembler {
       tasks: tasks,
       isRetry,
       reworks: reworks ? reworks : 0,
+      specsContent: loadDomainSpecsContent(join(workingDir, 'docs', 'specs', feature.domain)),
     }
     if (isRetry) {
       payload.reworkLogPath = join('docs', 'specs', feature.domain, 'REWORK-LOG.md')
@@ -70,13 +73,14 @@ export class ContextAssembler {
   /**
    * Phase C: validation — featureId, domain, projectPaths only
    */
-  static buildPhaseCPayload(feature: Feature, projectPaths: string[], steeringRules?: SteeringRulesConfig): PhaseCPayload {
-    const payload: PhaseCPayload = {
+  static buildReviewPayload(feature: Feature, workingDir: string, projectPaths: string[], steeringRules?: SteeringRulesConfig): ReviewPayload {
+    const payload: ReviewPayload = {
       featureId: feature.id,
       featureTitle: feature.title,
       domain: feature.domain,
       projectPaths,
-      totalReworks: feature.reworks || 0
+      totalReworks: feature.reworks || 0,
+      specsContent: loadDomainSpecsContent(join(workingDir, 'docs', 'specs', feature.domain)),
     }
     const flattened = this.flattenRules(Phase.REVIEW, steeringRules)
     if (flattened) {
@@ -88,12 +92,12 @@ export class ContextAssembler {
   /**
    * Phase E: project memory — domain, scopeDescription, completedCycles, recentDecisions
    */
-  static buildPhaseEPayload(
+  static buildMemoryPayload(
     projectPaths: string[],
     workingDir: string,
     steeringRules?: SteeringRulesConfig,
-  ): PhaseEPayload {
-    const payload: PhaseEPayload = {
+  ): MemoryPayload {
+    const payload: MemoryPayload = {
       projectPaths,
       workingDir,
     }

@@ -72,8 +72,8 @@ export type { TokenUsage } from './agent-runner/types'
 // Context assembler
 export { ContextAssembler } from './context-assembler/ContextAssembler'
 export type {
-  PhaseAPayload,
-  PhaseBPayload,
-  PhaseCPayload,
-  PhaseEPayload,
+  PlanningPayload,
+  DevelopmenPayload,
+  ReviewPayload,
+  MemoryPayload,
 } from './context-assembler/types'
