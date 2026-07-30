@@ -64,9 +64,10 @@ describe('DeployHandler', () => {
 
   it('aborts commit when sensitive files are detected in staged changes', async () => {
     vi.mocked(execFileSync).mockImplementation((bin, args) => {
-      if (args[0] === 'add') return '' as any
-      if (args[0] === 'diff') return '.env\nsrc/app.ts' as any
-      if (args[0] === 'reset') return '' as any
+      const firstArg = args?.[0]
+      if (firstArg === 'add') return '' as any
+      if (firstArg === 'diff') return '.env\nsrc/app.ts' as any
+      if (firstArg === 'reset') return '' as any
       return '' as any
     })
 
@@ -77,11 +78,12 @@ describe('DeployHandler', () => {
 
   it('executes commit and push successfully when uncommitted changes are present', async () => {
     vi.mocked(execFileSync).mockImplementation((bin, args) => {
-      if (args[0] === 'add') return '' as any
-      if (args[0] === 'diff') return 'src/app.ts' as any
-      if (args[0] === 'status') return 'M src/app.ts' as any
-      if (args[0] === 'commit') return '' as any
-      if (args[0] === 'push') return '' as any
+      const firstArg = args?.[0]
+      if (firstArg === 'add') return '' as any
+      if (firstArg === 'diff') return 'src/app.ts' as any
+      if (firstArg === 'status') return 'M src/app.ts' as any
+      if (firstArg === 'commit') return '' as any
+      if (firstArg === 'push') return '' as any
       return '' as any
     })
 
@@ -95,11 +97,12 @@ describe('DeployHandler', () => {
   it('uses deterministic fallback commit message if agent invocation throws', async () => {
     mockContext.invokeAgent.mockRejectedValue(new Error('Agent error'))
     vi.mocked(execFileSync).mockImplementation((bin, args) => {
-      if (args[0] === 'add') return '' as any
-      if (args[0] === 'diff') return 'src/app.ts' as any
-      if (args[0] === 'status') return 'M src/app.ts' as any
-      if (args[0] === 'commit') return '' as any
-      if (args[0] === 'push') return '' as any
+      const firstArg = args?.[0]
+      if (firstArg === 'add') return '' as any
+      if (firstArg === 'diff') return 'src/app.ts' as any
+      if (firstArg === 'status') return 'M src/app.ts' as any
+      if (firstArg === 'commit') return '' as any
+      if (firstArg === 'push') return '' as any
       return '' as any
     })
 

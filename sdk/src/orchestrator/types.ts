@@ -33,16 +33,16 @@ export enum Complexity {
 /**
  * Execution mode for `hrns run --mode <mode>`.
  *
- * quick   — Bootstrap → Planning → Development → Deploy  (skips Review and Memory)
- * fast    — All phases, complexity forced to LOW
- * default — All phases, complexity AUTO  (default when --mode is omitted)
- * slow    — All phases, complexity forced to HIGH
+ * quick         — Bootstrap → Planning → Development → Deploy  (skips Review and Memory)
+ * fast          — All phases, complexity forced to LOW
+ * thinking      — All phases, complexity AUTO  (default when --mode is omitted)
+ * deep_thinking — All phases, complexity forced to HIGH
  */
 export enum RunMode {
   QUICK = 'quick',
   FAST = 'fast',
-  DEFAULT = 'default',
-  SLOW = 'slow',
+  THINKING = 'thinking',
+  DEEP_THINKING = 'deep_thinking',
 }
 
 export enum CliCommand {

@@ -143,8 +143,8 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
         const val = nextArg()?.toLowerCase()
         if (val === RunMode.QUICK) result.mode = RunMode.QUICK
         else if (val === RunMode.FAST) result.mode = RunMode.FAST
-        else if (val === RunMode.DEFAULT) result.mode = RunMode.DEFAULT
-        else if (val === RunMode.SLOW) result.mode = RunMode.SLOW
+        else if (val === RunMode.THINKING || val === 'default') result.mode = RunMode.THINKING
+        else if (val === RunMode.DEEP_THINKING || val === 'deep_thinking' || val === 'slow') result.mode = RunMode.DEEP_THINKING
         break
       }
 
