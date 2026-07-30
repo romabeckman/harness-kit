@@ -64,6 +64,7 @@ describe('DeployHandler', () => {
 
   it('aborts commit when sensitive files are detected in staged changes', async () => {
     vi.mocked(execFileSync).mockImplementation((bin, args) => {
+      if (!args) return '' as any
       if (args[0] === 'add') return '' as any
       if (args[0] === 'diff') return '.env\nsrc/app.ts' as any
       if (args[0] === 'reset') return '' as any
@@ -77,6 +78,7 @@ describe('DeployHandler', () => {
 
   it('executes commit and push successfully when uncommitted changes are present', async () => {
     vi.mocked(execFileSync).mockImplementation((bin, args) => {
+      if (!args) return '' as any
       if (args[0] === 'add') return '' as any
       if (args[0] === 'diff') return 'src/app.ts' as any
       if (args[0] === 'status') return 'M src/app.ts' as any
@@ -95,6 +97,7 @@ describe('DeployHandler', () => {
   it('uses deterministic fallback commit message if agent invocation throws', async () => {
     mockContext.invokeAgent.mockRejectedValue(new Error('Agent error'))
     vi.mocked(execFileSync).mockImplementation((bin, args) => {
+      if (!args) return '' as any
       if (args[0] === 'add') return '' as any
       if (args[0] === 'diff') return 'src/app.ts' as any
       if (args[0] === 'status') return 'M src/app.ts' as any
