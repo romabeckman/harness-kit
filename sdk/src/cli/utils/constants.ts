@@ -41,7 +41,7 @@ EXECUTION MODE
                               slow    — All phases, forced to high planning and deep review
 
 SKIP OPTIONS
-  --skip-validation         Skip Phase REVIEW (code review + QA) — jump directly to STATE_CHECK
+  --skip-validation         Skip Phase REVIEW (code review + QA) - jump directly to TRANSITION
   --skip-memory           Skip Phase MEMORY (project-memory) — jump directly to TRANSITION
   --skip-deploy             Skip Phase DEPLOY (git stage/commit/push) — halt after TRANSITION
 

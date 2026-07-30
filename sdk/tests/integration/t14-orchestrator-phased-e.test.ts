@@ -79,7 +79,7 @@ function makeFullRunFake(specDir: string): void {
   fake.setResponse('project-memory', { raw: 'done' })
 }
 
-describe('T14 — HarnessOrchestrator STATE_CHECK + MEMORY', () => {
+describe('T14 — HarnessOrchestrator TRANSITION + MEMORY', () => {
   describe('TS-F-02: RETRY once then PASS — reworks counter reflects one retry', () => {
     it('feature COMPLETED, Reworks=1, REWORK-LOG.md exists, completedCycles=1', async () => {
       // Setup at REVIEW starting point (TDD-OUTPUT present, tasks completed)

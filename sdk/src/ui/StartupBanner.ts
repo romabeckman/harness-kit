@@ -46,11 +46,10 @@ export class StartupBanner {
       `| [3] -> [DEVELOPMENT]     -> (dev-be|fe, TDD)           |`,
       `| [4] -> [REVIEW]          -> (Scores >= threshold)      |`,
       `|     <--- (RETRY: max 2x)                               |`,
-      `| [5] -> [STATE_CHECK]     -> (completion criteria)      |`,
-      `| [6] -> [TRANSITION]      -> (finalize or loop)         |`,
+      `| [5] -> [TRANSITION]      -> (completion / next)        |`,
       `|     <--- (Next Cycle / Iteration)                      |`,
-      `| [7] -> [MEMORY]          -> (project learnings)        |`,
-      `| [8] -> [DEPLOY]          -> (git push)                 |`,
+      `| [6] -> [MEMORY]          -> (project learnings)        |`,
+      `| [7] -> [DEPLOY]          -> (git push)                 |`,
       `+---------------------------------------------------------+`,
     ].join('\n')
   }

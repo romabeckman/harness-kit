@@ -30,7 +30,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       process.stdout.write(`[phase_review] --skip-validation active — skipping review for feature ${activeFeature.id}\n`)
       context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED', { tl: 1, adv: 1 })
       context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'COMPLETED')
-      return Phase.STATE_CHECK
+      return Phase.TRANSITION
     }
 
     this.cleanTemporaryFiles(context, activeFeature.domain)
@@ -141,7 +141,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
 
   /**
    * Processes the validation gate evaluation result and decides the next workflow step.
-   * Logs decisions, manages feature state transitions, and moves to STATE_CHECK or retries.
+   * Logs decisions, manages feature state transitions, and moves to TRANSITION or retries.
    */
   private processDecision(
     context: Reviewontext,
@@ -179,8 +179,8 @@ export class ReviewHandler extends AbstractPhaseHandler {
     context.fsm.updateFeatureStatus(activeFeature.id, activeFeature.status, { tl: scores.scoreTL, adv: scores.scoreAdv })
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', activeFeature.status)
 
-    // Proceed to STATE_CHECK (documentation generation/completion check)
-    return Phase.STATE_CHECK
+    // Proceed to TRANSITION
+    return Phase.TRANSITION
   }
 
   private handleRetry(context: Reviewontext, activeFeature: Feature, scores: ValidationScores): Phase {

@@ -73,7 +73,7 @@ describe('ReviewHandler', () => {
     expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining('QA.json'), 'utf8')
     expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED', { tl: 0.9, adv: 0.9 })
     expect(mockContext.fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
-    expect(result).toBe(Phase.STATE_CHECK)
+    expect(result).toBe(Phase.TRANSITION)
   })
 
   it('deve solicitar RETRY se QA identificar falha grave no payload', async () => {
@@ -167,7 +167,7 @@ describe('ReviewHandler', () => {
     expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining('QA.json'), 'utf8')
     expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED', { tl: 0.9, adv: 0.9 })
     expect(mockContext.fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
-    expect(result).toBe(Phase.STATE_CHECK)
+    expect(result).toBe(Phase.TRANSITION)
   })
 
   it('deve limpar TL.json e QA.json no início de cada execução para evitar decisão com dados stale em retry', async () => {
@@ -237,6 +237,6 @@ describe('ReviewHandler', () => {
     expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED', { tl: 1, adv: 1 })
     expect(mockContext.fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
     // Must go straight to Phase D
-    expect(result).toBe(Phase.STATE_CHECK)
+    expect(result).toBe(Phase.TRANSITION)
   })
 })

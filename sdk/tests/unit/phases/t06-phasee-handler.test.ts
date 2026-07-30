@@ -47,7 +47,7 @@ describe('MemoryHandler', () => {
   it('delegates to next handler when phase is not MEMORY', async () => {
     const next = { handle: vi.fn().mockResolvedValue(Phase.TRANSITION) }
     handler.setNext(next as any)
-    const result = await handler.handle(Phase.STATE_CHECK, mockContext)
+    const result = await handler.handle(Phase.TRANSITION, mockContext)
     expect(next.handle).toHaveBeenCalled()
     expect(result).toBe(Phase.TRANSITION)
   })

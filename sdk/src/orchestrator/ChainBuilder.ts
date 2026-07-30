@@ -4,7 +4,6 @@ import {
   PlanningHandler,
   DevelopmentHandler,
   ReviewHandler,
-  StateCheckHandler,
   MemoryHandler,
   TransitionHandler,
   DeployHandler,
@@ -34,7 +33,6 @@ export class ChainBuilder {
       .addPhase(new PlanningHandler())
       .addPhase(new DevelopmentHandler())
       .addPhase(new ReviewHandler())
-      .addPhase(new StateCheckHandler())
       .addPhase(new TransitionHandler())
       .addPhase(new MemoryHandler())
       .addPhase(new DeployHandler())

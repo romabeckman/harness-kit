@@ -10,7 +10,7 @@ import type { OnDiskState } from './types'
  * 2. Active feature dependency is BLOCKED → CASCADE_BLOCKED
  * 3. TDD-OUTPUT present AND all tasks COMPLETED → REVIEW
  * 4. Spec files present AND tasks exist → DEVELOPMENT
- * 5. Active feature in terminal status (COMPLETED/BLOCKED/FAILED) → STATE_CHECK
+ * 5. Active feature in terminal status (COMPLETED/BLOCKED/FAILED) → TRANSITION
  * 6. No active feature or feature NOT_STARTED with no specs → PLANNING
  * 7. Fallback → BOOTSTRAP
  */
@@ -48,18 +48,18 @@ export class ReentryResolver {
       return Phase.DEVELOPMENT
     }
 
-    // 5. Active feature in terminal status → STATE_CHECK
+    // 5. Active feature in terminal status → TRANSITION
     if (state.activeFeature) {
       const terminal: Array<typeof state.activeFeature.status> = ['COMPLETED', 'BLOCKED', 'FAILED']
       if (terminal.includes(state.activeFeature.status)) {
-        return Phase.STATE_CHECK
+        return Phase.TRANSITION
       }
     }
 
-    // 6. All features in terminal status (none NOT_STARTED or IN_PROGRESS) → STATE_CHECK
+    // 6. All features in terminal status (none NOT_STARTED or IN_PROGRESS) → TRANSITION
     const hasActive = state.features.some(f => f.status === 'NOT_STARTED' || f.status === 'IN_PROGRESS')
     if (!hasActive && state.features.length > 0) {
-      return Phase.STATE_CHECK
+      return Phase.TRANSITION
     }
 
     // 7. Default: PLANNING (product files exist, feature is NOT_STARTED, no specs yet)
