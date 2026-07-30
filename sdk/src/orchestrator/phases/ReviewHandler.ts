@@ -65,7 +65,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
   }
 
   private async executeAgents(context: Reviewontext, payload: ReviewPayload, config: BootstrapConfig) {
-    const tlPrompt = this.buildTechLeadPrompt(payload, context.workingDir)
+    const tlPrompt = this.buildTechLeadPrompt(payload, context)
     const advPrompt = this.buildAdversarialQAPrompt(payload, context)
     const isSimple = context.config.complexity === Complexity.LOW
 
@@ -210,7 +210,8 @@ export class ReviewHandler extends AbstractPhaseHandler {
     return sections.length > 0 ? sections.join('\n\n') : `Score TL: ${scores.scoreTL}, Score Adv: ${scores.scoreAdv}`
   }
 
-  private buildTechLeadPrompt(payload: ReviewPayload, workingDir: string): string {
+  private buildTechLeadPrompt(payload: ReviewPayload, context: Reviewontext): string {
+    const workingDir = context.workingDir
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const rulesSection = payload.steeringRules?.length
       ? payload.steeringRules.map(r => `- ${r}`).join('\n')
@@ -280,13 +281,11 @@ export class ReviewHandler extends AbstractPhaseHandler {
       projectPathsList,
       `</project_paths>`,
       ``,
-      `<spec_sources>`,
-      `- Development log: \`${specsDir}/TDD-OUTPUT.json\` or \`git status -s\` to list all modified files in each project.`,
-      ...(payload.specsContent?.problemSpace ? [`<problem_space>`, `\`\`\`markdown`, payload.specsContent.problemSpace, `\`\`\``, `</problem_space>`] : []),
-      ...(payload.specsContent?.contextMap ? [`<context_map>`, `\`\`\`markdown`, payload.specsContent.contextMap, `\`\`\``, `</context_map>`] : []),
-      ...(payload.specsContent?.tacticalDesign ? [`<tactical_design>`, `\`\`\`markdown`, payload.specsContent.tacticalDesign, `\`\`\``, `</tactical_design>`] : []),
-      ...(payload.specsContent?.testScenarios ? [`<test_scenarios>`, `\`\`\`markdown`, payload.specsContent.testScenarios, `\`\`\``, `</test_scenarios>`] : []),
-      `</spec_sources>`,
+      `<scope>`,
+      `\`\`\`markdown`,
+      (context.config.scope || '').trim(),
+      `\`\`\``,
+      `</scope>`,
       ``,
       `<expected_output>`,
       `Respond exclusively with a valid JSON block saved to \`${specsDir}/TL.json\`:`,
@@ -306,6 +305,14 @@ export class ReviewHandler extends AbstractPhaseHandler {
       `\`\`\``,
       `Note: openPoints may be an empty array [] when no issue meets the evaluation_principle bar. An empty array with a high score is a fully valid response.`,
       `</expected_output>`,
+      ``,
+      `<spec_sources>`,
+      `- Development log: \`${specsDir}/TDD-OUTPUT.json\` or \`git status -s\` to list all modified files in each project.`,
+      ...(payload.specsContent?.problemSpace ? [`<problem_space>`, `\`\`\`markdown`, payload.specsContent.problemSpace, `\`\`\``, `</problem_space>`] : []),
+      ...(payload.specsContent?.contextMap ? [`<context_map>`, `\`\`\`markdown`, payload.specsContent.contextMap, `\`\`\``, `</context_map>`] : []),
+      ...(payload.specsContent?.tacticalDesign ? [`<tactical_design>`, `\`\`\`markdown`, payload.specsContent.tacticalDesign, `\`\`\``, `</tactical_design>`] : []),
+      ...(payload.specsContent?.testScenarios ? [`<test_scenarios>`, `\`\`\`markdown`, payload.specsContent.testScenarios, `\`\`\``, `</test_scenarios>`] : []),
+      `</spec_sources>`,
       ``,
       `<inputs>`,
       `<feature>`,
@@ -388,13 +395,11 @@ export class ReviewHandler extends AbstractPhaseHandler {
       projectPathsList,
       `</project_paths>`,
       ``,
-      `<spec_sources>`,
-      `- Development log: \`${specsDir}/TDD-OUTPUT.json\` or \`git status -s\` to list all modified files in each project.`,
-      ...(payload.specsContent?.problemSpace ? [`<problem_space>`, `\`\`\`markdown`, payload.specsContent.problemSpace, `\`\`\``, `</problem_space>`] : []),
-      ...(payload.specsContent?.contextMap ? [`<context_map>`, `\`\`\`markdown`, payload.specsContent.contextMap, `\`\`\``, `</context_map>`] : []),
-      ...(payload.specsContent?.tacticalDesign ? [`<tactical_design>`, `\`\`\`markdown`, payload.specsContent.tacticalDesign, `\`\`\``, `</tactical_design>`] : []),
-      ...(payload.specsContent?.testScenarios ? [`<test_scenarios>`, `\`\`\`markdown`, payload.specsContent.testScenarios, `\`\`\``, `</test_scenarios>`] : []),
-      `</spec_sources>`,
+      `<scope>`,
+      `\`\`\`markdown`,
+      (context.config.scope || '').trim(),
+      `\`\`\``,
+      `</scope>`,
       ``,
       `<expected_output>`,
       `Respond exclusively with a valid JSON block saved to \`${specsDir}/QA.json\`:`,
@@ -414,13 +419,15 @@ export class ReviewHandler extends AbstractPhaseHandler {
       `Note: vulnerabilities and edgeCasesMissed may be empty arrays when nothing meets the evaluation_principle bar. In that case passedAdversarial should be true and hasHighCriticalVuln false.`,
       `</expected_output>`,
       ``,
-      `<inputs>`,
-      `<scope>`,
-      `\`\`\`markdown`,
-      (context.config.scope || '').trim(),
-      `\`\`\``,
-      `</scope>`,
+      `<spec_sources>`,
+      `- Development log: \`${specsDir}/TDD-OUTPUT.json\` or \`git status -s\` to list all modified files in each project.`,
+      ...(payload.specsContent?.problemSpace ? [`<problem_space>`, `\`\`\`markdown`, payload.specsContent.problemSpace, `\`\`\``, `</problem_space>`] : []),
+      ...(payload.specsContent?.contextMap ? [`<context_map>`, `\`\`\`markdown`, payload.specsContent.contextMap, `\`\`\``, `</context_map>`] : []),
+      ...(payload.specsContent?.tacticalDesign ? [`<tactical_design>`, `\`\`\`markdown`, payload.specsContent.tacticalDesign, `\`\`\``, `</tactical_design>`] : []),
+      ...(payload.specsContent?.testScenarios ? [`<test_scenarios>`, `\`\`\`markdown`, payload.specsContent.testScenarios, `\`\`\``, `</test_scenarios>`] : []),
+      `</spec_sources>`,
       ``,
+      `<inputs>`,
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,
