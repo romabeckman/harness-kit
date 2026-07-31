@@ -21,8 +21,8 @@ describe('parseRunArgs', () => {
     it.each([
       ['--mode quick', 'quick', RunMode.QUICK],
       ['--mode fast', 'fast', RunMode.FAST],
-      ['--mode default', 'default', RunMode.DEFAULT],
-      ['--mode slow', 'slow', RunMode.SLOW],
+      ['--mode thinking', 'thinking', RunMode.THINKING],
+      ['--mode deep_thinking', 'deep_thinking', RunMode.DEEP_THINKING],
     ])('parses %s', (_, rawValue, expected) => {
       const result = parseRunArgs(['--mode', rawValue])
       expect(result.mode).toBe(expected)
@@ -84,7 +84,7 @@ describe('resolveMode', () => {
   })
 
   it('default mode → AUTO, no skips', () => {
-    const r = resolveMode(RunMode.DEFAULT)
+    const r = resolveMode(RunMode.THINKING)
     expect(r.complexity).toBe(Complexity.AUTO)
     expect(r.skipValidation).toBe(false)
     expect(r.skipMemory).toBe(false)
@@ -104,8 +104,8 @@ describe('resolveMode', () => {
     expect(r.skipMemory).toBe(false)
   })
 
-  it('slow mode → HIGH, no skips', () => {
-    const r = resolveMode(RunMode.SLOW)
+  it('deep thinking mode → HIGH, no skips', () => {
+    const r = resolveMode(RunMode.DEEP_THINKING)
     expect(r.complexity).toBe(Complexity.HIGH)
     expect(r.skipValidation).toBe(false)
     expect(r.skipMemory).toBe(false)

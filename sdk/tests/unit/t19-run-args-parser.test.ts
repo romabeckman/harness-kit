@@ -177,11 +177,11 @@ describe('T19 — parseRunArgs', () => {
   })
 
   it('parses --mode default', () => {
-    expect(parseRunArgs(['--mode', 'default']).mode).toBe('default')
+    expect(parseRunArgs(['--mode', 'default']).mode).toBe('thinking')
   })
 
   it('parses --mode slow', () => {
-    expect(parseRunArgs(['--mode', 'slow']).mode).toBe('slow')
+    expect(parseRunArgs(['--mode', 'slow']).mode).toBe('deep_thinking')
   })
 
   it('parses -M alias for mode', () => {

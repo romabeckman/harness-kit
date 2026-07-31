@@ -45,9 +45,9 @@ export function resolveMode(mode?: RunMode): ResolvedMode {
       return { complexity: Complexity.LOW, skipValidation: true, skipMemory: true }
     case RunMode.FAST:
       return { complexity: Complexity.LOW, skipValidation: false, skipMemory: false }
-    case RunMode.SLOW:
+    case RunMode.DEEP_THINKING:
       return { complexity: Complexity.HIGH, skipValidation: false, skipMemory: false }
-    case RunMode.DEFAULT:
+    case RunMode.THINKING:
     default:
       return { complexity: Complexity.AUTO, skipValidation: false, skipMemory: false }
   }
@@ -60,10 +60,10 @@ async function promptForMode(parsedMode?: RunMode): Promise<RunMode> {
     choices: [
       { name: "quick", value: RunMode.QUICK, description: "Bootstrap → Planning → Development → Deploy (skips Review and Memory)" },
       { name: "fast", value: RunMode.FAST, description: "Bootstrap → Planning → Development → Review (Only QA) → Memory → Deploy" },
-      { name: "default", value: RunMode.DEFAULT, description: "Bootstrap → Planning → Development → Review → Memory → Deploy" },
-      { name: "slow", value: RunMode.SLOW, description: "Bootstrap → Planning (Deep Dive) → Development → Review → Memory → Deploy" },
+      { name: "Thinking", value: RunMode.THINKING, description: "Bootstrap → Planning → Development → Review → Memory → Deploy" },
+      { name: "Deep Thinking", value: RunMode.DEEP_THINKING, description: "Bootstrap → Planning (Deep Thinking) → Development → Review → Memory → Deploy" },
     ],
-    default: RunMode.DEFAULT,
+    default: RunMode.THINKING,
   });
 }
 
@@ -234,7 +234,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     action,
     optionsReset,
     steeringMessage,
-    parsed.mode ?? RunMode.DEFAULT,
+    parsed.mode ?? RunMode.THINKING,
     skipValidation,
     skipMemory,
     skipDeploy
