@@ -1,6 +1,6 @@
 {
   "name": "@romabeckman/hrns",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "CLI and SDK for harness-kit autonomous TDD orchestration",
   "license": "MIT",
   "main": "dist/index.js",
@@ -32,21 +32,23 @@
     "prepublishOnly": "npm run build && npm test"
   },
   "devDependencies": {
-    "@types/node": "^26.1.1",
+    "@types/cross-spawn": "^6.0.6",
+    "@types/node": "^26.1.2",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.110.0",
-    "@cursor/sdk": "^1.0.23",
-    "@github/copilot-sdk": "^1.0.6",
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@cursor/sdk": "^1.0.26",
+    "@github/copilot-sdk": "^1.0.8",
     "@inquirer/prompts": "^8.5.2",
-    "@vitest/coverage-v8": "^4.1.10"
+    "@vitest/coverage-v8": "^4.1.10",
+    "cross-spawn": "^7.0.6"
   },
   "overrides": {
     "undici": "^6.27.0"
   },
   "allowScripts": {
-    "koffi@3.1.2": true
+    "koffi@3.1.4": true
   }
 }
