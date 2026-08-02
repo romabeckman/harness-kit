@@ -13,16 +13,16 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
   │                         Project Scope                                │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │
-                                 ▼  (optional via --refine)
-  ┌──────────────────────────────────────────────────────────────────────┐
-  │  REFINEMENT  ·  the-grumpy-tech-lead + software-architect            │
-  │  Generates QUESTIONS.json → collects answers → REFINEMENT.md          │
-  └──────────────────────────────┬───────────────────────────────────────┘
-                                 │
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
   │  BOOTSTRAP  ·  software-architect agent                              │
   │  Parses scope → writes BACKLOG.md with features, layers, priorities  │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                                 ▼  (optional via --refine or --mode deep_thinking)
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  REFINEMENT  ·  the-grumpy-tech-lead + software-architect            │
+  │  Generates QUESTIONS.json → collects answers → REFINEMENT.md         │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │  (for each feature)
                                  ▼

@@ -153,6 +153,20 @@ export class RefinementHandler extends AbstractPhaseHandler {
       })
       console.log()
     }
+
+    const additionalAnswer = await input({
+      message: 'Any aditional informations?',
+      default: '',
+    })
+
+    if (additionalAnswer.trim()) {
+      qaPairs.push({
+        question: 'Any aditional informations?',
+        answer: additionalAnswer.trim(),
+      })
+      console.log()
+    }
+
     console.log('────────────────────────────────────────────────────────────\n')
 
     return qaPairs
@@ -217,30 +231,12 @@ export class RefinementHandler extends AbstractPhaseHandler {
       `</qa_pairs>`,
     ].join('\n')
 
-    const output = await context.invokeAgent({
+    await context.invokeAgent({
       skill: 'harness-kit:scope-refinement',
       agent: 'harness-kit:software-architect',
       mode: 'autonomous',
       prompt,
       phaseKey: 'planning',
     })
-
-    const raw = output?.raw?.trim()
-    if (raw) {
-      context.fsm.saveRefinement(raw)
-    } else {
-      const fallback = [
-        `# Refinement — Project Context`,
-        ``,
-        `## Architectural Decisions`,
-        `- Established via pre-planning questionnaire.`,
-        ``,
-        `## Q&A Record`,
-        `| # | Question | Answer |`,
-        `| --- | --- | --- |`,
-        qaFormatted,
-      ].join('\n')
-      context.fsm.saveRefinement(fallback)
-    }
   }
 }
