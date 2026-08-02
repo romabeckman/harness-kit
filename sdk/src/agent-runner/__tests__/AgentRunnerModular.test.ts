@@ -4,11 +4,11 @@ import { AgentRunnerFactory } from '../AgentRunnerFactory'
 import { AntigravityCLIRunner } from '../antigravity-cli/AntigravityCLIRunner'
 import type { IAgentRunner } from '../IAgentRunner'
 import type { AgentInvocation, AgentOutput } from '../types'
-import { spawn } from 'node:child_process'
+import spawn from 'cross-spawn'
 
-vi.mock('node:child_process', () => {
+vi.mock('cross-spawn', () => {
   return {
-    spawn: vi.fn(),
+    default: vi.fn(),
   }
 })
 

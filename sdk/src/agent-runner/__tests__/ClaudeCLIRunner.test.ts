@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AgentInvocation, AgentOutput } from '../types'
 import { ClaudeCLIRunner } from '../claude-cli/ClaudeCLIRunner'
 import { AgentRunnerErrorCode } from '../AgentRunnerError'
-import { spawn } from 'node:child_process'
+import spawn from 'cross-spawn'
 import EventEmitter from 'node:events'
 
-// Mock the child_process module
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn(),
+// Mock the cross-spawn module
+vi.mock('cross-spawn', () => ({
+  default: vi.fn(),
 }))
 
 class MockChildProcess extends EventEmitter {

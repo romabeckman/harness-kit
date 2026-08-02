@@ -7,7 +7,7 @@ import { AgentRunnerErrorCode } from '../AgentRunnerError'
 // ─── Hoisted mock ─────────────────────────────────────────────────────────────
 const { mockSpawn } = vi.hoisted(() => ({ mockSpawn: vi.fn() }))
 
-vi.mock('node:child_process', () => ({ spawn: mockSpawn }))
+vi.mock('cross-spawn', () => ({ default: mockSpawn }))
 
 // ─── Import after mock ────────────────────────────────────────────────────────
 import { CursorCLIRunner } from '../cursor-cli/CursorCLIRunner'

@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import spawn from 'cross-spawn'
 import type { IAgentRunner } from './IAgentRunner'
 import type { AgentInvocation, AgentOutput } from './types'
 import { AgentRunnerError, AgentRunnerErrorCode } from './AgentRunnerError'
@@ -198,7 +198,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
       let stderr = ''
       let lineBuffer = ''
 
-      child.stdout.on('data', (chunk) => {
+      child.stdout?.on('data', (chunk) => {
         const text = chunk.toString()
         stdout += text
         lineBuffer += text
@@ -208,7 +208,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
           if (line.trim()) this.onStdoutLine(line, invocation)
         }
       })
-      child.stderr.on('data', (chunk) => { stderr += chunk.toString() })
+      child.stderr?.on('data', (chunk) => { stderr += chunk.toString() })
 
       child.on('error', (err: NodeJS.ErrnoException) => {
         clearTimer()

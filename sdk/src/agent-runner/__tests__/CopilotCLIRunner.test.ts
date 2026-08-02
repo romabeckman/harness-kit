@@ -3,10 +3,10 @@ import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerFactory } from '../AgentRunnerFactory'
 import { CopilotCLIRunner } from '../copilot-cli/CopilotCLIRunner'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
-import { spawn } from 'node:child_process'
+import spawn from 'cross-spawn'
 
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn(),
+vi.mock('cross-spawn', () => ({
+  default: vi.fn(),
 }))
 
 // Controllable mock child process
