@@ -12,6 +12,10 @@ export class PlanningHandler extends AbstractPhaseHandler {
       return super.handle(phase, context);
     }
 
+    if (context.config.enableRefinement && !context.fsm.existRefinement()) {
+      return Phase.REFINEMENT;
+    }
+
     const features = context.fsm.loadBacklog();
     const activeFeature = context.getActiveFeature(features);
 
@@ -108,6 +112,20 @@ export class PlanningHandler extends AbstractPhaseHandler {
       .map((f) => `\`${join('docs', 'specs', f.domain)}\``)
       .join(", ") || 'None';
 
+    const refinementBlock = context.fsm.existRefinement?.()
+      ? [
+        ``,
+        `<refinement_context>`,
+        `The following refinement document was produced from a human-validated questionnaire.`,
+        `Use it as authoritative context for architectural decisions, constraints, and design guidelines.`,
+        ``,
+        `\`\`\`markdown`,
+        context.fsm.loadRefinement().trim(),
+        `\`\`\``,
+        `</refinement_context>`,
+      ]
+      : []
+
     return [
       `## Objective`,
       `Perform scope refinement STRICTLY for the <target_feature>. Use the <scope> ONLY for system alignment and contextual awareness. Do NOT refine or generate specifications for the entire background context.`,
@@ -174,6 +192,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       payload.scope.trim(),
       `\`\`\``,
       `</scope>`,
+      ...refinementBlock,
       ``,
       `<target_feature>`,
       `ID: ${feature.id}`,
@@ -241,7 +260,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
     await context.invokeAgent({
       agent: "harness-kit:software-architect",
       mode: "autonomous",
-      phaseKey: "PLANNING",
+      phaseKey: "planning",
       prompt: [
         `## Objective`,
         `Extract ordered development tasks from the tactical design and append them to DEVELOPMENT-STATE.md.`,

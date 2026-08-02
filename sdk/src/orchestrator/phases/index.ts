@@ -1,5 +1,6 @@
 export * from './AbstractPhaseHandler'
 export * from './BootstrapHandler'
+export * from './RefinementHandler'
 export * from './PlanningHandler'
 export * from './DevelopmentHandler'
 export * from './ReviewHandler'
@@ -7,3 +8,4 @@ export * from './MemoryHandler'
 export * from './TransitionHandler'
 export * from './DeployHandler'
 export * from './CascadeBlockedHandler'
+

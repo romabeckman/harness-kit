@@ -389,4 +389,18 @@ describe('T07 — FileStateManager', () => {
       expect(content).toContain(shortRationale)
     })
   })
+
+  describe('TS-I-30: refinement file state management', () => {
+    it('returns false for existRefinement when REFINEMENT.md does not exist and empty string for loadRefinement', () => {
+      expect(mgr.existRefinement()).toBe(false)
+      expect(mgr.loadRefinement()).toBe('')
+    })
+
+    it('saves and loads REFINEMENT.md content correctly', () => {
+      const content = '# Refinement Context\n- Architecture: REST API'
+      mgr.saveRefinement(content)
+      expect(mgr.existRefinement()).toBe(true)
+      expect(mgr.loadRefinement()).toBe(content)
+    })
+  })
 })

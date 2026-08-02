@@ -266,6 +266,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     skipValidation,
     skipMemory,
     skipDeploy,
+    enableRefinement: parsed.refine ?? false,
   });
 
   if (action === "resume") {

@@ -49,6 +49,18 @@ describe('parseRunArgs', () => {
     })
   })
 
+  describe('--refine', () => {
+    it('returns refine undefined when --refine flag is absent', () => {
+      const result = parseRunArgs([])
+      expect(result.refine).toBeUndefined()
+    })
+
+    it('sets refine to true when --refine flag is present', () => {
+      const result = parseRunArgs(['--refine'])
+      expect(result.refine).toBe(true)
+    })
+  })
+
   describe('--complexity is removed', () => {
     it('silently ignores --complexity flag', () => {
       // --complexity no longer exists; it should be consumed by the unknown-flag handler

@@ -19,6 +19,8 @@ describe('PlanningHandler', () => {
             appendDecision: vi.fn(),
             existScope: vi.fn().mockReturnValue(true),
             loadScope: vi.fn().mockReturnValue('test scope'),
+            existRefinement: vi.fn().mockReturnValue(false),
+            loadRefinement: vi.fn().mockReturnValue(''),
         };
 
 
@@ -149,6 +151,17 @@ describe('PlanningHandler', () => {
             mockFsm.loadScope.mockReturnValue('');
 
             await expect(handler.handle(Phase.PLANNING, mockContext)).rejects.toThrow('Scope file (SCOPE.md) is empty');
+        });
+
+        it('injects refinement_context in prompt when existRefinement is true', async () => {
+            mockFsm.existRefinement = vi.fn().mockReturnValue(true);
+            mockFsm.loadRefinement = vi.fn().mockReturnValue('# Refinement Content\n- Decision 1');
+
+            await handler.handle(Phase.PLANNING, mockContext);
+
+            const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
+            expect(invokedPrompt).toContain('<refinement_context>');
+            expect(invokedPrompt).toContain('# Refinement Content\n- Decision 1');
         });
     });
 

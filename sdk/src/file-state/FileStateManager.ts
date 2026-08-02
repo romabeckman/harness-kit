@@ -13,6 +13,11 @@ export interface IFileStateManager {
   loadScope(): string
   existScope(): boolean
 
+  // ─── Refinement ──────────────────────────────────────────────────────────
+  saveRefinement(content: string): void
+  loadRefinement(): string
+  existRefinement(): boolean
+
   // ─── Bootstrap ──────────────────────────────────────────────────────────
   ensureProductFiles(config?: OrchestratorConfig): void
   loadBootstrapConfig(): BootstrapConfig
@@ -92,6 +97,24 @@ export class FileStateManager implements IFileStateManager {
 
   existScope(): boolean {
     return existsSync(join(this.productDir, 'SCOPE.md'))
+  }
+
+  // ─── Refinement ──────────────────────────────────────────────────────────
+
+  saveRefinement(content: string): void {
+    mkdirSync(this.productDir, { recursive: true })
+    const path = join(this.productDir, 'REFINEMENT.md')
+    atomicWrite(path, content)
+  }
+
+  loadRefinement(): string {
+    const path = join(this.productDir, 'REFINEMENT.md')
+    if (!existsSync(path)) return ''
+    return readFileSync(path, 'utf-8').trim()
+  }
+
+  existRefinement(): boolean {
+    return existsSync(join(this.productDir, 'REFINEMENT.md'))
   }
 
   // ─── Bootstrap ────────────────────────────────────────────────────────────

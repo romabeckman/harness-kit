@@ -1,6 +1,7 @@
 import {
   IPhaseHandler,
   BootstrapHandler,
+  RefinementHandler,
   PlanningHandler,
   DevelopmentHandler,
   ReviewHandler,
@@ -30,6 +31,7 @@ export class ChainBuilder {
 
   static buildDefault(): IPhaseHandler {
     return new ChainBuilder()
+      .addPhase(new RefinementHandler())
       .addPhase(new PlanningHandler())
       .addPhase(new DevelopmentHandler())
       .addPhase(new ReviewHandler())

@@ -28,10 +28,11 @@ export class AgentInvocationService {
 
     const runnerType = this.agentRunner.type ?? ''
     const settingKey = settings.hasSettings(runnerType) ? runnerType : runnerType.split('-')[0]
+    const phaseKey = invocation.phaseKey?.toLowerCase()
 
     let timeoutMs = config.timeoutMs
     if (timeoutMs === undefined && settingKey) {
-      timeoutMs = settings.getTimeoutMs(settingKey, invocation.phaseKey)
+      timeoutMs = settings.getTimeoutMs(settingKey, phaseKey)
     }
     if (timeoutMs === undefined) {
       timeoutMs = DEFAULT_PHASE_TIMEOUT_MS
@@ -43,8 +44,8 @@ export class AgentInvocationService {
       timeoutMs: timeoutMs
     }
 
-    if (settingKey && invocation.phaseKey) {
-      const overrides = settings.resolve(settingKey, invocation.phaseKey)
+    if (settingKey && phaseKey) {
+      const overrides = settings.resolve(settingKey, phaseKey)
       if (overrides.model || overrides.effort) {
         finalInvocation = {
           ...finalInvocation,
