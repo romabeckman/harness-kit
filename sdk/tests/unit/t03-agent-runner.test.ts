@@ -3,6 +3,9 @@ import { EventEmitter } from 'node:events'
 import { Readable, Writable } from 'node:stream'
 import { NullAgentRunner } from '../../src/agent-runner/NullAgentRunner'
 import type { IAgentRunner } from '../../src/agent-runner/IAgentRunner'
+import { ClaudeCLIRunner } from '../../src/agent-runner/claude-cli/ClaudeCLIRunner'
+import { AgentRunnerErrorCode } from '../../src/agent-runner/AgentRunnerError'
+import { DebugContext } from '../../src/cli/DebugContext'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -21,6 +24,14 @@ function makeChild(lines: string[], exitCode = 0) {
   }, 10)
   return child
 }
+
+let mockSpawnFn = vi.fn((_command: string, _args: string[], _options?: any) => makeChild([], 0))
+
+vi.mock('cross-spawn', () => ({
+  default: (...args: any[]) => mockSpawnFn(...(args as [string, string[], any?])),
+  spawn: (...args: any[]) => mockSpawnFn(...(args as [string, string[], any?])),
+  __esModule: true,
+}))
 
 // ─── NullAgentRunner ─────────────────────────────────────────────────────────
 
@@ -50,21 +61,14 @@ describe('T03 — IAgentRunner interface + NullAgentRunner', () => {
 describe('T03 — ClaudeCLIRunner', () => {
   beforeEach(() => {
     vi.useRealTimers()
-    vi.resetModules()
     vi.restoreAllMocks()
+    mockSpawnFn = vi.fn(() => makeChild([], 0))
   })
 
   it('spawns with required args', async () => {
-    const spawnFn = vi.fn(() => makeChild([], 0))
-    vi.doMock('cross-spawn', () => ({
-      default: spawnFn,
-      spawn: spawnFn,
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
-    const args: string[] = spawnFn.mock.calls[0][1]
+    const args: string[] = mockSpawnFn.mock.calls[0][1]
     expect(args).toContain('--print')
     expect(args).toContain('--output-format')
     expect(args).toContain('stream-json')
@@ -75,16 +79,9 @@ describe('T03 — ClaudeCLIRunner', () => {
   })
 
   it('adds --agent <agent> arg when invocation.agent is set', async () => {
-    const spawnFn = vi.fn(() => makeChild([], 0))
-    vi.doMock('cross-spawn', () => ({
-      default: spawnFn,
-      spawn: spawnFn,
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
     const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 's', agent: 'developer-backend', mode: 'autonomous', payload: {} })
-    const args: string[] = spawnFn.mock.calls[0][1]
+    const args: string[] = mockSpawnFn.mock.calls[0][1]
     const agentIdx = args.indexOf('--agent')
     expect(agentIdx).toBeGreaterThan(-1)
     expect(args[agentIdx + 1]).toBe('developer-backend')
@@ -95,11 +92,7 @@ describe('T03 — ClaudeCLIRunner', () => {
       type: 'assistant',
       message: { content: [{ type: 'text', text: 'hello world' }] },
     })
-    vi.doMock('cross-spawn', () => ({
-      default: vi.fn(() => makeChild([event], 0)),
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    mockSpawnFn = vi.fn(() => makeChild([event], 0))
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
@@ -113,11 +106,7 @@ describe('T03 — ClaudeCLIRunner', () => {
       type: 'assistant',
       message: { content: [{ type: 'tool_use', name: 'Bash' }] },
     })
-    vi.doMock('cross-spawn', () => ({
-      default: vi.fn(() => makeChild([event], 0)),
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    mockSpawnFn = vi.fn(() => makeChild([event], 0))
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
@@ -134,11 +123,7 @@ describe('T03 — ClaudeCLIRunner', () => {
       total_cost_usd: 0.005,
       usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 10 },
     })
-    vi.doMock('cross-spawn', () => ({
-      default: vi.fn(() => makeChild([event], 0)),
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    mockSpawnFn = vi.fn(() => makeChild([event], 0))
     const runner = new ClaudeCLIRunner()
     const out = await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     expect(out.raw).toBe('final output')
@@ -153,11 +138,7 @@ describe('T03 — ClaudeCLIRunner', () => {
       total_cost_usd: 0.0123,
       usage: { input_tokens: 200, output_tokens: 80, cache_creation_input_tokens: 5, cache_read_input_tokens: 15 },
     })
-    vi.doMock('cross-spawn', () => ({
-      default: vi.fn(() => makeChild([event], 0)),
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    mockSpawnFn = vi.fn(() => makeChild([event], 0))
     const runner = new ClaudeCLIRunner()
     const out = await runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
     expect(out.usage).toMatchObject({
@@ -175,12 +156,7 @@ describe('T03 — ClaudeCLIRunner', () => {
       is_error: true,
       result: 'something went wrong',
     })
-    vi.doMock('cross-spawn', () => ({
-      default: vi.fn(() => makeChild([event], 0)),
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
-    const { AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
+    mockSpawnFn = vi.fn(() => makeChild([event], 0))
     const runner = new ClaudeCLIRunner()
     await expect(
       runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
@@ -189,20 +165,15 @@ describe('T03 — ClaudeCLIRunner', () => {
 
   it('rejects with AgentRunnerError code NETWORK_ERROR on ENOENT spawn error', async () => {
     const enoentErr = Object.assign(new Error('spawn claude ENOENT'), { code: 'ENOENT' })
-    vi.doMock('cross-spawn', () => ({
-      default: vi.fn(() => {
-        const child = new EventEmitter() as any
-        child.stdout = new Readable({ read() { } })
-        child.stderr = new Readable({ read() { } })
-        child.stdin = new Writable({ write(_, __, cb) { cb() } })
-        child.kill = vi.fn()
-        setTimeout(() => child.emit('error', enoentErr), 10)
-        return child
-      }),
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
-    const { AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
+    mockSpawnFn = vi.fn(() => {
+      const child = new EventEmitter() as any
+      child.stdout = new Readable({ read() { } })
+      child.stderr = new Readable({ read() { } })
+      child.stdin = new Writable({ write(_, __, cb) { cb() } })
+      child.kill = vi.fn()
+      setTimeout(() => child.emit('error', enoentErr), 10)
+      return child
+    })
     const runner = new ClaudeCLIRunner()
     await expect(
       runner.run({ skill: 's', agent: 'a', mode: 'autonomous', payload: {} })
@@ -211,27 +182,23 @@ describe('T03 — ClaudeCLIRunner', () => {
 
   it('uses invocation.prompt as stdin when provided', async () => {
     const stdinChunks: string[] = []
-    vi.doMock('cross-spawn', () => ({
-      default: vi.fn(() => {
-        const child = new EventEmitter() as any
-        child.stdout = new Readable({ read() { } })
-        child.stderr = new Readable({ read() { } })
-        child.stdin = new Writable({
-          write(chunk, _, cb) {
-            stdinChunks.push(chunk.toString())
-            cb()
-          },
-        })
-        child.kill = vi.fn()
-        setTimeout(() => {
-          child.stdout.push(null)
-          child.emit('close', 0)
-        }, 10)
-        return child
-      }),
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    mockSpawnFn = vi.fn(() => {
+      const child = new EventEmitter() as any
+      child.stdout = new Readable({ read() { } })
+      child.stderr = new Readable({ read() { } })
+      child.stdin = new Writable({
+        write(chunk, _, cb) {
+          stdinChunks.push(chunk.toString())
+          cb()
+        },
+      })
+      child.kill = vi.fn()
+      setTimeout(() => {
+        child.stdout.push(null)
+        child.emit('close', 0)
+      }, 10)
+      return child
+    })
     const runner = new ClaudeCLIRunner()
     await runner.run({
       skill: 's',
@@ -248,11 +215,7 @@ describe('T03 — ClaudeCLIRunner', () => {
       type: 'assistant',
       message: { content: [{ type: 'text', text: 'progress line' }] },
     })
-    vi.doMock('cross-spawn', () => ({
-      default: vi.fn(() => makeChild([event], 0)),
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    mockSpawnFn = vi.fn(() => makeChild([event], 0))
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const runner = new ClaudeCLIRunner()
     await runner.run({ skill: 'my-skill', agent: 'my-agent', mode: 'autonomous', payload: {} })
@@ -263,14 +226,8 @@ describe('T03 — ClaudeCLIRunner', () => {
   })
 
   it('prints debug info to stderr when DebugContext is enabled', async () => {
-    const { DebugContext } = await import('../../src/cli/DebugContext')
     DebugContext.enable()
-
-    vi.doMock('cross-spawn', () => ({
-      default: vi.fn(() => makeChild([], 0)),
-      __esModule: true,
-    }))
-    const { ClaudeCLIRunner } = await import('../../src/agent-runner/claude-cli/ClaudeCLIRunner')
+    mockSpawnFn = vi.fn(() => makeChild([], 0))
 
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const runner = new ClaudeCLIRunner()
@@ -284,4 +241,3 @@ describe('T03 — ClaudeCLIRunner', () => {
     DebugContext.reset()
   })
 })
-
