@@ -34,24 +34,17 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
                                  │
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  DEVELOPMENT  ·  tdd-orchestrator skill                              │
-  │  Implements tasks in strict TDD order (red → green → refactor)       │
-  │  Each task must pass its tests before the next begins                │
-  └──────────────────────────────┬───────────────────────────────────────┘
-                                 │
-                                 ▼
-  ┌──────────────────────────────────────────────────────────────────────┐
-  │  REVIEW  ·  the-grumpy-tech-lead + adversarial-qa skills             │
-  │  Code review scores implementation quality (0–10)                    │
-  │  QA agent hunts security vulnerabilities and missing edge cases      │
-  │  Scores below threshold → feature returns to DEVELOPMENT (rework)    │
-  └──────────────────────────────┬───────────────────────────────────────┘
-                                 │
-                                 ▼
-  ┌──────────────────────────────────────────────────────────────────────┐
-  │  STATE_CHECK  ·  completion gate (no agent)                          │
-  │  Checks all features meet score thresholds and rework limits         │
-  │  Violations are logged to DECISIONS.md                               │
+  │  DEVELOPMENT  ·  tdd-orchestrator skill                              │◄──────────┐
+  │  Implements tasks in strict TDD order (red → green → refactor)       │           │
+  │  Each task must pass its tests before the next begins                │           │
+  └──────────────────────────────┬───────────────────────────────────────┘           │
+                                 │                                                   │ (rework: score < 0.7)
+                                 ▼                                                   │
+  ┌──────────────────────────────────────────────────────────────────────┐           │
+  │  REVIEW  ·  the-grumpy-tech-lead + adversarial-qa skills             │           │
+  │  Code review scores implementation quality (0–10)                    │           │
+  │  QA agent hunts security vulnerabilities and missing edge cases      │           │
+  │  Scores below threshold → feature returns to DEVELOPMENT (rework)    │───────────┘
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │
                                  ▼
