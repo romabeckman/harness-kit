@@ -22,6 +22,8 @@ export interface OrchestratorConfig {
   skipMemory?: boolean
   /** When true, Phase DEPLOY (git stage/commit/push) is skipped and pipeline halts after Phase F. */
   skipDeploy?: boolean
+  /** When true, interactive REFINEMENT phase runs before Phase PLANNING. */
+  enableRefinement?: boolean
 }
 
 export enum Complexity {
@@ -52,6 +54,7 @@ export enum CliCommand {
 
 export enum Phase {
   BOOTSTRAP = 'BOOTSTRAP',
+  REFINEMENT = 'REFINEMENT',
   PLANNING = 'PLANNING',
   DEVELOPMENT = 'DEVELOPMENT',
   REVIEW = 'REVIEW',

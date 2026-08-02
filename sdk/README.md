@@ -18,6 +18,12 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
   │  BOOTSTRAP  ·  software-architect agent                              │
   │  Parses scope → writes BACKLOG.md with features, layers, priorities  │
   └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                                 ▼  (optional via --refine or --mode deep_thinking)
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  REFINEMENT  ·  the-grumpy-tech-lead + software-architect            │
+  │  Generates QUESTIONS.json → collects answers → REFINEMENT.md         │
+  └──────────────────────────────┬───────────────────────────────────────┘
                                  │  (for each feature)
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
@@ -184,6 +190,7 @@ Show version or help message.
 | `--score <0–1>` | | Acceptance score threshold | `--score 0.8` |
 | `--reworks <1–10>` | | Max rework cycles before cascade fail | `--reworks 3` |
 | `--steering <text>` | | Additional orchestration rules | `--steering "prefer async/await"` |
+| `--refine` | | Enable interactive pre-planning Socratic questionnaire | `--refine` |
 | `--mode <mode>` | `-M` | Execution mode: `quick`, `fast`, `thinking` (default), `deep_thinking` | `--mode fast` |
 | `--skip-validation` | | Skip Phase C entirely — jump straight to Phase D | |
 | `--skip-memory` | | Skip Phase E entirely — jump straight to Phase F | |
@@ -192,6 +199,9 @@ Show version or help message.
 
 > [!NOTE]
 > `--model` overrides the default for **all** phases. For per-phase model tuning, use `settings.json` instead.
+
+> [!TIP]
+> `--refine` enables an interactive pre-planning Socratic questionnaire (`Phase.REFINEMENT`). The grumpy tech-lead agent analyzes your project scope, surfaces architectural trade-offs into `docs/product/QUESTIONS.json`, collects human-validated choices, and consolidates them into `docs/product/REFINEMENT.md` prior to Phase A planning.
 
 > [!TIP]
 > `--skip-validation` is useful for CI speed-runs or when you want to iterate on Phase B output without paying the cost of two agent reviews. All features are marked **COMPLETED** with neutral scores (TL: 1, Adv: 1) and the run proceeds directly to Phase D (state check) and then Phase E (memory).
@@ -495,7 +505,6 @@ npm run typecheck  # zero-error type check
 ## Further reading
 
 - [Daily Use Playbook](./docs/PLAYBOOK-DAILY-USE.md) — real-world recipes for multi-project setups, POCs, mid-run corrections, and more
-- [Agent invocations reference](./AGENTS.md) — detailed breakdown of each agent call per phase
 - [Agent runner architecture](./docs/feature/sdk_agent_runner.md) — runner internals and extension points
 - [Integration with Superpowers](https://github.com/obra/superpowers) — low-level execution tools (Git worktrees, parallel agents, etc.)
 

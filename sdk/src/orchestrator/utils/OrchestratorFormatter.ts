@@ -16,6 +16,7 @@ export class OrchestratorFormatter {
   static printPipelineHeader(current: Phase): void {
     const phases = [
       Phase.BOOTSTRAP,
+      Phase.REFINEMENT,
       Phase.PLANNING,
       Phase.DEVELOPMENT,
       Phase.REVIEW,
@@ -25,6 +26,7 @@ export class OrchestratorFormatter {
     ]
     const shortNames: Record<Phase, string> = {
       [Phase.BOOTSTRAP]: Phase.BOOTSTRAP,
+      [Phase.REFINEMENT]: Phase.REFINEMENT,
       [Phase.PLANNING]: Phase.PLANNING,
       [Phase.DEVELOPMENT]: Phase.DEVELOPMENT,
       [Phase.REVIEW]: Phase.REVIEW,

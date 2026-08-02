@@ -31,6 +31,7 @@ interface ResolvedMode {
   complexity: Complexity
   skipValidation: boolean
   skipMemory: boolean
+  enableRefinement: boolean
 }
 
 /**
@@ -42,14 +43,14 @@ interface ResolvedMode {
 export function resolveMode(mode?: RunMode): ResolvedMode {
   switch (mode) {
     case RunMode.QUICK:
-      return { complexity: Complexity.LOW, skipValidation: true, skipMemory: true }
+      return { complexity: Complexity.LOW, skipValidation: true, skipMemory: true, enableRefinement: false }
     case RunMode.FAST:
-      return { complexity: Complexity.LOW, skipValidation: false, skipMemory: false }
+      return { complexity: Complexity.LOW, skipValidation: false, skipMemory: false, enableRefinement: false }
     case RunMode.DEEP_THINKING:
-      return { complexity: Complexity.HIGH, skipValidation: false, skipMemory: false }
+      return { complexity: Complexity.HIGH, skipValidation: false, skipMemory: false, enableRefinement: true }
     case RunMode.THINKING:
     default:
-      return { complexity: Complexity.AUTO, skipValidation: false, skipMemory: false }
+      return { complexity: Complexity.AUTO, skipValidation: false, skipMemory: false, enableRefinement: false }
   }
 }
 
@@ -215,6 +216,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
   const resolved = resolveMode(parsed.mode)
   const skipValidation = resolved.skipValidation || !!parsed.skipValidation
   const skipMemory = resolved.skipMemory || !!parsed.skipMemory
+  const enableRefinement = resolved.enableRefinement || !!parsed.refine
   const skipDeploy = !!parsed.skipDeploy
 
   const action = await determineAction(parsed.action, !!hasExistingSession);
@@ -266,6 +268,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     skipValidation,
     skipMemory,
     skipDeploy,
+    enableRefinement,
   });
 
   if (action === "resume") {

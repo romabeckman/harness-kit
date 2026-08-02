@@ -216,7 +216,7 @@ describe('AgentInvocationService', () => {
         settings
       )
 
-      expect(settings.getTimeoutMs).toHaveBeenCalledWith('claude', 'PLANNING')
+      expect(settings.getTimeoutMs).toHaveBeenCalledWith('claude', 'planning')
     })
 
     it('falls back to DEFAULT_PHASE_TIMEOUT_MS when both config and settings return undefined', async () => {

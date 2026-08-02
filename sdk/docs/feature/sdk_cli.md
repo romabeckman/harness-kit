@@ -66,6 +66,7 @@ The `hrns init` command prepares a directory for running Harness Kit cycles:
 | `--score <0.1-1>` | float | `0.7` | Minimum acceptance score for a feature |
 | `--reworks <1-10>` | int | `2` | Max rework cycles before cascade fail |
 | `--steering <text>` | string | — | Additional orchestration rules |
+| `--refine` | boolean | `false` | Enable interactive pre-planning Socratic questionnaire (`QUESTIONS.json` → `REFINEMENT.md`) |
 
 > **Wizard bypass rule**: if _any_ of `--scope`, `--path`, `--score`, or `--reworks` is supplied, the interactive reset wizard is skipped entirely. Missing fields fall back to defaults.
 
@@ -74,6 +75,7 @@ The `hrns init` command prepares a directory for running Harness Kit cycles:
 | Flag | Description |
 |---|---|
 | `--steering <text>` | Steering message applied before the resumed run (skips interactive prompt) |
+| `--refine` | Enable interactive pre-planning REFINEMENT phase prior to planning |
 
 ---
 

@@ -32,6 +32,9 @@ export interface ParsedRunArgs {
   // Skip Phase DEPLOY (git stage/commit/push) — pipeline halts after Phase F
   skipDeploy?: boolean
 
+  // Enable interactive pre-planning REFINEMENT phase
+  refine?: boolean
+
   // Complexity hint for Phase A scope refinement ('LOW' | 'HIGH' | undefined = AUTO)
   // Controlled via --mode; kept here for backward-compat when set programmatically
   mode?: RunMode
@@ -137,6 +140,10 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
 
       case '--skip-deploy':
         result.skipDeploy = true
+        break
+
+      case '--refine':
+        result.refine = true
         break
       case '--mode':
       case '-M': {

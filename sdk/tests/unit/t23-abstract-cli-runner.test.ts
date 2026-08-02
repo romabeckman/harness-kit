@@ -43,7 +43,7 @@ describe('T23 — AbstractCliRunner', () => {
   })
 
   afterEach(() => {
-    vi.doUnmock('node:child_process')
+    vi.doUnmock('cross-spawn')
   })
 
   it('TC-AB-01: buildPrompt constructs correct string representation', async () => {
@@ -120,8 +120,8 @@ describe('T23 — AbstractCliRunner', () => {
   })
 
   it('TC-AB-05: run rejects immediately if AbortSignal is already aborted', async () => {
-    vi.doMock('node:child_process', () => ({
-      spawn: vi.fn(() => makeChildMock([], [], [])),
+    vi.doMock('cross-spawn', () => ({
+      default: vi.fn(() => makeChildMock([], [], [])),
     }))
 
     const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
@@ -139,8 +139,8 @@ describe('T23 — AbstractCliRunner', () => {
   })
 
   it('TC-AB-06: rejects with TIMEOUT error when timeout is reached', async () => {
-    vi.doMock('node:child_process', () => ({
-      spawn: vi.fn(() => makeChildMock([], [], [])),
+    vi.doMock('cross-spawn', () => ({
+      default: vi.fn(() => makeChildMock([], [], [])),
     }))
 
     const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
@@ -159,8 +159,8 @@ describe('T23 — AbstractCliRunner', () => {
     const spawnErr = new Error('spawn failed') as any
     spawnErr.code = 'EACCES'
 
-    vi.doMock('node:child_process', () => ({
-      spawn: vi.fn(() => {
+    vi.doMock('cross-spawn', () => ({
+      default: vi.fn(() => {
         const child = new EventEmitter() as any
         child.stdout = new Readable({ read() {} })
         child.stderr = new Readable({ read() {} })
@@ -184,8 +184,8 @@ describe('T23 — AbstractCliRunner', () => {
   })
 
   it('TC-AB-08: rejects with QUOTA_EXCEEDED when close code !== 0 and output contains rate limit', async () => {
-    vi.doMock('node:child_process', () => ({
-      spawn: vi.fn(() => makeChildMock([{ name: 'close', arg: 1, delay: 20 }], [], ['rate limit exceeded'])),
+    vi.doMock('cross-spawn', () => ({
+      default: vi.fn(() => makeChildMock([{ name: 'close', arg: 1, delay: 20 }], [], ['rate limit exceeded'])),
     }))
 
     const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
@@ -202,8 +202,8 @@ describe('T23 — AbstractCliRunner', () => {
 
   it('TC-AB-09: writes prompt to stdin if writePromptToStdin is true', async () => {
     let stdinContent = ''
-    vi.doMock('node:child_process', () => ({
-      spawn: vi.fn(() => {
+    vi.doMock('cross-spawn', () => ({
+      default: vi.fn(() => {
         const child = new EventEmitter() as any
         child.stdout = new Readable({ read() {} })
         child.stderr = new Readable({ read() {} })
