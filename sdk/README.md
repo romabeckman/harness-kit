@@ -1,4 +1,4 @@
-# @romabeckman/hrns
+![HarnessKit - 5-Step Engineering Cycle](../docs/assets/harness-kit-sdk-flow.png)
 
 Autonomous orchestrator SDK for [harness-kit](https://github.com/romabeckman/harness-kit). Run a single command and the full TDD loop executes unattended — scope in, backlog built, agents delegated, validation scored, memory persisted.
 
