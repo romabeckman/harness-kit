@@ -27,6 +27,7 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 ## FOLDER STRUCTURE
 [Show only the files and folders directly relevant to this module. Use aligned comments to explain the business role of each entry.]
 <folder_structure>
+```
 src/module-name/
 ├── domain/
 │   ├── business-entity     # Core logic and invariants
@@ -35,6 +36,7 @@ src/module-name/
 │   └── business-flow       # Orchestration and use cases
 └── infrastructure/
     └── external-adapter    # Persistence or external integrations
+```
 </folder_structure>
 
 ## [MAIN CONCEPTS / COMPONENTS]
