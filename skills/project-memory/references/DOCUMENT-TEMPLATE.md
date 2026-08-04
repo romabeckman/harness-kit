@@ -8,9 +8,6 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 
 - REQUIRED: One document covers exactly **one** business domain, module, or architectural layer.
 - PROHIBITED: Mixing unrelated topics in a single file.
-- PROHIBITED: Leaving placeholder literals (`[like this]`) in the final file.
-- PROHIBITED: Emoji in section titles or body text.
-- REQUIRED: UPPERCASE section titles for reliable LLM context extraction.
 - REQUIRED: Cross-reference section at the end listing related `docs/` files.
 
 ---
@@ -18,6 +15,13 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 ## MANDATORY TEMPLATE
 
 ```markdown
+---
+doc_type: [feature or adr]
+domain: [domain name]
+stack: [list of relevant technologies]
+depends_on: [list of related docs]
+updated: YYYY-MM-DD
+---
 # [Document Title]
 [One sentence stating the purpose of this document.]
 
@@ -87,7 +91,6 @@ optimized_code()
 </code_tip>
 
 ## REFERENCES
-[RULE: Only reference documents located in `./docs/adr/` or `./docs/feature/`. No other folders are permitted. Always validate that referenced files exist in one of these directories before finalizing the document.]
 
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md or ./ARCHITECTURE.md): [One-line description of the relationship]
 - [**TESTS.md**](../adr/TESTS.md or ./TESTS.md): [One-line description of the relationship]

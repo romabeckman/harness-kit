@@ -35,6 +35,12 @@ PROHIBITED: Inventing commands or coverage thresholds not found in the repositor
 REQUIRED: Use the exact structure below as literal output when generating or updating `docs/adr/TESTS.md`. Replace every `[placeholder]` with actual project content — **never leave placeholder literals in the final file.**
 
 ```markdown
+---
+doc_type: adr
+domain: testing
+stack: [list of testing frameworks]
+updated: YYYY-MM-DD
+---
 # Testing Protocol
 
 ## OVERVIEW
@@ -82,6 +88,3 @@ FORBIDDEN: [e.g., Tests that depend on execution order]
 
 - REQUIRED: Verify every command against the project's actual configuration (e.g., `package.json` scripts, `Makefile`) before writing.
 - REQUIRED: Coverage levels must reflect actual CI gates — not aspirational values.
-- PROHIBITED: Filler text — remove any sentence starting with "This section describes…" or "Below we can see…".
-- PROHIBITED: Placeholder literals in the final file.
-- REQUIRED: UPPERCASE section titles (`## COMMANDS`, `## TOOLING`, etc.) for reliable LLM context extraction.

@@ -15,36 +15,13 @@ Defines the analysis framework and strict rules for generating and maintaining `
 
 ## PRE-GENERATION ANALYSIS
 
-REQUIRED: Complete all three analyses before writing a single line of the document. Each analysis maps directly to a template section.
+REQUIRED: Complete all three analyses by inspecting the repository before writing a single line of the document. Each analysis maps directly to a template section.
 
-### 1. Structure Analysis → feeds `## FOLDER STRUCTURE`
-
-Answer these questions by inspecting directories and file organization:
-
-- What is the application root directory? (e.g., `src/`, `app/`)
-- Are files organized by feature/domain (e.g., `src/users/`) or by technical layer (e.g., `src/controllers/`)?
-- Where do global configuration files and shared utilities live?
-
-REQUIRED: Represent findings as an annotated directory tree in `## FOLDER STRUCTURE`.
-
-### 2. Pattern Recognition → feeds `## LAYERS` and `## PATTERNS`
-
-Answer these questions by reading class/function definitions and existing conventions:
-
-- What naming conventions apply to classes and functions?
-- What are the dependency injection and error handling patterns?
-- What is strictly REQUIRED and what is FORBIDDEN in the codebase?
-
-REQUIRED: Fill `## LAYERS` (responsibilities) and `## PATTERNS` (code blocks with REQUIRED/FORBIDDEN labels).
-
-### 3. Integration Points → feeds `## INTEGRATIONS`
-
-Answer these questions by inspecting registration logic and external calls:
-
-- How are new components (routes, services) registered?
-- Which external services does the project communicate with? (databases, external APIs)
-
-REQUIRED: Map findings into the `## INTEGRATIONS` table.
+| Analysis item | Where to look | Feeds template section |
+|---|---|---|
+| Structure | Application root directory (e.g., `src/`, `app/`), organization by feature vs layer, global configs | `## FOLDER STRUCTURE` |
+| Patterns | Class/function definitions, naming conventions, DI, error handling, REQUIRED/FORBIDDEN constraints | `## LAYERS` and `## PATTERNS` |
+| Integrations | Registration logic (routes, services), external calls (DBs, APIs) | `## INTEGRATIONS` |
 
 ---
 
@@ -53,6 +30,12 @@ REQUIRED: Map findings into the `## INTEGRATIONS` table.
 REQUIRED: Use the exact structure below as literal output when generating or updating `docs/adr/ARCHITECTURE.md`. UPPERCASE section titles are mandatory and must not be renamed or removed.
 
 ```markdown
+---
+doc_type: adr
+domain: architecture
+stack: [list of main technologies]
+updated: YYYY-MM-DD
+---
 # Arquitetura do Projeto
 
 ## OVERVIEW
@@ -99,7 +82,6 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 | [Name]                       | [Use]   | [How it connects]                   |
 
 ## REFERENCES
-[RULE: Only reference documents located in `./docs/adr/` or `./docs/feature/`. No other folders are permitted. Always validate that referenced files exist in one of these directories before finalizing the document.]
 
 - [**README.md**](../README.md): Main documentation index.
 - [**TESTS.md**](./TESTS.md): Testing strategies and commands.
@@ -109,9 +91,5 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 
 ## LLM OPTIMIZATION RULES (MANDATORY)
 
-- REQUIRED: Keep section titles UPPERCASE (`## OVERVIEW`, `## FOLDER STRUCTURE`, etc.) to enable reliable context extraction by other LLMs.
-- REQUIRED: Prefix all architectural constraints with `REQUIRED:`, `FORBIDDEN:`, or `ALLOWED:` — no implicit rules.
 - REQUIRED: Use tables for `## MODULES` and `## INTEGRATIONS` — never prose paragraphs for relational data.
 - REQUIRED: Annotate every directory in `## FOLDER STRUCTURE` with a `#` comment explaining where new files of each type should be created.
-- PROHIBITED: Filler text — remove any sentence starting with "This section describes…" or "Below we can see…".
-- PROHIBITED: Placeholder literals in the final file — replace every `[placeholder]` with actual project content.
