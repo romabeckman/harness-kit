@@ -1,12 +1,7 @@
 import { join } from 'node:path'
 
-const INLINE_THRESHOLD = 3000
+const INLINE_THRESHOLD = 5000
 
-/**
- * §4.3: Inline spec content when small (<3K chars), otherwise reference
- * the file path so the agent reads it with a tool call.
- * Saves 5-15K tokens for large features at the cost of 1 tool call latency.
- */
 export function inlineOrReference(label: string, content: string | undefined, filePath: string): string[] {
   if (!content) return []
 
