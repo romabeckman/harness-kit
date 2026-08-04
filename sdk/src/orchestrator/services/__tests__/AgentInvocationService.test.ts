@@ -277,6 +277,80 @@ describe('AgentInvocationService', () => {
     })
   })
 
+  describe('domain logging', () => {
+    it('logs domain on a single line when domain is specified in invocation', async () => {
+      const usage: TokenUsage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheCreationTokens: 0,
+        cacheReadTokens: 0,
+        costUsd: 0.001,
+      }
+      const runner = makeRunner({ usage })
+      const service = new AgentInvocationService(runner, makeLedger())
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      await service.invokeAgent(
+        makeInvocation({ domain: 'auth-service' }),
+        Phase.DEVELOPMENT,
+        makeConfig(),
+        makeSettings()
+      )
+
+      const domainLogCall = logSpy.mock.calls.find(call => call[0].includes('Domain: auth-service'))
+      expect(domainLogCall).toBeDefined()
+      logSpy.mockRestore()
+    })
+
+    it('logs domain on a single line when domain is specified in invocation.payload', async () => {
+      const usage: TokenUsage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheCreationTokens: 0,
+        cacheReadTokens: 0,
+        costUsd: 0.001,
+      }
+      const runner = makeRunner({ usage })
+      const service = new AgentInvocationService(runner, makeLedger())
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      await service.invokeAgent(
+        makeInvocation({ payload: { domain: 'payment-gateway' } }),
+        Phase.DEVELOPMENT,
+        makeConfig(),
+        makeSettings()
+      )
+
+      const domainLogCall = logSpy.mock.calls.find(call => call[0].includes('Domain: payment-gateway'))
+      expect(domainLogCall).toBeDefined()
+      logSpy.mockRestore()
+    })
+
+    it('does not log domain line when domain is not present', async () => {
+      const usage: TokenUsage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheCreationTokens: 0,
+        cacheReadTokens: 0,
+        costUsd: 0.001,
+      }
+      const runner = makeRunner({ usage })
+      const service = new AgentInvocationService(runner, makeLedger())
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      await service.invokeAgent(
+        makeInvocation({ domain: undefined, payload: {} }),
+        Phase.DEVELOPMENT,
+        makeConfig(),
+        makeSettings()
+      )
+
+      const domainLogCall = logSpy.mock.calls.find(call => call[0].includes('Domain:'))
+      expect(domainLogCall).toBeUndefined()
+      logSpy.mockRestore()
+    })
+  })
+
   describe('error propagation', () => {
     it('re-throws errors from runner.run after cleaning up the spinner', async () => {
       const runner: IAgentRunner = {

@@ -18,6 +18,7 @@ export interface AgentInvocation {
   readonly phaseKey?: string
   readonly timeoutMs?: number
   readonly additionalDirs?: string[]
+  readonly domain?: string
 }
 
 export interface AgentOutput {

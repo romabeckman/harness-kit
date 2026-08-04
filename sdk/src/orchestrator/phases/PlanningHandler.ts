@@ -88,6 +88,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       mode: "autonomous",
       prompt,
       phaseKey: "PLANNING",
+      domain: feature.domain,
     });
   }
 
@@ -261,6 +262,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       agent: "harness-kit:software-architect",
       mode: "autonomous",
       phaseKey: "planning",
+      domain: feature.domain,
       prompt: [
         `## Objective`,
         `Extract ordered development tasks from the tactical design and append them to DEVELOPMENT-STATE.md.`,

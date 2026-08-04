@@ -34,6 +34,7 @@ export interface AgentInvocation {
   payload: ContextPayload
   skill?: string        // OPTIONAL — if omitted, no skill folder lookup is performed
   prompt?: string       // Explicit prompt override; takes precedence over payload serialization
+  domain?: string       // OPTIONAL — active feature domain name for logging and scoping
 }
 ```
 

@@ -74,6 +74,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       mode: 'autonomous',
       prompt,
       phaseKey: 'implementation',
+      domain: activeFeature.domain,
     })
 
     PhaseDecisionLogger.logDevelopmen(context.fsm, activeFeature, tddOutputPath)
