@@ -93,42 +93,32 @@ IF empty → ${rules} = "No additional rules provided"
 
 ---
 
-<phase id="1" name="Strategic Design — Problem Space">
+<phase id="1-2" name="Strategic Design + Context Map (PARALLEL)">
 
-**Invoke skill:** `scope-refinement/agents/01-problem-space`
+> 💡 **Optimization:** Phases 1 and 2 have no data dependency. Invoke both in parallel to reduce Phase A latency by ~35%.
 
-```
-inputs: ${scope}, ${projectPaths}, ${domain}, ${rules}
-output: docs/specs/${domain}/001-problem-space.md
-        → path relative to the FIRST project in ${projectPaths}
-```
+**Invoke skills in parallel:**
+
+| Agent | Skill Path | Inputs | Output |
+|---|---|---|---|
+| Strategic Design | `scope-refinement/agents/01-problem-space` | `${scope}`, `${projectPaths}`, `${domain}`, `${rules}` | `docs/specs/${domain}/001-problem-space.md` |
+| Context Map | `scope-refinement/agents/02-context-map` | `${scope}`, `${projectPaths}`, `${domain}`, `${rules}` | `docs/specs/${domain}/002-context-map.md` |
+
+> ⏳ **Wait:** Both agents MUST complete before proceeding to review gate.
 
 <review_gate mode="INTERACTIVE">
 
-> ✅ **Strategic Design — Problem Space** generated at `docs/specs/${domain}/001-problem-space.md`  
-> Document contains: temporally ordered Domain Events, Subdomain classification, Ubiquitous Language Glossary, and Socratic Questions.  
-> 📝 **Answer the questions in the document**, adjust if needed, then confirm to proceed.
+> ✅ **Strategic Design + Context Map** generated at `docs/specs/${domain}/001-problem-space.md` and `docs/specs/${domain}/002-context-map.md`  
+> Documents contain: Problem Space (Domain Events, Subdomains, Glossary, Socratic Questions) and Context Map (Bounded Contexts, Relationships).  
+> 📝 **Answer the questions in the documents**, adjust if needed, then confirm to proceed.
 
 ```
 INTERACTIVE → WAIT for user confirmation.
-              IF feedback provided → update 001-problem-space.md BEFORE proceeding.
-AUTONOMOUS  → DO NOT PAUSE. Proceed immediately to Phase 2.
+              IF feedback provided → update documents BEFORE proceeding.
+AUTONOMOUS  → DO NOT PAUSE. Proceed immediately to Phase 3.
 ```
 
 </review_gate>
-
-</phase>
-
----
-
-<phase id="2" name="Bounded Contexts and Context Map">
-
-**Invoke skill:** `scope-refinement/agents/02-context-map`
-
-```
-inputs: ${scope}, ${projectPaths}, ${domain}, ${rules}
-output: docs/specs/${domain}/002-context-map.md
-```
 
 </phase>
 

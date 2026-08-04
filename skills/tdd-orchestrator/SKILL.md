@@ -50,6 +50,20 @@ Read on-demand as indicated in `README.md` (API specs, deployment, configuration
 
 ---
 
+<retry_fast_path>
+
+## RETRY FAST-PATH (when REWORK-LOG.md exists)
+
+REQUIRED: When `docs/specs/${domain}/REWORK-LOG.md` is present, apply these optimizations:
+1. Read `REWORK-LOG.md` FIRST — extract all findings before any other action
+2. Prioritize Step 1 (RED) — write NEW failing tests for each finding immediately
+3. SKIP Step 5 (Update Documentation) until final validation passes
+4. SKIP Step 6 (Machine-Readable Output) until all tests pass — regenerate only at the end
+
+</retry_fast_path>
+
+---
+
 <workflow>
 
 ## TDD Workflow — Execute Steps in Order

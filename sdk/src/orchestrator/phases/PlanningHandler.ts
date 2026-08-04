@@ -134,6 +134,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       `<skill_context>`,
       `Invoke the \`harness-kit:scope-refinement\` skill before starting.`,
       `Use \`the-grumpy-tech-lead\` skill, its optional, only use it if you have questions.`,
+      `Mode: autonomous`,
       `</skill_context>`,
       ``,
       `<react_workflow>`,

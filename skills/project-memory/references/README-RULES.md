@@ -11,7 +11,7 @@ Defines strict rules for generating and maintaining `docs/README.md`.
 | Field | Value |
 |---|---|
 | Target file | `docs/README.md` (root of the `docs/` folder) |
-| Agent action | Generate or overwrite `docs/README.md` using the MANDATORY TEMPLATE exactly as specified. Replace every placeholder — **never leave placeholder literals in the final file.** |
+| Agent action | Generate or overwrite `docs/README.md` using the MANDATORY TEMPLATE exactly as specified. |
 | When to update | REQUIRED: Every time a document is added, removed, or renamed in `docs/`, update `docs/README.md` in the same operation. |
 
 ---
@@ -63,7 +63,6 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 Index of project technical documentation for **[Project/Service Name]**. Use the links below to navigate the available documents.
 
 ## Documentation Index
-**RULE:** Only reference documents located in `./docs/adr/` or `./docs/feature/`. No other folders are permitted. Always validate that referenced files exist in one of these directories before finalizing the document.
 
 | Document | Description | Reading |
 |----------|-------------|----------|
