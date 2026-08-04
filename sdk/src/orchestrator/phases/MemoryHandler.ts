@@ -59,6 +59,7 @@ export class MemoryHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`/harness-kit:project-memory\` skill before starting.`,
+      `Mode: autonomous`,
       `</skill_context>`,
       ``,
       `<instructions>`,

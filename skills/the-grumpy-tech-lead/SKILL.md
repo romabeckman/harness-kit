@@ -57,7 +57,9 @@ When invoked in Autonomous Mode, your verdict feeds directly into **Phase C: Val
 
 
 ## Output Template
-Your response must be exclusively a valid JSON block. All fields are **required**:
+Your response must be exclusively a valid JSON block. All fields are **required**.
+
+**FORMAT ANCHOR:** Begin your response with exactly ```json and end with exactly ```. No prose, explanations, or text outside the JSON block.
 
 ```json
 {
@@ -96,50 +98,11 @@ Your response must be exclusively a valid JSON block. All fields are **required*
 }
 ```
 
-**Example 2**
-*Scenario:* "For product search, all records from the `products` table should be brought to the backend and the name filtered using an array `.filter()` function in memory to be more flexible."
-*Output:*
-```json
-{
-  "featureId": "123e4567-e89b-12d3-a456-426614174000",
-  "score": 0.30,
-  "openPoints": [
-    "What happens to the server's RAM if the table grows to 1 million products? This will cause an Out of Memory (OOM) error.",
-    "Why not delegate the filtering to the Database using a `WHERE` or `LIKE` clause? Databases are optimized exactly for this.",
-    "How does this approach impact API response time (latency) considering data transfer over the network?"
-  ],
-  "architectureTip": "Avoid fetching large datasets to filter in the application layer. Leverage the database's query engine."
-}
-```
+## SCORING RUBRIC
 
-**Example 3**
-*Scenario:* "Developed a public endpoint that returns user data. The frontend will take care of hiding sensitive fields like 'cpf' and 'balance' using CSS/Javascript."
-*Output:*
-```json
-{
-  "featureId": "123e4567-e89b-12d3-a456-426614174000",
-  "score": 0.45,
-  "openPoints": [
-    "Do you understand that hiding on the frontend does not protect the data? Anyone can see the full JSON in the browser's \"Network\" tab.",
-    "Are we using DTOs (Data Transfer Objects) or `ViewModels` on the backend to ensure only public data (name, avatar) is sent over the network?",
-    "Does this exposure violate LGPD/GDPR?"
-  ],
-  "architectureTip": "Security is implemented on the server side. Never trust the client to filter sensitive data."
-}
-```
-
-**Example 4**
-*Scenario:* "To calculate shipping, call the carrier's API directly inside the checkout controller as soon as the user clicks 'Finish Purchase'."
-*Output:*
-```json
-{
-  "featureId": "123e4567-e89b-12d3-a456-426614174000",
-  "score": 0.70,
-  "openPoints": [
-    "What happens to our checkout if the carrier's API is down or takes 10 seconds to respond? Will the user get a 500 error?",
-    "Did we define a short timeout for this external request?",
-    "Shouldn't we have a fallback strategy (e.g., fixed shipping table or cache) to avoid blocking the sale in case of partner failure?"
-  ],
-  "architectureTip": "External API calls can fail. Use asynchronous patterns, timeouts, and circuit breakers to protect your application."
-}
-```
+| Score range | Characteristics | Typical findings |
+|---|---|---|
+| 0.85-1.00 | Production-ready, no systemic risks | Minor style suggestions only |
+| 0.70-0.84 | Solid with addressable gaps | Missing timeouts, no pagination, minor auth gaps |
+| 0.50-0.69 | Significant architectural risks | N+1 queries, in-memory filtering of large datasets, missing error handling |
+| 0.00-0.49 | Critical flaws | Security leaks (data exposure on frontend), no input sanitization, single points of failure |

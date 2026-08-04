@@ -115,3 +115,12 @@ Execute steps in order. Do not skip steps.
 **Step 7 — Deliver**
 - Output the generated or updated content.
 - Provide a concise change summary: what was added, updated, or removed, and why.
+
+**Step 8 — Generate project digest**
+- REQUIRED: After every invocation, generate or update `docs/.digest.md` with a machine-readable summary.
+- Extract from `docs/adr/ARCHITECTURE.md`: main architectural pattern, layers list, DI strategy, key REQUIRED/FORBIDDEN constraints.
+- Extract from `docs/adr/TESTS.md`: test framework, run commands, coverage thresholds.
+- List all documents in `docs/feature/` and `docs/adr/` with one-line descriptions.
+- REQUIRED: Keep digest under 60 lines — this is an LLM orientation file, not a replacement for full docs.
+- REQUIRED: Include a `## LAST UPDATED` section with the current date.
+- Purpose: enables `tdd-orchestrator` and other skills to perform initial orientation without reading full documents.

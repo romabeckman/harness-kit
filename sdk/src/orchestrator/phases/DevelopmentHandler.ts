@@ -137,6 +137,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`harness-kit:tdd-orchestrator\` skill before starting.`,
+      `Mode: autonomous`,
       `</skill_context>`,
       ``,
       `<react_workflow>`,

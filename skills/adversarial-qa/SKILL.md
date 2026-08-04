@@ -51,7 +51,9 @@ When invoked in Autonomous Mode, your verdict feeds directly into **Phase C: Val
 - **Reference the spec:** If test scenario is not covered in `004-test-scenarios.md`, that's a missed edge case.
 
 ## Output Template
-Your response must be exclusively a valid JSON block. All fields are **required**:
+Your response must be exclusively a valid JSON block. All fields are **required**.
+
+**FORMAT ANCHOR:** Begin your response with exactly ```json and end with exactly ```. No prose, explanations, or text outside the JSON block.
 
 ```json
 {
