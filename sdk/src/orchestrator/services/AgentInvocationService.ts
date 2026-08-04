@@ -173,9 +173,15 @@ export class AgentInvocationService {
         const durationStr = OrchestratorFormatter.formatDuration(elapsedMs)
         const { inputTokens, outputTokens } = output.usage
         const total = inputTokens + outputTokens
+        const domain = finalInvocation.domain ?? (finalInvocation.payload as any)?.domain
         console.log(
           `\n  ${AnsiHelpers.green('✔')} ${AnsiHelpers.cyan(finalInvocation.agent)} finished in ${AnsiHelpers.yellow(durationStr)}`
         )
+        if (domain) {
+          console.log(
+            `  ${AnsiHelpers.dim('🎯')} ${AnsiHelpers.dim(' Domain:')} ${AnsiHelpers.cyan(domain)}`
+          )
+        }
         console.log(
           `  ${AnsiHelpers.dim('🪙')} ${AnsiHelpers.dim(' Tokens:')} ` +
           `${AnsiHelpers.cyan(inputTokens.toLocaleString())} prompt | ` +

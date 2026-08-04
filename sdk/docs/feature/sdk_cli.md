@@ -41,6 +41,21 @@ The `hrns init` command prepares a directory for running Harness Kit cycles:
 
 ---
 
+## HRNS REPORT — DEVELOPMENT DASHBOARD
+
+The `hrns report` command reads the local `docs/product/` state (using `FileStateManager` and `TokenLedger`) and aggregates it into a single, comprehensive terminal dashboard. 
+
+The output is rendered with ANSI colors using `ReportRenderer` and displays:
+1. **Configuration**: Shows paths, threshold overrides, and max limits from `BOOTSTRAP-CONFIG.json`.
+2. **Backlog Summary**: Displays total features, their status distributions, and the average TL/Adv scores.
+3. **Task Progress**: Itemizes all tasks mapped to their parent features, calculating the completion percentage (e.g. `2/4 (50%)`) and showing rework counts.
+4. **Recent Decisions**: Prints the 5 most recent decision logs extracted from `DECISIONS.md`.
+5. **Token Report**: Reuses the core TokenLedger functionality to display token consumption, cost in USD, and cache-hit savings.
+
+> **Read-only**: `ReportDataAggregator` guarantees a read-only pipeline. No files are mutated or locked during report generation. If a file is missing, the corresponding section will display an empty state or zeroes without crashing.
+
+---
+
 ## HRNS RUN — FLAGS REFERENCE
 
 ### Agent Runner

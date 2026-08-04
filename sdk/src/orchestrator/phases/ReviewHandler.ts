@@ -85,6 +85,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
           mode: 'autonomous',
           prompt: tlPrompt,
           phaseKey: 'review_tl',
+          domain: payload.domain,
         }),
       context.invokeAgent({
         skill: 'harness-kit:adversarial-qa',
@@ -92,6 +93,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
         mode: 'autonomous',
         prompt: advPrompt,
         phaseKey: 'review_adv',
+        domain: payload.domain,
       })
     ])
   }
