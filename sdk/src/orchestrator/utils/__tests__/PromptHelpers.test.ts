@@ -20,12 +20,12 @@ describe('PromptHelpers', () => {
       ])
     })
 
-    it('references file path if content is 3000 chars or more', () => {
-      const content = 'a'.repeat(3000)
+    it('references file path if content is 5000 chars or more', () => {
+      const content = 'a'.repeat(5000)
       const result = inlineOrReference('test_label', content, '/path/to/file.md')
       expect(result).toEqual([
         '<test_label_ref>',
-        'Read file: `/path/to/file.md` (content too large to inline — 3000 chars)',
+        'Read file: `/path/to/file.md` (content too large to inline — 5000 chars)',
         '</test_label_ref>'
       ])
     })
