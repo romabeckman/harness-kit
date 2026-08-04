@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
+import { inlineOrReference } from '../utils/PromptHelpers'
 import type { Feature, Task } from '../../file-state/types'
 import type { DevelopmenPayload } from '../../context-assembler/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
@@ -178,10 +179,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       `</expected_output>`,
       ``,
       `<development_specifications>`,
-      ...(payload.specsContent?.problemSpace ? [`<problem_space>`, `\`\`\`markdown`, payload.specsContent.problemSpace, `\`\`\``, `</problem_space>`] : []),
-      ...(payload.specsContent?.contextMap ? [`<context_map>`, `\`\`\`markdown`, payload.specsContent.contextMap, `\`\`\``, `</context_map>`] : []),
-      ...(payload.specsContent?.tacticalDesign ? [`<tactical_design>`, `\`\`\`markdown`, payload.specsContent.tacticalDesign, `\`\`\``, `</tactical_design>`] : []),
-      ...(payload.specsContent?.testScenarios ? [`<test_scenarios>`, `\`\`\`markdown`, payload.specsContent.testScenarios, `\`\`\``, `</test_scenarios>`] : []),
+      ...this.buildSpecsSection(payload),
       `</development_specifications>`,
       ``,
       `<inputs>`,
@@ -195,5 +193,28 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       tasksSection,
       `</inputs>`,
     ].join('\n')
+  }
+
+  private buildSpecsSection(payload: DevelopmenPayload): string[] {
+    const specsDir = join(this.workingDir(payload), 'docs', 'specs', payload.domain)
+    const specs = payload.specsContent
+    if (!specs) return []
+
+    const sections: string[] = []
+
+    if (!payload.isRetry) {
+      sections.push(...inlineOrReference('problem_space', specs.problemSpace, join(specsDir, '001-problem-space.md')))
+      sections.push(...inlineOrReference('context_map', specs.contextMap, join(specsDir, '002-context-map.md')))
+    }
+
+    sections.push(...inlineOrReference('tactical_design', specs.tacticalDesign, join(specsDir, '003-*-tactical-design.md')))
+    sections.push(...inlineOrReference('test_scenarios', specs.testScenarios, join(specsDir, '004-*-test-scenarios.md')))
+
+    return sections
+  }
+
+  private workingDir(payload: DevelopmenPayload): string {
+    // Reconstruct from domain — payload doesn't carry workingDir directly
+    return join(process.cwd())
   }
 }

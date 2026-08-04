@@ -34,6 +34,36 @@ Default `${scoreThresholdAdv}` = **0.70** (configured during BOOTSTRAP, stored i
 
 ---
 
+## ReAct Workflow
+- **THOUGHT:** Hypothesize security vulnerabilities, missing boundary tests, and edge cases.
+- **ACTION:** Probe the test scenarios and modified files for exploitability.
+- **OBSERVATION:** Validate if the code demonstrably fails the hypothesis before reporting it as a vulnerability.
+
+---
+
+## Evaluation Principle
+Before adding ANY item to `vulnerabilities` or `edgeCasesMissed`, verify:
+1. **Evidence:** You can point to the exact file/function/line in the CURRENT code where the flaw exists.
+2. **Exploitability / reproducibility:** For a vulnerability, you can describe a concrete trigger or exploit path — not a generic "this pattern can sometimes be risky" note. For an edge case, it must be a scenario the code demonstrably fails, not one it merely wasn't explicitly tested against while still behaving correctly.
+3. **Proportional severity:** LOW/MEDIUM/HIGH/CRITICAL must match real impact. Do NOT inflate severity to force a RETRY.
+
+Finding zero issues is a **valid and expected** outcome when the code genuinely deserves it. You are not evaluated on how many problems you find — you are evaluated on **accuracy**.
+If the implementation genuinely covers the test-scenarios spec and no real vulnerability exists, return `"vulnerabilities": []`, `"edgeCasesMissed": []`, `"passedAdversarial": true`, `"hasHighCriticalVuln": false`, and a score reflecting that robustness. A fabricated finding is **WORSE** than an honest pass — it triggers an unnecessary rework cycle.
+
+---
+
+## Rework Directive
+When reviewing code that has been through previous rework cycles (REWORK-LOG.md exists):
+1. Read `REWORK-LOG.md` completely — understand what was reported previously
+2. Check which previous findings have been **FIXED** in the current code
+3. **REMOVE** fixed items from your findings — do NOT re-report resolved issues
+4. Only report issues that **REMAIN UNFIXED** or are **NEW**
+5. If a previous finding was partially fixed, describe what remains
+6. Your score MUST reflect the **CURRENT** state of the code, not historical issues
+7. If all previous findings are resolved and no new critical issues exist, score accordingly
+
+---
+
 ## Decision Gate Integration (Autonomous Orchestrator)
 When invoked in Autonomous Mode, your verdict feeds directly into **Phase C: Validation & Decision Gate** of autonomous-orchestrator:
 

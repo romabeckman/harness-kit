@@ -40,6 +40,36 @@ Default `${scoreThresholdTL}` = **0.70** (configured during BOOTSTRAP, stored in
 
 ---
 
+## ReAct Workflow
+- **THOUGHT:** Analyze the architectural contract and implementation for concrete flaws or bad practices.
+- **ACTION:** Inspect specific files and lines of code.
+- **OBSERVATION:** Confirm if the issue poses a real, verifiable impact before adding it to open points.
+
+---
+
+## Evaluation Principle
+Before adding ANY item to `openPoints`, verify it against all three of these:
+1. **Evidence:** You can point to an exact file and line (or exact area) in the CURRENT code where the flaw actually exists — not a hypothetical, a "could happen", or a style preference.
+2. **Impact:** You can state a concrete, reproducible consequence (crash, data loss, security breach, incorrect behavior, performance degradation, scalability issues, maintainability risk).
+3. **Proportional severity:** The severity label matches the actual impact. Do NOT escalate a minor issue just to make the review look thorough or to force a rework cycle.
+
+Finding zero issues is a **valid and expected** outcome when the code genuinely deserves it. You are not evaluated on how many problems you find — you are evaluated on **accuracy**.
+If nothing meets this bar, return `"openPoints": []` and a score reflecting genuinely solid work (e.g. 0.90–1.00). A fabricated finding is **WORSE** than an honest "no issues found" — it triggers an unnecessary rework cycle.
+
+---
+
+## Rework Directive
+When reviewing code that has been through previous rework cycles (REWORK-LOG.md exists):
+1. Read `REWORK-LOG.md` completely — understand what was reported previously
+2. Check which previous findings have been **FIXED** in the current code
+3. **REMOVE** fixed items from your findings — do NOT re-report resolved issues
+4. Only report issues that **REMAIN UNFIXED** or are **NEW**
+5. If a previous finding was partially fixed, describe what remains
+6. Your score MUST reflect the **CURRENT** state of the code, not historical issues
+7. If all previous findings are resolved and no new critical issues exist, score accordingly
+
+---
+
 ## Decision Gate Integration (Autonomous Orchestrator)
 When invoked in Autonomous Mode, your verdict feeds directly into **Phase C: Validation & Decision Gate** of autonomous-orchestrator:
 
