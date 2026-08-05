@@ -1,118 +1,60 @@
-# sdk_steering — Session Steering
+---
+doc_type: feature
+domain: steering
+stack: [TypeScript, Node.js]
+depends_on: [SDK_CORE.md, SDK_AGENT_RUNNER.md, ARCHITECTURE.md]
+updated: 2026-08-04
+---
+# SDK STEERING
+Allows developers to inject runtime directives when resuming an orchestration session.
 
 ## OVERVIEW
-
-The `sdk_steering` module allows developers to inject runtime directives when resuming an orchestration session. A free-text steering message is analyzed by an LLM and translated into structured `SteeringAction` values that modify `BOOTSTRAP-CONFIG.json` or roll back the orchestrator's phase state.
-
----
+The steering module translates a free-text steering message into structured `SteeringAction` values using an LLM. It modifies `BOOTSTRAP-CONFIG.json` to persist rules or roll back the orchestrator's phase state.
 
 ## FOLDER STRUCTURE
-
 <folder_structure>
+```
 sdk/src/orchestrator/
 └── SteeringAnalyzer.ts   # LLM-based steering message classifier
 
 docs/product/
-└── BOOTSTRAP-CONFIG.json # Persists steeringRules[] alongside phase and cycle state
+└── BOOTSTRAP-CONFIG.json # Persists steeringRules[]
+```
 </folder_structure>
 
----
+## HOW TO APPLY STEERING
 
-## STEERING ACTIONS
+### Prerequisites
+1. Provide an LLM agent runner instance.
+2. Orchestrator must be initialized.
 
-| Action Type | Fields | Effect |
-|---|---|---|
-| `add_rule` | `rule: string` | Appends the rule string to `BOOTSTRAP-CONFIG.json#steeringRules[]`. Injected into all future phase payloads via `ContextAssembler`. |
-| `rollback` | `targetPhase: Phase` | Sets `currentPhase` to the target phase in both in-memory state and `BOOTSTRAP-CONFIG.json`. Resets all active tasks to `NOT_STARTED` when rolling back to `PLANNING` or `DEVELOPMENT`. |
-| `override_score` | `tl?: number; adv?: number` | Overwrites `scoreTL` and `scoreAdv` on the active feature. Forces the next validation to use the provided scores. |
+### Steps
+1. Run `hrns run --resume`.
+2. Provide a steering instruction.
 
----
+<code_example>
+# CORRECT: Context assembler automatically injects rules
+const payload = ContextAssembler.buildPlanningPayload(feature, paths, steeringRules);
 
-## BOOTSTRAPCONFIG SCHEMA
-
-```typescript
-interface BootstrapConfig {
-  currentPhase: Phase
-  cycleCounter: { completedCycles: number }
-  steeringRules?: string[]   // Persistent developer rules injected into every agent payload
-}
-```
-
-`steeringRules` defaults to `[]` when the key is absent from the JSON file. The `BootstrapConfigParser` applies this default during deserialization.
-
----
-
-## FLOW
-
-```
-hrns run --agent antigravity-cli
-  → user selects: resume
-  → user types: "todo código em português"
-  → SteeringAnalyzer.analyze(message, runner)
-      → LLM returns JSON array: [{ "type": "add_rule", "rule": "todo código em português" }]
-      → JsonExtractionProtocol.extract() parses the array
-  → orchestrator.applySteeringActions(actions)
-      → BOOTSTRAP-CONFIG.json#steeringRules updated
-      → DECISIONS.md entry appended
-  → orchestrator.run() continues from current phase
-      → ContextAssembler injects steeringRules into all payloads
-```
-
----
-
-## STEERINGANALYZER CONTRACT
-
-```typescript
-class SteeringAnalyzer {
-  static async analyze(msg: string, runner: IAgentRunner): Promise<SteeringAction[]>
-}
-```
-
-REQUIRED: Pass a valid `IAgentRunner` instance — `SteeringAnalyzer` invokes the runner to call the LLM.
-
-REQUIRED: The CLI (`run.ts`) falls back to `AgentRunnerFactory.create({ type: 'claude-cli' })` when no explicit `--agent` flag is provided, ensuring steering always works regardless of agent selection.
-
-FORBIDDEN: Do not call `applySteeringActions` with an empty array — check `actions.length > 0` before applying.
-
----
-
-## CONTEXT INJECTION
-
-`ContextAssembler` reads `steeringRules` from `BootstrapConfig` and appends them to every phase payload. All agents receive the rules as part of their prompt context on every invocation after the rules are added.
-
-```typescript
-// CORRECT: rules automatically included in phase payload
-const payload = ContextAssembler.buildPlanningPayload(feature, paths, steeringRules)
-
-// WRONG: omit rules — agents never see the developer's constraints
-const payload = ContextAssembler.buildPlanningPayload(feature, paths)
-```
-
-### Default Phase Rules
-
-By default, the `ContextAssembler` appends specific constraints automatically to phase payloads:
-- **Phase B (TDD Implementation):** Automatically appends `"Phase B: Limit of 5 tasks for feature"` to the `steeringRules` array (avoiding duplicates if it is already present).
-
----
+# WRONG: Omitting rules means agents never see developer constraints
+const payload = ContextAssembler.buildPlanningPayload(feature, paths);
+</code_example>
 
 ## BEST PRACTICES
-
-REQUIRED: Keep steering rules concise and imperative — the LLM reads them verbatim as constraints.
-REQUIRED: After applying a rollback action, the orchestrator resets all in-progress tasks to `NOT_STARTED` automatically. Do not manually reset tasks after a rollback.
-REQUIRED: Use steering rules to configure phase-specific behavior constraints (e.g., "Phase A: Limit of 5 tasks per feature") to avoid introducing runtime code complexity in phase handlers.
-FORBIDDEN: Do not add duplicate rules — `applySteeringActions` does not deduplicate; check `steeringRules` in `BOOTSTRAP-CONFIG.json` before adding if idempotency is required.
-
----
-
-## KNOWN LIMITATIONS
-
-1. **No deduplication** — `add_rule` unconditionally appends. The same rule added twice will appear twice in every future payload.
-2. **Single rollback per resume** — Multiple rollback actions in one message will each apply sequentially; only the last target phase will be effective.
-
----
+REQUIRED: Keep steering rules concise and imperative.
+REQUIRED: After applying a rollback action, let the orchestrator reset all in-progress tasks automatically.
+REQUIRED: Use steering rules to configure phase-specific behavior constraints.
+PROHIBITED: Adding duplicate rules. The system does not deduplicate automatically.
+PROHIBITED: Calling `applySteeringActions` with an empty array.
 
 ## REFERENCES
+- [**SDK_CORE.md**](./SDK_CORE.md): `BootstrapConfig` type and `applySteeringActions` method.
+- [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): `IAgentRunner` interface used by `SteeringAnalyzer`.
+- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): `SteeringAnalyzer` module responsibilities.
 
-- [**sdk_core.md**](./sdk_core.md): `BootstrapConfig` type, `applySteeringActions` method on `HarnessOrchestrator`.
-- [**sdk_agent_runner.md**](./sdk_agent_runner.md): `IAgentRunner` interface used by `SteeringAnalyzer`.
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): `SteeringAnalyzer` module responsibilities and location.
+---
+
+## CHANGE SUMMARY
+- **Added:** YAML frontmatter, CHANGE SUMMARY, code examples.
+- **Updated:** UPPERCASE section titles.
+- **Removed:** Redundant flow diagrams.

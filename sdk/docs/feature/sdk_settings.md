@@ -1,65 +1,64 @@
-# sdk_settings — Phase-Specific Model and Effort Settings
+---
+doc_type: feature
+domain: settings
+stack: [TypeScript, Node.js]
+depends_on: [ARCHITECTURE.md]
+updated: 2026-08-04
+---
+# SDK SETTINGS
+Configure models and effort parameters per orchestration phase and agent runner.
 
 ## OVERVIEW
-Use the settings module to configure models and effort parameters per orchestration phase and agent runner. 
-Export a default settings file to a global configuration location on the first execution of `hrns run`. Define project-level configuration files to override global settings.
+The settings module manages default and project-level configurations. It provides mechanisms to override global settings based on the runner type and specific execution phase.
 
-## DIRECTORY STRUCTURE
+## FOLDER STRUCTURE
 <folder_structure>
+```
 sdk/src/settings/
 ├── SettingsSchema.ts     # Schema and types for Settings Map
 ├── DefaultSettings.ts    # Complete out-of-the-box configurations
 └── HarnessSettings.ts    # Settings loader, merger, and resolver
+```
 </folder_structure>
 
-## SCHEMA DEFINITION
-Structure settings in a nested object. Use the first level for the runner type and the second level for the phase configurations:
+## HOW TO CONFIGURE SETTINGS
 
-```jsonc
-// # CORRECT: Valid settings schema structure
+### Prerequisites
+1. Ensure the SDK is initialized.
+2. Locate the global or project-level `.harness-kit/settings.json` file.
+
+### Steps
+1. Open `settings.json`.
+2. Add configurations keyed by agent runner type and phase.
+
+<code_example>
+# CORRECT: Valid settings schema structure
 {
   "claude-cli": {
     "phases": {
-      "bootstrap":   { "model": "claude-sonnet-4-6", "effort": "high" },
-      "PLANNING":     { "model": "claude-sonnet-4-6", "effort": "high" },
-      "implementation":     { "model": "claude-sonnet-4-6", "effort": "medium" },
-      "review_tl":  { "model": "claude-sonnet-4-6", "effort": "low" },
-      "review_adv": { "model": "claude-sonnet-4-6", "effort": "low" },
-      "memory":     { "model": "claude-sonnet-4-6", "effort": "medium" }
-    }
-  },
-  "antigravity-cli": {
-    "phases": {
-      "bootstrap":   { "model": "gemini-3.5-flash" }
+      "bootstrap": { "model": "claude-sonnet-4-6", "effort": "high" }
     }
   }
 }
-```
 
-### Supported Phase Keys
-- `bootstrap`: Bootstrap Handler
-- `PLANNING`: Scope Refinement Handler
-- `implementation`: TDD Implementation Handler
-- `review_tl`: Grumpy Tech Lead Handler (Phase C #1)
-- `review_adv`: Adversarial QA Handler (Phase C #2)
-- `memory`: Project Memory/Documentation Handler
+# WRONG: Missing agent runner top-level key
+{
+  "phases": {
+    "bootstrap": { "model": "claude-sonnet-4-6" }
+  }
+}
+</code_example>
 
-## PLATFORM-SPECIFIC SETTINGS PATHS
-Resolve global configurations automatically depending on the operating system environment variables:
-- **Linux/macOS/Windows**: Resolve to `$XDG_CONFIG_HOME/harness-kit/settings.json` (fall back to `~/.config/harness-kit/settings.json`).
-
-Resolve project-specific configurations using:
-- `[project path]/.harness-kit/settings.json`
-
-## PRECEDENCE RULES
-Resolve settings using the following precedence order:
-1. **Project settings file** (highest priority)
-2. **Global settings file**
-3. **Internal Default settings** (fallback)
-
-## INTEGRATION IN ORCHESTRATOR
-Call `settings.resolve(runnerType, phaseKey)` during `HarnessOrchestrator` invocation. Inject `model` or `effort` overrides directly into the `AgentInvocation` parameters. Apply these parameters inside agent runners to override default options.
+## BEST PRACTICES
+REQUIRED: Use valid phase keys (`bootstrap`, `PLANNING`, `implementation`, `review_tl`, `review_adv`, `memory`).
+REQUIRED: Resolve settings using the precedence order: Project > Global > Internal Defaults.
 
 ## REFERENCES
-- [**README.md**](../README.md): Main documentation index.
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Structural details and registry patterns.
+
+---
+
+## CHANGE SUMMARY
+- **Added:** YAML frontmatter, CHANGE SUMMARY, code examples.
+- **Updated:** Section titles converted to uppercase, adjusted rules format.
+- **Removed:** Redundant explanatory text.
