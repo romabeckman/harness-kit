@@ -22,6 +22,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
       '--stream-partial-output',
       '--force',
       '--trust',
+      '--approve-mcps',
     ]
 
     let model = this.getModelName(invocation)

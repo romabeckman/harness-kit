@@ -22,7 +22,7 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
       '--output-format', 'stream-json',
       '--verbose',
       '--input-format', 'text',
-      '--dangerously-skip-permissions',
+      '--permission-mode', 'bypassPermissions',
     ]
     const model = this.getModelName(invocation)
     if (model) args.push('--model', model)
