@@ -27,7 +27,7 @@ async function main(): Promise<void> {
   }
 
   if (cmd === 'init') {
-    const { cmdInit } = await import('./services/init-service')
+    const { cmdInit } = await import('./services/init-service.js')
     const initArgs = args.slice(1)
     await cmdInit(cwd, initArgs)
     return
@@ -39,7 +39,7 @@ async function main(): Promise<void> {
   }
 
   if (cmd === 'settings') {
-    const { cmdSettings } = await import('./services/settings-service')
+    const { cmdSettings } = await import('./services/settings-service.js')
     const settingsArgs = args.slice(1)
     await cmdSettings(cwd, settingsArgs)
     return

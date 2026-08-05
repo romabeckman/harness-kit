@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { RefinementHandler } from '../../../src/orchestrator/phases/RefinementHandler'
 import { Phase } from '../../../src/orchestrator/types'
+// @ts-ignore
 import { input } from '@inquirer/prompts'
 
 import { existsSync, readFileSync } from 'node:fs'

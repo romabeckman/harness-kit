@@ -1,4 +1,3 @@
-import { input, select } from "@inquirer/prompts";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { HarnessOrchestrator } from "../../orchestrator/HarnessOrchestrator";
@@ -56,6 +55,7 @@ export function resolveMode(mode?: RunMode): ResolvedMode {
 
 async function promptForMode(parsedMode?: RunMode): Promise<RunMode> {
   if (parsedMode) return parsedMode;
+  const { select } = await import("@inquirer/prompts");
   return select({
     message: "Select execution mode:",
     choices: [
@@ -71,6 +71,7 @@ async function promptForMode(parsedMode?: RunMode): Promise<RunMode> {
 async function determineAction(parsedAction?: RunAction, hasExistingSession?: boolean): Promise<RunAction> {
   if (!hasExistingSession) return "reset";
   if (parsedAction) return parsedAction;
+  const { select } = await import("@inquirer/prompts");
   return select({
     message: "What would you like to do?",
     choices: [
@@ -112,6 +113,7 @@ async function resolveResetOptions(
 
 async function resolveResumeOptions(parsed: ReturnType<typeof parseRunArgs>): Promise<string> {
   if (parsed.steeringMessage !== undefined) return parsed.steeringMessage;
+  const { input } = await import("@inquirer/prompts");
   return input({
     message: "Steering rules or state overrides (optional):",
     default: "",

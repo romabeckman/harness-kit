@@ -39,9 +39,9 @@ vi.mock('node:child_process', () => ({
 
 describe('AntigravityCLIRunner — TC-AGY', () => {
   beforeEach(async () => {
-    const { AgentRunnerRegistry } = await import('../../src/agent-runner/AgentRunnerRegistry')
+    const { AgentRunnerRegistry } = await import('../../src/agent-runner/AgentRunnerRegistry.js')
     AgentRunnerRegistry.clear()
-    await import('../../src/agent-runner/antigravity-cli/AntigravityCLIRunner')
+    await import('../../src/agent-runner/antigravity-cli/AntigravityCLIRunner.js')
   })
 
   afterEach(() => {
@@ -50,7 +50,7 @@ describe('AntigravityCLIRunner — TC-AGY', () => {
 
   // TC-AGY-03: self-registers as 'antigravity-cli'
   it('TC-AGY-03: self-registers as "antigravity-cli" on import', async () => {
-    const { AgentRunnerRegistry } = await import('../../src/agent-runner/AgentRunnerRegistry')
+    const { AgentRunnerRegistry } = await import('../../src/agent-runner/AgentRunnerRegistry.js')
     expect(AgentRunnerRegistry.has('antigravity-cli')).toBe(true)
   })
 })

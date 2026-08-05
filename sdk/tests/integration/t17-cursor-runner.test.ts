@@ -31,7 +31,7 @@ describe('CursorSDKRunner — TC-CU', () => {
       close: mockClose,
     })
 
-    await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner')
+    await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner.js')
   })
 
   afterEach(() => {
@@ -39,12 +39,12 @@ describe('CursorSDKRunner — TC-CU', () => {
   })
 
   it('TC-CU-03: self-registers as "cursor-sdk" on import', async () => {
-    const { AgentRunnerRegistry } = await import('../../src/agent-runner/AgentRunnerRegistry')
+    const { AgentRunnerRegistry } = await import('../../src/agent-runner/AgentRunnerRegistry.js')
     expect(AgentRunnerRegistry.has('cursor-sdk')).toBe(true)
   })
 
   it('TC-CU-01: correct configuration passed to Agent.create', async () => {
-    const { CursorSDKRunner } = await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner')
+    const { CursorSDKRunner } = await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner.js')
     const original = process.env.CURSOR_API_KEY
     process.env.CURSOR_API_KEY = 'test-cursor-sdk-key'
 
@@ -82,7 +82,7 @@ describe('CursorSDKRunner — TC-CU', () => {
   })
 
   it('TC-CU-01b: forwards reasoning-effort parameter to Agent.create model params', async () => {
-    const { CursorSDKRunner } = await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner')
+    const { CursorSDKRunner } = await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner.js')
     const original = process.env.CURSOR_API_KEY
     process.env.CURSOR_API_KEY = 'test-cursor-sdk-key'
 
@@ -111,8 +111,8 @@ describe('CursorSDKRunner — TC-CU', () => {
   })
 
   it('TC-CU-02: validateConfig throws MISSING_API_KEY when CURSOR_API_KEY absent', async () => {
-    const { AgentRunnerFactory } = await import('../../src/agent-runner/AgentRunnerFactory')
-    const { AgentRunnerError, AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
+    const { AgentRunnerFactory } = await import('../../src/agent-runner/AgentRunnerFactory.js')
+    const { AgentRunnerError, AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError.js')
 
     const original = process.env.CURSOR_API_KEY
     delete process.env.CURSOR_API_KEY
@@ -130,7 +130,7 @@ describe('CursorSDKRunner — TC-CU', () => {
   }, 15000) // 15 segundos
 
   it('TC-CU-02b: validateConfig passes when CURSOR_API_KEY is set', async () => {
-    const { AgentRunnerFactory } = await import('../../src/agent-runner/AgentRunnerFactory')
+    const { AgentRunnerFactory } = await import('../../src/agent-runner/AgentRunnerFactory.js')
     const original = process.env.CURSOR_API_KEY
     process.env.CURSOR_API_KEY = 'test-cursor-sdk-key'
 
@@ -143,8 +143,8 @@ describe('CursorSDKRunner — TC-CU', () => {
   })
 
   it('TC-CU-04: throws AgentRunnerError(UNKNOWN_ERROR) when run status is error', async () => {
-    const { CursorSDKRunner } = await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner')
-    const { AgentRunnerError, AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
+    const { CursorSDKRunner } = await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner.js')
+    const { AgentRunnerError, AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError.js')
 
     mockWait.mockResolvedValue({
       status: 'error',
@@ -176,8 +176,8 @@ describe('CursorSDKRunner — TC-CU', () => {
   })
 
   it('TC-CU-05: timeout throws AgentRunnerError(TIMEOUT)', async () => {
-    const { CursorSDKRunner } = await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner')
-    const { AgentRunnerError, AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError')
+    const { CursorSDKRunner } = await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner.js')
+    const { AgentRunnerError, AgentRunnerErrorCode } = await import('../../src/agent-runner/AgentRunnerError.js')
 
     mockWait.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ status: 'finished', result: 'done' }), 200)))
 
@@ -207,7 +207,7 @@ describe('CursorSDKRunner — TC-CU', () => {
   })
 
   it('TC-CU-06: AbortSignal rejects run() and cancels the run', async () => {
-    const { CursorSDKRunner } = await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner')
+    const { CursorSDKRunner } = await import('../../src/agent-runner/cursor-sdk/CursorSDKRunner.js')
     const original = process.env.CURSOR_API_KEY
     process.env.CURSOR_API_KEY = 'test-cursor-sdk-key'
 

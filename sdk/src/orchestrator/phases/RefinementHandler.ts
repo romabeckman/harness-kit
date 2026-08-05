@@ -2,7 +2,6 @@ import { join } from 'node:path'
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
-import { input } from '@inquirer/prompts'
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 
 export interface RefinementQuestion {
@@ -146,6 +145,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
   }
 
   private async collectAnswers(questions: RefinementQuestion[]): Promise<Array<{ question: string; answer: string }>> {
+    const { input } = await import('@inquirer/prompts')
     const qaPairs: Array<{ question: string; answer: string }> = []
 
     if (questions.length === 0) {

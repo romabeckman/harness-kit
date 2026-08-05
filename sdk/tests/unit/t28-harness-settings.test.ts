@@ -15,21 +15,21 @@ describe('T28 — HarnessSettings', () => {
 
   it('TC-HS-01: getGlobalSettingsPath checks HARNESS_SETTINGS_PATH env', async () => {
     process.env.HARNESS_SETTINGS_PATH = '/custom/path/settings.json'
-    const { HarnessSettings } = await import('../../src/settings/HarnessSettings')
+    const { HarnessSettings } = await import('../../src/settings/HarnessSettings.js')
     expect(HarnessSettings.getGlobalSettingsPath()).toBe('/custom/path/settings.json')
   })
 
   it('TC-HS-02: getGlobalSettingsPath checks XDG_CONFIG_HOME env', async () => {
     delete process.env.HARNESS_SETTINGS_PATH
     process.env.XDG_CONFIG_HOME = '/xdg/config'
-    const { HarnessSettings } = await import('../../src/settings/HarnessSettings')
+    const { HarnessSettings } = await import('../../src/settings/HarnessSettings.js')
     const path = HarnessSettings.getGlobalSettingsPath().replace(/\\/g, '/')
     expect(path).toContain('/xdg/config')
     expect(path).toContain('settings.json')
   })
 
   it('TC-HS-03: hasSettings checks runner existence', async () => {
-    const { HarnessSettings } = await import('../../src/settings/HarnessSettings')
+    const { HarnessSettings } = await import('../../src/settings/HarnessSettings.js')
     const settings = (HarnessSettings as any).load()
     // By default, it loads settings (and creates default global settings in a test env if not present)
     expect(settings.hasSettings('claude')).toBe(true)
@@ -37,7 +37,7 @@ describe('T28 — HarnessSettings', () => {
   })
 
   it('TC-HS-04: resolve returns runner phase settings', async () => {
-    const { HarnessSettings } = await import('../../src/settings/HarnessSettings')
+    const { HarnessSettings } = await import('../../src/settings/HarnessSettings.js')
     // Instantiate with custom map to test logic directly
     const customMap = {
       'my-runner': {
@@ -55,7 +55,7 @@ describe('T28 — HarnessSettings', () => {
   })
 
   it('TC-HS-05: getTimeoutMs retrieves phase-specific or runner-specific timeouts', async () => {
-    const { HarnessSettings } = await import('../../src/settings/HarnessSettings')
+    const { HarnessSettings } = await import('../../src/settings/HarnessSettings.js')
     const customMap = {
       'my-runner': {
         timeoutMs: 5000,
@@ -74,7 +74,7 @@ describe('T28 — HarnessSettings', () => {
   })
 
   it('TC-HS-06: mergeMaps merges base and overrides', async () => {
-    const { HarnessSettings } = await import('../../src/settings/HarnessSettings')
+    const { HarnessSettings } = await import('../../src/settings/HarnessSettings.js')
     const base = {
       'claude-cli': {
         timeoutMs: 1000,
@@ -106,7 +106,7 @@ describe('T28 — HarnessSettings', () => {
   })
 
   it('TC-HS-07: createLocalSettings creates local settings in project path', async () => {
-    const { HarnessSettings } = await import('../../src/settings/HarnessSettings')
+    const { HarnessSettings } = await import('../../src/settings/HarnessSettings.js')
     const { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } = await import('fs')
     const { tmpdir } = await import('os')
     const { join } = await import('path')
