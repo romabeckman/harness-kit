@@ -35,9 +35,9 @@ LANGUAGE — use Ubiquitous Language terms exclusively — no generic placeholde
 
 For each path in ${projectPaths}:
 ```
-1. Read docs/README.md
-2. Read docs/adr/TESTS.md  → test framework, organization patterns, execution commands
-3. Identify and read relevant docs under docs/adr/ and docs/feature/
+1. READ docs/.digest.md (orientation summary) + docs/.graph.json (relation topology) if present
+2. Use docs/.graph.json to locate 1-hop relevant documents matching ${scope}
+3. Fallback: if .digest.md/.graph.json missing, read docs/README.md + docs/adr/TESTS.md and scan docs/adr/ / docs/feature/
 ```
 
 Then load accumulated domain context:

@@ -60,7 +60,7 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 ```markdown
 # Project Documentation
 
-Index of project technical documentation for **[Project/Service Name]**. Use the links below to navigate the available documents.
+Index of project technical documentation for **[Project/Service Name]**. Use the links below to navigate the available documents and graph map topology.
 
 ## Documentation Index
 
@@ -68,12 +68,14 @@ Index of project technical documentation for **[Project/Service Name]**. Use the
 |----------|-------------|----------|
 | [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Architecture, folder organization, and code patterns for the project. | **Mandatory** |
 | [**TESTS.md**](./adr/TESTS.md) | Testing strategies, patterns, and execution commands. | **Mandatory** |
+| [**.graph.json**](./.graph.json) | Machine-readable document relation graph index for agent topology navigation. | **Mandatory** |
 
 ## Recommended Reading Order
 
 1. **adr/ARCHITECTURE.md** — technical foundation and project organization.
 2. **adr/TESTS.md** — code validation and quality.
-3. Additional documents in adr/ or feature/ folders as needed for the task.
+3. **.graph.json** — complete relation graph index for 1-hop document lookup.
+4. Additional documents in adr/ or feature/ folders as needed for the task.
 ```
 
 > **Note:** The template above shows the minimum expected documents. Add new rows to the table and the reading list to reflect the actual documents present in `docs/`.

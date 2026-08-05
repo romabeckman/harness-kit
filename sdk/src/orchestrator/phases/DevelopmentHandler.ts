@@ -148,7 +148,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       `</react_workflow>`,
       ``,
       `<strict_rules>`,
-      `- You MUST read \`docs/README.md\` (It is a guide to all the documents; load them into memory as needed), \`docs/adr/ARCHITECTURE.md\`, and \`docs/adr/TESTS.md\` in each project before writing any code`,
+      `- You MUST read \`docs/.digest.md\` and \`docs/.graph.json\` (or fallback to \`docs/README.md\`, \`docs/adr/ARCHITECTURE.md\`, and \`docs/adr/TESTS.md\`) in each project before writing any code`,
       `- Each project MUST have its own \`docs/adr\` and \`docs/feature\` folders where all ADRs and features are stored.`,
       `- If exists "Socratic Questions" section in the problem space, use it to reflect and write the code in the best possible way.`,
       `- Execute autonomously without pausing or asking for confirmation`,

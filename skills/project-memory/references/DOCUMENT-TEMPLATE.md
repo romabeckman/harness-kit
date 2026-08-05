@@ -19,11 +19,31 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 doc_type: [feature or adr]
 domain: [domain name]
 stack: [list of relevant technologies]
-depends_on: [list of related docs]
+node_id: "[type]:[slug]"
+tags: [tag1, tag2]
+edges:
+  - relation: [implements | depends_on | tested_by | references | child_of]
+    target: "[target_node_id]"
+    path: "[relative/path/to/doc.md]"
 updated: YYYY-MM-DD
 ---
 # [Document Title]
 [One sentence stating the purpose of this document.]
+
+```graph
+{
+  "node_id": "[type]:[slug]",
+  "domain": "[domain name]",
+  "implements": ["adr:architecture"],
+  "tested_by": ["adr:tests"],
+  "code_files": [
+    "relative/path/to/source1.ts"
+  ],
+  "test_files": [
+    "relative/path/to/test1.test.ts"
+  ]
+}
+```
 
 ## OVERVIEW
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]
@@ -89,6 +109,14 @@ FORBIDDEN: [Anti-pattern] — [brief justification]
 // Practical example
 optimized_code()
 </code_tip>
+
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["[Document Title]"] -->|[relation]| REL1["[Related Doc Title]"]
+    click REL1 "[relative/path/to/doc.md]"
+```
 
 ## REFERENCES
 

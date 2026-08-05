@@ -70,6 +70,7 @@ export class MemoryHandler extends AbstractPhaseHandler {
       `3. Read \`${backlogFile}\` to identify the specification \`Domain\`. Use it to place/locate the feature doc at \`${specsPattern}\`.`,
       `4. If an existing document already covers this feature's changes, fixes, updates or improvements, update that file. Otherwise, create a new one.`,
       `5. If architectural changes were introduced (new layers, patterns, integrations, test strategy changes), update the corresponding \`docs/adr/*.md\` file following its own rules file.`,
+      `6. Update \`docs/.digest.md\` and \`docs/.graph.json\` at the end of the operation.`,
       ``,
       `## File Organization`,
       `- Each project listed in \`<project_paths>\` must have its own \`docs/adr/\` and \`docs/feature/\` folders. These are the ONLY directories allowed for creation or modification inside \`docs/\`.`,

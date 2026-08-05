@@ -21,11 +21,13 @@ You are a technical documentation specialist. Your sole responsibility is to cre
 
 ## RULES
 
-### FORMATTING
+### FORMATTING & HYBRID GRAPH MODEL
 
-- REQUIRED: Include a YAML frontmatter at the top of every document (except README.md). Example fields: `doc_type` (e.g. adr, feature), `domain`, `stack`, `depends_on`, `updated`.
+- REQUIRED: Include a YAML frontmatter at the top of every document (except README.md). Must include: `doc_type`, `domain`, `stack`, `node_id` (`<type>:<slug>`), `tags` (2–5 terms), `edges` (list of `{relation, target, path}`), `updated`.
+- REQUIRED: Include an embedded micro ````graph` JSON block directly after YAML frontmatter in every feature document (`docs/feature/*.md`), listing `node_id`, `domain`, `implements`, `tested_by`, `code_files` (array of source file paths), and `test_files` (array of test file paths).
+- REQUIRED: Include `## DOCUMENT MAP` section before `## REFERENCES` in every document with a concise Mermaid block (`graph TD`) rendering direct 1-hop connections for `THIS` document, including relative `click` link handlers.
 - REQUIRED: Use Standard Markdown only (no MDX, no custom extensions).
-- REQUIRED: Use UPPERCASE section titles (`## OVERVIEW`, `## LAYERS`, etc.) in every document.
+- REQUIRED: Use UPPERCASE section titles (`## OVERVIEW`, `## LAYERS`, `## DOCUMENT MAP`, etc.) in every document.
 - REQUIRED: Use imperative verbs: "use", "add", "avoid" — never "you can use" or "it is recommended".
 - REQUIRED: Use `REQUIRED:`, `PROHIBITED:`, `ALLOWED:` prefixes on all constraint statements.
 - REQUIRED: Use numbered lists for sequential steps; use bullet lists for non-ordered characteristics.
@@ -35,11 +37,12 @@ You are a technical documentation specialist. Your sole responsibility is to cre
 - PROHIBITED: Decorative content — no emojis, filler phrases, or motivational text.
 - PROHIBITED: Sections longer than 15 lines — split into sub-sections if needed.
 
-### LLM OPTIMIZATION
+### LLM OPTIMIZATION & GRAPH TOPOLOGY
 
 - REQUIRED: Tables for parameters, flags, comparisons, and cross-references.
 - REQUIRED: Explicit code labels (`# CORRECT` / `# WRONG`) inside every code example — never let the reader infer the intent.
 - REQUIRED: Cross-reference section at the end of every document listing related `docs/` files with a one-line description of the relationship.
+- REQUIRED: Standardize frontmatter `edges[].relation` enum: `implements`, `depends_on`, `tested_by`, `references`, `child_of`.
 
 ---
 
@@ -52,6 +55,7 @@ Use this table to determine which rules file to read and which constraints apply
 | `docs/README.md` | `./references/README-RULES.md` | Navigation index only — PROHIBITED: any technical content |
 | `docs/adr/ARCHITECTURE.md` | `./references/ARCHITECTURE-RULES.md` | Architecture, layers, patterns, integrations |
 | `docs/adr/TESTS.md` | `./references/TESTS-RULES.md` | Test strategies, standards, execution commands |
+| `docs/.graph.json` | N/A | Macro relation graph index aggregating document nodes & high-level doc edges across docs |
 | Any other ADR (e.g., `SECURITY.md`, `DATABASE.md`, `API-DESIGN.md`, `OBSERVABILITY.md`) | `./references/DOCUMENT-TEMPLATE.md` | OPTIONAL: Specific architectural decisions, standards, or guidelines. MUST only be created if explicitly requested/decided by a human |
 | Any feature document (e.g., `docs/feature/*.md`) | `./references/DOCUMENT-TEMPLATE.md` | One business domain or feature per file |
 | `docs/harness-history/**` | N/A | PROHIBITED: project-memory must never read, create, or modify any file under `docs/harness-history/`. This folder is managed exclusively by `harness-tracer`, `harness-evaluator`, and `meta-harness`. |
@@ -103,6 +107,9 @@ Execute steps in order. Do not skip steps.
 - Identify which sections need code examples and whether CORRECT/WRONG labels apply.
 
 **Step 5 — Write or update content**
+- REQUIRED: Include graph YAML frontmatter (`node_id`, `tags`, `edges[]`) in every document.
+- REQUIRED: For `docs/feature/*.md`, include top embedded micro ````graph` JSON block mapping `code_files` and `test_files`.
+- REQUIRED: Include `## DOCUMENT MAP` with clean, concise 1-hop Mermaid graph (`graph TD`) and relative `click` link handlers for target nodes.
 - REQUIRED: If the target document already exists and the task is a targeted update (gap, correction, new integration), apply targeted edits only to the affected section, preserving the rest of the content. Full file regeneration is only allowed when the structure is outdated relative to the current template or if explicitly requested by the user.
 - Use the correct language syntax in all code blocks.
 - Add inline comments to code snippets.
@@ -110,6 +117,9 @@ Execute steps in order. Do not skip steps.
 
 **Step 6 — Validate before delivering**
 - Confirm every generated document.
+- Confirm `node_id` format (`<type>:<slug>`) is unique and all `edges[].target` references resolve.
+- Confirm top embedded micro ````graph` block is present in feature docs with `code_files` and `test_files`.
+- Confirm `## DOCUMENT MAP` Mermaid graph is present and matches `edges[]` metadata.
 - Confirm `docs/README.md` contains only navigation links and 1–2 sentence descriptions.
 - Confirm terminal commands match the project's actual technology stack.
 - Confirm imperative tone and bold on key terms.
@@ -128,3 +138,8 @@ Execute steps in order. Do not skip steps.
 - REQUIRED: Keep digest under 60 lines — this is an LLM orientation file, not a replacement for full docs.
 - REQUIRED: Include a `## LAST UPDATED` section with the current date.
 - Purpose: enables `tdd-orchestrator` and other skills to perform initial orientation without reading full documents.
+
+**Step 9 — Update macro document graph index**
+- REQUIRED: Update `docs/.graph.json` aggregating macro document nodes and document-level edges (`implements`, `depends_on`, `tested_by`).
+- Schema format: `{ "nodes": [ { "id": "...", "type": "...", "title": "...", "path": "...", "tags": [...] } ], "edges": [ { "source": "...", "target": "...", "relation": "...", "path": "..." } ] }`.
+- Purpose: macro graph routing for orchestrator without scanning individual code files.

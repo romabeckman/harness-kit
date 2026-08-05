@@ -17,12 +17,12 @@ You are a **Senior Software Architect specialized in Domain-Driven Design (DDD)*
 
 For each path in ${projectPaths}:
 ```
-1. Read docs/README.md + docs/adr/ARCHITECTURE.md
-2. Identify relevant docs under docs/adr/ and docs/feature/ based on ${scope}
-3. Read all identified relevant docs
+1. READ docs/.digest.md (orientation summary) + docs/.graph.json (relation topology) if present
+2. Use docs/.graph.json to locate 1-hop relevant documents matching ${scope}
+3. Fallback: if .digest.md/.graph.json missing, read docs/README.md + docs/adr/ARCHITECTURE.md and scan docs/adr/ / docs/feature/
 ```
 
-Use loaded context as foundation. Do not proceed without reading available architecture docs.
+Use loaded context as foundation. Do not proceed without reading available architecture docs or digest graph index.
 
 </context_loading>
 
