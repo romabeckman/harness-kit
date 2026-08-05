@@ -2,7 +2,6 @@ import { IAgentRunner } from '../IAgentRunner'
 import { Runner, type AgentInvocation, type AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
-import { CopilotClient, approveAll } from '@github/copilot-sdk'
 import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
 
 export interface CopilotSDKRunnerConfig {
@@ -24,6 +23,7 @@ export class CopilotSDKRunner implements IAgentRunner {
   }
 
   async run(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput> {
+    const { CopilotClient, approveAll } = await import('@github/copilot-sdk')
     const client = new CopilotClient({
       workingDirectory: invocation.workspacePath ?? process.cwd(),
       env: invocation.env,

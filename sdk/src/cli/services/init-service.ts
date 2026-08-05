@@ -1,4 +1,3 @@
-import { input, confirm } from '@inquirer/prompts'
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { FileStateManager } from '../../file-state/FileStateManager'
@@ -8,6 +7,7 @@ import { StartupBanner } from '../../ui/StartupBanner'
 import { DEFAULT_LINE_LENGTH } from '../utils/constants'
 
 export async function cmdInit(cwd: string, args: string[]): Promise<void> {
+  const { input, confirm } = await import('@inquirer/prompts')
   console.log('\n' + StartupBanner.render(process.stdout.columns || DEFAULT_LINE_LENGTH) + '\n')
 
   const productDir = join(cwd, 'docs', 'product')
@@ -90,7 +90,7 @@ export async function cmdInit(cwd: string, args: string[]): Promise<void> {
     })
 
     if (createSettings) {
-      const { HarnessSettings } = await import('../../settings/HarnessSettings')
+      const { HarnessSettings } = await import('../../settings/HarnessSettings.js')
       const createdPath = HarnessSettings.createLocalSettings(cwd)
       console.log(`${AnsiHelpers.green('✓')} Local settings.json created at ${createdPath}\n`)
     }
@@ -104,7 +104,7 @@ export async function cmdInit(cwd: string, args: string[]): Promise<void> {
 
   if (launch) {
     // Dynamically import to avoid circular dependencies and only load when needed
-    const { cmdRun } = await import('./run-service')
+    const { cmdRun } = await import('./run-service.js')
     const runArgs = [...args.filter(arg => arg !== '--resume'), '--reset']
     await cmdRun(cwd, runArgs, true)
   } else {

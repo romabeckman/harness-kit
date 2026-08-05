@@ -13,14 +13,15 @@ Index of project technical documentation for **harness-kit SDK**. Use the links 
 | [**AGENT-RUNNERS.md**](./adr/AGENT-RUNNERS.md) | Outbound LLM runner strategies and dynamic registries. | Optional |
 | [**TELEMETRY.md**](./adr/TELEMETRY.md) | Token ledger tracking, cost auditing, and rate limit halts. | Optional |
 | [**STATE-PERSISTENCE.md**](./adr/STATE-PERSISTENCE.md) | FileState atomic writes and Markdown/JSON parsing. | Optional |
-| [**sdk_cli.md**](./feature/sdk_cli.md) | CLI commands (`hrns init`, `run`, `report`), arg parsing, and interactive wizards. | Optional |
-| [**sdk_agent_runner.md**](./feature/sdk_agent_runner.md) | Agent runner strategies, CLI flags (`--agent`, `--model`), and `AgentInvocation` interface. | Optional |
-| [**sdk_settings.md**](./feature/sdk_settings.md) | Phase-specific model and effort settings per runner with OS-aware loading. | Optional |
-| [**sdk_core.md**](./feature/sdk_core.md) | Architectural details of core SDK ports and adapters, and full public API table. | Optional |
-| [**sdk_package.md**](./feature/sdk_package.md) | SDK package build and release configuration. | Optional |
-| [**sdk_state.md**](./feature/sdk_state.md) | SDK state persistence and recovery logic. | Optional |
-| [**sdk_steering.md**](./feature/sdk_steering.md) | Session steering: `SteeringAnalyzer`, `steeringRules` config, and rollback/rule actions. | Optional |
-| [**sdk_terminal_ui.md**](./feature/sdk_terminal_ui.md) | Terminal progress spinner, progress bar, and ANSI color helpers. | Optional |
+| [**SDK_CLI.md**](./feature/SDK_CLI.md) | CLI commands (`hrns init`, `run`, `report`), arg parsing, and interactive wizards. | Optional |
+| [**SDK_AGENT_RUNNER.md**](./feature/SDK_AGENT_RUNNER.md) | Agent runner strategies, CLI flags (`--agent`, `--model`), and `AgentInvocation` interface. | Optional |
+| [**SDK_SETTINGS.md**](./feature/SDK_SETTINGS.md) | Phase-specific model and effort settings per runner with OS-aware loading. | Optional |
+| [**SDK_CORE.md**](./feature/SDK_CORE.md) | Architectural details of core SDK ports and adapters, and full public API table. | Optional |
+| [**SDK_PACKAGE.md**](./feature/SDK_PACKAGE.md) | SDK package build and release configuration. | Optional |
+| [**SDK_STATE.md**](./feature/SDK_STATE.md) | SDK state persistence and recovery logic. | Optional |
+| [**SDK_STEERING.md**](./feature/SDK_STEERING.md) | Session steering: `SteeringAnalyzer`, `steeringRules` config, and rollback/rule actions. | Optional |
+| [**SDK_TERMINAL_UI.md**](./feature/SDK_TERMINAL_UI.md) | Terminal progress spinner, progress bar, and ANSI color helpers. | Optional |
+| [**E2E_TESTING_SUITE.md**](./feature/E2E_TESTING_SUITE.md) | End-to-End integration and CLI test suite specifications and setup. | Optional |
 
 ## RECOMMENDED READING ORDER
 

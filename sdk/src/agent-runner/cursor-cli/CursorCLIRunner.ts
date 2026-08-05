@@ -22,12 +22,18 @@ export class CursorCLIRunner extends AbstractCliRunner {
       '--stream-partial-output',
       '--force',
       '--trust',
+      '--approve-mcps',
     ]
 
-    const model = this.getModelName(invocation)
-    if (model) args.push('--model', model)
+    let model = this.getModelName(invocation)
     const effort = this.getEffort(invocation)
-    if (effort) args.push('--effort', effort)
+
+    if (model) {
+      if (effort && !model.includes('[')) {
+        model = `${model}[effort=${effort}]`
+      }
+      args.push('--model', model)
+    }
     if (invocation.workspacePath) args.push('--workspace', invocation.workspacePath)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
     return args

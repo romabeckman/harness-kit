@@ -1,4 +1,3 @@
-import { select } from '@inquirer/prompts'
 import { join, dirname } from 'node:path'
 import { existsSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { execSync } from 'node:child_process'
@@ -7,6 +6,7 @@ import { DEFAULT_SETTINGS } from '../../settings/DefaultSettings'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
 
 export async function cmdSettings(cwd: string, args: string[] = []): Promise<void> {
+  const { select } = await import('@inquirer/prompts')
   let subcommand = args[0];
 
   if (!subcommand) {

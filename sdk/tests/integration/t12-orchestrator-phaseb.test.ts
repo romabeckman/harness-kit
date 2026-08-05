@@ -171,16 +171,16 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
       }, { workingDir: tmpDir })
 
       // Re-entry: spec files present, tasks not all completed → DEVELOPMENT
-      const { Phase } = await import('../../src/orchestrator/types')
+      const { Phase } = await import('../../src/orchestrator/types.js')
       expect(orchestrator.getState().currentPhase).toBe(Phase.DEVELOPMENT)
 
       await orchestrator.run()
 
       // Verify no duplicate task rows
-      const { FileStateManager } = await import('../../src/file-state/FileStateManager')
+      const { FileStateManager } = await import('../../src/file-state/FileStateManager.js')
       const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
       const tasks = fsm.loadDevelopmentState()
-      const t01Tasks = tasks.filter(t => t.taskId === 'T01')
+      const t01Tasks = tasks.filter((t: any) => t.taskId === 'T01')
       expect(t01Tasks).toHaveLength(1) // no duplicates
     })
   })

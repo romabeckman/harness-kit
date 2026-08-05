@@ -140,6 +140,7 @@ class DevelopmentHandler extends AbstractPhaseHandler {
 ## REFERENCES
 - [**README.md**](../README.md): Main documentation index.
 - [**TESTS.md**](./TESTS.md): Testing strategies and commands.
+- [**E2E_TESTING_SUITE.md**](../feature/E2E_TESTING_SUITE.md): End-to-End integration and CLI test suite specification.
 - [**sdk_agent_runner.md**](../feature/sdk_agent_runner.md): Implementation details of agent runners including strategy registration and CLI flags.
 - [**sdk_core.md**](../feature/sdk_core.md): Public API surface, orchestrator types, and known limitations.
 - [**sdk_terminal_ui.md**](../feature/sdk_terminal_ui.md): Terminal progress, ANSI helpers, and spinner integration.

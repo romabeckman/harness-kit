@@ -193,7 +193,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
 
     await orchestrator.run()
 
-    const { FileStateManager } = await import('../../src/file-state/FileStateManager')
+    const { FileStateManager } = await import('../../src/file-state/FileStateManager.js')
     const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
     const cfg = fsm.loadBootstrapConfig()
     // After run() completes, last persisted phase should be set
@@ -396,7 +396,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
     await orchestrator.runBootstrapOnly()
 
     // Verify it is saved in SCOPE.md
-    const { FileStateManager } = await import('../../src/file-state/FileStateManager')
+    const { FileStateManager } = await import('../../src/file-state/FileStateManager.js')
     const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
     expect(fsm.loadScope()).toBe('my-custom-original-project-scope')
 
@@ -524,7 +524,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
     // Read the saved config and verify fields were merged
     const { readFileSync } = await import('fs')
     const savedConfig = JSON.parse(readFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), 'utf-8'))
-    const { FileStateManager } = await import('../../src/file-state/FileStateManager')
+    const { FileStateManager } = await import('../../src/file-state/FileStateManager.js')
     const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
 
     expect(fsm.loadScope()).toBe('my new scope')

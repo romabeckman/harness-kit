@@ -1,4 +1,3 @@
-import { input, select, editor, number } from '@inquirer/prompts'
 import { validateScope, resolveDirs, validateDirs } from '../utils/cli-utils'
 import { DEFAULT_SCORE, DEFAULT_REWORKS } from '../utils/constants'
 
@@ -11,6 +10,7 @@ export interface ResetOptions {
 }
 
 export async function resetOptions(cwd: string): Promise<ResetOptions> {
+  const { input, select, editor, number } = await import('@inquirer/prompts')
   let scope = ''
   let projectPaths: string[] = []
   let score = DEFAULT_SCORE

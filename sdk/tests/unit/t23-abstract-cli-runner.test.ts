@@ -47,7 +47,7 @@ describe('T23 — AbstractCliRunner', () => {
   })
 
   it('TC-AB-01: buildPrompt constructs correct string representation', async () => {
-    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner.js')
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
@@ -64,7 +64,7 @@ describe('T23 — AbstractCliRunner', () => {
   })
 
   it('TC-AB-02: getModelName falls back to config or invocation model', async () => {
-    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner.js')
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
@@ -78,7 +78,7 @@ describe('T23 — AbstractCliRunner', () => {
   })
 
   it('TC-AB-02b: getEffort prioritizes runner config and cancels when empty string is passed', async () => {
-    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner.js')
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
@@ -96,7 +96,7 @@ describe('T23 — AbstractCliRunner', () => {
   })
 
   it('TC-AB-03: parseOutput default is empty object', async () => {
-    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner.js')
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
@@ -108,7 +108,7 @@ describe('T23 — AbstractCliRunner', () => {
   })
 
   it('TC-AB-04: checkParsed default is null', async () => {
-    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner.js')
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
@@ -124,7 +124,7 @@ describe('T23 — AbstractCliRunner', () => {
       default: vi.fn(() => makeChildMock([], [], [])),
     }))
 
-    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner.js')
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
@@ -143,7 +143,7 @@ describe('T23 — AbstractCliRunner', () => {
       default: vi.fn(() => makeChildMock([], [], [])),
     }))
 
-    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner.js')
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
@@ -171,7 +171,7 @@ describe('T23 — AbstractCliRunner', () => {
       }),
     }))
 
-    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner.js')
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
@@ -188,7 +188,7 @@ describe('T23 — AbstractCliRunner', () => {
       default: vi.fn(() => makeChildMock([{ name: 'close', arg: 1, delay: 20 }], [], ['rate limit exceeded'])),
     }))
 
-    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner.js')
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
@@ -219,7 +219,7 @@ describe('T23 — AbstractCliRunner', () => {
       }),
     }))
 
-    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner')
+    const { AbstractCliRunner } = await import('../../src/agent-runner/AbstractCliRunner.js')
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
