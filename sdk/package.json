@@ -28,6 +28,8 @@
     "build": "tsc -p tsconfig.build.json && node -e \"const fs=require('fs');const f='dist/cli/run.js';const c=fs.readFileSync(f,'utf8');if(!c.startsWith('#!/usr/bin/env node')){fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c);fs.chmodSync(f,'755')}\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:e2e:clean": "rimraf tests/e2e/.temp",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test"
   },
