@@ -1,3 +1,15 @@
+---
+doc_type: adr
+domain: architecture
+stack: [typescript, nodejs]
+node_id: "adr:architecture"
+tags: [architecture, ports-and-adapters, state-machine, orchestrator]
+edges:
+  - relation: tested_by
+    target: "adr:tests"
+    path: "./TESTS.md"
+updated: "2026-08-05"
+---
 # Arquitetura do Projeto
 
 ## OVERVIEW
@@ -137,11 +149,21 @@ class DevelopmentHandler extends AbstractPhaseHandler {
 | Antigravity CLI | Execution of Google coding agent | Spawn subprocess using agy binary |
 | `hrns` CLI | Command-line interface for running and steering feature orchestration | Spawn and run local executable via `npm run` or global symlink |
 
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["Architecture ADR"] -->|tested_by| TESTS["Tests ADR"]
+    THIS -->|implemented_by| CORE["SDK Core Feature"]
+    click TESTS "./TESTS.md"
+    click CORE "../feature/SDK_CORE.md"
+```
+
 ## REFERENCES
 - [**README.md**](../README.md): Main documentation index.
 - [**TESTS.md**](./TESTS.md): Testing strategies and commands.
 - [**E2E_TESTING_SUITE.md**](../feature/E2E_TESTING_SUITE.md): End-to-End integration and CLI test suite specification.
-- [**sdk_agent_runner.md**](../feature/sdk_agent_runner.md): Implementation details of agent runners including strategy registration and CLI flags.
-- [**sdk_core.md**](../feature/sdk_core.md): Public API surface, orchestrator types, and known limitations.
-- [**sdk_terminal_ui.md**](../feature/sdk_terminal_ui.md): Terminal progress, ANSI helpers, and spinner integration.
-- [**sdk_steering.md**](../feature/sdk_steering.md): Session steering analyzer and `steeringRules` configuration.
+- [**SDK_AGENT_RUNNER.md**](../feature/SDK_AGENT_RUNNER.md): Implementation details of agent runners including strategy registration and CLI flags.
+- [**SDK_CORE.md**](../feature/SDK_CORE.md): Public API surface, orchestrator types, and known limitations.
+- [**SDK_TERMINAL_UI.md**](../feature/SDK_TERMINAL_UI.md): Terminal progress, ANSI helpers, and spinner integration.
+- [**SDK_STEERING.md**](../feature/SDK_STEERING.md): Session steering analyzer and `steeringRules` configuration.

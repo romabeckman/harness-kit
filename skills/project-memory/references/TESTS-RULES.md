@@ -39,6 +39,12 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 doc_type: adr
 domain: testing
 stack: [list of testing frameworks]
+node_id: "adr:tests"
+tags: [testing, unit-tests, e2e-tests, coverage]
+edges:
+  - relation: tests
+    target: "adr:architecture"
+    path: "./ARCHITECTURE.md"
 updated: YYYY-MM-DD
 ---
 # Testing Protocol
@@ -80,6 +86,19 @@ FORBIDDEN: [e.g., Tests that depend on execution order]
 ## TROUBLESHOOTING
 - **Flaky tests:** [How to identify and report]
 - **Debug mode:** [Command or flag to run tests with verbose/debug output]
+
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["Tests ADR"] -->|tests| ARCH["Architecture ADR"]
+    click ARCH "./ARCHITECTURE.md"
+```
+
+## REFERENCES
+
+- [**README.md**](../README.md): Main documentation index.
+- [**ARCHITECTURE.md**](./ARCHITECTURE.md): System architecture and patterns.
 ```
 
 ---
