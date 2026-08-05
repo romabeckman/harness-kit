@@ -75,7 +75,8 @@ describe('T03 — ClaudeCLIRunner', () => {
     expect(args).toContain('--verbose')
     expect(args).toContain('--input-format')
     expect(args).toContain('text')
-    expect(args).toContain('--dangerously-skip-permissions')
+    expect(args).toContain('--permission-mode')
+    expect(args).toContain('bypassPermissions')
   })
 
   it('adds --agent <agent> arg when invocation.agent is set', async () => {
