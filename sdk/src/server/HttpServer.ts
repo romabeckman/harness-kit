@@ -48,6 +48,7 @@ export class HttpServer {
       port: this.port,
       host: this.host,
       allowedWorkspaces,
+      auth: config.auth,
     }
 
     this.routeHandlers = new RouteHandlers(

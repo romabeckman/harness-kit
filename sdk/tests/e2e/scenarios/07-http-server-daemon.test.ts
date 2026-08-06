@@ -66,8 +66,15 @@ function makeHttpRequest(
 describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
   let server: HttpServer | undefined
   const tempDir = join(process.cwd(), 'tests', 'e2e', '.temp', 'http-server-e2e')
+  const originalEnv = { ...process.env }
 
   beforeEach(() => {
+    process.env = { ...originalEnv }
+    delete process.env.AUTH_MODE
+    delete process.env.AUTH_BASIC_USER
+    delete process.env.AUTH_BASIC_PASS
+    delete process.env.AUTH_BEARER_TOKEN
+
     if (existsSync(tempDir)) {
       rmSync(tempDir, { recursive: true, force: true })
     }
@@ -80,6 +87,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
   })
 
   afterEach(async () => {
+    process.env = { ...originalEnv }
     if (server) {
       await server.stop()
       server = undefined
@@ -270,11 +278,9 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     const port = server.getPort()
 
     // 1. Unauthenticated request -> HTTP 401 + WWW-Authenticate header
-    process.env.AUTH_MODE = 'basic'
     const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { scope: 'test' })
     expect(unauthRes.statusCode).toBe(401)
     expect(unauthRes.headers['www-authenticate']).toContain('Basic realm=')
-    delete process.env.AUTH_MODE
 
     // 2. Request with valid Basic Auth -> HTTP 202
     const validCredentials = Buffer.from('admin:super_secret_pass').toString('base64')
