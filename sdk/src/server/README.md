@@ -1,0 +1,160 @@
+# Harness SDK HTTP Server
+
+This directory (`src/server/`) contains the headless, non-interactive HTTP daemon capability for `@romabeckman/hrns`. It allows external clients, CI/CD runners, and Docker containers to trigger and monitor autonomous TDD orchestration loops via RESTful APIs.
+
+---
+
+## Quick Start
+
+### 1. Programmatic Usage (Node.js / TypeScript)
+
+You can import and start the server directly within your Node.js application:
+
+```typescript
+import { startHttpServer } from '@romabeckman/hrns'
+
+// Start server on custom port/host (defaults: port 3000, host '0.0.0.0')
+const server = await startHttpServer({
+  port: 3000,
+  host: '0.0.0.0',
+  allowedWorkspaces: ['/workspace/my-project'], // optional path restriction
+})
+
+console.log(`HTTP Server running at http://localhost:${server.getPort()}`)
+
+// To stop the server gracefully (drains open connections and stops worker loop):
+// await server.stop()
+```
+
+---
+
+### 2. Standalone Script
+
+After building the project (`npm run build`), you can run the compiled HTTP server script directly:
+
+```bash
+# Default settings (PORT 3000, HOST 0.0.0.0)
+node dist/server/index.js
+
+# Custom port and host via environment variables
+PORT=8080 HOST=127.0.0.1 node dist/server/index.js
+```
+
+---
+
+### 3. Running with Docker
+
+Build and run using the production multi-stage `Dockerfile`:
+
+```bash
+# 1. Build the Docker image
+docker build -t hrns-server:latest .
+
+# 2. Run container mounting your source workspace to /workspace
+docker run -d \
+  -p 3000:3000 \
+  -v /path/to/your/project:/workspace \
+  -e PORT=3000 \
+  -e HOST=0.0.0.0 \
+  --name hrns-daemon \
+  hrns-server:latest
+```
+
+---
+
+### 4. Running with Docker Compose
+
+Use `docker-compose.yml` for zero-configuration local execution:
+
+```bash
+# Start container in background
+docker compose up -d
+
+# Inspect server logs
+docker compose logs -f
+
+# Check container health status
+docker compose ps
+```
+
+---
+
+## Configuration & Environment Variables
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `PORT` | `3000` | HTTP port to listen on |
+| `HOST` | `0.0.0.0` | Host interface to bind (`0.0.0.0` for all interfaces, `127.0.0.1` for localhost only) |
+| `ALLOWED_WORKSPACES` | *None* | Comma-separated list of allowed workspace directories/repos on VM (e.g. `/workspaces/repo-a,/workspaces/repo-b`) |
+| `GIT_REPOSITORIES` | *None* | Alias for `ALLOWED_WORKSPACES` |
+
+---
+
+## Mandatory Git Worktree & Automated Commit/Push
+
+In HTTP daemon execution mode:
+1. **Mandatory Worktree Isolation**: All background jobs run inside an isolated Git worktree (`.worktrees/<jobId>`) by default. This enables multiple concurrent executions on the same repository without branch checkout conflicts.
+2. **Automated Commit & Push**: Upon successful completion of the TDD orchestrator loop:
+   - The server inspects modified files and stages them (`git add -A`).
+   - Commits changes (`git commit -m "feat(harness): completed orchestration job <jobId> [<scope>]"`).
+   - Pushes branch to remote origin (`git push origin <branch>`).
+3. **Clean Up**: The worktree is safely deleted in a `finally` block, leaving the main repository clean.
+
+---
+
+## API Endpoints
+
+Once the server is running, the following REST endpoints are available:
+
+| Method | Endpoint | Description | Response Code |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/orchestrator/run` | Enqueues a background orchestration job | `202 Accepted` |
+| `GET` | `/orchestrator/status/:id` | Polls current status and progress for job `:id` | `200 OK` / `404 Not Found` |
+| `GET` | `/health` | Liveness & readiness probe (active/queued jobs, memory usage) | `200 OK` |
+| `GET` | `/docs` | Interactive Swagger UI documentation page | `200 OK` (HTML) |
+| `GET` | `/docs/openapi.json` | Raw OpenAPI 3.0.3 specification JSON | `200 OK` (JSON) |
+
+---
+
+## Triggering an Orchestration Job
+
+### Triggering an Orchestration Job on Remote Server (Using Project Alias)
+
+The client sending the request does **not** need to know the internal server filesystem paths (`projectPaths`). Instead, the client sends a clean project alias (`"project": "backend"`):
+
+```bash
+curl -X POST http://localhost:3000/orchestrator/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scope": "implement-user-authentication",
+    "project": "backend",
+    "branch": "feature/login-auth",
+    "mode": "fast",
+    "useWorktree": true
+  }'
+```
+
+- **`project`**: Project alias configured in server environment variables (e.g. `PROJECT_MAPPINGS` or `PROJECT_BACKEND_PATH`). The server resolves the internal path and git URL automatically.
+- **`branch`**: Target Git branch to checkout or build upon.
+- **`useWorktree`**: Spawns an isolated Git worktree for parallel job isolation.
+
+### Example Response (`HTTP 202 Accepted`)
+
+```json
+{
+  "jobId": "e4e9d777-3db4-44d1-907e-bff18ee3342e",
+  "status": "queued",
+  "workspacePath": "/workspace",
+  "enqueuedAt": "2026-08-06T17:50:00.000Z",
+  "statusUrl": "/orchestrator/status/e4e9d777-3db4-44d1-907e-bff18ee3342e"
+}
+```
+
+---
+
+## Non-Interactive Invariants
+
+> ⚠️ **Important Execution Constraints:**
+> - Interactive pre-planning refinement (`refine: true`) requires terminal TTY input and is **forbidden** in HTTP mode. The server returns `HTTP 400 Bad Request`.
+> - Interactive `mode: "deep_thinking"` is forbidden in HTTP mode and returns `HTTP 400 Bad Request`.
+> - Path traversal sequences (`..`) in `projectPaths` are blocked (`HTTP 400 Bad Request`).

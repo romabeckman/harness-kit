@@ -78,3 +78,19 @@ export type {
   ReviewPayload,
   MemoryPayload,
 } from './context-assembler/types'
+
+// HTTP Server
+export { HttpServer, startHttpServer } from './server'
+export { HttpServerError } from './server/types'
+export type {
+  HttpServerConfig,
+  HealthStatusVo,
+  OpenApiSpec,
+  OrchestrationJob,
+  JobStatus,
+  RunRequestDto,
+  RunRequestDtoExtended,
+  RunResponseDto,
+  JobStatusDto,
+} from './server'
+
