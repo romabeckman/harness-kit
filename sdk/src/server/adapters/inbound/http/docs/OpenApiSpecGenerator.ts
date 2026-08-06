@@ -136,6 +136,53 @@ export class OpenApiSpecGenerator {
             },
           },
         },
+        '/orchestrator/settings': {
+          get: {
+            summary: 'Get local project model settings',
+            description: 'Consults local settings.json model configuration for the target project workspace.',
+            parameters: [
+              {
+                name: 'projectPath',
+                in: 'query',
+                required: false,
+                description: 'Absolute path to target workspace directory',
+                schema: { type: 'string' },
+              },
+            ],
+            responses: {
+              '200': {
+                description: 'Local project model settings object',
+                content: {
+                  'application/json': {
+                    schema: { type: 'object' },
+                  },
+                },
+              },
+            },
+          },
+          post: {
+            summary: 'Create or update local project model settings',
+            description: 'Saves model configuration in project local .harness-kit/settings.json file.',
+            requestBody: {
+              required: true,
+              content: {
+                'application/json': {
+                  schema: { type: 'object' },
+                },
+              },
+            },
+            responses: {
+              '200': {
+                description: 'Settings saved successfully',
+                content: {
+                  'application/json': {
+                    schema: { type: 'object' },
+                  },
+                },
+              },
+            },
+          },
+        },
         '/health': {
           get: {
             summary: 'Health check',

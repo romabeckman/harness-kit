@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import http from 'node:http'
-import { existsSync, mkdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import spawn from 'cross-spawn'
 import { HttpServer } from '../../../src/server/HttpServer'
@@ -130,6 +130,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     expect(jsonRes.json.openapi).toBe('3.0.3')
     expect(jsonRes.json.paths['/orchestrator/run']).toBeDefined()
     expect(jsonRes.json.paths['/orchestrator/jobs/{id}/resume']).toBeDefined()
+    expect(jsonRes.json.paths['/orchestrator/settings']).toBeDefined()
     expect(jsonRes.json.paths['/health']).toBeDefined()
   })
 
@@ -319,5 +320,39 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     const notFoundRes = await makeHttpRequest(port, '/orchestrator/status/non-existent-uuid')
     expect(notFoundRes.statusCode).toBe(404)
     expect(notFoundRes.json.code).toBe('JOB_NOT_FOUND')
+  })
+
+  it('9. Local Project Settings Management (GET & POST /orchestrator/settings)', async () => {
+    server = new HttpServer({ port: 0, host: '127.0.0.1' })
+    await server.start()
+    const port = server.getPort()
+
+    // 1. GET settings (creates local .harness-kit/settings.json if not existing)
+    const getRes = await makeHttpRequest(port, `/orchestrator/settings?projectPath=${encodeURIComponent(tempDir)}`)
+    expect(getRes.statusCode).toBe(200)
+    expect(getRes.json.projectPath).toBe(tempDir)
+    expect(getRes.json.settings).toBeDefined()
+
+    const localSettingsFile = join(tempDir, '.harness-kit', 'settings.json')
+    expect(existsSync(localSettingsFile)).toBe(true)
+
+    // 2. POST settings (updates local settings file)
+    const postRes = await makeHttpRequest(port, '/orchestrator/settings', 'POST', {
+      projectPath: tempDir,
+      settings: {
+        'claude-cli': {
+          timeoutMs: 120000,
+          phases: {
+            DEVELOPMENT: { timeoutMs: 300000 },
+          },
+        },
+      },
+    })
+
+    expect(postRes.statusCode).toBe(200)
+    expect(postRes.json.settings['claude-cli']?.timeoutMs).toBe(120000)
+
+    const updatedContent = JSON.parse(readFileSync(localSettingsFile, 'utf-8'))
+    expect(updatedContent['claude-cli']?.timeoutMs).toBe(120000)
   })
 })

@@ -90,6 +90,38 @@ describe('RouteHandlers Integration Tests', () => {
     expect(statusParsed.status).toBe('queued')
   })
 
+  it('GET /orchestrator/settings -> 200 OK with model settings', async () => {
+    const req = new MockIncomingMessage('/orchestrator/settings', 'GET')
+    const res = new MockServerResponse()
+
+    await routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+
+    expect(res.statusCode).toBe(200)
+    const parsed = JSON.parse(res.body)
+    expect(parsed.projectPath).toBeDefined()
+    expect(parsed.settings).toBeDefined()
+  })
+
+  it('POST /orchestrator/settings -> 200 OK creating/updating settings', async () => {
+    const req = new MockIncomingMessage('/orchestrator/settings', 'POST')
+    const res = new MockServerResponse()
+
+    const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+    const jsonBody = JSON.stringify({
+      settings: {
+        'claude-cli': { timeoutMs: 45000 },
+      },
+    })
+
+    req.emit('data', Buffer.from(jsonBody))
+    req.emit('end')
+    await handlePromise
+
+    expect(res.statusCode).toBe(200)
+    const parsed = JSON.parse(res.body)
+    expect(parsed.settings['claude-cli']?.timeoutMs).toBe(45000)
+  })
+
   it('IT-2.2.3: GET /health -> 200 OK', async () => {
     const req = new MockIncomingMessage('/health', 'GET')
     const res = new MockServerResponse()

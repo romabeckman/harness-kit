@@ -11,6 +11,8 @@ import {
   GetOpenApiDocsUseCase,
   ResumeOrchestratorJobUseCase,
   CleanJobsAndWorktreesUseCase,
+  GetSettingsUseCase,
+  UpdateSettingsUseCase,
 } from '../../../../application/use-cases'
 import { AuthStrategyFactory } from '../../../outbound/auth/AuthStrategyFactory'
 import type { IAuthStrategy } from '../../../outbound/auth/types'
@@ -22,6 +24,8 @@ export class RouteHandlers {
   private docsUseCase: GetOpenApiDocsUseCase
   private resumeJobUseCase: ResumeOrchestratorJobUseCase
   private cleanUseCase: CleanJobsAndWorktreesUseCase
+  private getSettingsUseCase: GetSettingsUseCase
+  private updateSettingsUseCase: UpdateSettingsUseCase
   private authStrategy: IAuthStrategy
   private config?: HttpServerConfig
 
@@ -38,6 +42,8 @@ export class RouteHandlers {
     this.docsUseCase = new GetOpenApiDocsUseCase()
     this.resumeJobUseCase = new ResumeOrchestratorJobUseCase(jobStore, jobQueue)
     this.cleanUseCase = new CleanJobsAndWorktreesUseCase(jobStore, config)
+    this.getSettingsUseCase = new GetSettingsUseCase(config)
+    this.updateSettingsUseCase = new UpdateSettingsUseCase(config)
     this.authStrategy = AuthStrategyFactory.create(config?.auth)
   }
 
@@ -73,6 +79,17 @@ export class RouteHandlers {
 
       if (method === 'DELETE' && pathname === '/orchestrator/jobs/clean') {
         await this.handleCleanJobs(req, res)
+        return
+      }
+
+      if (method === 'GET' && pathname === '/orchestrator/settings') {
+        const projectPath = url.searchParams.get('projectPath') ?? url.searchParams.get('project') ?? undefined
+        await this.handleGetSettings(projectPath, res)
+        return
+      }
+
+      if (method === 'POST' && pathname === '/orchestrator/settings') {
+        await this.handleUpdateSettings(req, res)
         return
       }
 
@@ -148,6 +165,27 @@ export class RouteHandlers {
 
     const cleanResult = await this.cleanUseCase.execute(maxAgeMs)
     this.sendJson(res, 200, cleanResult)
+  }
+
+  private async handleGetSettings(projectPath: string | undefined, res: ServerResponse): Promise<void> {
+    const result = await this.getSettingsUseCase.execute(projectPath)
+    this.sendJson(res, 200, result)
+  }
+
+  private async handleUpdateSettings(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const rawBody = await this.readBody(req)
+    let parsed: any
+    try {
+      parsed = JSON.parse(rawBody)
+    } catch {
+      throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in settings request')
+    }
+
+    const projectPath = typeof parsed.projectPath === 'string' ? parsed.projectPath : undefined
+    const settingsPayload = parsed.settings ?? parsed
+
+    const result = await this.updateSettingsUseCase.execute(settingsPayload, projectPath)
+    this.sendJson(res, 200, result)
   }
 
   private async handleGetJobStatus(jobId: string, res: ServerResponse): Promise<void> {

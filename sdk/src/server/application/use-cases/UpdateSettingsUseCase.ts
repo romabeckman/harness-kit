@@ -1,0 +1,57 @@
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
+import { join, resolve, dirname } from 'node:path'
+import { HttpServerError, HttpServerConfig } from '../../domain/types'
+import type { HarnessSettingsMap } from '../../../settings/SettingsSchema'
+import type { IUpdateSettingsUseCase } from '../ports/inbound/IUpdateSettingsUseCase'
+
+export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
+  constructor(private config?: HttpServerConfig) {}
+
+  async execute(
+    settingsPayload: HarnessSettingsMap,
+    projectPath?: string
+  ): Promise<{ projectPath: string; settings: HarnessSettingsMap }> {
+    const targetPath = this.resolveProjectPath(projectPath)
+
+    if (this.config?.allowedWorkspaces && this.config.allowedWorkspaces.length > 0) {
+      const allowed = this.config.allowedWorkspaces.some((ws) => targetPath.startsWith(ws))
+      if (!allowed) {
+        throw new HttpServerError(
+          400,
+          'PATH_TRAVERSAL_DETECTED',
+          `Target path '${targetPath}' is outside allowed workspaces`
+        )
+      }
+    }
+
+    const settingsFilePath = join(targetPath, '.harness-kit', 'settings.json')
+    if (!existsSync(dirname(settingsFilePath))) {
+      mkdirSync(dirname(settingsFilePath), { recursive: true })
+    }
+
+    let existingSettings: HarnessSettingsMap = {}
+    if (existsSync(settingsFilePath)) {
+      try {
+        existingSettings = JSON.parse(readFileSync(settingsFilePath, 'utf-8'))
+      } catch {}
+    }
+
+    const mergedSettings: HarnessSettingsMap = {
+      ...existingSettings,
+      ...settingsPayload,
+    }
+
+    writeFileSync(settingsFilePath, JSON.stringify(mergedSettings, null, 2), 'utf-8')
+    return { projectPath: targetPath, settings: mergedSettings }
+  }
+
+  private resolveProjectPath(projectPath?: string): string {
+    if (projectPath && projectPath.trim() !== '') {
+      return resolve(projectPath)
+    }
+    if (this.config?.allowedWorkspaces && this.config.allowedWorkspaces.length > 0) {
+      return resolve(this.config.allowedWorkspaces[0])
+    }
+    return process.cwd()
+  }
+}
