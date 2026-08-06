@@ -83,7 +83,7 @@ export class RouteHandlers {
       }
 
       if (method === 'GET' && pathname === '/orchestrator/settings') {
-        const projectIdentifier = url.searchParams.get('project') ?? url.searchParams.get('projectIdentifier') ?? undefined
+        const projectIdentifier = url.searchParams.get('project') ?? url.searchParams.get('projectIdentifier') ?? url.searchParams.get('projectPath') ?? undefined
         await this.handleGetSettings(projectIdentifier, res)
         return
       }
@@ -181,7 +181,12 @@ export class RouteHandlers {
       throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in settings request')
     }
 
-    const projectIdentifier = typeof parsed.project === 'string' ? parsed.project : (typeof parsed.projectIdentifier === 'string' ? parsed.projectIdentifier : undefined)
+    const projectIdentifier = typeof parsed.project === 'string'
+      ? parsed.project
+      : (typeof parsed.projectIdentifier === 'string'
+        ? parsed.projectIdentifier
+        : (typeof parsed.projectPath === 'string' ? parsed.projectPath : undefined))
+
     const settingsPayload = parsed.settings ?? (parsed.project ? { ...parsed, project: undefined } : parsed)
 
     const result = await this.updateSettingsUseCase.execute(settingsPayload, projectIdentifier)

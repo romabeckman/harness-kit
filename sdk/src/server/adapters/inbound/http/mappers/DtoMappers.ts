@@ -69,13 +69,23 @@ export class DtoMappers {
     if (process.env.PROJECT_MAPPINGS) {
       try {
         const mappings = JSON.parse(process.env.PROJECT_MAPPINGS)
-        if (mappings && typeof mappings === 'object' && mappings[name]) {
-          const entry = mappings[name]
-          if (typeof entry === 'string') {
-            return { path: entry }
+        if (mappings && typeof mappings === 'object') {
+          if (mappings[name]) {
+            const entry = mappings[name]
+            if (typeof entry === 'string') return { path: entry }
+            if (typeof entry === 'object' && typeof entry.path === 'string') {
+              return { path: entry.path, gitUrl: entry.gitUrl }
+            }
           }
-          if (typeof entry === 'object' && typeof entry.path === 'string') {
-            return { path: entry.path, gitUrl: entry.gitUrl }
+          const lowerName = name.toLowerCase()
+          for (const key of Object.keys(mappings)) {
+            if (key.toLowerCase() === lowerName) {
+              const entry = mappings[key]
+              if (typeof entry === 'string') return { path: entry }
+              if (typeof entry === 'object' && typeof entry.path === 'string') {
+                return { path: entry.path, gitUrl: entry.gitUrl }
+              }
+            }
           }
         }
       } catch {}

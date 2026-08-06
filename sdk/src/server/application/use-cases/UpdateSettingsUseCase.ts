@@ -11,7 +11,7 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
   async execute(
     settingsPayload: HarnessSettingsMap,
     projectIdentifier?: string
-  ): Promise<{ projectPath: string; settings: HarnessSettingsMap }> {
+  ): Promise<{ project: string; projectPath: string; settings: HarnessSettingsMap }> {
     const targetPath = this.resolveProjectPath(projectIdentifier)
 
     if (this.config?.allowedWorkspaces && this.config.allowedWorkspaces.length > 0) {
@@ -43,7 +43,11 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
     }
 
     writeFileSync(settingsFilePath, JSON.stringify(mergedSettings, null, 2), 'utf-8')
-    return { projectPath: targetPath, settings: mergedSettings }
+    return {
+      project: projectIdentifier ?? 'default',
+      projectPath: targetPath,
+      settings: mergedSettings,
+    }
   }
 
   private resolveProjectPath(projectIdentifier?: string): string {

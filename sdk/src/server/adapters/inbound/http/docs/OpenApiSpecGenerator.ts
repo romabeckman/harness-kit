@@ -417,10 +417,11 @@ export class OpenApiSpecGenerator {
           SettingsResponseDto: {
             type: 'object',
             properties: {
-              projectPath: { type: 'string' },
+              project: { type: 'string', description: 'Registered project identifier' },
+              projectPath: { type: 'string', description: 'Resolved server workspace path' },
               settings: { type: 'object', description: 'HarnessSettingsMap model configuration' },
             },
-            required: ['projectPath', 'settings'],
+            required: ['project', 'projectPath', 'settings'],
           },
           UpdateSettingsRequestDto: {
             type: 'object',

@@ -9,7 +9,7 @@ import type { IGetSettingsUseCase } from '../ports/inbound/IGetSettingsUseCase'
 export class GetSettingsUseCase implements IGetSettingsUseCase {
   constructor(private config?: HttpServerConfig) {}
 
-  async execute(projectIdentifier?: string): Promise<{ projectPath: string; settings: HarnessSettingsMap }> {
+  async execute(projectIdentifier?: string): Promise<{ project: string; projectPath: string; settings: HarnessSettingsMap }> {
     const targetPath = this.resolveProjectPath(projectIdentifier)
     const settingsFilePath = join(targetPath, '.harness-kit', 'settings.json')
 
@@ -17,13 +17,19 @@ export class GetSettingsUseCase implements IGetSettingsUseCase {
       HarnessSettings.createLocalSettings(targetPath)
     }
 
+    let settings: HarnessSettingsMap = {}
     try {
       const content = readFileSync(settingsFilePath, 'utf-8')
-      const settings = JSON.parse(content) as HarnessSettingsMap
-      return { projectPath: targetPath, settings }
+      settings = JSON.parse(content) as HarnessSettingsMap
     } catch {
       const fallbackSettings = HarnessSettings.load(targetPath)
-      return { projectPath: targetPath, settings: (fallbackSettings as any).settings ?? {} }
+      settings = (fallbackSettings as any).settings ?? {}
+    }
+
+    return {
+      project: projectIdentifier ?? 'default',
+      projectPath: targetPath,
+      settings,
     }
   }
 
