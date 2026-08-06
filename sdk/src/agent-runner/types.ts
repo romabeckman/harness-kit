@@ -48,6 +48,7 @@ export enum Runner {
   COPILOT_SDK = 'copilot-sdk',
   CURSOR_CLI = 'cursor-cli',
   CURSOR_SDK = 'cursor-sdk',
+  KIRO_CLI = 'kiro-cli',
 }
 
 export type ContextPayload = Record<string, unknown>
