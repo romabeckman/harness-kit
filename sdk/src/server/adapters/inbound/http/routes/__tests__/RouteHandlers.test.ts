@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { EventEmitter } from 'node:events'
 import { RouteHandlers } from '../RouteHandlers'
@@ -40,12 +40,22 @@ describe('RouteHandlers Integration Tests', () => {
   let jobQueue: JobQueue
   let lockManager: WorkspaceLockManager
   let routeHandlers: RouteHandlers
+  const originalEnv = { ...process.env }
 
   beforeEach(() => {
+    process.env = { ...originalEnv }
+    process.env.PROJECT_MAPPINGS = JSON.stringify({
+      backend: process.cwd(),
+    })
+
     jobStore = new InMemoryJobStore()
     jobQueue = new JobQueue()
     lockManager = new WorkspaceLockManager()
     routeHandlers = new RouteHandlers(jobStore, jobQueue, lockManager)
+  })
+
+  afterEach(() => {
+    process.env = { ...originalEnv }
   })
 
   it('IT-2.2.1 & FT-3.1: POST /orchestrator/run -> 202 Accepted with jobId and statusUrl', async () => {
@@ -53,7 +63,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    const jsonBody = JSON.stringify({ scope: 'build-api', mode: 'fast' })
+    const jsonBody = JSON.stringify({ scope: 'build-api', project: 'backend', mode: 'fast' })
 
     req.emit('data', Buffer.from(jsonBody))
     req.emit('end')
@@ -72,7 +82,7 @@ describe('RouteHandlers Integration Tests', () => {
     const resRun = new MockServerResponse()
 
     const runPromise = routeHandlers.handleRequest(reqRun as unknown as IncomingMessage, resRun as unknown as ServerResponse)
-    reqRun.emit('data', Buffer.from(JSON.stringify({ scope: 'status-test' })))
+    reqRun.emit('data', Buffer.from(JSON.stringify({ scope: 'status-test', project: 'backend' })))
     reqRun.emit('end')
     await runPromise
 
@@ -90,14 +100,15 @@ describe('RouteHandlers Integration Tests', () => {
     expect(statusParsed.status).toBe('queued')
   })
 
-  it('GET /orchestrator/settings -> 200 OK with model settings', async () => {
-    const req = new MockIncomingMessage('/orchestrator/settings', 'GET')
+  it('GET /orchestrator/settings?project=backend -> 200 OK with model settings', async () => {
+    const req = new MockIncomingMessage('/orchestrator/settings?project=backend', 'GET')
     const res = new MockServerResponse()
 
     await routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
 
     expect(res.statusCode).toBe(200)
     const parsed = JSON.parse(res.body)
+    expect(parsed.project).toBe('backend')
     expect(parsed.projectPath).toBeDefined()
     expect(parsed.settings).toBeDefined()
   })
@@ -108,6 +119,7 @@ describe('RouteHandlers Integration Tests', () => {
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
     const jsonBody = JSON.stringify({
+      project: 'backend',
       settings: {
         'claude-cli': { timeoutMs: 45000 },
       },
@@ -150,7 +162,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    req.emit('data', Buffer.from(JSON.stringify({ scope: 'refine-test', refine: true })))
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'refine-test', project: 'backend', refine: true })))
     req.emit('end')
     await handlePromise
 
@@ -164,7 +176,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    req.emit('data', Buffer.from(JSON.stringify({ scope: 'deep-test', mode: 'deep_thinking' })))
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'deep-test', project: 'backend', mode: 'deep_thinking' })))
     req.emit('end')
     await handlePromise
 
