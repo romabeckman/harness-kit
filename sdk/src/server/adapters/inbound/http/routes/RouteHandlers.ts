@@ -23,6 +23,7 @@ export class RouteHandlers {
   private resumeJobUseCase: ResumeOrchestratorJobUseCase
   private cleanUseCase: CleanJobsAndWorktreesUseCase
   private authStrategy: IAuthStrategy
+  private config?: HttpServerConfig
 
   constructor(
     jobStore: JobStoreRepository,
@@ -30,6 +31,7 @@ export class RouteHandlers {
     _lockManager?: WorkspaceLockManager,
     config?: HttpServerConfig
   ) {
+    this.config = config
     this.runJobUseCase = new RunOrchestratorJobUseCase(jobStore, jobQueue, config)
     this.getStatusUseCase = new GetJobStatusUseCase(jobStore)
     this.getHealthUseCase = new GetHealthStatusUseCase(jobStore, jobQueue)
@@ -50,7 +52,7 @@ export class RouteHandlers {
 
       if (pathname.startsWith('/orchestrator/')) {
         if (!this.authStrategy.authenticate(req.headers)) {
-          const authMode = (process.env.AUTH_MODE ?? 'none').toLowerCase()
+          const authMode = (this.config?.auth?.mode ?? process.env.AUTH_MODE ?? 'none').toLowerCase()
           if (authMode === 'basic') {
             res.setHeader('WWW-Authenticate', 'Basic realm="Harness-Kit Daemon"')
           }
