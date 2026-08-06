@@ -15,14 +15,15 @@ export class RunOrchestratorJobUseCase {
   ) {}
 
   async execute(body: RunRequestDtoExtended): Promise<RunResponseDto> {
-    // Validate non-interactive mode rules (throws 400 Bad Request if refine: true or mode: deep_thinking)
-    DtoMappers.toOrchestratorConfig(body)
+    // Validate non-interactive mode rules & project requirement (throws 400 Bad Request if invalid)
+    const orchestratorConfig = DtoMappers.toOrchestratorConfig(body)
 
-    // Resolve project alias / workspace path
-    const workspacePath = DtoMappers.resolveWorkspacePath(body)
+    // Resolve project workspace paths
+    const workspacePaths = orchestratorConfig.projectPaths
+    const workspacePath = workspacePaths[0]
 
     // Validate path traversal & workspace permissions
-    this.validatePathTraversal(body.projectPaths, workspacePath)
+    this.validatePathTraversal(body.project, workspacePaths)
 
     const jobId = randomUUID()
     const createdAt = new Date().toISOString()
@@ -41,44 +42,61 @@ export class RunOrchestratorJobUseCase {
     return {
       jobId,
       status: 'queued',
-      workspacePath,
       enqueuedAt: createdAt,
       statusUrl: `/orchestrator/status/${jobId}`,
     }
   }
 
-  private validatePathTraversal(projectPaths?: string[], resolvedWorkspacePath?: string): void {
-    const allowedWorkspaces = this.config?.allowedWorkspaces
+  private validatePathTraversal(
+    projects?: string | string[],
+    resolvedWorkspacePaths?: string[]
+  ): void {
+    const projectList = typeof projects === 'string'
+      ? [projects]
+      : (Array.isArray(projects) ? projects : [])
 
-    if (projectPaths && projectPaths.length > 0) {
-      for (const p of projectPaths) {
-        if (typeof p !== 'string') continue
-        if (p.includes('..')) {
+    for (const p of projectList) {
+      if (typeof p === 'string' && p.includes('..')) {
+        throw new HttpServerError(
+          400,
+          'PATH_TRAVERSAL_DETECTED',
+          `Path traversal detected in project parameter: '${p}'`
+        )
+      }
+    }
+
+    if (resolvedWorkspacePaths && resolvedWorkspacePaths.length > 0) {
+      for (const wp of resolvedWorkspacePaths) {
+        if (wp.includes('..')) {
           throw new HttpServerError(
             400,
             'PATH_TRAVERSAL_DETECTED',
-            `Path traversal detected in projectPath: '${p}'`
+            `Path traversal detected in resolved workspace path: '${wp}'`
           )
         }
       }
     }
 
-    if (allowedWorkspaces && allowedWorkspaces.length > 0 && resolvedWorkspacePath) {
-      const isAllowed = allowedWorkspaces.some((allowed) => {
-        const resolvedAllowed = resolve(process.cwd(), allowed)
-        return (
-          resolvedWorkspacePath === resolvedAllowed ||
-          resolvedWorkspacePath.startsWith(resolvedAllowed + '/') ||
-          resolvedWorkspacePath.startsWith(resolvedAllowed + '\\')
-        )
-      })
+    const allowedWorkspaces = this.config?.allowedWorkspaces
 
-      if (!isAllowed) {
-        throw new HttpServerError(
-          400,
-          'WORKSPACE_NOT_ALLOWED',
-          `Workspace path '${resolvedWorkspacePath}' is outside allowed workspaces.`
-        )
+    if (allowedWorkspaces && allowedWorkspaces.length > 0 && resolvedWorkspacePaths) {
+      for (const resolvedWorkspacePath of resolvedWorkspacePaths) {
+        const isAllowed = allowedWorkspaces.some((allowed) => {
+          const resolvedAllowed = resolve(process.cwd(), allowed)
+          return (
+            resolvedWorkspacePath === resolvedAllowed ||
+            resolvedWorkspacePath.startsWith(resolvedAllowed + '/') ||
+            resolvedWorkspacePath.startsWith(resolvedAllowed + '\\')
+          )
+        })
+
+        if (!isAllowed) {
+          throw new HttpServerError(
+            400,
+            'WORKSPACE_NOT_ALLOWED',
+            `Workspace path '${resolvedWorkspacePath}' is outside allowed workspaces.`
+          )
+        }
       }
     }
   }

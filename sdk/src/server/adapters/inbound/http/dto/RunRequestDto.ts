@@ -10,16 +10,12 @@ export interface RunRequestDtoExtended extends RunRequestDto {
   reworks?: number
   steeringMessage?: string
   agent?: string
-  agentType?: string
   model?: string
   effort?: string
   skipValidation?: boolean
   skipMemory?: boolean
   skipDeploy?: boolean
-  refine?: boolean
-  projectPaths?: string[]
   branch?: string
-  gitUrl?: string
   useWorktree?: boolean
-  project?: string
+  project?: string | string[]
 }

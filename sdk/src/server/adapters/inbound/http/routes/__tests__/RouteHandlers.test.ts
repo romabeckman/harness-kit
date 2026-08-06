@@ -138,7 +138,6 @@ describe('RouteHandlers Integration Tests', () => {
     const parsed = JSON.parse(res.body)
     expect(parsed.project).toBe('backend')
     expect(parsed.agent).toBe('claude-cli')
-    expect(parsed.projectPath).toBeDefined()
     expect(parsed.settings).toBeDefined()
   })
 
@@ -198,7 +197,7 @@ describe('RouteHandlers Integration Tests', () => {
 
     expect(res.statusCode).toBe(400)
     const parsed = JSON.parse(res.body)
-    expect(parsed.code).toBe('REFINE_NOT_SUPPORTED_IN_HTTP_MODE')
+    expect(parsed.code).toBe('REFINE_NOT_ALLOWED')
   })
 
   it('FT-3.2.2: Rejects mode: "deep_thinking" with HTTP 400', async () => {
@@ -231,12 +230,37 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    req.emit('data', Buffer.from(JSON.stringify({ scope: 'traversal-test', agent: 'claude-cli', projectPaths: ['../secret'] })))
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'traversal-test', agent: 'claude-cli', project: ['../secret'] })))
     req.emit('end')
     await handlePromise
 
     expect(res.statusCode).toBe(400)
     const parsed = JSON.parse(res.body)
     expect(parsed.code).toBe('PATH_TRAVERSAL_DETECTED')
+  })
+
+  it('GET /orchestrator/tokens?project=backend -> 200 OK with token telemetry data', async () => {
+    const req = new MockIncomingMessage('/orchestrator/tokens?project=backend', 'GET')
+    const res = new MockServerResponse()
+
+    await routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+
+    expect(res.statusCode).toBe(200)
+    const parsed = JSON.parse(res.body)
+    expect(parsed.project).toBe('backend')
+    expect(parsed.entries).toBeDefined()
+    expect(parsed.totals).toBeDefined()
+  })
+
+  it('GET /orchestrator/tokens?project=backend&jobId=job-123 -> 200 OK filtered by jobId', async () => {
+    const req = new MockIncomingMessage('/orchestrator/tokens?project=backend&jobId=job-123', 'GET')
+    const res = new MockServerResponse()
+
+    await routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+
+    expect(res.statusCode).toBe(200)
+    const parsed = JSON.parse(res.body)
+    expect(parsed.project).toBe('backend')
+    expect(parsed.jobId).toBe('job-123')
   })
 })

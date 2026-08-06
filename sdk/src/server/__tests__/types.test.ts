@@ -72,7 +72,6 @@ describe('Server Types and DTOs', () => {
     it('supports base and extended run request fields', () => {
       const baseReq: RunRequestDto = {
         scope: 'test-scope',
-        projectPaths: ['./src'],
         mode: 'quick',
         action: 'reset',
         score: 0.8,
@@ -82,17 +81,17 @@ describe('Server Types and DTOs', () => {
 
       const extReq: RunRequestDtoExtended = {
         ...baseReq,
+        project: ['backend'],
         steeringMessage: 'keep simple',
-        agentType: 'claude-cli',
+        agent: 'claude-cli',
         model: 'claude-3-5-sonnet',
         effort: 'high',
         skipValidation: true,
         skipMemory: true,
         skipDeploy: true,
-        refine: false,
       }
       expect(extReq.skipValidation).toBe(true)
-      expect(extReq.refine).toBe(false)
+      expect(extReq.project).toEqual(['backend'])
     })
   })
 
@@ -101,7 +100,6 @@ describe('Server Types and DTOs', () => {
       const res: RunResponseDto = {
         jobId: 'job-uuid-1234',
         status: 'queued',
-        workspacePath: '/workspace/repo',
         enqueuedAt: '2026-08-06T12:00:00.000Z',
         statusUrl: 'http://localhost:3000/orchestrator/status/job-uuid-1234',
       }
@@ -117,7 +115,6 @@ describe('Server Types and DTOs', () => {
       const dto: JobStatusDto = {
         jobId: 'job-555',
         status,
-        workspacePath: '/workspace/proj',
         createdAt: '2026-08-06T12:00:00.000Z',
         startedAt: '2026-08-06T12:00:01.000Z',
         progress: { phase: 'DEVELOPMENT', step: 2 },

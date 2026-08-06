@@ -21,7 +21,7 @@ export class GetSettingsUseCase implements IGetSettingsUseCase {
   async execute(
     projectIdentifier?: string,
     agentIdentifier?: string
-  ): Promise<{ project: string; agent?: string; projectPath: string; settings: HarnessSettingsMap }> {
+  ): Promise<{ project: string; agent?: string; settings: HarnessSettingsMap }> {
     if (!projectIdentifier || projectIdentifier.trim() === '') {
       throw new HttpServerError(
         400,
@@ -75,7 +75,6 @@ export class GetSettingsUseCase implements IGetSettingsUseCase {
     return {
       project: name,
       agent: agentIdentifier ? agentIdentifier.trim().toLowerCase() : undefined,
-      projectPath: targetPath,
       settings,
     }
   }

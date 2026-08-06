@@ -16,16 +16,16 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
     process.env = { ...originalEnv }
   })
 
-  it('UT-1.2.6: Rejects refine: true with HttpServerError(400)', () => {
+  it('UT-1.2.6: Rejects refine with HttpServerError(400)', () => {
     expect(() =>
-      DtoMappers.toOrchestratorConfig({ scope: 'test', refine: true })
+      DtoMappers.toOrchestratorConfig({ scope: 'test', agent: 'claude-cli', refine: true } as any)
     ).toThrowError(HttpServerError)
 
     try {
-      DtoMappers.toOrchestratorConfig({ scope: 'test', refine: true })
+      DtoMappers.toOrchestratorConfig({ scope: 'test', agent: 'claude-cli', refine: true } as any)
     } catch (err: any) {
       expect(err.statusCode).toBe(400)
-      expect(err.code).toBe('REFINE_NOT_SUPPORTED_IN_HTTP_MODE')
+      expect(err.code).toBe('REFINE_NOT_ALLOWED')
     }
   })
 
@@ -43,19 +43,45 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
   })
 
   it('UT-1.2.8: Maps mode ("quick", "fast", "thinking") to OrchestratorConfig using resolveMode', () => {
-    const quickConfig = DtoMappers.toOrchestratorConfig({ scope: 'quick-test', agent: 'claude-cli', mode: 'quick' })
+    const quickConfig = DtoMappers.toOrchestratorConfig({ scope: 'quick-test', project: 'backend', agent: 'claude-cli', mode: 'quick' })
     expect(quickConfig.skipValidation).toBe(true)
     expect(quickConfig.skipMemory).toBe(true)
 
-    const fastConfig = DtoMappers.toOrchestratorConfig({ scope: 'fast-test', agent: 'claude-cli', mode: 'fast' })
+    const fastConfig = DtoMappers.toOrchestratorConfig({ scope: 'fast-test', project: 'backend', agent: 'claude-cli', mode: 'fast' })
     expect(fastConfig.complexity).toBe('LOW')
     expect(fastConfig.skipValidation).toBe(false)
   })
 
-  it('UT-1.2.9: Normalizes workspace paths to canonical absolute format', () => {
-    const resolvedPath = DtoMappers.resolveWorkspacePath({ projectPaths: ['./src'] })
+  it('UT-1.2.9: Normalizes workspace paths from project list', () => {
+    process.env.PROJECT_MAPPINGS = JSON.stringify({
+      src: './src',
+      other: './other',
+    })
+    const resolvedPath = DtoMappers.resolveWorkspacePath({ project: ['src'] })
     expect(resolvedPath).toContain('src')
     expect(resolvedPath.length).toBeGreaterThan(5)
+
+    const resolvedPaths = DtoMappers.resolveWorkspacePaths({ project: ['src', 'other'] })
+    expect(resolvedPaths.length).toBe(2)
+    expect(resolvedPaths[0]).toContain('src')
+    expect(resolvedPaths[1]).toContain('other')
+  })
+
+  it('Rejects missing or empty project parameter with HttpServerError(400)', () => {
+    expect(() =>
+      DtoMappers.toOrchestratorConfig({ scope: 'test', agent: 'claude-cli' })
+    ).toThrowError(HttpServerError)
+
+    expect(() =>
+      DtoMappers.resolveWorkspacePaths({ project: [] })
+    ).toThrowError(HttpServerError)
+
+    try {
+      DtoMappers.resolveWorkspacePaths({ project: [] })
+    } catch (err: any) {
+      expect(err.statusCode).toBe(400)
+      expect(err.code).toBe('MISSING_PROJECT_PARAMETER')
+    }
   })
 
   it('UT-1.2.10: Resolves project alias from environment variables', () => {

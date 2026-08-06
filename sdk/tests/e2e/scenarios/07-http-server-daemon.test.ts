@@ -156,12 +156,14 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     expect(runRes.statusCode).toBe(202)
     expect(runRes.json.jobId).toBeDefined()
     expect(runRes.json.status).toBe('queued')
+    expect(runRes.json.workspacePath).toBeUndefined()
     const jobId = runRes.json.jobId
 
     // 2. Poll Status
     const statusRes = await makeHttpRequest(port, `/orchestrator/status/${jobId}`)
     expect(statusRes.statusCode).toBe(200)
     expect(statusRes.json.jobId).toBe(jobId)
+    expect(statusRes.json.workspacePath).toBeUndefined()
     expect(['queued', 'running', 'completed', 'failed']).toContain(statusRes.json.status)
   })
 
@@ -306,6 +308,23 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     await server.start()
     const port = server.getPort()
 
+    // Rejects missing project parameter
+    const missingProjRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      scope: 'test',
+      agent: 'claude-cli',
+    })
+    expect(missingProjRes.statusCode).toBe(400)
+    expect(missingProjRes.json.code).toBe('MISSING_PROJECT_PARAMETER')
+
+    // Rejects unregistered project identifier
+    const unregProjRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      scope: 'test',
+      project: 'unregistered_proj',
+      agent: 'claude-cli',
+    })
+    expect(unregProjRes.statusCode).toBe(400)
+    expect(unregProjRes.json.code).toBe('PROJECT_NOT_FOUND')
+
     // Rejects missing agent parameter
     const missingAgentRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
       scope: 'test',
@@ -331,7 +350,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       refine: true,
     })
     expect(refineRes.statusCode).toBe(400)
-    expect(refineRes.json.code).toBe('REFINE_NOT_SUPPORTED_IN_HTTP_MODE')
+    expect(refineRes.json.code).toBe('REFINE_NOT_ALLOWED')
 
     // Rejects mode: deep_thinking
     const deepRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
@@ -357,7 +376,8 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     // 1. GET settings with ?project=backend&agent=claude-cli
     const getRes = await makeHttpRequest(port, '/orchestrator/settings?project=backend&agent=claude-cli')
     expect(getRes.statusCode).toBe(200)
-    expect(getRes.json.projectPath).toContain('http-server-e2e')
+    expect(getRes.json.project).toBe('backend')
+    expect(getRes.json.projectPath).toBeUndefined()
     expect(getRes.json.settings).toBeDefined()
 
     const localSettingsFile = join(tempDir, '.harness-kit', 'settings.json')

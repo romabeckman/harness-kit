@@ -38,7 +38,6 @@ describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', 
       const result = await useCase.execute('backend')
 
       expect(result.project).toBe('backend')
-      expect(result.projectPath).toContain('settings-use-case-test')
       expect(result.settings).toBeDefined()
 
       const settingsFilePath = join(testWorkspaceDir, '.harness-kit', 'settings.json')
@@ -78,7 +77,6 @@ describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', 
 
       const result = await updateUseCase.execute(newSettings, 'backend')
       expect(result.project).toBe('backend')
-      expect(result.projectPath).toContain('settings-use-case-test')
       expect(result.settings['claude-sdk']?.timeoutMs).toBe(90000)
 
       const settingsFilePath = join(testWorkspaceDir, '.harness-kit', 'settings.json')

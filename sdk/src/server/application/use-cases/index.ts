@@ -6,3 +6,5 @@ export { GetHealthStatusUseCase } from './GetHealthStatusUseCase'
 export { GetOpenApiDocsUseCase } from './GetOpenApiDocsUseCase'
 export { GetSettingsUseCase } from './GetSettingsUseCase'
 export { UpdateSettingsUseCase } from './UpdateSettingsUseCase'
+export { GetTokensTelemetryUseCase } from './GetTokensTelemetryUseCase'
+

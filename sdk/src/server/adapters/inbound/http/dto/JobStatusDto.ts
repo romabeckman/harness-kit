@@ -3,7 +3,6 @@ import type { JobStatus } from '../../../../domain/types'
 export interface JobStatusDto {
   jobId: string
   status: JobStatus
-  workspacePath: string
   createdAt: string
   startedAt?: string
   completedAt?: string

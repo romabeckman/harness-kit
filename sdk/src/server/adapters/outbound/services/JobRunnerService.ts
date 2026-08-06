@@ -85,9 +85,9 @@ export class JobRunnerService {
 
       const runner =
         this.agentRunner ??
-        (job.request.agentType
+        (job.request.agent
           ? AgentRunnerFactory.create({
-              type: job.request.agentType,
+              type: job.request.agent,
               model: job.request.model,
               effort: job.request.effort,
             })
@@ -134,10 +134,17 @@ export class JobRunnerService {
   ): Promise<{ effectiveWorkspacePath: string; createdWorktreePath?: string }> {
     const useWorktree = request.useWorktree ?? true
 
-    if (request.gitUrl && !existsSync(join(workspacePath, '.git'))) {
-      const res = spawn.sync('git', ['clone', request.gitUrl, workspacePath], { stdio: 'pipe', encoding: 'utf-8' })
+    const firstProject = typeof request.project === 'string'
+      ? request.project
+      : (Array.isArray(request.project) && request.project.length > 0 ? request.project[0] : undefined)
+
+    const envInfo = DtoMappers.resolveProjectFromEnv(firstProject)
+    const gitUrl = envInfo?.gitUrl
+
+    if (gitUrl && !existsSync(join(workspacePath, '.git'))) {
+      const res = spawn.sync('git', ['clone', gitUrl, workspacePath], { stdio: 'pipe', encoding: 'utf-8' })
       if (res.status !== 0) {
-        throw new Error(`Git clone failed for '${request.gitUrl}': ${res.stderr || res.stdout}`)
+        throw new Error(`Git clone failed for '${gitUrl}': ${res.stderr || res.stdout}`)
       }
     }
 

@@ -13,6 +13,7 @@ import {
   CleanJobsAndWorktreesUseCase,
   GetSettingsUseCase,
   UpdateSettingsUseCase,
+  GetTokensTelemetryUseCase,
 } from '../../../../application/use-cases'
 import { AuthStrategyFactory } from '../../../outbound/auth/AuthStrategyFactory'
 import type { IAuthStrategy } from '../../../outbound/auth/types'
@@ -26,6 +27,7 @@ export class RouteHandlers {
   private cleanUseCase: CleanJobsAndWorktreesUseCase
   private getSettingsUseCase: GetSettingsUseCase
   private updateSettingsUseCase: UpdateSettingsUseCase
+  private getTokensUseCase: GetTokensTelemetryUseCase
   private authStrategy: IAuthStrategy
   private config?: HttpServerConfig
 
@@ -44,6 +46,7 @@ export class RouteHandlers {
     this.cleanUseCase = new CleanJobsAndWorktreesUseCase(jobStore, config)
     this.getSettingsUseCase = new GetSettingsUseCase(config)
     this.updateSettingsUseCase = new UpdateSettingsUseCase(config)
+    this.getTokensUseCase = new GetTokensTelemetryUseCase(config)
     this.authStrategy = AuthStrategyFactory.create(config?.auth)
   }
 
@@ -82,10 +85,17 @@ export class RouteHandlers {
         return
       }
 
+      if (method === 'GET' && (pathname === '/orchestrator/tokens' || pathname === '/orchestrator/telemetry/tokens')) {
+        const project = url.searchParams.get('project') ?? undefined
+        const jobId = url.searchParams.get('jobId') ?? url.searchParams.get('id') ?? undefined
+        await this.handleGetTokensTelemetry(project, jobId, res)
+        return
+      }
+
       if (method === 'GET' && pathname === '/orchestrator/settings') {
-        const projectIdentifier = url.searchParams.get('project') ?? url.searchParams.get('projectIdentifier') ?? url.searchParams.get('projectPath') ?? undefined
-        const agentIdentifier = url.searchParams.get('agent') ?? url.searchParams.get('agentType') ?? undefined
-        await this.handleGetSettings(projectIdentifier, agentIdentifier, res)
+        const project = url.searchParams.get('project') ?? undefined
+        const agent = url.searchParams.get('agent') ?? undefined
+        await this.handleGetSettings(project, agent, res)
         return
       }
 
@@ -173,6 +183,11 @@ export class RouteHandlers {
     this.sendJson(res, 200, result)
   }
 
+  private async handleGetTokensTelemetry(projectIdentifier: string | undefined, jobId: string | undefined, res: ServerResponse): Promise<void> {
+    const result = await this.getTokensUseCase.execute(projectIdentifier, jobId)
+    this.sendJson(res, 200, result)
+  }
+
   private async handleUpdateSettings(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const rawBody = await this.readBody(req)
     let parsed: any
@@ -182,19 +197,12 @@ export class RouteHandlers {
       throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in settings request')
     }
 
-    const projectIdentifier = typeof parsed.project === 'string'
-      ? parsed.project
-      : (typeof parsed.projectIdentifier === 'string'
-        ? parsed.projectIdentifier
-        : (typeof parsed.projectPath === 'string' ? parsed.projectPath : undefined))
+    const project = typeof parsed.project === 'string' ? parsed.project : undefined
+    const agent = typeof parsed.agent === 'string' ? parsed.agent : undefined
 
-    const agentIdentifier = typeof parsed.agent === 'string'
-      ? parsed.agent
-      : (typeof parsed.agentType === 'string' ? parsed.agentType : undefined)
+    const settingsPayload = parsed.settings ?? (parsed.project ? { ...parsed, project: undefined, agent: undefined } : parsed)
 
-    const settingsPayload = parsed.settings ?? (parsed.project ? { ...parsed, project: undefined, agent: undefined, agentType: undefined } : parsed)
-
-    const result = await this.updateSettingsUseCase.execute(settingsPayload, projectIdentifier, agentIdentifier)
+    const result = await this.updateSettingsUseCase.execute(settingsPayload, project, agent)
     this.sendJson(res, 200, result)
   }
 

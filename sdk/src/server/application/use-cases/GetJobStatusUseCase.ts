@@ -18,7 +18,6 @@ export class GetJobStatusUseCase {
     return {
       jobId: job.jobId,
       status: job.status,
-      workspacePath: job.workspacePath,
       createdAt: job.createdAt,
       startedAt: job.startedAt,
       completedAt: job.completedAt,

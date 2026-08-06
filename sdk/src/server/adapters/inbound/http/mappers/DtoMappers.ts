@@ -42,11 +42,19 @@ export class DtoMappers {
     dto: RunRequestDtoExtended,
     overrideWorkspacePath?: string
   ): OrchestratorConfig {
-    if (dto.refine === true) {
+    if ((dto as any).refine !== undefined) {
       throw new HttpServerError(
         400,
-        'REFINE_NOT_SUPPORTED_IN_HTTP_MODE',
-        'Interactive mode refine=true is strictly prohibited in HTTP daemon execution.'
+        'REFINE_NOT_ALLOWED',
+        'The refine parameter cannot be set in HTTP mode. Refinement is fixed to false.'
+      )
+    }
+
+    if ((dto as any).gitUrl !== undefined) {
+      throw new HttpServerError(
+        400,
+        'GIT_URL_NOT_ALLOWED',
+        'The gitUrl parameter cannot be set in request body. Project gitUrl must be configured in environment.'
       )
     }
 
@@ -58,12 +66,12 @@ export class DtoMappers {
       )
     }
 
-    const selectedAgent = dto.agent ?? dto.agentType
+    const selectedAgent = dto.agent
     if (!selectedAgent || selectedAgent.trim() === '') {
       throw new HttpServerError(
         400,
         'MISSING_AGENT_PARAMETER',
-        `Parameter 'agent' (or 'agentType') is required. Valid agents: ${VALID_RUNNERS.join(', ')}`
+        `Parameter 'agent' is required. Valid agents: ${VALID_RUNNERS.join(', ')}`
       )
     }
 
@@ -75,16 +83,16 @@ export class DtoMappers {
       )
     }
 
-    const resolvedWorkspace = overrideWorkspacePath
-      ? resolve(overrideWorkspacePath)
-      : this.resolveWorkspacePath(dto)
+    const resolvedWorkspaces = overrideWorkspacePath
+      ? [resolve(overrideWorkspacePath)]
+      : this.resolveWorkspacePaths(dto)
 
     const rawMode = dto.mode ?? 'quick'
     const modeConfig = resolveMode(rawMode as any)
 
     return {
       scope: dto.scope ?? '',
-      projectPaths: [resolvedWorkspace],
+      projectPaths: resolvedWorkspaces,
       complexity: modeConfig.complexity,
       reworks: dto.reworks ?? 1,
       steeringMessage: dto.steeringMessage,
@@ -95,19 +103,50 @@ export class DtoMappers {
     }
   }
 
-  static resolveWorkspacePath(dto: RunRequestDtoExtended, allowedWorkspaces?: string[]): string {
-    const fromEnv = this.resolveProjectFromEnv(dto.project, allowedWorkspaces)
-    if (fromEnv?.path) {
-      return resolve(fromEnv.path)
+  static resolveWorkspacePaths(dto: RunRequestDtoExtended, allowedWorkspaces?: string[]): string[] {
+    const rawProjects = dto.project
+    const projectList: string[] = typeof rawProjects === 'string'
+      ? [rawProjects]
+      : (Array.isArray(rawProjects) ? rawProjects : [])
+
+    const cleanProjects = projectList.filter((p) => typeof p === 'string' && p.trim() !== '')
+
+    if (cleanProjects.length === 0) {
+      throw new HttpServerError(
+        400,
+        'MISSING_PROJECT_PARAMETER',
+        "Parameter 'project' is required and must contain at least 1 project."
+      )
     }
 
-    if (dto.projectPaths && dto.projectPaths.length > 0) {
-      const target = dto.projectPaths[0]
-      if (typeof target === 'string' && target.trim() !== '') {
-        return isAbsolute(target) ? target : resolve(process.cwd(), target)
+    const paths: string[] = []
+    for (const proj of cleanProjects) {
+      if (proj.includes('..')) {
+        throw new HttpServerError(
+          400,
+          'PATH_TRAVERSAL_DETECTED',
+          `Path traversal detected in project parameter: '${proj}'`
+        )
+      }
+
+      const fromEnv = this.resolveProjectFromEnv(proj, allowedWorkspaces)
+      if (fromEnv?.path) {
+        paths.push(resolve(fromEnv.path))
+      } else {
+        throw new HttpServerError(
+          400,
+          'PROJECT_NOT_FOUND',
+          `Project identifier '${proj}' is not registered in server environment variables.`
+        )
       }
     }
-    return process.cwd()
+
+    return paths
+  }
+
+  static resolveWorkspacePath(dto: RunRequestDtoExtended, allowedWorkspaces?: string[]): string {
+    const paths = this.resolveWorkspacePaths(dto, allowedWorkspaces)
+    return paths[0]
   }
 
   static resolveProjectFromEnv(
@@ -116,7 +155,7 @@ export class DtoMappers {
   ): { path: string; gitUrl?: string } | null {
     ensureEnvLoaded()
 
-    if (!projectName || projectName.trim() === '') return null
+    if (!projectName || typeof projectName !== 'string' || projectName.trim() === '') return null
     const name = projectName.trim()
     const lowerName = name.toLowerCase()
 
@@ -161,25 +200,6 @@ export class DtoMappers {
 
     if (pathEnv) {
       return { path: normalize(pathEnv), gitUrl: gitUrlEnv }
-    }
-
-    // 3. Match against allowed workspaces folder basename
-    const workspaces = allowedWorkspaces ?? (
-      process.env.ALLOWED_WORKSPACES
-        ? process.env.ALLOWED_WORKSPACES.split(',').map((p) => p.trim()).filter(Boolean)
-        : []
-    )
-
-    for (const ws of workspaces) {
-      const cleanWs = ws.replace(/^["']|["']$/g, '')
-      if (basename(cleanWs).toLowerCase() === lowerName) {
-        return { path: resolve(cleanWs) }
-      }
-    }
-
-    // 4. Match against current working directory basename
-    if (basename(process.cwd()).toLowerCase() === lowerName) {
-      return { path: resolve(process.cwd()) }
     }
 
     return null

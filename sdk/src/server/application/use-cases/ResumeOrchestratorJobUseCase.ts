@@ -55,7 +55,6 @@ export class ResumeOrchestratorJobUseCase {
     return {
       jobId: newJobId,
       status: 'queued',
-      workspacePath: previousJob.workspacePath,
       enqueuedAt: createdAt,
       statusUrl: `/orchestrator/status/${newJobId}`,
     }

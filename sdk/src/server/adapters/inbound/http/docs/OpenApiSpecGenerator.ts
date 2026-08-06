@@ -168,6 +168,51 @@ export class OpenApiSpecGenerator {
             },
           },
         },
+        '/orchestrator/tokens': {
+          get: {
+            summary: 'Get token telemetry report (tokens.jsonl)',
+            description: 'Retrieves parsed token ledger report entries and totals for target registered project.',
+            security: [{ BearerAuth: [] }, { BasicAuth: [] }],
+            parameters: [
+              {
+                name: 'project',
+                in: 'query',
+                required: true,
+                description: 'Mandatory registered project identifier (e.g. "backend")',
+                schema: { type: 'string' },
+              },
+              {
+                name: 'jobId',
+                in: 'query',
+                required: false,
+                description: 'Optional job UUID filter to obtain tokens for a specific workflow execution',
+                schema: { type: 'string' },
+              },
+            ],
+            responses: {
+              '200': {
+                description: 'Token telemetry report object',
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/TokensTelemetryDto' },
+                  },
+                },
+              },
+              '400': {
+                description: 'Missing or unregistered project identifier',
+                content: {
+                  'application/json': { schema: { $ref: '#/components/schemas/HttpServerError' } },
+                },
+              },
+              '401': {
+                description: 'Unauthorized access',
+                content: {
+                  'application/json': { schema: { $ref: '#/components/schemas/HttpServerError' } },
+                },
+              },
+            },
+          },
+        },
         '/orchestrator/settings': {
           get: {
             summary: 'Get local project model settings',
@@ -369,7 +414,13 @@ export class OpenApiSpecGenerator {
             type: 'object',
             properties: {
               scope: { type: 'string' },
-              project: { type: 'string', description: 'Mandatory registered project identifier (e.g. "backend")' },
+              project: {
+                oneOf: [
+                  { type: 'string', description: 'Registered project identifier' },
+                  { type: 'array', items: { type: 'string' }, description: 'List of registered project identifiers' },
+                ],
+                description: 'Mandatory registered project identifier or list of project identifiers (min 1 required)',
+              },
               agent: { type: 'string', enum: [...VALID_RUNNER_TYPES], description: 'Mandatory registered agent runner strategy' },
               mode: { type: 'string', enum: ['quick', 'fast', 'thinking', 'deep_thinking'] },
               action: { type: 'string', enum: ['reset', 'resume'] },
@@ -381,9 +432,7 @@ export class OpenApiSpecGenerator {
               skipValidation: { type: 'boolean' },
               skipMemory: { type: 'boolean' },
               skipDeploy: { type: 'boolean' },
-              refine: { type: 'boolean' },
               branch: { type: 'string', description: 'Target Git branch to checkout prior to job execution' },
-              gitUrl: { type: 'string', description: 'Git repository URL to clone if missing from workspace' },
               useWorktree: { type: 'boolean', description: 'Enable isolated Git worktree for parallel job execution' },
             },
             required: ['project', 'agent'],
@@ -393,18 +442,16 @@ export class OpenApiSpecGenerator {
             properties: {
               jobId: { type: 'string' },
               status: { type: 'string', enum: ['queued', 'running'] },
-              workspacePath: { type: 'string' },
               enqueuedAt: { type: 'string', format: 'date-time' },
               statusUrl: { type: 'string' },
             },
-            required: ['jobId', 'status', 'workspacePath', 'enqueuedAt', 'statusUrl'],
+            required: ['jobId', 'status', 'enqueuedAt', 'statusUrl'],
           },
           JobStatusDto: {
             type: 'object',
             properties: {
               jobId: { type: 'string' },
               status: { type: 'string', enum: ['queued', 'running', 'completed', 'failed', 'aborted'] },
-              workspacePath: { type: 'string' },
               createdAt: { type: 'string', format: 'date-time' },
               startedAt: { type: 'string', format: 'date-time' },
               completedAt: { type: 'string', format: 'date-time' },
@@ -423,17 +470,26 @@ export class OpenApiSpecGenerator {
                 },
               },
             },
-            required: ['jobId', 'status', 'workspacePath', 'createdAt'],
+            required: ['jobId', 'status', 'createdAt'],
           },
           SettingsResponseDto: {
             type: 'object',
             properties: {
               project: { type: 'string', description: 'Registered project identifier' },
               agent: { type: 'string', description: 'Agent runner filter (if specified)' },
-              projectPath: { type: 'string', description: 'Resolved server workspace path' },
               settings: { type: 'object', description: 'HarnessSettingsMap model configuration' },
             },
-            required: ['project', 'projectPath', 'settings'],
+            required: ['project', 'settings'],
+          },
+          TokensTelemetryDto: {
+            type: 'object',
+            properties: {
+              project: { type: 'string', description: 'Registered project identifier' },
+              entries: { type: 'array', items: { type: 'object' }, description: 'List of token usage entries' },
+              totals: { type: 'object', description: 'Total aggregated token counts' },
+              bySkill: { type: 'object', description: 'Aggregated token counts by skill' },
+            },
+            required: ['project', 'entries', 'totals', 'bySkill'],
           },
           UpdateSettingsRequestDto: {
             type: 'object',

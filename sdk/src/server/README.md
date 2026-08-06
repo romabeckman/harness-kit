@@ -170,14 +170,14 @@ Once the server is running, the following REST endpoints are available:
 
 ### Triggering an Orchestration Job on Remote Server (Using Project Alias)
 
-The client sending the request does **not** need to know the internal server filesystem paths (`projectPaths`). Instead, the client sends a clean project alias (`"project": "backend"`):
+The client sending the request does **not** need to know internal server filesystem paths. Instead, the client sends a clean project alias or list of project aliases (`"project": "backend"` or `"project": ["backend"]`, minimum 1 required):
 
 ```bash
 curl -X POST http://localhost:3000/orchestrator/run \
   -H "Content-Type: application/json" \
   -d '{
     "scope": "implement-user-authentication",
-    "project": "backend",
+    "project": ["backend"],
     "branch": "feature/login-auth",
     "mode": "fast",
     "useWorktree": true
@@ -227,4 +227,5 @@ curl -X DELETE http://localhost:3000/orchestrator/jobs/clean \
 > ⚠️ **Important Execution Constraints:**
 > - Interactive pre-planning refinement (`refine: true`) requires terminal TTY input and is **forbidden** in HTTP mode. The server returns `HTTP 400 Bad Request`.
 > - Interactive `mode: "deep_thinking"` is forbidden in HTTP mode and returns `HTTP 400 Bad Request`.
-> - Path traversal sequences (`..`) in `projectPaths` are blocked (`HTTP 400 Bad Request`).
+> - Parameter `project` is required and must contain at least 1 project identifier.
+> - Path traversal sequences (`..`) in `project` parameter are blocked (`HTTP 400 Bad Request`).

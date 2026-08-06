@@ -20,7 +20,7 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
     settingsPayload: HarnessSettingsMap,
     projectIdentifier?: string,
     agentIdentifier?: string
-  ): Promise<{ project: string; agent?: string; projectPath: string; settings: HarnessSettingsMap }> {
+  ): Promise<{ project: string; agent?: string; settings: HarnessSettingsMap }> {
     if (!projectIdentifier || projectIdentifier.trim() === '') {
       throw new HttpServerError(
         400,
@@ -83,7 +83,6 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
     return {
       project: name,
       agent: agentIdentifier ? agentIdentifier.trim().toLowerCase() : undefined,
-      projectPath: targetPath,
       settings: mergedSettings,
     }
   }
