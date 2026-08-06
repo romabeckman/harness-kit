@@ -179,6 +179,7 @@ INTERACTIVE → present markdown table of all 4 generated artifacts
 | **Format** | Structured Markdown with H2/H3, lists, and tables. JSON must strictly validate. |
 | **Ubiquitous Language** | Use glossary terms consistently across ALL documents |
 | **No Code Output** | Under no circumstances generate implementation code |
+| **Fast-path Orientation** | Sub-agents MUST read `docs/.digest.md` & `docs/.graph.json` first if present for fast context loading before falling back to full ADRs |
 | **Harness Isolation** | PROHIBITED: read, create, or modify any file under `docs/harness-history/` |
 | **Spec Isolation** | PROHIBITED: read, create, or modify any file under `docs/specs/` except documents produced by Phases 1–4 of this skill |
 

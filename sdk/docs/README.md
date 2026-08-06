@@ -9,6 +9,8 @@ Index of project technical documentation for **harness-kit SDK**. Use the links 
 |----------|-------------|----------|
 | [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Architecture, folder organization, and code patterns for the project. | **Mandatory** |
 | [**TESTS.md**](./adr/TESTS.md) | Testing strategies, patterns, and execution commands. | **Mandatory** |
+| [**.digest.md**](./.digest.md) | Machine-readable project orientation digest (stack, test commands, rules). | **Mandatory** |
+| [**.graph.json**](./.graph.json) | Machine-readable document relation graph index for agent topology navigation. | Optional |
 | [**STEERING.md**](./adr/STEERING.md) | Session steering overrides and state machine rollbacks. | Optional |
 | [**AGENT-RUNNERS.md**](./adr/AGENT-RUNNERS.md) | Outbound LLM runner strategies and dynamic registries. | Optional |
 | [**TELEMETRY.md**](./adr/TELEMETRY.md) | Token ledger tracking, cost auditing, and rate limit halts. | Optional |
@@ -25,6 +27,8 @@ Index of project technical documentation for **harness-kit SDK**. Use the links 
 
 ## RECOMMENDED READING ORDER
 
-1. **adr/ARCHITECTURE.md** — technical foundation and project organization.
-2. **adr/TESTS.md** — code validation and quality.
-3. Additional documents in adr/ or feature/ folders as needed for the task.
+1. **.digest.md** — fast orientation (architecture, stack, test commands).
+2. **adr/ARCHITECTURE.md** — technical foundation and project organization.
+3. **adr/TESTS.md** — code validation and quality.
+4. **.graph.json** — relation graph index for 1-hop document lookup.
+5. Additional documents in adr/ or feature/ folders as needed for the task.

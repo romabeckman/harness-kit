@@ -2,10 +2,39 @@
 doc_type: feature
 domain: core
 stack: [TypeScript, Node.js]
-depends_on: [ARCHITECTURE.md, TESTS.md]
-updated: 2026-08-04
+node_id: "feature:sdk_core"
+tags: [sdk, orchestrator, state-machine, core]
+edges:
+  - relation: implements
+    target: "adr:architecture"
+    path: "../adr/ARCHITECTURE.md"
+  - relation: tested_by
+    target: "adr:tests"
+    path: "../adr/TESTS.md"
+updated: 2026-08-05
 ---
 # SDK CORE
+
+```graph
+{
+  "node_id": "feature:sdk_core",
+  "domain": "core",
+  "implements": ["adr:architecture"],
+  "tested_by": ["adr:tests"],
+  "code_files": [
+    "src/orchestrator/HarnessOrchestrator.ts",
+    "src/orchestrator/StateMachine.ts",
+    "src/orchestrator/ReentryResolver.ts",
+    "src/file-state/FileStateManager.ts",
+    "src/context-assembler/ContextAssembler.ts"
+  ],
+  "test_files": [
+    "tests/unit/t10-state-machine.test.ts",
+    "tests/integration/t13-orchestrator-phasec.test.ts"
+  ]
+}
+```
+
 Implements the autonomous-orchestrator state machine as an importable library.
 
 ## OVERVIEW
@@ -75,6 +104,16 @@ const orchestrator = new HarnessOrchestrator({});
 ## BEST PRACTICES
 REQUIRED: Use the provided `isExtractionError` / `isExtractionResult` type guards to branch on extraction outcomes.
 PROHIBITED: Mutating state directly without using the `IFileStateManager` port.
+
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["SDK Core Feature"] -->|implements| ARCH["Architecture ADR"]
+    THIS -->|tested_by| TESTS["Tests ADR"]
+    click ARCH "../adr/ARCHITECTURE.md"
+    click TESTS "../adr/TESTS.md"
+```
 
 ## REFERENCES
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Architectural decisions like Ports and Adapters.

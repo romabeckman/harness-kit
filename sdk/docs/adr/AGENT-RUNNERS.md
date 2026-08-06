@@ -42,6 +42,13 @@ AgentRunnerRegistry.register({
 const runner = new ClaudeCLIRunner() // Violates ports and adapters decoupling
 </code_example>
 
+## RUNNER FORMAT SPECIFICATIONS
+### AntigravityCLIRunner (`antigravity-cli`)
+- Executes binary `agy` with `--output-format json` by default.
+- Parses stdout JSON structure containing `status`, `response`, `structured_output`, and `usage`.
+- Extracts token counts: `inputTokens`, `outputTokens`, `cacheReadTokens`. Note that `outputTokens` already includes `thinking_tokens`.
+- Rejects invocation if `status` field equals `FAILED` or `ERROR`.
+
 ## PARAMETERS / CONFIGURATIONS
 | Name | Type | Required | Description | Default |
 |------|------|----------|-------------|---------|

@@ -34,6 +34,11 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 doc_type: adr
 domain: architecture
 stack: [list of main technologies]
+node_id: "adr:architecture"
+tags: [architecture, design-patterns, folder-structure]
+edges:
+  - relation: references
+    target: "adr:tests"
 updated: YYYY-MM-DD
 ---
 # Arquitetura do Projeto
@@ -80,6 +85,8 @@ updated: YYYY-MM-DD
 | External Service / Component | Purpose | Connection / Authentication Method |
 |------------------------------|---------|-------------------------------------|
 | [Name]                       | [Use]   | [How it connects]                   |
+
+<!-- DOCUMENT MAP: omitted — this baseline ADR has exactly 1 edge. The ## REFERENCES section below carries the relation. Include ## DOCUMENT MAP with Mermaid graph TD only when 2+ edges exist. -->
 
 ## REFERENCES
 

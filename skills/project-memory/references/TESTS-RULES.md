@@ -39,6 +39,11 @@ REQUIRED: Use the exact structure below as literal output when generating or upd
 doc_type: adr
 domain: testing
 stack: [list of testing frameworks]
+node_id: "adr:tests"
+tags: [testing, unit-tests, e2e-tests, coverage]
+edges:
+  - relation: references
+    target: "adr:architecture"
 updated: YYYY-MM-DD
 ---
 # Testing Protocol
@@ -80,6 +85,13 @@ FORBIDDEN: [e.g., Tests that depend on execution order]
 ## TROUBLESHOOTING
 - **Flaky tests:** [How to identify and report]
 - **Debug mode:** [Command or flag to run tests with verbose/debug output]
+
+<!-- DOCUMENT MAP: omitted — this baseline ADR has exactly 1 edge. The ## REFERENCES section below carries the relation. Include ## DOCUMENT MAP with Mermaid graph TD only when 2+ edges exist. -->
+
+## REFERENCES
+
+- [**README.md**](../README.md): Main documentation index.
+- [**ARCHITECTURE.md**](./ARCHITECTURE.md): System architecture and patterns.
 ```
 
 ---
