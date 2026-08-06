@@ -76,5 +76,6 @@ PROHIBITED: Hardcoding agent implementations directly into the orchestrator.
 
 ## CHANGE SUMMARY
 - **Added:** YAML frontmatter, standard folder structure block, CHANGE SUMMARY.
+- **Updated:** `AntigravityCLIRunner` defaults to `--output-format json` with structured JSON output parsing for tokens (`inputTokens`, `outputTokens`, `cacheReadTokens`), artefacts, and error handling.
 - **Updated:** Section titles converted to uppercase, imperative tone applied.
 - **Removed:** Extra boilerplate text.
