@@ -58,7 +58,7 @@ Use this table to determine which rules file to read and which constraints apply
 
 | Document | Rules file to read | Key constraint |
 |---|---|---|
-| `docs/README.md` | `./references/README-RULES.md` | Navigation index only — PROHIBITED: any technical content |
+| `docs/README.md` | `./references/README-RULES.md` | Navigation index only — PROHIBITED: any technical content — MUST sync in Step 10 |
 | `docs/adr/ARCHITECTURE.md` | `./references/ARCHITECTURE-RULES.md` | Architecture, layers, patterns, integrations |
 | `docs/adr/TESTS.md` | `./references/TESTS-RULES.md` | Test strategies, standards, execution commands |
 | `docs/.digest.md` | N/A | Machine-readable orientation digest — MUST read in Step 1 and update in Step 8 |
@@ -133,7 +133,7 @@ Execute steps in order. Do not skip steps.
 - Confirm imperative tone and bold on key terms.
 - Confirm UPPERCASE section titles are present.
 - Confirm cross-reference section exists at the end of each document.
-- REQUIRED: Confirm `docs/.digest.md` (Step 8) and `docs/.graph.json` (Step 9) have been updated.
+- REQUIRED: Confirm `docs/.digest.md` (Step 8), `docs/.graph.json` (Step 9), and `docs/README.md` (Step 10) have been updated.
 - REQUIRED: Confirm `docs/.digest.md` is under 60 lines and under 3000 characters, and its `## DOCUMENTATION INDEX` lists only baseline docs plus a pointer to `docs/.graph.json`.
 - REQUIRED: Confirm `docs/.digest.md` contains no absolute filesystem paths or `file://` URIs — every path is relative (plain text, not a Markdown link).
 
@@ -158,3 +158,9 @@ Execute steps in order. Do not skip steps.
 - Schema format: `{"nodes":[{"id":"...","type":"...","title":"...","path":"...","tags":[...]}],"edges":[{"source":"...","target":"...","relation":"..."}]}`.
 - PROHIBITED: Including `path` in edge entries — resolve target paths via `node_id` lookup in `nodes[]`. Duplicating path in edges wastes tokens and creates drift risk.
 - Purpose: macro graph routing for orchestrator without scanning individual code files.
+
+**Step 10 — Sync docs/README.md index**
+- REQUIRED: After updating `docs/.graph.json` (Step 9), reconcile `docs/README.md`'s index table against `nodes[]`: add a row for every node without one, remove rows whose file no longer exists, update descriptions that drifted.
+- REQUIRED: Treat `docs/.graph.json` `nodes[]` as the source of truth for *which* documents exist; `docs/README.md` adds the human-facing layer (`Mandatory`/`Optional`, 1–2 sentence description) on top of those same nodes.
+- Follow `./references/README-RULES.md` structure and prohibitions exactly — do not skip this step even when the user's request only targeted one specific document.
+- Purpose: prevents `docs/README.md` from drifting out of sync while `docs/.digest.md`/`docs/.graph.json` are kept current every invocation.
