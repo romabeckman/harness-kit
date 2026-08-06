@@ -152,13 +152,9 @@ export class DtoMappers {
       }
     }
 
-    // 4. Match against current working directory basename or single workspace
+    // 4. Match against current working directory basename
     if (basename(process.cwd()).toLowerCase() === lowerName) {
       return { path: resolve(process.cwd()) }
-    }
-    if (workspaces.length === 1) {
-      const cleanWs = workspaces[0].replace(/^["']|["']$/g, '')
-      return { path: resolve(cleanWs) }
     }
 
     return null
