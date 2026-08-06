@@ -74,7 +74,11 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     delete process.env.AUTH_BASIC_USER
     delete process.env.AUTH_BASIC_PASS
     delete process.env.AUTH_BEARER_TOKEN
-    delete process.env.PROJECT_MAPPINGS
+    
+    // Register project identifier mapping for all E2E tests
+    process.env.PROJECT_MAPPINGS = JSON.stringify({
+      backend: tempDir,
+    })
 
     if (existsSync(tempDir)) {
       rmSync(tempDir, { recursive: true, force: true })
@@ -135,15 +139,15 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     expect(jsonRes.json.paths['/health']).toBeDefined()
   })
 
-  it('3. Real Orchestration Job Execution Workflow (POST /orchestrator/run & GET /orchestrator/status/:id)', async () => {
+  it('3. Real Orchestration Job Execution Workflow using Project Identifier (POST /orchestrator/run & GET /orchestrator/status/:id)', async () => {
     server = new HttpServer({ port: 0, host: '127.0.0.1' })
     await server.start()
     const port = server.getPort()
 
-    // 1. Enqueue Job
+    // 1. Enqueue Job using registered project identifier "backend" (never raw file path)
     const runRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
       scope: 'e2e-http-run-test',
-      projectPaths: [tempDir],
+      project: 'backend',
       mode: 'fast',
       useWorktree: true,
     })
@@ -235,7 +239,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     const port = server.getPort()
 
     // 1. Unauthenticated request -> HTTP 401
-    const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { scope: 'test' })
+    const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { scope: 'test', project: 'backend' })
     expect(unauthRes.statusCode).toBe(401)
     expect(unauthRes.json.code).toBe('UNAUTHORIZED')
 
@@ -244,7 +248,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test' },
+      { scope: 'test', project: 'backend' },
       { Authorization: 'Bearer wrong_token' }
     )
     expect(invalidRes.statusCode).toBe(401)
@@ -254,7 +258,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test' },
+      { scope: 'test', project: 'backend' },
       { Authorization: 'Bearer secret_e2e_bearer_123' }
     )
     expect(validBearerRes.statusCode).toBe(202)
@@ -264,7 +268,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test' },
+      { scope: 'test', project: 'backend' },
       { 'X-API-Key': 'secret_e2e_bearer_123' }
     )
     expect(validApiKeyRes.statusCode).toBe(202)
@@ -280,7 +284,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     const port = server.getPort()
 
     // 1. Unauthenticated request -> HTTP 401 + WWW-Authenticate header
-    const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { scope: 'test' })
+    const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { scope: 'test', project: 'backend' })
     expect(unauthRes.statusCode).toBe(401)
     expect(unauthRes.headers['www-authenticate']).toContain('Basic realm=')
 
@@ -290,7 +294,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test' },
+      { scope: 'test', project: 'backend' },
       { Authorization: `Basic ${validCredentials}` }
     )
     expect(validRes.statusCode).toBe(202)
@@ -304,6 +308,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     // Rejects refine: true
     const refineRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
       scope: 'test',
+      project: 'backend',
       refine: true,
     })
     expect(refineRes.statusCode).toBe(400)
@@ -312,6 +317,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     // Rejects mode: deep_thinking
     const deepRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
       scope: 'test',
+      project: 'backend',
       mode: 'deep_thinking',
     })
     expect(deepRes.statusCode).toBe(400)
@@ -324,10 +330,6 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
   })
 
   it('9. Local Project Settings Management via Project Identifier (GET & POST /orchestrator/settings)', async () => {
-    process.env.PROJECT_MAPPINGS = JSON.stringify({
-      backend: tempDir,
-    })
-
     server = new HttpServer({ port: 0, host: '127.0.0.1' })
     await server.start()
     const port = server.getPort()
