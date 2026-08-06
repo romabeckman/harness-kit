@@ -51,6 +51,55 @@ export class OpenApiSpecGenerator {
             },
           },
         },
+        '/orchestrator/jobs/{id}/resume': {
+          post: {
+            summary: 'Resume/retry a stopped or failed job',
+            description: 'Resumes execution of a previously failed, stopped, or completed job by ID.',
+            parameters: [
+              {
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'UUID of the job to resume',
+                schema: { type: 'string' },
+              },
+            ],
+            requestBody: {
+              required: false,
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/RunRequestDtoExtended' },
+                },
+              },
+            },
+            responses: {
+              '202': {
+                description: 'Resumed job enqueued successfully',
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/RunResponseDto' },
+                  },
+                },
+              },
+              '400': {
+                description: 'Job is currently running or invalid ID',
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/HttpServerError' },
+                  },
+                },
+              },
+              '404': {
+                description: 'Previous job not found',
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/HttpServerError' },
+                  },
+                },
+              },
+            },
+          },
+        },
         '/orchestrator/status/{id}': {
           get: {
             summary: 'Get job status',

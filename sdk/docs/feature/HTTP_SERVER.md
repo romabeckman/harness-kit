@@ -67,6 +67,11 @@ src/server/
 │   ├── RunRequestDto.ts        # Request payload contracts
 │   ├── RunResponseDto.ts       # HTTP 202 response contract
 │   └── JobStatusDto.ts         # Status polling read model
+├── use-cases/
+│   ├── RunOrchestratorJobUseCase.ts # Enqueue job business logic
+│   ├── GetJobStatusUseCase.ts       # Status query business logic
+│   ├── GetHealthStatusUseCase.ts    # Health metrics business logic
+│   └── GetOpenApiDocsUseCase.ts    # Swagger/OpenAPI docs logic
 ├── mappers/
 │   └── DtoMappers.ts           # Anti-Corruption Layer (ACL)
 ├── mutex/
@@ -80,7 +85,7 @@ src/server/
 ├── services/
 │   └── JobRunnerService.ts     # Background worker loop service
 ├── routes/
-│   └── RouteHandlers.ts        # Native Node http.Server route dispatcher
+│   └── RouteHandlers.ts        # HTTP adapter controller (delegates to Use Cases)
 ├── docs/
 │   └── OpenApiSpecGenerator.ts # OpenAPI 3.0.3 generator & Swagger UI
 ├── HttpServer.ts               # Server lifecycle manager

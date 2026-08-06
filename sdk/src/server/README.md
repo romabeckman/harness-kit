@@ -108,8 +108,10 @@ Once the server is running, the following REST endpoints are available:
 
 | Method | Endpoint | Description | Response Code |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/orchestrator/run` | Enqueues a background orchestration job | `202 Accepted` |
+| `POST` | `/orchestrator/run` | Enqueues a new background orchestration job | `202 Accepted` |
+| `POST` | `/orchestrator/jobs/:id/resume` | Resumes/retries a previously stopped or failed job | `202 Accepted` |
 | `GET` | `/orchestrator/status/:id` | Polls current status and progress for job `:id` | `200 OK` / `404 Not Found` |
+| `DELETE` | `/orchestrator/jobs/clean` | Purges completed jobs from memory store & cleans stale worktrees | `200 OK` |
 | `GET` | `/health` | Liveness & readiness probe (active/queued jobs, memory usage) | `200 OK` |
 | `GET` | `/docs` | Interactive Swagger UI documentation page | `200 OK` (HTML) |
 | `GET` | `/docs/openapi.json` | Raw OpenAPI 3.0.3 specification JSON | `200 OK` (JSON) |
@@ -134,9 +136,29 @@ curl -X POST http://localhost:3000/orchestrator/run \
   }'
 ```
 
-- **`project`**: Project alias configured in server environment variables (e.g. `PROJECT_MAPPINGS` or `PROJECT_BACKEND_PATH`). The server resolves the internal path and git URL automatically.
-- **`branch`**: Target Git branch to checkout or build upon.
-- **`useWorktree`**: Spawns an isolated Git worktree for parallel job isolation.
+### Resuming a Stopped or Failed Job (`POST /orchestrator/jobs/:id/resume`)
+
+If a job stops or fails, you can resume execution from the exact phase it stopped by calling:
+
+```bash
+curl -X POST http://localhost:3000/orchestrator/jobs/job-123-abc/resume \
+  -H "Content-Type: application/json" \
+  -d '{
+    "steeringMessage": "try adjusting test thresholds"
+  }'
+```
+
+### Cleaning Old Jobs & Stale Worktrees (`DELETE /orchestrator/jobs/clean`)
+
+To purge completed/failed jobs from memory and clean up stale `.worktrees/` directories:
+
+```bash
+curl -X DELETE http://localhost:3000/orchestrator/jobs/clean \
+  -H "Content-Type: application/json" \
+  -d '{ "maxAgeMs": 3600000 }'
+```
+
+- **`maxAgeMs`**: Optional threshold in milliseconds (default `0` purges all completed/failed jobs).
 
 ### Example Response (`HTTP 202 Accepted`)
 

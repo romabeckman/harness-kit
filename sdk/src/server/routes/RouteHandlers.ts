@@ -1,24 +1,40 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { randomUUID } from 'node:crypto'
-import { isAbsolute, resolve } from 'node:path'
 import { HttpServerError } from '../types'
 import type { JobStoreRepository } from '../repository/JobStoreRepository'
 import type { JobQueue } from '../queue/JobQueue'
 import type { WorkspaceLockManager } from '../mutex/WorkspaceLockManager'
-import type { HttpServerConfig, OrchestrationJob, HealthStatusVo } from '../types'
+import type { HttpServerConfig } from '../types'
 import type { RunRequestDtoExtended } from '../dto/RunRequestDto'
-import type { RunResponseDto } from '../dto/RunResponseDto'
-import type { JobStatusDto } from '../dto/JobStatusDto'
-import { DtoMappers } from '../mappers/DtoMappers'
-import { OpenApiSpecGenerator } from '../docs/OpenApiSpecGenerator'
+import {
+  RunOrchestratorJobUseCase,
+  GetJobStatusUseCase,
+  GetHealthStatusUseCase,
+  GetOpenApiDocsUseCase,
+  ResumeOrchestratorJobUseCase,
+  CleanJobsAndWorktreesUseCase,
+} from '../use-cases'
 
 export class RouteHandlers {
+  private runJobUseCase: RunOrchestratorJobUseCase
+  private getStatusUseCase: GetJobStatusUseCase
+  private getHealthUseCase: GetHealthStatusUseCase
+  private docsUseCase: GetOpenApiDocsUseCase
+  private resumeJobUseCase: ResumeOrchestratorJobUseCase
+  private cleanUseCase: CleanJobsAndWorktreesUseCase
+
   constructor(
-    private jobStore: JobStoreRepository,
-    private jobQueue: JobQueue,
-    private lockManager?: WorkspaceLockManager,
-    private config?: HttpServerConfig
-  ) {}
+    jobStore: JobStoreRepository,
+    jobQueue: JobQueue,
+    _lockManager?: WorkspaceLockManager,
+    config?: HttpServerConfig
+  ) {
+    this.runJobUseCase = new RunOrchestratorJobUseCase(jobStore, jobQueue, config)
+    this.getStatusUseCase = new GetJobStatusUseCase(jobStore)
+    this.getHealthUseCase = new GetHealthStatusUseCase(jobStore, jobQueue)
+    this.docsUseCase = new GetOpenApiDocsUseCase()
+    this.resumeJobUseCase = new ResumeOrchestratorJobUseCase(jobStore, jobQueue)
+    this.cleanUseCase = new CleanJobsAndWorktreesUseCase(jobStore, config)
+  }
 
   /**
    * Main incoming request dispatcher for native Node http.Server.
@@ -31,6 +47,17 @@ export class RouteHandlers {
 
       if (method === 'POST' && pathname === '/orchestrator/run') {
         await this.handleRunJob(req, res)
+        return
+      }
+
+      if (method === 'POST' && pathname.startsWith('/orchestrator/jobs/') && pathname.endsWith('/resume')) {
+        const jobId = pathname.replace('/orchestrator/jobs/', '').replace('/resume', '')
+        await this.handleResumeJob(jobId, req, res)
+        return
+      }
+
+      if (method === 'DELETE' && pathname === '/orchestrator/jobs/clean') {
+        await this.handleCleanJobs(req, res)
         return
       }
 
@@ -75,83 +102,51 @@ export class RouteHandlers {
       throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in request')
     }
 
-    this.validatePathTraversal(body.projectPaths)
-
-    // DtoMappers validates refine: true and mode: 'deep_thinking' and throws HttpServerError(400)
-    DtoMappers.toOrchestratorConfig(body)
-
-    const workspacePath = DtoMappers.resolveWorkspacePath(body)
-    const jobId = randomUUID()
-    const createdAt = new Date().toISOString()
-
-    const job: OrchestrationJob = {
-      jobId,
-      status: 'queued',
-      workspacePath,
-      request: body,
-      createdAt,
-    }
-
-    await this.jobStore.save(job)
-    this.jobQueue.enqueue(job)
-
-    const responseDto: RunResponseDto = {
-      jobId,
-      status: 'queued',
-      workspacePath,
-      enqueuedAt: createdAt,
-      statusUrl: `/orchestrator/status/${jobId}`,
-    }
-
+    const responseDto = await this.runJobUseCase.execute(body)
     this.sendJson(res, 202, responseDto)
   }
 
+  private async handleResumeJob(jobId: string, req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const rawBody = await this.readBody(req)
+    let overrides: Partial<RunRequestDtoExtended> = {}
+    if (rawBody && rawBody.trim().length > 0) {
+      try {
+        overrides = JSON.parse(rawBody)
+      } catch {
+        throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in resume request')
+      }
+    }
+
+    const responseDto = await this.resumeJobUseCase.execute(jobId, overrides)
+    this.sendJson(res, 202, responseDto)
+  }
+
+  private async handleCleanJobs(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const rawBody = await this.readBody(req)
+    let maxAgeMs = 0
+    if (rawBody && rawBody.trim().length > 0) {
+      try {
+        const parsed = JSON.parse(rawBody)
+        if (typeof parsed.maxAgeMs === 'number') maxAgeMs = parsed.maxAgeMs
+      } catch {}
+    }
+
+    const cleanResult = await this.cleanUseCase.execute(maxAgeMs)
+    this.sendJson(res, 200, cleanResult)
+  }
+
   private async handleGetJobStatus(jobId: string, res: ServerResponse): Promise<void> {
-    if (!jobId || jobId.trim() === '') {
-      throw new HttpServerError(400, 'INVALID_JOB_ID', 'Job ID is required')
-    }
-
-    const job = await this.jobStore.findById(jobId)
-    if (!job) {
-      throw new HttpServerError(404, 'JOB_NOT_FOUND', `Job with ID '${jobId}' not found`)
-    }
-
-    const statusDto: JobStatusDto = {
-      jobId: job.jobId,
-      status: job.status,
-      workspacePath: job.workspacePath,
-      createdAt: job.createdAt,
-      startedAt: job.startedAt,
-      completedAt: job.completedAt,
-      progress: job.progress,
-      error: job.error,
-    }
-
+    const statusDto = await this.getStatusUseCase.execute(jobId)
     this.sendJson(res, 200, statusDto)
   }
 
   private async handleHealthCheck(res: ServerResponse): Promise<void> {
-    const activeJobs = await this.jobStore.listActive()
-    const queuedJobs = this.jobQueue.size
-    const mem = process.memoryUsage()
-
-    const healthVo: HealthStatusVo = {
-      status: 'healthy',
-      uptimeSeconds: Math.floor(process.uptime()),
-      timestamp: new Date().toISOString(),
-      activeJobs: activeJobs.length,
-      queuedJobs,
-      memoryUsage: {
-        rssMb: Math.round((mem.rss / (1024 * 1024)) * 100) / 100,
-        heapUsedMb: Math.round((mem.heapUsed / (1024 * 1024)) * 100) / 100,
-      },
-    }
-
+    const healthVo = await this.getHealthUseCase.execute()
     this.sendJson(res, 200, healthVo)
   }
 
   private handleDocsHtml(res: ServerResponse): void {
-    const html = OpenApiSpecGenerator.getSwaggerHtml()
+    const html = this.docsUseCase.getSwaggerHtml()
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',
       'Content-Length': Buffer.byteLength(html, 'utf-8'),
@@ -160,42 +155,8 @@ export class RouteHandlers {
   }
 
   private handleDocsJson(res: ServerResponse): void {
-    const spec = OpenApiSpecGenerator.getSpec()
+    const spec = this.docsUseCase.getSpec()
     this.sendJson(res, 200, spec)
-  }
-
-  private validatePathTraversal(projectPaths?: string[]): void {
-    if (!projectPaths || projectPaths.length === 0) return
-
-    const allowedWorkspaces = this.config?.allowedWorkspaces
-
-    for (const p of projectPaths) {
-      if (typeof p !== 'string') continue
-
-      if (p.includes('..')) {
-        throw new HttpServerError(
-          400,
-          'PATH_TRAVERSAL_DETECTED',
-          `Path traversal detected in projectPath: '${p}'`
-        )
-      }
-
-      if (allowedWorkspaces && allowedWorkspaces.length > 0) {
-        const resolvedPath = resolve(process.cwd(), p)
-        const isAllowed = allowedWorkspaces.some((allowed) => {
-          const resolvedAllowed = resolve(process.cwd(), allowed)
-          return resolvedPath === resolvedAllowed || resolvedPath.startsWith(resolvedAllowed + '/') || resolvedPath.startsWith(resolvedAllowed + '\\')
-        })
-
-        if (!isAllowed) {
-          throw new HttpServerError(
-            400,
-            'WORKSPACE_NOT_ALLOWED',
-            `Project path '${p}' is outside allowed workspaces.`
-          )
-        }
-      }
-    }
   }
 
   private async readBody(req: IncomingMessage, maxBytes = 1024 * 1024): Promise<string> {

@@ -14,6 +14,7 @@ export type {
 export type { RunRequestDto, RunRequestDtoExtended } from './dto/RunRequestDto'
 export type { RunResponseDto } from './dto/RunResponseDto'
 export type { JobStatusDto } from './dto/JobStatusDto'
+export * from './use-cases'
 
 export async function startHttpServer(options: HttpServerConfig = {}): Promise<HttpServer> {
   const server = new HttpServer(options)

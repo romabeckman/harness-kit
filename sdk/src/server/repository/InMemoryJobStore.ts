@@ -56,4 +56,23 @@ export class InMemoryJobStore implements JobStoreRepository {
     }
     return activeJobs
   }
+
+  async delete(jobId: string): Promise<boolean> {
+    return this.jobs.delete(jobId)
+  }
+
+  async purgeCompleted(maxAgeMs: number = 0): Promise<number> {
+    const now = Date.now()
+    let count = 0
+    for (const [jobId, job] of this.jobs.entries()) {
+      if (job.status === 'completed' || job.status === 'failed' || job.status === 'aborted') {
+        const completedTime = job.completedAt ? new Date(job.completedAt).getTime() : new Date(job.createdAt).getTime()
+        if (now - completedTime >= maxAgeMs) {
+          this.jobs.delete(jobId)
+          count++
+        }
+      }
+    }
+    return count
+  }
 }
