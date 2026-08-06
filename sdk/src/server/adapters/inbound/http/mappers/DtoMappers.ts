@@ -95,7 +95,6 @@ export class DtoMappers {
       projectPaths: resolvedWorkspaces,
       complexity: modeConfig.complexity,
       reworks: dto.reworks ?? 1,
-      steeringMessage: dto.steeringMessage,
       skipValidation: dto.skipValidation ?? modeConfig.skipValidation,
       skipMemory: dto.skipMemory ?? modeConfig.skipMemory,
       skipDeploy: dto.skipDeploy ?? false,
