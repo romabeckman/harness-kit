@@ -6,7 +6,7 @@ import { UpdateSettingsUseCase } from '../UpdateSettingsUseCase'
 import { HttpServerError } from '../../../domain/types'
 import type { HarnessSettingsMap } from '../../../../settings/SettingsSchema'
 
-describe('Settings Use Cases (Local Project Mode & Identifier Rule)', () => {
+describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', () => {
   const testWorkspaceDir = join(process.cwd(), 'tests', '.temp', 'settings-use-case-test')
   const originalEnv = { ...process.env }
 
@@ -45,22 +45,9 @@ describe('Settings Use Cases (Local Project Mode & Identifier Rule)', () => {
       expect(existsSync(settingsFilePath)).toBe(true)
     })
 
-    it('resolves single mapped project when project identifier is omitted', async () => {
+    it('throws HttpServerError(400, MISSING_PROJECT_IDENTIFIER) when project parameter is omitted', async () => {
       process.env.PROJECT_MAPPINGS = JSON.stringify({
         backend: testWorkspaceDir,
-      })
-
-      const useCase = new GetSettingsUseCase()
-      const result = await useCase.execute()
-
-      expect(result.project).toBe('backend')
-      expect(result.projectPath).toContain('settings-use-case-test')
-    })
-
-    it('throws HttpServerError(400, MISSING_PROJECT_IDENTIFIER) when project is omitted and multiple/no mappings exist', async () => {
-      process.env.PROJECT_MAPPINGS = JSON.stringify({
-        backend: '/path1',
-        frontend: '/path2',
       })
 
       const useCase = new GetSettingsUseCase()
@@ -97,6 +84,11 @@ describe('Settings Use Cases (Local Project Mode & Identifier Rule)', () => {
       const settingsFilePath = join(testWorkspaceDir, '.harness-kit', 'settings.json')
       const fileContent = JSON.parse(readFileSync(settingsFilePath, 'utf-8'))
       expect(fileContent['claude-sdk']?.timeoutMs).toBe(90000)
+    })
+
+    it('throws HttpServerError(400, MISSING_PROJECT_IDENTIFIER) when project parameter is omitted', async () => {
+      const updateUseCase = new UpdateSettingsUseCase()
+      await expect(updateUseCase.execute({})).rejects.toThrowError(HttpServerError)
     })
   })
 })

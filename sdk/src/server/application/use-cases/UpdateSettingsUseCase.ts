@@ -12,7 +12,25 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
     settingsPayload: HarnessSettingsMap,
     projectIdentifier?: string
   ): Promise<{ project: string; projectPath: string; settings: HarnessSettingsMap }> {
-    const { name, path: targetPath } = this.resolveProject(projectIdentifier)
+    if (!projectIdentifier || projectIdentifier.trim() === '') {
+      throw new HttpServerError(
+        400,
+        'MISSING_PROJECT_IDENTIFIER',
+        `Project identifier parameter 'project' is required in request.`
+      )
+    }
+
+    const name = projectIdentifier.trim()
+    const fromEnv = DtoMappers.resolveProjectFromEnv(name, this.config?.allowedWorkspaces)
+    if (!fromEnv?.path) {
+      throw new HttpServerError(
+        400,
+        'PROJECT_NOT_FOUND',
+        `Project identifier '${name}' is not registered in server environment (PROJECT_MAPPINGS, PROJECT_${name.toUpperCase()}_PATH, or ALLOWED_WORKSPACES).`
+      )
+    }
+
+    const targetPath = resolve(fromEnv.path)
 
     if (this.config?.allowedWorkspaces && this.config.allowedWorkspaces.length > 0) {
       const allowed = this.config.allowedWorkspaces.some((ws) => targetPath.startsWith(ws))
@@ -48,44 +66,5 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
       projectPath: targetPath,
       settings: mergedSettings,
     }
-  }
-
-  private resolveProject(projectIdentifier?: string): { name: string; path: string } {
-    if (projectIdentifier && projectIdentifier.trim() !== '') {
-      const fromEnv = DtoMappers.resolveProjectFromEnv(projectIdentifier, this.config?.allowedWorkspaces)
-      if (fromEnv?.path) {
-        return { name: projectIdentifier.trim(), path: resolve(fromEnv.path) }
-      }
-      throw new HttpServerError(
-        400,
-        'PROJECT_NOT_FOUND',
-        `Project identifier '${projectIdentifier}' is not registered in server environment (PROJECT_MAPPINGS, PROJECT_${projectIdentifier.toUpperCase()}_PATH, or ALLOWED_WORKSPACES).`
-      )
-    }
-
-    if (process.env.PROJECT_MAPPINGS) {
-      try {
-        const mappings = JSON.parse(process.env.PROJECT_MAPPINGS)
-        const keys = Object.keys(mappings)
-        if (keys.length === 1) {
-          const singleKey = keys[0]
-          const entry = mappings[singleKey]
-          const pathStr = typeof entry === 'string' ? entry : entry?.path
-          if (pathStr) {
-            return { name: singleKey, path: resolve(pathStr) }
-          }
-        }
-      } catch {}
-    }
-
-    if (this.config?.allowedWorkspaces && this.config.allowedWorkspaces.length === 1) {
-      return { name: 'default', path: resolve(this.config.allowedWorkspaces[0]) }
-    }
-
-    throw new HttpServerError(
-      400,
-      'MISSING_PROJECT_IDENTIFIER',
-      `Project identifier parameter 'project' is required in request.`
-    )
   }
 }
