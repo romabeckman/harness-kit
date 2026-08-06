@@ -1,4 +1,4 @@
-import { resolve, isAbsolute } from 'node:path'
+import { resolve, isAbsolute, basename } from 'node:path'
 import type { OrchestratorConfig } from '../../../../../orchestrator/types'
 import { resolveMode } from '../../../../../cli/services/run-service'
 import { HttpServerError } from '../../../../domain/types'
@@ -45,8 +45,8 @@ export class DtoMappers {
     }
   }
 
-  static resolveWorkspacePath(dto: RunRequestDtoExtended): string {
-    const fromEnv = this.resolveProjectFromEnv(dto.project)
+  static resolveWorkspacePath(dto: RunRequestDtoExtended, allowedWorkspaces?: string[]): string {
+    const fromEnv = this.resolveProjectFromEnv(dto.project, allowedWorkspaces)
     if (fromEnv?.path) {
       return resolve(fromEnv.path)
     }
@@ -61,29 +61,31 @@ export class DtoMappers {
   }
 
   static resolveProjectFromEnv(
-    projectName?: string
+    projectName?: string,
+    allowedWorkspaces?: string[]
   ): { path: string; gitUrl?: string } | null {
     if (!projectName || projectName.trim() === '') return null
     const name = projectName.trim()
+    const lowerName = name.toLowerCase()
 
+    // 1. PROJECT_MAPPINGS env var
     if (process.env.PROJECT_MAPPINGS) {
       try {
         const mappings = JSON.parse(process.env.PROJECT_MAPPINGS)
         if (mappings && typeof mappings === 'object') {
           if (mappings[name]) {
             const entry = mappings[name]
-            if (typeof entry === 'string') return { path: entry }
+            if (typeof entry === 'string') return { path: resolve(entry) }
             if (typeof entry === 'object' && typeof entry.path === 'string') {
-              return { path: entry.path, gitUrl: entry.gitUrl }
+              return { path: resolve(entry.path), gitUrl: entry.gitUrl }
             }
           }
-          const lowerName = name.toLowerCase()
           for (const key of Object.keys(mappings)) {
             if (key.toLowerCase() === lowerName) {
               const entry = mappings[key]
-              if (typeof entry === 'string') return { path: entry }
+              if (typeof entry === 'string') return { path: resolve(entry) }
               if (typeof entry === 'object' && typeof entry.path === 'string') {
-                return { path: entry.path, gitUrl: entry.gitUrl }
+                return { path: resolve(entry.path), gitUrl: entry.gitUrl }
               }
             }
           }
@@ -91,12 +93,34 @@ export class DtoMappers {
       } catch {}
     }
 
+    // 2. PROJECT_<NAME>_PATH env var
     const envPrefix = `PROJECT_${name.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`
     const pathEnv = process.env[`${envPrefix}_PATH`]
     const gitUrlEnv = process.env[`${envPrefix}_GIT_URL`]
 
     if (pathEnv) {
-      return { path: pathEnv, gitUrl: gitUrlEnv }
+      return { path: resolve(pathEnv), gitUrl: gitUrlEnv }
+    }
+
+    // 3. Match against allowed workspaces folder basename
+    const workspaces = allowedWorkspaces ?? (
+      process.env.ALLOWED_WORKSPACES
+        ? process.env.ALLOWED_WORKSPACES.split(',').map((p) => p.trim()).filter(Boolean)
+        : []
+    )
+
+    for (const ws of workspaces) {
+      if (basename(ws).toLowerCase() === lowerName) {
+        return { path: resolve(ws) }
+      }
+    }
+
+    // 4. Match against current working directory basename or single workspace
+    if (basename(process.cwd()).toLowerCase() === lowerName) {
+      return { path: resolve(process.cwd()) }
+    }
+    if (workspaces.length === 1) {
+      return { path: resolve(workspaces[0]) }
     }
 
     return null

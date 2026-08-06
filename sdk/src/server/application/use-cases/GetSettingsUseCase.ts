@@ -35,14 +35,14 @@ export class GetSettingsUseCase implements IGetSettingsUseCase {
 
   private resolveProject(projectIdentifier?: string): { name: string; path: string } {
     if (projectIdentifier && projectIdentifier.trim() !== '') {
-      const fromEnv = DtoMappers.resolveProjectFromEnv(projectIdentifier)
+      const fromEnv = DtoMappers.resolveProjectFromEnv(projectIdentifier, this.config?.allowedWorkspaces)
       if (fromEnv?.path) {
         return { name: projectIdentifier.trim(), path: resolve(fromEnv.path) }
       }
       throw new HttpServerError(
         400,
         'PROJECT_NOT_FOUND',
-        `Project identifier '${projectIdentifier}' is not registered in server environment (PROJECT_MAPPINGS or PROJECT_<NAME>_PATH).`
+        `Project identifier '${projectIdentifier}' is not registered in server environment (PROJECT_MAPPINGS, PROJECT_${projectIdentifier.toUpperCase()}_PATH, or ALLOWED_WORKSPACES).`
       )
     }
 
