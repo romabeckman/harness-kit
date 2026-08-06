@@ -61,6 +61,7 @@ describe('Scenario 6: Quota Exceeded and POC Mode Recovery', () => {
       sandboxDir,
       [
         '--resume',
+        '--steering', '',
         '--agent', 'antigravity-cli',
         '--mode', 'quick',
         '--skip-deploy',
@@ -127,6 +128,7 @@ describe('Scenario 6: Quota Exceeded and POC Mode Recovery', () => {
       sandboxDir,
       [
         '--resume',
+        '--steering', '',
         '--agent', 'antigravity-cli',
         '--mode', 'quick',
         '--skip-deploy',
