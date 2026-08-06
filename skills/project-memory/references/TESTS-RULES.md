@@ -42,9 +42,8 @@ stack: [list of testing frameworks]
 node_id: "adr:tests"
 tags: [testing, unit-tests, e2e-tests, coverage]
 edges:
-  - relation: tests
+  - relation: references
     target: "adr:architecture"
-    path: "./ARCHITECTURE.md"
 updated: YYYY-MM-DD
 ---
 # Testing Protocol
@@ -87,13 +86,7 @@ FORBIDDEN: [e.g., Tests that depend on execution order]
 - **Flaky tests:** [How to identify and report]
 - **Debug mode:** [Command or flag to run tests with verbose/debug output]
 
-## DOCUMENT MAP
-
-```mermaid
-graph TD
-    THIS["Tests ADR"] -->|tests| ARCH["Architecture ADR"]
-    click ARCH "./ARCHITECTURE.md"
-```
+<!-- DOCUMENT MAP: omitted — this baseline ADR has exactly 1 edge. The ## REFERENCES section below carries the relation. Include ## DOCUMENT MAP with Mermaid graph TD only when 2+ edges exist. -->
 
 ## REFERENCES
 

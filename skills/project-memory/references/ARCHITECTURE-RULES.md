@@ -37,9 +37,8 @@ stack: [list of main technologies]
 node_id: "adr:architecture"
 tags: [architecture, design-patterns, folder-structure]
 edges:
-  - relation: tested_by
+  - relation: references
     target: "adr:tests"
-    path: "./TESTS.md"
 updated: YYYY-MM-DD
 ---
 # Arquitetura do Projeto
@@ -87,13 +86,7 @@ updated: YYYY-MM-DD
 |------------------------------|---------|-------------------------------------|
 | [Name]                       | [Use]   | [How it connects]                   |
 
-## DOCUMENT MAP
-
-```mermaid
-graph TD
-    THIS["Architecture ADR"] -->|tested_by| TESTS["Tests ADR"]
-    click TESTS "./TESTS.md"
-```
+<!-- DOCUMENT MAP: omitted — this baseline ADR has exactly 1 edge. The ## REFERENCES section below carries the relation. Include ## DOCUMENT MAP with Mermaid graph TD only when 2+ edges exist. -->
 
 ## REFERENCES
 

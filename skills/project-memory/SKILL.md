@@ -24,9 +24,11 @@ You are a technical documentation specialist. Your sole responsibility is to cre
 
 ### FORMATTING & HYBRID GRAPH MODEL
 
-- REQUIRED: Include a YAML frontmatter at the top of every document (except README.md). Must include: `doc_type`, `domain`, `stack`, `node_id` (`<type>:<slug>`), `tags` (2–5 terms), `edges` (list of `{relation, target, path}`), `updated`.
+- REQUIRED: Include a YAML frontmatter at the top of every document (except README.md). Must include: `doc_type`, `domain`, `stack`, `node_id` (`<type>:<slug>`), `tags` (2–5 terms), `edges` (list of `{relation, target}`), `updated`.
+- PROHIBITED: Including `path` in frontmatter `edges[]` entries — resolve target paths via `node_id` lookup in `docs/.graph.json` nodes[]. Duplicating path in edges wastes tokens and creates a second source of truth that can drift.
 - REQUIRED: Include an embedded micro ````graph` JSON block directly after YAML frontmatter in every feature document (`docs/feature/*.md`), listing `node_id`, `domain`, `implements`, `tested_by`, `code_files` (array of source file paths), and `test_files` (array of test file paths).
-- REQUIRED: Include `## DOCUMENT MAP` section before `## REFERENCES` in every document with a concise Mermaid block (`graph TD`) rendering direct 1-hop connections for `THIS` document, including relative `click` link handlers.
+- REQUIRED: Include `## DOCUMENT MAP` with Mermaid `graph TD` only when the document has **2+ edges** in its frontmatter. For nodes with exactly 1 edge, omit this section — the `## REFERENCES` line already carries the relation.
+- PROHIBITED: Encoding the same edge in `edges[]` frontmatter, DOCUMENT MAP Mermaid, and REFERENCES prose simultaneously without added value.
 - REQUIRED: Use Standard Markdown only (no MDX, no custom extensions).
 - REQUIRED: Use UPPERCASE section titles (`## OVERVIEW`, `## LAYERS`, `## DOCUMENT MAP`, etc.) in every document.
 - REQUIRED: Use imperative verbs: "use", "add", "avoid" — never "you can use" or "it is recommended".
@@ -44,6 +46,9 @@ You are a technical documentation specialist. Your sole responsibility is to cre
 - REQUIRED: Explicit code labels (`# CORRECT` / `# WRONG`) inside every code example — never let the reader infer the intent.
 - REQUIRED: Cross-reference section at the end of every document listing related `docs/` files with a one-line description of the relationship.
 - REQUIRED: Standardize frontmatter `edges[].relation` enum: `implements`, `depends_on`, `tested_by`, `references`, `child_of`.
+  - `tested_by`: ALLOWED only from a feature/code node to the ADR defining its test strategy. PROHIBITED between two ADR/documentation nodes.
+  - `references`: default relation between two ADR/documentation nodes.
+  - PROHIBITED: reciprocal edges between the same pair with the same relation (A `tested_by` B and B `tested_by` A simultaneously). Encode each relation once, from the dependent node only.
 
 ---
 
@@ -110,9 +115,9 @@ Execute steps in order. Do not skip steps.
 - Identify which sections need code examples and whether CORRECT/WRONG labels apply.
 
 **Step 5 — Write or update content**
-- REQUIRED: Include graph YAML frontmatter (`node_id`, `tags`, `edges[]`) in every document.
+- REQUIRED: Include graph YAML frontmatter (`node_id`, `tags`, `edges[]`) in every document. PROHIBITED: `path` key in `edges[]` entries.
 - REQUIRED: For `docs/feature/*.md`, include top embedded micro ````graph` JSON block mapping `code_files` and `test_files`.
-- REQUIRED: Include `## DOCUMENT MAP` with clean, concise 1-hop Mermaid graph (`graph TD`) and relative `click` link handlers for target nodes.
+- REQUIRED: Include `## DOCUMENT MAP` with Mermaid `graph TD` only when the document has **2+ edges**. Omit for single-edge documents.
 - REQUIRED: If the target document already exists and the task is a targeted update (gap, correction, new integration), apply targeted edits only to the affected section, preserving the rest of the content. Full file regeneration is only allowed when the structure is outdated relative to the current template or if explicitly requested by the user.
 - Use the correct language syntax in all code blocks.
 - Add inline comments to code snippets.
@@ -122,7 +127,7 @@ Execute steps in order. Do not skip steps.
 - Confirm every generated document.
 - Confirm `node_id` format (`<type>:<slug>`) is unique and all `edges[].target` references resolve.
 - Confirm top embedded micro ````graph` block is present in feature docs with `code_files` and `test_files`.
-- Confirm `## DOCUMENT MAP` Mermaid graph is present and matches `edges[]` metadata.
+- Confirm `## DOCUMENT MAP` Mermaid graph is present for documents with 2+ edges and absent for single-edge documents.
 - Confirm `docs/README.md` contains only navigation links and 1–2 sentence descriptions.
 - Confirm terminal commands match the project's actual technology stack.
 - Confirm imperative tone and bold on key terms.
@@ -145,5 +150,7 @@ Execute steps in order. Do not skip steps.
 
 **Step 9 — Update macro document graph index**
 - REQUIRED: Update `docs/.graph.json` aggregating macro document nodes and document-level edges (`implements`, `depends_on`, `tested_by`).
-- Schema format: `{ "nodes": [ { "id": "...", "type": "...", "title": "...", "path": "...", "tags": [...] } ], "edges": [ { "source": "...", "target": "...", "relation": "...", "path": "..." } ] }`.
+- REQUIRED: Write `docs/.graph.json` as **compact JSON** (no indentation, `separators=(',',':')`) — it is a machine-read routing index, not a human-diffed file.
+- Schema format: `{"nodes":[{"id":"...","type":"...","title":"...","path":"...","tags":[...]}],"edges":[{"source":"...","target":"...","relation":"..."}]}`.
+- PROHIBITED: Including `path` in edge entries — resolve target paths via `node_id` lookup in `nodes[]`. Duplicating path in edges wastes tokens and creates drift risk.
 - Purpose: macro graph routing for orchestrator without scanning individual code files.

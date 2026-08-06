@@ -24,7 +24,6 @@ tags: [tag1, tag2]
 edges:
   - relation: [implements | depends_on | tested_by | references | child_of]
     target: "[target_node_id]"
-    path: "[relative/path/to/doc.md]"
 updated: YYYY-MM-DD
 ---
 # [Document Title]
@@ -110,12 +109,16 @@ FORBIDDEN: [Anti-pattern] — [brief justification]
 optimized_code()
 </code_tip>
 
+<!-- Include ## DOCUMENT MAP with Mermaid graph TD ONLY when the document has 2+ edges.
+     For single-edge documents, omit this section — ## REFERENCES already carries the relation. -->
 ## DOCUMENT MAP
 
 ```mermaid
 graph TD
     THIS["[Document Title]"] -->|[relation]| REL1["[Related Doc Title]"]
+    THIS -->|[relation]| REL2["[Related Doc Title]"]
     click REL1 "[relative/path/to/doc.md]"
+    click REL2 "[relative/path/to/doc.md]"
 ```
 
 ## REFERENCES
