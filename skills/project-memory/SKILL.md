@@ -134,6 +134,7 @@ Execute steps in order. Do not skip steps.
 - Confirm UPPERCASE section titles are present.
 - Confirm cross-reference section exists at the end of each document.
 - REQUIRED: Confirm `docs/.digest.md` (Step 8) and `docs/.graph.json` (Step 9) have been updated.
+- REQUIRED: Confirm `docs/.digest.md` is under 60 lines and under 3000 characters, and its `## DOCUMENTATION INDEX` lists only baseline docs plus a pointer to `docs/.graph.json`.
 
 **Step 7 — Deliver**
 - Output the generated or updated content.
@@ -143,8 +144,9 @@ Execute steps in order. Do not skip steps.
 - REQUIRED: After every invocation, generate or update `docs/.digest.md` with a machine-readable summary.
 - Extract from `docs/adr/ARCHITECTURE.md`: main architectural pattern, layers list, DI strategy, key REQUIRED/FORBIDDEN constraints.
 - Extract from `docs/adr/TESTS.md`: test framework, run commands, coverage thresholds.
-- List all documents in `docs/feature/` and `docs/adr/` with one-line descriptions.
-- REQUIRED: Keep digest under 60 lines — this is an LLM orientation file, not a replacement for full docs.
+- REQUIRED: In `## DOCUMENTATION INDEX`, list only the baseline documents (`docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) with one-line descriptions, followed by a note directing to `docs/.graph.json` for the complete document list, tags, and relations.
+- PROHIBITED: Enumerating every `docs/feature/` and `docs/adr/` document in `## DOCUMENTATION INDEX` — this duplicates `docs/.graph.json` nodes[] and wastes tokens on every digest read.
+- REQUIRED: Keep digest under 60 lines and under 3000 characters — this is an LLM orientation file, not a replacement for full docs.
 - REQUIRED: Include a `## LAST UPDATED` section with the current date.
 - Purpose: enables `tdd-orchestrator` and other skills to perform initial orientation without reading full documents.
 
