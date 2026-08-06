@@ -1,20 +1,18 @@
 import { HttpServer } from './HttpServer'
-import type { HttpServerConfig } from './types'
+import type { HttpServerConfig } from './domain/types'
 
 export { HttpServer }
-export { HttpServerError } from './types'
-export type {
-  HttpServerConfig,
-  HealthStatusVo,
-  OpenApiSpec,
-  OrchestrationJob,
-  JobStatus,
-} from './types'
+export * from './domain/types'
 
-export type { RunRequestDto, RunRequestDtoExtended } from './dto/RunRequestDto'
-export type { RunResponseDto } from './dto/RunResponseDto'
-export type { JobStatusDto } from './dto/JobStatusDto'
-export * from './use-cases'
+export type { RunRequestDto, RunRequestDtoExtended } from './adapters/inbound/http/dto/RunRequestDto'
+export type { RunResponseDto } from './adapters/inbound/http/dto/RunResponseDto'
+export type { JobStatusDto } from './adapters/inbound/http/dto/JobStatusDto'
+
+export * from './application/ports/inbound'
+export * from './application/ports/outbound'
+export * from './application/use-cases'
+export * from './adapters/outbound/auth'
+export * from './adapters'
 
 export async function startHttpServer(options: HttpServerConfig = {}): Promise<HttpServer> {
   const server = new HttpServer(options)

@@ -1,9 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import http from 'node:http'
 import { HttpServer } from '../HttpServer'
-import { InMemoryJobStore } from '../repository/InMemoryJobStore'
-import { WorkspaceLockManager } from '../mutex/WorkspaceLockManager'
-import { JobQueue } from '../queue/JobQueue'
+import { InMemoryJobStore, WorkspaceLockManager, JobQueue } from '../adapters'
 
 describe('HttpServer', () => {
   let server: HttpServer | undefined

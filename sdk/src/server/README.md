@@ -85,8 +85,56 @@ docker compose ps
 | :--- | :--- | :--- |
 | `PORT` | `3000` | HTTP port to listen on |
 | `HOST` | `0.0.0.0` | Host interface to bind (`0.0.0.0` for all interfaces, `127.0.0.1` for localhost only) |
-| `ALLOWED_WORKSPACES` | *None* | Comma-separated list of allowed workspace directories/repos on VM (e.g. `/workspaces/repo-a,/workspaces/repo-b`) |
-| `GIT_REPOSITORIES` | *None* | Alias for `ALLOWED_WORKSPACES` |
+| `ALLOWED_WORKSPACES` | *None* | Comma-separated list of allowed workspace directories/repos on VM |
+| `PROJECT_MAPPINGS` | *None* | JSON object mapping project aliases to `{ path, gitUrl }` |
+| `AUTH_MODE` | `none` | Authentication strategy: `none` (disabled), `basic`, or `bearer` |
+| `AUTH_BEARER_TOKEN` | *None* | Secret token for Bearer auth / `X-API-Key` header |
+| `AUTH_BASIC_USER` | `admin` | Username for HTTP Basic Auth |
+| `AUTH_BASIC_PASS` | *None* | Password for HTTP Basic Auth |
+
+---
+
+## Authentication & Security Options
+
+Authentication is optional and configurable via the `AUTH_MODE` environment variable.
+
+### 1. Bearer Token / API Key Mode (`AUTH_MODE=bearer`)
+Recommended for CI/CD runners and machine-to-machine integrations.
+
+```bash
+# Environment variables
+AUTH_MODE=bearer
+AUTH_BEARER_TOKEN=hrns_sk_live_9876543210
+
+# cURL with Bearer header
+curl -X POST http://localhost:3000/orchestrator/run \
+  -H "Authorization: Bearer hrns_sk_live_9876543210" \
+  -H "Content-Type: application/json" \
+  -d '{ "scope": "build", "project": "backend" }'
+
+# Or using X-API-Key header
+curl -X POST http://localhost:3000/orchestrator/run \
+  -H "X-API-Key: hrns_sk_live_9876543210" \
+  -H "Content-Type: application/json" \
+  -d '{ "scope": "build", "project": "backend" }'
+```
+
+### 2. Basic Auth Mode (`AUTH_MODE=basic`)
+
+```bash
+# Environment variables
+AUTH_MODE=basic
+AUTH_BASIC_USER=admin
+AUTH_BASIC_PASS=secret123
+
+# cURL with Basic Auth
+curl -u admin:secret123 -X POST http://localhost:3000/orchestrator/run \
+  -H "Content-Type: application/json" \
+  -d '{ "scope": "build", "project": "backend" }'
+```
+
+### 3. Disabled Mode (`AUTH_MODE=none`)
+Default mode for local development. Requests require no authorization headers.
 
 ---
 

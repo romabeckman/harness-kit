@@ -1,11 +1,13 @@
 import { createServer, Server, IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
-import { InMemoryJobStore } from './repository/InMemoryJobStore'
-import { WorkspaceLockManager } from './mutex/WorkspaceLockManager'
-import { JobQueue } from './queue/JobQueue'
-import { JobRunnerService } from './services/JobRunnerService'
-import { RouteHandlers } from './routes/RouteHandlers'
-import type { HttpServerConfig } from './types'
+import {
+  InMemoryJobStore,
+  WorkspaceLockManager,
+  JobQueue,
+  JobRunnerService,
+  RouteHandlers,
+} from './adapters'
+import type { HttpServerConfig } from './domain/types'
 
 export class HttpServer {
   private jobStore: InMemoryJobStore

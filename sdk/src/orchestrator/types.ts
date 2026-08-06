@@ -23,6 +23,7 @@ export interface OrchestratorConfig {
   /** When true, Phase DEPLOY (git stage/commit/push) is skipped and pipeline halts after Phase F. */
   skipDeploy?: boolean
   /** When true, interactive REFINEMENT phase runs before Phase PLANNING. */
+  steeringMessage?: string
   enableRefinement?: boolean
 }
 

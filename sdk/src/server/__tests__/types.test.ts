@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { HttpServerError } from '../types'
-import type { HttpServerConfig, HealthStatusVo, OpenApiSpec, OrchestrationJob, JobStatus } from '../types'
-import type { RunRequestDto, RunRequestDtoExtended } from '../dto/RunRequestDto'
-import type { RunResponseDto } from '../dto/RunResponseDto'
-import type { JobStatusDto } from '../dto/JobStatusDto'
+import { HttpServerError } from '../domain/types'
+import type { HttpServerConfig, HealthStatusVo, OpenApiSpec, OrchestrationJob, JobStatus } from '../domain/types'
+import type { RunRequestDto, RunRequestDtoExtended } from '../adapters/inbound/http/dto/RunRequestDto'
+import type { RunResponseDto } from '../adapters/inbound/http/dto/RunResponseDto'
+import type { JobStatusDto } from '../adapters/inbound/http/dto/JobStatusDto'
 
 describe('Server Types and DTOs', () => {
   describe('HttpServerError', () => {

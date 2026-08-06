@@ -59,37 +59,45 @@ Provides a non-interactive HTTP daemon service and Docker container environment 
 ## OVERVIEW
 The `http_server` module acts as an Inbound Adapter in Hexagonal Architecture. It exposes REST API endpoints for triggering autonomous TDD orchestration jobs, polling execution status, probing container health, and rendering OpenAPI Swagger documentation without interactive TTY dependencies.
 
-## FOLDER STRUCTURE
+## FOLDER STRUCTURE (HEXAGONAL ARCHITECTURE)
 ```
 src/server/
-├── types.ts                    # Core interfaces & HttpServerError
-├── dto/
-│   ├── RunRequestDto.ts        # Request payload contracts
-│   ├── RunResponseDto.ts       # HTTP 202 response contract
-│   └── JobStatusDto.ts         # Status polling read model
-├── use-cases/
-│   ├── RunOrchestratorJobUseCase.ts # Enqueue job business logic
-│   ├── GetJobStatusUseCase.ts       # Status query business logic
-│   ├── GetHealthStatusUseCase.ts    # Health metrics business logic
-│   └── GetOpenApiDocsUseCase.ts    # Swagger/OpenAPI docs logic
-├── mappers/
-│   └── DtoMappers.ts           # Anti-Corruption Layer (ACL)
-├── mutex/
-│   ├── LockRepository.ts       # Workspace lock port interface
-│   └── WorkspaceLockManager.ts # In-memory per-workspace lock manager
-├── repository/
-│   ├── JobStoreRepository.ts   # Job state repository port
-│   └── InMemoryJobStore.ts     # Thread-safe in-memory job store
-├── queue/
-│   └── JobQueue.ts             # FIFO job queue & worker notifier
-├── services/
-│   └── JobRunnerService.ts     # Background worker loop service
-├── routes/
-│   └── RouteHandlers.ts        # HTTP adapter controller (delegates to Use Cases)
-├── docs/
-│   └── OpenApiSpecGenerator.ts # OpenAPI 3.0.3 generator & Swagger UI
-├── HttpServer.ts               # Server lifecycle manager
-└── index.ts                    # Public exports & CLI entry point
+├── domain/                      # Domain Layer (Entities, Value Objects, Domain Errors)
+│   └── types.ts                 # JobStatus, HealthStatusVo, HttpServerError, OrchestrationJob
+├── application/                 # Application Layer (Ports & Orchestration)
+│   ├── ports/
+│   │   ├── inbound/             # Primary / Driving Ports (Use Case Interfaces)
+│   │   │   ├── IRunOrchestratorJobUseCase.ts
+│   │   │   ├── IGetJobStatusUseCase.ts
+│   │   │   ├── IResumeOrchestratorJobUseCase.ts
+│   │   │   ├── ICleanJobsAndWorktreesUseCase.ts
+│   │   │   └── IGetHealthStatusUseCase.ts
+│   │   └── outbound/            # Secondary / Driven Ports (Infrastructure Interfaces)
+│   │       ├── JobStoreRepository.ts
+│   │       ├── LockRepository.ts
+│   │       └── IAuthStrategy.ts
+│   └── use-cases/               # Use Case Implementations
+│       ├── RunOrchestratorJobUseCase.ts
+│       ├── GetJobStatusUseCase.ts
+│       ├── ResumeOrchestratorJobUseCase.ts
+│       ├── CleanJobsAndWorktreesUseCase.ts
+│       ├── GetHealthStatusUseCase.ts
+│       └── GetOpenApiDocsUseCase.ts
+├── adapters/                    # Infrastructure & Technical Adapters Layer
+│   ├── inbound/                 # Primary / Driving Adapters
+│   │   └── http/
+│   │       ├── RouteHandlers.ts # HTTP Dispatcher / Controller Adapter
+│   │       ├── DtoMappers.ts    # Anti-Corruption Layer (ACL)
+│   │       ├── OpenApiSpecGenerator.ts # Swagger/OpenAPI Specs Adapter
+│   │       └── dto/             # Request & Response Data Transfer Objects
+│   └── outbound/                # Secondary / Driven Adapters
+│       ├── persistence/         # InMemoryJobStore persistence adapter
+│       ├── mutex/               # WorkspaceLockManager mutex adapter
+│       ├── queue/               # JobQueue FIFO worker adapter
+│       ├── auth/                # BasicAuthStrategy, BearerAuthStrategy, NoAuthStrategy
+│       └── runner/              # JobRunnerService execution worker adapter
+├── HttpServer.ts                # Application Bootstrap & Lifecycle Manager
+└── index.ts                     # Public SDK Exports & Entry Point
 ```
 
 ## API ENDPOINTS

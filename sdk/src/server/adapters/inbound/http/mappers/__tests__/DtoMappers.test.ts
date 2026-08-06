@@ -1,0 +1,71 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { DtoMappers } from '../DtoMappers'
+import { HttpServerError } from '../../../../../domain/types'
+import { RunMode } from '../../../../../../orchestrator/types'
+
+describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
+  const originalEnv = { ...process.env }
+
+  beforeEach(() => {
+    delete process.env.PROJECT_MAPPINGS
+    delete process.env.PROJECT_BACKEND_PATH
+    delete process.env.PROJECT_BACKEND_GIT_URL
+  })
+
+  afterEach(() => {
+    process.env = { ...originalEnv }
+  })
+
+  it('UT-1.2.6: Rejects refine: true with HttpServerError(400)', () => {
+    expect(() =>
+      DtoMappers.toOrchestratorConfig({ scope: 'test', refine: true })
+    ).toThrowError(HttpServerError)
+
+    try {
+      DtoMappers.toOrchestratorConfig({ scope: 'test', refine: true })
+    } catch (err: any) {
+      expect(err.statusCode).toBe(400)
+      expect(err.code).toBe('REFINE_NOT_SUPPORTED_IN_HTTP_MODE')
+    }
+  })
+
+  it('UT-1.2.7: Rejects mode: "deep_thinking" with HttpServerError(400)', () => {
+    expect(() =>
+      DtoMappers.toOrchestratorConfig({ scope: 'test', mode: RunMode.DEEP_THINKING })
+    ).toThrowError(HttpServerError)
+
+    try {
+      DtoMappers.toOrchestratorConfig({ scope: 'test', mode: RunMode.DEEP_THINKING })
+    } catch (err: any) {
+      expect(err.statusCode).toBe(400)
+      expect(err.code).toBe('INTERACTIVE_MODE_NOT_ALLOWED')
+    }
+  })
+
+  it('UT-1.2.8: Maps mode ("quick", "fast", "thinking") to OrchestratorConfig using resolveMode', () => {
+    const quickConfig = DtoMappers.toOrchestratorConfig({ scope: 'quick-test', mode: 'quick' })
+    expect(quickConfig.skipValidation).toBe(true)
+    expect(quickConfig.skipMemory).toBe(true)
+
+    const fastConfig = DtoMappers.toOrchestratorConfig({ scope: 'fast-test', mode: 'fast' })
+    expect(fastConfig.complexity).toBe('LOW')
+    expect(fastConfig.skipValidation).toBe(false)
+  })
+
+  it('UT-1.2.9: Normalizes workspace paths to canonical absolute format', () => {
+    const resolvedPath = DtoMappers.resolveWorkspacePath({ projectPaths: ['./src'] })
+    expect(resolvedPath).toContain('src')
+    expect(resolvedPath.length).toBeGreaterThan(5)
+  })
+
+  it('UT-1.2.10: Resolves project alias from environment variables', () => {
+    process.env.PROJECT_MAPPINGS = JSON.stringify({
+      backend: { path: '/workspaces/backend-repo', gitUrl: 'https://github.com/org/backend.git' },
+    })
+
+    const envResolved = DtoMappers.resolveProjectFromEnv('backend')
+    expect(envResolved).not.toBeNull()
+    expect(envResolved?.path).toBe('/workspaces/backend-repo')
+    expect(envResolved?.gitUrl).toBe('https://github.com/org/backend.git')
+  })
+})
