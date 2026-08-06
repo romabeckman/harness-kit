@@ -3,7 +3,7 @@ doc_type: feature
 domain: server
 stack: [TypeScript, Node.js, Docker]
 node_id: "feature:http_server"
-tags: [server, http, api, docker, swagger, health, settings]
+tags: [server, http, api, docker, swagger, health, settings, agents]
 edges:
   - relation: implements
     target: "adr:architecture"
@@ -74,25 +74,22 @@ Provides a non-interactive HTTP daemon service and Docker container environment 
 ## OVERVIEW
 The `http_server` module acts as an Inbound Adapter in Hexagonal Architecture. It exposes REST API endpoints for triggering autonomous TDD orchestration jobs, polling execution status, probing container health, rendering OpenAPI Swagger documentation, and managing project-local model settings (`settings.json`) without interactive TTY dependencies.
 
-## MANDATORY RULE: PROJECT IDENTIFIER MAPPING
+## MANDATORY RULES: PROJECT & AGENT PARAMETERS
 > [!IMPORTANT]
-> **Clients MUST NEVER send internal server filesystem paths (e.g. `/workspaces/backend` or `C:\Users\...\app`).**  
-> Clients MUST ONLY send registered **project identifiers** (e.g. `"project": "backend"` or `?project=backend`).
+> **1. Project Identifier Rule:** Clients MUST NEVER send internal server filesystem paths (e.g. `/workspaces/backend`). Clients MUST ONLY send registered project identifiers (e.g. `"project": "backend"` or `?project=backend`).  
+> **2. Agent Parameter Rule:** Clients MUST ALWAYS send a valid registered `agent` runner strategy when executing orchestration jobs or configuring settings.
 
-### How Project Identifiers Are Resolved:
-The HTTP daemon resolves project names to physical filesystem paths using environment variables configured on the server:
+### Registered Valid Agents (`src/agent-runner/`):
+- `claude-cli` (Anthropic Claude CLI agent)
+- `claude-sdk` (Anthropic Claude Node.js SDK agent)
+- `antigravity-cli` (Google DeepMind Antigravity CLI agent)
+- `copilot-sdk` (GitHub Copilot Node.js SDK agent)
+- `copilot-cli` (GitHub Copilot CLI agent)
+- `cursor-sdk` (Cursor AI SDK agent)
+- `cursor-cli` (Cursor AI CLI agent)
+- `kiro-cli` (AWS Kiro CLI agent)
 
-1. **JSON Mapping (`PROJECT_MAPPINGS`)**:
-   ```bash
-   PROJECT_MAPPINGS={"backend":{"path":"/workspaces/backend","gitUrl":"https://github.com/my-org/backend.git"}}
-   ```
-2. **Prefixed Environment Variables (`PROJECT_<NAME>_PATH`)**:
-   ```bash
-   PROJECT_BACKEND_PATH=/workspaces/backend
-   PROJECT_BACKEND_GIT_URL=https://github.com/my-org/backend.git
-   ```
-
-If a client sends an unregistered project identifier, the server throws `HTTP 400 Bad Request` with error code `PROJECT_NOT_FOUND`.
+If a request omits `agent` or passes an unregistered agent, the server returns `HTTP 400 Bad Request` with error code `MISSING_AGENT_PARAMETER` or `INVALID_AGENT`.
 
 ---
 
@@ -151,6 +148,7 @@ Enqueues a background orchestration job. Returns `HTTP 202 Accepted` immediately
   {
     "scope": "implement-feature-x",
     "project": "backend",
+    "agent": "claude-cli",
     "branch": "feature/login-auth",
     "mode": "fast",
     "useWorktree": true
@@ -182,14 +180,17 @@ Retrieves execution state and progress of an orchestration job.
   }
   ```
 
-### 3. `GET /orchestrator/settings?project=backend`
+### 3. `GET /orchestrator/settings?project=backend&agent=claude-cli`
 Consults project-local model configuration from `.harness-kit/settings.json`. If the file does not exist in the target project, creates it with default settings.
 
 - **Query Parameters**:
-  - `project`: Registered project identifier (e.g. `"backend"`).
+  - `project` (mandatory): Registered project identifier (e.g. `"backend"`).
+  - `agent` (optional): Valid agent runner strategy to filter (e.g. `"claude-cli"`).
 - **Response Payload** (`HTTP 200 OK`):
   ```json
   {
+    "project": "backend",
+    "agent": "claude-cli",
     "projectPath": "/workspaces/backend",
     "settings": {
       "claude-cli": {
@@ -207,6 +208,7 @@ Creates or updates model configuration in the project's local `.harness-kit/sett
   ```json
   {
     "project": "backend",
+    "agent": "claude-cli",
     "settings": {
       "claude-cli": {
         "timeoutMs": 90000,
@@ -218,6 +220,8 @@ Creates or updates model configuration in the project's local `.harness-kit/sett
 - **Response Payload** (`HTTP 200 OK`):
   ```json
   {
+    "project": "backend",
+    "agent": "claude-cli",
     "projectPath": "/workspaces/backend",
     "settings": {
       "claude-cli": {
@@ -299,23 +303,21 @@ console.log(`Server running on port ${server.getPort()}`)
 // Graceful shutdown on process exit
 await server.stop()
 
-# CORRECT: Client passes project identifier "backend"
-// Server resolves "backend" -> "/workspaces/backend" via PROJECT_MAPPINGS
-const payload = { scope: "build-feature", project: "backend" }
+# CORRECT: Client passes project identifier "backend" and agent "claude-cli"
+const payload = { scope: "build-feature", project: "backend", agent: "claude-cli" }
 
-# WRONG: Client passing raw internal server file path
-// Violates project identifier rule
-const invalidPayload = { scope: "build", projectPaths: ["/internal/server/path"] }
+# WRONG: Omitting mandatory agent parameter
+// DtoMappers throws HTTP 400 Bad Request (MISSING_AGENT_PARAMETER)
+const invalidPayload = { scope: "build", project: "backend" }
 ```
 
 ---
 
 ## BEST PRACTICES
-REQUIRED: Clients MUST pass registered project identifiers (e.g. `"project": "backend"`), never direct server file paths.  
+REQUIRED: Clients MUST pass registered project identifiers (e.g. `"project": "backend"`) and valid agent runner (`"agent": "claude-cli"`).  
 REQUIRED: Use `DtoMappers` ACL to validate incoming payloads before queueing jobs.  
 REQUIRED: Settings MUST be persisted locally in the target project's `.harness-kit/settings.json` file.  
 REQUIRED: Ensure background jobs use isolated Git worktrees (`useWorktree: true` by default) to allow parallel executions on the same repository.  
-REQUIRED: Automatic Git commit (`git add -A` + `git commit`) and push (`git push origin <branch>`) occur on job completion before worktree cleanup.  
 PROHIBITED: Passing interactive stdin prompts (`refine: true` or `mode: "deep_thinking"`) in HTTP requests.
 
 ---

@@ -43,11 +43,11 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
   })
 
   it('UT-1.2.8: Maps mode ("quick", "fast", "thinking") to OrchestratorConfig using resolveMode', () => {
-    const quickConfig = DtoMappers.toOrchestratorConfig({ scope: 'quick-test', mode: 'quick' })
+    const quickConfig = DtoMappers.toOrchestratorConfig({ scope: 'quick-test', agent: 'claude-cli', mode: 'quick' })
     expect(quickConfig.skipValidation).toBe(true)
     expect(quickConfig.skipMemory).toBe(true)
 
-    const fastConfig = DtoMappers.toOrchestratorConfig({ scope: 'fast-test', mode: 'fast' })
+    const fastConfig = DtoMappers.toOrchestratorConfig({ scope: 'fast-test', agent: 'claude-cli', mode: 'fast' })
     expect(fastConfig.complexity).toBe('LOW')
     expect(fastConfig.skipValidation).toBe(false)
   })

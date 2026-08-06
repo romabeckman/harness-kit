@@ -1,5 +1,9 @@
 import type { HarnessSettingsMap } from '../../../../settings/SettingsSchema'
 
 export interface IUpdateSettingsUseCase {
-  execute(settings: HarnessSettingsMap, projectIdentifier?: string): Promise<{ project: string; projectPath: string; settings: HarnessSettingsMap }>
+  execute(
+    settings: HarnessSettingsMap,
+    projectIdentifier?: string,
+    agentIdentifier?: string
+  ): Promise<{ project: string; agent?: string; projectPath: string; settings: HarnessSettingsMap }>
 }

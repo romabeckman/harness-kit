@@ -4,6 +4,14 @@ import type { OrchestratorConfig } from '../../../../../orchestrator/types'
 import { resolveMode } from '../../../../../cli/services/run-service'
 import { HttpServerError } from '../../../../domain/types'
 import type { RunRequestDtoExtended } from '../dto/RunRequestDto'
+import { Runner } from '../../../../../agent-runner/types'
+
+const VALID_RUNNERS = Object.values(Runner) as string[]
+
+function isValidRunner(agent?: string): boolean {
+  if (!agent || agent.trim() === '') return false
+  return VALID_RUNNERS.includes(agent.trim().toLowerCase())
+}
 
 function ensureEnvLoaded(): void {
   const envFile = resolve(process.cwd(), '.env')
@@ -47,6 +55,23 @@ export class DtoMappers {
         400,
         'INTERACTIVE_MODE_NOT_ALLOWED',
         'Interactive mode deep_thinking is not allowed in background HTTP execution.'
+      )
+    }
+
+    const selectedAgent = dto.agent ?? dto.agentType
+    if (!selectedAgent || selectedAgent.trim() === '') {
+      throw new HttpServerError(
+        400,
+        'MISSING_AGENT_PARAMETER',
+        `Parameter 'agent' (or 'agentType') is required. Valid agents: ${VALID_RUNNERS.join(', ')}`
+      )
+    }
+
+    if (!isValidRunner(selectedAgent)) {
+      throw new HttpServerError(
+        400,
+        'INVALID_AGENT',
+        `Agent '${selectedAgent}' is invalid. Valid agents: ${VALID_RUNNERS.join(', ')}`
       )
     }
 

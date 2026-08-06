@@ -4,20 +4,39 @@ import { HttpServerError, HttpServerConfig } from '../../domain/types'
 import { DtoMappers } from '../../adapters/inbound/http/mappers/DtoMappers'
 import type { HarnessSettingsMap } from '../../../settings/SettingsSchema'
 import type { IUpdateSettingsUseCase } from '../ports/inbound/IUpdateSettingsUseCase'
+import { Runner } from '../../../agent-runner/types'
+
+const VALID_RUNNERS = Object.values(Runner) as string[]
+
+function isValidRunner(agent?: string): boolean {
+  if (!agent || agent.trim() === '') return false
+  return VALID_RUNNERS.includes(agent.trim().toLowerCase())
+}
 
 export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
   constructor(private config?: HttpServerConfig) {}
 
   async execute(
     settingsPayload: HarnessSettingsMap,
-    projectIdentifier?: string
-  ): Promise<{ project: string; projectPath: string; settings: HarnessSettingsMap }> {
+    projectIdentifier?: string,
+    agentIdentifier?: string
+  ): Promise<{ project: string; agent?: string; projectPath: string; settings: HarnessSettingsMap }> {
     if (!projectIdentifier || projectIdentifier.trim() === '') {
       throw new HttpServerError(
         400,
         'MISSING_PROJECT_IDENTIFIER',
         `Project identifier parameter 'project' is required in request.`
       )
+    }
+
+    if (agentIdentifier && agentIdentifier.trim() !== '') {
+      if (!isValidRunner(agentIdentifier)) {
+        throw new HttpServerError(
+          400,
+          'INVALID_AGENT',
+          `Agent '${agentIdentifier}' is invalid. Valid agents: ${VALID_RUNNERS.join(', ')}`
+        )
+      }
     }
 
     const name = projectIdentifier.trim()
@@ -63,6 +82,7 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
     writeFileSync(settingsFilePath, JSON.stringify(mergedSettings, null, 2), 'utf-8')
     return {
       project: name,
+      agent: agentIdentifier ? agentIdentifier.trim().toLowerCase() : undefined,
       projectPath: targetPath,
       settings: mergedSettings,
     }

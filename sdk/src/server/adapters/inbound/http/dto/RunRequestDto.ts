@@ -9,6 +9,7 @@ export interface RunRequestDtoExtended extends RunRequestDto {
   scope?: string
   reworks?: number
   steeringMessage?: string
+  agent?: string
   agentType?: string
   model?: string
   effort?: string

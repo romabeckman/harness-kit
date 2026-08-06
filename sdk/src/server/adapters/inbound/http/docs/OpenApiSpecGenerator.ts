@@ -1,4 +1,7 @@
 import type { OpenApiSpec } from '../../../../domain/types'
+import { Runner } from '../../../../../agent-runner/types'
+
+const VALID_RUNNER_TYPES = Object.values(Runner) as string[]
 
 export class OpenApiSpecGenerator {
   static getSpec(): OpenApiSpec {
@@ -13,7 +16,7 @@ export class OpenApiSpecGenerator {
         '/orchestrator/run': {
           post: {
             summary: 'Enqueue an orchestration job',
-            description: 'Enqueues a background orchestration job with requested parameters. Client passes registered project identifier (e.g. "backend").',
+            description: 'Enqueues a background orchestration job with requested parameters. Client MUST pass registered project identifier and agent runner.',
             security: [{ BearerAuth: [] }, { BasicAuth: [] }],
             requestBody: {
               required: true,
@@ -37,7 +40,7 @@ export class OpenApiSpecGenerator {
                 },
               },
               '400': {
-                description: 'Invalid input, project not registered, or unsupported non-interactive mode',
+                description: 'Missing project/agent, invalid agent, or unsupported non-interactive mode',
                 content: {
                   'application/json': {
                     schema: {
@@ -174,9 +177,16 @@ export class OpenApiSpecGenerator {
               {
                 name: 'project',
                 in: 'query',
-                required: false,
-                description: 'Registered project identifier (e.g. "backend")',
+                required: true,
+                description: 'Mandatory registered project identifier (e.g. "backend")',
                 schema: { type: 'string' },
+              },
+              {
+                name: 'agent',
+                in: 'query',
+                required: false,
+                description: 'Optional agent runner to filter settings (e.g. "claude-cli")',
+                schema: { type: 'string', enum: [...VALID_RUNNER_TYPES] },
               },
             ],
             responses: {
@@ -189,7 +199,7 @@ export class OpenApiSpecGenerator {
                 },
               },
               '400': {
-                description: 'Project identifier not registered in server environment',
+                description: 'Missing/invalid project identifier or invalid agent runner',
                 content: {
                   'application/json': {
                     schema: { $ref: '#/components/schemas/HttpServerError' },
@@ -226,7 +236,7 @@ export class OpenApiSpecGenerator {
                 },
               },
               '400': {
-                description: 'Project identifier not registered or path traversal detected',
+                description: 'Missing/invalid project identifier, invalid agent runner, or path traversal',
                 content: {
                   'application/json': {
                     schema: { $ref: '#/components/schemas/HttpServerError' },
@@ -360,12 +370,12 @@ export class OpenApiSpecGenerator {
             properties: {
               scope: { type: 'string' },
               project: { type: 'string', description: 'Mandatory registered project identifier (e.g. "backend")' },
+              agent: { type: 'string', enum: [...VALID_RUNNER_TYPES], description: 'Mandatory registered agent runner strategy' },
               mode: { type: 'string', enum: ['quick', 'fast', 'thinking', 'deep_thinking'] },
               action: { type: 'string', enum: ['reset', 'resume'] },
               score: { type: 'number' },
               reworks: { type: 'integer' },
               steeringMessage: { type: 'string' },
-              agentType: { type: 'string' },
               model: { type: 'string' },
               effort: { type: 'string' },
               skipValidation: { type: 'boolean' },
@@ -376,6 +386,7 @@ export class OpenApiSpecGenerator {
               gitUrl: { type: 'string', description: 'Git repository URL to clone if missing from workspace' },
               useWorktree: { type: 'boolean', description: 'Enable isolated Git worktree for parallel job execution' },
             },
+            required: ['project', 'agent'],
           },
           RunResponseDto: {
             type: 'object',
@@ -418,6 +429,7 @@ export class OpenApiSpecGenerator {
             type: 'object',
             properties: {
               project: { type: 'string', description: 'Registered project identifier' },
+              agent: { type: 'string', description: 'Agent runner filter (if specified)' },
               projectPath: { type: 'string', description: 'Resolved server workspace path' },
               settings: { type: 'object', description: 'HarnessSettingsMap model configuration' },
             },
@@ -426,10 +438,11 @@ export class OpenApiSpecGenerator {
           UpdateSettingsRequestDto: {
             type: 'object',
             properties: {
-              project: { type: 'string', description: 'Registered project identifier (e.g. "backend")' },
+              project: { type: 'string', description: 'Mandatory registered project identifier (e.g. "backend")' },
+              agent: { type: 'string', enum: [...VALID_RUNNER_TYPES], description: 'Optional agent runner identifier' },
               settings: { type: 'object', description: 'HarnessSettingsMap model configuration to save' },
             },
-            required: ['settings'],
+            required: ['project', 'settings'],
           },
           HealthStatusVo: {
             type: 'object',

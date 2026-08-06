@@ -63,7 +63,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    const jsonBody = JSON.stringify({ scope: 'build-api', project: 'backend', mode: 'fast' })
+    const jsonBody = JSON.stringify({ scope: 'build-api', project: 'backend', agent: 'claude-cli', mode: 'fast' })
 
     req.emit('data', Buffer.from(jsonBody))
     req.emit('end')
@@ -77,12 +77,40 @@ describe('RouteHandlers Integration Tests', () => {
     expect(parsed.statusUrl).toContain(parsed.jobId)
   })
 
+  it('Rejects POST /orchestrator/run when agent parameter is missing', async () => {
+    const req = new MockIncomingMessage('/orchestrator/run', 'POST')
+    const res = new MockServerResponse()
+
+    const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'test', project: 'backend' })))
+    req.emit('end')
+    await handlePromise
+
+    expect(res.statusCode).toBe(400)
+    const parsed = JSON.parse(res.body)
+    expect(parsed.code).toBe('MISSING_AGENT_PARAMETER')
+  })
+
+  it('Rejects POST /orchestrator/run when agent parameter is invalid', async () => {
+    const req = new MockIncomingMessage('/orchestrator/run', 'POST')
+    const res = new MockServerResponse()
+
+    const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'test', project: 'backend', agent: 'invalid-agent' })))
+    req.emit('end')
+    await handlePromise
+
+    expect(res.statusCode).toBe(400)
+    const parsed = JSON.parse(res.body)
+    expect(parsed.code).toBe('INVALID_AGENT')
+  })
+
   it('IT-2.2.2: GET /orchestrator/status/:id -> 200 OK', async () => {
     const reqRun = new MockIncomingMessage('/orchestrator/run', 'POST')
     const resRun = new MockServerResponse()
 
     const runPromise = routeHandlers.handleRequest(reqRun as unknown as IncomingMessage, resRun as unknown as ServerResponse)
-    reqRun.emit('data', Buffer.from(JSON.stringify({ scope: 'status-test', project: 'backend' })))
+    reqRun.emit('data', Buffer.from(JSON.stringify({ scope: 'status-test', project: 'backend', agent: 'claude-cli' })))
     reqRun.emit('end')
     await runPromise
 
@@ -100,8 +128,8 @@ describe('RouteHandlers Integration Tests', () => {
     expect(statusParsed.status).toBe('queued')
   })
 
-  it('GET /orchestrator/settings?project=backend -> 200 OK with model settings', async () => {
-    const req = new MockIncomingMessage('/orchestrator/settings?project=backend', 'GET')
+  it('GET /orchestrator/settings?project=backend&agent=claude-cli -> 200 OK with model settings', async () => {
+    const req = new MockIncomingMessage('/orchestrator/settings?project=backend&agent=claude-cli', 'GET')
     const res = new MockServerResponse()
 
     await routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
@@ -109,6 +137,7 @@ describe('RouteHandlers Integration Tests', () => {
     expect(res.statusCode).toBe(200)
     const parsed = JSON.parse(res.body)
     expect(parsed.project).toBe('backend')
+    expect(parsed.agent).toBe('claude-cli')
     expect(parsed.projectPath).toBeDefined()
     expect(parsed.settings).toBeDefined()
   })
@@ -120,6 +149,7 @@ describe('RouteHandlers Integration Tests', () => {
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
     const jsonBody = JSON.stringify({
       project: 'backend',
+      agent: 'claude-cli',
       settings: {
         'claude-cli': { timeoutMs: 45000 },
       },
@@ -162,7 +192,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    req.emit('data', Buffer.from(JSON.stringify({ scope: 'refine-test', project: 'backend', refine: true })))
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'refine-test', project: 'backend', agent: 'claude-cli', refine: true })))
     req.emit('end')
     await handlePromise
 
@@ -176,7 +206,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    req.emit('data', Buffer.from(JSON.stringify({ scope: 'deep-test', project: 'backend', mode: 'deep_thinking' })))
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'deep-test', project: 'backend', agent: 'claude-cli', mode: 'deep_thinking' })))
     req.emit('end')
     await handlePromise
 
@@ -201,7 +231,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    req.emit('data', Buffer.from(JSON.stringify({ scope: 'traversal-test', projectPaths: ['../secret'] })))
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'traversal-test', agent: 'claude-cli', projectPaths: ['../secret'] })))
     req.emit('end')
     await handlePromise
 

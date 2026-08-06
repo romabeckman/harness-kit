@@ -74,7 +74,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     delete process.env.AUTH_BASIC_USER
     delete process.env.AUTH_BASIC_PASS
     delete process.env.AUTH_BEARER_TOKEN
-    
+
     // Register project identifier mapping for all E2E tests
     process.env.PROJECT_MAPPINGS = JSON.stringify({
       backend: tempDir,
@@ -139,15 +139,16 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     expect(jsonRes.json.paths['/health']).toBeDefined()
   })
 
-  it('3. Real Orchestration Job Execution Workflow using Project Identifier (POST /orchestrator/run & GET /orchestrator/status/:id)', async () => {
+  it('3. Real Orchestration Job Execution Workflow using Project Identifier & Agent (POST /orchestrator/run & GET /orchestrator/status/:id)', async () => {
     server = new HttpServer({ port: 0, host: '127.0.0.1' })
     await server.start()
     const port = server.getPort()
 
-    // 1. Enqueue Job using registered project identifier "backend" (never raw file path)
+    // 1. Enqueue Job using registered project identifier "backend" and agent "claude-cli"
     const runRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
       scope: 'e2e-http-run-test',
       project: 'backend',
+      agent: 'claude-cli',
       mode: 'fast',
       useWorktree: true,
     })
@@ -176,7 +177,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       jobId: previousJobId,
       status: 'failed',
       workspacePath: tempDir,
-      request: { scope: 'resume-scope-test', action: 'reset' },
+      request: { scope: 'resume-scope-test', action: 'reset', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
       error: { code: 'PREV_FAIL', message: 'Simulated failure' },
     })
@@ -186,7 +187,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       `/orchestrator/jobs/${previousJobId}/resume`,
       'POST',
-      { steeringMessage: 'resume with steering' }
+      { steeringMessage: 'resume with steering', agent: 'claude-cli' }
     )
 
     expect(resumeRes.statusCode).toBe(202)
@@ -239,7 +240,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     const port = server.getPort()
 
     // 1. Unauthenticated request -> HTTP 401
-    const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { scope: 'test', project: 'backend' })
+    const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { scope: 'test', project: 'backend', agent: 'claude-cli' })
     expect(unauthRes.statusCode).toBe(401)
     expect(unauthRes.json.code).toBe('UNAUTHORIZED')
 
@@ -248,7 +249,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test', project: 'backend' },
+      { scope: 'test', project: 'backend', agent: 'claude-cli' },
       { Authorization: 'Bearer wrong_token' }
     )
     expect(invalidRes.statusCode).toBe(401)
@@ -258,7 +259,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test', project: 'backend' },
+      { scope: 'test', project: 'backend', agent: 'claude-cli' },
       { Authorization: 'Bearer secret_e2e_bearer_123' }
     )
     expect(validBearerRes.statusCode).toBe(202)
@@ -268,7 +269,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test', project: 'backend' },
+      { scope: 'test', project: 'backend', agent: 'claude-cli' },
       { 'X-API-Key': 'secret_e2e_bearer_123' }
     )
     expect(validApiKeyRes.statusCode).toBe(202)
@@ -284,7 +285,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     const port = server.getPort()
 
     // 1. Unauthenticated request -> HTTP 401 + WWW-Authenticate header
-    const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { scope: 'test', project: 'backend' })
+    const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { scope: 'test', project: 'backend', agent: 'claude-cli' })
     expect(unauthRes.statusCode).toBe(401)
     expect(unauthRes.headers['www-authenticate']).toContain('Basic realm=')
 
@@ -294,7 +295,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test', project: 'backend' },
+      { scope: 'test', project: 'backend', agent: 'claude-cli' },
       { Authorization: `Basic ${validCredentials}` }
     )
     expect(validRes.statusCode).toBe(202)
@@ -305,10 +306,28 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     await server.start()
     const port = server.getPort()
 
+    // Rejects missing agent parameter
+    const missingAgentRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      scope: 'test',
+      project: 'backend',
+    })
+    expect(missingAgentRes.statusCode).toBe(400)
+    expect(missingAgentRes.json.code).toBe('MISSING_AGENT_PARAMETER')
+
+    // Rejects invalid agent parameter
+    const invalidAgentRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      scope: 'test',
+      project: 'backend',
+      agent: 'invalid-agent-name',
+    })
+    expect(invalidAgentRes.statusCode).toBe(400)
+    expect(invalidAgentRes.json.code).toBe('INVALID_AGENT')
+
     // Rejects refine: true
     const refineRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
       scope: 'test',
       project: 'backend',
+      agent: 'claude-cli',
       refine: true,
     })
     expect(refineRes.statusCode).toBe(400)
@@ -318,6 +337,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     const deepRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
       scope: 'test',
       project: 'backend',
+      agent: 'claude-cli',
       mode: 'deep_thinking',
     })
     expect(deepRes.statusCode).toBe(400)
@@ -329,13 +349,13 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     expect(notFoundRes.json.code).toBe('JOB_NOT_FOUND')
   })
 
-  it('9. Local Project Settings Management via Project Identifier (GET & POST /orchestrator/settings)', async () => {
+  it('9. Local Project Settings Management via Project Identifier & Agent (GET & POST /orchestrator/settings)', async () => {
     server = new HttpServer({ port: 0, host: '127.0.0.1' })
     await server.start()
     const port = server.getPort()
 
-    // 1. GET settings with ?project=backend
-    const getRes = await makeHttpRequest(port, '/orchestrator/settings?project=backend')
+    // 1. GET settings with ?project=backend&agent=claude-cli
+    const getRes = await makeHttpRequest(port, '/orchestrator/settings?project=backend&agent=claude-cli')
     expect(getRes.statusCode).toBe(200)
     expect(getRes.json.projectPath).toContain('http-server-e2e')
     expect(getRes.json.settings).toBeDefined()
@@ -343,9 +363,10 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     const localSettingsFile = join(tempDir, '.harness-kit', 'settings.json')
     expect(existsSync(localSettingsFile)).toBe(true)
 
-    // 2. POST settings with { "project": "backend", "settings": { ... } }
+    // 2. POST settings with { "project": "backend", "agent": "claude-cli", "settings": { ... } }
     const postRes = await makeHttpRequest(port, '/orchestrator/settings', 'POST', {
       project: 'backend',
+      agent: 'claude-cli',
       settings: {
         'claude-cli': {
           timeoutMs: 120000,

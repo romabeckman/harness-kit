@@ -84,7 +84,8 @@ export class RouteHandlers {
 
       if (method === 'GET' && pathname === '/orchestrator/settings') {
         const projectIdentifier = url.searchParams.get('project') ?? url.searchParams.get('projectIdentifier') ?? url.searchParams.get('projectPath') ?? undefined
-        await this.handleGetSettings(projectIdentifier, res)
+        const agentIdentifier = url.searchParams.get('agent') ?? url.searchParams.get('agentType') ?? undefined
+        await this.handleGetSettings(projectIdentifier, agentIdentifier, res)
         return
       }
 
@@ -167,8 +168,8 @@ export class RouteHandlers {
     this.sendJson(res, 200, cleanResult)
   }
 
-  private async handleGetSettings(projectIdentifier: string | undefined, res: ServerResponse): Promise<void> {
-    const result = await this.getSettingsUseCase.execute(projectIdentifier)
+  private async handleGetSettings(projectIdentifier: string | undefined, agentIdentifier: string | undefined, res: ServerResponse): Promise<void> {
+    const result = await this.getSettingsUseCase.execute(projectIdentifier, agentIdentifier)
     this.sendJson(res, 200, result)
   }
 
@@ -187,9 +188,13 @@ export class RouteHandlers {
         ? parsed.projectIdentifier
         : (typeof parsed.projectPath === 'string' ? parsed.projectPath : undefined))
 
-    const settingsPayload = parsed.settings ?? (parsed.project ? { ...parsed, project: undefined } : parsed)
+    const agentIdentifier = typeof parsed.agent === 'string'
+      ? parsed.agent
+      : (typeof parsed.agentType === 'string' ? parsed.agentType : undefined)
 
-    const result = await this.updateSettingsUseCase.execute(settingsPayload, projectIdentifier)
+    const settingsPayload = parsed.settings ?? (parsed.project ? { ...parsed, project: undefined, agent: undefined, agentType: undefined } : parsed)
+
+    const result = await this.updateSettingsUseCase.execute(settingsPayload, projectIdentifier, agentIdentifier)
     this.sendJson(res, 200, result)
   }
 
