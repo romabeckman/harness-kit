@@ -240,6 +240,12 @@ HarnessKit is designed to complement [Superpowers Skills](https://github.com/obr
 
 ---
 
+## Contributors
+
+* [@lnonatto98](https://github.com/lnonatto98)
+
+---
+
 ## License
 
 MIT License — see [LICENSE](LICENSE) file for details.
