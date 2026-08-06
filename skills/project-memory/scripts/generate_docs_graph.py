@@ -20,12 +20,16 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
     fm_match = re.match(r"^---\s*\n(.*?)\n---\s*\n", content, re.DOTALL)
     if fm_match:
         fm_text = fm_match.group(1)
-        # Parse simples de YAML sem dependência externa obrigatória
-        for line in fm_text.splitlines():
-            line = line.strip()
-            if ":" in line and not line.startswith("-"):
-                k, v = line.split(":", 1)
-                frontmatter[k.strip()] = v.strip().strip("'\"")
+        try:
+            import yaml
+            frontmatter = yaml.safe_load(fm_text) or {}
+        except Exception:
+            # Fallback para regex simples
+            for line in fm_text.splitlines():
+                line = line.strip()
+                if ":" in line and not line.startswith("-"):
+                    k, v = line.split(":", 1)
+                    frontmatter[k.strip()] = v.strip().strip("'\"")
 
     # Extrair título principal (# Title)
     title = file_path.stem.replace("_", " ").replace("-", " ").title()
@@ -51,14 +55,9 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
         slug = file_path.stem.lower().replace("_", "-")
         node_id = f"{doc_type}:{slug}"
 
-    tags = []
-    # Busca por tags no frontmatter
-    tags_match = re.search(r"tags:\s*\n((?:\s*-\s*.+\n)+)", fm_text if fm_match else "", re.MULTILINE)
-    if tags_match:
-        for t_line in tags_match.group(1).splitlines():
-            t_val = t_line.strip().lstrip("-").strip()
-            if t_val:
-                tags.append(t_val)
+    tags = frontmatter.get("tags", [])
+    if not isinstance(tags, list):
+        tags = []
 
     node = {
         "id": node_id,
@@ -69,27 +68,18 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
     }
 
     edges = []
-    # Busca por edges no frontmatter
-    edges_block_match = re.search(r"edges:\s*\n((?:\s*-\s*.+\n?)+)", fm_text if fm_match else "", re.MULTILINE)
-    if edges_block_match:
-        current_relation = None
-        current_target = None
-        for line in edges_block_match.group(1).splitlines():
-            line = line.strip()
-            if "relation:" in line:
-                current_relation = line.split("relation:", 1)[1].strip().strip("'\"")
-            if "target:" in line:
-                current_target = line.split("target:", 1)[1].strip().strip("'\"")
-            if current_relation and current_target:
+    # 1. Processar edges do YAML frontmatter
+    fm_edges = frontmatter.get("edges", [])
+    if isinstance(fm_edges, list):
+        for edge in fm_edges:
+            if isinstance(edge, dict) and "target" in edge:
                 edges.append({
                     "source": node_id,
-                    "target": current_target,
-                    "relation": current_relation
+                    "target": edge["target"],
+                    "relation": edge.get("relation", "references")
                 })
-                current_relation = None
-                current_target = None
 
-    # Busca por bloco embutido ```graph
+    # 2. Processar bloco embutido ```graph
     graph_block_match = re.search(r"```graph\s*\n(.*?)\n```", content, re.DOTALL)
     if graph_block_match:
         try:
