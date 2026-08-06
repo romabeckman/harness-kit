@@ -37,11 +37,34 @@ describe('Settings Use Cases (Local Project Mode & Identifier Rule)', () => {
       const useCase = new GetSettingsUseCase()
       const result = await useCase.execute('backend')
 
+      expect(result.project).toBe('backend')
       expect(result.projectPath).toContain('settings-use-case-test')
       expect(result.settings).toBeDefined()
 
       const settingsFilePath = join(testWorkspaceDir, '.harness-kit', 'settings.json')
       expect(existsSync(settingsFilePath)).toBe(true)
+    })
+
+    it('resolves single mapped project when project identifier is omitted', async () => {
+      process.env.PROJECT_MAPPINGS = JSON.stringify({
+        backend: testWorkspaceDir,
+      })
+
+      const useCase = new GetSettingsUseCase()
+      const result = await useCase.execute()
+
+      expect(result.project).toBe('backend')
+      expect(result.projectPath).toContain('settings-use-case-test')
+    })
+
+    it('throws HttpServerError(400, MISSING_PROJECT_IDENTIFIER) when project is omitted and multiple/no mappings exist', async () => {
+      process.env.PROJECT_MAPPINGS = JSON.stringify({
+        backend: '/path1',
+        frontend: '/path2',
+      })
+
+      const useCase = new GetSettingsUseCase()
+      await expect(useCase.execute()).rejects.toThrowError(HttpServerError)
     })
 
     it('throws HttpServerError(400, PROJECT_NOT_FOUND) when project identifier is not registered in environment', async () => {
@@ -67,6 +90,7 @@ describe('Settings Use Cases (Local Project Mode & Identifier Rule)', () => {
       }
 
       const result = await updateUseCase.execute(newSettings, 'backend')
+      expect(result.project).toBe('backend')
       expect(result.projectPath).toContain('settings-use-case-test')
       expect(result.settings['claude-sdk']?.timeoutMs).toBe(90000)
 

@@ -12,7 +12,7 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
     settingsPayload: HarnessSettingsMap,
     projectIdentifier?: string
   ): Promise<{ project: string; projectPath: string; settings: HarnessSettingsMap }> {
-    const targetPath = this.resolveProjectPath(projectIdentifier)
+    const { name, path: targetPath } = this.resolveProject(projectIdentifier)
 
     if (this.config?.allowedWorkspaces && this.config.allowedWorkspaces.length > 0) {
       const allowed = this.config.allowedWorkspaces.some((ws) => targetPath.startsWith(ws))
@@ -44,17 +44,17 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
 
     writeFileSync(settingsFilePath, JSON.stringify(mergedSettings, null, 2), 'utf-8')
     return {
-      project: projectIdentifier ?? 'default',
+      project: name,
       projectPath: targetPath,
       settings: mergedSettings,
     }
   }
 
-  private resolveProjectPath(projectIdentifier?: string): string {
+  private resolveProject(projectIdentifier?: string): { name: string; path: string } {
     if (projectIdentifier && projectIdentifier.trim() !== '') {
       const fromEnv = DtoMappers.resolveProjectFromEnv(projectIdentifier)
       if (fromEnv?.path) {
-        return resolve(fromEnv.path)
+        return { name: projectIdentifier.trim(), path: resolve(fromEnv.path) }
       }
       throw new HttpServerError(
         400,
@@ -62,9 +62,30 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
         `Project identifier '${projectIdentifier}' is not registered in server environment (PROJECT_MAPPINGS or PROJECT_<NAME>_PATH).`
       )
     }
-    if (this.config?.allowedWorkspaces && this.config.allowedWorkspaces.length > 0) {
-      return resolve(this.config.allowedWorkspaces[0])
+
+    if (process.env.PROJECT_MAPPINGS) {
+      try {
+        const mappings = JSON.parse(process.env.PROJECT_MAPPINGS)
+        const keys = Object.keys(mappings)
+        if (keys.length === 1) {
+          const singleKey = keys[0]
+          const entry = mappings[singleKey]
+          const pathStr = typeof entry === 'string' ? entry : entry?.path
+          if (pathStr) {
+            return { name: singleKey, path: resolve(pathStr) }
+          }
+        }
+      } catch {}
     }
-    return process.cwd()
+
+    if (this.config?.allowedWorkspaces && this.config.allowedWorkspaces.length === 1) {
+      return { name: 'default', path: resolve(this.config.allowedWorkspaces[0]) }
+    }
+
+    throw new HttpServerError(
+      400,
+      'MISSING_PROJECT_IDENTIFIER',
+      `Project identifier parameter 'project' is required in request.`
+    )
   }
 }
