@@ -68,6 +68,8 @@ export class DtoMappers {
     const name = projectName.trim()
     const lowerName = name.toLowerCase()
 
+    const normalize = (p: string) => (isAbsolute(p) ? p : resolve(p))
+
     // 1. PROJECT_MAPPINGS env var
     if (process.env.PROJECT_MAPPINGS) {
       try {
@@ -75,17 +77,17 @@ export class DtoMappers {
         if (mappings && typeof mappings === 'object') {
           if (mappings[name]) {
             const entry = mappings[name]
-            if (typeof entry === 'string') return { path: resolve(entry) }
+            if (typeof entry === 'string') return { path: normalize(entry) }
             if (typeof entry === 'object' && typeof entry.path === 'string') {
-              return { path: resolve(entry.path), gitUrl: entry.gitUrl }
+              return { path: normalize(entry.path), gitUrl: entry.gitUrl }
             }
           }
           for (const key of Object.keys(mappings)) {
             if (key.toLowerCase() === lowerName) {
               const entry = mappings[key]
-              if (typeof entry === 'string') return { path: resolve(entry) }
+              if (typeof entry === 'string') return { path: normalize(entry) }
               if (typeof entry === 'object' && typeof entry.path === 'string') {
-                return { path: resolve(entry.path), gitUrl: entry.gitUrl }
+                return { path: normalize(entry.path), gitUrl: entry.gitUrl }
               }
             }
           }
@@ -99,7 +101,7 @@ export class DtoMappers {
     const gitUrlEnv = process.env[`${envPrefix}_GIT_URL`]
 
     if (pathEnv) {
-      return { path: resolve(pathEnv), gitUrl: gitUrlEnv }
+      return { path: normalize(pathEnv), gitUrl: gitUrlEnv }
     }
 
     // 3. Match against allowed workspaces folder basename
