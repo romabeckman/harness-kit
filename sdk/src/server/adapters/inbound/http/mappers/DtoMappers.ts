@@ -1,8 +1,33 @@
 import { resolve, isAbsolute, basename } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
 import type { OrchestratorConfig } from '../../../../../orchestrator/types'
 import { resolveMode } from '../../../../../cli/services/run-service'
 import { HttpServerError } from '../../../../domain/types'
 import type { RunRequestDtoExtended } from '../dto/RunRequestDto'
+
+function ensureEnvLoaded(): void {
+  const envFile = resolve(process.cwd(), '.env')
+  if (!existsSync(envFile)) return
+
+  try {
+    const content = readFileSync(envFile, 'utf-8')
+    for (const line of content.split(/\r?\n/)) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const eqIdx = trimmed.indexOf('=')
+      if (eqIdx > 0) {
+        const k = trimmed.slice(0, eqIdx).trim()
+        let v = trimmed.slice(eqIdx + 1).trim()
+        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+          v = v.slice(1, -1)
+        }
+        if (!process.env[k]) {
+          process.env[k] = v
+        }
+      }
+    }
+  } catch {}
+}
 
 export class DtoMappers {
   static toOrchestratorConfig(
@@ -64,6 +89,8 @@ export class DtoMappers {
     projectName?: string,
     allowedWorkspaces?: string[]
   ): { path: string; gitUrl?: string } | null {
+    ensureEnvLoaded()
+
     if (!projectName || projectName.trim() === '') return null
     const name = projectName.trim()
     const lowerName = name.toLowerCase()
@@ -73,7 +100,14 @@ export class DtoMappers {
     // 1. PROJECT_MAPPINGS env var
     if (process.env.PROJECT_MAPPINGS) {
       try {
-        const mappings = JSON.parse(process.env.PROJECT_MAPPINGS)
+        let cleanStr = process.env.PROJECT_MAPPINGS.trim()
+        const openBraces = (cleanStr.match(/\{/g) || []).length
+        let closeBraces = (cleanStr.match(/\}/g) || []).length
+        while (closeBraces < openBraces) {
+          cleanStr += '}'
+          closeBraces++
+        }
+        const mappings = JSON.parse(cleanStr)
         if (mappings && typeof mappings === 'object') {
           if (mappings[name]) {
             const entry = mappings[name]
@@ -112,8 +146,9 @@ export class DtoMappers {
     )
 
     for (const ws of workspaces) {
-      if (basename(ws).toLowerCase() === lowerName) {
-        return { path: resolve(ws) }
+      const cleanWs = ws.replace(/^["']|["']$/g, '')
+      if (basename(cleanWs).toLowerCase() === lowerName) {
+        return { path: resolve(cleanWs) }
       }
     }
 
@@ -122,7 +157,8 @@ export class DtoMappers {
       return { path: resolve(process.cwd()) }
     }
     if (workspaces.length === 1) {
-      return { path: resolve(workspaces[0]) }
+      const cleanWs = workspaces[0].replace(/^["']|["']$/g, '')
+      return { path: resolve(cleanWs) }
     }
 
     return null
