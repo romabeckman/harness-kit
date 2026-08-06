@@ -218,7 +218,7 @@ Show version or help message.
 
 ## Agent runners
 
-Each runner is a self-contained strategy for invoking a specific AI backend. The SDK ships seven built-in runners:
+Each runner is a self-contained strategy for invoking a specific AI backend. The SDK ships eight built-in runners:
 
 | Type | Binary / SDK | Default model |
 |---|---|---|
@@ -229,6 +229,7 @@ Each runner is a self-contained strategy for invoking a specific AI backend. The
 | `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.3-codex` |
 | `cursor-cli` | `agent` CLI | _(from settings)_ |
 | `cursor-sdk` | `@cursor/sdk` | `gpt-5.3-codex` |
+| `kiro-cli` | `kiro-cli` CLI | _(from settings)_ |
 
 ### Auto-selection
 
@@ -243,6 +244,7 @@ Each runner is a self-contained strategy for invoking a specific AI backend. The
 hrns run --agent cursor-sdk          # cursor-sdk (needs CURSOR_API_KEY)
 hrns run --agent copilot-cli         # copilot-cli
 hrns run --agent cursor-cli          # cursor-cli
+hrns run --agent kiro-cli            # kiro-cli
 ```
 
 ---
@@ -294,6 +296,7 @@ The global file is created automatically on first run. You can also set `HARNESS
 | `antigravity` | `antigravity-cli` |
 | `copilot` | `copilot-cli` and `copilot-sdk` |
 | `cursor` | `cursor-cli` and `cursor-sdk` |
+| `kiro` | `kiro-cli` |
 
 ### Phase keys
 
