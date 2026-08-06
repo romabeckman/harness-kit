@@ -154,6 +154,7 @@ Execute steps in order. Do not skip steps.
 
 **Step 9 — Update macro document graph index**
 - REQUIRED: Update `docs/.graph.json` aggregating macro document nodes and document-level edges (`implements`, `depends_on`, `tested_by`).
+- REQUIRED: Execute the Python script `./scripts/generate_docs_graph.py <target_docs_dir>` (or embedded logic) to extract nodes/edges and generate `docs/.graph.json`.
 - REQUIRED: Write `docs/.graph.json` as **compact JSON** (no indentation, `separators=(',',':')`) — it is a machine-read routing index, not a human-diffed file.
 - Schema format: `{"nodes":[{"id":"...","type":"...","title":"...","path":"...","tags":[...]}],"edges":[{"source":"...","target":"...","relation":"..."}]}`.
 - PROHIBITED: Including `path` in edge entries — resolve target paths via `node_id` lookup in `nodes[]`. Duplicating path in edges wastes tokens and creates drift risk.
