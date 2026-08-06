@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { HttpServerError, HttpServerConfig } from '../../domain/types'
+import { DtoMappers } from '../../adapters/inbound/http/mappers/DtoMappers'
 import type { HarnessSettingsMap } from '../../../settings/SettingsSchema'
 import type { IUpdateSettingsUseCase } from '../ports/inbound/IUpdateSettingsUseCase'
 
@@ -9,9 +10,9 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
 
   async execute(
     settingsPayload: HarnessSettingsMap,
-    projectPath?: string
+    projectIdentifier?: string
   ): Promise<{ projectPath: string; settings: HarnessSettingsMap }> {
-    const targetPath = this.resolveProjectPath(projectPath)
+    const targetPath = this.resolveProjectPath(projectIdentifier)
 
     if (this.config?.allowedWorkspaces && this.config.allowedWorkspaces.length > 0) {
       const allowed = this.config.allowedWorkspaces.some((ws) => targetPath.startsWith(ws))
@@ -45,9 +46,17 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
     return { projectPath: targetPath, settings: mergedSettings }
   }
 
-  private resolveProjectPath(projectPath?: string): string {
-    if (projectPath && projectPath.trim() !== '') {
-      return resolve(projectPath)
+  private resolveProjectPath(projectIdentifier?: string): string {
+    if (projectIdentifier && projectIdentifier.trim() !== '') {
+      const fromEnv = DtoMappers.resolveProjectFromEnv(projectIdentifier)
+      if (fromEnv?.path) {
+        return resolve(fromEnv.path)
+      }
+      throw new HttpServerError(
+        400,
+        'PROJECT_NOT_FOUND',
+        `Project identifier '${projectIdentifier}' is not registered in server environment (PROJECT_MAPPINGS or PROJECT_<NAME>_PATH).`
+      )
     }
     if (this.config?.allowedWorkspaces && this.config.allowedWorkspaces.length > 0) {
       return resolve(this.config.allowedWorkspaces[0])

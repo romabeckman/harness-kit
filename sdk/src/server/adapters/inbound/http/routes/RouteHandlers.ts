@@ -83,8 +83,8 @@ export class RouteHandlers {
       }
 
       if (method === 'GET' && pathname === '/orchestrator/settings') {
-        const projectPath = url.searchParams.get('projectPath') ?? url.searchParams.get('project') ?? undefined
-        await this.handleGetSettings(projectPath, res)
+        const projectIdentifier = url.searchParams.get('project') ?? url.searchParams.get('projectIdentifier') ?? undefined
+        await this.handleGetSettings(projectIdentifier, res)
         return
       }
 
@@ -167,8 +167,8 @@ export class RouteHandlers {
     this.sendJson(res, 200, cleanResult)
   }
 
-  private async handleGetSettings(projectPath: string | undefined, res: ServerResponse): Promise<void> {
-    const result = await this.getSettingsUseCase.execute(projectPath)
+  private async handleGetSettings(projectIdentifier: string | undefined, res: ServerResponse): Promise<void> {
+    const result = await this.getSettingsUseCase.execute(projectIdentifier)
     this.sendJson(res, 200, result)
   }
 
@@ -181,10 +181,10 @@ export class RouteHandlers {
       throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in settings request')
     }
 
-    const projectPath = typeof parsed.projectPath === 'string' ? parsed.projectPath : undefined
-    const settingsPayload = parsed.settings ?? parsed
+    const projectIdentifier = typeof parsed.project === 'string' ? parsed.project : (typeof parsed.projectIdentifier === 'string' ? parsed.projectIdentifier : undefined)
+    const settingsPayload = parsed.settings ?? (parsed.project ? { ...parsed, project: undefined } : parsed)
 
-    const result = await this.updateSettingsUseCase.execute(settingsPayload, projectPath)
+    const result = await this.updateSettingsUseCase.execute(settingsPayload, projectIdentifier)
     this.sendJson(res, 200, result)
   }
 

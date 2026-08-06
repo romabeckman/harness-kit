@@ -74,6 +74,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     delete process.env.AUTH_BASIC_USER
     delete process.env.AUTH_BASIC_PASS
     delete process.env.AUTH_BEARER_TOKEN
+    delete process.env.PROJECT_MAPPINGS
 
     if (existsSync(tempDir)) {
       rmSync(tempDir, { recursive: true, force: true })
@@ -322,37 +323,42 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     expect(notFoundRes.json.code).toBe('JOB_NOT_FOUND')
   })
 
-  it('9. Local Project Settings Management (GET & POST /orchestrator/settings)', async () => {
+  it('9. Local Project Settings Management via Project Identifier (GET & POST /orchestrator/settings)', async () => {
+    process.env.PROJECT_MAPPINGS = JSON.stringify({
+      backend: tempDir,
+    })
+
     server = new HttpServer({ port: 0, host: '127.0.0.1' })
     await server.start()
     const port = server.getPort()
 
-    // 1. GET settings (creates local .harness-kit/settings.json if not existing)
-    const getRes = await makeHttpRequest(port, `/orchestrator/settings?projectPath=${encodeURIComponent(tempDir)}`)
+    // 1. GET settings with ?project=backend
+    const getRes = await makeHttpRequest(port, '/orchestrator/settings?project=backend')
     expect(getRes.statusCode).toBe(200)
-    expect(getRes.json.projectPath).toBe(tempDir)
+    expect(getRes.json.projectPath).toContain('http-server-e2e')
     expect(getRes.json.settings).toBeDefined()
 
     const localSettingsFile = join(tempDir, '.harness-kit', 'settings.json')
     expect(existsSync(localSettingsFile)).toBe(true)
 
-    // 2. POST settings (updates local settings file)
+    // 2. POST settings with { "project": "backend", "settings": { ... } }
     const postRes = await makeHttpRequest(port, '/orchestrator/settings', 'POST', {
-      projectPath: tempDir,
+      project: 'backend',
       settings: {
         'claude-cli': {
           timeoutMs: 120000,
-          phases: {
-            DEVELOPMENT: { timeoutMs: 300000 },
-          },
         },
       },
     })
-
     expect(postRes.statusCode).toBe(200)
     expect(postRes.json.settings['claude-cli']?.timeoutMs).toBe(120000)
 
     const updatedContent = JSON.parse(readFileSync(localSettingsFile, 'utf-8'))
     expect(updatedContent['claude-cli']?.timeoutMs).toBe(120000)
+
+    // 3. Unregistered project identifier -> HTTP 400
+    const unregRes = await makeHttpRequest(port, '/orchestrator/settings?project=unknown_proj')
+    expect(unregRes.statusCode).toBe(400)
+    expect(unregRes.json.code).toBe('PROJECT_NOT_FOUND')
   })
 })

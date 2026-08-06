@@ -3,7 +3,7 @@ doc_type: feature
 domain: server
 stack: [TypeScript, Node.js, Docker]
 node_id: "feature:http_server"
-tags: [server, http, api, docker, swagger, health]
+tags: [server, http, api, docker, swagger, health, settings]
 edges:
   - relation: implements
     target: "adr:architecture"
@@ -25,17 +25,25 @@ updated: 2026-08-06
   "code_files": [
     "src/server/HttpServer.ts",
     "src/server/index.ts",
-    "src/server/types.ts",
-    "src/server/dto/RunRequestDto.ts",
-    "src/server/dto/RunResponseDto.ts",
-    "src/server/dto/JobStatusDto.ts",
-    "src/server/mappers/DtoMappers.ts",
-    "src/server/mutex/WorkspaceLockManager.ts",
-    "src/server/repository/InMemoryJobStore.ts",
-    "src/server/queue/JobQueue.ts",
-    "src/server/services/JobRunnerService.ts",
-    "src/server/routes/RouteHandlers.ts",
-    "src/server/docs/OpenApiSpecGenerator.ts",
+    "src/server/domain/types.ts",
+    "src/server/application/ports/inbound/IRunOrchestratorJobUseCase.ts",
+    "src/server/application/ports/inbound/IGetJobStatusUseCase.ts",
+    "src/server/application/ports/inbound/IResumeOrchestratorJobUseCase.ts",
+    "src/server/application/ports/inbound/ICleanJobsAndWorktreesUseCase.ts",
+    "src/server/application/ports/inbound/IGetHealthStatusUseCase.ts",
+    "src/server/application/ports/inbound/IGetSettingsUseCase.ts",
+    "src/server/application/ports/inbound/IUpdateSettingsUseCase.ts",
+    "src/server/application/use-cases/RunOrchestratorJobUseCase.ts",
+    "src/server/application/use-cases/GetJobStatusUseCase.ts",
+    "src/server/application/use-cases/ResumeOrchestratorJobUseCase.ts",
+    "src/server/application/use-cases/CleanJobsAndWorktreesUseCase.ts",
+    "src/server/application/use-cases/GetHealthStatusUseCase.ts",
+    "src/server/application/use-cases/GetOpenApiDocsUseCase.ts",
+    "src/server/application/use-cases/GetSettingsUseCase.ts",
+    "src/server/application/use-cases/UpdateSettingsUseCase.ts",
+    "src/server/adapters/inbound/http/RouteHandlers.ts",
+    "src/server/adapters/inbound/http/DtoMappers.ts",
+    "src/server/adapters/inbound/http/OpenApiSpecGenerator.ts",
     "Dockerfile",
     "docker-compose.yml"
   ],
@@ -43,13 +51,20 @@ updated: 2026-08-06
     "src/server/__tests__/types.test.ts",
     "src/server/__tests__/HttpServer.test.ts",
     "src/server/__tests__/DockerBuild.test.ts",
-    "src/server/mappers/__tests__/DtoMappers.test.ts",
-    "src/server/mutex/__tests__/WorkspaceLockManager.test.ts",
-    "src/server/repository/__tests__/InMemoryJobStore.test.ts",
-    "src/server/queue/__tests__/JobQueue.test.ts",
-    "src/server/services/__tests__/JobRunnerService.test.ts",
-    "src/server/routes/__tests__/RouteHandlers.test.ts",
-    "src/server/docs/__tests__/OpenApiSpecGenerator.test.ts"
+    "src/server/application/use-cases/__tests__/GetJobStatusUseCase.test.ts",
+    "src/server/application/use-cases/__tests__/GetHealthStatusUseCase.test.ts",
+    "src/server/application/use-cases/__tests__/ResumeOrchestratorJobUseCase.test.ts",
+    "src/server/application/use-cases/__tests__/CleanJobsAndWorktreesUseCase.test.ts",
+    "src/server/application/use-cases/__tests__/RunOrchestratorJobUseCase.test.ts",
+    "src/server/application/use-cases/__tests__/SettingsUseCases.test.ts",
+    "src/server/adapters/inbound/http/mappers/__tests__/DtoMappers.test.ts",
+    "src/server/adapters/inbound/http/docs/__tests__/OpenApiSpecGenerator.test.ts",
+    "src/server/adapters/inbound/http/routes/__tests__/RouteHandlers.test.ts",
+    "src/server/adapters/outbound/mutex/__tests__/WorkspaceLockManager.test.ts",
+    "src/server/adapters/outbound/repository/__tests__/InMemoryJobStore.test.ts",
+    "src/server/adapters/outbound/queue/__tests__/JobQueue.test.ts",
+    "src/server/adapters/outbound/services/__tests__/JobRunnerService.test.ts",
+    "tests/e2e/scenarios/07-http-server-daemon.test.ts"
   ]
 }
 ```
@@ -57,7 +72,29 @@ updated: 2026-08-06
 Provides a non-interactive HTTP daemon service and Docker container environment for the SDK orchestrator.
 
 ## OVERVIEW
-The `http_server` module acts as an Inbound Adapter in Hexagonal Architecture. It exposes REST API endpoints for triggering autonomous TDD orchestration jobs, polling execution status, probing container health, and rendering OpenAPI Swagger documentation without interactive TTY dependencies.
+The `http_server` module acts as an Inbound Adapter in Hexagonal Architecture. It exposes REST API endpoints for triggering autonomous TDD orchestration jobs, polling execution status, probing container health, rendering OpenAPI Swagger documentation, and managing project-local model settings (`settings.json`) without interactive TTY dependencies.
+
+## MANDATORY RULE: PROJECT IDENTIFIER MAPPING
+> [!IMPORTANT]
+> **Clients MUST NEVER send internal server filesystem paths (e.g. `/workspaces/backend` or `C:\Users\...\app`).**  
+> Clients MUST ONLY send registered **project identifiers** (e.g. `"project": "backend"` or `?project=backend`).
+
+### How Project Identifiers Are Resolved:
+The HTTP daemon resolves project names to physical filesystem paths using environment variables configured on the server:
+
+1. **JSON Mapping (`PROJECT_MAPPINGS`)**:
+   ```bash
+   PROJECT_MAPPINGS={"backend":{"path":"/workspaces/backend","gitUrl":"https://github.com/my-org/backend.git"}}
+   ```
+2. **Prefixed Environment Variables (`PROJECT_<NAME>_PATH`)**:
+   ```bash
+   PROJECT_BACKEND_PATH=/workspaces/backend
+   PROJECT_BACKEND_GIT_URL=https://github.com/my-org/backend.git
+   ```
+
+If a client sends an unregistered project identifier, the server throws `HTTP 400 Bad Request` with error code `PROJECT_NOT_FOUND`.
+
+---
 
 ## FOLDER STRUCTURE (HEXAGONAL ARCHITECTURE)
 ```
@@ -71,7 +108,9 @@ src/server/
 │   │   │   ├── IGetJobStatusUseCase.ts
 │   │   │   ├── IResumeOrchestratorJobUseCase.ts
 │   │   │   ├── ICleanJobsAndWorktreesUseCase.ts
-│   │   │   └── IGetHealthStatusUseCase.ts
+│   │   │   ├── IGetHealthStatusUseCase.ts
+│   │   │   ├── IGetSettingsUseCase.ts
+│   │   │   └── IUpdateSettingsUseCase.ts
 │   │   └── outbound/            # Secondary / Driven Ports (Infrastructure Interfaces)
 │   │       ├── JobStoreRepository.ts
 │   │       ├── LockRepository.ts
@@ -82,7 +121,9 @@ src/server/
 │       ├── ResumeOrchestratorJobUseCase.ts
 │       ├── CleanJobsAndWorktreesUseCase.ts
 │       ├── GetHealthStatusUseCase.ts
-│       └── GetOpenApiDocsUseCase.ts
+│       ├── GetOpenApiDocsUseCase.ts
+│       ├── GetSettingsUseCase.ts        # Consults project-local .harness-kit/settings.json
+│       └── UpdateSettingsUseCase.ts     # Creates/updates project-local .harness-kit/settings.json
 ├── adapters/                    # Infrastructure & Technical Adapters Layer
 │   ├── inbound/                 # Primary / Driving Adapters
 │   │   └── http/
@@ -120,7 +161,7 @@ Enqueues a background orchestration job. Returns `HTTP 202 Accepted` immediately
   {
     "jobId": "6c4e0d4a-5b12-4e9f-8671-123456789abc",
     "status": "queued",
-    "workspacePath": "/workspace/my-service",
+    "workspacePath": "/workspaces/backend",
     "enqueuedAt": "2026-08-06T17:50:00.000Z",
     "statusUrl": "/orchestrator/status/6c4e0d4a-5b12-4e9f-8671-123456789abc"
   }
@@ -134,14 +175,60 @@ Retrieves execution state and progress of an orchestration job.
   {
     "jobId": "6c4e0d4a-5b12-4e9f-8671-123456789abc",
     "status": "running",
-    "workspacePath": "/workspace/my-service",
+    "workspacePath": "/workspaces/backend",
     "createdAt": "2026-08-06T17:50:00.000Z",
     "startedAt": "2026-08-06T17:50:01.000Z",
     "progress": { "phase": "DEVELOPMENT", "step": 2 }
   }
   ```
 
-### 3. `GET /health`
+### 3. `GET /orchestrator/settings?project=backend`
+Consults project-local model configuration from `.harness-kit/settings.json`. If the file does not exist in the target project, creates it with default settings.
+
+- **Query Parameters**:
+  - `project`: Registered project identifier (e.g. `"backend"`).
+- **Response Payload** (`HTTP 200 OK`):
+  ```json
+  {
+    "projectPath": "/workspaces/backend",
+    "settings": {
+      "claude-cli": {
+        "timeoutMs": 60000,
+        "phases": { "DEVELOPMENT": { "timeoutMs": 120000 } }
+      }
+    }
+  }
+  ```
+
+### 4. `POST /orchestrator/settings`
+Creates or updates model configuration in the project's local `.harness-kit/settings.json` file.
+
+- **Request Body**:
+  ```json
+  {
+    "project": "backend",
+    "settings": {
+      "claude-cli": {
+        "timeoutMs": 90000,
+        "phases": { "PLANNING": { "timeoutMs": 30000 } }
+      }
+    }
+  }
+  ```
+- **Response Payload** (`HTTP 200 OK`):
+  ```json
+  {
+    "projectPath": "/workspaces/backend",
+    "settings": {
+      "claude-cli": {
+        "timeoutMs": 90000,
+        "phases": { "PLANNING": { "timeoutMs": 30000 } }
+      }
+    }
+  }
+  ```
+
+### 5. `GET /health`
 Liveness and readiness probe for container orchestrators (Kubernetes, Docker Swarm, ECS).
 
 - **Response Payload** (`HTTP 200 OK`):
@@ -156,8 +243,10 @@ Liveness and readiness probe for container orchestrators (Kubernetes, Docker Swa
   }
   ```
 
-### 4. `GET /docs` & `GET /docs/openapi.json`
+### 6. `GET /docs` & `GET /docs/openapi.json`
 Interactive Swagger UI documentation page (`GET /docs`) and raw OpenAPI 3.0.3 specification JSON (`GET /docs/openapi.json`).
+
+---
 
 ## DOCKER SUPPORT
 
@@ -193,7 +282,10 @@ services:
     environment:
       - PORT=3000
       - HOST=0.0.0.0
+      - PROJECT_MAPPINGS={"backend":{"path":"/workspace/backend"}}
 ```
+
+---
 
 ## CODE EXAMPLES
 
@@ -207,16 +299,26 @@ console.log(`Server running on port ${server.getPort()}`)
 // Graceful shutdown on process exit
 await server.stop()
 
-# WRONG: Passing refine: true in HTTP payload
-// DtoMappers throws HTTP 400 Bad Request
-const payload = { scope: "build", refine: true }
+# CORRECT: Client passes project identifier "backend"
+// Server resolves "backend" -> "/workspaces/backend" via PROJECT_MAPPINGS
+const payload = { scope: "build-feature", project: "backend" }
+
+# WRONG: Client passing raw internal server file path
+// Violates project identifier rule
+const invalidPayload = { scope: "build", projectPaths: ["/internal/server/path"] }
 ```
 
+---
+
 ## BEST PRACTICES
+REQUIRED: Clients MUST pass registered project identifiers (e.g. `"project": "backend"`), never direct server file paths.  
 REQUIRED: Use `DtoMappers` ACL to validate incoming payloads before queueing jobs.  
+REQUIRED: Settings MUST be persisted locally in the target project's `.harness-kit/settings.json` file.  
 REQUIRED: Ensure background jobs use isolated Git worktrees (`useWorktree: true` by default) to allow parallel executions on the same repository.  
 REQUIRED: Automatic Git commit (`git add -A` + `git commit`) and push (`git push origin <branch>`) occur on job completion before worktree cleanup.  
 PROHIBITED: Passing interactive stdin prompts (`refine: true` or `mode: "deep_thinking"`) in HTTP requests.
+
+---
 
 ## DOCUMENT MAP
 
@@ -234,9 +336,3 @@ graph TD
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Ports and Adapters architecture pattern.
 - [**TESTS.md**](../adr/TESTS.md): Vitest test suite guidelines and coverage targets.
 - [**SDK_CORE.md**](./SDK_CORE.md): Core HarnessOrchestrator domain state machine.
-
----
-
-## CHANGE SUMMARY
-- **Added:** YAML frontmatter, top embedded micro ````graph` block, and `## DOCUMENT MAP` Mermaid graph.
-- **Updated:** UPPERCASE section headers, standard folder structure tree, and code examples with `# CORRECT` / `# WRONG` labels.
