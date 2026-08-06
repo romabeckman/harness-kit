@@ -135,6 +135,7 @@ Execute steps in order. Do not skip steps.
 - Confirm cross-reference section exists at the end of each document.
 - REQUIRED: Confirm `docs/.digest.md` (Step 8) and `docs/.graph.json` (Step 9) have been updated.
 - REQUIRED: Confirm `docs/.digest.md` is under 60 lines and under 3000 characters, and its `## DOCUMENTATION INDEX` lists only baseline docs plus a pointer to `docs/.graph.json`.
+- REQUIRED: Confirm `docs/.digest.md` contains no absolute filesystem paths or `file://` URIs — every path is relative (plain text, not a Markdown link).
 
 **Step 7 — Deliver**
 - Output the generated or updated content.
@@ -146,6 +147,7 @@ Execute steps in order. Do not skip steps.
 - Extract from `docs/adr/TESTS.md`: test framework, run commands, coverage thresholds.
 - REQUIRED: In `## DOCUMENTATION INDEX`, list only the baseline documents (`docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) with one-line descriptions, followed by a note directing to `docs/.graph.json` for the complete document list, tags, and relations.
 - PROHIBITED: Enumerating every `docs/feature/` and `docs/adr/` document in `## DOCUMENTATION INDEX` — this duplicates `docs/.graph.json` nodes[] and wastes tokens on every digest read.
+- REQUIRED: Reference every document path in `docs/.digest.md` as a plain relative path (e.g. `` `docs/adr/ARCHITECTURE.md` ``), never as a Markdown link, and never with an absolute filesystem path or a `file://` URI.
 - REQUIRED: Keep digest under 60 lines and under 3000 characters — this is an LLM orientation file, not a replacement for full docs.
 - REQUIRED: Include a `## LAST UPDATED` section with the current date.
 - Purpose: enables `tdd-orchestrator` and other skills to perform initial orientation without reading full documents.
