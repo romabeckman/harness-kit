@@ -113,7 +113,8 @@ export class KiroCLIRunner extends AbstractCliRunner {
       }
     }
 
-    const outputText = finalResult || stdout
+    const cleanStdout = stdout.replace(/\u001b\[[0-9;]*[a-zA-Z]/g, '')
+    const outputText = (finalResult || cleanStdout).trim()
 
     return {
       success: !isFinalError,
