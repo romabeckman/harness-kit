@@ -13,7 +13,8 @@ export class OpenApiSpecGenerator {
         '/orchestrator/run': {
           post: {
             summary: 'Enqueue an orchestration job',
-            description: 'Enqueues a background orchestration job with requested parameters.',
+            description: 'Enqueues a background orchestration job with requested parameters. Client passes registered project identifier (e.g. "backend").',
+            security: [{ BearerAuth: [] }, { BasicAuth: [] }],
             requestBody: {
               required: true,
               content: {
@@ -36,7 +37,17 @@ export class OpenApiSpecGenerator {
                 },
               },
               '400': {
-                description: 'Invalid input or unsupported non-interactive mode',
+                description: 'Invalid input, project not registered, or unsupported non-interactive mode',
+                content: {
+                  'application/json': {
+                    schema: {
+                      $ref: '#/components/schemas/HttpServerError',
+                    },
+                  },
+                },
+              },
+              '401': {
+                description: 'Unauthorized access',
                 content: {
                   'application/json': {
                     schema: {
@@ -52,6 +63,7 @@ export class OpenApiSpecGenerator {
           post: {
             summary: 'Resume/retry a stopped or failed job',
             description: 'Resumes execution of a previously failed, stopped, or completed job by ID.',
+            security: [{ BearerAuth: [] }, { BasicAuth: [] }],
             parameters: [
               {
                 name: 'id',
@@ -86,6 +98,14 @@ export class OpenApiSpecGenerator {
                   },
                 },
               },
+              '401': {
+                description: 'Unauthorized access',
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/HttpServerError' },
+                  },
+                },
+              },
               '404': {
                 description: 'Previous job not found',
                 content: {
@@ -101,6 +121,7 @@ export class OpenApiSpecGenerator {
           get: {
             summary: 'Get job status',
             description: 'Retrieves current status and progress of an orchestration job by ID.',
+            security: [{ BearerAuth: [] }, { BasicAuth: [] }],
             parameters: [
               {
                 name: 'id',
@@ -123,6 +144,14 @@ export class OpenApiSpecGenerator {
                   },
                 },
               },
+              '401': {
+                description: 'Unauthorized access',
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/HttpServerError' },
+                  },
+                },
+              },
               '404': {
                 description: 'Job not found',
                 content: {
@@ -139,13 +168,14 @@ export class OpenApiSpecGenerator {
         '/orchestrator/settings': {
           get: {
             summary: 'Get local project model settings',
-            description: 'Consults local settings.json model configuration for the target project workspace.',
+            description: 'Consults local settings.json model configuration for the target project workspace using project identifier.',
+            security: [{ BearerAuth: [] }, { BasicAuth: [] }],
             parameters: [
               {
-                name: 'projectPath',
+                name: 'project',
                 in: 'query',
                 required: false,
-                description: 'Absolute path to target workspace directory',
+                description: 'Registered project identifier (e.g. "backend")',
                 schema: { type: 'string' },
               },
             ],
@@ -154,20 +184,35 @@ export class OpenApiSpecGenerator {
                 description: 'Local project model settings object',
                 content: {
                   'application/json': {
-                    schema: { type: 'object' },
+                    schema: { $ref: '#/components/schemas/SettingsResponseDto' },
                   },
+                },
+              },
+              '400': {
+                description: 'Project identifier not registered in server environment',
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/HttpServerError' },
+                  },
+                },
+              },
+              '401': {
+                description: 'Unauthorized access',
+                content: {
+                  'application/json': { schema: { $ref: '#/components/schemas/HttpServerError' } },
                 },
               },
             },
           },
           post: {
             summary: 'Create or update local project model settings',
-            description: 'Saves model configuration in project local .harness-kit/settings.json file.',
+            description: 'Saves model configuration in target project local .harness-kit/settings.json file.',
+            security: [{ BearerAuth: [] }, { BasicAuth: [] }],
             requestBody: {
               required: true,
               content: {
                 'application/json': {
-                  schema: { type: 'object' },
+                  schema: { $ref: '#/components/schemas/UpdateSettingsRequestDto' },
                 },
               },
             },
@@ -176,8 +221,65 @@ export class OpenApiSpecGenerator {
                 description: 'Settings saved successfully',
                 content: {
                   'application/json': {
-                    schema: { type: 'object' },
+                    schema: { $ref: '#/components/schemas/SettingsResponseDto' },
                   },
+                },
+              },
+              '400': {
+                description: 'Project identifier not registered or path traversal detected',
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/HttpServerError' },
+                  },
+                },
+              },
+              '401': {
+                description: 'Unauthorized access',
+                content: {
+                  'application/json': { schema: { $ref: '#/components/schemas/HttpServerError' } },
+                },
+              },
+            },
+          },
+        },
+        '/orchestrator/jobs/clean': {
+          delete: {
+            summary: 'Purge completed jobs and clean stale worktrees',
+            description: 'Removes finished/failed jobs from memory store and cleans up stale .worktrees/ directories.',
+            security: [{ BearerAuth: [] }, { BasicAuth: [] }],
+            requestBody: {
+              required: false,
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      maxAgeMs: { type: 'integer', description: 'Minimum age of completed jobs to purge in milliseconds (default 0)' },
+                    },
+                  },
+                },
+              },
+            },
+            responses: {
+              '200': {
+                description: 'Cleanup summary',
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        purgedJobs: { type: 'integer' },
+                        cleanedWorktrees: { type: 'integer' },
+                      },
+                      required: ['purgedJobs', 'cleanedWorktrees'],
+                    },
+                  },
+                },
+              },
+              '401': {
+                description: 'Unauthorized access',
+                content: {
+                  'application/json': { schema: { $ref: '#/components/schemas/HttpServerError' } },
                 },
               },
             },
@@ -239,12 +341,25 @@ export class OpenApiSpecGenerator {
         },
       },
       components: {
+        securitySchemes: {
+          BearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'Token',
+            description: 'Bearer token or API key for protected /orchestrator/* endpoints',
+          },
+          BasicAuth: {
+            type: 'http',
+            scheme: 'basic',
+            description: 'HTTP Basic authentication for protected /orchestrator/* endpoints',
+          },
+        },
         schemas: {
           RunRequestDtoExtended: {
             type: 'object',
             properties: {
               scope: { type: 'string' },
-              projectPaths: { type: 'array', items: { type: 'string' } },
+              project: { type: 'string', description: 'Mandatory registered project identifier (e.g. "backend")' },
               mode: { type: 'string', enum: ['quick', 'fast', 'thinking', 'deep_thinking'] },
               action: { type: 'string', enum: ['reset', 'resume'] },
               score: { type: 'number' },
@@ -260,7 +375,6 @@ export class OpenApiSpecGenerator {
               branch: { type: 'string', description: 'Target Git branch to checkout prior to job execution' },
               gitUrl: { type: 'string', description: 'Git repository URL to clone if missing from workspace' },
               useWorktree: { type: 'boolean', description: 'Enable isolated Git worktree for parallel job execution' },
-              project: { type: 'string', description: 'Project alias registered in server env (e.g. "backend")' },
             },
           },
           RunResponseDto: {
@@ -299,6 +413,22 @@ export class OpenApiSpecGenerator {
               },
             },
             required: ['jobId', 'status', 'workspacePath', 'createdAt'],
+          },
+          SettingsResponseDto: {
+            type: 'object',
+            properties: {
+              projectPath: { type: 'string' },
+              settings: { type: 'object', description: 'HarnessSettingsMap model configuration' },
+            },
+            required: ['projectPath', 'settings'],
+          },
+          UpdateSettingsRequestDto: {
+            type: 'object',
+            properties: {
+              project: { type: 'string', description: 'Registered project identifier (e.g. "backend")' },
+              settings: { type: 'object', description: 'HarnessSettingsMap model configuration to save' },
+            },
+            required: ['settings'],
           },
           HealthStatusVo: {
             type: 'object',

@@ -13,10 +13,10 @@ You can import and start the server directly within your Node.js application:
 ```typescript
 import { startHttpServer } from '@romabeckman/hrns'
 
-// Start server on custom port/host (defaults: port 3000, host '0.0.0.0')
+// Start server on custom port/host (defaults: port 3000, host 'localhost')
 const server = await startHttpServer({
   port: 3000,
-  host: '0.0.0.0',
+  host: 'localhost',
   allowedWorkspaces: ['/workspace/my-project'], // optional path restriction
 })
 
@@ -33,7 +33,7 @@ console.log(`HTTP Server running at http://localhost:${server.getPort()}`)
 After building the project (`npm run build`), you can run the compiled HTTP server script directly:
 
 ```bash
-# Default settings (PORT 3000, HOST 0.0.0.0)
+# Default settings (PORT 3000, HOST localhost)
 node dist/server/index.js
 
 # Custom port and host via environment variables
@@ -55,7 +55,7 @@ docker run -d \
   -p 3000:3000 \
   -v /path/to/your/project:/workspace \
   -e PORT=3000 \
-  -e HOST=0.0.0.0 \
+  -e HOST=localhost \
   --name hrns-daemon \
   hrns-server:latest
 ```
@@ -84,7 +84,7 @@ docker compose ps
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | `PORT` | `3000` | HTTP port to listen on |
-| `HOST` | `0.0.0.0` | Host interface to bind (`0.0.0.0` for all interfaces, `127.0.0.1` for localhost only) |
+| `HOST` | `localhost` | Host interface to bind (`localhost` for all interfaces, `127.0.0.1` for localhost only) |
 | `ALLOWED_WORKSPACES` | *None* | Comma-separated list of allowed workspace directories/repos on VM |
 | `PROJECT_MAPPINGS` | *None* | JSON object mapping project aliases to `{ path, gitUrl }` |
 | `AUTH_MODE` | `none` | Authentication strategy: `none` (disabled), `basic`, or `bearer` |
