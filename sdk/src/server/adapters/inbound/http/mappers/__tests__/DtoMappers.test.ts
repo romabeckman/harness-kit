@@ -43,6 +43,7 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
   })
 
   it('UT-1.2.8: Maps mode ("quick", "fast", "thinking") to OrchestratorConfig using resolveMode', () => {
+    process.env.PROJECT_BACKEND_PATH = '/tmp/backend'
     const quickConfig = DtoMappers.toOrchestratorConfig({ scope: 'quick-test', project: 'backend', agent: 'claude-cli', mode: 'quick' })
     expect(quickConfig.skipValidation).toBe(true)
     expect(quickConfig.skipMemory).toBe(true)

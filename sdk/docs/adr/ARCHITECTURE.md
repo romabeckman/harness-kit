@@ -18,6 +18,8 @@ TypeScript SDK implementing an autonomous TDD orchestration loop using Ports-and
 ## FOLDER STRUCTURE
 <folder_structure>
 sdk/
+├── docker/                       # Docker container setup and entrypoint
+│   └── entrypoint.sh             # Git bootstrap script (credentials, pre-cloning)
 ├── src/                          # Main SDK source directory
 │   ├── cli/                      # CLI entry point implementation
 │   │   └── run.ts                # Main command line parser and orchestrator executor

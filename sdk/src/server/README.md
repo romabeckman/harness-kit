@@ -44,20 +44,27 @@ PORT=8080 HOST=127.0.0.1 node dist/server/index.js
 
 ### 3. Running with Docker
 
-Build and run using the production multi-stage `Dockerfile`:
+Build and run using the production multi-stage `Dockerfile` with the pre-cloning `entrypoint.sh` script:
 
 ```bash
 # 1. Build the Docker image
 docker build -t hrns-server:latest .
 
-# 2. Run container mounting your source workspace to /workspace
+# 2. Run container with environment variables & Git authorization
 docker run -d \
   -p 3000:3000 \
-  -v /path/to/your/project:/workspace \
+  -v /path/to/workspaces:/workspaces \
   -e PORT=3000 \
-  -e HOST=localhost \
+  -e HOST=0.0.0.0 \
+  -e GIT_COMMIT_AUTHOR_NAME="HRNS Bot" \
+  -e GIT_COMMIT_AUTHOR_EMAIL="bot@company.com" \
+  -e GIT_TOKEN="ghp_xxxxxxxxxxxx" \
+  -e PROJECT_MAPPINGS='{"backend":{"path":"/workspaces/backend","gitUrl":"git@github.com:org/backend.git"}}' \
   --name hrns-daemon \
   hrns-server:latest
+
+# 3. View entrypoint bootstrap logs
+docker logs -f hrns-daemon
 ```
 
 ---
@@ -67,14 +74,20 @@ docker run -d \
 Use `docker-compose.yml` for zero-configuration local execution:
 
 ```bash
-# Start container in background
-docker compose up -d
+# Build and start container in background
+docker compose up -d --build
 
-# Inspect server logs
+# Inspect bootstrap and server logs
 docker compose logs -f
 
 # Check container health status
 docker compose ps
+
+# Execute an interactive shell inside container for debugging
+docker compose exec hrns-server sh
+
+# Stop container and clean resources
+docker compose down
 ```
 
 ---
@@ -84,9 +97,13 @@ docker compose ps
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | `PORT` | `3000` | HTTP port to listen on |
-| `HOST` | `localhost` | Host interface to bind (`localhost` for all interfaces, `127.0.0.1` for localhost only) |
+| `HOST` | `localhost` | Host interface to bind (`0.0.0.0` for container networks) |
 | `ALLOWED_WORKSPACES` | *None* | Comma-separated list of allowed workspace directories/repos on VM |
-| `PROJECT_MAPPINGS` | *None* | JSON object mapping project aliases to `{ path, gitUrl }` |
+| `PROJECT_MAPPINGS` | *None* | JSON object mapping project aliases to `{ path, gitUrl }` for startup pre-cloning |
+| `GIT_COMMIT_AUTHOR_NAME` | `HRNS Automation` | Git commit author name for automated commits |
+| `GIT_COMMIT_AUTHOR_EMAIL` | `automation@hrns.local` | Git commit author email for automated commits |
+| `GIT_SSH_PRIVATE_KEY` | *None* | RSA/Ed25519 private SSH key string injected at boot into `/root/.ssh/id_ed25519` |
+| `GIT_TOKEN` | *None* | Personal Access Token (PAT) registered in `/root/.git-credentials` |
 | `AUTH_MODE` | `none` | Authentication strategy: `none` (disabled), `basic`, or `bearer` |
 | `AUTH_BEARER_TOKEN` | *None* | Secret token for Bearer auth / `X-API-Key` header |
 | `AUTH_BASIC_USER` | `admin` | Username for HTTP Basic Auth |

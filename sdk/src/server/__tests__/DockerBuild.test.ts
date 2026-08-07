@@ -19,6 +19,18 @@ describe('Docker Build & Compose Setup', () => {
     expect(dockerfileContent).toContain('http://localhost:3000/health')
     expect(dockerfileContent).toContain('CMD ["node", "dist/server/index.js"]')
 
+    expect(dockerfileContent).toContain('COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh')
+    expect(dockerfileContent).toContain('ENTRYPOINT ["entrypoint.sh"]')
+    expect(dockerfileContent).toContain('jq')
+
+    const entrypointPath = join(rootDir, 'docker/entrypoint.sh')
+    expect(existsSync(entrypointPath)).toBe(true)
+    const entrypointContent = readFileSync(entrypointPath, 'utf-8')
+    expect(entrypointContent).toContain('#!/bin/sh')
+    expect(entrypointContent).toContain('GIT_COMMIT_AUTHOR_NAME')
+    expect(entrypointContent).toContain('GIT_SSH_PRIVATE_KEY')
+    expect(entrypointContent).toContain('PROJECT_MAPPINGS')
+
     const composeContent = readFileSync(composePath, 'utf-8')
     expect(composeContent).toContain('hrns-server')
     expect(composeContent).toContain('build: .')
