@@ -408,4 +408,28 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     expect(unregRes.statusCode).toBe(400)
     expect(unregRes.json.code).toBe('PROJECT_NOT_FOUND')
   })
+
+  it('10. Webhook Git Synchronization (POST /orchestrator/webhook/sync)', async () => {
+    server = new HttpServer({ port: 0, host: '127.0.0.1' })
+    await server.start()
+    const port = server.getPort()
+
+    // 1. Trigger sync webhook on valid project
+    const syncRes = await makeHttpRequest(port, '/orchestrator/webhook/sync', 'POST', {
+      project: 'backend',
+      baseBranch: 'main',
+    })
+    expect(syncRes.statusCode).toBe(200)
+    expect(syncRes.json.status).toBe('synced')
+    expect(syncRes.json.project).toBe('backend')
+    expect(syncRes.json.baseBranch).toBe('main')
+    expect(syncRes.json.fetchedAt).toBeDefined()
+
+    // 2. Unregistered project -> HTTP 400
+    const unregSyncRes = await makeHttpRequest(port, '/orchestrator/webhook/sync', 'POST', {
+      project: 'unregistered_proj',
+    })
+    expect(unregSyncRes.statusCode).toBe(400)
+    expect(unregSyncRes.json.code).toBe('PROJECT_NOT_FOUND')
+  })
 })

@@ -95,4 +95,20 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
     expect(envResolved?.path).toBe('/workspaces/backend-repo')
     expect(envResolved?.gitUrl).toBe('https://github.com/org/backend.git')
   })
+
+  it('UT-1.2.11: Resolves baseBranch from PROJECT_MAPPINGS or PROJECT_<NAME>_BASE_BRANCH env var', () => {
+    process.env.PROJECT_MAPPINGS = JSON.stringify({
+      backend: { path: '/workspaces/backend-repo', gitUrl: 'https://github.com/org/backend.git', baseBranch: 'develop' },
+    })
+
+    const envResolved = DtoMappers.resolveProjectFromEnv('backend')
+    expect(envResolved?.baseBranch).toBe('develop')
+
+    delete process.env.PROJECT_MAPPINGS
+    process.env.PROJECT_FRONTEND_PATH = '/workspaces/frontend'
+    process.env.PROJECT_FRONTEND_BASE_BRANCH = 'release/v1.0'
+
+    const envPrefixResolved = DtoMappers.resolveProjectFromEnv('frontend')
+    expect(envPrefixResolved?.baseBranch).toBe('release/v1.0')
+  })
 })

@@ -99,7 +99,8 @@ docker compose down
 | `PORT` | `3000` | HTTP port to listen on |
 | `HOST` | `localhost` | Host interface to bind (`0.0.0.0` for container networks) |
 | `ALLOWED_WORKSPACES` | *None* | Comma-separated list of allowed workspace directories/repos on VM |
-| `PROJECT_MAPPINGS` | *None* | JSON object mapping project aliases to `{ path, gitUrl }` for startup pre-cloning |
+| `PROJECT_MAPPINGS` | *None* | JSON object mapping project aliases to `{ path, gitUrl, baseBranch }` for startup pre-cloning |
+| `PROJECT_<NAME>_BASE_BRANCH` | `main` | Base branch for target project (e.g. `develop`) |
 | `GIT_COMMIT_AUTHOR_NAME` | `HRNS Automation` | Git commit author name for automated commits |
 | `GIT_COMMIT_AUTHOR_EMAIL` | `automation@hrns.local` | Git commit author email for automated commits |
 | `GIT_SSH_PRIVATE_KEY` | *None* | RSA/Ed25519 private SSH key string injected at boot into `/root/.ssh/id_ed25519` |
@@ -158,7 +159,7 @@ Default mode for local development. Requests require no authorization headers.
 ## Mandatory Git Worktree & Automated Commit/Push
 
 In HTTP daemon execution mode:
-1. **Mandatory Worktree Isolation**: All background jobs run inside an isolated Git worktree (`.worktrees/<jobId>`) by default. This enables multiple concurrent executions on the same repository without branch checkout conflicts.
+1. **Mandatory Worktree Isolation**: All background jobs run inside an isolated Git worktree (`.worktrees/<jobId>`) by default. Worktrees are created directly off `origin/<baseBranch>` after performing a JIT `git fetch origin <baseBranch>`.
 2. **Automated Commit & Push**: Upon successful completion of the TDD orchestrator loop:
    - The server inspects modified files and stages them (`git add -A`).
    - Commits changes (`git commit -m "feat(harness): completed orchestration job <jobId> [<scope>]"`).
@@ -175,6 +176,7 @@ Once the server is running, the following REST endpoints are available:
 | :--- | :--- | :--- | :--- |
 | `POST` | `/orchestrator/run` | Enqueues a new background orchestration job | `202 Accepted` |
 | `POST` | `/orchestrator/jobs/:id/resume` | Resumes/retries a previously stopped or failed job | `202 Accepted` |
+| `POST` | `/orchestrator/webhook/sync` | Reactive git fetch sync on target project baseBranch | `200 OK` |
 | `GET` | `/orchestrator/status/:id` | Polls current status and progress for job `:id` | `200 OK` / `404 Not Found` |
 | `DELETE` | `/orchestrator/jobs/clean` | Purges completed jobs from memory store & cleans stale worktrees | `200 OK` |
 | `GET` | `/health` | Liveness & readiness probe (active/queued jobs, memory usage) | `200 OK` |

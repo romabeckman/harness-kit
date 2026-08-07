@@ -27,27 +27,29 @@ fi
 # 4. Bootstrap de clonagem de repositórios definidos em PROJECT_MAPPINGS
 if [ -n "$PROJECT_MAPPINGS" ]; then
     echo "[BOOTSTRAP] Processando PROJECT_MAPPINGS..."
-    # Extrai cada par {path, gitUrl} via Node.js inline
+    # Extrai cada par {path, gitUrl, baseBranch} via Node.js inline
     node -e '
       try {
         const mappings = JSON.parse(process.env.PROJECT_MAPPINGS || "{}");
         for (const [key, val] of Object.entries(mappings)) {
           const path = typeof val === "string" ? val : val.path;
           const gitUrl = typeof val === "object" ? val.gitUrl : null;
+          const baseBranch = (typeof val === "object" && val.baseBranch) ? val.baseBranch : (process.env[`PROJECT_${key.toUpperCase()}_BASE_BRANCH`] || "main");
           if (path && gitUrl) {
-            console.log(`${path}|${gitUrl}`);
+            console.log(`${path}|${gitUrl}|${baseBranch}`);
           }
         }
       } catch (e) {}
-    ' | while IFS='|' read -r TARGET_PATH GIT_URL; do
+    ' | while IFS='|' read -r TARGET_PATH GIT_URL BASE_BRANCH; do
         if [ -n "$TARGET_PATH" ] && [ -n "$GIT_URL" ]; then
+            TARGET_BRANCH="${BASE_BRANCH:-main}"
             if [ ! -d "$TARGET_PATH/.git" ]; then
-                echo "[BOOTSTRAP] Clonando $GIT_URL em $TARGET_PATH..."
+                echo "[BOOTSTRAP] Clonando $GIT_URL (branch: $TARGET_BRANCH) em $TARGET_PATH..."
                 mkdir -p "$TARGET_PATH"
-                git clone "$GIT_URL" "$TARGET_PATH" || echo "[WARN] Falha ao clonar $GIT_URL"
+                git clone -b "$TARGET_BRANCH" "$GIT_URL" "$TARGET_PATH" || git clone "$GIT_URL" "$TARGET_PATH" || echo "[WARN] Falha ao clonar $GIT_URL"
             else
-                echo "[BOOTSTRAP] Repositório em $TARGET_PATH já existe. Atualizando..."
-                git -C "$TARGET_PATH" fetch --all || true
+                echo "[BOOTSTRAP] Repositório em $TARGET_PATH já existe. Sincronizando $TARGET_BRANCH..."
+                git -C "$TARGET_PATH" fetch origin "$TARGET_BRANCH" || git -C "$TARGET_PATH" fetch --all || true
             fi
         fi
     done

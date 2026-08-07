@@ -151,7 +151,7 @@ export class DtoMappers {
   static resolveProjectFromEnv(
     projectName?: string,
     allowedWorkspaces?: string[]
-  ): { path: string; gitUrl?: string } | null {
+  ): { path: string; gitUrl?: string; baseBranch?: string } | null {
     ensureEnvLoaded()
 
     if (!projectName || typeof projectName !== 'string' || projectName.trim() === '') return null
@@ -170,7 +170,7 @@ export class DtoMappers {
             const entry = mappings[name]
             if (typeof entry === 'string') return { path: normalize(entry) }
             if (typeof entry === 'object' && typeof entry.path === 'string') {
-              return { path: normalize(entry.path), gitUrl: entry.gitUrl }
+              return { path: normalize(entry.path), gitUrl: entry.gitUrl, baseBranch: entry.baseBranch }
             }
           }
           for (const key of Object.keys(mappings)) {
@@ -178,7 +178,7 @@ export class DtoMappers {
               const entry = mappings[key]
               if (typeof entry === 'string') return { path: normalize(entry) }
               if (typeof entry === 'object' && typeof entry.path === 'string') {
-                return { path: normalize(entry.path), gitUrl: entry.gitUrl }
+                return { path: normalize(entry.path), gitUrl: entry.gitUrl, baseBranch: entry.baseBranch }
               }
             }
           }
@@ -192,9 +192,10 @@ export class DtoMappers {
     const envPrefix = `PROJECT_${name.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`
     const pathEnv = process.env[`${envPrefix}_PATH`]
     const gitUrlEnv = process.env[`${envPrefix}_GIT_URL`]
+    const baseBranchEnv = process.env[`${envPrefix}_BASE_BRANCH`]
 
     if (pathEnv) {
-      return { path: normalize(pathEnv), gitUrl: gitUrlEnv }
+      return { path: normalize(pathEnv), gitUrl: gitUrlEnv, baseBranch: baseBranchEnv }
     }
 
     return null

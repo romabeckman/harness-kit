@@ -14,6 +14,7 @@ import {
   GetSettingsUseCase,
   UpdateSettingsUseCase,
   GetTokensTelemetryUseCase,
+  SyncWorkspaceRepositoryUseCase,
 } from '../../../../application/use-cases'
 import { AuthStrategyFactory } from '../../../outbound/auth/AuthStrategyFactory'
 import type { IAuthStrategy } from '../../../outbound/auth/types'
@@ -28,6 +29,7 @@ export interface UseCaseContainer {
   getSettingsUseCase?: GetSettingsUseCase
   updateSettingsUseCase?: UpdateSettingsUseCase
   getTokensUseCase?: GetTokensTelemetryUseCase
+  syncUseCase?: SyncWorkspaceRepositoryUseCase
 }
 
 export class RouteHandlers {
@@ -40,6 +42,7 @@ export class RouteHandlers {
   private getSettingsUseCase: GetSettingsUseCase
   private updateSettingsUseCase: UpdateSettingsUseCase
   private getTokensUseCase: GetTokensTelemetryUseCase
+  private syncUseCase: SyncWorkspaceRepositoryUseCase
   private authStrategy: IAuthStrategy
   private config?: HttpServerConfig
   private requestCounts = new Map<string, { count: number; resetAt: number }>()
@@ -63,6 +66,7 @@ export class RouteHandlers {
     this.getSettingsUseCase = useCases?.getSettingsUseCase ?? new GetSettingsUseCase(config)
     this.updateSettingsUseCase = useCases?.updateSettingsUseCase ?? new UpdateSettingsUseCase(config)
     this.getTokensUseCase = useCases?.getTokensUseCase ?? new GetTokensTelemetryUseCase(config)
+    this.syncUseCase = useCases?.syncUseCase ?? new SyncWorkspaceRepositoryUseCase()
     this.authStrategy = AuthStrategyFactory.create(config?.auth)
   }
 
@@ -128,6 +132,11 @@ export class RouteHandlers {
         const project = url.searchParams.get('project') ?? undefined
         const agent = url.searchParams.get('agent') ?? undefined
         await this.handleGetSettings(project, agent, res)
+        return
+      }
+
+      if (method === 'POST' && (pathname === '/orchestrator/sync' || pathname === '/orchestrator/webhook/sync')) {
+        await this.handleSyncWorkspace(req, res)
         return
       }
 
@@ -260,6 +269,19 @@ export class RouteHandlers {
   private handleDocsJson(res: ServerResponse): void {
     const spec = this.docsUseCase.getSpec()
     this.sendJson(res, 200, spec)
+  }
+
+  private async handleSyncWorkspace(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const rawBody = await this.readBody(req)
+    let body: { project: string; baseBranch?: string }
+    try {
+      body = JSON.parse(rawBody || '{}')
+    } catch {
+      throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in sync request')
+    }
+
+    const result = await this.syncUseCase.execute(body)
+    this.sendJson(res, 200, result)
   }
 
   private async readBody(req: IncomingMessage, maxBytes = 1024 * 1024): Promise<string> {

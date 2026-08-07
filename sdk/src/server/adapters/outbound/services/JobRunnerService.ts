@@ -164,18 +164,33 @@ export class JobRunnerService {
 
     const envInfo = DtoMappers.resolveProjectFromEnv(firstProject)
     const gitUrl = envInfo?.gitUrl
+    const baseBranch = request.baseBranch ?? envInfo?.baseBranch ?? 'main'
 
     if (gitUrl && !existsSync(join(workspacePath, '.git'))) {
-      const cloneRes = await execGit(['clone', gitUrl, workspacePath])
+      const cloneRes = await execGit(['clone', '-b', baseBranch, gitUrl, workspacePath])
       if (cloneRes.exitCode !== 0) {
-        throw new Error(`Git clone failed for '${gitUrl}': ${cloneRes.stderr || cloneRes.stdout}`)
+        const fallbackClone = await execGit(['clone', gitUrl, workspacePath])
+        if (fallbackClone.exitCode !== 0) {
+          throw new Error(`Git clone failed for '${gitUrl}': ${fallbackClone.stderr || fallbackClone.stdout}`)
+        }
       }
+    }
+
+    if (existsSync(join(workspacePath, '.git'))) {
+      // JIT Sync: fetch latest changes from origin for baseBranch
+      await execGit(['fetch', 'origin', baseBranch], workspacePath)
     }
 
     if (useWorktree && existsSync(join(workspacePath, '.git'))) {
       const worktreePath = join(workspacePath, '.worktrees', jobId)
       const targetBranch = request.branch ?? `job-${jobId}`
-      const addRes = await execGit(['worktree', 'add', '-B', targetBranch, worktreePath], workspacePath)
+      let addRes = await execGit(
+        ['worktree', 'add', '-B', targetBranch, worktreePath, `origin/${baseBranch}`],
+        workspacePath
+      )
+      if (addRes.exitCode !== 0) {
+        addRes = await execGit(['worktree', 'add', '-B', targetBranch, worktreePath], workspacePath)
+      }
       if (addRes.exitCode === 0) {
         return { effectiveWorkspacePath: worktreePath, createdWorktreePath: worktreePath }
       }

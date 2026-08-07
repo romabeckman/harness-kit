@@ -3,7 +3,7 @@ doc_type: feature
 domain: server
 stack: [TypeScript, Node.js, Docker]
 node_id: "feature:http_server"
-tags: [server, http, api, docker, swagger, health, settings, agents]
+tags: [server, http, api, docker, swagger, health, settings, agents, sync, git]
 edges:
   - relation: implements
     target: "adr:architecture"
@@ -11,7 +11,7 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_core"
-updated: 2026-08-06
+updated: 2026-08-07
 ---
 # HTTP SERVER & DOCKER ADAPTER
 
@@ -41,9 +41,11 @@ updated: 2026-08-06
     "src/server/application/use-cases/GetOpenApiDocsUseCase.ts",
     "src/server/application/use-cases/GetSettingsUseCase.ts",
     "src/server/application/use-cases/UpdateSettingsUseCase.ts",
-    "src/server/adapters/inbound/http/RouteHandlers.ts",
-    "src/server/adapters/inbound/http/DtoMappers.ts",
-    "src/server/adapters/inbound/http/OpenApiSpecGenerator.ts",
+    "src/server/application/use-cases/SyncWorkspaceRepositoryUseCase.ts",
+    "src/server/adapters/inbound/http/routes/RouteHandlers.ts",
+    "src/server/adapters/inbound/http/mappers/DtoMappers.ts",
+    "src/server/adapters/inbound/http/docs/OpenApiSpecGenerator.ts",
+    "docker/entrypoint.sh",
     "Dockerfile",
     "docker-compose.yml"
   ],
@@ -57,6 +59,7 @@ updated: 2026-08-06
     "src/server/application/use-cases/__tests__/CleanJobsAndWorktreesUseCase.test.ts",
     "src/server/application/use-cases/__tests__/RunOrchestratorJobUseCase.test.ts",
     "src/server/application/use-cases/__tests__/SettingsUseCases.test.ts",
+    "src/server/application/use-cases/__tests__/SyncWorkspaceRepositoryUseCase.test.ts",
     "src/server/adapters/inbound/http/mappers/__tests__/DtoMappers.test.ts",
     "src/server/adapters/inbound/http/docs/__tests__/OpenApiSpecGenerator.test.ts",
     "src/server/adapters/inbound/http/routes/__tests__/RouteHandlers.test.ts",
@@ -72,7 +75,9 @@ updated: 2026-08-06
 Provides a non-interactive HTTP daemon service and Docker container environment for the SDK orchestrator.
 
 ## OVERVIEW
-The `http_server` module acts as an Inbound Adapter in Hexagonal Architecture. It exposes REST API endpoints for triggering autonomous TDD orchestration jobs, polling execution status, probing container health, rendering OpenAPI Swagger documentation, and managing project-local model settings (`settings.json`) without interactive TTY dependencies.
+The `http_server` module acts as an Inbound Adapter in Hexagonal Architecture. It exposes REST API endpoints for triggering autonomous TDD orchestration jobs, polling execution status, probing container health, triggering git repository synchronization, rendering OpenAPI Swagger documentation, and managing project-local model settings (`settings.json`) without interactive TTY dependencies.
+
+It includes automated Git workspace preparation: container pre-cloning via `docker/entrypoint.sh`, Just-In-Time (JIT) base branch fetching (`baseBranch`), worktree derivation off `origin/<baseBranch>`, and reactive git fetch synchronization via `POST /orchestrator/webhook/sync`.
 
 ## MANDATORY RULES: PROJECT & AGENT PARAMETERS
 > [!IMPORTANT]
@@ -95,6 +100,8 @@ If a request omits `agent` or passes an unregistered agent, the server returns `
 
 ## FOLDER STRUCTURE (HEXAGONAL ARCHITECTURE)
 ```
+docker/
+└── entrypoint.sh                # Container bootstrap script (Git setup, SSH/PAT, pre-clone)
 src/server/
 ├── domain/                      # Domain Layer (Entities, Value Objects, Domain Errors)
 │   └── types.ts                 # JobStatus, HealthStatusVo, HttpServerError, OrchestrationJob
@@ -120,20 +127,24 @@ src/server/
 │       ├── GetHealthStatusUseCase.ts
 │       ├── GetOpenApiDocsUseCase.ts
 │       ├── GetSettingsUseCase.ts        # Consults project-local .harness-kit/settings.json
-│       └── UpdateSettingsUseCase.ts     # Creates/updates project-local .harness-kit/settings.json
+│       ├── UpdateSettingsUseCase.ts     # Creates/updates project-local .harness-kit/settings.json
+│       └── SyncWorkspaceRepositoryUseCase.ts # Triggers git fetch sync on target project baseBranch
 ├── adapters/                    # Infrastructure & Technical Adapters Layer
 │   ├── inbound/                 # Primary / Driving Adapters
 │   │   └── http/
-│   │       ├── RouteHandlers.ts # HTTP Dispatcher / Controller Adapter
-│   │       ├── DtoMappers.ts    # Anti-Corruption Layer (ACL)
-│   │       ├── OpenApiSpecGenerator.ts # Swagger/OpenAPI Specs Adapter
+│   │       ├── routes/
+│   │       │   └── RouteHandlers.ts # HTTP Dispatcher / Controller Adapter
+│   │       ├── mappers/
+│   │       │   └── DtoMappers.ts    # Anti-Corruption Layer (ACL)
+│   │       ├── docs/
+│   │       │   └── OpenApiSpecGenerator.ts # Swagger/OpenAPI Specs Adapter
 │   │       └── dto/             # Request & Response Data Transfer Objects
 │   └── outbound/                # Secondary / Driven Adapters
 │       ├── persistence/         # InMemoryJobStore persistence adapter
 │       ├── mutex/               # WorkspaceLockManager mutex adapter
 │       ├── queue/               # JobQueue FIFO worker adapter
 │       ├── auth/                # BasicAuthStrategy, BearerAuthStrategy, NoAuthStrategy
-│       └── runner/              # JobRunnerService execution worker adapter
+│       └── services/            # JobRunnerService execution worker adapter
 ├── HttpServer.ts                # Application Bootstrap & Lifecycle Manager
 └── index.ts                     # Public SDK Exports & Entry Point
 ```
@@ -150,6 +161,7 @@ Enqueues a background orchestration job. Returns `HTTP 202 Accepted` immediately
     "project": "backend",
     "agent": "claude-cli",
     "branch": "feature/login-auth",
+    "baseBranch": "develop",
     "mode": "fast",
     "useWorktree": true
   }
@@ -165,7 +177,28 @@ Enqueues a background orchestration job. Returns `HTTP 202 Accepted` immediately
   }
   ```
 
-### 2. `GET /orchestrator/status/:id`
+### 2. `POST /orchestrator/webhook/sync` & `POST /orchestrator/sync`
+Triggers an asynchronous `git fetch origin <baseBranch>` on the target registered project workspace path.
+
+- **Request Body**:
+  ```json
+  {
+    "project": "backend",
+    "baseBranch": "develop"
+  }
+  ```
+- **Response Payload** (`HTTP 200 OK`):
+  ```json
+  {
+    "status": "synced",
+    "project": "backend",
+    "workspacePath": "/workspaces/backend",
+    "baseBranch": "develop",
+    "fetchedAt": "2026-08-07T09:25:00.000Z"
+  }
+  ```
+
+### 3. `GET /orchestrator/status/:id`
 Retrieves execution state and progress of an orchestration job.
 
 - **Response Payload** (`HTTP 200 OK`):
@@ -180,7 +213,7 @@ Retrieves execution state and progress of an orchestration job.
   }
   ```
 
-### 3. `GET /orchestrator/settings?project=backend&agent=claude-cli`
+### 4. `GET /orchestrator/settings?project=backend&agent=claude-cli`
 Consults project-local model configuration from `.harness-kit/settings.json`. If the file does not exist in the target project, creates it with default settings.
 
 - **Query Parameters**:
@@ -201,7 +234,7 @@ Consults project-local model configuration from `.harness-kit/settings.json`. If
   }
   ```
 
-### 4. `POST /orchestrator/settings`
+### 5. `POST /orchestrator/settings`
 Creates or updates model configuration in the project's local `.harness-kit/settings.json` file.
 
 - **Request Body**:
@@ -232,7 +265,7 @@ Creates or updates model configuration in the project's local `.harness-kit/sett
   }
   ```
 
-### 5. `GET /health`
+### 6. `GET /health`
 Liveness and readiness probe for container orchestrators (Kubernetes, Docker Swarm, ECS).
 
 - **Response Payload** (`HTTP 200 OK`):
@@ -247,14 +280,14 @@ Liveness and readiness probe for container orchestrators (Kubernetes, Docker Swa
   }
   ```
 
-### 6. `GET /docs` & `GET /docs/openapi.json`
+### 7. `GET /docs` & `GET /docs/openapi.json`
 Interactive Swagger UI documentation page (`GET /docs`) and raw OpenAPI 3.0.3 specification JSON (`GET /docs/openapi.json`).
 
 ---
 
-## DOCKER SUPPORT
+## DOCKER & CONTAINER BOOTSTRAP
 
-### Multi-Stage `Dockerfile`
+### Multi-Stage `Dockerfile` with Entrypoint
 ```dockerfile
 FROM node:22-alpine AS builder
 WORKDIR /app
@@ -265,12 +298,24 @@ RUN npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
+RUN apk add --no-cache git openssh-client jq
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOST=0.0.0.0
+
 COPY package*.json ./
 COPY --from=builder /app/dist ./dist
-RUN npm ci --only=production
+RUN npm ci --omit=dev
+
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 3000
+
 HEALTHCHECK --interval=30s --timeout=5s CMD wget --quiet --tries=1 --spider http://localhost:3000/health || exit 1
+
+ENTRYPOINT ["entrypoint.sh"]
 CMD ["node", "dist/server/index.js"]
 ```
 
@@ -286,7 +331,10 @@ services:
     environment:
       - PORT=3000
       - HOST=0.0.0.0
-      - PROJECT_MAPPINGS={"backend":{"path":"/workspace/backend"}}
+      - GIT_COMMIT_AUTHOR_NAME=HRNS Bot
+      - GIT_COMMIT_AUTHOR_EMAIL=bot@company.com
+      - GIT_TOKEN=ghp_xxxxxxxxxxxx
+      - PROJECT_MAPPINGS={"backend":{"path":"/workspace/backend","gitUrl":"https://github.com/org/backend.git","baseBranch":"develop"}}
 ```
 
 ---
@@ -304,7 +352,7 @@ console.log(`Server running on port ${server.getPort()}`)
 await server.stop()
 
 # CORRECT: Client passes project identifier "backend" and agent "claude-cli"
-const payload = { scope: "build-feature", project: "backend", agent: "claude-cli" }
+const payload = { scope: "build-feature", project: "backend", agent: "claude-cli", baseBranch: "develop" }
 
 # WRONG: Omitting mandatory agent parameter
 // DtoMappers throws HTTP 400 Bad Request (MISSING_AGENT_PARAMETER)
@@ -317,7 +365,7 @@ const invalidPayload = { scope: "build", project: "backend" }
 REQUIRED: Clients MUST pass registered project identifiers (e.g. `"project": "backend"`) and valid agent runner (`"agent": "claude-cli"`).  
 REQUIRED: Use `DtoMappers` ACL to validate incoming payloads before queueing jobs.  
 REQUIRED: Settings MUST be persisted locally in the target project's `.harness-kit/settings.json` file.  
-REQUIRED: Ensure background jobs use isolated Git worktrees (`useWorktree: true` by default) to allow parallel executions on the same repository.  
+REQUIRED: Ensure background jobs use isolated Git worktrees (`useWorktree: true` by default) off `origin/<baseBranch>` to allow parallel executions on the same repository.  
 PROHIBITED: Passing interactive stdin prompts (`refine: true` or `mode: "deep_thinking"`) in HTTP requests.
 
 ---

@@ -340,6 +340,60 @@ export class OpenApiSpecGenerator {
             },
           },
         },
+        '/orchestrator/webhook/sync': {
+          post: {
+            summary: 'Synchronize workspace git repository (Webhook)',
+            description: 'Triggers asynchronous git fetch for baseBranch on target project workspace.',
+            security: [{ BearerAuth: [] }, { BasicAuth: [] }],
+            requestBody: {
+              required: true,
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      project: { type: 'string', description: 'Mandatory registered project identifier' },
+                      baseBranch: { type: 'string', description: 'Optional base branch name to fetch (defaults to configured baseBranch or main)' },
+                    },
+                    required: ['project'],
+                  },
+                },
+              },
+            },
+            responses: {
+              '200': {
+                description: 'Workspace synchronized successfully',
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        status: { type: 'string' },
+                        project: { type: 'string' },
+                        workspacePath: { type: 'string' },
+                        baseBranch: { type: 'string' },
+                        fetchedAt: { type: 'string', format: 'date-time' },
+                      },
+                      required: ['status', 'project', 'workspacePath', 'baseBranch', 'fetchedAt'],
+                    },
+                  },
+                },
+              },
+              '400': {
+                description: 'Missing project, not a git repository, or fetch failure',
+                content: {
+                  'application/json': { schema: { $ref: '#/components/schemas/HttpServerError' } },
+                },
+              },
+              '401': {
+                description: 'Unauthorized access',
+                content: {
+                  'application/json': { schema: { $ref: '#/components/schemas/HttpServerError' } },
+                },
+              },
+            },
+          },
+        },
         '/health': {
           get: {
             summary: 'Health check',
