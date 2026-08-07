@@ -7,7 +7,9 @@ describe('OpenApiSpecGenerator', () => {
     expect(spec.openapi).toBe('3.0.3')
     expect(spec.info.title).toContain('Harness-Kit')
     expect(spec.paths['/orchestrator/run']).toBeDefined()
+    expect(spec.paths['/orchestrator/webhook/sync']).toBeDefined()
     expect(spec.paths['/health']).toBeDefined()
+    expect((spec as any).components.schemas.RunRequestDtoExtended.properties.baseBranch).toBeDefined()
   })
 
   it('Generates Swagger UI HTML template', () => {
