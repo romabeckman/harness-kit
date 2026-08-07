@@ -15,6 +15,7 @@ sdk/src/
     ├── claude-cli/              # Claude CLI execution adapter
     ├── claude-sdk/             # Anthropic API execution adapter
     ├── antigravity-cli/         # Google Antigravity execution adapter
+    ├── codex-cli/               # Codex CLI execution adapter
     ├── copilot-cli/             # GitHub Copilot CLI execution adapter
     ├── copilot-sdk/             # GitHub Copilot SDK execution adapter
     ├── cursor-cli/              # Cursor agent CLI execution adapter
@@ -47,7 +48,11 @@ const runner = new ClaudeCLIRunner() // Violates ports and adapters decoupling
 - Executes binary `agy` with `--output-format json` by default.
 - Parses stdout JSON structure containing `status`, `response`, `structured_output`, and `usage`.
 - Extracts token counts: `inputTokens`, `outputTokens`, `cacheReadTokens`. Note that `outputTokens` already includes `thinking_tokens`.
-- Rejects invocation if `status` field equals `FAILED` or `ERROR`.
+### CodexCLIRunner (`codex-cli`)
+- Executes binary `codex` with subcommand `exec --json --dangerously-bypass-approvals-and-sandbox`.
+- Writes prompt to stdin and streams JSON events.
+- Extracts token counts and cost: `inputTokens`, `outputTokens`, `cacheCreationTokens`, `cacheReadTokens`, `costUsd`.
+
 
 ## PARAMETERS / CONFIGURATIONS
 | Name | Type | Required | Description | Default |

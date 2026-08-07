@@ -44,6 +44,7 @@ export enum Runner {
   ANTIGRAVITY_CLI = 'antigravity-cli',
   CLAUDE_CLI = 'claude-cli',
   CLAUDE_SDK = 'claude-sdk',
+  CODEX_CLI = 'codex-cli',
   COPILOT_CLI = 'copilot-cli',
   COPILOT_SDK = 'copilot-sdk',
   CURSOR_CLI = 'cursor-cli',

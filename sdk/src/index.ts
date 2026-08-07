@@ -39,6 +39,7 @@ export type { CopilotSDKRunnerConfig } from './agent-runner/copilot-sdk/CopilotS
 export { CursorSDKRunner } from './agent-runner/cursor-sdk/CursorSDKRunner'
 export type { CursorSDKRunnerConfig } from './agent-runner/cursor-sdk/CursorSDKRunner'
 export { KiroCLIRunner } from './agent-runner/kiro-cli/KiroCLIRunner'
+export { CodexCLIRunner } from './agent-runner/codex-cli/CodexCLIRunner'
 
 // File state types
 export type {
