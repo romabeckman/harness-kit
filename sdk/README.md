@@ -175,7 +175,7 @@ Show version or help message.
 |---|---|---|---|
 | `--agent <type>` | `-a` | Agent runner type (see table below) | `--agent copilot-sdk` |
 | `--model <name>` | `-m` | Model override for all phases | `--model gpt-4o` |
-| `--effort <level>` | `-e` | Effort level override for all phases | `--effort high` |
+| `--effort <level>` | `-e` | Effort level override for all phases (`low`, `medium`, `high`, `max`) | `--effort high` |
 | `--reset` | | Force reset (skip interactive prompt) | |
 | `--resume` | | Force resume (skip interactive prompt) | |
 | `--scope <text>` | | Project scope / PRD (skips editor prompt) | `--scope "REST API with JWT"` |
@@ -218,15 +218,16 @@ Show version or help message.
 
 ## Agent runners
 
-Each runner is a self-contained strategy for invoking a specific AI backend. The SDK ships eight built-in runners:
+Each runner is a self-contained strategy for invoking a specific AI backend. The SDK ships nine built-in runners:
 
 | Type | Binary / SDK | Default model |
 |---|---|---|
 | `claude-cli` | `claude` CLI | _(from settings)_ |
 | `claude-sdk` | `@anthropic-ai/sdk` | `anthropic.claude-5-sonnet` |
 | `antigravity-cli` | `agy` CLI | `gemini-3.6-flash` |
+| `codex-cli` | `codex` CLI | `gpt-5.6-sol` / `gpt-5.6-luna` |
 | `copilot-cli` | `copilot` CLI | _(from settings)_ |
-| `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.3-codex` |
+| `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.6-sol` / `gpt-5.6-luna` |
 | `cursor-cli` | `agent` CLI | _(from settings)_ |
 | `cursor-sdk` | `@cursor/sdk` | `gpt-5.3-codex` |
 | `kiro-cli` | `kiro-cli` CLI | _(from settings)_ |
@@ -241,6 +242,7 @@ Each runner is a self-contained strategy for invoking a specific AI backend. The
 ### CLI shorthands
 
 ```bash
+hrns run --agent codex-cli           # codex-cli
 hrns run --agent cursor-sdk          # cursor-sdk (needs CURSOR_API_KEY)
 hrns run --agent copilot-cli         # copilot-cli
 hrns run --agent cursor-cli          # cursor-cli
@@ -285,7 +287,7 @@ The global file is created automatically on first run. You can also set `HARNESS
 |---|---|---|
 | `timeoutMs` | `number` | Default timeout (ms) for all phases under this runner |
 | `phases.<key>.model` | `string` | Model for this specific phase |
-| `phases.<key>.effort` | `string` | Reasoning effort: `low`, `medium`, `high` |
+| `phases.<key>.effort` | `string` | Reasoning effort: `low`, `medium`, `high`, `max` |
 | `phases.<key>.timeoutMs` | `number` | Phase-level timeout override |
 
 ### Runner keys
@@ -294,6 +296,7 @@ The global file is created automatically on first run. You can also set `HARNESS
 |---|---|
 | `claude` | `claude-cli` and `claude-sdk` |
 | `antigravity` | `antigravity-cli` |
+| `codex` | `codex-cli` |
 | `copilot` | `copilot-cli` and `copilot-sdk` |
 | `cursor` | `cursor-cli` and `cursor-sdk` |
 | `kiro` | `kiro-cli` |
@@ -338,12 +341,12 @@ The global file is created automatically on first run. You can also set `HARNESS
   "copilot": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":      { "model": "gpt-5.3-codex",  "effort": "medium" },
-      "planning":       { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
-      "implementation": { "model": "gpt-5.3-codex",  "effort": "medium" },
-      "review_tl":      { "model": "gpt-5.3-codex",  "effort": "low"    },
-      "review_adv":     { "model": "gpt-5.3-codex",  "effort": "low"    },
-      "memory":         { "model": "gpt-5.3-codex",  "effort": "low"    }
+      "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
+      "implementation": { "model": "gpt-5.6-luna", "effort": "max"    },
+      "review_tl":      { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "review_adv":     { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "memory":         { "model": "gpt-5.6-luna", "effort": "high"   }
     }
   },
   "cursor": {
@@ -355,6 +358,17 @@ The global file is created automatically on first run. You can also set `HARNESS
       "review_tl":      { "model": "gpt-5.3-codex",  "effort": "low"    },
       "review_adv":     { "model": "gpt-5.3-codex",  "effort": "low"    },
       "memory":         { "model": "gpt-5.3-codex",  "effort": "low"    }
+    }
+  },
+  "codex": {
+    "timeoutMs": 1800000,
+    "phases": {
+      "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
+      "implementation": { "model": "gpt-5.6-luna", "effort": "max"    },
+      "review_tl":      { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "review_adv":     { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "memory":         { "model": "gpt-5.6-luna", "effort": "high"   }
     }
   }
 }
