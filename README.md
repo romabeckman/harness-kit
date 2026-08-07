@@ -79,8 +79,14 @@ copilot plugin install harness-kit@harness-kit
 ### Gemini CLI
 
 ```bash
-# Install the extension
 agy plugin install https://github.com/romabeckman/harness-kit
+```
+
+### Codex CLI
+
+```bash
+codex plugin marketplace add https://github.com/romabeckman/harness-kit
+codex plugin add harness-kit@harness-kit
 ```
 
 ---

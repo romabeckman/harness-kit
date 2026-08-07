@@ -23,6 +23,7 @@ export class ReportDataAggregator {
     let decisions: string[] = []
     let tokenReport: TokenReport = {
       entries: [],
+      events: [],
       totals: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, costUsd: 0 },
       bySkill: {}
     }

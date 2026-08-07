@@ -23,6 +23,7 @@ Index of project technical documentation for **harness-kit SDK**. Use the links 
 | [**SDK_STATE.md**](./feature/SDK_STATE.md) | SDK state persistence and recovery logic. | Optional |
 | [**SDK_STEERING.md**](./feature/SDK_STEERING.md) | Session steering: `SteeringAnalyzer`, `steeringRules` config, and rollback/rule actions. | Optional |
 | [**SDK_TERMINAL_UI.md**](./feature/SDK_TERMINAL_UI.md) | Terminal progress spinner, progress bar, and ANSI color helpers. | Optional |
+| [**HTTP_SERVER.md**](./feature/HTTP_SERVER.md) | Headless HTTP server daemon, REST endpoints, and Docker container support. | Optional |
 | [**E2E_TESTING_SUITE.md**](./feature/E2E_TESTING_SUITE.md) | End-to-End integration and CLI test suite specifications and setup. | Optional |
 
 ## RECOMMENDED READING ORDER

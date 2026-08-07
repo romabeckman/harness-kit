@@ -147,3 +147,4 @@ docs/product
 docs/specs
 .claude/
 docs/superpowers
+.harness-kit/settings.json
