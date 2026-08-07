@@ -17,7 +17,7 @@ import {
   SyncWorkspaceRepositoryUseCase,
 } from '../../../../application/use-cases'
 import { AuthStrategyFactory } from '../../../outbound/auth/AuthStrategyFactory'
-import type { IAuthStrategy } from '../../../outbound/auth/types'
+import type { IAuthStrategy, AuthUserContext } from '../../../outbound/auth/types'
 
 export interface UseCaseContainer {
   runJobUseCase?: RunOrchestratorJobUseCase
@@ -95,29 +95,95 @@ export class RouteHandlers {
       const pathname = url.pathname
       const method = (req.method ?? 'GET').toUpperCase()
 
-      if (pathname.startsWith('/orchestrator/')) {
-        if (!this.authStrategy.authenticate(req.headers)) {
-          const authMode = (this.config?.auth?.mode ?? process.env.AUTH_MODE ?? 'none').toLowerCase()
-          if (authMode === 'basic') {
-            res.setHeader('WWW-Authenticate', 'Basic realm="Harness-Kit Daemon"')
-          }
-          throw new HttpServerError(401, 'UNAUTHORIZED', 'Authentication credentials invalid or missing.')
-        }
+      let rawBody: string | undefined
+      if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+        rawBody = await this.readBody(req)
       }
 
       if (method === 'POST' && pathname === '/orchestrator/run') {
-        await this.handleRunJob(req, res)
+        let body: RunRequestDtoExtended
+        try {
+          body = JSON.parse(rawBody || '{}')
+        } catch {
+          throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in request')
+        }
+
+        const projectList = typeof body.project === 'string'
+          ? [body.project]
+          : (Array.isArray(body.project) ? body.project : undefined)
+
+        await this.authenticateAndAuthorize(req, res, projectList, rawBody)
+        const responseDto = await this.runJobUseCase.execute(body)
+        this.sendJson(res, 202, responseDto)
+        return
+      }
+
+      if (method === 'POST' && (pathname === '/orchestrator/sync' || pathname === '/orchestrator/webhook/sync')) {
+        let body: { project: string; baseBranch?: string }
+        try {
+          body = JSON.parse(rawBody || '{}')
+        } catch {
+          throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in sync request')
+        }
+
+        await this.authenticateAndAuthorize(req, res, body.project ? [body.project] : undefined, rawBody)
+        const result = await this.syncUseCase.execute(body)
+        this.sendJson(res, 200, result)
+        return
+      }
+
+      if (method === 'POST' && pathname === '/orchestrator/settings') {
+        let parsed: any
+        try {
+          parsed = JSON.parse(rawBody || '{}')
+        } catch {
+          throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in settings request')
+        }
+
+        const project = typeof parsed.project === 'string' ? parsed.project : undefined
+        const agent = typeof parsed.agent === 'string' ? parsed.agent : undefined
+
+        await this.authenticateAndAuthorize(req, res, project ? [project] : undefined, rawBody)
+        const settingsPayload = parsed.settings ?? (parsed.project ? { ...parsed, project: undefined, agent: undefined } : parsed)
+
+        const result = await this.updateSettingsUseCase.execute(settingsPayload, project, agent)
+        this.sendJson(res, 200, result)
         return
       }
 
       if (method === 'POST' && pathname.startsWith('/orchestrator/jobs/') && pathname.endsWith('/resume')) {
         const jobId = pathname.replace('/orchestrator/jobs/', '').replace('/resume', '')
-        await this.handleResumeJob(jobId, req, res)
+        let overrides: Partial<RunRequestDtoExtended> = {}
+        if (rawBody && rawBody.trim().length > 0) {
+          try {
+            overrides = JSON.parse(rawBody)
+          } catch {
+            throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in resume request')
+          }
+        }
+
+        await this.authenticateAndAuthorize(req, res, undefined, rawBody)
+        const responseDto = await this.resumeJobUseCase.execute(jobId, overrides)
+        this.sendJson(res, 202, responseDto)
         return
       }
 
+      if (pathname.startsWith('/orchestrator/')) {
+        const projectParam = url.searchParams.get('project') ?? undefined
+        await this.authenticateAndAuthorize(req, res, projectParam ? [projectParam] : undefined, rawBody)
+      }
+
       if (method === 'DELETE' && pathname === '/orchestrator/jobs/clean') {
-        await this.handleCleanJobs(req, res)
+        let maxAgeMs = 0
+        if (rawBody && rawBody.trim().length > 0) {
+          try {
+            const parsed = JSON.parse(rawBody)
+            if (typeof parsed.maxAgeMs === 'number') maxAgeMs = parsed.maxAgeMs
+          } catch {}
+        }
+
+        const cleanResult = await this.cleanUseCase.execute(maxAgeMs)
+        this.sendJson(res, 200, cleanResult)
         return
       }
 
@@ -132,16 +198,6 @@ export class RouteHandlers {
         const project = url.searchParams.get('project') ?? undefined
         const agent = url.searchParams.get('agent') ?? undefined
         await this.handleGetSettings(project, agent, res)
-        return
-      }
-
-      if (method === 'POST' && (pathname === '/orchestrator/sync' || pathname === '/orchestrator/webhook/sync')) {
-        await this.handleSyncWorkspace(req, res)
-        return
-      }
-
-      if (method === 'POST' && pathname === '/orchestrator/settings') {
-        await this.handleUpdateSettings(req, res)
         return
       }
 
@@ -282,6 +338,38 @@ export class RouteHandlers {
 
     const result = await this.syncUseCase.execute(body)
     this.sendJson(res, 200, result)
+  }
+
+  private async authenticateAndAuthorize(
+    req: IncomingMessage,
+    res: ServerResponse,
+    targetProjects?: string[],
+    rawBody?: string
+  ): Promise<AuthUserContext> {
+    const authContext = await this.authStrategy.authenticate(req.headers, rawBody)
+
+    if (!authContext.authenticated) {
+      const authMode = (this.config?.auth?.mode ?? process.env.AUTH_MODE ?? 'none').toLowerCase()
+      if (authMode === 'basic') {
+        res.setHeader('WWW-Authenticate', 'Basic realm="Harness-Kit Daemon"')
+      }
+      throw new HttpServerError(401, 'UNAUTHORIZED', 'Authentication credentials invalid or missing.')
+    }
+
+    if (targetProjects && targetProjects.length > 0 && authContext.allowedProjects) {
+      if (!authContext.allowedProjects.includes('*')) {
+        const hasPermission = targetProjects.every((p) => authContext.allowedProjects?.includes(p))
+        if (!hasPermission) {
+          throw new HttpServerError(
+            403,
+            'FORBIDDEN',
+            'Your token does not have permission to access one or more requested projects.'
+          )
+        }
+      }
+    }
+
+    return authContext
   }
 
   private async readBody(req: IncomingMessage, maxBytes = 1024 * 1024): Promise<string> {

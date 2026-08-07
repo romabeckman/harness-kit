@@ -1,16 +1,24 @@
 import { timingSafeEqual } from 'node:crypto'
-import type { IAuthStrategy } from './types'
+import type { IAuthStrategy, AuthUserContext } from './types'
 
 export class BearerAuthStrategy implements IAuthStrategy {
   constructor(private expectedToken: string) {}
 
-  authenticate(headers: Record<string, string | string[] | undefined>): boolean {
+  authenticate(headers: Record<string, string | string[] | undefined>): AuthUserContext {
     const token = this.extractToken(headers)
     if (!token) {
-      return false
+      return { authenticated: false }
     }
 
-    return this.safeCompare(token, this.expectedToken)
+    const isValid = this.safeCompare(token, this.expectedToken)
+    if (!isValid) {
+      return { authenticated: false }
+    }
+
+    return {
+      authenticated: true,
+      allowedProjects: ['*'],
+    }
   }
 
   private extractToken(headers: Record<string, string | string[] | undefined>): string | null {

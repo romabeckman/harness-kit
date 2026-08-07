@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto'
-import type { IAuthStrategy } from './types'
+import type { IAuthStrategy, AuthUserContext } from './types'
 
 export class BasicAuthStrategy implements IAuthStrategy {
   constructor(
@@ -7,10 +7,10 @@ export class BasicAuthStrategy implements IAuthStrategy {
     private expectedPass: string
   ) {}
 
-  authenticate(headers: Record<string, string | string[] | undefined>): boolean {
+  authenticate(headers: Record<string, string | string[] | undefined>): AuthUserContext {
     const authHeader = this.getHeaderString(headers, 'authorization')
     if (!authHeader || !authHeader.toLowerCase().startsWith('basic ')) {
-      return false
+      return { authenticated: false }
     }
 
     const base64Credentials = authHeader.substring(6).trim()
@@ -18,18 +18,27 @@ export class BasicAuthStrategy implements IAuthStrategy {
     try {
       credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8')
     } catch {
-      return false
+      return { authenticated: false }
     }
 
     const colonIndex = credentials.indexOf(':')
     if (colonIndex === -1) {
-      return false
+      return { authenticated: false }
     }
 
     const user = credentials.substring(0, colonIndex)
     const pass = credentials.substring(colonIndex + 1)
 
-    return this.safeCompare(user, this.expectedUser) && this.safeCompare(pass, this.expectedPass)
+    const isValid = this.safeCompare(user, this.expectedUser) && this.safeCompare(pass, this.expectedPass)
+    if (!isValid) {
+      return { authenticated: false }
+    }
+
+    return {
+      authenticated: true,
+      userId: user,
+      allowedProjects: ['*'],
+    }
   }
 
   private getHeaderString(

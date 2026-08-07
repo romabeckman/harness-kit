@@ -432,4 +432,84 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     expect(unregSyncRes.statusCode).toBe(400)
     expect(unregSyncRes.json.code).toBe('PROJECT_NOT_FOUND')
   })
+
+  it('11. JWT Authentication & RBAC Scoping Strategy (AUTH_MODE=jwt)', async () => {
+    process.env.AUTH_MODE = 'jwt'
+    process.env.AUTH_JWT_SECRET = 'e2e-jwt-secret-key-99'
+
+    server = new HttpServer({ port: 0, host: '127.0.0.1' })
+    await server.start()
+    const port = server.getPort()
+
+    const { JwtAuthStrategy } = await import('../../../src/server/adapters/outbound/auth/JwtAuthStrategy')
+
+    // Valid JWT with wildcard project access -> 202 Accepted
+    const validToken = JwtAuthStrategy.signPayload({ sub: 'e2e-user', allowed_projects: ['*'] }, 'e2e-jwt-secret-key-99')
+    const validRes = await makeHttpRequest(
+      port,
+      '/orchestrator/run',
+      'POST',
+      { scope: 'jwt-test', project: 'backend', agent: 'claude-cli' },
+      { Authorization: `Bearer ${validToken}` }
+    )
+    expect(validRes.statusCode).toBe(202)
+
+    // JWT missing permission for 'backend' project -> 403 Forbidden
+    const restrictedToken = JwtAuthStrategy.signPayload({ sub: 'e2e-user', allowed_projects: ['frontend'] }, 'e2e-jwt-secret-key-99')
+    const forbiddenRes = await makeHttpRequest(
+      port,
+      '/orchestrator/run',
+      'POST',
+      { scope: 'jwt-test', project: 'backend', agent: 'claude-cli' },
+      { Authorization: `Bearer ${restrictedToken}` }
+    )
+    expect(forbiddenRes.statusCode).toBe(403)
+    expect(forbiddenRes.json.code).toBe('FORBIDDEN')
+
+    // Invalid JWT signature -> 401 Unauthorized
+    const invalidRes = await makeHttpRequest(
+      port,
+      '/orchestrator/run',
+      'POST',
+      { scope: 'jwt-test', project: 'backend', agent: 'claude-cli' },
+      { Authorization: 'Bearer invalid.jwt.signature' }
+    )
+    expect(invalidRes.statusCode).toBe(401)
+  })
+
+  it('12. HMAC Payload Signature Authentication (AUTH_MODE=hmac)', async () => {
+    process.env.AUTH_MODE = 'hmac'
+    process.env.AUTH_HMAC_SECRET = 'e2e-hmac-secret-88'
+
+    server = new HttpServer({ port: 0, host: '127.0.0.1' })
+    await server.start()
+    const port = server.getPort()
+
+    const { HmacAuthStrategy } = await import('../../../src/server/adapters/outbound/auth/HmacAuthStrategy')
+
+    const body = { project: 'backend', baseBranch: 'main' }
+    const rawBody = JSON.stringify(body)
+    const validSignature = HmacAuthStrategy.computeSignature(rawBody, 'e2e-hmac-secret-88')
+
+    // Valid HMAC signature -> 200 OK
+    const validRes = await makeHttpRequest(
+      port,
+      '/orchestrator/webhook/sync',
+      'POST',
+      body,
+      { 'X-Signature-256': validSignature }
+    )
+    expect(validRes.statusCode).toBe(200)
+    expect(validRes.json.status).toBe('synced')
+
+    // Invalid HMAC signature -> 401 Unauthorized
+    const invalidRes = await makeHttpRequest(
+      port,
+      '/orchestrator/webhook/sync',
+      'POST',
+      body,
+      { 'X-Signature-256': 'sha256=invalid_hmac_hash' }
+    )
+    expect(invalidRes.statusCode).toBe(401)
+  })
 })

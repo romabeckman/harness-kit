@@ -263,4 +263,26 @@ describe('RouteHandlers Integration Tests', () => {
     expect(parsed.project).toBe('backend')
     expect(parsed.jobId).toBe('job-123')
   })
+
+  it('Enforces RBAC allowedProjects and returns HTTP 403 Forbidden when project access is unauthorized', async () => {
+    process.env.AUTH_MODE = 'jwt'
+    process.env.AUTH_JWT_SECRET = 'my-jwt-secret-123'
+    const handlersWithJwt = new RouteHandlers(jobStore, jobQueue, lockManager)
+
+    const { JwtAuthStrategy } = await import('../../../../outbound/auth/JwtAuthStrategy')
+    const token = JwtAuthStrategy.signPayload({ sub: 'user-1', allowed_projects: ['frontend'] }, 'my-jwt-secret-123')
+
+    const req = new MockIncomingMessage('/orchestrator/run', 'POST')
+    req.headers['authorization'] = `Bearer ${token}`
+    const res = new MockServerResponse()
+
+    const handlePromise = handlersWithJwt.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'rbac-test', project: 'backend', agent: 'claude-cli' })))
+    req.emit('end')
+    await handlePromise
+
+    expect(res.statusCode).toBe(403)
+    const parsed = JSON.parse(res.body)
+    expect(parsed.code).toBe('FORBIDDEN')
+  })
 })

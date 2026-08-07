@@ -462,6 +462,18 @@ export class OpenApiSpecGenerator {
             scheme: 'basic',
             description: 'HTTP Basic authentication for protected /orchestrator/* endpoints',
           },
+          JwtAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+            description: 'JSON Web Token (JWT/OIDC) for authenticated access and RBAC project scoping',
+          },
+          HmacAuth: {
+            type: 'apiKey',
+            in: 'header',
+            name: 'X-Signature-256',
+            description: 'HMAC-SHA256 payload signature for webhook and M2M authentication',
+          },
         },
         schemas: {
           RunRequestDtoExtended: {

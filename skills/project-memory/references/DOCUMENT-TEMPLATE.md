@@ -48,17 +48,15 @@ updated: YYYY-MM-DD
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]
 
 ## FOLDER STRUCTURE
-[Show only the files and folders directly relevant to this module. Use aligned comments to explain the business role of each entry.]
+[High-level architectural view: folders and layers only, not a file inventory. Show one representative entry per folder/layer — enough to convey the module's shape and where new code of each type belongs. PROHIBITED: enumerating every individual file already listed in the `code_files`/`test_files` arrays of the top ````graph` block — that duplicates content and wastes tokens. If a folder holds many similar files (e.g. multiple use cases, multiple adapters), collapse them into one annotated line (e.g. `use-cases/ # RunX, GetY, UpdateZ use cases`) instead of one line per file.]
 <folder_structure>
 ```
 src/module-name/
-├── domain/
-│   ├── business-entity     # Core logic and invariants
-│   └── business-validator  # Domain-specific validations
+├── domain/                 # Core logic, invariants, domain-specific validations
 ├── application/
-│   └── business-flow       # Orchestration and use cases
+│   └── use-cases/          # Orchestration and business flows
 └── infrastructure/
-    └── external-adapter    # Persistence or external integrations
+    └── adapters/            # Persistence or external integrations
 ```
 </folder_structure>
 

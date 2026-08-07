@@ -42,9 +42,12 @@ updated: 2026-08-07
     "src/server/application/use-cases/GetSettingsUseCase.ts",
     "src/server/application/use-cases/UpdateSettingsUseCase.ts",
     "src/server/application/use-cases/SyncWorkspaceRepositoryUseCase.ts",
-    "src/server/adapters/inbound/http/routes/RouteHandlers.ts",
-    "src/server/adapters/inbound/http/mappers/DtoMappers.ts",
-    "src/server/adapters/inbound/http/docs/OpenApiSpecGenerator.ts",
+    "src/server/adapters/outbound/auth/NoAuthStrategy.ts",
+    "src/server/adapters/outbound/auth/BasicAuthStrategy.ts",
+    "src/server/adapters/outbound/auth/BearerAuthStrategy.ts",
+    "src/server/adapters/outbound/auth/JwtAuthStrategy.ts",
+    "src/server/adapters/outbound/auth/HmacAuthStrategy.ts",
+    "src/server/adapters/outbound/auth/AuthStrategyFactory.ts",
     "docker/entrypoint.sh",
     "Dockerfile",
     "docker-compose.yml"
@@ -53,6 +56,7 @@ updated: 2026-08-07
     "src/server/__tests__/types.test.ts",
     "src/server/__tests__/HttpServer.test.ts",
     "src/server/__tests__/DockerBuild.test.ts",
+    "src/server/adapters/outbound/auth/__tests__/AuthStrategies.test.ts",
     "src/server/application/use-cases/__tests__/GetJobStatusUseCase.test.ts",
     "src/server/application/use-cases/__tests__/GetHealthStatusUseCase.test.ts",
     "src/server/application/use-cases/__tests__/ResumeOrchestratorJobUseCase.test.ts",
@@ -103,51 +107,23 @@ If a request omits `agent` or passes an unregistered agent, the server returns `
 docker/
 └── entrypoint.sh                # Container bootstrap script (Git setup, SSH/PAT, pre-clone)
 src/server/
-├── domain/                      # Domain Layer (Entities, Value Objects, Domain Errors)
-│   └── types.ts                 # JobStatus, HealthStatusVo, HttpServerError, OrchestrationJob
-├── application/                 # Application Layer (Ports & Orchestration)
+├── domain/                      # Entities, Value Objects, Domain Errors
+├── application/
 │   ├── ports/
 │   │   ├── inbound/             # Primary / Driving Ports (Use Case Interfaces)
-│   │   │   ├── IRunOrchestratorJobUseCase.ts
-│   │   │   ├── IGetJobStatusUseCase.ts
-│   │   │   ├── IResumeOrchestratorJobUseCase.ts
-│   │   │   ├── ICleanJobsAndWorktreesUseCase.ts
-│   │   │   ├── IGetHealthStatusUseCase.ts
-│   │   │   ├── IGetSettingsUseCase.ts
-│   │   │   └── IUpdateSettingsUseCase.ts
 │   │   └── outbound/            # Secondary / Driven Ports (Infrastructure Interfaces)
-│   │       ├── JobStoreRepository.ts
-│   │       ├── LockRepository.ts
-│   │       └── IAuthStrategy.ts
-│   └── use-cases/               # Use Case Implementations
-│       ├── RunOrchestratorJobUseCase.ts
-│       ├── GetJobStatusUseCase.ts
-│       ├── ResumeOrchestratorJobUseCase.ts
-│       ├── CleanJobsAndWorktreesUseCase.ts
-│       ├── GetHealthStatusUseCase.ts
-│       ├── GetOpenApiDocsUseCase.ts
-│       ├── GetSettingsUseCase.ts        # Consults project-local .harness-kit/settings.json
-│       ├── UpdateSettingsUseCase.ts     # Creates/updates project-local .harness-kit/settings.json
-│       └── SyncWorkspaceRepositoryUseCase.ts # Triggers git fetch sync on target project baseBranch
-├── adapters/                    # Infrastructure & Technical Adapters Layer
-│   ├── inbound/                 # Primary / Driving Adapters
-│   │   └── http/
-│   │       ├── routes/
-│   │       │   └── RouteHandlers.ts # HTTP Dispatcher / Controller Adapter
-│   │       ├── mappers/
-│   │       │   └── DtoMappers.ts    # Anti-Corruption Layer (ACL)
-│   │       ├── docs/
-│   │       │   └── OpenApiSpecGenerator.ts # Swagger/OpenAPI Specs Adapter
-│   │       └── dto/             # Request & Response Data Transfer Objects
-│   └── outbound/                # Secondary / Driven Adapters
-│       ├── persistence/         # InMemoryJobStore persistence adapter
-│       ├── mutex/               # WorkspaceLockManager mutex adapter
-│       ├── queue/               # JobQueue FIFO worker adapter
-│       ├── auth/                # BasicAuthStrategy, BearerAuthStrategy, NoAuthStrategy
-│       └── services/            # JobRunnerService execution worker adapter
-├── HttpServer.ts                # Application Bootstrap & Lifecycle Manager
-└── index.ts                     # Public SDK Exports & Entry Point
+│   └── use-cases/               # Use Case Implementations (Run/GetStatus/Resume/Clean/Health/Settings/Sync)
+├── adapters/
+│   ├── inbound/http/
+│   │   ├── routes/               # HTTP Dispatcher / Controller Adapter
+│   │   ├── mappers/              # Anti-Corruption Layer (ACL, DTO <-> Domain)
+│   │   ├── docs/                 # Swagger/OpenAPI Specs Adapter
+│   │   └── dto/                  # Request & Response Data Transfer Objects
+│   └── outbound/                 # Persistence, mutex, queue, auth strategies, worker services
+├── HttpServer.ts                 # Application Bootstrap & Lifecycle Manager
+└── index.ts                      # Public SDK Exports & Entry Point
 ```
+See top ````graph` block for the exhaustive `code_files`/`test_files` list.
 
 ## API ENDPOINTS
 

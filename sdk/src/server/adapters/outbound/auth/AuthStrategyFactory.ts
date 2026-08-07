@@ -2,6 +2,8 @@ import type { IAuthStrategy, AuthConfig } from './types'
 import { NoAuthStrategy } from './NoAuthStrategy'
 import { BasicAuthStrategy } from './BasicAuthStrategy'
 import { BearerAuthStrategy } from './BearerAuthStrategy'
+import { JwtAuthStrategy } from './JwtAuthStrategy'
+import { HmacAuthStrategy } from './HmacAuthStrategy'
 
 export class AuthStrategyFactory {
   static create(config?: AuthConfig): IAuthStrategy {
@@ -26,6 +28,24 @@ export class AuthStrategyFactory {
         console.warn('[HRNS Auth] AUTH_MODE is "bearer" but AUTH_BEARER_TOKEN / API_KEY is empty.')
       }
       return new BearerAuthStrategy(token)
+    }
+
+    if (rawMode === 'jwt' || rawMode === 'oidc') {
+      const secret = config?.jwtSecret ?? process.env.AUTH_JWT_SECRET ?? ''
+      const issuer = config?.issuer ?? process.env.AUTH_JWT_ISSUER ?? undefined
+      const audience = config?.audience ?? process.env.AUTH_JWT_AUDIENCE ?? undefined
+      if (!secret) {
+        console.warn('[HRNS Auth] AUTH_MODE is "jwt" but AUTH_JWT_SECRET is empty.')
+      }
+      return new JwtAuthStrategy(secret, issuer, audience)
+    }
+
+    if (rawMode === 'hmac') {
+      const secret = config?.hmacSecret ?? process.env.AUTH_HMAC_SECRET ?? ''
+      if (!secret) {
+        console.warn('[HRNS Auth] AUTH_MODE is "hmac" but AUTH_HMAC_SECRET is empty.')
+      }
+      return new HmacAuthStrategy(secret)
     }
 
     return new NoAuthStrategy()
