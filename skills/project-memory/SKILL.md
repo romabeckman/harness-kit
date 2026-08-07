@@ -146,7 +146,7 @@ Execute steps in order. Do not skip steps.
 - REQUIRED: After every invocation, generate or update `docs/.digest.md` with a machine-readable summary.
 - Extract from `docs/adr/ARCHITECTURE.md`: main architectural pattern, layers list, DI strategy, key REQUIRED/FORBIDDEN constraints.
 - Extract from `docs/adr/TESTS.md`: test framework, run commands, coverage thresholds.
-- REQUIRED: In `## DOCUMENTATION INDEX`, list only the baseline documents (`docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) with one-line descriptions, followed by a note directing to `docs/.graph.json` for the complete document list, tags, and relations.
+- REQUIRED: In `## DOCUMENTATION INDEX`, list only the baseline documents (`docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) with one-line descriptions, followed by a note directing to `docs/.graph.json` with the text: "Required read `docs/.graph.json` for the complete document list, tags, and relations.".
 - PROHIBITED: Enumerating every `docs/feature/` and `docs/adr/` document in `## DOCUMENTATION INDEX` — this duplicates `docs/.graph.json` nodes[] and wastes tokens on every digest read.
 - REQUIRED: Reference every document path in `docs/.digest.md` as a plain relative path (e.g. `` `docs/adr/ARCHITECTURE.md` ``), never as a Markdown link, and never with an absolute filesystem path or a `file://` URI.
 - REQUIRED: Keep digest under 60 lines and under 3000 characters — this is an LLM orientation file, not a replacement for full docs.
