@@ -80,9 +80,11 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       backend: tempDir,
     })
 
-    if (existsSync(tempDir)) {
-      rmSync(tempDir, { recursive: true, force: true })
-    }
+    try {
+      if (existsSync(tempDir)) {
+        rmSync(tempDir, { recursive: true, force: true })
+      }
+    } catch {}
     mkdirSync(tempDir, { recursive: true })
 
     // Initialize temporary Git repository
@@ -97,9 +99,11 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       await server.stop()
       server = undefined
     }
-    if (existsSync(tempDir)) {
-      rmSync(tempDir, { recursive: true, force: true })
-    }
+    try {
+      if (existsSync(tempDir)) {
+        rmSync(tempDir, { recursive: true, force: true })
+      }
+    } catch {}
   })
 
   it('1. Server Startup, Port Binding & Health Check Probe (GET /health)', async () => {

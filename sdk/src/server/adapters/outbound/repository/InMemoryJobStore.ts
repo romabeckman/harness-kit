@@ -1,11 +1,37 @@
 import type { JobStoreRepository } from './JobStoreRepository'
 import type { OrchestrationJob, JobStatus } from '../../../domain/types'
 
+export interface InMemoryJobStoreOptions {
+  maxJobs?: number
+}
+
 export class InMemoryJobStore implements JobStoreRepository {
   private jobs = new Map<string, OrchestrationJob>()
+  private maxJobs: number
+
+  constructor(options?: InMemoryJobStoreOptions) {
+    this.maxJobs = options?.maxJobs ?? 1000
+  }
 
   async save(job: OrchestrationJob): Promise<void> {
+    this.enforceCapacityLimit()
     this.jobs.set(job.jobId, JSON.parse(JSON.stringify(job)))
+  }
+
+  private enforceCapacityLimit(): void {
+    if (this.jobs.size < this.maxJobs) return
+    const now = Date.now()
+    for (const [jobId, job] of this.jobs.entries()) {
+      if (job.status === 'completed' || job.status === 'failed' || job.status === 'aborted') {
+        this.jobs.delete(jobId)
+        if (this.jobs.size < this.maxJobs) return
+      }
+    }
+    while (this.jobs.size >= this.maxJobs) {
+      const oldestKey = this.jobs.keys().next().value
+      if (!oldestKey) break
+      this.jobs.delete(oldestKey)
+    }
   }
 
   async findById(jobId: string): Promise<OrchestrationJob | null> {

@@ -11,7 +11,11 @@ export class WorkspaceLockManager implements LockRepository {
 
   async acquireLock(workspacePath: string, jobId: string): Promise<boolean> {
     const key = this.normalizePath(workspacePath)
-    if (this.locks.has(key)) {
+    const existing = this.locks.get(key)
+    if (existing) {
+      if (existing.jobId === jobId) {
+        return true
+      }
       return false
     }
     this.locks.set(key, { jobId, acquiredAt: new Date() })

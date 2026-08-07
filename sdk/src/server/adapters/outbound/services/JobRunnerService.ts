@@ -1,6 +1,7 @@
 import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import spawn from 'cross-spawn'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import type { JobStoreRepository } from '../repository/JobStoreRepository'
 import type { WorkspaceLockManager } from '../mutex/WorkspaceLockManager'
 import type { JobQueue } from '../queue/JobQueue'
@@ -11,6 +12,28 @@ import { AgentRunnerFactory } from '../../../../agent-runner/AgentRunnerFactory'
 import { DtoMappers } from '../../inbound/http/mappers/DtoMappers'
 import { HarnessOrchestrator } from '../../../../orchestrator/HarnessOrchestrator'
 import { FileStateManager } from '../../../../file-state/FileStateManager'
+
+const execFileAsync = promisify(execFile)
+
+async function execGit(
+  args: string[],
+  cwd?: string
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  try {
+    const { stdout, stderr } = await execFileAsync('git', args, {
+      cwd,
+      maxBuffer: 10 * 1024 * 1024,
+      encoding: 'utf-8',
+    })
+    return { stdout: stdout ?? '', stderr: stderr ?? '', exitCode: 0 }
+  } catch (err: any) {
+    return {
+      stdout: err.stdout ?? '',
+      stderr: err.stderr ?? err.message ?? '',
+      exitCode: typeof err.code === 'number' ? err.code : 1,
+    }
+  }
+}
 
 export interface JobRunnerServiceOptions {
   jobStore: JobStoreRepository
@@ -25,6 +48,7 @@ export class JobRunnerService {
   private jobQueue: JobQueue
   private agentRunner?: IAgentRunner
   private isRunning = false
+  private isLoopProcessing = false
   private workerListener?: () => void
 
   constructor(
@@ -113,7 +137,7 @@ export class JobRunnerService {
     } finally {
       if (createdWorktreePath) {
         try {
-          spawn.sync('git', ['worktree', 'remove', '--force', createdWorktreePath], { cwd: job.workspacePath, stdio: 'pipe' })
+          await execGit(['worktree', 'remove', '--force', createdWorktreePath], job.workspacePath)
           if (existsSync(createdWorktreePath)) {
             rmSync(createdWorktreePath, { recursive: true, force: true })
           }
@@ -142,26 +166,26 @@ export class JobRunnerService {
     const gitUrl = envInfo?.gitUrl
 
     if (gitUrl && !existsSync(join(workspacePath, '.git'))) {
-      const res = spawn.sync('git', ['clone', gitUrl, workspacePath], { stdio: 'pipe', encoding: 'utf-8' })
-      if (res.status !== 0) {
-        throw new Error(`Git clone failed for '${gitUrl}': ${res.stderr || res.stdout}`)
+      const cloneRes = await execGit(['clone', gitUrl, workspacePath])
+      if (cloneRes.exitCode !== 0) {
+        throw new Error(`Git clone failed for '${gitUrl}': ${cloneRes.stderr || cloneRes.stdout}`)
       }
     }
 
     if (useWorktree && existsSync(join(workspacePath, '.git'))) {
       const worktreePath = join(workspacePath, '.worktrees', jobId)
       const targetBranch = request.branch ?? `job-${jobId}`
-      const addRes = spawn.sync('git', ['worktree', 'add', '-B', targetBranch, worktreePath], { cwd: workspacePath, stdio: 'pipe', encoding: 'utf-8' })
-      if (addRes.status === 0) {
+      const addRes = await execGit(['worktree', 'add', '-B', targetBranch, worktreePath], workspacePath)
+      if (addRes.exitCode === 0) {
         return { effectiveWorkspacePath: worktreePath, createdWorktreePath: worktreePath }
       }
     }
 
     if (request.branch && existsSync(workspacePath)) {
-      const checkoutRes = spawn.sync('git', ['checkout', request.branch], { cwd: workspacePath, stdio: 'pipe', encoding: 'utf-8' })
-      if (checkoutRes.status !== 0) {
-        const createRes = spawn.sync('git', ['checkout', '-B', request.branch], { cwd: workspacePath, stdio: 'pipe', encoding: 'utf-8' })
-        if (createRes.status !== 0) {
+      const checkoutRes = await execGit(['checkout', request.branch], workspacePath)
+      if (checkoutRes.exitCode !== 0) {
+        const createRes = await execGit(['checkout', '-B', request.branch], workspacePath)
+        if (createRes.exitCode !== 0) {
           throw new Error(`Git checkout failed for branch '${request.branch}': ${checkoutRes.stderr || createRes.stderr}`)
         }
       }
@@ -181,20 +205,32 @@ export class JobRunnerService {
   ): Promise<void> {
     if (!existsSync(join(workingDir, '.git')) && !existsSync(workingDir)) return
 
-    try {
-      const statusRes = spawn.sync('git', ['status', '--porcelain'], { cwd: workingDir, stdio: 'pipe', encoding: 'utf-8' })
-      const hasChanges = statusRes.stdout && statusRes.stdout.trim().length > 0
+    const statusRes = await execGit(['status', '--porcelain'], workingDir)
+    const hasChanges = statusRes.stdout && statusRes.stdout.trim().length > 0
 
-      if (hasChanges) {
-        spawn.sync('git', ['add', '-A'], { cwd: workingDir, stdio: 'pipe' })
-        const commitMsg = `feat(harness): completed orchestration job ${jobId ?? ''} [${scope ?? 'auto'}]`
-        spawn.sync('git', ['commit', '-m', commitMsg], { cwd: workingDir, stdio: 'pipe' })
+    if (hasChanges) {
+      const addRes = await execGit(['add', '-A'], workingDir)
+      if (addRes.exitCode !== 0) {
+        const err: any = new Error(`Git add failed: ${addRes.stderr}`)
+        err.code = 'GIT_COMMIT_FAILED'
+        throw err
       }
 
-      // Push committed changes to origin
-      spawn.sync('git', ['push', 'origin', branch], { cwd: workingDir, stdio: 'pipe' })
-    } catch {
-      // Git commit or push errors inside background worker do not block job completion record
+      const commitMsg = `feat(harness): completed orchestration job ${jobId ?? ''} [${scope ?? 'auto'}]`
+      const commitRes = await execGit(['commit', '-m', commitMsg], workingDir)
+      if (commitRes.exitCode !== 0) {
+        const err: any = new Error(`Git commit failed: ${commitRes.stderr}`)
+        err.code = 'GIT_COMMIT_FAILED'
+        throw err
+      }
+    }
+
+    // Push committed changes to origin
+    const pushRes = await execGit(['push', 'origin', branch], workingDir)
+    if (pushRes.exitCode !== 0) {
+      const err: any = new Error(`Git push failed to branch '${branch}': ${pushRes.stderr || pushRes.stdout}`)
+      err.code = 'GIT_PUSH_FAILED'
+      throw err
     }
   }
 
@@ -206,13 +242,19 @@ export class JobRunnerService {
     this.isRunning = true
 
     const processNext = async () => {
-      if (!this.isRunning) return
-      const nextJob = await this.jobQueue.dequeueNextAvailable(this.lockManager)
-      if (nextJob) {
-        await this.executeJob(nextJob)
-        if (this.isRunning && this.jobQueue.size > 0) {
-          setImmediate(processNext)
+      if (!this.isRunning || this.isLoopProcessing) return
+      this.isLoopProcessing = true
+
+      try {
+        const nextJob = await this.jobQueue.dequeueNextAvailable(this.lockManager)
+        if (nextJob) {
+          await this.executeJob(nextJob)
+          if (this.isRunning && this.jobQueue.size > 0) {
+            setImmediate(processNext)
+          }
         }
+      } finally {
+        this.isLoopProcessing = false
       }
     }
 
@@ -229,6 +271,7 @@ export class JobRunnerService {
    */
   stopWorkerLoop(): void {
     this.isRunning = false
+    this.isLoopProcessing = false
     if (this.workerListener) {
       this.jobQueue.off('workerNotify', this.workerListener)
       this.workerListener = undefined

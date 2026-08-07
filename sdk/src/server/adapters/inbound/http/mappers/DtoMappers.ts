@@ -163,13 +163,7 @@ export class DtoMappers {
     // 1. PROJECT_MAPPINGS env var
     if (process.env.PROJECT_MAPPINGS) {
       try {
-        let cleanStr = process.env.PROJECT_MAPPINGS.trim()
-        const openBraces = (cleanStr.match(/\{/g) || []).length
-        let closeBraces = (cleanStr.match(/\}/g) || []).length
-        while (closeBraces < openBraces) {
-          cleanStr += '}'
-          closeBraces++
-        }
+        const cleanStr = process.env.PROJECT_MAPPINGS.trim()
         const mappings = JSON.parse(cleanStr)
         if (mappings && typeof mappings === 'object') {
           if (mappings[name]) {
@@ -189,7 +183,9 @@ export class DtoMappers {
             }
           }
         }
-      } catch {}
+      } catch {
+        console.warn('[DtoMappers] Invalid JSON format in PROJECT_MAPPINGS environment variable')
+      }
     }
 
     // 2. PROJECT_<NAME>_PATH env var

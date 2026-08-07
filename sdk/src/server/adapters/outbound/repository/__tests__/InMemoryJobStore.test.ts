@@ -107,4 +107,15 @@ describe('InMemoryJobStore', () => {
     expect(count).toBe(1)
     expect(await jobStore.findById('job-purge')).toBeNull()
   })
+
+  it('Evicts oldest jobs when maxJobs capacity is reached', async () => {
+    const limitedStore = new InMemoryJobStore({ maxJobs: 2 })
+    await limitedStore.save({ jobId: 'j1', status: 'completed', workspacePath: '/tmp', request: {}, createdAt: new Date().toISOString() })
+    await limitedStore.save({ jobId: 'j2', status: 'running', workspacePath: '/tmp', request: {}, createdAt: new Date().toISOString() })
+    await limitedStore.save({ jobId: 'j3', status: 'queued', workspacePath: '/tmp', request: {}, createdAt: new Date().toISOString() })
+
+    expect(await limitedStore.findById('j1')).toBeNull()
+    expect(await limitedStore.findById('j2')).not.toBeNull()
+    expect(await limitedStore.findById('j3')).not.toBeNull()
+  })
 })

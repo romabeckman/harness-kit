@@ -18,6 +18,18 @@ import {
 import { AuthStrategyFactory } from '../../../outbound/auth/AuthStrategyFactory'
 import type { IAuthStrategy } from '../../../outbound/auth/types'
 
+export interface UseCaseContainer {
+  runJobUseCase?: RunOrchestratorJobUseCase
+  getStatusUseCase?: GetJobStatusUseCase
+  getHealthUseCase?: GetHealthStatusUseCase
+  docsUseCase?: GetOpenApiDocsUseCase
+  resumeJobUseCase?: ResumeOrchestratorJobUseCase
+  cleanUseCase?: CleanJobsAndWorktreesUseCase
+  getSettingsUseCase?: GetSettingsUseCase
+  updateSettingsUseCase?: UpdateSettingsUseCase
+  getTokensUseCase?: GetTokensTelemetryUseCase
+}
+
 export class RouteHandlers {
   private runJobUseCase: RunOrchestratorJobUseCase
   private getStatusUseCase: GetJobStatusUseCase
@@ -30,24 +42,41 @@ export class RouteHandlers {
   private getTokensUseCase: GetTokensTelemetryUseCase
   private authStrategy: IAuthStrategy
   private config?: HttpServerConfig
+  private requestCounts = new Map<string, { count: number; resetAt: number }>()
+  private maxRequestsPerWindow = 120
+  private windowMs = 60 * 1000
 
   constructor(
     jobStore: JobStoreRepository,
     jobQueue: JobQueue,
     _lockManager?: WorkspaceLockManager,
-    config?: HttpServerConfig
+    config?: HttpServerConfig,
+    useCases?: UseCaseContainer
   ) {
     this.config = config
-    this.runJobUseCase = new RunOrchestratorJobUseCase(jobStore, jobQueue, config)
-    this.getStatusUseCase = new GetJobStatusUseCase(jobStore)
-    this.getHealthUseCase = new GetHealthStatusUseCase(jobStore, jobQueue)
-    this.docsUseCase = new GetOpenApiDocsUseCase()
-    this.resumeJobUseCase = new ResumeOrchestratorJobUseCase(jobStore, jobQueue)
-    this.cleanUseCase = new CleanJobsAndWorktreesUseCase(jobStore, config)
-    this.getSettingsUseCase = new GetSettingsUseCase(config)
-    this.updateSettingsUseCase = new UpdateSettingsUseCase(config)
-    this.getTokensUseCase = new GetTokensTelemetryUseCase(config)
+    this.runJobUseCase = useCases?.runJobUseCase ?? new RunOrchestratorJobUseCase(jobStore, jobQueue, config)
+    this.getStatusUseCase = useCases?.getStatusUseCase ?? new GetJobStatusUseCase(jobStore)
+    this.getHealthUseCase = useCases?.getHealthUseCase ?? new GetHealthStatusUseCase(jobStore, jobQueue)
+    this.docsUseCase = useCases?.docsUseCase ?? new GetOpenApiDocsUseCase()
+    this.resumeJobUseCase = useCases?.resumeJobUseCase ?? new ResumeOrchestratorJobUseCase(jobStore, jobQueue)
+    this.cleanUseCase = useCases?.cleanUseCase ?? new CleanJobsAndWorktreesUseCase(jobStore, config)
+    this.getSettingsUseCase = useCases?.getSettingsUseCase ?? new GetSettingsUseCase(config)
+    this.updateSettingsUseCase = useCases?.updateSettingsUseCase ?? new UpdateSettingsUseCase(config)
+    this.getTokensUseCase = useCases?.getTokensUseCase ?? new GetTokensTelemetryUseCase(config)
     this.authStrategy = AuthStrategyFactory.create(config?.auth)
+  }
+
+  private checkRateLimit(clientIp: string): void {
+    const now = Date.now()
+    const record = this.requestCounts.get(clientIp)
+    if (!record || now > record.resetAt) {
+      this.requestCounts.set(clientIp, { count: 1, resetAt: now + this.windowMs })
+      return
+    }
+    record.count++
+    if (record.count > this.maxRequestsPerWindow) {
+      throw new HttpServerError(429, 'RATE_LIMIT_EXCEEDED', 'Too many requests. Please try again later.')
+    }
   }
 
   /**
@@ -55,6 +84,9 @@ export class RouteHandlers {
    */
   async handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     try {
+      const clientIp = req.socket?.remoteAddress || '127.0.0.1'
+      this.checkRateLimit(clientIp)
+
       const url = new URL(req.url ?? '/', `http://${req.headers.host || 'localhost'}`)
       const pathname = url.pathname
       const method = (req.method ?? 'GET').toUpperCase()

@@ -17,8 +17,8 @@ export class JobQueue extends EventEmitter {
   async dequeueNextAvailable(lockManager: WorkspaceLockManager): Promise<OrchestrationJob | undefined> {
     for (let i = 0; i < this.queue.length; i++) {
       const candidate = this.queue[i]
-      const locked = await lockManager.isLocked(candidate.workspacePath)
-      if (!locked) {
+      const acquired = await lockManager.acquireLock(candidate.workspacePath, candidate.jobId)
+      if (acquired) {
         this.queue.splice(i, 1)
         return candidate
       }
