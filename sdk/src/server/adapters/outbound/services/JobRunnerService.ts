@@ -156,7 +156,7 @@ export class JobRunnerService {
     request: OrchestrationJob['request'],
     jobId: string
   ): Promise<{ effectiveWorkspacePath: string; createdWorktreePath?: string }> {
-    const useWorktree = request.useWorktree ?? true
+    const useWorktree = true
 
     const firstProject = typeof request.project === 'string'
       ? request.project
@@ -164,7 +164,7 @@ export class JobRunnerService {
 
     const envInfo = DtoMappers.resolveProjectFromEnv(firstProject)
     const gitUrl = envInfo?.gitUrl
-    const baseBranch = request.baseBranch ?? envInfo?.baseBranch ?? 'main'
+    const baseBranch = envInfo?.baseBranch ?? process.env.BASE_BRANCH ?? 'main'
 
     if (gitUrl && !existsSync(join(workspacePath, '.git'))) {
       const cloneRes = await execGit(['clone', '-b', baseBranch, gitUrl, workspacePath])

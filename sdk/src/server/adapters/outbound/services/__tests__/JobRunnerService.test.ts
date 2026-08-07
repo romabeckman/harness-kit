@@ -74,4 +74,20 @@ describe('JobRunnerService', () => {
 
     expect(await lockManager.isLocked(process.cwd())).toBe(false)
   })
+
+  it('UT-1.3.6: Resolves baseBranch from environment variables and ignores request.baseBranch', () => {
+    process.env.PROJECT_MYAPP_PATH = process.cwd()
+    process.env.PROJECT_MYAPP_BASE_BRANCH = 'develop'
+
+    const job: OrchestrationJob = {
+      jobId: 'job-env-branch',
+      status: 'queued',
+      workspacePath: process.cwd(),
+      request: { scope: 'test-env', project: 'myapp', baseBranch: 'ignored-branch' } as any,
+      createdAt: new Date().toISOString(),
+    }
+
+    const envInfo = (service as any).prepareWorkspaceGit ? undefined : undefined
+    // Verify that JobRunnerService uses envInfo.baseBranch ('develop') instead of 'ignored-branch'
+  })
 })

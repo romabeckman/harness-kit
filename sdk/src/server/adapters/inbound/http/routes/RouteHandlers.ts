@@ -124,7 +124,7 @@ export class RouteHandlers {
       }
 
       if (method === 'POST' && (pathname === '/orchestrator/sync' || pathname === '/orchestrator/webhook/sync')) {
-        let body: { project: string; baseBranch?: string }
+        let body: { project: string }
         try {
           body = JSON.parse(rawBody || '{}')
         } catch {
@@ -363,7 +363,7 @@ export class RouteHandlers {
 
   private async handleSyncWorkspace(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const rawBody = await this.readBody(req)
-    let body: { project: string; baseBranch?: string }
+    let body: { project: string }
     try {
       body = JSON.parse(rawBody || '{}')
     } catch {

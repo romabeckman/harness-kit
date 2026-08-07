@@ -440,7 +440,6 @@ export class OpenApiSpecGenerator {
                     type: 'object',
                     properties: {
                       project: { type: 'string', description: 'Mandatory registered project identifier' },
-                      baseBranch: { type: 'string', description: 'Optional base branch name to fetch (defaults to configured baseBranch or main)' },
                     },
                     required: ['project'],
                   },
@@ -586,8 +585,6 @@ export class OpenApiSpecGenerator {
               skipMemory: { type: 'boolean' },
               skipDeploy: { type: 'boolean' },
               branch: { type: 'string', description: 'Target Git branch to checkout prior to job execution' },
-              baseBranch: { type: 'string', description: 'Base Git branch to fetch and derive worktree from (defaults to configured baseBranch or main)' },
-              useWorktree: { type: 'boolean', description: 'Enable isolated Git worktree for parallel job execution' },
             },
             required: ['project', 'agent'],
           },

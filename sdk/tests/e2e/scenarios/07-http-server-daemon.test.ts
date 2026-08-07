@@ -154,7 +154,6 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       project: 'backend',
       agent: 'claude-cli',
       mode: 'fast',
-      useWorktree: true,
     })
 
     expect(runRes.statusCode).toBe(202)
@@ -417,7 +416,6 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     // 1. Trigger sync webhook on valid project
     const syncRes = await makeHttpRequest(port, '/orchestrator/webhook/sync', 'POST', {
       project: 'backend',
-      baseBranch: 'main',
     })
     expect(syncRes.statusCode).toBe(200)
     expect(syncRes.json.status).toBe('synced')
@@ -487,7 +485,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
 
     const { HmacAuthStrategy } = await import('../../../src/server/adapters/outbound/auth/HmacAuthStrategy.js')
 
-    const body = { project: 'backend', baseBranch: 'main' }
+    const body = { project: 'backend' }
     const rawBody = JSON.stringify(body)
     const validSignature = HmacAuthStrategy.computeSignature(rawBody, 'e2e-hmac-secret-88')
 

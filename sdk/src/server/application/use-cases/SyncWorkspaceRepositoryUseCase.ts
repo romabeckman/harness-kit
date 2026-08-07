@@ -18,7 +18,6 @@ async function execGit(args: string[], cwd: string): Promise<{ stdout: string; s
 
 export interface SyncWorkspaceRequestDto {
   project: string
-  baseBranch?: string
 }
 
 export interface SyncWorkspaceResponseDto {
@@ -45,7 +44,7 @@ export class SyncWorkspaceRepositoryUseCase {
       throw new HttpServerError(400, 'NOT_A_GIT_REPOSITORY', `Workspace at '${workspacePath}' is not initialized with a .git repository.`)
     }
 
-    const targetBranch = dto.baseBranch ?? envInfo.baseBranch ?? 'main'
+    const targetBranch = envInfo.baseBranch ?? process.env.BASE_BRANCH ?? 'main'
     const fetchRes = await execGit(['fetch', 'origin', targetBranch], workspacePath)
 
     if (fetchRes.exitCode !== 0) {

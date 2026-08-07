@@ -16,7 +16,5 @@ export interface RunRequestDtoExtended extends RunRequestDto {
   skipMemory?: boolean
   skipDeploy?: boolean
   branch?: string
-  baseBranch?: string
-  useWorktree?: boolean
   project?: string | string[]
 }

@@ -9,7 +9,8 @@ describe('OpenApiSpecGenerator', () => {
     expect(spec.paths['/orchestrator/run']).toBeDefined()
     expect(spec.paths['/orchestrator/webhook/sync']).toBeDefined()
     expect(spec.paths['/health']).toBeDefined()
-    expect((spec as any).components.schemas.RunRequestDtoExtended.properties.baseBranch).toBeDefined()
+    expect((spec as any).components.schemas.RunRequestDtoExtended.properties.baseBranch).toBeUndefined()
+    expect((spec as any).components.schemas.RunRequestDtoExtended.properties.useWorktree).toBeUndefined()
   })
 
   it('Generates Swagger UI HTML template', () => {
