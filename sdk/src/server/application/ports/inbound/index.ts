@@ -6,4 +6,5 @@ export type { IGetHealthStatusUseCase } from './IGetHealthStatusUseCase'
 export type { IGetSettingsUseCase } from './IGetSettingsUseCase'
 export type { IUpdateSettingsUseCase } from './IUpdateSettingsUseCase'
 export type { IGetTokensTelemetryUseCase } from './IGetTokensTelemetryUseCase'
+export type { IGetReportsSummaryUseCase } from './IGetReportsSummaryUseCase'
 

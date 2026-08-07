@@ -241,22 +241,134 @@ Creates or updates model configuration in the project's local `.harness-kit/sett
   }
   ```
 
-### 6. `GET /health`
-Liveness and readiness probe for container orchestrators (Kubernetes, Docker Swarm, ECS).
+### 7. `GET /orchestrator/telemetry/tokens` & `GET /orchestrator/tokens`
+Retrieves token telemetry usage report with full audit traceability, period filtering, and pagination support.
+
+- **Query Parameters**:
+  - `project` (mandatory): Registered project identifier (e.g. `"backend"`).
+  - `jobId` (optional): Filter entries by job execution UUID.
+  - `startDate` (optional): ISO date string filter (e.g. `"2026-08-01T00:00:00.000Z"`).
+  - `endDate` (optional): ISO date string filter (e.g. `"2026-08-31T23:59:59.999Z"`).
+  - `model` (optional): Model name filter (e.g. `"claude-3-5-sonnet"`).
+  - `limit` (optional): Pagination limit (default 50, max 500).
+  - `nextToken` (optional): Opaque pagination token returned in previous request.
 
 - **Response Payload** (`HTTP 200 OK`):
   ```json
   {
-    "status": "healthy",
-    "uptimeSeconds": 3600,
-    "timestamp": "2026-08-06T18:00:00.000Z",
-    "activeJobs": 1,
-    "queuedJobs": 0,
-    "memoryUsage": { "rssMb": 85.5, "heapUsedMb": 42.1 }
+    "project": "backend",
+    "jobId": "e4e9d777-3db4-44d1-907e-bff18ee3342e",
+    "entries": [
+      {
+        "auditId": "aud_9876543210",
+        "jobId": "e4e9d777-3db4-44d1-907e-bff18ee3342e",
+        "projectId": "backend",
+        "tenantId": "org_corp_acme",
+        "userId": "usr_dev_456",
+        "timestamp": "2026-08-07T11:14:01.000Z",
+        "agent": "claude-cli",
+        "model": "claude-3-5-sonnet",
+        "skill": "test-driven-development",
+        "executionMetrics": {
+          "durationMs": 4200,
+          "status": "success"
+        },
+        "tokenUsage": {
+          "inputTokens": 1250,
+          "outputTokens": 450,
+          "cacheCreationTokens": 100,
+          "cacheReadTokens": 800,
+          "calculatedCostUsd": 0.00645
+        }
+      }
+    ],
+    "totals": {
+      "inputTokens": 1250,
+      "outputTokens": 450,
+      "cacheCreationTokens": 100,
+      "cacheReadTokens": 800,
+      "calculatedCostUsd": 0.00645
+    },
+    "bySkill": {
+      "test-driven-development": {
+        "inputTokens": 1250,
+        "outputTokens": 450,
+        "cacheCreationTokens": 100,
+        "cacheReadTokens": 800,
+        "calculatedCostUsd": 0.00645
+      }
+    },
+    "pagination": {
+      "limit": 50,
+      "nextToken": null,
+      "totalEntries": 1,
+      "hasMore": false
+    }
   }
   ```
 
-### 7. `GET /docs` & `GET /docs/openapi.json`
+### 8. `GET /orchestrator/reports/summary`
+Exhibits consolidated cost view aggregated by Project, Model, and Agent within a target time window.
+
+- **Query Parameters**:
+  - `project` (optional): Filter summary by registered project identifier.
+  - `startDate` (optional): ISO date string start filter.
+  - `endDate` (optional): ISO date string end filter.
+
+- **Response Payload** (`HTTP 200 OK`):
+  ```json
+  {
+    "period": {
+      "startDate": "2026-08-01T00:00:00.000Z",
+      "endDate": "2026-08-31T23:59:59.999Z"
+    },
+    "summary": {
+      "byProject": {
+        "backend": {
+          "totalCostUsd": 0.123,
+          "inputTokens": 10000,
+          "outputTokens": 2000,
+          "cacheCreationTokens": 500,
+          "cacheReadTokens": 4000,
+          "totalInvocations": 15
+        }
+      },
+      "byModel": {
+        "claude-3-5-sonnet": {
+          "totalCostUsd": 0.123,
+          "inputTokens": 10000,
+          "outputTokens": 2000,
+          "cacheCreationTokens": 500,
+          "cacheReadTokens": 4000,
+          "totalInvocations": 15
+        }
+      },
+      "byAgent": {
+        "claude-cli": {
+          "totalCostUsd": 0.123,
+          "inputTokens": 10000,
+          "outputTokens": 2000,
+          "cacheCreationTokens": 500,
+          "cacheReadTokens": 4000,
+          "totalInvocations": 15
+        }
+      }
+    },
+    "grandTotal": {
+      "totalCostUsd": 0.123,
+      "inputTokens": 10000,
+      "outputTokens": 2000,
+      "cacheCreationTokens": 500,
+      "cacheReadTokens": 4000,
+      "totalInvocations": 15
+    }
+  }
+  ```
+
+### 9. `GET /health`
+Liveness and readiness probe for container orchestrators (Kubernetes, Docker Swarm, ECS).
+
+### 10. `GET /docs` & `GET /docs/openapi.json`
 Interactive Swagger UI documentation page (`GET /docs`) and raw OpenAPI 3.0.3 specification JSON (`GET /docs/openapi.json`).
 
 ---

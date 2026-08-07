@@ -441,7 +441,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     await server.start()
     const port = server.getPort()
 
-    const { JwtAuthStrategy } = await import('../../../src/server/adapters/outbound/auth/JwtAuthStrategy')
+    const { JwtAuthStrategy } = await import('../../../src/server/adapters/outbound/auth/JwtAuthStrategy.js')
 
     // Valid JWT with wildcard project access -> 202 Accepted
     const validToken = JwtAuthStrategy.signPayload({ sub: 'e2e-user', allowed_projects: ['*'] }, 'e2e-jwt-secret-key-99')
@@ -485,7 +485,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     await server.start()
     const port = server.getPort()
 
-    const { HmacAuthStrategy } = await import('../../../src/server/adapters/outbound/auth/HmacAuthStrategy')
+    const { HmacAuthStrategy } = await import('../../../src/server/adapters/outbound/auth/HmacAuthStrategy.js')
 
     const body = { project: 'backend', baseBranch: 'main' }
     const rawBody = JSON.stringify(body)

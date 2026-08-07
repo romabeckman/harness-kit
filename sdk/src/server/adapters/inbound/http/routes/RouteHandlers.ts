@@ -4,6 +4,7 @@ import type { JobStoreRepository } from '../../../outbound/repository/JobStoreRe
 import type { JobQueue } from '../../../outbound/queue/JobQueue'
 import type { WorkspaceLockManager } from '../../../outbound/mutex/WorkspaceLockManager'
 import type { RunRequestDtoExtended } from '../dto/RunRequestDto'
+import type { TokensTelemetryQueryOptions } from '../dto/TokensTelemetryDto'
 import {
   RunOrchestratorJobUseCase,
   GetJobStatusUseCase,
@@ -14,6 +15,7 @@ import {
   GetSettingsUseCase,
   UpdateSettingsUseCase,
   GetTokensTelemetryUseCase,
+  GetReportsSummaryUseCase,
   SyncWorkspaceRepositoryUseCase,
 } from '../../../../application/use-cases'
 import { AuthStrategyFactory } from '../../../outbound/auth/AuthStrategyFactory'
@@ -29,6 +31,7 @@ export interface UseCaseContainer {
   getSettingsUseCase?: GetSettingsUseCase
   updateSettingsUseCase?: UpdateSettingsUseCase
   getTokensUseCase?: GetTokensTelemetryUseCase
+  getReportsSummaryUseCase?: GetReportsSummaryUseCase
   syncUseCase?: SyncWorkspaceRepositoryUseCase
 }
 
@@ -42,6 +45,7 @@ export class RouteHandlers {
   private getSettingsUseCase: GetSettingsUseCase
   private updateSettingsUseCase: UpdateSettingsUseCase
   private getTokensUseCase: GetTokensTelemetryUseCase
+  private getReportsSummaryUseCase: GetReportsSummaryUseCase
   private syncUseCase: SyncWorkspaceRepositoryUseCase
   private authStrategy: IAuthStrategy
   private config?: HttpServerConfig
@@ -66,6 +70,7 @@ export class RouteHandlers {
     this.getSettingsUseCase = useCases?.getSettingsUseCase ?? new GetSettingsUseCase(config)
     this.updateSettingsUseCase = useCases?.updateSettingsUseCase ?? new UpdateSettingsUseCase(config)
     this.getTokensUseCase = useCases?.getTokensUseCase ?? new GetTokensTelemetryUseCase(config)
+    this.getReportsSummaryUseCase = useCases?.getReportsSummaryUseCase ?? new GetReportsSummaryUseCase(config)
     this.syncUseCase = useCases?.syncUseCase ?? new SyncWorkspaceRepositoryUseCase()
     this.authStrategy = AuthStrategyFactory.create(config?.auth)
   }
@@ -190,7 +195,21 @@ export class RouteHandlers {
       if (method === 'GET' && (pathname === '/orchestrator/tokens' || pathname === '/orchestrator/telemetry/tokens')) {
         const project = url.searchParams.get('project') ?? undefined
         const jobId = url.searchParams.get('jobId') ?? url.searchParams.get('id') ?? undefined
-        await this.handleGetTokensTelemetry(project, jobId, res)
+        const startDate = url.searchParams.get('startDate') ?? undefined
+        const endDate = url.searchParams.get('endDate') ?? undefined
+        const model = url.searchParams.get('model') ?? undefined
+        const limitParam = url.searchParams.get('limit')
+        const limit = limitParam ? parseInt(limitParam, 10) : undefined
+        const nextToken = url.searchParams.get('nextToken') ?? undefined
+        await this.handleGetTokensTelemetry(project, jobId, { startDate, endDate, model, limit, nextToken }, res)
+        return
+      }
+
+      if (method === 'GET' && pathname === '/orchestrator/reports/summary') {
+        const project = url.searchParams.get('project') ?? undefined
+        const startDate = url.searchParams.get('startDate') ?? undefined
+        const endDate = url.searchParams.get('endDate') ?? undefined
+        await this.handleGetReportsSummary(project, startDate, endDate, res)
         return
       }
 
@@ -280,8 +299,23 @@ export class RouteHandlers {
     this.sendJson(res, 200, result)
   }
 
-  private async handleGetTokensTelemetry(projectIdentifier: string | undefined, jobId: string | undefined, res: ServerResponse): Promise<void> {
-    const result = await this.getTokensUseCase.execute(projectIdentifier, jobId)
+  private async handleGetTokensTelemetry(
+    projectIdentifier: string | undefined,
+    jobId: string | undefined,
+    options: TokensTelemetryQueryOptions,
+    res: ServerResponse
+  ): Promise<void> {
+    const result = await this.getTokensUseCase.execute(projectIdentifier, jobId, options)
+    this.sendJson(res, 200, result)
+  }
+
+  private async handleGetReportsSummary(
+    projectIdentifier: string | undefined,
+    startDate: string | undefined,
+    endDate: string | undefined,
+    res: ServerResponse
+  ): Promise<void> {
+    const result = await this.getReportsSummaryUseCase.execute(projectIdentifier, startDate, endDate)
     this.sendJson(res, 200, result)
   }
 

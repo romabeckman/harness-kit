@@ -2,18 +2,112 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import type { TokenUsage } from '../agent-runner/types'
 
+export interface ExecutionMetrics {
+  durationMs: number
+  status: 'success' | 'error' | string
+}
+
+export interface DetailedTokenUsage {
+  inputTokens: number
+  outputTokens: number
+  cacheCreationTokens: number
+  cacheReadTokens: number
+  calculatedCostUsd: number
+}
+
+export interface TelemetryAuditEvent {
+  auditId: string
+  jobId?: string
+  projectId: string
+  tenantId?: string
+  userId?: string
+  timestamp: string
+  agent: string
+  model: string
+  skill: string
+  executionMetrics: ExecutionMetrics
+  tokenUsage: DetailedTokenUsage
+}
+
 export interface TokenEntry extends TokenUsage {
   ts: string
   skill: string
   agent: string
   model: string
   effort: string
+  auditId?: string
+  jobId?: string
+  projectId?: string
+  tenantId?: string
+  userId?: string
+  executionMetrics?: ExecutionMetrics
+  tokenUsage?: DetailedTokenUsage
 }
 
 export interface TokenReport {
   entries: TokenEntry[]
+  events: TelemetryAuditEvent[]
   totals: TokenUsage
   bySkill: Record<string, TokenUsage>
+}
+
+export function normalizeTelemetryEvent(raw: any): TelemetryAuditEvent {
+  if (raw && typeof raw === 'object' && raw.tokenUsage && typeof raw.tokenUsage === 'object') {
+    const tu = raw.tokenUsage
+    const em = raw.executionMetrics ?? {}
+    return {
+      auditId: raw.auditId ?? `aud_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      jobId: raw.jobId,
+      projectId: raw.projectId ?? raw.project ?? 'default',
+      tenantId: raw.tenantId ?? 'default',
+      userId: raw.userId ?? 'system',
+      timestamp: raw.timestamp ?? raw.ts ?? new Date().toISOString(),
+      agent: raw.agent ?? 'unknown',
+      model: raw.model ?? 'unknown',
+      skill: raw.skill ?? 'unknown',
+      executionMetrics: {
+        durationMs: typeof em.durationMs === 'number' ? em.durationMs : 0,
+        status: em.status ?? 'success',
+      },
+      tokenUsage: {
+        inputTokens: typeof tu.inputTokens === 'number' ? tu.inputTokens : 0,
+        outputTokens: typeof tu.outputTokens === 'number' ? tu.outputTokens : 0,
+        cacheCreationTokens: typeof tu.cacheCreationTokens === 'number' ? tu.cacheCreationTokens : 0,
+        cacheReadTokens: typeof tu.cacheReadTokens === 'number' ? tu.cacheReadTokens : 0,
+        calculatedCostUsd: typeof tu.calculatedCostUsd === 'number' ? tu.calculatedCostUsd : (typeof tu.costUsd === 'number' ? tu.costUsd : 0),
+      },
+    }
+  }
+
+  // Legacy flat format normalization
+  const inputTokens = typeof raw.inputTokens === 'number' ? raw.inputTokens : 0
+  const outputTokens = typeof raw.outputTokens === 'number' ? raw.outputTokens : 0
+  const cacheCreationTokens = typeof raw.cacheCreationTokens === 'number' ? raw.cacheCreationTokens : 0
+  const cacheReadTokens = typeof raw.cacheReadTokens === 'number' ? raw.cacheReadTokens : 0
+  const calculatedCostUsd = typeof raw.costUsd === 'number' ? raw.costUsd : (typeof raw.calculatedCostUsd === 'number' ? raw.calculatedCostUsd : 0)
+
+  return {
+    auditId: raw.auditId ?? `aud_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+    jobId: raw.jobId,
+    projectId: raw.projectId ?? raw.project ?? 'default',
+    tenantId: raw.tenantId ?? 'default',
+    userId: raw.userId ?? 'system',
+    timestamp: raw.timestamp ?? raw.ts ?? new Date().toISOString(),
+    agent: raw.agent ?? 'unknown',
+    model: raw.model ?? 'unknown',
+    skill: raw.skill ?? 'unknown',
+    executionMetrics: {
+      durationMs: typeof raw.durationMs === 'number' ? raw.durationMs : (raw.executionMetrics?.durationMs ?? 0),
+      status: raw.status ?? raw.executionMetrics?.status ?? 'success',
+    },
+    tokenUsage: {
+      inputTokens,
+      outputTokens,
+      cacheCreationTokens,
+      cacheReadTokens,
+      calculatedCostUsd,
+    },
+  }
 }
 
 export class TokenLedger {
@@ -23,28 +117,119 @@ export class TokenLedger {
     this.#ledgerPath = ledgerPath
   }
 
-  record(skill: string, agent: string, usage: TokenUsage): void {
-    const entry: TokenEntry = {
-      ts: new Date().toISOString(),
-      skill,
+  record(skill: string, agent: string, usage: TokenUsage & Record<string, any>): void {
+    const inputTokens = usage.inputTokens ?? 0
+    const outputTokens = usage.outputTokens ?? 0
+    const cacheCreationTokens = usage.cacheCreationTokens ?? 0
+    const cacheReadTokens = usage.cacheReadTokens ?? 0
+    const calculatedCostUsd = usage.costUsd ?? usage.calculatedCostUsd ?? 0
+    const timestamp = usage.timestamp ?? usage.ts ?? new Date().toISOString()
+
+    const event = {
+      auditId: usage.auditId ?? `aud_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      jobId: usage.jobId,
+      projectId: usage.projectId ?? usage.project ?? 'default',
+      tenantId: usage.tenantId ?? 'default',
+      userId: usage.userId ?? 'system',
+      timestamp,
+      ts: timestamp,
       agent,
       model: usage.model ?? 'unknown',
+      skill,
       effort: usage.effort ?? 'default',
-      ...usage,
+      inputTokens,
+      outputTokens,
+      cacheCreationTokens,
+      cacheReadTokens,
+      costUsd: calculatedCostUsd,
+      executionMetrics: {
+        durationMs: usage.durationMs ?? 0,
+        status: usage.status ?? 'success',
+      },
+      tokenUsage: {
+        inputTokens,
+        outputTokens,
+        cacheCreationTokens,
+        cacheReadTokens,
+        calculatedCostUsd,
+      },
     }
     const dir = dirname(this.#ledgerPath)
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-    appendFileSync(this.#ledgerPath, JSON.stringify(entry) + '\n', 'utf8')
+    appendFileSync(this.#ledgerPath, JSON.stringify(event) + '\n', 'utf8')
+  }
+
+  recordAudit(event: Partial<TelemetryAuditEvent> & Record<string, any>): void {
+    const inputTokens = event.tokenUsage?.inputTokens ?? event.inputTokens ?? 0
+    const outputTokens = event.tokenUsage?.outputTokens ?? event.outputTokens ?? 0
+    const cacheCreationTokens = event.tokenUsage?.cacheCreationTokens ?? event.cacheCreationTokens ?? 0
+    const cacheReadTokens = event.tokenUsage?.cacheReadTokens ?? event.cacheReadTokens ?? 0
+    const calculatedCostUsd = event.tokenUsage?.calculatedCostUsd ?? event.costUsd ?? 0
+    const timestamp = event.timestamp ?? event.ts ?? new Date().toISOString()
+
+    const fullEvent = {
+      auditId: event.auditId ?? `aud_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      jobId: event.jobId,
+      projectId: event.projectId ?? 'default',
+      tenantId: event.tenantId ?? 'default',
+      userId: event.userId ?? 'system',
+      timestamp,
+      ts: timestamp,
+      agent: event.agent ?? 'unknown',
+      model: event.model ?? 'unknown',
+      skill: event.skill ?? 'unknown',
+      effort: event.effort ?? 'default',
+      inputTokens,
+      outputTokens,
+      cacheCreationTokens,
+      cacheReadTokens,
+      costUsd: calculatedCostUsd,
+      executionMetrics: {
+        durationMs: event.executionMetrics?.durationMs ?? 0,
+        status: event.executionMetrics?.status ?? 'success',
+      },
+      tokenUsage: {
+        inputTokens,
+        outputTokens,
+        cacheCreationTokens,
+        cacheReadTokens,
+        calculatedCostUsd,
+      },
+    }
+    const dir = dirname(this.#ledgerPath)
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    appendFileSync(this.#ledgerPath, JSON.stringify(fullEvent) + '\n', 'utf8')
   }
 
   report(): TokenReport {
-    const entries: TokenEntry[] = []
+    const rawEntries: any[] = []
     if (existsSync(this.#ledgerPath)) {
       for (const line of readFileSync(this.#ledgerPath, 'utf8').split('\n')) {
         if (!line.trim()) continue
-        try { entries.push(JSON.parse(line) as TokenEntry) } catch { /* skip malformed */ }
+        try { rawEntries.push(JSON.parse(line)) } catch { /* skip malformed */ }
       }
     }
+
+    const events: TelemetryAuditEvent[] = rawEntries.map(normalizeTelemetryEvent)
+    const entries: TokenEntry[] = events.map((ev) => ({
+      ts: ev.timestamp,
+      skill: ev.skill,
+      agent: ev.agent,
+      model: ev.model,
+      effort: 'default',
+      auditId: ev.auditId,
+      jobId: ev.jobId,
+      projectId: ev.projectId,
+      tenantId: ev.tenantId,
+      userId: ev.userId,
+      inputTokens: ev.tokenUsage.inputTokens,
+      outputTokens: ev.tokenUsage.outputTokens,
+      cacheCreationTokens: ev.tokenUsage.cacheCreationTokens,
+      cacheReadTokens: ev.tokenUsage.cacheReadTokens,
+      costUsd: ev.tokenUsage.calculatedCostUsd,
+      executionMetrics: ev.executionMetrics,
+      tokenUsage: ev.tokenUsage,
+    }))
 
     const zero = (): TokenUsage => ({
       inputTokens: 0, outputTokens: 0,
@@ -69,7 +254,7 @@ export class TokenLedger {
       bySkill[e.skill].costUsd += e.costUsd
     }
 
-    return { entries, totals, bySkill }
+    return { entries, events, totals, bySkill }
   }
 
   printReport(): void {

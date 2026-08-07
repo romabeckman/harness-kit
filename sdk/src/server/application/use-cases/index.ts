@@ -7,5 +7,6 @@ export { GetOpenApiDocsUseCase } from './GetOpenApiDocsUseCase'
 export { GetSettingsUseCase } from './GetSettingsUseCase'
 export { UpdateSettingsUseCase } from './UpdateSettingsUseCase'
 export { GetTokensTelemetryUseCase } from './GetTokensTelemetryUseCase'
+export { GetReportsSummaryUseCase } from './GetReportsSummaryUseCase'
 export { SyncWorkspaceRepositoryUseCase } from './SyncWorkspaceRepositoryUseCase'
 

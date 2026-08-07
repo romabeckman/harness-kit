@@ -168,7 +168,7 @@ export class OpenApiSpecGenerator {
             },
           },
         },
-        '/orchestrator/tokens': {
+        '/orchestrator/telemetry/tokens': {
           get: {
             summary: 'Get token telemetry report (tokens.jsonl)',
             description: 'Retrieves parsed token ledger report entries and totals for target registered project.',
@@ -188,6 +188,41 @@ export class OpenApiSpecGenerator {
                 description: 'Optional job UUID filter to obtain tokens for a specific workflow execution',
                 schema: { type: 'string' },
               },
+              {
+                name: 'startDate',
+                in: 'query',
+                required: false,
+                description: 'Optional start date ISO string filter',
+                schema: { type: 'string' },
+              },
+              {
+                name: 'endDate',
+                in: 'query',
+                required: false,
+                description: 'Optional end date ISO string filter',
+                schema: { type: 'string' },
+              },
+              {
+                name: 'model',
+                in: 'query',
+                required: false,
+                description: 'Optional model name filter',
+                schema: { type: 'string' },
+              },
+              {
+                name: 'limit',
+                in: 'query',
+                required: false,
+                description: 'Page size limit (default 50)',
+                schema: { type: 'integer' },
+              },
+              {
+                name: 'nextToken',
+                in: 'query',
+                required: false,
+                description: 'Opaque pagination token for next page',
+                schema: { type: 'string' },
+              },
             ],
             responses: {
               '200': {
@@ -200,6 +235,58 @@ export class OpenApiSpecGenerator {
               },
               '400': {
                 description: 'Missing or unregistered project identifier',
+                content: {
+                  'application/json': { schema: { $ref: '#/components/schemas/HttpServerError' } },
+                },
+              },
+              '401': {
+                description: 'Unauthorized access',
+                content: {
+                  'application/json': { schema: { $ref: '#/components/schemas/HttpServerError' } },
+                },
+              },
+            },
+          },
+        },
+        '/orchestrator/reports/summary': {
+          get: {
+            summary: 'Get consolidated reports summary',
+            description: 'Returns consolidated cost view aggregated by Project, Model, and Agent within a time window.',
+            security: [{ BearerAuth: [] }, { BasicAuth: [] }],
+            parameters: [
+              {
+                name: 'project',
+                in: 'query',
+                required: false,
+                description: 'Optional project identifier to filter report summary',
+                schema: { type: 'string' },
+              },
+              {
+                name: 'startDate',
+                in: 'query',
+                required: false,
+                description: 'Optional start date ISO string filter',
+                schema: { type: 'string' },
+              },
+              {
+                name: 'endDate',
+                in: 'query',
+                required: false,
+                description: 'Optional end date ISO string filter',
+                schema: { type: 'string' },
+              },
+            ],
+            responses: {
+              '200': {
+                description: 'Consolidated report summary object',
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/ReportsSummaryDto' },
+                  },
+                },
+              },
+              '400': {
+                description: 'Invalid request parameters',
                 content: {
                   'application/json': { schema: { $ref: '#/components/schemas/HttpServerError' } },
                 },
@@ -555,8 +642,18 @@ export class OpenApiSpecGenerator {
               entries: { type: 'array', items: { type: 'object' }, description: 'List of token usage entries' },
               totals: { type: 'object', description: 'Total aggregated token counts' },
               bySkill: { type: 'object', description: 'Aggregated token counts by skill' },
+              pagination: { type: 'object', description: 'Pagination metadata' },
             },
             required: ['project', 'entries', 'totals', 'bySkill'],
+          },
+          ReportsSummaryDto: {
+            type: 'object',
+            properties: {
+              period: { type: 'object', description: 'Start and end date period' },
+              summary: { type: 'object', description: 'Aggregated metrics grouped by project, model, and agent' },
+              grandTotal: { type: 'object', description: 'Overall aggregated metrics' },
+            },
+            required: ['summary', 'grandTotal'],
           },
           UpdateSettingsRequestDto: {
             type: 'object',

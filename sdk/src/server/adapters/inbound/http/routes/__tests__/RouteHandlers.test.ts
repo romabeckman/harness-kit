@@ -269,7 +269,7 @@ describe('RouteHandlers Integration Tests', () => {
     process.env.AUTH_JWT_SECRET = 'my-jwt-secret-123'
     const handlersWithJwt = new RouteHandlers(jobStore, jobQueue, lockManager)
 
-    const { JwtAuthStrategy } = await import('../../../../outbound/auth/JwtAuthStrategy')
+    const { JwtAuthStrategy } = await import('../../../../outbound/auth/JwtAuthStrategy.js')
     const token = JwtAuthStrategy.signPayload({ sub: 'user-1', allowed_projects: ['frontend'] }, 'my-jwt-secret-123')
 
     const req = new MockIncomingMessage('/orchestrator/run', 'POST')
@@ -285,4 +285,29 @@ describe('RouteHandlers Integration Tests', () => {
     const parsed = JSON.parse(res.body)
     expect(parsed.code).toBe('FORBIDDEN')
   })
+
+  it('GET /orchestrator/telemetry/tokens?project=backend&startDate=2026-08-01T00:00:00Z&model=claude-3-5-sonnet&limit=10 -> 200 OK with query parameters', async () => {
+    const req = new MockIncomingMessage('/orchestrator/telemetry/tokens?project=backend&startDate=2026-08-01T00:00:00Z&model=claude-3-5-sonnet&limit=10', 'GET')
+    const res = new MockServerResponse()
+
+    await routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+
+    expect(res.statusCode).toBe(200)
+    const parsed = JSON.parse(res.body)
+    expect(parsed.project).toBe('backend')
+    expect(parsed.pagination).toBeDefined()
+  })
+
+  it('GET /orchestrator/reports/summary?project=backend -> 200 OK with summary report', async () => {
+    const req = new MockIncomingMessage('/orchestrator/reports/summary?project=backend', 'GET')
+    const res = new MockServerResponse()
+
+    await routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+
+    expect(res.statusCode).toBe(200)
+    const parsed = JSON.parse(res.body)
+    expect(parsed.summary).toBeDefined()
+    expect(parsed.grandTotal).toBeDefined()
+  })
 })
+

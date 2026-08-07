@@ -2,15 +2,18 @@ import { existsSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { HttpServerError, HttpServerConfig } from '../../domain/types'
 import { DtoMappers } from '../../adapters/inbound/http/mappers/DtoMappers'
-import type { TokenUsage } from '../../../agent-runner/types'
-import { TokenLedger, type TokenEntry } from '../../../telemetry/TokenLedger'
-import type { TokensTelemetryDto } from '../../adapters/inbound/http/dto/TokensTelemetryDto'
+import { TokenLedger, type TelemetryAuditEvent, type DetailedTokenUsage } from '../../../telemetry/TokenLedger'
+import type { TokensTelemetryDto, TokensTelemetryQueryOptions } from '../../adapters/inbound/http/dto/TokensTelemetryDto'
 import type { IGetTokensTelemetryUseCase } from '../ports/inbound/IGetTokensTelemetryUseCase'
 
 export class GetTokensTelemetryUseCase implements IGetTokensTelemetryUseCase {
   constructor(private config?: HttpServerConfig) {}
 
-  async execute(projectIdentifier?: string, jobId?: string): Promise<TokensTelemetryDto> {
+  async execute(
+    projectIdentifier?: string,
+    jobId?: string,
+    options?: TokensTelemetryQueryOptions
+  ): Promise<TokensTelemetryDto> {
     if (!projectIdentifier || projectIdentifier.trim() === '') {
       throw new HttpServerError(
         400,
@@ -75,61 +78,103 @@ export class GetTokensTelemetryUseCase implements IGetTokensTelemetryUseCase {
 
     const existingPaths = [...new Set(candidatePaths.filter((p) => existsSync(p)))]
 
-    const allEntries: TokenEntry[] = []
+    const allEvents: TelemetryAuditEvent[] = []
     for (const filePath of existingPaths) {
       const ledger = new TokenLedger(filePath)
       const r = ledger.report()
-      for (const entry of r.entries) {
-        if (cleanJobId && (entry as any).jobId && (entry as any).jobId !== cleanJobId) {
+      for (const ev of r.events) {
+        if (cleanJobId && ev.jobId && ev.jobId !== cleanJobId) {
           continue
         }
-        allEntries.push(entry)
+        allEvents.push({
+          ...ev,
+          projectId: ev.projectId !== 'default' ? ev.projectId : name,
+        })
       }
     }
 
-    const uniqueEntries: TokenEntry[] = []
+    const uniqueEvents: TelemetryAuditEvent[] = []
     const seenKeys = new Set<string>()
 
-    for (const entry of allEntries) {
-      const key = `${entry.ts}-${entry.skill}-${entry.agent}-${entry.inputTokens}-${entry.outputTokens}`
+    for (const ev of allEvents) {
+      const key = `${ev.auditId}-${ev.timestamp}-${ev.skill}-${ev.agent}-${ev.tokenUsage.inputTokens}`
       if (!seenKeys.has(key)) {
         seenKeys.add(key)
-        uniqueEntries.push(entry)
+        uniqueEvents.push(ev)
       }
     }
 
-    const zero = (): TokenUsage => ({
+    // Filters: startDate, endDate, model
+    const startMs = options?.startDate ? new Date(options.startDate).getTime() : undefined
+    const endMs = options?.endDate ? new Date(options.endDate).getTime() : undefined
+    const filterModel = options?.model?.trim().toLowerCase()
+
+    const filteredEvents = uniqueEvents.filter((ev) => {
+      const timeMs = new Date(ev.timestamp).getTime()
+      if (startMs !== undefined && !isNaN(startMs) && timeMs < startMs) return false
+      if (endMs !== undefined && !isNaN(endMs) && timeMs > endMs) return false
+      if (filterModel && !ev.model.toLowerCase().includes(filterModel)) return false
+      return true
+    })
+
+    const zero = (): DetailedTokenUsage => ({
       inputTokens: 0,
       outputTokens: 0,
       cacheCreationTokens: 0,
       cacheReadTokens: 0,
-      costUsd: 0,
+      calculatedCostUsd: 0,
     })
 
     const totals = zero()
-    const bySkill: Record<string, TokenUsage> = {}
+    const bySkill: Record<string, DetailedTokenUsage> = {}
 
-    for (const e of uniqueEntries) {
-      totals.inputTokens += e.inputTokens
-      totals.outputTokens += e.outputTokens
-      totals.cacheCreationTokens += e.cacheCreationTokens
-      totals.cacheReadTokens += e.cacheReadTokens
-      totals.costUsd += e.costUsd
+    for (const e of filteredEvents) {
+      totals.inputTokens += e.tokenUsage.inputTokens
+      totals.outputTokens += e.tokenUsage.outputTokens
+      totals.cacheCreationTokens += e.tokenUsage.cacheCreationTokens
+      totals.cacheReadTokens += e.tokenUsage.cacheReadTokens
+      totals.calculatedCostUsd += e.tokenUsage.calculatedCostUsd
 
       if (!bySkill[e.skill]) bySkill[e.skill] = zero()
-      bySkill[e.skill].inputTokens += e.inputTokens
-      bySkill[e.skill].outputTokens += e.outputTokens
-      bySkill[e.skill].cacheCreationTokens += e.cacheCreationTokens
-      bySkill[e.skill].cacheReadTokens += e.cacheReadTokens
-      bySkill[e.skill].costUsd += e.costUsd
+      bySkill[e.skill].inputTokens += e.tokenUsage.inputTokens
+      bySkill[e.skill].outputTokens += e.tokenUsage.outputTokens
+      bySkill[e.skill].cacheCreationTokens += e.tokenUsage.cacheCreationTokens
+      bySkill[e.skill].cacheReadTokens += e.tokenUsage.cacheReadTokens
+      bySkill[e.skill].calculatedCostUsd += e.tokenUsage.calculatedCostUsd
     }
+
+    // Pagination Slicing
+    let offset = 0
+    if (options?.nextToken) {
+      try {
+        const decoded = Buffer.from(options.nextToken, 'base64').toString('utf-8')
+        const parsed = parseInt(decoded, 10)
+        if (!isNaN(parsed) && parsed >= 0) offset = parsed
+      } catch {
+        const parsed = parseInt(options.nextToken, 10)
+        if (!isNaN(parsed) && parsed >= 0) offset = parsed
+      }
+    }
+
+    const limit = Math.max(1, Math.min(options?.limit ? Number(options.limit) : 50, 500))
+    const slicedEntries = filteredEvents.slice(offset, offset + limit)
+    const hasMore = offset + limit < filteredEvents.length
+    const nextToken = hasMore
+      ? Buffer.from(String(offset + limit)).toString('base64')
+      : undefined
 
     return {
       project: name,
       ...(cleanJobId ? { jobId: cleanJobId } : {}),
-      entries: uniqueEntries,
+      entries: slicedEntries,
       totals,
       bySkill,
+      pagination: {
+        limit,
+        ...(nextToken ? { nextToken } : {}),
+        totalEntries: filteredEvents.length,
+        hasMore,
+      },
     }
   }
 }
