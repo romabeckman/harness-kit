@@ -87,4 +87,21 @@ describe('T16 — HarnessSettings', () => {
     expect(settings.resolve('non-existent-runner', 'PLANNING')).toEqual({})
     expect(settings.resolve('claude', 'non-existent-phase')).toEqual({})
   })
+
+  it('resolves codex default settings', () => {
+    const globalDir = join(tmpDir, 'global-config')
+    const globalFile = join(globalDir, 'harness-kit', 'settings.json')
+    process.env.HARNESS_SETTINGS_PATH = globalFile
+
+    const settings = HarnessSettings.load(tmpDir)
+
+    expect(settings.resolve('codex', 'planning')).toEqual({
+      model: 'gpt-5.6-sol',
+      effort: 'high',
+    })
+    expect(settings.resolve('codex', 'implementation')).toEqual({
+      model: 'gpt-5.6-luna',
+      effort: 'max',
+    })
+  })
 })
