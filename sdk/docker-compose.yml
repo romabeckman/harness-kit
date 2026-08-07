@@ -1,0 +1,13 @@
+services:
+  hrns-server:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/workspace
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - ALLOWED_WORKSPACES=/workspace,/workspaces/repo-a,/workspaces/repo-b
+      - PROJECT_MAPPINGS={"default":"/workspace"}

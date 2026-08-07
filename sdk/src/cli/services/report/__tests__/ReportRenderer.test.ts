@@ -42,6 +42,7 @@ describe('ReportRenderer - Unit Tests', () => {
     },
     tokenReport: {
       entries: [],
+      events: [],
       totals: { inputTokens: 100, outputTokens: 50, cacheCreationTokens: 0, cacheReadTokens: 0, costUsd: 0 },
       bySkill: {}
     }

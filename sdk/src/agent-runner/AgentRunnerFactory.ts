@@ -11,6 +11,7 @@ import './cursor-sdk/CursorSDKRunner'
 import './copilot-cli/CopilotCLIRunner'
 import './cursor-cli/CursorCLIRunner'
 import './kiro-cli/KiroCLIRunner'
+import './codex-cli/CodexCLIRunner'
 
 export class AgentRunnerFactory {
   static create(config: RunnerConfig): IAgentRunner {

@@ -39,6 +39,7 @@ export type { CopilotSDKRunnerConfig } from './agent-runner/copilot-sdk/CopilotS
 export { CursorSDKRunner } from './agent-runner/cursor-sdk/CursorSDKRunner'
 export type { CursorSDKRunnerConfig } from './agent-runner/cursor-sdk/CursorSDKRunner'
 export { KiroCLIRunner } from './agent-runner/kiro-cli/KiroCLIRunner'
+export { CodexCLIRunner } from './agent-runner/codex-cli/CodexCLIRunner'
 
 // File state types
 export type {
@@ -78,3 +79,19 @@ export type {
   ReviewPayload,
   MemoryPayload,
 } from './context-assembler/types'
+
+// HTTP Server
+export { HttpServer, startHttpServer } from './server'
+export { HttpServerError } from './server/types'
+export type {
+  HttpServerConfig,
+  HealthStatusVo,
+  OpenApiSpec,
+  OrchestrationJob,
+  JobStatus,
+  RunRequestDto,
+  RunRequestDtoExtended,
+  RunResponseDto,
+  JobStatusDto,
+} from './server'
+
