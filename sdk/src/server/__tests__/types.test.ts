@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { HttpServerError } from '../domain/types'
+import { HttpServerError, WorkerPoolConfig } from '../domain/types'
 import type { HttpServerConfig, HealthStatusVo, OpenApiSpec, OrchestrationJob, JobStatus } from '../domain/types'
 import type { RunRequestDto, RunRequestDtoExtended } from '../adapters/inbound/http/dto/RunRequestDto'
 import type { RunResponseDto } from '../adapters/inbound/http/dto/RunResponseDto'
@@ -133,6 +133,22 @@ describe('Server Types and DTOs', () => {
       }
       expect(job.status).toBe('queued')
       expect(job.workspacePath).toBe('/workspace/app')
+    })
+  })
+
+  describe('WorkerPoolConfig', () => {
+    it('allows valid maxConcurrency >= 1', () => {
+      const config = new WorkerPoolConfig({ maxConcurrency: 4 })
+      expect(config.maxConcurrency).toBe(4)
+    })
+
+    it('defaults maxConcurrency to 4 if omitted', () => {
+      const config = new WorkerPoolConfig()
+      expect(config.maxConcurrency).toBe(4)
+    })
+
+    it('throws HttpServerError if maxConcurrency < 1', () => {
+      expect(() => new WorkerPoolConfig({ maxConcurrency: 0 })).toThrow()
     })
   })
 })

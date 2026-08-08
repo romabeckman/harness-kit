@@ -35,11 +35,14 @@ async function execGit(
   }
 }
 
+import { AsyncWorkerPool } from './AsyncWorkerPool'
+
 export interface JobRunnerServiceOptions {
   jobStore: JobStoreRepository
   lockManager: WorkspaceLockManager
   jobQueue: JobQueue
   agentRunner?: IAgentRunner
+  maxConcurrency?: number
 }
 
 export class JobRunnerService {
@@ -47,9 +50,7 @@ export class JobRunnerService {
   private lockManager: WorkspaceLockManager
   private jobQueue: JobQueue
   private agentRunner?: IAgentRunner
-  private isRunning = false
-  private isLoopProcessing = false
-  private workerListener?: () => void
+  private workerPool: AsyncWorkerPool
 
   constructor(
     jobStoreOrOptions: JobStoreRepository | JobRunnerServiceOptions,
@@ -62,12 +63,29 @@ export class JobRunnerService {
       this.lockManager = jobStoreOrOptions.lockManager
       this.jobQueue = jobStoreOrOptions.jobQueue
       this.agentRunner = jobStoreOrOptions.agentRunner
+      this.workerPool = new AsyncWorkerPool({
+        maxConcurrency: jobStoreOrOptions.maxConcurrency,
+        queue: this.jobQueue,
+        lockManager: this.lockManager,
+        jobStore: this.jobStore,
+      })
     } else {
       this.jobStore = jobStoreOrOptions
       this.lockManager = lockManager!
       this.jobQueue = jobQueue!
       this.agentRunner = options?.agentRunner
+      this.workerPool = new AsyncWorkerPool({
+        queue: this.jobQueue,
+        lockManager: this.lockManager,
+        jobStore: this.jobStore,
+      })
     }
+
+    this.workerPool.setJobProcessor((job) => this.executeJob(job))
+  }
+
+  getWorkerPool(): AsyncWorkerPool {
+    return this.workerPool
   }
 
   /**
@@ -250,46 +268,16 @@ export class JobRunnerService {
   }
 
   /**
-   * Starts the background worker loop to continuously dequeue and run jobs from JobQueue.
+   * Starts the background worker pool to continuously dequeue and run jobs.
    */
   startWorkerLoop(): void {
-    if (this.isRunning) return
-    this.isRunning = true
-
-    const processNext = async () => {
-      if (!this.isRunning || this.isLoopProcessing) return
-      this.isLoopProcessing = true
-
-      try {
-        const nextJob = await this.jobQueue.dequeueNextAvailable(this.lockManager)
-        if (nextJob) {
-          await this.executeJob(nextJob)
-          if (this.isRunning && this.jobQueue.size > 0) {
-            setImmediate(processNext)
-          }
-        }
-      } finally {
-        this.isLoopProcessing = false
-      }
-    }
-
-    this.workerListener = () => {
-      processNext()
-    }
-
-    this.jobQueue.on('workerNotify', this.workerListener)
-    processNext()
+    this.workerPool.start()
   }
 
   /**
-   * Stops the background worker loop.
+   * Stops the background worker pool.
    */
   stopWorkerLoop(): void {
-    this.isRunning = false
-    this.isLoopProcessing = false
-    if (this.workerListener) {
-      this.jobQueue.off('workerNotify', this.workerListener)
-      this.workerListener = undefined
-    }
+    this.workerPool.stop()
   }
 }

@@ -10,6 +10,8 @@ export interface CleanResultVo {
 }
 
 export class CleanJobsAndWorktreesUseCase {
+  private static pendingCleanups = new Set<Promise<number>>()
+
   constructor(
     private jobStore: JobStoreRepository,
     private config?: HttpServerConfig
@@ -17,34 +19,45 @@ export class CleanJobsAndWorktreesUseCase {
 
   async execute(maxAgeMs: number = 0): Promise<CleanResultVo> {
     const purgedJobs = await this.jobStore.purgeCompleted(maxAgeMs)
-    let cleanedWorktrees = 0
-
     const allowedWorkspaces = this.config?.allowedWorkspaces ?? [process.cwd()]
 
-    for (const ws of allowedWorkspaces) {
-      const worktreesDir = join(ws, '.worktrees')
-      if (existsSync(worktreesDir)) {
-        try {
-          const entries = readdirSync(worktreesDir)
-          for (const entry of entries) {
-            const entryPath = join(worktreesDir, entry)
-            try {
-              spawn.sync('git', ['worktree', 'remove', '--force', entryPath], { cwd: ws, stdio: 'pipe' })
-              if (existsSync(entryPath)) {
-                rmSync(entryPath, { recursive: true, force: true })
-              }
-              cleanedWorktrees++
-            } catch {}
-          }
-          // Prune git worktree administrative files
-          spawn.sync('git', ['worktree', 'prune'], { cwd: ws, stdio: 'pipe' })
-        } catch {}
+    let syncCleanedCount = 0
+
+    // Schedule background non-blocking worktree purge
+    const cleanupTask = (async () => {
+      let count = 0
+      for (const ws of allowedWorkspaces) {
+        const worktreesDir = join(ws, '.worktrees')
+        if (existsSync(worktreesDir)) {
+          try {
+            const entries = readdirSync(worktreesDir)
+            for (const entry of entries) {
+              const entryPath = join(worktreesDir, entry)
+              try {
+                spawn.sync('git', ['worktree', 'remove', '--force', entryPath], { cwd: ws, stdio: 'pipe' })
+                if (existsSync(entryPath)) {
+                  rmSync(entryPath, { recursive: true, force: true })
+                }
+                count++
+              } catch {}
+            }
+            spawn.sync('git', ['worktree', 'prune'], { cwd: ws, stdio: 'pipe' })
+          } catch {}
+        }
       }
-    }
+      return count
+    })()
+
+    CleanJobsAndWorktreesUseCase.pendingCleanups.add(cleanupTask)
+    cleanupTask.finally(() => CleanJobsAndWorktreesUseCase.pendingCleanups.delete(cleanupTask))
 
     return {
       purgedJobs,
-      cleanedWorktrees,
+      cleanedWorktrees: syncCleanedCount,
     }
+  }
+
+  static async awaitPendingCleanups(): Promise<void> {
+    await Promise.all(Array.from(CleanJobsAndWorktreesUseCase.pendingCleanups))
   }
 }
