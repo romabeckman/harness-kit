@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { mkdtempSync, rmSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import { JobRunnerService } from '../JobRunnerService'
 import { InMemoryJobStore } from '../../repository/InMemoryJobStore'
 import { WorkspaceLockManager } from '../../mutex/WorkspaceLockManager'
@@ -60,19 +63,26 @@ describe('JobRunnerService', () => {
     expect(updated?.error?.code).toBe('LOCK_ACQUISITION_FAILED')
   })
 
+
+
   it('UT-1.3.5: Releases lock in finally block after execution', async () => {
-    const job: OrchestrationJob = {
-      jobId: 'job-finally',
-      status: 'queued',
-      workspacePath: process.cwd(),
-      request: { idempotencyKey: 'id-fin', scope: 'test-finally', project: 'backend', agent: 'claude-cli' },
-      createdAt: new Date().toISOString(),
+    const testWs = mkdtempSync(join(tmpdir(), 'harness-test-'))
+    try {
+      const job: OrchestrationJob = {
+        jobId: 'job-finally',
+        status: 'queued',
+        workspacePath: testWs,
+        request: { idempotencyKey: 'id-fin', scope: 'test-finally', project: 'backend', agent: 'claude-cli' },
+        createdAt: new Date().toISOString(),
+      }
+      await jobStore.save(job)
+
+      await service.executeJob(job)
+
+      expect(await lockManager.isLocked(testWs)).toBe(false)
+    } finally {
+      rmSync(testWs, { recursive: true, force: true })
     }
-    await jobStore.save(job)
-
-    await service.executeJob(job)
-
-    expect(await lockManager.isLocked(process.cwd())).toBe(false)
   })
 
   it('UT-1.3.6: Resolves baseBranch from environment variables and ignores request.baseBranch', () => {
