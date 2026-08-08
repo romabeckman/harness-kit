@@ -6,11 +6,20 @@ import type { HarnessSettingsMap } from '../../../settings/SettingsSchema'
 import type { IUpdateSettingsUseCase } from '../ports/inbound/IUpdateSettingsUseCase'
 import { Runner } from '../../../agent-runner/types'
 
+const SHORT_AGENT_NAMES = ['antigravity', 'claude', 'copilot', 'cursor', 'codex', 'kiro']
 const VALID_RUNNERS = Object.values(Runner) as string[]
+const ALL_VALID_AGENTS = Array.from(new Set([...SHORT_AGENT_NAMES, ...VALID_RUNNERS]))
 
-function isValidRunner(agent?: string): boolean {
+function normalizeAgentKey(agent: string): string {
+  const clean = agent.trim().toLowerCase()
+  const family = clean.replace(/-cli$|-sdk$/, '')
+  return SHORT_AGENT_NAMES.includes(family) ? family : clean
+}
+
+function isValidAgent(agent?: string): boolean {
   if (!agent || agent.trim() === '') return false
-  return VALID_RUNNERS.includes(agent.trim().toLowerCase())
+  const clean = agent.trim().toLowerCase()
+  return ALL_VALID_AGENTS.includes(clean) || SHORT_AGENT_NAMES.includes(clean.replace(/-cli$|-sdk$/, ''))
 }
 
 export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
@@ -30,11 +39,11 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
     }
 
     if (agentIdentifier && agentIdentifier.trim() !== '') {
-      if (!isValidRunner(agentIdentifier)) {
+      if (!isValidAgent(agentIdentifier)) {
         throw new HttpServerError(
           400,
           'INVALID_AGENT',
-          `Agent '${agentIdentifier}' is invalid. Valid agents: ${VALID_RUNNERS.join(', ')}`
+          `Agent '${agentIdentifier}' is invalid. Valid agents: ${ALL_VALID_AGENTS.join(', ')}`
         )
       }
     }
@@ -74,9 +83,22 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
       } catch {}
     }
 
+    const agentKey = agentIdentifier ? normalizeAgentKey(agentIdentifier) : undefined
+    let payloadToMerge: HarnessSettingsMap = settingsPayload
+
+    // If settingsPayload is direct runner settings ({ timeoutMs, phases }) rather than a map of agent keys, wrap it under agentKey
+    if (agentKey && ((settingsPayload as any).timeoutMs !== undefined || (settingsPayload as any).phases !== undefined)) {
+      payloadToMerge = { [agentKey]: settingsPayload }
+    } else if (agentKey && !settingsPayload[agentKey]) {
+      const keys = Object.keys(settingsPayload)
+      if (keys.length === 0 || keys.includes('timeoutMs') || keys.includes('phases')) {
+        payloadToMerge = { [agentKey]: settingsPayload }
+      }
+    }
+
     const mergedSettings: HarnessSettingsMap = {
       ...existingSettings,
-      ...settingsPayload,
+      ...payloadToMerge,
     }
 
     writeFileSync(settingsFilePath, JSON.stringify(mergedSettings, null, 2), 'utf-8')

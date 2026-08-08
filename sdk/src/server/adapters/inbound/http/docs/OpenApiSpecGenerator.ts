@@ -1,7 +1,9 @@
 import type { OpenApiSpec } from '../../../../domain/types'
 import { Runner } from '../../../../../agent-runner/types'
 
+const SHORT_AGENTS = ['antigravity', 'claude', 'copilot', 'cursor', 'codex', 'kiro']
 const VALID_RUNNER_TYPES = Object.values(Runner) as string[]
+const VALID_SETTINGS_AGENTS = Array.from(new Set([...SHORT_AGENTS, ...VALID_RUNNER_TYPES]))
 
 export class OpenApiSpecGenerator {
   static getSpec(): OpenApiSpec {
@@ -327,8 +329,8 @@ export class OpenApiSpecGenerator {
                 name: 'agent',
                 in: 'query',
                 required: false,
-                description: 'Optional agent runner to filter settings (e.g. "claude-cli")',
-                schema: { type: 'string', enum: [...VALID_RUNNER_TYPES] },
+                description: 'Optional agent runner to filter settings (e.g. "antigravity", "claude-cli")',
+                schema: { type: 'string', enum: [...VALID_SETTINGS_AGENTS] },
               },
             ],
             responses: {
@@ -664,7 +666,7 @@ export class OpenApiSpecGenerator {
             type: 'object',
             properties: {
               project: { type: 'string', description: 'Mandatory registered project identifier (e.g. "backend")' },
-              agent: { type: 'string', enum: [...VALID_RUNNER_TYPES], description: 'Optional agent runner identifier' },
+              agent: { type: 'string', enum: [...VALID_SETTINGS_AGENTS], description: 'Optional agent runner identifier (e.g. "antigravity", "claude-cli")' },
               settings: { type: 'object', description: 'HarnessSettingsMap model configuration to save' },
             },
             required: ['project', 'settings'],

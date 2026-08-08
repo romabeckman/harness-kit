@@ -44,6 +44,19 @@ describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', 
       expect(existsSync(settingsFilePath)).toBe(true)
     })
 
+    it('accepts short agent name "antigravity" and filters settings', async () => {
+      process.env.PROJECT_MAPPINGS = JSON.stringify({
+        backend: testWorkspaceDir,
+      })
+
+      const useCase = new GetSettingsUseCase()
+      const result = await useCase.execute('backend', 'antigravity')
+
+      expect(result.project).toBe('backend')
+      expect(result.agent).toBe('antigravity')
+      expect(result.settings['antigravity']).toBeDefined()
+    })
+
     it('throws HttpServerError(400, MISSING_PROJECT_IDENTIFIER) when project parameter is omitted', async () => {
       process.env.PROJECT_MAPPINGS = JSON.stringify({
         backend: testWorkspaceDir,
@@ -82,6 +95,31 @@ describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', 
       const settingsFilePath = join(testWorkspaceDir, '.harness-kit', 'settings.json')
       const fileContent = JSON.parse(readFileSync(settingsFilePath, 'utf-8'))
       expect(fileContent['claude-sdk']?.timeoutMs).toBe(90000)
+    })
+
+    it('successfully accepts short agent name "antigravity" and wraps direct settings payload', async () => {
+      process.env.PROJECT_MAPPINGS = JSON.stringify({
+        backend: testWorkspaceDir,
+      })
+
+      const updateUseCase = new UpdateSettingsUseCase()
+      const payload: any = {
+        timeoutMs: 1800000,
+        phases: {
+          bootstrap: { model: 'gemini-3.1-flash-lite', effort: '' },
+          planning: { model: 'gemini-3.1-flash-lite', effort: '' },
+        },
+      }
+
+      const result = await updateUseCase.execute(payload, 'backend', 'antigravity')
+      expect(result.project).toBe('backend')
+      expect(result.agent).toBe('antigravity')
+      expect(result.settings['antigravity']?.timeoutMs).toBe(1800000)
+      expect(result.settings['antigravity']?.phases?.bootstrap?.model).toBe('gemini-3.1-flash-lite')
+
+      const settingsFilePath = join(testWorkspaceDir, '.harness-kit', 'settings.json')
+      const fileContent = JSON.parse(readFileSync(settingsFilePath, 'utf-8'))
+      expect(fileContent['antigravity']?.phases?.bootstrap?.model).toBe('gemini-3.1-flash-lite')
     })
 
     it('throws HttpServerError(400, MISSING_PROJECT_IDENTIFIER) when project parameter is omitted', async () => {
