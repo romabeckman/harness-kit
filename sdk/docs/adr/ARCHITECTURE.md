@@ -17,6 +17,7 @@ TypeScript SDK implementing an autonomous TDD orchestration loop using Ports-and
 
 ## FOLDER STRUCTURE
 <folder_structure>
+```
 sdk/
 ├── docker/                       # Docker container setup and entrypoint
 │   └── entrypoint.sh             # Git bootstrap script (credentials, pre-cloning)
@@ -56,6 +57,7 @@ sdk/
 └── docs/                         # Technical documentation folder
     ├── adr/                      # Architectural Decisions Records
     └── feature/                  # Feature orientations and specs
+```
 </folder_structure>
 
 ## LAYERS
@@ -83,6 +85,12 @@ sdk/
 | `AnsiHelpers` | Low-level ANSI escape helpers: cursor-sdk control, color wrappers (`blue`, `cyan`, `green`, `dim`). | `src/ui/` |
 
 ## PATTERNS
+REQUIRED execute after code development for validation in order:
+  - Run `rtk npm install` to check dependencies
+  - Run `rtk npm run lint` to check code syntax
+  - Run `rtk npm run typecheck`
+  - Run `rtk npm run build`
+
 REQUIRED: Use Constructor Dependency Injection to decouple ports from adapters.
 REQUIRED: Spelled-out registration of new runner strategies via AgentRunnerRegistry.
 REQUIRED: Propagate AbortSignal downwards to child process groups or API requests to prevent leaks.

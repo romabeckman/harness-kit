@@ -10,6 +10,7 @@ export class AuthStrategyFactory {
     const rawMode = (config?.mode ?? process.env.AUTH_MODE ?? process.env.AUTH_STRATEGY ?? 'none').toLowerCase()
 
     if (rawMode === 'none' || rawMode === 'off' || rawMode === 'disabled') {
+      console.warn('[HRNS Auth] NoAuthStrategy active — server has no authentication. Set AUTH_MODE to enable security.')
       return new NoAuthStrategy()
     }
 
@@ -17,7 +18,7 @@ export class AuthStrategyFactory {
       const user = config?.basicUser ?? process.env.AUTH_BASIC_USER ?? 'admin'
       const pass = config?.basicPass ?? process.env.AUTH_BASIC_PASS ?? ''
       if (!pass) {
-        console.warn('[HRNS Auth] AUTH_MODE is "basic" but AUTH_BASIC_PASS is empty.')
+        throw new Error('[HRNS Auth] AUTH_MODE is "basic" but AUTH_BASIC_PASS is empty. Set AUTH_BASIC_PASS to a non-empty value.')
       }
       return new BasicAuthStrategy(user, pass)
     }
@@ -48,6 +49,7 @@ export class AuthStrategyFactory {
       return new HmacAuthStrategy(secret)
     }
 
+    console.warn(`[HRNS Auth] Unrecognized AUTH_MODE "${rawMode}" — falling back to NoAuthStrategy (no authentication).`)
     return new NoAuthStrategy()
   }
 }

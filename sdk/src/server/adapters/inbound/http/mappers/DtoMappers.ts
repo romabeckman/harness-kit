@@ -1,5 +1,5 @@
 import { resolve, isAbsolute, basename } from 'node:path'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import type { OrchestratorConfig } from '../../../../../orchestrator/types'
 import { resolveMode } from '../../../../../cli/services/run-service'
 import { HttpServerError } from '../../../../domain/types'
@@ -16,6 +16,10 @@ function isValidRunner(agent?: string): boolean {
 function ensureEnvLoaded(): void {
   const envFile = resolve(process.cwd(), '.env')
   if (!existsSync(envFile)) return
+
+  const MAX_ENV_FILE_SIZE = 64 * 1024 // 64KB max
+  const stat = statSync(envFile, { throwIfNoEntry: false })
+  if (!stat || stat.size > MAX_ENV_FILE_SIZE) return
 
   try {
     const content = readFileSync(envFile, 'utf-8')
@@ -98,6 +102,11 @@ export class DtoMappers {
         'MISSING_SCOPE_PARAMETER',
         "Parameter 'scope' is required and must be a non-empty string."
       )
+    }
+
+    const MAX_SCOPE_LENGTH = 10_000
+    if (scope.length > MAX_SCOPE_LENGTH) {
+      throw new HttpServerError(400, 'SCOPE_TOO_LONG', `Scope text exceeds maximum allowed length of ${MAX_SCOPE_LENGTH} characters.`)
     }
 
     const selectedAgent = dto.agent

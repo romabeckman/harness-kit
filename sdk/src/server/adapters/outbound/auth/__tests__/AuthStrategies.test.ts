@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NoAuthStrategy } from '../NoAuthStrategy'
 import { BasicAuthStrategy } from '../BasicAuthStrategy'
 import { BearerAuthStrategy } from '../BearerAuthStrategy'
@@ -90,5 +90,44 @@ describe('Auth Strategies & Identity Context (AuthUserContext)', () => {
 
     const hmacStrategy = AuthStrategyFactory.create({ mode: 'hmac', hmacSecret: 'webhook123' })
     expect(hmacStrategy).toBeInstanceOf(HmacAuthStrategy)
+  })
+
+  it('SEC-JWT: JwtAuthStrategy rejects tokens with alg=none', async () => {
+    const noneHeader = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url')
+    const payload = Buffer.from(JSON.stringify({ sub: 'attacker' })).toString('base64url')
+    const fakeToken = `${noneHeader}.${payload}.`
+    
+    const strategy = new JwtAuthStrategy('my-secret')
+    const ctx = await strategy.authenticate({ authorization: `Bearer ${fakeToken}` })
+    expect(ctx.authenticated).toBe(false)
+  })
+
+  it('SEC-JWT: JwtAuthStrategy rejects tokens with unsupported algorithms', async () => {
+    const badHeader = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url')
+    const payload = Buffer.from(JSON.stringify({ sub: 'user' })).toString('base64url')
+    const fakeToken = `${badHeader}.${payload}.fakesig`
+    
+    const strategy = new JwtAuthStrategy('my-secret')
+    const ctx = await strategy.authenticate({ authorization: `Bearer ${fakeToken}` })
+    expect(ctx.authenticated).toBe(false)
+  })
+
+  it('SEC-AUTH: AuthStrategyFactory logs warning when using NoAuthStrategy', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    AuthStrategyFactory.create({ mode: 'none' })
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('NoAuthStrategy'))
+    warnSpy.mockRestore()
+  })
+
+  it('SEC-AUTH: AuthStrategyFactory falls back to NoAuthStrategy with warning for unrecognized modes', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const strategy = AuthStrategyFactory.create({ mode: 'unknown-mode' as any })
+    expect(strategy).toBeInstanceOf(NoAuthStrategy)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unrecognized'))
+    warnSpy.mockRestore()
+  })
+
+  it('SEC-AUTH: AuthStrategyFactory throws when basic auth password is empty', () => {
+    expect(() => AuthStrategyFactory.create({ mode: 'basic', basicPass: '' })).toThrow('AUTH_BASIC_PASS')
   })
 })

@@ -25,7 +25,7 @@ export class HttpServer {
 
   constructor(config: HttpServerConfig = {}) {
     this.port = config.port ?? 3000
-    this.host = config.host ?? '0.0.0.0'
+    this.host = config.host ?? '127.0.0.1'
 
     this.jobStore = new InMemoryJobStore()
     this.lockManager = new WorkspaceLockManager()

@@ -22,7 +22,7 @@ export async function startHttpServer(options: HttpServerConfig = {}): Promise<H
 
 if (require.main === module) {
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
-  const host = process.env.HOST ?? '0.0.0.0'
+  const host = process.env.HOST ?? '127.0.0.1'
   const server = new HttpServer({ port, host })
   server
     .start()
