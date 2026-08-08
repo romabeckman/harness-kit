@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, rmSync, copyFileSync, mkdirSync, readFileSync, appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
@@ -110,6 +110,18 @@ export class JobRunnerService {
       const effectivePath = gitPrep.effectiveWorkspacePath
       createdWorktreePath = gitPrep.createdWorktreePath
 
+      if (createdWorktreePath && createdWorktreePath !== job.workspacePath) {
+        const rootSettingsFile = join(job.workspacePath, '.harness-kit', 'settings.json')
+        const worktreeSettingsDir = join(createdWorktreePath, '.harness-kit')
+        const worktreeSettingsFile = join(worktreeSettingsDir, 'settings.json')
+        if (existsSync(rootSettingsFile) && !existsSync(worktreeSettingsFile)) {
+          try {
+            mkdirSync(worktreeSettingsDir, { recursive: true })
+            copyFileSync(rootSettingsFile, worktreeSettingsFile)
+          } catch {}
+        }
+      }
+
       // Resolve action (reset vs resume) using FileStateManager if action is omitted (IT-2.3.2)
       let action = job.request.action
       const productDir = join(effectivePath, 'docs', 'product')
@@ -154,6 +166,7 @@ export class JobRunnerService {
       await this.jobStore.updateStatus(job.jobId, 'failed', { code, message })
     } finally {
       if (createdWorktreePath) {
+        this.syncWorktreeTelemetry(createdWorktreePath, job.workspacePath)
         try {
           await execGit(['worktree', 'remove', '--force', createdWorktreePath], job.workspacePath)
           if (existsSync(createdWorktreePath)) {
@@ -163,6 +176,50 @@ export class JobRunnerService {
       }
       await this.lockManager.releaseLock(job.workspacePath, job.jobId)
       this.jobQueue.notifyLockReleased(job.workspacePath)
+    }
+  }
+
+  /**
+   * Synchronizes telemetry records from temporary worktree docs/product/tokens.jsonl to main workspace root.
+   */
+  private syncWorktreeTelemetry(worktreePath: string, mainWorkspacePath: string): void {
+    if (!worktreePath || worktreePath === mainWorkspacePath) return
+
+    const sourceFile = join(worktreePath, 'docs', 'product', 'tokens.jsonl')
+    if (!existsSync(sourceFile)) return
+
+    try {
+      const content = readFileSync(sourceFile, 'utf-8').trim()
+      if (!content) return
+
+      const mainDir = join(mainWorkspacePath, 'docs', 'product')
+      const mainFile = join(mainDir, 'tokens.jsonl')
+      if (!existsSync(mainDir)) {
+        mkdirSync(mainDir, { recursive: true })
+      }
+
+      const existingLines = new Set<string>()
+      if (existsSync(mainFile)) {
+        const existingContent = readFileSync(mainFile, 'utf-8')
+        for (const line of existingContent.split(/\r?\n/)) {
+          if (line.trim()) existingLines.add(line.trim())
+        }
+      }
+
+      const newLines: string[] = []
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim()
+        if (trimmed && !existingLines.has(trimmed)) {
+          newLines.push(trimmed)
+          existingLines.add(trimmed)
+        }
+      }
+
+      if (newLines.length > 0) {
+        appendFileSync(mainFile, newLines.join('\n') + '\n', 'utf-8')
+      }
+    } catch (err) {
+      console.warn(`Failed to sync worktree telemetry from ${sourceFile} to ${mainWorkspacePath}:`, err)
     }
   }
 

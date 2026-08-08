@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mkdtempSync, rmSync } from 'fs'
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { JobRunnerService } from '../JobRunnerService'
@@ -85,19 +85,24 @@ describe('JobRunnerService', () => {
     }
   })
 
-  it('UT-1.3.6: Resolves baseBranch from environment variables and ignores request.baseBranch', () => {
-    process.env.PROJECT_MYAPP_PATH = process.cwd()
-    process.env.PROJECT_MYAPP_BASE_BRANCH = 'develop'
+  it('UT-1.3.7: Synchronizes telemetry tokens from worktree to main workspace', () => {
+    const mainWs = mkdtempSync(join(tmpdir(), 'harness-main-'))
+    const worktreeWs = mkdtempSync(join(tmpdir(), 'harness-worktree-'))
+    try {
+      const sourceDir = join(worktreeWs, 'docs', 'product')
+      mkdirSync(sourceDir, { recursive: true })
+      const sampleRecord = JSON.stringify({ model: 'claude-3-5-sonnet', inputTokens: 100, agent: 'claude-cli' }) + '\n'
+      writeFileSync(join(sourceDir, 'tokens.jsonl'), sampleRecord, 'utf-8')
 
-    const job: OrchestrationJob = {
-      jobId: 'job-env-branch',
-      status: 'queued',
-      workspacePath: process.cwd(),
-      request: { scope: 'test-env', project: 'myapp', baseBranch: 'ignored-branch' } as any,
-      createdAt: new Date().toISOString(),
+      ;(service as any).syncWorktreeTelemetry(worktreeWs, mainWs)
+
+      const mainFile = join(mainWs, 'docs', 'product', 'tokens.jsonl')
+      expect(existsSync(mainFile)).toBe(true)
+      const content = readFileSync(mainFile, 'utf-8')
+      expect(content).toContain('claude-3-5-sonnet')
+    } finally {
+      rmSync(mainWs, { recursive: true, force: true })
+      rmSync(worktreeWs, { recursive: true, force: true })
     }
-
-    const envInfo = (service as any).prepareWorkspaceGit ? undefined : undefined
-    // Verify that JobRunnerService uses envInfo.baseBranch ('develop') instead of 'ignored-branch'
   })
 })
