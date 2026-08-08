@@ -1,9 +1,15 @@
 ---
 doc_type: feature
 domain: e2e_testing
-stack: [TypeScript, Vitest 1.6.0, Node.js, Execa]
-depends_on: [ARCHITECTURE.md, TESTS.md, SDK_CLI.md, SDK_CORE.md]
-updated: 2026-08-04
+stack: [TypeScript, Node.js, Vitest]
+node_id: "feature:e2e_testing_suite"
+tags: [testing, e2e, sandbox, vitest]
+edges:
+  - relation: implements
+    target: "adr:architecture"
+  - relation: tested_by
+    target: "adr:tests"
+updated: "2026-08-08"
 ---
 # END-TO-END (E2E) TESTING SUITE
 Provides an end-to-end integration and CLI test suite validating the complete Harness Kit SDK orchestrator lifecycle.

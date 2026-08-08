@@ -8,11 +8,20 @@ import { DtoMappers } from '../../adapters/inbound/http/mappers/DtoMappers'
 import type { IGetSettingsUseCase } from '../ports/inbound/IGetSettingsUseCase'
 import { Runner } from '../../../agent-runner/types'
 
+const SHORT_AGENT_NAMES = ['antigravity', 'claude', 'copilot', 'cursor', 'codex', 'kiro']
 const VALID_RUNNERS = Object.values(Runner) as string[]
+const ALL_VALID_AGENTS = Array.from(new Set([...SHORT_AGENT_NAMES, ...VALID_RUNNERS]))
 
-function isValidRunner(agent?: string): boolean {
+function normalizeAgentKey(agent: string): string {
+  const clean = agent.trim().toLowerCase()
+  const family = clean.replace(/-cli$|-sdk$/, '')
+  return SHORT_AGENT_NAMES.includes(family) ? family : clean
+}
+
+function isValidAgent(agent?: string): boolean {
   if (!agent || agent.trim() === '') return false
-  return VALID_RUNNERS.includes(agent.trim().toLowerCase())
+  const clean = agent.trim().toLowerCase()
+  return ALL_VALID_AGENTS.includes(clean) || SHORT_AGENT_NAMES.includes(clean.replace(/-cli$|-sdk$/, ''))
 }
 
 export class GetSettingsUseCase implements IGetSettingsUseCase {
@@ -31,11 +40,11 @@ export class GetSettingsUseCase implements IGetSettingsUseCase {
     }
 
     if (agentIdentifier && agentIdentifier.trim() !== '') {
-      if (!isValidRunner(agentIdentifier)) {
+      if (!isValidAgent(agentIdentifier)) {
         throw new HttpServerError(
           400,
           'INVALID_AGENT',
-          `Agent '${agentIdentifier}' is invalid. Valid agents: ${VALID_RUNNERS.join(', ')}`
+          `Agent '${agentIdentifier}' is invalid. Valid agents: ${ALL_VALID_AGENTS.join(', ')}`
         )
       }
     }
@@ -66,9 +75,12 @@ export class GetSettingsUseCase implements IGetSettingsUseCase {
     }
 
     if (agentIdentifier && agentIdentifier.trim() !== '') {
-      const cleanAgent = agentIdentifier.trim().toLowerCase()
-      if (settings[cleanAgent]) {
-        settings = { [cleanAgent]: settings[cleanAgent] }
+      const agentKey = normalizeAgentKey(agentIdentifier)
+      const rawKey = agentIdentifier.trim().toLowerCase()
+      if (settings[agentKey]) {
+        settings = { [agentKey]: settings[agentKey] }
+      } else if (settings[rawKey]) {
+        settings = { [rawKey]: settings[rawKey] }
       }
     }
 

@@ -17,14 +17,14 @@ describe('JobQueue', () => {
       jobId: 'q-1',
       status: 'queued',
       workspacePath: '/ws/1',
-      request: { scope: 's1' },
+      request: { idempotencyKey: 'id-q1', scope: 's1', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
     }
     const job2: OrchestrationJob = {
       jobId: 'q-2',
       status: 'queued',
       workspacePath: '/ws/2',
-      request: { scope: 's2' },
+      request: { idempotencyKey: 'id-q2', scope: 's2', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
     }
 
@@ -37,8 +37,8 @@ describe('JobQueue', () => {
   })
 
   it('UT-1.1.5: Reports queue position accurately', () => {
-    const job1: OrchestrationJob = { jobId: 'pos-1', status: 'queued', workspacePath: '/ws', request: { scope: 's' }, createdAt: '' }
-    const job2: OrchestrationJob = { jobId: 'pos-2', status: 'queued', workspacePath: '/ws', request: { scope: 's' }, createdAt: '' }
+    const job1: OrchestrationJob = { jobId: 'pos-1', status: 'queued', workspacePath: '/ws', request: { idempotencyKey: 'id-pos1', scope: 's', project: 'backend', agent: 'claude-cli' }, createdAt: '' }
+    const job2: OrchestrationJob = { jobId: 'pos-2', status: 'queued', workspacePath: '/ws', request: { idempotencyKey: 'id-pos2', scope: 's', project: 'backend', agent: 'claude-cli' }, createdAt: '' }
 
     queue.enqueue(job1)
     queue.enqueue(job2)
@@ -49,8 +49,8 @@ describe('JobQueue', () => {
   })
 
   it('UT-1.1.6: Skips locked workspaces when dequeuing available jobs', async () => {
-    const job1: OrchestrationJob = { jobId: 'lock-ws1', status: 'queued', workspacePath: '/ws/locked', request: { scope: 's' }, createdAt: '' }
-    const job2: OrchestrationJob = { jobId: 'free-ws2', status: 'queued', workspacePath: '/ws/free', request: { scope: 's' }, createdAt: '' }
+    const job1: OrchestrationJob = { jobId: 'lock-ws1', status: 'queued', workspacePath: '/ws/locked', request: { idempotencyKey: 'id-l1', scope: 's', project: 'backend', agent: 'claude-cli' }, createdAt: '' }
+    const job2: OrchestrationJob = { jobId: 'free-ws2', status: 'queued', workspacePath: '/ws/free', request: { idempotencyKey: 'id-f2', scope: 's', project: 'backend', agent: 'claude-cli' }, createdAt: '' }
 
     await lockManager.acquireLock('/ws/locked', 'existing-job')
 

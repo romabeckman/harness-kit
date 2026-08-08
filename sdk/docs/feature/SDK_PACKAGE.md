@@ -1,9 +1,15 @@
 ---
 doc_type: feature
 domain: package
-stack: [npm, TypeScript]
-depends_on: [SDK_CORE.md, SDK_STATE.md, SDK_AGENT_RUNNER.md, ARCHITECTURE.md]
-updated: 2026-08-04
+stack: [TypeScript, Node.js]
+node_id: "feature:sdk_package"
+tags: [package, npm, build, exports]
+edges:
+  - relation: implements
+    target: "adr:architecture"
+  - relation: tested_by
+    target: "adr:tests"
+updated: "2026-08-08"
 ---
 # SDK PACKAGE
 Defines the publication surface of `harness-kit-sdk` for npm.

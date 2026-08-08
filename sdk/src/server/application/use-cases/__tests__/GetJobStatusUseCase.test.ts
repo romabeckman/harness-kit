@@ -17,7 +17,7 @@ describe('GetJobStatusUseCase', () => {
       jobId: 'job-status-123',
       status: 'running',
       workspacePath: '/tmp/workspace',
-      request: { scope: 'test' },
+      request: { idempotencyKey: 'id-stat', scope: 'test', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
     }
     await jobStore.save(job)

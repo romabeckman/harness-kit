@@ -34,7 +34,7 @@ function ensureEnvLoaded(): void {
         }
       }
     }
-  } catch {}
+  } catch { }
 }
 
 export class DtoMappers {
@@ -58,6 +58,22 @@ export class DtoMappers {
       )
     }
 
+    if ((dto as any).branch !== undefined) {
+      throw new HttpServerError(
+        400,
+        'BRANCH_NOT_ALLOWED',
+        'The branch parameter cannot be set in HTTP request body. Branch name is auto-generated from jobId.'
+      )
+    }
+
+    if ((dto as any).skipDeploy !== undefined) {
+      throw new HttpServerError(
+        400,
+        'SKIP_DEPLOY_NOT_ALLOWED',
+        'The skipDeploy parameter cannot be set in HTTP request body.'
+      )
+    }
+
     if (dto.mode === 'deep_thinking') {
       throw new HttpServerError(
         400,
@@ -66,8 +82,26 @@ export class DtoMappers {
       )
     }
 
+    const idempotencyKey = dto.idempotencyKey
+    if (!idempotencyKey || typeof idempotencyKey !== 'string' || idempotencyKey.trim() === '') {
+      throw new HttpServerError(
+        400,
+        'MISSING_IDEMPOTENCY_KEY',
+        "Parameter 'idempotencyKey' is required and must be a non-empty string."
+      )
+    }
+
+    const scope = dto.scope
+    if (!scope || typeof scope !== 'string' || scope.trim() === '') {
+      throw new HttpServerError(
+        400,
+        'MISSING_SCOPE_PARAMETER',
+        "Parameter 'scope' is required and must be a non-empty string."
+      )
+    }
+
     const selectedAgent = dto.agent
-    if (!selectedAgent || selectedAgent.trim() === '') {
+    if (!selectedAgent || typeof selectedAgent !== 'string' || selectedAgent.trim() === '') {
       throw new HttpServerError(
         400,
         'MISSING_AGENT_PARAMETER',
@@ -87,17 +121,17 @@ export class DtoMappers {
       ? [resolve(overrideWorkspacePath)]
       : this.resolveWorkspacePaths(dto)
 
-    const rawMode = dto.mode ?? 'quick'
+    const rawMode = dto.mode ?? 'fast'
     const modeConfig = resolveMode(rawMode as any)
 
     return {
-      scope: dto.scope ?? '',
+      scope: scope.trim(),
       projectPaths: resolvedWorkspaces,
       complexity: modeConfig.complexity,
-      reworks: dto.reworks ?? 1,
+      reworks: dto.reworks ?? 2,
       skipValidation: dto.skipValidation ?? modeConfig.skipValidation,
       skipMemory: dto.skipMemory ?? modeConfig.skipMemory,
-      skipDeploy: dto.skipDeploy ?? false,
+      skipDeploy: false,
       enableRefinement: false,
     }
   }

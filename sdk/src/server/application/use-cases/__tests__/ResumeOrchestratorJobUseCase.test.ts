@@ -20,7 +20,7 @@ describe('ResumeOrchestratorJobUseCase', () => {
       jobId: 'failed-job-123',
       status: 'failed',
       workspacePath: '/tmp/workspace',
-      request: { scope: 'test-resume', action: 'reset' },
+      request: { idempotencyKey: 'id-res1', scope: 'test-resume', action: 'reset', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
       error: { code: 'TEST_ERR', message: 'Something went wrong' },
     }
@@ -42,7 +42,7 @@ describe('ResumeOrchestratorJobUseCase', () => {
       jobId: 'running-job-456',
       status: 'running',
       workspacePath: '/tmp/workspace',
-      request: { scope: 'test-running' },
+      request: { idempotencyKey: 'id-res2', scope: 'test-running', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
     }
     await jobStore.save(runningJob)

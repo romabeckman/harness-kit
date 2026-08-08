@@ -2,8 +2,14 @@
 doc_type: feature
 domain: agent_runner
 stack: [TypeScript, Node.js]
-depends_on: [ARCHITECTURE.md, TESTS.md]
-updated: 2026-08-04
+node_id: "feature:sdk_agent_runner"
+tags: [agent-runner, strategies, factory, runner]
+edges:
+  - relation: implements
+    target: "adr:architecture"
+  - relation: tested_by
+    target: "adr:tests"
+updated: "2026-08-08"
 ---
 # SDK AGENT RUNNER
 Provides a decoupled, pluggable architecture for executing coding agents.

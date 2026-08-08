@@ -2,8 +2,14 @@
 doc_type: feature
 domain: steering
 stack: [TypeScript, Node.js]
-depends_on: [SDK_CORE.md, SDK_AGENT_RUNNER.md, ARCHITECTURE.md]
-updated: 2026-08-04
+node_id: "feature:sdk_steering"
+tags: [steering, rules, directives, LLM]
+edges:
+  - relation: implements
+    target: "adr:architecture"
+  - relation: tested_by
+    target: "adr:tests"
+updated: "2026-08-08"
 ---
 # SDK STEERING
 Allows developers to inject runtime directives when resuming an orchestration session.

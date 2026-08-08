@@ -25,14 +25,27 @@ export class RunOrchestratorJobUseCase {
     // Validate path traversal & workspace permissions
     this.validatePathTraversal(body.project, workspacePaths)
 
+    // Check idempotencyKey uniqueness
+    if (body.idempotencyKey) {
+      const existingJob = await this.jobStore.findByIdempotencyKey(body.idempotencyKey)
+      if (existingJob) {
+        throw new HttpServerError(
+          409,
+          'DUPLICATE_IDEMPOTENCY_KEY',
+          `Duplicate idempotencyKey '${body.idempotencyKey}'. Job already exists with ID: ${existingJob.jobId}`
+        )
+      }
+    }
+
     const jobId = randomUUID()
     const createdAt = new Date().toISOString()
 
     const job: OrchestrationJob = {
       jobId,
+      idempotencyKey: body.idempotencyKey,
       status: 'queued',
       workspacePath,
-      request: body,
+      request: { ...body, action: 'reset' },
       createdAt,
     }
 

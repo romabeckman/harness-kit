@@ -29,6 +29,8 @@ export interface SyncWorkspaceResponseDto {
 }
 
 export class SyncWorkspaceRepositoryUseCase {
+  private static pendingSyncs = new Map<string, Promise<void>>()
+
   async execute(dto: SyncWorkspaceRequestDto): Promise<SyncWorkspaceResponseDto> {
     if (!dto.project || typeof dto.project !== 'string' || dto.project.trim() === '') {
       throw new HttpServerError(400, 'MISSING_PROJECT_PARAMETER', "Parameter 'project' is required.")
@@ -45,11 +47,20 @@ export class SyncWorkspaceRepositoryUseCase {
     }
 
     const targetBranch = envInfo.baseBranch ?? process.env.BASE_BRANCH ?? 'main'
-    const fetchRes = await execGit(['fetch', 'origin', targetBranch], workspacePath)
+    const syncKey = `${workspacePath}:${targetBranch}`
 
-    if (fetchRes.exitCode !== 0) {
-      // Fallback fetch all
-      await execGit(['fetch', '--all'], workspacePath)
+    // Schedule background non-blocking fetch with deduplication
+    if (!SyncWorkspaceRepositoryUseCase.pendingSyncs.has(syncKey)) {
+      const syncTask = (async () => {
+        const fetchRes = await execGit(['fetch', 'origin', targetBranch], workspacePath)
+        if (fetchRes.exitCode !== 0) {
+          await execGit(['fetch', '--all'], workspacePath)
+        }
+      })().finally(() => {
+        SyncWorkspaceRepositoryUseCase.pendingSyncs.delete(syncKey)
+      })
+
+      SyncWorkspaceRepositoryUseCase.pendingSyncs.set(syncKey, syncTask)
     }
 
     return {
@@ -59,5 +70,13 @@ export class SyncWorkspaceRepositoryUseCase {
       baseBranch: targetBranch,
       fetchedAt: new Date().toISOString(),
     }
+  }
+
+  static getActiveSyncsCount(): number {
+    return SyncWorkspaceRepositoryUseCase.pendingSyncs.size
+  }
+
+  static async awaitAllPendingSyncs(): Promise<void> {
+    await Promise.all(Array.from(SyncWorkspaceRepositoryUseCase.pendingSyncs.values()))
   }
 }

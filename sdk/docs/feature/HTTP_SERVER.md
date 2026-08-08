@@ -48,6 +48,8 @@ updated: 2026-08-07
     "src/server/adapters/outbound/auth/JwtAuthStrategy.ts",
     "src/server/adapters/outbound/auth/HmacAuthStrategy.ts",
     "src/server/adapters/outbound/auth/AuthStrategyFactory.ts",
+    "src/server/adapters/outbound/services/JobRunnerService.ts",
+    "src/server/adapters/outbound/services/AsyncWorkerPool.ts",
     "docker/entrypoint.sh",
     "Dockerfile",
     "docker-compose.yml"
@@ -56,6 +58,7 @@ updated: 2026-08-07
     "src/server/__tests__/types.test.ts",
     "src/server/__tests__/HttpServer.test.ts",
     "src/server/__tests__/DockerBuild.test.ts",
+    "src/server/adapters/outbound/services/__tests__/AsyncWorkerPool.test.ts",
     "src/server/adapters/outbound/auth/__tests__/AuthStrategies.test.ts",
     "src/server/application/use-cases/__tests__/GetJobStatusUseCase.test.ts",
     "src/server/application/use-cases/__tests__/GetHealthStatusUseCase.test.ts",
@@ -83,10 +86,11 @@ The `http_server` module acts as an Inbound Adapter in Hexagonal Architecture. I
 
 It includes automated Git workspace preparation: container pre-cloning via `docker/entrypoint.sh`, Just-In-Time (JIT) base branch fetching (`baseBranch`), worktree derivation off `origin/<baseBranch>`, and reactive git fetch synchronization via `POST /orchestrator/webhook/sync`.
 
-## MANDATORY RULES: PROJECT & AGENT PARAMETERS
+## MANDATORY RULES: PROJECT, AGENT & GIT PARAMETERS
 > [!IMPORTANT]
 > **1. Project Identifier Rule:** Clients MUST NEVER send internal server filesystem paths (e.g. `/workspaces/backend`). Clients MUST ONLY send registered project identifiers (e.g. `"project": "backend"` or `?project=backend`).  
-> **2. Agent Parameter Rule:** Clients MUST ALWAYS send a valid registered `agent` runner strategy when executing orchestration jobs or configuring settings.
+> **2. Agent Parameter Rule:** Clients MUST ALWAYS send a valid registered `agent` runner strategy when executing orchestration jobs or configuring settings.  
+> **3. Internal Git Management Rule:** Clients MUST NEVER pass `branch`, `baseBranch`, or `useWorktree` in request bodies. `branch` is automatically generated internally using `jobId` (`job-<jobId>`), `baseBranch` is retrieved from environment variables (`BASE_BRANCH`), and `useWorktree` is strictly `true` inside the application kernel.
 
 ### Registered Valid Agents (`src/agent-runner/`):
 - `claude-cli` (Anthropic Claude CLI agent)
@@ -133,13 +137,11 @@ Enqueues a background orchestration job. Returns `HTTP 202 Accepted` immediately
 - **Request Body** (`RunRequestDtoExtended`):
   ```json
   {
+    "idempotencyKey": "client_req_987654321",
     "scope": "implement-feature-x",
     "project": "backend",
     "agent": "claude-cli",
-    "branch": "feature/login-auth",
-    "baseBranch": "develop",
-    "mode": "fast",
-    "useWorktree": true
+    "mode": "fast"
   }
   ```
 - **Response Payload** (`HTTP 202 Accepted`):
@@ -154,13 +156,12 @@ Enqueues a background orchestration job. Returns `HTTP 202 Accepted` immediately
   ```
 
 ### 2. `POST /orchestrator/webhook/sync` & `POST /orchestrator/sync`
-Triggers an asynchronous `git fetch origin <baseBranch>` on the target registered project workspace path.
+Triggers an asynchronous `git fetch origin <baseBranch>` on the target registered project workspace path. Returns `HTTP 200 OK` immediately.
 
 - **Request Body**:
   ```json
   {
-    "project": "backend",
-    "baseBranch": "develop"
+    "project": "backend"
   }
   ```
 - **Response Payload** (`HTTP 200 OK`):
@@ -174,7 +175,27 @@ Triggers an asynchronous `git fetch origin <baseBranch>` on the target registere
   }
   ```
 
-### 3. `GET /orchestrator/status/:id`
+### 3. `POST /orchestrator/jobs/:id/resume`
+Resumes execution of a paused or failed orchestration job identified by `:id` (UUID). Returns `HTTP 202 Accepted` immediately.
+
+- **Request Body** (optional overrides):
+  ```json
+  {
+    "steeringMessage": "focus on fixing unit tests"
+  }
+  ```
+- **Response Payload** (`HTTP 202 Accepted`):
+  ```json
+  {
+    "jobId": "6c4e0d4a-5b12-4e9f-8671-123456789abc",
+    "status": "queued",
+    "workspacePath": "/workspaces/backend",
+    "enqueuedAt": "2026-08-06T17:55:00.000Z",
+    "statusUrl": "/orchestrator/status/6c4e0d4a-5b12-4e9f-8671-123456789abc"
+  }
+  ```
+
+### 4. `GET /orchestrator/status/:id`
 Retrieves execution state and progress of an orchestration job.
 
 - **Response Payload** (`HTTP 200 OK`):
@@ -189,7 +210,7 @@ Retrieves execution state and progress of an orchestration job.
   }
   ```
 
-### 4. `GET /orchestrator/settings?project=backend&agent=claude-cli`
+### 5. `GET /orchestrator/settings?project=backend&agent=claude-cli`
 Consults project-local model configuration from `.harness-kit/settings.json`. If the file does not exist in the target project, creates it with default settings.
 
 - **Query Parameters**:
@@ -210,38 +231,59 @@ Consults project-local model configuration from `.harness-kit/settings.json`. If
   }
   ```
 
-### 5. `POST /orchestrator/settings`
-Creates or updates model configuration in the project's local `.harness-kit/settings.json` file.
+### 6. `POST /orchestrator/settings`
+Creates or updates model configuration in the project's local `.harness-kit/settings.json` file. Supports exclusively the flat request format.
 
 - **Request Body**:
   ```json
   {
     "project": "backend",
-    "agent": "claude-cli",
-    "settings": {
-      "claude-cli": {
-        "timeoutMs": 90000,
-        "phases": { "PLANNING": { "timeoutMs": 30000 } }
-      }
-    }
+    "agent": "antigravity",
+    "timeoutMs": 1800000,
+    "phases": ["bootstrap", "planning", "implementation", "review_tl", "review_adv", "memory"],
+    "model": "gemini-3.1-flash-lite",
+    "effort": "high"
   }
   ```
 - **Response Payload** (`HTTP 200 OK`):
   ```json
   {
     "project": "backend",
-    "agent": "claude-cli",
-    "projectPath": "/workspaces/backend",
+    "agent": "antigravity",
     "settings": {
-      "claude-cli": {
-        "timeoutMs": 90000,
-        "phases": { "PLANNING": { "timeoutMs": 30000 } }
+      "antigravity": {
+        "timeoutMs": 1800000,
+        "phases": {
+          "bootstrap": { "model": "gemini-3.1-flash-lite", "effort": "high" },
+          "planning": { "model": "gemini-3.1-flash-lite", "effort": "high" },
+          "implementation": { "model": "gemini-3.1-flash-lite", "effort": "high" },
+          "review_tl": { "model": "gemini-3.1-flash-lite", "effort": "high" },
+          "review_adv": { "model": "gemini-3.1-flash-lite", "effort": "high" },
+          "memory": { "model": "gemini-3.1-flash-lite", "effort": "high" }
+        }
       }
     }
   }
   ```
 
-### 7. `GET /orchestrator/telemetry/tokens` & `GET /orchestrator/tokens`
+### 7. `DELETE /orchestrator/jobs/clean`
+Triggers an asynchronous background purge of completed job records and stale `.worktrees` directories.
+
+- **Request Body** (optional):
+  ```json
+  {
+    "maxAgeMs": 3600000
+  }
+  ```
+- **Response Payload** (`HTTP 200 OK`):
+  ```json
+  {
+    "purgedJobs": 2,
+    "cleanedWorktrees": 3
+  }
+  ```
+
+### 8. `GET /orchestrator/telemetry/tokens` & `GET /orchestrator/tokens`
 Retrieves token telemetry usage report with full audit traceability, period filtering, and pagination support.
 
 - **Query Parameters**:
@@ -307,7 +349,7 @@ Retrieves token telemetry usage report with full audit traceability, period filt
   }
   ```
 
-### 8. `GET /orchestrator/reports/summary`
+### 9. `GET /orchestrator/reports/summary`
 Exhibits consolidated cost view aggregated by Project, Model, and Agent within a target time window.
 
 - **Query Parameters**:
@@ -365,10 +407,25 @@ Exhibits consolidated cost view aggregated by Project, Model, and Agent within a
   }
   ```
 
-### 9. `GET /health`
+### 10. `GET /health`
 Liveness and readiness probe for container orchestrators (Kubernetes, Docker Swarm, ECS).
 
-### 10. `GET /docs` & `GET /docs/openapi.json`
+- **Response Payload** (`HTTP 200 OK`):
+  ```json
+  {
+    "status": "healthy",
+    "uptimeSeconds": 120,
+    "timestamp": "2026-08-06T12:00:00.000Z",
+    "activeJobs": 1,
+    "queuedJobs": 0,
+    "memoryUsage": {
+      "rssMb": 150.5,
+      "heapUsedMb": 85.2
+    }
+  }
+  ```
+
+### 11. `GET /docs` & `GET /docs/openapi.json`
 Interactive Swagger UI documentation page (`GET /docs`) and raw OpenAPI 3.0.3 specification JSON (`GET /docs/openapi.json`).
 
 ---
@@ -440,7 +497,7 @@ console.log(`Server running on port ${server.getPort()}`)
 await server.stop()
 
 # CORRECT: Client passes project identifier "backend" and agent "claude-cli"
-const payload = { scope: "build-feature", project: "backend", agent: "claude-cli", baseBranch: "develop" }
+const payload = { scope: "build-feature", project: "backend", agent: "claude-cli" }
 
 # WRONG: Omitting mandatory agent parameter
 // DtoMappers throws HTTP 400 Bad Request (MISSING_AGENT_PARAMETER)
@@ -453,7 +510,7 @@ const invalidPayload = { scope: "build", project: "backend" }
 REQUIRED: Clients MUST pass registered project identifiers (e.g. `"project": "backend"`) and valid agent runner (`"agent": "claude-cli"`).  
 REQUIRED: Use `DtoMappers` ACL to validate incoming payloads before queueing jobs.  
 REQUIRED: Settings MUST be persisted locally in the target project's `.harness-kit/settings.json` file.  
-REQUIRED: Ensure background jobs use isolated Git worktrees (`useWorktree: true` by default) off `origin/<baseBranch>` to allow parallel executions on the same repository.  
+REQUIRED: Background jobs automatically derive isolated Git worktrees (`useWorktree: true`) using internal branch naming (`job-<jobId>`) off `origin/<baseBranch>`. Clients MUST NOT pass `branch`, `baseBranch`, or `useWorktree` in request bodies.  
 PROHIBITED: Passing interactive stdin prompts (`refine: true` or `mode: "deep_thinking"`) in HTTP requests.
 
 ---

@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import { JobRunnerService } from '../JobRunnerService'
 import { InMemoryJobStore } from '../../repository/InMemoryJobStore'
 import { WorkspaceLockManager } from '../../mutex/WorkspaceLockManager'
@@ -47,7 +50,7 @@ describe('JobRunnerService', () => {
       jobId: 'job-lock-fail',
       status: 'queued',
       workspacePath: '/ws/busy',
-      request: { scope: 'test' },
+      request: { idempotencyKey: 'id-lock', scope: 'test', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
     }
     await jobStore.save(job)
@@ -60,34 +63,46 @@ describe('JobRunnerService', () => {
     expect(updated?.error?.code).toBe('LOCK_ACQUISITION_FAILED')
   })
 
+
+
   it('UT-1.3.5: Releases lock in finally block after execution', async () => {
-    const job: OrchestrationJob = {
-      jobId: 'job-finally',
-      status: 'queued',
-      workspacePath: process.cwd(),
-      request: { scope: 'test-finally' },
-      createdAt: new Date().toISOString(),
+    const testWs = mkdtempSync(join(tmpdir(), 'harness-test-'))
+    try {
+      const job: OrchestrationJob = {
+        jobId: 'job-finally',
+        status: 'queued',
+        workspacePath: testWs,
+        request: { idempotencyKey: 'id-fin', scope: 'test-finally', project: 'backend', agent: 'claude-cli' },
+        createdAt: new Date().toISOString(),
+      }
+      await jobStore.save(job)
+
+      await service.executeJob(job)
+
+      expect(await lockManager.isLocked(testWs)).toBe(false)
+    } finally {
+      rmSync(testWs, { recursive: true, force: true })
     }
-    await jobStore.save(job)
-
-    await service.executeJob(job)
-
-    expect(await lockManager.isLocked(process.cwd())).toBe(false)
   })
 
-  it('UT-1.3.6: Resolves baseBranch from environment variables and ignores request.baseBranch', () => {
-    process.env.PROJECT_MYAPP_PATH = process.cwd()
-    process.env.PROJECT_MYAPP_BASE_BRANCH = 'develop'
+  it('UT-1.3.7: Synchronizes telemetry tokens from worktree to main workspace', () => {
+    const mainWs = mkdtempSync(join(tmpdir(), 'harness-main-'))
+    const worktreeWs = mkdtempSync(join(tmpdir(), 'harness-worktree-'))
+    try {
+      const sourceDir = join(worktreeWs, 'docs', 'product')
+      mkdirSync(sourceDir, { recursive: true })
+      const sampleRecord = JSON.stringify({ model: 'claude-3-5-sonnet', inputTokens: 100, agent: 'claude-cli' }) + '\n'
+      writeFileSync(join(sourceDir, 'tokens.jsonl'), sampleRecord, 'utf-8')
 
-    const job: OrchestrationJob = {
-      jobId: 'job-env-branch',
-      status: 'queued',
-      workspacePath: process.cwd(),
-      request: { scope: 'test-env', project: 'myapp', baseBranch: 'ignored-branch' } as any,
-      createdAt: new Date().toISOString(),
+      ;(service as any).syncWorktreeTelemetry(worktreeWs, mainWs)
+
+      const mainFile = join(mainWs, 'docs', 'product', 'tokens.jsonl')
+      expect(existsSync(mainFile)).toBe(true)
+      const content = readFileSync(mainFile, 'utf-8')
+      expect(content).toContain('claude-3-5-sonnet')
+    } finally {
+      rmSync(mainWs, { recursive: true, force: true })
+      rmSync(worktreeWs, { recursive: true, force: true })
     }
-
-    const envInfo = (service as any).prepareWorkspaceGit ? undefined : undefined
-    // Verify that JobRunnerService uses envInfo.baseBranch ('develop') instead of 'ignored-branch'
   })
 })

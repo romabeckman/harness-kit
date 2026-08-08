@@ -2,8 +2,14 @@
 doc_type: feature
 domain: state
 stack: [TypeScript, Node.js]
-depends_on: [SDK_CORE.md, SDK_AGENT_RUNNER.md, ARCHITECTURE.md]
-updated: 2026-08-04
+node_id: "feature:sdk_state"
+tags: [state, file-state, mutations, markdown]
+edges:
+  - relation: implements
+    target: "adr:architecture"
+  - relation: tested_by
+    target: "adr:tests"
+updated: "2026-08-08"
 ---
 # SDK STATE
 Extends `FileStateManager` with high-level state mutation and query methods required by the orchestrator loop.

@@ -1,3 +1,14 @@
+---
+doc_type: adr
+domain: telemetry
+stack: [TypeScript, Node.js]
+node_id: "adr:telemetry"
+tags: [telemetry, ledger, tokens, costs]
+edges:
+  - relation: references
+    target: "adr:architecture"
+updated: "2026-08-08"
+---
 # Telemetry and Ledger
 Tracks token consumption, execution costs, and quota limits across agent run cycles.
 

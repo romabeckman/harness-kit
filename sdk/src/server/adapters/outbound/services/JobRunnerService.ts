@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, rmSync, copyFileSync, mkdirSync, readFileSync, appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
@@ -35,11 +35,14 @@ async function execGit(
   }
 }
 
+import { AsyncWorkerPool } from './AsyncWorkerPool'
+
 export interface JobRunnerServiceOptions {
   jobStore: JobStoreRepository
   lockManager: WorkspaceLockManager
   jobQueue: JobQueue
   agentRunner?: IAgentRunner
+  maxConcurrency?: number
 }
 
 export class JobRunnerService {
@@ -47,9 +50,7 @@ export class JobRunnerService {
   private lockManager: WorkspaceLockManager
   private jobQueue: JobQueue
   private agentRunner?: IAgentRunner
-  private isRunning = false
-  private isLoopProcessing = false
-  private workerListener?: () => void
+  private workerPool: AsyncWorkerPool
 
   constructor(
     jobStoreOrOptions: JobStoreRepository | JobRunnerServiceOptions,
@@ -62,12 +63,29 @@ export class JobRunnerService {
       this.lockManager = jobStoreOrOptions.lockManager
       this.jobQueue = jobStoreOrOptions.jobQueue
       this.agentRunner = jobStoreOrOptions.agentRunner
+      this.workerPool = new AsyncWorkerPool({
+        maxConcurrency: jobStoreOrOptions.maxConcurrency,
+        queue: this.jobQueue,
+        lockManager: this.lockManager,
+        jobStore: this.jobStore,
+      })
     } else {
       this.jobStore = jobStoreOrOptions
       this.lockManager = lockManager!
       this.jobQueue = jobQueue!
       this.agentRunner = options?.agentRunner
+      this.workerPool = new AsyncWorkerPool({
+        queue: this.jobQueue,
+        lockManager: this.lockManager,
+        jobStore: this.jobStore,
+      })
     }
+
+    this.workerPool.setJobProcessor((job) => this.executeJob(job))
+  }
+
+  getWorkerPool(): AsyncWorkerPool {
+    return this.workerPool
   }
 
   /**
@@ -91,6 +109,18 @@ export class JobRunnerService {
       const gitPrep = await this.prepareWorkspaceGit(job.workspacePath, job.request, job.jobId)
       const effectivePath = gitPrep.effectiveWorkspacePath
       createdWorktreePath = gitPrep.createdWorktreePath
+
+      if (createdWorktreePath && createdWorktreePath !== job.workspacePath) {
+        const rootSettingsFile = join(job.workspacePath, '.harness-kit', 'settings.json')
+        const worktreeSettingsDir = join(createdWorktreePath, '.harness-kit')
+        const worktreeSettingsFile = join(worktreeSettingsDir, 'settings.json')
+        if (existsSync(rootSettingsFile) && !existsSync(worktreeSettingsFile)) {
+          try {
+            mkdirSync(worktreeSettingsDir, { recursive: true })
+            copyFileSync(rootSettingsFile, worktreeSettingsFile)
+          } catch {}
+        }
+      }
 
       // Resolve action (reset vs resume) using FileStateManager if action is omitted (IT-2.3.2)
       let action = job.request.action
@@ -126,7 +156,7 @@ export class JobRunnerService {
       await orchestrator.run()
 
       // Commit and push completed changes before cleaning up worktree
-      const targetBranch = job.request.branch ?? `job-${job.jobId}`
+      const targetBranch = `job-${job.jobId}`
       await this.finalizeGitCommitPush(effectivePath, targetBranch, job.request.scope, job.jobId)
 
       await this.jobStore.updateStatus(job.jobId, 'completed')
@@ -136,6 +166,7 @@ export class JobRunnerService {
       await this.jobStore.updateStatus(job.jobId, 'failed', { code, message })
     } finally {
       if (createdWorktreePath) {
+        this.syncWorktreeTelemetry(createdWorktreePath, job.workspacePath)
         try {
           await execGit(['worktree', 'remove', '--force', createdWorktreePath], job.workspacePath)
           if (existsSync(createdWorktreePath)) {
@@ -145,6 +176,50 @@ export class JobRunnerService {
       }
       await this.lockManager.releaseLock(job.workspacePath, job.jobId)
       this.jobQueue.notifyLockReleased(job.workspacePath)
+    }
+  }
+
+  /**
+   * Synchronizes telemetry records from temporary worktree docs/product/tokens.jsonl to main workspace root.
+   */
+  private syncWorktreeTelemetry(worktreePath: string, mainWorkspacePath: string): void {
+    if (!worktreePath || worktreePath === mainWorkspacePath) return
+
+    const sourceFile = join(worktreePath, 'docs', 'product', 'tokens.jsonl')
+    if (!existsSync(sourceFile)) return
+
+    try {
+      const content = readFileSync(sourceFile, 'utf-8').trim()
+      if (!content) return
+
+      const mainDir = join(mainWorkspacePath, 'docs', 'product')
+      const mainFile = join(mainDir, 'tokens.jsonl')
+      if (!existsSync(mainDir)) {
+        mkdirSync(mainDir, { recursive: true })
+      }
+
+      const existingLines = new Set<string>()
+      if (existsSync(mainFile)) {
+        const existingContent = readFileSync(mainFile, 'utf-8')
+        for (const line of existingContent.split(/\r?\n/)) {
+          if (line.trim()) existingLines.add(line.trim())
+        }
+      }
+
+      const newLines: string[] = []
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim()
+        if (trimmed && !existingLines.has(trimmed)) {
+          newLines.push(trimmed)
+          existingLines.add(trimmed)
+        }
+      }
+
+      if (newLines.length > 0) {
+        appendFileSync(mainFile, newLines.join('\n') + '\n', 'utf-8')
+      }
+    } catch (err) {
+      console.warn(`Failed to sync worktree telemetry from ${sourceFile} to ${mainWorkspacePath}:`, err)
     }
   }
 
@@ -181,9 +256,9 @@ export class JobRunnerService {
       await execGit(['fetch', 'origin', baseBranch], workspacePath)
     }
 
+    const targetBranch = `job-${jobId}`
     if (useWorktree && existsSync(join(workspacePath, '.git'))) {
       const worktreePath = join(workspacePath, '.worktrees', jobId)
-      const targetBranch = request.branch ?? `job-${jobId}`
       let addRes = await execGit(
         ['worktree', 'add', '-B', targetBranch, worktreePath, `origin/${baseBranch}`],
         workspacePath
@@ -196,12 +271,12 @@ export class JobRunnerService {
       }
     }
 
-    if (request.branch && existsSync(workspacePath)) {
-      const checkoutRes = await execGit(['checkout', request.branch], workspacePath)
+    if (existsSync(workspacePath)) {
+      const checkoutRes = await execGit(['checkout', targetBranch], workspacePath)
       if (checkoutRes.exitCode !== 0) {
-        const createRes = await execGit(['checkout', '-B', request.branch], workspacePath)
+        const createRes = await execGit(['checkout', '-B', targetBranch], workspacePath)
         if (createRes.exitCode !== 0) {
-          throw new Error(`Git checkout failed for branch '${request.branch}': ${checkoutRes.stderr || createRes.stderr}`)
+          throw new Error(`Git checkout failed for branch '${targetBranch}': ${checkoutRes.stderr || createRes.stderr}`)
         }
       }
     }
@@ -250,46 +325,16 @@ export class JobRunnerService {
   }
 
   /**
-   * Starts the background worker loop to continuously dequeue and run jobs from JobQueue.
+   * Starts the background worker pool to continuously dequeue and run jobs.
    */
   startWorkerLoop(): void {
-    if (this.isRunning) return
-    this.isRunning = true
-
-    const processNext = async () => {
-      if (!this.isRunning || this.isLoopProcessing) return
-      this.isLoopProcessing = true
-
-      try {
-        const nextJob = await this.jobQueue.dequeueNextAvailable(this.lockManager)
-        if (nextJob) {
-          await this.executeJob(nextJob)
-          if (this.isRunning && this.jobQueue.size > 0) {
-            setImmediate(processNext)
-          }
-        }
-      } finally {
-        this.isLoopProcessing = false
-      }
-    }
-
-    this.workerListener = () => {
-      processNext()
-    }
-
-    this.jobQueue.on('workerNotify', this.workerListener)
-    processNext()
+    this.workerPool.start()
   }
 
   /**
-   * Stops the background worker loop.
+   * Stops the background worker pool.
    */
   stopWorkerLoop(): void {
-    this.isRunning = false
-    this.isLoopProcessing = false
-    if (this.workerListener) {
-      this.jobQueue.off('workerNotify', this.workerListener)
-      this.workerListener = undefined
-    }
+    this.workerPool.stop()
   }
 }

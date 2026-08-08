@@ -8,7 +8,7 @@ edges:
   - relation: tested_by
     target: "adr:tests"
     path: "./TESTS.md"
-updated: "2026-08-05"
+updated: "2026-08-08"
 ---
 # Arquitetura do Projeto
 

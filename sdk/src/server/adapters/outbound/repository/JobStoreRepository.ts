@@ -3,6 +3,7 @@ import type { OrchestrationJob, JobStatus } from '../../../domain/types'
 export interface JobStoreRepository {
   save(job: OrchestrationJob): Promise<void>
   findById(jobId: string): Promise<OrchestrationJob | null>
+  findByIdempotencyKey(idempotencyKey: string): Promise<OrchestrationJob | null>
   updateStatus(
     jobId: string,
     status: JobStatus,

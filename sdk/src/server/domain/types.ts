@@ -30,8 +30,21 @@ export interface OpenApiSpec {
     version: string
     description?: string
   }
+  tags?: Array<{ name: string; description?: string }>
   paths: Record<string, unknown>
   components: Record<string, Record<string, unknown>>
+}
+
+export class WorkerPoolConfig {
+  readonly maxConcurrency: number
+
+  constructor(options?: { maxConcurrency?: number }) {
+    const val = options?.maxConcurrency ?? 4
+    if (val < 1 || !Number.isInteger(val)) {
+      throw new HttpServerError(400, 'INVALID_CONCURRENCY', `maxConcurrency must be an integer >= 1, got ${val}`)
+    }
+    this.maxConcurrency = val
+  }
 }
 
 export class HttpServerError extends Error {
@@ -49,6 +62,7 @@ export class HttpServerError extends Error {
 
 export interface OrchestrationJob {
   jobId: string
+  idempotencyKey?: string
   status: JobStatus
   workspacePath: string
   request: RunRequestDtoExtended

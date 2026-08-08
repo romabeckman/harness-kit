@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { HttpServerError } from '../domain/types'
+import { HttpServerError, WorkerPoolConfig } from '../domain/types'
 import type { HttpServerConfig, HealthStatusVo, OpenApiSpec, OrchestrationJob, JobStatus } from '../domain/types'
 import type { RunRequestDto, RunRequestDtoExtended } from '../adapters/inbound/http/dto/RunRequestDto'
 import type { RunResponseDto } from '../adapters/inbound/http/dto/RunResponseDto'
@@ -80,6 +80,8 @@ describe('Server Types and DTOs', () => {
       expect(baseReq.mode).toBe('quick')
 
       const extReq: RunRequestDtoExtended = {
+        idempotencyKey: 'idemp-type-test',
+        scope: 'test',
         ...baseReq,
         project: ['backend'],
         steeringMessage: 'keep simple',
@@ -88,7 +90,6 @@ describe('Server Types and DTOs', () => {
         effort: 'high',
         skipValidation: true,
         skipMemory: true,
-        skipDeploy: true,
       }
       expect(extReq.skipValidation).toBe(true)
       expect(extReq.project).toEqual(['backend'])
@@ -128,11 +129,27 @@ describe('Server Types and DTOs', () => {
         jobId: 'job-101',
         status: 'queued',
         workspacePath: '/workspace/app',
-        request: { scope: 'build app' },
+        request: { idempotencyKey: 'id-job101', scope: 'build app', project: 'backend', agent: 'claude-cli' },
         createdAt: '2026-08-06T12:00:00.000Z',
       }
       expect(job.status).toBe('queued')
       expect(job.workspacePath).toBe('/workspace/app')
+    })
+  })
+
+  describe('WorkerPoolConfig', () => {
+    it('allows valid maxConcurrency >= 1', () => {
+      const config = new WorkerPoolConfig({ maxConcurrency: 4 })
+      expect(config.maxConcurrency).toBe(4)
+    })
+
+    it('defaults maxConcurrency to 4 if omitted', () => {
+      const config = new WorkerPoolConfig()
+      expect(config.maxConcurrency).toBe(4)
+    })
+
+    it('throws HttpServerError if maxConcurrency < 1', () => {
+      expect(() => new WorkerPoolConfig({ maxConcurrency: 0 })).toThrow()
     })
   })
 })

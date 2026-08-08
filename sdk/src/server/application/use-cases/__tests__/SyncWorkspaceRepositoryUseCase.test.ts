@@ -17,8 +17,9 @@ describe('SyncWorkspaceRepositoryUseCase', () => {
     }
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     process.env = { ...originalEnv }
+    await SyncWorkspaceRepositoryUseCase.awaitAllPendingSyncs()
     rmSync(testWorkspacePath, { recursive: true, force: true })
   })
 

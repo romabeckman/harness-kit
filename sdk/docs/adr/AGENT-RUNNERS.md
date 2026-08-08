@@ -1,3 +1,14 @@
+---
+doc_type: adr
+domain: agent_runner
+stack: [TypeScript, Node.js]
+node_id: "adr:agent_runners"
+tags: [agent-runner, strategies, factory, registry]
+edges:
+  - relation: references
+    target: "adr:architecture"
+updated: "2026-08-08"
+---
 # Agent Runners
 Decouples agent execution clients and strategies from the orchestrator engine.
 

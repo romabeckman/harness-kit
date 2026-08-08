@@ -2,8 +2,14 @@
 doc_type: feature
 domain: terminal_ui
 stack: [TypeScript, Node.js]
-depends_on: [ARCHITECTURE.md, SDK_CORE.md, SDK_STEERING.md]
-updated: 2026-08-04
+node_id: "feature:sdk_terminal_ui"
+tags: [ui, terminal, ansi, spinner]
+edges:
+  - relation: implements
+    target: "adr:architecture"
+  - relation: tested_by
+    target: "adr:tests"
+updated: "2026-08-08"
 ---
 # SDK TERMINAL UI
 Provides ANSI-based terminal rendering utilities for the CLI orchestrator.

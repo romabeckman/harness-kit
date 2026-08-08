@@ -2,8 +2,14 @@
 doc_type: feature
 domain: settings
 stack: [TypeScript, Node.js]
-depends_on: [ARCHITECTURE.md]
-updated: 2026-08-04
+node_id: "feature:sdk_settings"
+tags: [settings, schema, config, defaults]
+edges:
+  - relation: implements
+    target: "adr:architecture"
+  - relation: tested_by
+    target: "adr:tests"
+updated: "2026-08-08"
 ---
 # SDK SETTINGS
 Configure models and effort parameters per orchestration phase and agent runner.
