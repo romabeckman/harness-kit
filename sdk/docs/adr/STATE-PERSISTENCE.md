@@ -1,3 +1,14 @@
+---
+doc_type: adr
+domain: state
+stack: [TypeScript, Node.js]
+node_id: "adr:state_persistence"
+tags: [state, persistence, atomic, file-state]
+edges:
+  - relation: references
+    target: "adr:architecture"
+updated: "2026-08-08"
+---
 # State Persistence
 Governs localized file state mutations and data structures for features and tasks.
 

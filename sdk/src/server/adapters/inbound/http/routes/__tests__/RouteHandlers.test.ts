@@ -63,7 +63,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    const jsonBody = JSON.stringify({ scope: 'build-api', project: 'backend', agent: 'claude-cli', mode: 'fast' })
+    const jsonBody = JSON.stringify({ scope: 'build-api', project: 'backend', agent: 'claude-cli', mode: 'fast', idempotencyKey: 'idem-rh-1' })
 
     req.emit('data', Buffer.from(jsonBody))
     req.emit('end')
@@ -82,7 +82,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    req.emit('data', Buffer.from(JSON.stringify({ scope: 'test', project: 'backend' })))
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'test', project: 'backend', idempotencyKey: 'idem-rh-2' })))
     req.emit('end')
     await handlePromise
 
@@ -96,7 +96,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    req.emit('data', Buffer.from(JSON.stringify({ scope: 'test', project: 'backend', agent: 'invalid-agent' })))
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'test', project: 'backend', agent: 'invalid-agent', idempotencyKey: 'idem-rh-3' })))
     req.emit('end')
     await handlePromise
 
@@ -110,7 +110,7 @@ describe('RouteHandlers Integration Tests', () => {
     const resRun = new MockServerResponse()
 
     const runPromise = routeHandlers.handleRequest(reqRun as unknown as IncomingMessage, resRun as unknown as ServerResponse)
-    reqRun.emit('data', Buffer.from(JSON.stringify({ scope: 'status-test', project: 'backend', agent: 'claude-cli' })))
+    reqRun.emit('data', Buffer.from(JSON.stringify({ scope: 'status-test', project: 'backend', agent: 'claude-cli', idempotencyKey: 'idem-rh-4' })))
     reqRun.emit('end')
     await runPromise
 
@@ -230,7 +230,7 @@ describe('RouteHandlers Integration Tests', () => {
     const res = new MockServerResponse()
 
     const handlePromise = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
-    req.emit('data', Buffer.from(JSON.stringify({ scope: 'traversal-test', agent: 'claude-cli', project: ['../secret'] })))
+    req.emit('data', Buffer.from(JSON.stringify({ scope: 'traversal-test', agent: 'claude-cli', project: ['../secret'], idempotencyKey: 'idem-trav-1' })))
     req.emit('end')
     await handlePromise
 

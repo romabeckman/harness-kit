@@ -118,4 +118,22 @@ describe('InMemoryJobStore', () => {
     expect(await limitedStore.findById('j2')).not.toBeNull()
     expect(await limitedStore.findById('j3')).not.toBeNull()
   })
+
+  it('Finds job by idempotencyKey', async () => {
+    const job: OrchestrationJob = {
+      jobId: 'job-idem-1',
+      idempotencyKey: 'idem-key-999',
+      status: 'queued',
+      workspacePath: '/tmp/ws',
+      request: { scope: 'idem' },
+      createdAt: new Date().toISOString(),
+    }
+    await jobStore.save(job)
+    const found = await jobStore.findByIdempotencyKey('idem-key-999')
+    expect(found).not.toBeNull()
+    expect(found?.jobId).toBe('job-idem-1')
+    expect(found?.idempotencyKey).toBe('idem-key-999')
+
+    expect(await jobStore.findByIdempotencyKey('non-existent')).toBeNull()
+  })
 })

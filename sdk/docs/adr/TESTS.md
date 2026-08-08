@@ -8,7 +8,7 @@ edges:
   - relation: tests
     target: "adr:architecture"
     path: "./ARCHITECTURE.md"
-updated: "2026-08-05"
+updated: "2026-08-08"
 ---
 # Testing Protocol
 

@@ -2,8 +2,16 @@
 doc_type: feature
 domain: cli
 stack: [TypeScript, Node.js]
-depends_on: [SDK_SETTINGS.md, SDK_STEERING.md, SDK_CORE.md]
-updated: 2026-08-04
+node_id: "feature:sdk_cli"
+tags: [cli, hrns, runner]
+edges:
+  - relation: implements
+    target: "adr:architecture"
+  - relation: tested_by
+    target: "adr:tests"
+  - relation: depends_on
+    target: "feature:sdk_core"
+updated: "2026-08-08"
 ---
 # SDK CLI
 Provides the `hrns` command-line interface for launching and managing orchestration sessions.

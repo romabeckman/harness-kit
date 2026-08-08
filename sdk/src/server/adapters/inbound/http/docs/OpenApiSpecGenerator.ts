@@ -59,6 +59,16 @@ export class OpenApiSpecGenerator {
                   },
                 },
               },
+              '409': {
+                description: 'Duplicate idempotencyKey submitted',
+                content: {
+                  'application/json': {
+                    schema: {
+                      $ref: '#/components/schemas/HttpServerError',
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -565,7 +575,8 @@ export class OpenApiSpecGenerator {
           RunRequestDtoExtended: {
             type: 'object',
             properties: {
-              scope: { type: 'string' },
+              idempotencyKey: { type: 'string', description: 'Mandatory client-supplied unique request correlation ID' },
+              scope: { type: 'string', description: 'Mandatory target task scope prompt' },
               project: {
                 oneOf: [
                   { type: 'string', description: 'Registered project identifier' },
@@ -574,19 +585,16 @@ export class OpenApiSpecGenerator {
                 description: 'Mandatory registered project identifier or list of project identifiers (min 1 required)',
               },
               agent: { type: 'string', enum: [...VALID_RUNNER_TYPES], description: 'Mandatory registered agent runner strategy' },
-              mode: { type: 'string', enum: ['quick', 'fast', 'thinking', 'deep_thinking'] },
-              action: { type: 'string', enum: ['reset', 'resume'] },
-              score: { type: 'number' },
-              reworks: { type: 'integer' },
-              steeringMessage: { type: 'string' },
-              model: { type: 'string' },
-              effort: { type: 'string' },
-              skipValidation: { type: 'boolean' },
-              skipMemory: { type: 'boolean' },
-              skipDeploy: { type: 'boolean' },
-              branch: { type: 'string', description: 'Target Git branch to checkout prior to job execution' },
+              mode: { type: 'string', enum: ['quick', 'fast', 'thinking', 'deep_thinking'], default: 'fast', description: 'Execution mode strategy (default "fast")' },
+              action: { type: 'string', enum: ['reset', 'resume'], description: 'Execution action strategy (always "reset" on /orchestrator/run)' },
+              reworks: { type: 'integer', default: 2, description: 'Maximum rework attempts (default 2)' },
+              steeringMessage: { type: 'string', description: 'Optional initial steering guidance message' },
+              model: { type: 'string', description: 'Optional LLM model override string' },
+              effort: { type: 'string', description: 'Optional effort/reasoning intensity level' },
+              skipValidation: { type: 'boolean', default: false, description: 'Skip validation/review phase (default false)' },
+              skipMemory: { type: 'boolean', default: false, description: 'Skip project memory phase (default false)' },
             },
-            required: ['project', 'agent'],
+            required: ['idempotencyKey', 'scope', 'project', 'agent'],
           },
           RunResponseDto: {
             type: 'object',

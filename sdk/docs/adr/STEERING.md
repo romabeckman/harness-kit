@@ -1,3 +1,14 @@
+---
+doc_type: adr
+domain: steering
+stack: [TypeScript, Node.js]
+node_id: "adr:steering"
+tags: [steering, rules, rollback, overrides]
+edges:
+  - relation: references
+    target: "adr:architecture"
+updated: "2026-08-08"
+---
 # Session Steering
 Guides the runtime classification and application of developer steering overrides in the orchestration loop.
 

@@ -144,7 +144,7 @@ export class JobRunnerService {
       await orchestrator.run()
 
       // Commit and push completed changes before cleaning up worktree
-      const targetBranch = job.request.branch ?? `job-${job.jobId}`
+      const targetBranch = `job-${job.jobId}`
       await this.finalizeGitCommitPush(effectivePath, targetBranch, job.request.scope, job.jobId)
 
       await this.jobStore.updateStatus(job.jobId, 'completed')
@@ -201,7 +201,7 @@ export class JobRunnerService {
 
     if (useWorktree && existsSync(join(workspacePath, '.git'))) {
       const worktreePath = join(workspacePath, '.worktrees', jobId)
-      const targetBranch = request.branch ?? `job-${jobId}`
+      const targetBranch = `job-${jobId}`
       let addRes = await execGit(
         ['worktree', 'add', '-B', targetBranch, worktreePath, `origin/${baseBranch}`],
         workspacePath

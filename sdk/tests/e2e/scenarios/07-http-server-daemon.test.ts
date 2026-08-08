@@ -150,6 +150,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
 
     // 1. Enqueue Job using registered project identifier "backend" and agent "claude-cli"
     const runRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      idempotencyKey: 'e2e-run-1',
       scope: 'e2e-http-run-test',
       project: 'backend',
       agent: 'claude-cli',
@@ -254,7 +255,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test', project: 'backend', agent: 'claude-cli' },
+      { idempotencyKey: 'idem-b1', scope: 'test', project: 'backend', agent: 'claude-cli' },
       { Authorization: 'Bearer wrong_token' }
     )
     expect(invalidRes.statusCode).toBe(401)
@@ -264,7 +265,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test', project: 'backend', agent: 'claude-cli' },
+      { idempotencyKey: 'idem-b2', scope: 'test', project: 'backend', agent: 'claude-cli' },
       { Authorization: 'Bearer secret_e2e_bearer_123' }
     )
     expect(validBearerRes.statusCode).toBe(202)
@@ -274,7 +275,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test', project: 'backend', agent: 'claude-cli' },
+      { idempotencyKey: 'idem-b3', scope: 'test', project: 'backend', agent: 'claude-cli' },
       { 'X-API-Key': 'secret_e2e_bearer_123' }
     )
     expect(validApiKeyRes.statusCode).toBe(202)
@@ -290,7 +291,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     const port = server.getPort()
 
     // 1. Unauthenticated request -> HTTP 401 + WWW-Authenticate header
-    const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { scope: 'test', project: 'backend', agent: 'claude-cli' })
+    const unauthRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', { idempotencyKey: 'idem-ba1', scope: 'test', project: 'backend', agent: 'claude-cli' })
     expect(unauthRes.statusCode).toBe(401)
     expect(unauthRes.headers['www-authenticate']).toContain('Basic realm=')
 
@@ -300,7 +301,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'test', project: 'backend', agent: 'claude-cli' },
+      { idempotencyKey: 'idem-ba2', scope: 'test', project: 'backend', agent: 'claude-cli' },
       { Authorization: `Basic ${validCredentials}` }
     )
     expect(validRes.statusCode).toBe(202)
@@ -313,6 +314,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
 
     // Rejects missing project parameter
     const missingProjRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      idempotencyKey: 'idem-sg1',
       scope: 'test',
       agent: 'claude-cli',
     })
@@ -321,6 +323,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
 
     // Rejects unregistered project identifier
     const unregProjRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      idempotencyKey: 'idem-sg2',
       scope: 'test',
       project: 'unregistered_proj',
       agent: 'claude-cli',
@@ -330,6 +333,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
 
     // Rejects missing agent parameter
     const missingAgentRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      idempotencyKey: 'idem-sg3',
       scope: 'test',
       project: 'backend',
     })
@@ -338,6 +342,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
 
     // Rejects invalid agent parameter
     const invalidAgentRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      idempotencyKey: 'idem-sg4',
       scope: 'test',
       project: 'backend',
       agent: 'invalid-agent-name',
@@ -347,6 +352,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
 
     // Rejects refine: true
     const refineRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      idempotencyKey: 'idem-sg5',
       scope: 'test',
       project: 'backend',
       agent: 'claude-cli',
@@ -357,6 +363,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
 
     // Rejects mode: deep_thinking
     const deepRes = await makeHttpRequest(port, '/orchestrator/run', 'POST', {
+      idempotencyKey: 'idem-sg6',
       scope: 'test',
       project: 'backend',
       agent: 'claude-cli',
@@ -447,7 +454,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'jwt-test', project: 'backend', agent: 'claude-cli' },
+      { idempotencyKey: 'idem-jwt1', scope: 'jwt-test', project: 'backend', agent: 'claude-cli' },
       { Authorization: `Bearer ${validToken}` }
     )
     expect(validRes.statusCode).toBe(202)
@@ -458,7 +465,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'jwt-test', project: 'backend', agent: 'claude-cli' },
+      { idempotencyKey: 'idem-jwt2', scope: 'jwt-test', project: 'backend', agent: 'claude-cli' },
       { Authorization: `Bearer ${restrictedToken}` }
     )
     expect(forbiddenRes.statusCode).toBe(403)
@@ -469,7 +476,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       port,
       '/orchestrator/run',
       'POST',
-      { scope: 'jwt-test', project: 'backend', agent: 'claude-cli' },
+      { idempotencyKey: 'idem-jwt3', scope: 'jwt-test', project: 'backend', agent: 'claude-cli' },
       { Authorization: 'Bearer invalid.jwt.signature' }
     )
     expect(invalidRes.statusCode).toBe(401)
@@ -509,5 +516,29 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       { 'X-Signature-256': 'sha256=invalid_hmac_hash' }
     )
     expect(invalidRes.statusCode).toBe(401)
+  })
+
+  it('13. Idempotency Key Enforcement & Duplicate Request Rejection (HTTP 409 Conflict)', async () => {
+    server = new HttpServer({ port: 0, host: '127.0.0.1' })
+    await server.start()
+    const port = server.getPort()
+
+    const payload = {
+      idempotencyKey: 'unique-e2e-idem-999',
+      scope: 'idem-test',
+      project: 'backend',
+      agent: 'claude-cli',
+    }
+
+    // 1. Initial request with new idempotencyKey -> 202 Accepted
+    const res1 = await makeHttpRequest(port, '/orchestrator/run', 'POST', payload)
+    expect(res1.statusCode).toBe(202)
+    expect(res1.json.jobId).toBeDefined()
+
+    // 2. Duplicate request with same idempotencyKey -> 409 Conflict (DUPLICATE_IDEMPOTENCY_KEY)
+    const res2 = await makeHttpRequest(port, '/orchestrator/run', 'POST', payload)
+    expect(res2.statusCode).toBe(409)
+    expect(res2.json.code).toBe('DUPLICATE_IDEMPOTENCY_KEY')
+    expect(res2.json.message).toContain('unique-e2e-idem-999')
   })
 })

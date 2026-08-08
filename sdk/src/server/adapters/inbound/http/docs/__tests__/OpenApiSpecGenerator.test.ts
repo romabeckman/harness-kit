@@ -9,8 +9,13 @@ describe('OpenApiSpecGenerator', () => {
     expect(spec.paths['/orchestrator/run']).toBeDefined()
     expect(spec.paths['/orchestrator/webhook/sync']).toBeDefined()
     expect(spec.paths['/health']).toBeDefined()
-    expect((spec as any).components.schemas.RunRequestDtoExtended.properties.baseBranch).toBeUndefined()
-    expect((spec as any).components.schemas.RunRequestDtoExtended.properties.useWorktree).toBeUndefined()
+
+    const schema = (spec as any).components.schemas.RunRequestDtoExtended
+    expect(schema.required).toEqual(['idempotencyKey', 'scope', 'project', 'agent'])
+    expect(schema.properties.branch).toBeUndefined()
+    expect(schema.properties.skipDeploy).toBeUndefined()
+    expect(schema.properties.baseBranch).toBeUndefined()
+    expect(schema.properties.useWorktree).toBeUndefined()
   })
 
   it('Generates Swagger UI HTML template', () => {

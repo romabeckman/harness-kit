@@ -25,14 +25,30 @@ describe('RunOrchestratorJobUseCase', () => {
   })
 
   it('enqueues job and returns RunResponseDto with HTTP 202 structure', async () => {
-    const res = await useCase.execute({ scope: 'use-case-test', project: 'backend', agent: 'claude-cli', mode: 'fast' })
+    const res = await useCase.execute({ scope: 'use-case-test', project: 'backend', agent: 'claude-cli', mode: 'fast', idempotencyKey: 'idem-uc-1' })
     expect(res.jobId).toBeDefined()
     expect(res.status).toBe('queued')
     expect(res.statusUrl).toBe(`/orchestrator/status/${res.jobId}`)
 
     const storedJob = await jobStore.findById(res.jobId)
     expect(storedJob).not.toBeNull()
+    expect(storedJob?.idempotencyKey).toBe('idem-uc-1')
     expect(jobQueue.size).toBe(1)
+  })
+
+  it('throws HttpServerError(409 DUPLICATE_IDEMPOTENCY_KEY) when duplicate idempotencyKey is submitted', async () => {
+    await useCase.execute({ scope: 'first-req', project: 'backend', agent: 'claude-cli', idempotencyKey: 'dup-idem-key' })
+
+    await expect(
+      useCase.execute({ scope: 'second-req', project: 'backend', agent: 'claude-cli', idempotencyKey: 'dup-idem-key' })
+    ).rejects.toThrowError(HttpServerError)
+
+    try {
+      await useCase.execute({ scope: 'second-req', project: 'backend', agent: 'claude-cli', idempotencyKey: 'dup-idem-key' })
+    } catch (err: any) {
+      expect(err.statusCode).toBe(409)
+      expect(err.code).toBe('DUPLICATE_IDEMPOTENCY_KEY')
+    }
   })
 
   it('throws HttpServerError(400) when refine is passed', async () => {

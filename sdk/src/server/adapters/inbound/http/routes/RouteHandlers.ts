@@ -244,56 +244,13 @@ export class RouteHandlers {
       this.sendJson(res, 404, { error: 'Route not found', code: 'NOT_FOUND' })
     } catch (err: any) {
       if (err instanceof HttpServerError) {
-        this.sendJson(res, err.statusCode, { error: err.message, code: err.code })
+        this.sendJson(res, err.statusCode, { error: err.message, message: err.message, code: err.code })
       } else {
         const message = err instanceof Error ? err.message : String(err)
-        this.sendJson(res, 500, { error: message, code: 'INTERNAL_SERVER_ERROR' })
+        this.sendJson(res, 500, { error: message, message, code: 'INTERNAL_SERVER_ERROR' })
       }
     }
   }
-
-  private async handleRunJob(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const rawBody = await this.readBody(req)
-    let body: RunRequestDtoExtended
-    try {
-      body = JSON.parse(rawBody)
-    } catch {
-      throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in request')
-    }
-
-    const responseDto = await this.runJobUseCase.execute(body)
-    this.sendJson(res, 202, responseDto)
-  }
-
-  private async handleResumeJob(jobId: string, req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const rawBody = await this.readBody(req)
-    let overrides: Partial<RunRequestDtoExtended> = {}
-    if (rawBody && rawBody.trim().length > 0) {
-      try {
-        overrides = JSON.parse(rawBody)
-      } catch {
-        throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in resume request')
-      }
-    }
-
-    const responseDto = await this.resumeJobUseCase.execute(jobId, overrides)
-    this.sendJson(res, 202, responseDto)
-  }
-
-  private async handleCleanJobs(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const rawBody = await this.readBody(req)
-    let maxAgeMs = 0
-    if (rawBody && rawBody.trim().length > 0) {
-      try {
-        const parsed = JSON.parse(rawBody)
-        if (typeof parsed.maxAgeMs === 'number') maxAgeMs = parsed.maxAgeMs
-      } catch {}
-    }
-
-    const cleanResult = await this.cleanUseCase.execute(maxAgeMs)
-    this.sendJson(res, 200, cleanResult)
-  }
-
   private async handleGetSettings(projectIdentifier: string | undefined, agentIdentifier: string | undefined, res: ServerResponse): Promise<void> {
     const result = await this.getSettingsUseCase.execute(projectIdentifier, agentIdentifier)
     this.sendJson(res, 200, result)
@@ -319,24 +276,6 @@ export class RouteHandlers {
     this.sendJson(res, 200, result)
   }
 
-  private async handleUpdateSettings(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const rawBody = await this.readBody(req)
-    let parsed: any
-    try {
-      parsed = JSON.parse(rawBody)
-    } catch {
-      throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in settings request')
-    }
-
-    const project = typeof parsed.project === 'string' ? parsed.project : undefined
-    const agent = typeof parsed.agent === 'string' ? parsed.agent : undefined
-
-    const settingsPayload = parsed.settings ?? (parsed.project ? { ...parsed, project: undefined, agent: undefined } : parsed)
-
-    const result = await this.updateSettingsUseCase.execute(settingsPayload, project, agent)
-    this.sendJson(res, 200, result)
-  }
-
   private async handleGetJobStatus(jobId: string, res: ServerResponse): Promise<void> {
     const statusDto = await this.getStatusUseCase.execute(jobId)
     this.sendJson(res, 200, statusDto)
@@ -359,19 +298,6 @@ export class RouteHandlers {
   private handleDocsJson(res: ServerResponse): void {
     const spec = this.docsUseCase.getSpec()
     this.sendJson(res, 200, spec)
-  }
-
-  private async handleSyncWorkspace(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const rawBody = await this.readBody(req)
-    let body: { project: string }
-    try {
-      body = JSON.parse(rawBody || '{}')
-    } catch {
-      throw new HttpServerError(400, 'INVALID_JSON', 'Invalid JSON body in sync request')
-    }
-
-    const result = await this.syncUseCase.execute(body)
-    this.sendJson(res, 200, result)
   }
 
   private async authenticateAndAuthorize(

@@ -18,11 +18,11 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
 
   it('UT-1.2.6: Rejects refine with HttpServerError(400)', () => {
     expect(() =>
-      DtoMappers.toOrchestratorConfig({ scope: 'test', agent: 'claude-cli', refine: true } as any)
+      DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', scope: 'test', project: 'backend', agent: 'claude-cli', refine: true } as any)
     ).toThrowError(HttpServerError)
 
     try {
-      DtoMappers.toOrchestratorConfig({ scope: 'test', agent: 'claude-cli', refine: true } as any)
+      DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', scope: 'test', project: 'backend', agent: 'claude-cli', refine: true } as any)
     } catch (err: any) {
       expect(err.statusCode).toBe(400)
       expect(err.code).toBe('REFINE_NOT_ALLOWED')
@@ -31,11 +31,11 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
 
   it('UT-1.2.7: Rejects mode: "deep_thinking" with HttpServerError(400)', () => {
     expect(() =>
-      DtoMappers.toOrchestratorConfig({ scope: 'test', mode: RunMode.DEEP_THINKING })
+      DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', scope: 'test', project: 'backend', agent: 'claude-cli', mode: RunMode.DEEP_THINKING })
     ).toThrowError(HttpServerError)
 
     try {
-      DtoMappers.toOrchestratorConfig({ scope: 'test', mode: RunMode.DEEP_THINKING })
+      DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', scope: 'test', project: 'backend', agent: 'claude-cli', mode: RunMode.DEEP_THINKING })
     } catch (err: any) {
       expect(err.statusCode).toBe(400)
       expect(err.code).toBe('INTERACTIVE_MODE_NOT_ALLOWED')
@@ -44,11 +44,11 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
 
   it('UT-1.2.8: Maps mode ("quick", "fast", "thinking") to OrchestratorConfig using resolveMode', () => {
     process.env.PROJECT_BACKEND_PATH = '/tmp/backend'
-    const quickConfig = DtoMappers.toOrchestratorConfig({ scope: 'quick-test', project: 'backend', agent: 'claude-cli', mode: 'quick' })
+    const quickConfig = DtoMappers.toOrchestratorConfig({ scope: 'quick-test', project: 'backend', agent: 'claude-cli', mode: 'quick', idempotencyKey: 'idem-1' })
     expect(quickConfig.skipValidation).toBe(true)
     expect(quickConfig.skipMemory).toBe(true)
 
-    const fastConfig = DtoMappers.toOrchestratorConfig({ scope: 'fast-test', project: 'backend', agent: 'claude-cli', mode: 'fast' })
+    const fastConfig = DtoMappers.toOrchestratorConfig({ scope: 'fast-test', project: 'backend', agent: 'claude-cli', mode: 'fast', idempotencyKey: 'idem-2' })
     expect(fastConfig.complexity).toBe('LOW')
     expect(fastConfig.skipValidation).toBe(false)
   })
@@ -96,6 +96,25 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
     expect(envResolved?.gitUrl).toBe('https://github.com/org/backend.git')
   })
 
+  it('Rejects missing or empty idempotencyKey parameter with HttpServerError(400)', () => {
+    process.env.PROJECT_BACKEND_PATH = '/tmp/backend'
+
+    expect(() =>
+      DtoMappers.toOrchestratorConfig({ scope: 'test', project: 'backend', agent: 'claude-cli' })
+    ).toThrowError(HttpServerError)
+
+    try {
+      DtoMappers.toOrchestratorConfig({ scope: 'test', project: 'backend', agent: 'claude-cli' })
+    } catch (err: any) {
+      expect(err.statusCode).toBe(400)
+      expect(err.code).toBe('MISSING_IDEMPOTENCY_KEY')
+    }
+
+    expect(() =>
+      DtoMappers.toOrchestratorConfig({ scope: 'test', project: 'backend', agent: 'claude-cli', idempotencyKey: '   ' })
+    ).toThrowError(HttpServerError)
+  })
+
   it('UT-1.2.11: Resolves baseBranch from PROJECT_MAPPINGS or PROJECT_<NAME>_BASE_BRANCH env var', () => {
     process.env.PROJECT_MAPPINGS = JSON.stringify({
       backend: { path: '/workspaces/backend-repo', gitUrl: 'https://github.com/org/backend.git', baseBranch: 'develop' },
@@ -110,5 +129,55 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
 
     const envPrefixResolved = DtoMappers.resolveProjectFromEnv('frontend')
     expect(envPrefixResolved?.baseBranch).toBe('release/v1.0')
+  })
+
+  it('Rejects missing scope parameter with HttpServerError(400)', () => {
+    process.env.PROJECT_BACKEND_PATH = '/tmp/backend'
+    expect(() =>
+      DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', project: 'backend', agent: 'claude-cli' } as any)
+    ).toThrowError(HttpServerError)
+
+    try {
+      DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', project: 'backend', agent: 'claude-cli' } as any)
+    } catch (err: any) {
+      expect(err.statusCode).toBe(400)
+      expect(err.code).toBe('MISSING_SCOPE_PARAMETER')
+    }
+  })
+
+  it('Rejects branch parameter with HttpServerError(400)', () => {
+    process.env.PROJECT_BACKEND_PATH = '/tmp/backend'
+    expect(() =>
+      DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', scope: 'test', project: 'backend', agent: 'claude-cli', branch: 'feat/test' } as any)
+    ).toThrowError(HttpServerError)
+
+    try {
+      DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', scope: 'test', project: 'backend', agent: 'claude-cli', branch: 'feat/test' } as any)
+    } catch (err: any) {
+      expect(err.statusCode).toBe(400)
+      expect(err.code).toBe('BRANCH_NOT_ALLOWED')
+    }
+  })
+
+  it('Rejects skipDeploy parameter with HttpServerError(400)', () => {
+    process.env.PROJECT_BACKEND_PATH = '/tmp/backend'
+    expect(() =>
+      DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', scope: 'test', project: 'backend', agent: 'claude-cli', skipDeploy: true } as any)
+    ).toThrowError(HttpServerError)
+
+    try {
+      DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', scope: 'test', project: 'backend', agent: 'claude-cli', skipDeploy: true } as any)
+    } catch (err: any) {
+      expect(err.statusCode).toBe(400)
+      expect(err.code).toBe('SKIP_DEPLOY_NOT_ALLOWED')
+    }
+  })
+
+  it('Applies default values: reworks=2, mode=fast, skipDeploy=false', () => {
+    process.env.PROJECT_BACKEND_PATH = '/tmp/backend'
+    const config = DtoMappers.toOrchestratorConfig({ idempotencyKey: 'idem-1', scope: 'my-scope', project: 'backend', agent: 'claude-cli' })
+    expect(config.reworks).toBe(2)
+    expect(config.skipDeploy).toBe(false)
+    expect(config.complexity).toBe('LOW') // default mode 'fast' maps complexity to LOW
   })
 })

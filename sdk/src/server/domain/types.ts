@@ -61,6 +61,7 @@ export class HttpServerError extends Error {
 
 export interface OrchestrationJob {
   jobId: string
+  idempotencyKey?: string
   status: JobStatus
   workspacePath: string
   request: RunRequestDtoExtended

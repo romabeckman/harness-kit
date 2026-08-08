@@ -6,15 +6,14 @@ export interface RunRequestDto extends Partial<OrchestratorConfig> {
 }
 
 export interface RunRequestDtoExtended extends RunRequestDto {
-  scope?: string
+  idempotencyKey: string
+  scope: string
+  project: string | string[]
+  agent: string
   reworks?: number
   steeringMessage?: string
-  agent?: string
   model?: string
   effort?: string
   skipValidation?: boolean
   skipMemory?: boolean
-  skipDeploy?: boolean
-  branch?: string
-  project?: string | string[]
 }

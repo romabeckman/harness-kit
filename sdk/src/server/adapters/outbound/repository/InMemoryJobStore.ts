@@ -42,6 +42,16 @@ export class InMemoryJobStore implements JobStoreRepository {
     return JSON.parse(JSON.stringify(job))
   }
 
+  async findByIdempotencyKey(idempotencyKey: string): Promise<OrchestrationJob | null> {
+    if (!idempotencyKey || typeof idempotencyKey !== 'string') return null
+    for (const job of this.jobs.values()) {
+      if (job.idempotencyKey === idempotencyKey || job.request?.idempotencyKey === idempotencyKey) {
+        return JSON.parse(JSON.stringify(job))
+      }
+    }
+    return null
+  }
+
   async updateStatus(
     jobId: string,
     status: JobStatus,
