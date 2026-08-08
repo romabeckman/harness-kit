@@ -149,9 +149,10 @@ describe('RouteHandlers Integration Tests', () => {
     const jsonBody = JSON.stringify({
       project: 'backend',
       agent: 'claude-cli',
-      settings: {
-        'claude-cli': { timeoutMs: 45000 },
-      },
+      timeoutMs: 45000,
+      phases: ['bootstrap', 'planning', 'implementation', 'review_tl', 'review_adv', 'memory'],
+      model: 'anthropic.claude-5-sonnet',
+      effort: 'high',
     })
 
     req.emit('data', Buffer.from(jsonBody))
@@ -160,7 +161,7 @@ describe('RouteHandlers Integration Tests', () => {
 
     expect(res.statusCode).toBe(200)
     const parsed = JSON.parse(res.body)
-    expect(parsed.settings['claude-cli']?.timeoutMs).toBe(45000)
+    expect(parsed.settings['claude']?.timeoutMs).toBe(45000)
   })
 
   it('IT-2.2.3: GET /health -> 200 OK', async () => {

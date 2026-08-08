@@ -232,31 +232,35 @@ Consults project-local model configuration from `.harness-kit/settings.json`. If
   ```
 
 ### 6. `POST /orchestrator/settings`
-Creates or updates model configuration in the project's local `.harness-kit/settings.json` file.
+Creates or updates model configuration in the project's local `.harness-kit/settings.json` file. Supports exclusively the flat request format.
 
 - **Request Body**:
   ```json
   {
     "project": "backend",
-    "agent": "claude-cli",
-    "settings": {
-      "claude-cli": {
-        "timeoutMs": 90000,
-        "phases": { "PLANNING": { "timeoutMs": 30000 } }
-      }
-    }
+    "agent": "antigravity",
+    "timeoutMs": 1800000,
+    "phases": ["bootstrap", "planning", "implementation", "review_tl", "review_adv", "memory"],
+    "model": "gemini-3.1-flash-lite",
+    "effort": "high"
   }
   ```
 - **Response Payload** (`HTTP 200 OK`):
   ```json
   {
     "project": "backend",
-    "agent": "claude-cli",
-    "projectPath": "/workspaces/backend",
+    "agent": "antigravity",
     "settings": {
-      "claude-cli": {
-        "timeoutMs": 90000,
-        "phases": { "PLANNING": { "timeoutMs": 30000 } }
+      "antigravity": {
+        "timeoutMs": 1800000,
+        "phases": {
+          "bootstrap": { "model": "gemini-3.1-flash-lite", "effort": "high" },
+          "planning": { "model": "gemini-3.1-flash-lite", "effort": "high" },
+          "implementation": { "model": "gemini-3.1-flash-lite", "effort": "high" },
+          "review_tl": { "model": "gemini-3.1-flash-lite", "effort": "high" },
+          "review_adv": { "model": "gemini-3.1-flash-lite", "effort": "high" },
+          "memory": { "model": "gemini-3.1-flash-lite", "effort": "high" }
+        }
       }
     }
   }

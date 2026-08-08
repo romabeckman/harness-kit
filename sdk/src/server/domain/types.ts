@@ -30,6 +30,7 @@ export interface OpenApiSpec {
     version: string
     description?: string
   }
+  tags?: Array<{ name: string; description?: string }>
   paths: Record<string, unknown>
   components: Record<string, Record<string, unknown>>
 }

@@ -393,21 +393,20 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
     const localSettingsFile = join(tempDir, '.harness-kit', 'settings.json')
     expect(existsSync(localSettingsFile)).toBe(true)
 
-    // 2. POST settings with { "project": "backend", "agent": "claude-cli", "settings": { ... } }
+    // 2. POST settings with flat payload format
     const postRes = await makeHttpRequest(port, '/orchestrator/settings', 'POST', {
       project: 'backend',
       agent: 'claude-cli',
-      settings: {
-        'claude-cli': {
-          timeoutMs: 120000,
-        },
-      },
+      timeoutMs: 120000,
+      phases: ['bootstrap', 'planning', 'implementation', 'review_tl', 'review_adv', 'memory'],
+      model: 'anthropic.claude-5-sonnet',
+      effort: 'high',
     })
     expect(postRes.statusCode).toBe(200)
-    expect(postRes.json.settings['claude-cli']?.timeoutMs).toBe(120000)
+    expect(postRes.json.settings['claude']?.timeoutMs).toBe(120000)
 
     const updatedContent = JSON.parse(readFileSync(localSettingsFile, 'utf-8'))
-    expect(updatedContent['claude-cli']?.timeoutMs).toBe(120000)
+    expect(updatedContent['claude']?.timeoutMs).toBe(120000)
 
     // 3. Unregistered project identifier -> HTTP 400
     const unregRes = await makeHttpRequest(port, '/orchestrator/settings?project=unknown_proj')

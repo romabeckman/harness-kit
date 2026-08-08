@@ -6,3 +6,4 @@
 - ALWAYS run `npm run build` before `npm run typecheck`
 - ALWAYS run `npm run typecheck` before `npm run test`
 - ALWAYS use Portuguese in your answers and write code and documentation (comments, docstrings, etc.) in English
+- ALWAYS verify if `OpenApiSpecGenerator.ts` is updated after changes in `src/server` with endpoint changes.
