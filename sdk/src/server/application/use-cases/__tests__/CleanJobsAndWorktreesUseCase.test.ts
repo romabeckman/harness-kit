@@ -17,7 +17,7 @@ describe('CleanJobsAndWorktreesUseCase', () => {
       jobId: 'completed-101',
       status: 'completed',
       workspacePath: process.cwd(),
-      request: { scope: 'clean-test' },
+      request: { idempotencyKey: 'id-clean', scope: 'clean-test', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
       completedAt: new Date().toISOString(),
     }

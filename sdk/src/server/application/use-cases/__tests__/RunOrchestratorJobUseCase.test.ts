@@ -56,14 +56,14 @@ describe('RunOrchestratorJobUseCase', () => {
   })
 
   it('throws HttpServerError(400) when mode is deep_thinking', async () => {
-    await expect(useCase.execute({ scope: 'deep-test', project: 'backend', agent: 'claude-cli', mode: 'deep_thinking' })).rejects.toThrowError(HttpServerError)
+    await expect(useCase.execute({ scope: 'deep-test', project: 'backend', agent: 'claude-cli', mode: 'deep_thinking' } as any)).rejects.toThrowError(HttpServerError)
   })
 
   it('throws HttpServerError(400) when path traversal detected in project', async () => {
-    await expect(useCase.execute({ scope: 'traversal-test', project: ['../secret'], agent: 'claude-cli' })).rejects.toThrowError(HttpServerError)
+    await expect(useCase.execute({ scope: 'traversal-test', project: ['../secret'], agent: 'claude-cli' } as any)).rejects.toThrowError(HttpServerError)
   })
 
   it('throws HttpServerError(400) when project parameter is missing or empty', async () => {
-    await expect(useCase.execute({ scope: 'no-proj-test', agent: 'claude-cli' })).rejects.toThrowError(HttpServerError)
+    await expect(useCase.execute({ scope: 'no-proj-test', agent: 'claude-cli' } as any)).rejects.toThrowError(HttpServerError)
   })
 })

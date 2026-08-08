@@ -28,6 +28,8 @@ describe('AsyncWorkerPool', () => {
     expect(workerPool.activeCount).toBe(0)
   })
 
+  const dummyReq = { idempotencyKey: 'idemp-worker', scope: 'task 1', project: 'backend', agent: 'claude-cli' }
+
   it('executes jobs on distinct workspaces concurrently up to maxConcurrency', async () => {
     const executedJobs: string[] = []
     
@@ -40,14 +42,14 @@ describe('AsyncWorkerPool', () => {
       jobId: 'pool-j1',
       status: 'queued',
       workspacePath: '/ws/alpha',
-      request: { scope: 'task 1' },
+      request: dummyReq,
       createdAt: new Date().toISOString(),
     }
     const job2: OrchestrationJob = {
       jobId: 'pool-j2',
       status: 'queued',
       workspacePath: '/ws/beta',
-      request: { scope: 'task 2' },
+      request: dummyReq,
       createdAt: new Date().toISOString(),
     }
 
@@ -75,14 +77,14 @@ describe('AsyncWorkerPool', () => {
       jobId: 'same-ws-1',
       status: 'queued',
       workspacePath: '/ws/alpha',
-      request: { scope: 'task 1' },
+      request: dummyReq,
       createdAt: new Date().toISOString(),
     }
     const job2: OrchestrationJob = {
       jobId: 'diff-ws-2',
       status: 'queued',
       workspacePath: '/ws/gamma',
-      request: { scope: 'task 2' },
+      request: dummyReq,
       createdAt: new Date().toISOString(),
     }
 

@@ -58,11 +58,11 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
       src: './src',
       other: './other',
     })
-    const resolvedPath = DtoMappers.resolveWorkspacePath({ project: ['src'] })
+    const resolvedPath = DtoMappers.resolveWorkspacePath({ project: ['src'] } as any)
     expect(resolvedPath).toContain('src')
     expect(resolvedPath.length).toBeGreaterThan(5)
 
-    const resolvedPaths = DtoMappers.resolveWorkspacePaths({ project: ['src', 'other'] })
+    const resolvedPaths = DtoMappers.resolveWorkspacePaths({ project: ['src', 'other'] } as any)
     expect(resolvedPaths.length).toBe(2)
     expect(resolvedPaths[0]).toContain('src')
     expect(resolvedPaths[1]).toContain('other')
@@ -70,15 +70,15 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
 
   it('Rejects missing or empty project parameter with HttpServerError(400)', () => {
     expect(() =>
-      DtoMappers.toOrchestratorConfig({ scope: 'test', agent: 'claude-cli' })
+      DtoMappers.toOrchestratorConfig({ scope: 'test', agent: 'claude-cli' } as any)
     ).toThrowError(HttpServerError)
 
     expect(() =>
-      DtoMappers.resolveWorkspacePaths({ project: [] })
+      DtoMappers.resolveWorkspacePaths({ project: [] } as any)
     ).toThrowError(HttpServerError)
 
     try {
-      DtoMappers.resolveWorkspacePaths({ project: [] })
+      DtoMappers.resolveWorkspacePaths({ project: [] } as any)
     } catch (err: any) {
       expect(err.statusCode).toBe(400)
       expect(err.code).toBe('MISSING_PROJECT_PARAMETER')
@@ -100,18 +100,18 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
     process.env.PROJECT_BACKEND_PATH = '/tmp/backend'
 
     expect(() =>
-      DtoMappers.toOrchestratorConfig({ scope: 'test', project: 'backend', agent: 'claude-cli' })
+      DtoMappers.toOrchestratorConfig({ scope: 'test', project: 'backend', agent: 'claude-cli' } as any)
     ).toThrowError(HttpServerError)
 
     try {
-      DtoMappers.toOrchestratorConfig({ scope: 'test', project: 'backend', agent: 'claude-cli' })
+      DtoMappers.toOrchestratorConfig({ scope: 'test', project: 'backend', agent: 'claude-cli' } as any)
     } catch (err: any) {
       expect(err.statusCode).toBe(400)
       expect(err.code).toBe('MISSING_IDEMPOTENCY_KEY')
     }
 
     expect(() =>
-      DtoMappers.toOrchestratorConfig({ scope: 'test', project: 'backend', agent: 'claude-cli', idempotencyKey: '   ' })
+      DtoMappers.toOrchestratorConfig({ scope: 'test', project: 'backend', agent: 'claude-cli', idempotencyKey: '   ' } as any)
     ).toThrowError(HttpServerError)
   })
 

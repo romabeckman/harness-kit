@@ -199,9 +199,9 @@ export class JobRunnerService {
       await execGit(['fetch', 'origin', baseBranch], workspacePath)
     }
 
+    const targetBranch = `job-${jobId}`
     if (useWorktree && existsSync(join(workspacePath, '.git'))) {
       const worktreePath = join(workspacePath, '.worktrees', jobId)
-      const targetBranch = `job-${jobId}`
       let addRes = await execGit(
         ['worktree', 'add', '-B', targetBranch, worktreePath, `origin/${baseBranch}`],
         workspacePath
@@ -214,12 +214,12 @@ export class JobRunnerService {
       }
     }
 
-    if (request.branch && existsSync(workspacePath)) {
-      const checkoutRes = await execGit(['checkout', request.branch], workspacePath)
+    if (existsSync(workspacePath)) {
+      const checkoutRes = await execGit(['checkout', targetBranch], workspacePath)
       if (checkoutRes.exitCode !== 0) {
-        const createRes = await execGit(['checkout', '-B', request.branch], workspacePath)
+        const createRes = await execGit(['checkout', '-B', targetBranch], workspacePath)
         if (createRes.exitCode !== 0) {
-          throw new Error(`Git checkout failed for branch '${request.branch}': ${checkoutRes.stderr || createRes.stderr}`)
+          throw new Error(`Git checkout failed for branch '${targetBranch}': ${checkoutRes.stderr || createRes.stderr}`)
         }
       }
     }

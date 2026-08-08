@@ -183,7 +183,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       jobId: previousJobId,
       status: 'failed',
       workspacePath: tempDir,
-      request: { scope: 'resume-scope-test', action: 'reset', project: 'backend', agent: 'claude-cli' },
+      request: { idempotencyKey: 'id-e2e-fail', scope: 'resume-scope-test', action: 'reset', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
       error: { code: 'PREV_FAIL', message: 'Simulated failure' },
     })
@@ -218,7 +218,7 @@ describe('E2E Scenario 07: HTTP Server Daemon Workflows & Security', () => {
       jobId: 'e2e-completed-1',
       status: 'completed',
       workspacePath: tempDir,
-      request: { scope: 'c1' },
+      request: { idempotencyKey: 'id-e2e-comp', scope: 'c1', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
       completedAt: new Date().toISOString(),
     })

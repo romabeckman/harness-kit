@@ -80,6 +80,8 @@ describe('Server Types and DTOs', () => {
       expect(baseReq.mode).toBe('quick')
 
       const extReq: RunRequestDtoExtended = {
+        idempotencyKey: 'idemp-type-test',
+        scope: 'test',
         ...baseReq,
         project: ['backend'],
         steeringMessage: 'keep simple',
@@ -88,7 +90,6 @@ describe('Server Types and DTOs', () => {
         effort: 'high',
         skipValidation: true,
         skipMemory: true,
-        skipDeploy: true,
       }
       expect(extReq.skipValidation).toBe(true)
       expect(extReq.project).toEqual(['backend'])
@@ -128,7 +129,7 @@ describe('Server Types and DTOs', () => {
         jobId: 'job-101',
         status: 'queued',
         workspacePath: '/workspace/app',
-        request: { scope: 'build app' },
+        request: { idempotencyKey: 'id-job101', scope: 'build app', project: 'backend', agent: 'claude-cli' },
         createdAt: '2026-08-06T12:00:00.000Z',
       }
       expect(job.status).toBe('queued')

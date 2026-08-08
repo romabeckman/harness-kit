@@ -47,7 +47,7 @@ describe('JobRunnerService', () => {
       jobId: 'job-lock-fail',
       status: 'queued',
       workspacePath: '/ws/busy',
-      request: { scope: 'test' },
+      request: { idempotencyKey: 'id-lock', scope: 'test', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
     }
     await jobStore.save(job)
@@ -65,7 +65,7 @@ describe('JobRunnerService', () => {
       jobId: 'job-finally',
       status: 'queued',
       workspacePath: process.cwd(),
-      request: { scope: 'test-finally' },
+      request: { idempotencyKey: 'id-fin', scope: 'test-finally', project: 'backend', agent: 'claude-cli' },
       createdAt: new Date().toISOString(),
     }
     await jobStore.save(job)
