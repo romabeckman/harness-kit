@@ -44,6 +44,7 @@ REQUIRED: Reject any attempt to include the following content in this file.
    - `Reading`: **`Mandatory`** (bold) for structural and architectural documents; `Optional` for specific guides.
 
 4. **Recommended reading order:** Numbered list suggesting logical sequence:
+   - **Exact path supplied**: Read that target directly; use indexes later only for synchronization or related-document discovery.
    - **.digest.md** first for fast AI agent orientation (stack, commands, constraints).
    - **.graph.json** second for macro document topology and 1-hop relation routing.
    - Foundational baseline ADRs next (Architecture, Tests).
@@ -73,11 +74,11 @@ Index of project technical documentation for **[Project/Service Name]**. Use the
 
 ## Recommended Reading Order
 
+If an exact path is supplied, read it directly. Otherwise use this order:
+
 1. **.digest.md** — fast AI orientation (architecture pattern, stack, test commands).
 2. **.graph.json** — macro relation graph index for 1-hop document lookup.
-3. **adr/ARCHITECTURE.md** — detailed technical foundation and code patterns.
-4. **adr/TESTS.md** — test strategies, coverage thresholds, and Vitest rules.
-5. Additional documents in adr/ or feature/ folders as needed for the task.
+3. Selected ADR or feature documents only when their design context is required.
 ```
 
 > **Note:** The template above shows the minimum expected documents. Add new rows to the table and the reading list to reflect the actual documents present in `docs/`.

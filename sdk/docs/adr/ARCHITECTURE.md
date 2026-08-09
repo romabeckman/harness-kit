@@ -5,9 +5,8 @@ stack: [typescript, nodejs]
 node_id: "adr:architecture"
 tags: [architecture, ports-and-adapters, state-machine, orchestrator]
 edges:
-  - relation: tested_by
+  - relation: references
     target: "adr:tests"
-    path: "./TESTS.md"
 updated: "2026-08-08"
 ---
 # Arquitetura do Projeto

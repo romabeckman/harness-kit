@@ -35,6 +35,15 @@ updated: YYYY-MM-DD
   "domain": "[domain name]",
   "implements": ["adr:architecture"],
   "tested_by": ["adr:tests"],
+  "entrypoints": [
+    "relative/path/to/public-entrypoint.ts"
+  ],
+  "registration_files": [
+    "relative/path/to/registry-or-factory.ts"
+  ],
+  "reference_files": [
+    "relative/path/to/representative-implementation.ts"
+  ],
   "code_files": [
     "relative/path/to/source1.ts"
   ],
@@ -43,6 +52,19 @@ updated: YYYY-MM-DD
   ]
 }
 ```
+
+Use routing arrays by role:
+
+- `entrypoints`: public or runtime entry files agents should inspect first.
+- `registration_files`: registries, factories, dependency injection, exports, or command maps changed when extending the feature.
+- `reference_files`: smallest representative implementations to copy as patterns.
+- `code_files`: remaining production files defining the feature.
+- `test_files`: tests proving feature behavior and integration.
+
+REQUIRED: Use project-relative paths, remove duplicates across arrays, and list only files that exist.
+REQUIRED: Use empty arrays when a routing role does not apply.
+PROHIBITED: Copying these source paths into YAML `edges`, `.digest.md`, or `.graph.json`.
+REQUIRED: For ADR documents, omit the entire embedded `graph` block; source routing belongs only to feature documents.
 
 ## OVERVIEW
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]

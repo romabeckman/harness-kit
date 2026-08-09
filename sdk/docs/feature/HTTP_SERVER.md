@@ -11,7 +11,7 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_core"
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 # HTTP SERVER & DOCKER ADAPTER
 
@@ -22,9 +22,20 @@ updated: 2026-08-07
   "implements": ["adr:architecture"],
   "tested_by": ["adr:tests"],
   "depends_on": ["feature:sdk_core"],
-  "code_files": [
-    "src/server/HttpServer.ts",
+  "entrypoints": [
     "src/server/index.ts",
+    "src/server/HttpServer.ts"
+  ],
+  "registration_files": [
+    "src/server/adapters/index.ts",
+    "src/server/application/use-cases/index.ts",
+    "src/server/adapters/outbound/auth/AuthStrategyFactory.ts"
+  ],
+  "reference_files": [
+    "src/server/adapters/inbound/http/routes/RouteHandlers.ts"
+  ],
+  "code_files": [
+    "src/server/types.ts",
     "src/server/domain/types.ts",
     "src/server/application/ports/inbound/IRunOrchestratorJobUseCase.ts",
     "src/server/application/ports/inbound/IGetJobStatusUseCase.ts",
@@ -47,7 +58,26 @@ updated: 2026-08-07
     "src/server/adapters/outbound/auth/BearerAuthStrategy.ts",
     "src/server/adapters/outbound/auth/JwtAuthStrategy.ts",
     "src/server/adapters/outbound/auth/HmacAuthStrategy.ts",
-    "src/server/adapters/outbound/auth/AuthStrategyFactory.ts",
+    "src/server/application/ports/inbound/IGetReportsSummaryUseCase.ts",
+    "src/server/application/ports/inbound/IGetTokensTelemetryUseCase.ts",
+    "src/server/application/ports/inbound/index.ts",
+    "src/server/application/ports/outbound/index.ts",
+    "src/server/application/use-cases/GetReportsSummaryUseCase.ts",
+    "src/server/application/use-cases/GetTokensTelemetryUseCase.ts",
+    "src/server/adapters/inbound/http/docs/OpenApiSpecGenerator.ts",
+    "src/server/adapters/inbound/http/mappers/DtoMappers.ts",
+    "src/server/adapters/inbound/http/dto/JobStatusDto.ts",
+    "src/server/adapters/inbound/http/dto/ReportsSummaryDto.ts",
+    "src/server/adapters/inbound/http/dto/RunRequestDto.ts",
+    "src/server/adapters/inbound/http/dto/RunResponseDto.ts",
+    "src/server/adapters/inbound/http/dto/TokensTelemetryDto.ts",
+    "src/server/adapters/outbound/auth/index.ts",
+    "src/server/adapters/outbound/auth/types.ts",
+    "src/server/adapters/outbound/mutex/LockRepository.ts",
+    "src/server/adapters/outbound/mutex/WorkspaceLockManager.ts",
+    "src/server/adapters/outbound/queue/JobQueue.ts",
+    "src/server/adapters/outbound/repository/InMemoryJobStore.ts",
+    "src/server/adapters/outbound/repository/JobStoreRepository.ts",
     "src/server/adapters/outbound/services/JobRunnerService.ts",
     "src/server/adapters/outbound/services/AsyncWorkerPool.ts",
     "docker/entrypoint.sh",
@@ -65,6 +95,8 @@ updated: 2026-08-07
     "src/server/application/use-cases/__tests__/ResumeOrchestratorJobUseCase.test.ts",
     "src/server/application/use-cases/__tests__/CleanJobsAndWorktreesUseCase.test.ts",
     "src/server/application/use-cases/__tests__/RunOrchestratorJobUseCase.test.ts",
+    "src/server/application/use-cases/__tests__/GetReportsSummaryUseCase.test.ts",
+    "src/server/application/use-cases/__tests__/GetTokensTelemetryUseCase.test.ts",
     "src/server/application/use-cases/__tests__/SettingsUseCases.test.ts",
     "src/server/application/use-cases/__tests__/SyncWorkspaceRepositoryUseCase.test.ts",
     "src/server/adapters/inbound/http/mappers/__tests__/DtoMappers.test.ts",

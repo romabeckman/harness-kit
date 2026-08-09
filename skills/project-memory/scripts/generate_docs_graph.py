@@ -12,6 +12,47 @@ import json
 import sys
 from pathlib import Path
 
+ROUTING_FIELDS = (
+    "entrypoints",
+    "registration_files",
+    "reference_files",
+    "code_files",
+    "test_files",
+)
+MICROGRAPH_FIELDS = ("node_id", "domain", "implements", "tested_by", *ROUTING_FIELDS)
+
+
+def validate_feature_micrograph(data, node_id: str, file_path: Path, base_dir: Path):
+    for field in MICROGRAPH_FIELDS:
+        if field not in data:
+            raise ValueError(f"Missing micrograph field '{field}' in {file_path}")
+
+    if data["node_id"] != node_id:
+        raise ValueError(
+            f"Micrograph node_id '{data['node_id']}' does not match '{node_id}' in {file_path}"
+        )
+
+    for field in ("implements", "tested_by", *ROUTING_FIELDS):
+        if not isinstance(data[field], list):
+            raise ValueError(f"Micrograph field '{field}' must be an array in {file_path}")
+
+    seen_paths = set()
+    project_root = base_dir.resolve()
+    routes = []
+    for field in ROUTING_FIELDS:
+        for route in data[field]:
+            if not isinstance(route, str) or not route:
+                raise ValueError(f"Invalid routing path in '{field}' in {file_path}")
+            if route in seen_paths:
+                raise ValueError(f"Duplicate routing path '{route}' in {file_path}")
+            seen_paths.add(route)
+            routes.append(route)
+
+    for route in routes:
+        target = (project_root / route).resolve()
+        if not target.is_relative_to(project_root) or not target.is_file():
+            raise ValueError(f"Unresolved routing path '{route}' in {file_path}")
+
 def parse_markdown_file(file_path: Path, base_dir: Path):
     rel_path = file_path.relative_to(base_dir).as_posix()
     content = file_path.read_text(encoding="utf-8")
@@ -84,22 +125,17 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
     if graph_block_match:
         try:
             gb_data = json.loads(graph_block_match.group(1))
-            tested_by = gb_data.get("tested_by")
-            if tested_by:
-                edges.append({
-                    "source": node_id,
-                    "target": tested_by,
-                    "relation": "tested_by"
-                })
-            depends_on = gb_data.get("depends_on")
-            if depends_on:
-                if isinstance(depends_on, list):
-                    for dep in depends_on:
-                        edges.append({"source": node_id, "target": dep, "relation": "depends_on"})
-                else:
-                    edges.append({"source": node_id, "target": depends_on, "relation": "depends_on"})
-        except Exception:
-            pass
+            if doc_type == "feature":
+                validate_feature_micrograph(gb_data, node_id, file_path, base_dir)
+            for relation in ("implements", "depends_on", "tested_by"):
+                targets = gb_data.get(relation, [])
+                if not isinstance(targets, list):
+                    targets = [targets]
+                for target in targets:
+                    if target:
+                        edges.append({"source": node_id, "target": target, "relation": relation})
+        except json.JSONDecodeError as error:
+            raise ValueError(f"Invalid micrograph JSON in {file_path}: {error.msg}") from error
 
     return node, edges
 
@@ -107,22 +143,26 @@ def build_docs_graph(docs_dir: Path):
     nodes = []
     edges = []
     node_ids = set()
+    node_paths = {}
 
-    for root, dirs, files in os.walk(docs_dir):
-        dirs[:] = [d for d in dirs if d not in ["harness-history"]]
-        
-        for file in files:
-            if file.endswith(".md") and not file.startswith("."):
-                file_path = Path(root) / file
-                if file_path == docs_dir / "README.md":
+    for allowed_dir in (docs_dir / "adr", docs_dir / "feature"):
+        if not allowed_dir.exists():
+            continue
+        for root, _, files in os.walk(allowed_dir):
+            for file in files:
+                if not file.endswith(".md") or file.startswith("."):
                     continue
-                    
+
+                file_path = Path(root) / file
                 node, file_edges = parse_markdown_file(file_path, docs_dir.parent)
-                
-                if node["id"] not in node_ids:
-                    nodes.append(node)
-                    node_ids.add(node["id"])
-                
+
+                if node["id"] in node_ids:
+                    raise ValueError(
+                        f"Duplicate node_id '{node['id']}' in {node_paths[node['id']]} and {node['path']}"
+                    )
+                nodes.append(node)
+                node_ids.add(node["id"])
+                node_paths[node["id"]] = node["path"]
                 edges.extend(file_edges)
 
     unique_edges = []
@@ -132,6 +172,19 @@ def build_docs_graph(docs_dir: Path):
         if edge_key not in seen_edges:
             seen_edges.add(edge_key)
             unique_edges.append(edge)
+
+    unresolved = sorted(
+        (edge for edge in unique_edges if edge["target"] not in node_ids),
+        key=lambda edge: (edge["source"], edge["relation"], edge["target"]),
+    )
+    if unresolved:
+        edge = unresolved[0]
+        raise ValueError(
+            f"Unresolved edge target '{edge['target']}' from '{edge['source']}' ({edge['relation']})"
+        )
+
+    nodes.sort(key=lambda node: node["id"])
+    unique_edges.sort(key=lambda edge: (edge["source"], edge["relation"], edge["target"]))
 
     return {
         "nodes": nodes,
@@ -151,7 +204,7 @@ def main():
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(graph_data, f, separators=(',', ':'), ensure_ascii=False)
 
-    print(f"✅ Grafo gerado em {output_file} ({len(graph_data['nodes'])} nós, {len(graph_data['edges'])} arestas)")
+    print(f"Graph generated at {output_file} ({len(graph_data['nodes'])} nodes, {len(graph_data['edges'])} edges)")
 
 if __name__ == "__main__":
     main()

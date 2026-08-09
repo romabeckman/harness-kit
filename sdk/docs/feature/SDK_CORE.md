@@ -19,19 +19,11 @@ updated: "2026-08-08"
   "domain": "core",
   "implements": ["adr:architecture"],
   "tested_by": ["adr:tests"],
-  "code_files": [
-    "src/orchestrator/HarnessOrchestrator.ts",
-    "src/orchestrator/StateMachine.ts",
-    "src/orchestrator/ReentryResolver.ts",
-    "src/file-state/FileStateManager.ts",
-    "src/context-assembler/ContextAssembler.ts",
-    "src/telemetry/TokenLedger.ts"
-  ],
-  "test_files": [
-    "tests/unit/t10-state-machine.test.ts",
-    "tests/integration/t13-orchestrator-phasec.test.ts",
-    "src/telemetry/__tests__/TokenLedger.test.ts"
-  ]
+  "entrypoints": ["src/orchestrator/HarnessOrchestrator.ts"],
+  "registration_files": ["src/orchestrator/ChainBuilder.ts","src/orchestrator/phases/index.ts"],
+  "reference_files": ["src/orchestrator/phases/AbstractPhaseHandler.ts"],
+  "code_files": ["src/orchestrator/ReentryResolver.ts","src/orchestrator/types.ts","src/orchestrator/utils/OrchestratorFormatter.ts","src/orchestrator/utils/PhaseFileUtils.ts","src/orchestrator/utils/PromptHelpers.ts","src/orchestrator/services/AgentInvocationService.ts","src/orchestrator/services/PhaseDecisionLogger.ts","src/orchestrator/services/ProjectStateService.ts","src/orchestrator/phases/BootstrapHandler.ts","src/orchestrator/phases/CascadeBlockedHandler.ts","src/orchestrator/phases/DeployHandler.ts","src/orchestrator/phases/DevelopmentHandler.ts","src/orchestrator/phases/MemoryHandler.ts","src/orchestrator/phases/PlanningHandler.ts","src/orchestrator/phases/RefinementHandler.ts","src/orchestrator/phases/ReviewHandler.ts","src/orchestrator/phases/TransitionHandler.ts","src/context-assembler/ContextAssembler.ts","src/context-assembler/types.ts","src/validation-gate/ValidationGate.ts","src/validation-gate/types.ts","src/json-extraction/JsonExtractionProtocol.ts","src/json-extraction/types.ts"],
+  "test_files": ["src/context-assembler/__tests__/ContextAssembler.test.ts","src/orchestrator/__tests__/ChainBuilder.test.ts","src/orchestrator/__tests__/types.test.ts","src/orchestrator/phases/__tests__/PhaseAHandler.test.ts","src/orchestrator/phases/__tests__/PhaseBHandler.test.ts","src/orchestrator/phases/__tests__/PhaseFHandler.test.ts","src/orchestrator/phases/__tests__/RefinementHandler.test.ts","src/orchestrator/services/__tests__/AgentInvocationService.test.ts","src/orchestrator/services/__tests__/PhaseDecisionLogger.test.ts","src/orchestrator/services/__tests__/ProjectStateService.test.ts","src/orchestrator/utils/__tests__/PhaseFileUtils.test.ts","src/orchestrator/utils/__tests__/PromptHelpers.test.ts","src/validation-gate/__tests__/ValidationGate.test.ts","tests/integration/t11-orchestrator-bootstrap-phasea.test.ts","tests/integration/t12-orchestrator-phaseb.test.ts","tests/integration/t13-orchestrator-phasec.test.ts","tests/integration/t14-orchestrator-phased-e.test.ts","tests/unit/t05-validation-gate.test.ts","tests/unit/t08-context-assembler.test.ts","tests/unit/t09-reentry-resolver.test.ts","tests/unit/t10-state-machine.test.ts"]
 }
 ```
 
