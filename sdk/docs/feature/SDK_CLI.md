@@ -13,6 +13,18 @@ edges:
     target: "feature:sdk_core"
 updated: "2026-08-08"
 ---
+
+```graph
+{
+  "node_id":"feature:sdk_cli","domain":"cli","implements":["adr:architecture"],"tested_by":["adr:tests"],"depends_on":["feature:sdk_core"],
+  "entrypoints":["src/cli/run.ts"],
+  "registration_files":["package.json"],
+  "reference_files":["src/cli/services/run-service.ts"],
+  "code_files":["src/cli/DebugContext.ts","src/cli/services/init-service.ts","src/cli/services/report-service.ts","src/cli/services/report/ReportDataAggregator.ts","src/cli/services/report/ReportRenderer.ts","src/cli/services/report/types.ts","src/cli/services/reset-service.ts","src/cli/services/settings-service.ts","src/cli/utils/cli-utils.ts","src/cli/utils/constants.ts","src/cli/utils/run-args-parser.ts"],
+  "test_files":["src/cli/services/report/__tests__/ReportDataAggregator.test.ts","src/cli/services/report/__tests__/ReportRenderer.test.ts","src/cli/utils/__tests__/run-args-parser.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/unit/t19-run-args-parser.test.ts","tests/unit/t20-debug-context.test.ts","tests/unit/t27-cli-utils.test.ts","tests/unit/t29-init-service.test.ts"]
+}
+```
+
 # SDK CLI
 Provides the `hrns` command-line interface for launching and managing orchestration sessions.
 

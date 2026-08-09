@@ -2,6 +2,8 @@ import tempfile
 import unittest
 from pathlib import Path
 import sys
+import os
+import subprocess
 
 sys.path.insert(0, str(Path(__file__).parent))
 from generate_docs_graph import build_docs_graph
@@ -32,6 +34,22 @@ def append_micrograph(path: Path, graph_json: str) -> None:
 
 
 class BuildDocsGraphTests(unittest.TestCase):
+    def test_cli_status_output_is_cp1252_safe(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "architecture.md", "adr:architecture")
+            environment = os.environ.copy()
+            environment["PYTHONIOENCODING"] = "cp1252"
+
+            result = subprocess.run(
+                [sys.executable, str(Path(__file__).parent / "generate_docs_graph.py"), str(docs)],
+                capture_output=True,
+                text=True,
+                env=environment,
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+
     def test_feature_template_exposes_direct_source_routing_fields(self) -> None:
         template = (Path(__file__).parent.parent / "references" / "DOCUMENT-TEMPLATE.md").read_text(
             encoding="utf-8"

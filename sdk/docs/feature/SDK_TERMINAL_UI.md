@@ -11,6 +11,11 @@ edges:
     target: "adr:tests"
 updated: "2026-08-08"
 ---
+
+```graph
+{"node_id":"feature:sdk_terminal_ui","domain":"terminal_ui","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/ui/TerminalProgress.ts"],"registration_files":[],"reference_files":["src/ui/AnsiHelpers.ts"],"code_files":["src/ui/StartupBanner.ts"],"test_files":["src/ui/__tests__/StartupBanner.test.ts","tests/unit/t26-terminal-progress.test.ts"]}
+```
+
 # SDK TERMINAL UI
 Provides ANSI-based terminal rendering utilities for the CLI orchestrator.
 

@@ -11,6 +11,11 @@ edges:
     target: "adr:tests"
 updated: "2026-08-08"
 ---
+
+```graph
+{"node_id":"feature:sdk_package","domain":"package","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/index.ts","src/cli/run.ts"],"registration_files":["package.json"],"reference_files":[],"code_files":["tsconfig.json","tsconfig.build.json"],"test_files":["tests/unit/t01-scaffold.test.ts","tests/unit/t15-public-api.test.ts"]}
+```
+
 # SDK PACKAGE
 Defines the publication surface of `harness-kit-sdk` for npm.
 

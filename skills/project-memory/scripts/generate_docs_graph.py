@@ -205,7 +205,7 @@ def main():
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(graph_data, f, separators=(',', ':'), ensure_ascii=False)
 
-    print(f"✅ Grafo gerado em {output_file} ({len(graph_data['nodes'])} nós, {len(graph_data['edges'])} arestas)")
+    print(f"Graph generated at {output_file} ({len(graph_data['nodes'])} nodes, {len(graph_data['edges'])} edges)")
 
 if __name__ == "__main__":
     main()

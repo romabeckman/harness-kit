@@ -4,10 +4,7 @@ domain: testing
 stack: [vitest, typescript]
 node_id: "adr:tests"
 tags: [testing, vitest, unit-tests, e2e-tests, coverage]
-edges:
-  - relation: tests
-    target: "adr:architecture"
-    path: "./ARCHITECTURE.md"
+edges: []
 updated: "2026-08-08"
 ---
 # Testing Protocol
