@@ -1,0 +1,141 @@
+import tempfile
+import unittest
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).parent))
+from generate_docs_graph import build_docs_graph
+
+
+def write_doc(path: Path, node_id: str, edges: str = "edges: []", doc_type: str = "adr") -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "\n".join(
+            [
+                "---",
+                f"doc_type: {doc_type}",
+                "domain: test",
+                f'node_id: "{node_id}"',
+                "tags: [test, routing]",
+                edges,
+                "---",
+                f"# {node_id}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
+def append_micrograph(path: Path, graph_json: str) -> None:
+    with path.open("a", encoding="utf-8") as document:
+        document.write(f"\n```graph\n{graph_json}\n```\n")
+
+
+class BuildDocsGraphTests(unittest.TestCase):
+    def test_feature_template_exposes_direct_source_routing_fields(self) -> None:
+        template = (Path(__file__).parent.parent / "references" / "DOCUMENT-TEMPLATE.md").read_text(
+            encoding="utf-8"
+        )
+
+        for field in ("entrypoints", "registration_files", "reference_files", "code_files", "test_files"):
+            self.assertIn(f'"{field}"', template)
+
+    def test_readme_rules_preserve_direct_path_fast_route(self) -> None:
+        rules = (Path(__file__).parent.parent / "references" / "README-RULES.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("exact path", rules.lower())
+
+    def test_sorts_nodes_and_edges_for_stable_compact_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "feature" / "z.md", "feature:z")
+            write_doc(
+                docs / "feature" / "a.md",
+                "feature:a",
+                'edges:\n  - relation: depends_on\n    target: "feature:z"',
+            )
+
+            graph = build_docs_graph(docs)
+
+            self.assertEqual(["feature:a", "feature:z"], [node["id"] for node in graph["nodes"]])
+            self.assertEqual(
+                [{"source": "feature:a", "target": "feature:z", "relation": "depends_on"}],
+                graph["edges"],
+            )
+
+    def test_rejects_duplicate_node_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "feature" / "a.md", "feature:duplicate")
+            write_doc(docs / "feature" / "b.md", "feature:duplicate")
+
+            with self.assertRaisesRegex(ValueError, "Duplicate node_id"):
+                build_docs_graph(docs)
+
+    def test_rejects_unresolved_edge_targets(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(
+                docs / "feature" / "a.md",
+                "feature:a",
+                'edges:\n  - relation: depends_on\n    target: "feature:missing"',
+            )
+
+            with self.assertRaisesRegex(ValueError, "Unresolved edge target"):
+                build_docs_graph(docs)
+
+    def test_extracts_list_relations_from_feature_micrograph(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            feature = docs / "feature" / "runner.md"
+            write_doc(feature, "feature:runner", doc_type="feature")
+            write_doc(docs / "adr" / "architecture.md", "adr:architecture")
+            write_doc(docs / "adr" / "tests.md", "adr:tests")
+            append_micrograph(
+                feature,
+                '{"node_id":"feature:runner","domain":"test","implements":["adr:architecture"],'
+                '"tested_by":["adr:tests"],"entrypoints":[],"registration_files":[],'
+                '"reference_files":[],"code_files":[],"test_files":[]}',
+            )
+
+            graph = build_docs_graph(docs)
+
+            self.assertIn(
+                {"source": "feature:runner", "target": "adr:architecture", "relation": "implements"},
+                graph["edges"],
+            )
+            self.assertIn(
+                {"source": "feature:runner", "target": "adr:tests", "relation": "tested_by"},
+                graph["edges"],
+            )
+
+    def test_rejects_feature_micrograph_without_routing_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            feature = docs / "feature" / "runner.md"
+            write_doc(feature, "feature:runner", doc_type="feature")
+            append_micrograph(feature, '{"node_id":"feature:runner","domain":"test"}')
+
+            with self.assertRaisesRegex(ValueError, "Missing micrograph field"):
+                build_docs_graph(docs)
+
+    def test_rejects_missing_and_duplicate_routing_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            feature = docs / "feature" / "runner.md"
+            write_doc(feature, "feature:runner", doc_type="feature")
+            append_micrograph(
+                feature,
+                '{"node_id":"feature:runner","domain":"test","implements":[],"tested_by":[],'
+                '"entrypoints":["src/missing.ts"],"registration_files":["src/missing.ts"],'
+                '"reference_files":[],"code_files":[],"test_files":[]}',
+            )
+
+            with self.assertRaisesRegex(ValueError, "Duplicate routing path"):
+                build_docs_graph(docs)
+
+
+if __name__ == "__main__":
+    unittest.main()
