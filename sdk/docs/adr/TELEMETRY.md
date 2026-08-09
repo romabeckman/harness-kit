@@ -14,6 +14,7 @@ Tracks token consumption, execution costs, and quota limits across agent run cyc
 
 ## OVERVIEW
 Telemetry is written to an NDJSON ledger file after every agent execution to calculate costs, prompt token savings, and abort gracefully when rate limits or quotas are exceeded.
+New records store token metrics only in `tokenUsage`; readers normalize legacy flat records for backward compatibility.
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -36,7 +37,7 @@ sdk/
 
 ### Steps
 1. Capture agent invocation output containing `usage` metadata.
-2. Call `ledger.record(skill, agent, usage)` to append records to `tokens.jsonl`.
+2. Call `ledger.record(skill, agent, usage)` to append a canonical audit event to `tokens.jsonl`.
 3. Invoke `ledger.printReport()` to view cost and savings summaries in the terminal.
 
 <code_example>
@@ -57,8 +58,11 @@ const output = await runner.run(invocation) // Ignores token tracking metadata
 | costUsd | number | Yes | Estimated cost of the invocation in USD | 0.00 |
 
 ## BEST PRACTICES
+REQUIRED: Write token metrics only inside `tokenUsage` in new JSONL records.
+REQUIRED: Normalize legacy flat token metrics when reading existing ledgers.
 REQUIRED: Handle QUOTA_EXCEEDED errors gracefully by persisting the active phase state and halting.
 REQUIRED: Print cumulative token savings reports via `rtk gain` and `ledger.printReport()`.
+FORBIDDEN: Duplicate token metrics at the event root and inside `tokenUsage`.
 FORBIDDEN: Executing orchestrator loops without an active `TokenLedger` tracking backend.
 
 ## REFERENCES

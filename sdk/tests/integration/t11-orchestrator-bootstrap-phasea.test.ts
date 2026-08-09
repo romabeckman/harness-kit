@@ -330,8 +330,10 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
     const lines = (await import('node:fs')).readFileSync(ledgerPath, 'utf8').trim().split('\n')
     expect(lines.length).toBeGreaterThan(0)
     const entry = JSON.parse(lines[0])
-    expect(entry).toHaveProperty('inputTokens', 10)
-    expect(entry).toHaveProperty('costUsd', 0.001)
+    expect(entry.tokenUsage).toHaveProperty('inputTokens', 10)
+    expect(entry.tokenUsage).toHaveProperty('calculatedCostUsd', 0.001)
+    expect(entry).not.toHaveProperty('inputTokens')
+    expect(entry).not.toHaveProperty('costUsd')
   })
 
   it('invokeAgent() skips ledger.record() when output.usage is undefined', async () => {
