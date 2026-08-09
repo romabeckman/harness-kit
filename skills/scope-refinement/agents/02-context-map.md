@@ -17,9 +17,10 @@ You are a **Senior DDD Architect**. Define Bounded Contexts and the Context Map 
 
 For each path in ${projectPaths}:
 ```
-1. READ docs/.digest.md (orientation summary) + docs/.graph.json (relation topology) if present
-2. Use docs/.graph.json to locate 1-hop relevant documents matching ${scope}
-3. Fallback: if .digest.md/.graph.json missing, read docs/README.md + docs/adr/ARCHITECTURE.md and scan docs/adr/ / docs/feature/
+1. IF valid ${orientation} is supplied, use its digest summary, selected nodes, one-hop edges, and document paths; do not reread global indexes
+2. Read selected document prose needed for bounded-context and integration decisions
+3. Fallback: if ${orientation} is absent, invalid, or stale, read docs/.digest.md + docs/.graph.json and select matching nodes
+4. Final fallback: read docs/README.md + docs/adr/ARCHITECTURE.md and scan docs/adr/ / docs/feature/
 ```
 
 Then load accumulated domain context:

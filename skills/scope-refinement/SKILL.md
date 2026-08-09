@@ -93,6 +93,24 @@ IF empty → ${rules} = "No additional rules provided"
 
 ---
 
+<orientation>
+
+## Shared Project Orientation — Load Once
+
+Before Phase 1, load orientation once for each `${projectPaths}` entry:
+
+1. Read `docs/.digest.md` and `docs/.graph.json` when present.
+2. Select only nodes matching `${scope}` and `${domain}` by ID, title, path, or tags; include their one-hop edges.
+3. For selected feature nodes, extract only frontmatter and top `graph` block.
+4. Build in-memory `${orientation}` with project path, digest summary, selected nodes, selected document paths, and selected feature micrographs.
+5. Validate routed paths before Phases 3–4. Mark stale paths in `${orientation}`; do not create another routing artifact.
+
+Pass `${orientation}` to every phase agent. Agents must not reread global indexes when valid orientation is supplied. If orientation is absent, invalid, or stale, agents use their documented fallback.
+
+</orientation>
+
+---
+
 <phase id="1-2" name="Strategic Design + Context Map (PARALLEL)">
 
 > 💡 **Optimization:** Phases 1 and 2 have no data dependency. Invoke both in parallel to reduce Phase A latency by ~35%.
@@ -101,8 +119,8 @@ IF empty → ${rules} = "No additional rules provided"
 
 | Agent | Skill Path | Inputs | Output |
 |---|---|---|---|
-| Strategic Design | `scope-refinement/agents/01-problem-space` | `${scope}`, `${projectPaths}`, `${domain}`, `${rules}` | `docs/specs/${domain}/001-problem-space.md` |
-| Context Map | `scope-refinement/agents/02-context-map` | `${scope}`, `${projectPaths}`, `${domain}`, `${rules}` | `docs/specs/${domain}/002-context-map.md` |
+| Strategic Design | `scope-refinement/agents/01-problem-space` | `${scope}`, `${projectPaths}`, `${domain}`, `${rules}`, `${orientation}` | `docs/specs/${domain}/001-problem-space.md` |
+| Context Map | `scope-refinement/agents/02-context-map` | `${scope}`, `${projectPaths}`, `${domain}`, `${rules}`, `${orientation}` | `docs/specs/${domain}/002-context-map.md` |
 
 > ⏳ **Wait:** Both agents MUST complete before proceeding to review gate.
 
@@ -129,7 +147,7 @@ AUTONOMOUS  → DO NOT PAUSE. Proceed immediately to Phase 3.
 **Invoke skill:** `scope-refinement/agents/03-tactical-design`
 
 ```
-inputs: ${scope}, ${projectPaths}, ${domain}, ${rules}
+inputs: ${scope}, ${projectPaths}, ${domain}, ${rules}, ${orientation}
 output: one document PER project in ${projectPaths}
         → docs/specs/${domain}/003-${PROJECT_NAME}-tactical-design.md
            where ${PROJECT_NAME} = root folder name of each project
@@ -144,7 +162,7 @@ output: one document PER project in ${projectPaths}
 **Invoke skill:** `scope-refinement/agents/04-test-scenarios`
 
 ```
-inputs: ${scope}, ${projectPaths}, ${domain}, ${rules}
+inputs: ${scope}, ${projectPaths}, ${domain}, ${rules}, ${orientation}
 output: one document PER project in ${projectPaths}
         → docs/specs/${domain}/004-${PROJECT_NAME}-test-scenarios.md
            where ${PROJECT_NAME} = root folder name of each project
@@ -179,7 +197,7 @@ INTERACTIVE → present markdown table of all 4 generated artifacts
 | **Format** | Structured Markdown with H2/H3, lists, and tables. JSON must strictly validate. |
 | **Ubiquitous Language** | Use glossary terms consistently across ALL documents |
 | **No Code Output** | Under no circumstances generate implementation code |
-| **Fast-path Orientation** | Sub-agents MUST read `docs/.digest.md` & `docs/.graph.json` first if present for fast context loading before falling back to full ADRs |
+| **Fast-path Orientation** | Root reads digest and graph once, then passes `${orientation}`; sub-agents reread indexes only as fallback when shared orientation is absent, invalid, or stale |
 | **Harness Isolation** | PROHIBITED: read, create, or modify any file under `docs/harness-history/` |
 | **Spec Isolation** | PROHIBITED: read, create, or modify any file under `docs/specs/` except documents produced by Phases 1–4 of this skill |
 

@@ -34,6 +34,41 @@ def append_micrograph(path: Path, graph_json: str) -> None:
 
 
 class BuildDocsGraphTests(unittest.TestCase):
+    def test_indexes_only_adr_and_feature_documents(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "architecture.md", "adr:architecture")
+            write_doc(docs / "feature" / "runner.md", "feature:runner")
+            write_doc(docs / "specs" / "billing" / "design.md", "spec:billing")
+            write_doc(docs / "PLAYBOOK.md", "doc:playbook")
+
+            graph = build_docs_graph(docs)
+
+            self.assertEqual(
+                ["adr:architecture", "feature:runner"],
+                [node["id"] for node in graph["nodes"]],
+            )
+
+    def test_development_consumers_define_micrograph_fast_paths(self) -> None:
+        repository = Path(__file__).parents[3]
+        tdd_skill = (repository / "skills" / "tdd-orchestrator" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        scope_skill = (repository / "skills" / "scope-refinement" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+
+        for field in ("entrypoints", "registration_files", "reference_files", "code_files", "test_files"):
+            self.assertIn(field, tdd_skill)
+        self.assertIn("stale", tdd_skill.lower())
+        self.assertIn("${orientation}", scope_skill)
+        self.assertIn("once", scope_skill.lower())
+
+        for agent_file in sorted((repository / "skills" / "scope-refinement" / "agents").glob("*.md")):
+            agent = agent_file.read_text(encoding="utf-8")
+            self.assertIn("${orientation}", agent, agent_file.name)
+            self.assertIn("fallback", agent.lower(), agent_file.name)
+
     def test_cli_status_output_is_cp1252_safe(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             docs = Path(temp_dir) / "docs"

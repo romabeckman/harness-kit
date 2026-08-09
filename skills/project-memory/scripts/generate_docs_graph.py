@@ -145,17 +145,17 @@ def build_docs_graph(docs_dir: Path):
     node_ids = set()
     node_paths = {}
 
-    for root, dirs, files in os.walk(docs_dir):
-        dirs[:] = [d for d in dirs if d not in ["harness-history"]]
-        
-        for file in files:
-            if file.endswith(".md") and not file.startswith("."):
-                file_path = Path(root) / file
-                if file_path == docs_dir / "README.md":
+    for allowed_dir in (docs_dir / "adr", docs_dir / "feature"):
+        if not allowed_dir.exists():
+            continue
+        for root, _, files in os.walk(allowed_dir):
+            for file in files:
+                if not file.endswith(".md") or file.startswith("."):
                     continue
-                    
+
+                file_path = Path(root) / file
                 node, file_edges = parse_markdown_file(file_path, docs_dir.parent)
-                
+
                 if node["id"] in node_ids:
                     raise ValueError(
                         f"Duplicate node_id '{node['id']}' in {node_paths[node['id']]} and {node['path']}"
@@ -163,7 +163,6 @@ def build_docs_graph(docs_dir: Path):
                 nodes.append(node)
                 node_ids.add(node["id"])
                 node_paths[node["id"]] = node["path"]
-                
                 edges.extend(file_edges)
 
     unique_edges = []

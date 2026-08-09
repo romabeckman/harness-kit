@@ -36,6 +36,19 @@ IF invoked directly by human:
 
 *Note: If `docs/.digest.md` is present and provides complete stack/test commands, proceed directly. Fall back to reading full baseline documents below if `.digest.md` is missing or deeper technical context is required.*
 
+### Feature micrograph routing
+
+After macro orientation:
+
+1. Match `${featureId}` and `${domain}` against `.graph.json` node IDs, titles, paths, and tags.
+2. Read only frontmatter and top `graph` block from selected `docs/feature/*.md` document.
+3. Validate every routed path exists. If any path is stale or feature node is absent, use `rg --files` plus targeted `rg` searches, then continue with discovered paths.
+4. RED phase: read relevant `test_files` first.
+5. GREEN phase: read relevant files in this order: `entrypoints`, `registration_files`, `reference_files`, then `code_files`.
+6. Read full feature prose only when implementation needs design context not present in digest, graph, specs, or routed code.
+
+Do not copy routing arrays into `.graph.json` or create another routing artifact.
+
 ### Baseline documents (fallback / deep-dive):
 
 | Document | Purpose |
@@ -84,7 +97,7 @@ AUTONOMOUS → translate each Given-When-Then from 004-*-test-scenarios.md into 
 INTERACTIVE → analyze requirement and identify what needs to be tested
 ```
 
-- Consult `docs/adr/TESTS.md` for the default testing framework
+- Use test framework and commands from `.digest.md`; consult `docs/adr/TESTS.md` only when digest detail is missing or ambiguous
 - Create test structure (unit / integration / functional)
 - Write tests following AAA pattern (Arrange, Act, Assert)
 - Include positive and negative scenarios
@@ -104,13 +117,13 @@ INTERACTIVE → analyze newly created tests to understand exact requirements
 - **REWORK (if `REWORK-LOG.md` present)**: address all architectural questions, vulnerabilities, and open points listed in `REWORK-LOG.md` alongside tactical tasks
 - After GREEN: refactor to remove duplication and improve readability
 - Keep tests green throughout refactor
-- Follow SOLID principles and conventions from `docs/adr/ARCHITECTURE.md`
+- Follow constraints from `.digest.md`; consult `docs/adr/ARCHITECTURE.md` only when work crosses architectural boundaries or digest detail is insufficient
 
 </step>
 
 <step id="3" name="Run Tests">
 
-Execute full test suite. *(Command varies by stack — consult `docs/adr/TESTS.md`. Examples: `npm test`, `pytest`, `mvn test`, `go test`.)*
+Execute full test suite using verified command from `.digest.md`; fall back to `docs/adr/TESTS.md` when unavailable.
 
 ```
 IF all tests pass → proceed to Step 4
@@ -183,7 +196,8 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 ## Rules of Conduct
 
 **✅ Do:**
-- Read `docs/.digest.md` and `docs/.graph.json` first if present; fallback to full baseline docs (`README.md`, `ARCHITECTURE.md`, `TESTS.md`) if missing or deeper context required
+- Read `docs/.digest.md` and `docs/.graph.json` first if present; select one feature micrograph and follow its role-based paths before broad search
+- Verify routed files exist; use targeted `rg` discovery when metadata is stale or missing
 - Invoke `test-driven-development` before writing any production code
 - Run tests after every change
 - Fix production code — never alter correct tests to force passing

@@ -35,9 +35,11 @@ LANGUAGE — use Ubiquitous Language terms exclusively — no generic placeholde
 
 For each path in ${projectPaths}:
 ```
-1. READ docs/.digest.md (orientation summary) + docs/.graph.json (relation topology) if present
-2. Use docs/.graph.json to locate 1-hop relevant documents matching ${scope}
-3. Fallback: if .digest.md/.graph.json missing, read docs/README.md + docs/adr/TESTS.md and scan docs/adr/ / docs/feature/
+1. IF valid ${orientation} is supplied, use its digest summary, selected nodes, edges, and feature micrographs; do not reread global indexes
+2. Validate and inspect relevant test_files first; use entrypoints only to identify functional boundaries
+3. If any route is stale or missing, fallback to rg --files plus targeted test-name searches
+4. If ${orientation} is absent or invalid, read docs/.digest.md + docs/.graph.json, select matching feature nodes, and extract their top graph blocks
+5. Final fallback: read docs/README.md + docs/adr/TESTS.md and scan docs/adr/ / docs/feature/
 ```
 
 Then load accumulated domain context:
