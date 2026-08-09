@@ -24,11 +24,13 @@ updated: "2026-08-08"
     "src/orchestrator/StateMachine.ts",
     "src/orchestrator/ReentryResolver.ts",
     "src/file-state/FileStateManager.ts",
-    "src/context-assembler/ContextAssembler.ts"
+    "src/context-assembler/ContextAssembler.ts",
+    "src/telemetry/TokenLedger.ts"
   ],
   "test_files": [
     "tests/unit/t10-state-machine.test.ts",
-    "tests/integration/t13-orchestrator-phasec.test.ts"
+    "tests/integration/t13-orchestrator-phasec.test.ts",
+    "src/telemetry/__tests__/TokenLedger.test.ts"
   ]
 }
 ```
@@ -66,6 +68,7 @@ sdk/src/
 - **Ports-and-Adapters**: The orchestrator domain has zero runtime dependencies outside the standard library.
 - **Atomic Writes**: `FileStateManager` writes all files via a write-to-temp-then-rename pattern.
 - **Never-Throws JSON Extraction**: Returns an outcome union and never throws an exception.
+- **Canonical Telemetry Writes**: `TokenLedger` stores token metrics only inside `tokenUsage` while reading legacy flat records.
 
 ## HOW TO USE THE ORCHESTRATOR API
 
@@ -121,5 +124,5 @@ graph TD
 
 ## CHANGE SUMMARY
 - **Added:** YAML frontmatter, CHANGE SUMMARY, code examples.
-- **Updated:** UPPERCASE sections, standard folder tree format.
+- **Updated:** UPPERCASE sections, standard folder tree format, and canonical telemetry record contract.
 - **Removed:** Open limitations section as they are bug tickets, not permanent documentation.

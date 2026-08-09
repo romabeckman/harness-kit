@@ -88,11 +88,17 @@ export class RouteHandlers {
     }
   }
 
+  private setSecurityHeaders(res: ServerResponse): void {
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    res.setHeader('X-Frame-Options', 'DENY')
+  }
+
   /**
    * Main incoming request dispatcher for native Node http.Server.
    */
   async handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     try {
+      this.setSecurityHeaders(res)
       const clientIp = req.socket?.remoteAddress || '127.0.0.1'
       this.checkRateLimit(clientIp)
 
@@ -246,8 +252,7 @@ export class RouteHandlers {
       if (err instanceof HttpServerError) {
         this.sendJson(res, err.statusCode, { error: err.message, message: err.message, code: err.code })
       } else {
-        const message = err instanceof Error ? err.message : String(err)
-        this.sendJson(res, 500, { error: message, message, code: 'INTERNAL_SERVER_ERROR' })
+        this.sendJson(res, 500, { error: 'Internal server error', message: 'Internal server error', code: 'INTERNAL_SERVER_ERROR' })
       }
     }
   }

@@ -33,6 +33,8 @@ export class CleanJobsAndWorktreesUseCase {
             const entries = readdirSync(worktreesDir)
             for (const entry of entries) {
               const entryPath = join(worktreesDir, entry)
+              // Security: Verify entry path is within worktrees directory
+              if (!entryPath.startsWith(worktreesDir)) continue
               try {
                 spawn.sync('git', ['worktree', 'remove', '--force', entryPath], { cwd: ws, stdio: 'pipe' })
                 if (existsSync(entryPath)) {

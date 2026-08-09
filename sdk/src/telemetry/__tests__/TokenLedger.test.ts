@@ -37,7 +37,12 @@ describe('TokenLedger', () => {
       const entry = JSON.parse(lines[0])
       expect(entry.skill).toBe('tdd-orchestrator')
       expect(entry.agent).toBe('developer-backend')
-      expect(entry.inputTokens).toBe(100)
+      expect(entry.tokenUsage.inputTokens).toBe(100)
+      expect(entry).not.toHaveProperty('inputTokens')
+      expect(entry).not.toHaveProperty('outputTokens')
+      expect(entry).not.toHaveProperty('cacheCreationTokens')
+      expect(entry).not.toHaveProperty('cacheReadTokens')
+      expect(entry).not.toHaveProperty('costUsd')
     })
 
     it('appends multiple entries on successive calls', () => {
@@ -201,6 +206,14 @@ describe('TokenLedger', () => {
           calculatedCostUsd: 0.00645,
         },
       })
+
+      const persistedEvent = JSON.parse(readFileSync(ledgerPath, 'utf8').trim())
+      expect(persistedEvent.tokenUsage.inputTokens).toBe(1250)
+      expect(persistedEvent).not.toHaveProperty('inputTokens')
+      expect(persistedEvent).not.toHaveProperty('outputTokens')
+      expect(persistedEvent).not.toHaveProperty('cacheCreationTokens')
+      expect(persistedEvent).not.toHaveProperty('cacheReadTokens')
+      expect(persistedEvent).not.toHaveProperty('costUsd')
 
       const report = ledger.report()
       expect(report.events).toHaveLength(1)

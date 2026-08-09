@@ -23,6 +23,10 @@ class MockServerResponse {
   public headers: Record<string, string | number> = {}
   public body = ''
 
+  setHeader(name: string, value: string | number) {
+    this.headers[name] = value
+  }
+
   writeHead(statusCode: number, headers?: Record<string, string | number>) {
     this.statusCode = statusCode
     if (headers) {
@@ -310,5 +314,27 @@ describe('RouteHandlers Integration Tests', () => {
     expect(parsed.summary).toBeDefined()
     expect(parsed.grandTotal).toBeDefined()
   })
-})
 
+  it('SEC-CORS: All responses include security headers', async () => {
+    const req = new MockIncomingMessage('/health', 'GET')
+    const res = new MockServerResponse()
+    await routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+    expect(res.headers['X-Content-Type-Options']).toBe('nosniff')
+    expect(res.headers['X-Frame-Options']).toBe('DENY')
+  })
+
+  it('SEC-ERR: Internal errors return generic message without stack traces', async () => {
+    const handlers = new RouteHandlers(jobStore, jobQueue, lockManager, undefined, {
+      getHealthUseCase: { execute: async () => { throw new Error('Sensitive: /home/user/.secrets/db-password=abc123') } } as any
+    })
+    const req = new MockIncomingMessage('/health', 'GET')
+    const res = new MockServerResponse()
+    await handlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+    expect(res.statusCode).toBe(500)
+    const parsed = JSON.parse(res.body)
+    expect(parsed.message).toBe('Internal server error')
+    expect(parsed.error).toBe('Internal server error')
+    expect(parsed.message).not.toContain('Sensitive')
+    expect(parsed.message).not.toContain('db-password')
+  })
+})

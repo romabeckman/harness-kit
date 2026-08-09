@@ -56,4 +56,13 @@ describe('SyncWorkspaceRepositoryUseCase', () => {
     expect(result.workspacePath).toBe(testWorkspacePath)
     expect(result.fetchedAt).toBeDefined()
   })
+  
+  it('SEC-BRANCH: Rejects branch names with invalid characters', async () => {
+    // Create a fake workspace with .git to pass the git repository check
+    mkdirSync(join(testWorkspacePath, '.git'), { recursive: true })
+    writeFileSync(join(testWorkspacePath, '.git', 'HEAD'), 'ref: refs/heads/main\n')
+    process.env.PROJECT_MAPPINGS = JSON.stringify({ backend: { path: testWorkspacePath, baseBranch: 'main; rm -rf /' } })
+    const uc = new SyncWorkspaceRepositoryUseCase()
+    await expect(uc.execute({ project: 'backend' })).rejects.toThrow('contains invalid characters')
+  })
 })

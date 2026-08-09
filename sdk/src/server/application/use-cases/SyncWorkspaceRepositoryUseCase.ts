@@ -5,6 +5,15 @@ import { promisify } from 'node:util'
 import { DtoMappers } from '../../adapters/inbound/http/mappers/DtoMappers'
 import { HttpServerError } from '../../domain/types'
 
+const BRANCH_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._\/-]*$/
+const MAX_BRANCH_LENGTH = 255
+
+function validateBranchName(branch: string): void {
+  if (!branch || branch.length > MAX_BRANCH_LENGTH || !BRANCH_NAME_PATTERN.test(branch)) {
+    throw new HttpServerError(400, 'INVALID_BRANCH_NAME', `Branch name '${branch.slice(0, 50)}' contains invalid characters or is too long.`)
+  }
+}
+
 const execFileAsync = promisify(execFile)
 
 async function execGit(args: string[], cwd: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
@@ -47,6 +56,7 @@ export class SyncWorkspaceRepositoryUseCase {
     }
 
     const targetBranch = envInfo.baseBranch ?? process.env.BASE_BRANCH ?? 'main'
+    validateBranchName(targetBranch)
     const syncKey = `${workspacePath}:${targetBranch}`
 
     // Schedule background non-blocking fetch with deduplication

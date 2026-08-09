@@ -137,11 +137,6 @@ export class TokenLedger {
       model: usage.model ?? 'unknown',
       skill,
       effort: usage.effort ?? 'default',
-      inputTokens,
-      outputTokens,
-      cacheCreationTokens,
-      cacheReadTokens,
-      costUsd: calculatedCostUsd,
       executionMetrics: {
         durationMs: usage.durationMs ?? 0,
         status: usage.status ?? 'success',
@@ -179,11 +174,6 @@ export class TokenLedger {
       model: event.model ?? 'unknown',
       skill: event.skill ?? 'unknown',
       effort: event.effort ?? 'default',
-      inputTokens,
-      outputTokens,
-      cacheCreationTokens,
-      cacheReadTokens,
-      costUsd: calculatedCostUsd,
       executionMetrics: {
         durationMs: event.executionMetrics?.durationMs ?? 0,
         status: event.executionMetrics?.status ?? 'success',

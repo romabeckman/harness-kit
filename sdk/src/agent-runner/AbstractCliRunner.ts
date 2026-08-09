@@ -13,6 +13,37 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   #effort?: string
   #timeoutMs: number = DEFAULT_PHASE_TIMEOUT_MS
 
+  /**
+   * Sensitive environment variable patterns that should not be propagated
+   * to child agent processes to prevent credential leakage.
+   */
+  private static readonly SENSITIVE_ENV_PATTERNS: RegExp[] = [
+    /API_KEY$/i,
+    /SECRET/i,
+    /TOKEN$/i,
+    /PASSWORD/i,
+    /PASS$/i,
+    /^DATABASE_URL$/i,
+    /^DB_/i,
+    /^REDIS_URL$/i,
+    /^MONGO/i,
+    /^AUTH_/i,
+    /^PROJECT_MAPPINGS$/i,
+    /^ALLOWED_WORKSPACES$/i,
+    /^GIT_REPOSITORIES$/i,
+  ]
+
+  static filterSensitiveEnv(env: Record<string, string | undefined>): Record<string, string | undefined> {
+    const filtered: Record<string, string | undefined> = {}
+    for (const [key, value] of Object.entries(env)) {
+      const isSensitive = AbstractCliRunner.SENSITIVE_ENV_PATTERNS.some(pattern => pattern.test(key))
+      if (!isSensitive) {
+        filtered[key] = value
+      }
+    }
+    return filtered
+  }
+
   private static registerSignalHandlers(): void {
     if (AbstractCliRunner.signalsRegistered) return
     AbstractCliRunner.signalsRegistered = true
@@ -142,7 +173,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
       const child = spawn(this.binaryName, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
-        env: { ...process.env, ...(invocation.env ?? {}) },
+        env: { ...AbstractCliRunner.filterSensitiveEnv(process.env), ...(invocation.env ?? {}) },
       })
 
       let timer: ReturnType<typeof setTimeout> | undefined

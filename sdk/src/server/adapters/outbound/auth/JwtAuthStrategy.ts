@@ -60,6 +60,17 @@ export class JwtAuthStrategy implements IAuthStrategy {
     if (parts.length !== 3) return null
 
     const [encHeader, encPayload, signature] = parts
+
+    // Validate algorithm in header
+    try {
+      const headerStr = Buffer.from(encHeader, 'base64url').toString('utf-8')
+      const header = JSON.parse(headerStr)
+      if (!header.alg || header.alg !== 'HS256') {
+        return null
+      }
+    } catch {
+      return null
+    }
     const expectedSig = createHmac('sha256', secret)
       .update(`${encHeader}.${encPayload}`)
       .digest('base64url')
