@@ -35,7 +35,7 @@ describe('GetTokensTelemetryUseCase', () => {
     const tokensFile = join(productDir, 'tokens.jsonl')
     const sampleEntry = JSON.stringify({
       ts: '2026-08-06T12:00:00.000Z',
-      skill: 'test-driven-development',
+      skill: 'tdd-orchestrator',
       agent: 'claude-cli',
       model: 'claude-3-5-sonnet',
       effort: 'medium',
@@ -55,7 +55,7 @@ describe('GetTokensTelemetryUseCase', () => {
     expect(result.entries.length).toBe(1)
     expect(result.totals.inputTokens).toBe(100)
     expect(result.totals.outputTokens).toBe(50)
-    expect(result.bySkill['test-driven-development']).toBeDefined()
+    expect(result.bySkill['tdd-orchestrator']).toBeDefined()
   })
 
   it('filters token entries by jobId when jobId parameter is specified', async () => {
@@ -69,7 +69,7 @@ describe('GetTokensTelemetryUseCase', () => {
     const tokensFile = join(wtDir, 'tokens.jsonl')
     const sampleEntry = JSON.stringify({
       ts: '2026-08-06T12:00:00.000Z',
-      skill: 'test-driven-development',
+      skill: 'tdd-orchestrator',
       agent: 'claude-cli',
       model: 'claude-3-5-sonnet',
       effort: 'medium',
@@ -121,7 +121,7 @@ describe('GetTokensTelemetryUseCase', () => {
       timestamp: '2026-08-01T10:00:00.000Z',
       agent: 'claude-cli',
       model: 'claude-3-5-sonnet',
-      skill: 'test-driven-development',
+      skill: 'tdd-orchestrator',
       executionMetrics: { durationMs: 1000, status: 'success' },
       tokenUsage: { inputTokens: 100, outputTokens: 50, cacheCreationTokens: 0, cacheReadTokens: 0, calculatedCostUsd: 0.001 },
     })
@@ -132,7 +132,7 @@ describe('GetTokensTelemetryUseCase', () => {
       timestamp: '2026-08-07T10:00:00.000Z',
       agent: 'claude-cli',
       model: 'claude-3-5-sonnet',
-      skill: 'test-driven-development',
+      skill: 'tdd-orchestrator',
       executionMetrics: { durationMs: 2000, status: 'success' },
       tokenUsage: { inputTokens: 200, outputTokens: 100, cacheCreationTokens: 0, cacheReadTokens: 0, calculatedCostUsd: 0.002 },
     })

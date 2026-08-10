@@ -90,7 +90,7 @@ REQUIRED: When `docs/specs/${domain}/REWORK-LOG.md` is present, apply these opti
 
 ## TDD Workflow — Execute Steps in Order
 
-<step id="1" name="Write Tests — RED Phase" skill="test-driven-development">
+<step id="1" name="Write Tests — RED Phase">
 
 ```
 AUTONOMOUS → translate each Given-When-Then from 004-*-test-scenarios.md into executable test code
@@ -106,7 +106,7 @@ INTERACTIVE → analyze requirement and identify what needs to be tested
 
 </step>
 
-<step id="2" name="Implement Code — GREEN + REFACTOR Phases" skill="test-driven-development">
+<step id="2" name="Implement Code — GREEN + REFACTOR Phases">
 
 ```
 AUTONOMOUS → follow ordered tasks from 003-*-tactical-design.md as implementation blueprint
@@ -129,18 +129,18 @@ Execute full test suite using verified command from `.digest.md`; fall back to `
 IF all tests pass → proceed to Step 4
 
 IF any test fails:
-    1. Invoke systematic-debugging skill BEFORE attempting any fix
+    1. Route diagnosis to the developer-debugging agent BEFORE attempting any fix
     2. Follow 4 debugging phases: Root Cause → Pattern Analysis → Hypothesis → Implementation
-    3. Fix production code via test-driven-development skill
+    3. Fix production code through this tdd-orchestrator RED/GREEN/REFACTOR workflow
        IRON LAW: never change tests to force passing unless test was conceptually wrong
     4. Re-run tests → repeat until all pass
 ```
 
 </step>
 
-<step id="4" name="Final Validation" skill="verification-before-completion">
+<step id="4" name="Final Validation">
 
-- Invoke `verification-before-completion` **before declaring any completion**
+- Execute this final validation gate **before declaring any completion**
 - Run full test suite one last time — check for regressions
 - Provide concrete evidence (actual test command output)
 
@@ -150,7 +150,7 @@ Task is COMPLETE only when: 100% tests pass WITH verified output evidence
 
 </step>
 
-<step id="5" name="Update Documentation" skill="project-memory">
+<step id="5" name="Update Documentation">
 
 When applicable, invoke `project-memory` to update:
 - OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs
@@ -198,10 +198,10 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 **✅ Do:**
 - Read `docs/.digest.md` and `docs/.graph.json` first if present; select one feature micrograph and follow its role-based paths before broad search
 - Verify routed files exist; use targeted `rg` discovery when metadata is stale or missing
-- Invoke `test-driven-development` before writing any production code
+- Follow this skill's RED phase before writing any production code
 - Run tests after every change
 - Fix production code — never alter correct tests to force passing
-- Invoke `verification-before-completion` before declaring completion
+- Execute the final validation step before declaring completion
 - Invoke `project-memory` for new or changes in the project
 
 **❌ Don't:**
@@ -210,7 +210,7 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 - Assume language, framework, or architecture without consulting docs
 - Run package installation commands automatically — always instruct the user
 - Declare "tests passed" without executed, verified output in the same message
-- Propose fixes for failing tests without first invoking `systematic-debugging`
+- Propose fixes for failing tests without first routing root-cause analysis to `developer-debugging`
 
 </rules>
 
@@ -245,20 +245,20 @@ At each step, emit a status block:
 
 **Example sequence:**
 ```
-📋 Step 1: Writing Tests (test-driven-development — RED)
+📋 Step 1: Writing Tests (tdd-orchestrator — RED)
 ✅ Tests written and verified failing — TESTS.md consulted
 
-📋 Step 2: Implementing Feature (test-driven-development — GREEN + REFACTOR)
+📋 Step 2: Implementing Feature (tdd-orchestrator — GREEN + REFACTOR)
 ✅ Minimal implementation complete; tests green; code refactored
 
 📋 Step 3: Running Tests
-⚠️  2 tests failed — invoking systematic-debugging...
-✅ Root cause identified — fixing via test-driven-development
+⚠️  2 tests failed — routing diagnosis to developer-debugging...
+✅ Root cause identified — fixing via tdd-orchestrator
 
 📋 Step 3: Re-running Tests
 ✅ All tests passed
 
-📋 Step 4: Final Validation (verification-before-completion)
+📋 Step 4: Final Validation (tdd-orchestrator)
 ✅ [test output evidence] All tests passed — claim verified
 
 📋 Step 5: Updating Documentation (project-memory)

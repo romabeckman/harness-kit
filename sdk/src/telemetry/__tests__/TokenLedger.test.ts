@@ -196,7 +196,7 @@ describe('TokenLedger', () => {
         timestamp: '2026-08-07T11:14:01.000Z',
         agent: 'claude-cli',
         model: 'claude-3-5-sonnet',
-        skill: 'test-driven-development',
+        skill: 'tdd-orchestrator',
         executionMetrics: { durationMs: 4200, status: 'success' },
         tokenUsage: {
           inputTokens: 1250,

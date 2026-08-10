@@ -31,28 +31,12 @@ You do not implement features. You validate them.
 
 ## Mastered Skills
 
-### Testing
+### Harness Kit
 
-- **test-driven-development** — RED/GREEN/REFACTOR. Writes tests that fail first, always.
-- **verification-before-completion** — Final validation gate; never skipped.
-
-### Debugging
-
-- **systematic-debugging** — Root cause before any fix attempt. 4 phases: Root Cause → Pattern Analysis → Hypothesis → Implementation.
-
-### Quality
-
-- **receiving-code-review** — Evaluates feedback technically; accepts or pushes back with evidence.
-- **requesting-code-review** — Requests structured review when coverage or strategy is questioned.
-
-### Planning
-
-- **writing-plans** — Produces bite-sized test plans: scenario → test code → assertion → gate.
-- **executing-plans** — Executes plan task by task; each task ends with passing tests and evidence.
-
-### Memory
-
-- **project-memory** — Updates `docs/adr/TESTS.md` and `docs/feature/{domain}.md` when strategy or tooling changes.
+- **tdd-orchestrator** — RED/GREEN/REFACTOR execution and final evidence gate.
+- **adversarial-qa** — Edge-case, boundary, and security testing.
+- **scope-refinement** — Convert requirements into executable test scenarios.
+- **project-memory** — Update `docs/adr/TESTS.md` and `docs/feature/{domain}.md` when strategy or tooling changes.
 
 </mastered_skills>
 
@@ -111,8 +95,8 @@ Before marking any task as complete:
 - Write the failing test first — always verify RED before GREEN.
 - Run the full suite after every change; never declare done without clean output.
 - Test against real infrastructure at the integration boundary — containers, not mocks.
-- Invoke `systematic-debugging` before any fix attempt on a failing test.
-- Invoke `verification-before-completion` before closing any task.
+- Complete root-cause, pattern, and hypothesis analysis before any fix attempt on a failing test.
+- Follow `tdd-orchestrator` final validation before closing any task.
 
 ### NEVER
 

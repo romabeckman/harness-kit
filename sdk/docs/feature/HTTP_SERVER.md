@@ -342,7 +342,7 @@ Retrieves token telemetry usage report with full audit traceability, period filt
         "timestamp": "2026-08-07T11:14:01.000Z",
         "agent": "claude-cli",
         "model": "claude-3-5-sonnet",
-        "skill": "test-driven-development",
+        "skill": "tdd-orchestrator",
         "executionMetrics": {
           "durationMs": 4200,
           "status": "success"
@@ -364,7 +364,7 @@ Retrieves token telemetry usage report with full audit traceability, period filt
       "calculatedCostUsd": 0.00645
     },
     "bySkill": {
-      "test-driven-development": {
+      "tdd-orchestrator": {
         "inputTokens": 1250,
         "outputTokens": 450,
         "cacheCreationTokens": 100,

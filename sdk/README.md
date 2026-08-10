@@ -587,7 +587,6 @@ The built-in JWT implementation supports **HS256 only** and validates the `alg` 
 
 - [Daily Use Playbook](./docs/PLAYBOOK-DAILY-USE.md) — real-world recipes for multi-project setups, POCs, mid-run corrections, and more
 - [Agent runner architecture](./docs/feature/sdk_agent_runner.md) — runner internals and extension points
-- [Integration with Superpowers](https://github.com/obra/superpowers) — low-level execution tools (Git worktrees, parallel agents, etc.)
 
 ---
 

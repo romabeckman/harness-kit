@@ -26,7 +26,7 @@ Choose your entry point based on what you need right now:
 → **[AUTONOMOUS-ORCHESTRATOR.md](AUTONOMOUS-ORCHESTRATOR.md)**
 - Step-by-step workflow for running the sovereign, fully automated execution loop.
 - Full status lifecycle: `PASS`, `RETRY`, `BLOCKED`, and `FAILED`.
-- Best practices on initializing project documentation and defining proper brainstorming contexts.
+- Best practices for initializing project documentation and defining scope-refinement contexts.
 
 ---
 
