@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { HarnessOrchestrator } from "../../orchestrator/HarnessOrchestrator";
 import { ChainBuilder } from "../../orchestrator/ChainBuilder";
-import { CliCommand, Complexity, RunMode } from "../../orchestrator/types";
+import { CliCommand, Complexity, Phase, RunMode } from "../../orchestrator/types";
 import { AgentRunnerFactory } from "../../agent-runner/AgentRunnerFactory";
 import { HarnessSettings } from "../../settings/HarnessSettings";
 import { StartupBanner } from "../../ui/StartupBanner";
@@ -118,6 +118,74 @@ async function resolveResumeOptions(parsed: ReturnType<typeof parseRunArgs>): Pr
     message: "Steering rules or state overrides (optional):",
     default: "",
   });
+}
+
+/**
+ * Ordered pipeline of phases eligible for resume rollback.
+ * Only these phases support "continue or go back" during resume.
+ */
+const RESUMABLE_PHASES: readonly Phase[] = [
+  Phase.PLANNING,
+  Phase.DEVELOPMENT,
+  Phase.REVIEW,
+] as const;
+
+export interface ResumePhaseChoice {
+  name: string;
+  value: Phase;
+}
+
+/**
+ * Pure function: given the current phase, returns the list of choices
+ * (continue at current phase + earlier resumable phases), or null if
+ * the phase is not in the resumable set.
+ */
+export function buildResumePhaseChoices(currentPhase: Phase): ResumePhaseChoice[] | null {
+  const idx = RESUMABLE_PHASES.indexOf(currentPhase);
+  if (idx === -1) return null;
+
+  const choices: ResumePhaseChoice[] = [
+    { name: `Continue at ${currentPhase}`, value: currentPhase },
+  ];
+
+  // Add earlier phases in reverse order (most recent first)
+  for (let i = idx - 1; i >= 0; i--) {
+    choices.push({
+      name: `Go back to ${RESUMABLE_PHASES[i]}`,
+      value: RESUMABLE_PHASES[i],
+    });
+  }
+
+  return choices;
+}
+
+/**
+ * Prompts the user to continue at the current phase or roll back
+ * to an earlier one. Returns the chosen phase, or the current phase
+ * if no override is available.
+ */
+async function promptResumePhaseOverride(
+  orchestrator: HarnessOrchestrator,
+  currentPhase: Phase
+): Promise<void> {
+  const choices = buildResumePhaseChoices(currentPhase);
+  if (!choices || choices.length <= 1) return;
+
+  const isInteractive = process.stdout.isTTY && process.stdin.isTTY && process.env.NODE_ENV !== 'test';
+  if (!isInteractive) return;
+
+  const { select } = await import("@inquirer/prompts");
+  const selected = await select({
+    message: `Current phase is ${currentPhase}. Where do you want to resume?`,
+    choices,
+  });
+
+  if (selected !== currentPhase) {
+    console.log(
+      `\n${AnsiHelpers.blue("⟳")} ${AnsiHelpers.dim("Rolling back to:")} ${AnsiHelpers.cyan(selected)}`
+    );
+    orchestrator.state = { ...orchestrator.state, currentPhase: selected };
+  }
 }
 
 function logOrchestrationStart(
@@ -284,6 +352,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
       );
     }
 
+    await promptResumePhaseOverride(orchestrator, state.currentPhase);
     await applySteeringRules(orchestrator, agentRunner, options, steeringMessage);
   }
 

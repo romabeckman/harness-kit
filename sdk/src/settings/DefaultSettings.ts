@@ -32,21 +32,21 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     phases: {
       bootstrap: { model: 'gpt-5.6-sol', effort: 'medium' },
       planning: { model: 'gpt-5.6-sol', effort: 'high' },
-      implementation: { model: 'gpt-5.6-luna', effort: 'max' },
-      review_tl: { model: 'gpt-5.6-sol', effort: 'medium' },
-      review_adv: { model: 'gpt-5.6-sol', effort: 'medium' },
-      memory: { model: 'gpt-5.6-luna', effort: 'high' },
+      implementation: { model: 'gpt-5.6-sol', effort: 'medium' },
+      review_tl: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      review_adv: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      memory: { model: 'gpt-5.6-sol', effort: 'low' },
     }
   },
   'cursor': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'gpt-5.3-codex', effort: 'medium' },
-      planning: { model: 'anthropic.claude-5-sonnet', effort: 'high' },
-      implementation: { model: 'gpt-5.3-codex', effort: 'medium' },
-      review_tl: { model: 'gpt-5.3-codex', effort: 'low' },
-      review_adv: { model: 'gpt-5.3-codex', effort: 'low' },
-      memory: { model: 'gpt-5.3-codex', effort: 'low' },
+      bootstrap: { model: 'gpt-5.6-sol', effort: 'medium' },
+      planning: { model: 'gpt-5.6-sol', effort: 'high' },
+      implementation: { model: 'gpt-5.6-sol', effort: 'medium' },
+      review_tl: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      review_adv: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      memory: { model: 'gpt-5.6-sol', effort: 'low' },
     }
   },
   'codex': {
@@ -54,10 +54,10 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     phases: {
       bootstrap: { model: 'gpt-5.6-sol', effort: 'medium' },
       planning: { model: 'gpt-5.6-sol', effort: 'high' },
-      implementation: { model: 'gpt-5.6-luna', effort: 'max' },
-      review_tl: { model: 'gpt-5.6-sol', effort: 'medium' },
-      review_adv: { model: 'gpt-5.6-sol', effort: 'medium' },
-      memory: { model: 'gpt-5.6-luna', effort: 'high' },
+      implementation: { model: 'gpt-5.6-sol', effort: 'medium' },
+      review_tl: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      review_adv: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      memory: { model: 'gpt-5.6-sol', effort: 'low' },
     }
   }
 }
