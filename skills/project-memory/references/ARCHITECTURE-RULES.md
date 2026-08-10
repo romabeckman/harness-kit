@@ -41,7 +41,7 @@ edges:
     target: "adr:tests"
 updated: YYYY-MM-DD
 ---
-# Arquitetura do Projeto
+# Project Architecture
 
 ## OVERVIEW
 [Maximum 3 lines. State the main architectural pattern (e.g., Clean Architecture, Hexagonal, MVC), primary languages/frameworks, and the general data flow.]

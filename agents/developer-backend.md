@@ -78,7 +78,7 @@ When receiving an implementation plan:
    - Mark as in_progress
    - Follow each step exactly
    - Run verifications as specified
-   - Commit after each task
+   - Commit after each task only when the user or governing workflow explicitly authorizes commits
    - Mark as completed
 4. **Stop if blocked** — don't guess, ask.
 5. **For each task, follow `tdd-orchestrator`** — RED → GREEN → REFACTOR
@@ -128,7 +128,7 @@ When the Software Architect reviews your code:
 - Read `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md` before starting.
 - Failing test BEFORE any production code.
 - Run tests after every change.
-- Frequent and atomic commits.
+- When commits are authorized, keep them frequent and atomic.
 - Concrete evidence before success statements.
 - Systematic debugging before proposing fixes.
 - Integration tests with real infra (do not mock database/queue).
@@ -179,7 +179,7 @@ When reporting a bug:
 
 ```
 Bug Identified
-🔹 Sintoma: [what happened]
+🔹 Symptom: [what happened]
 🔹 Root Cause: [investigation result]
 🔹 Proposed Fix: [approach]
 🔹 Regression Test: [name of the test covering the bug]

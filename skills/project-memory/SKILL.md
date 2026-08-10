@@ -137,13 +137,11 @@ Execute steps in order. Do not skip steps.
 - Confirm imperative tone and bold on key terms.
 - Confirm UPPERCASE section titles are present.
 - Confirm cross-reference section exists at the end of each document.
-- REQUIRED: Confirm `docs/.digest.md` (Step 8), `docs/.graph.json` (Step 9), and `docs/README.md` (Step 10) have been updated.
-- REQUIRED: Confirm `docs/.digest.md` is under 60 lines and under 3000 characters, and its `## DOCUMENTATION INDEX` lists only baseline docs plus a pointer to `docs/.graph.json`.
-- REQUIRED: Confirm `docs/.digest.md` contains no absolute filesystem paths or `file://` URIs — every path is relative (plain text, not a Markdown link).
+- At this stage validate the target documents only. Validate generated indexes after Steps 8–10, once those files have actually been updated.
 
-**Step 7 — Deliver**
-- Output the generated or updated content.
-- Provide a concise change summary: what was added, updated, or removed, and why.
+**Step 7 — Prepare delivery summary**
+- Record what was added, updated, or removed, and why.
+- Do not deliver yet; Steps 8–10 must complete first.
 
 **Step 8 — Generate project digest**
 - REQUIRED: After every invocation, generate or update `docs/.digest.md` with a machine-readable summary.
@@ -173,3 +171,5 @@ Execute steps in order. Do not skip steps.
 - REQUIRED: Treat `docs/.graph.json` `nodes[]` as the source of truth for *which* documents exist; `docs/README.md` adds the human-facing layer (`Mandatory`/`Optional`, 1–2 sentence description) on top of those same nodes.
 - Follow `./references/README-RULES.md` structure and prohibitions exactly — do not skip this step even when the user's request only targeted one specific document.
 - Purpose: prevents `docs/README.md` from drifting out of sync while `docs/.digest.md`/`docs/.graph.json` are kept current every invocation.
+- Final validation: confirm `docs/.digest.md` is under 60 lines and 3000 characters, contains only relative plain-text paths, and lists only baseline docs plus the `.graph.json` pointer. Confirm `.graph.json` topology resolves and `docs/README.md` matches its nodes.
+- Deliver only the concise Step 7 summary and changed file paths. Do not repeat full document contents unless the user asks.

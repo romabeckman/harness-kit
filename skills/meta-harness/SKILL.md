@@ -93,8 +93,8 @@ Do NOT output conversational text. Your final response must be strictly a valid 
   "targetSkill": "string",
   "status": "PROPOSED",
   "decision": {
-    "action": "APPLY_CANDIDATE",
-    "scoreImprovement": 0.00
+    "action": "EVALUATE_CANDIDATE",
+    "scoreImprovement": null
   }
 }
 ```
@@ -106,9 +106,10 @@ If invoked with an evaluation context after the loop tested the candidate:
 1. Read `docs/harness-history/candidates/{candidate_id}/score.md`.
 2. Compare against baseline score in `pareto-frontier.md`.
 3. If candidate_score > baseline_score:
-* Copy candidate `SKILL.md` to `skills/{skill_name}/SKILL.md`.
-* Update `candidates/{candidate_id}/score.md` → `promoted: true`.
-* Return JSON with `status: "PROMOTED"` and `action: "OPTIMIZED"`.
+* Present the score comparison and candidate diff to the human.
+* Promote only after explicit human approval; then copy candidate `SKILL.md` to `skills/{skill_name}/SKILL.md` and set `promoted: true`.
+* Without approval, leave the active skill unchanged and return `status: "PROPOSED"`, `action: "AWAIT_APPROVAL"`.
+* After approved promotion, return `status: "PROMOTED"`, `action: "OPTIMIZED"`.
 4. If candidate_score ≤ baseline_score:
 * Return JSON with `status: "PROPOSED"` and `action: "REVERT"`.
 
@@ -122,6 +123,7 @@ If invoked with an evaluation context after the loop tested the candidate:
 * Form hypothesis from evidence in actual traces — never from assumption.
 * Propose ONE change per candidate.
 * Store a complete, runnable `SKILL.md` in the candidate directory.
+* Require explicit human approval before modifying an active skill.
 
 ### NEVER
 

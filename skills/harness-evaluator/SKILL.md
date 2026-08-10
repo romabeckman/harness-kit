@@ -78,8 +78,7 @@ Group: scope-refinement → tdd-orchestrator → project-memory → adversarial-
 
 ### Step 4 — Identify Pareto Frontier
 
-Identify harness configurations that are **not dominated** by any other configuration.
-Configuration A dominates B if A scores higher on ALL metrics simultaneously.
+Identify harness configurations that are **not dominated** by any other configuration. First normalize each metric according to its configured direction and target range. Configuration A dominates B when A is at least as good on every normalized metric and strictly better on at least one.
 
 Also compute:
 - **Best overall** — highest `mean_score`
@@ -184,7 +183,7 @@ Next step — automatic optimization cycle:
 - Show the full computation transparently before the summary.
 
 ### NEVER
-- Delete or modify session trace files — they are append-only.
+- Delete or modify session trace evidence (`metadata.md`, `input.md`, `steps.md`, `verdict.md`, or raw metrics). The only permitted trace edit is filling a previously blank `Computed Score` block in `score.md`.
 - Modify `candidates/` — that is `meta-harness` territory.
 - Invent metrics — only use values from actual `score.md` files.
-- Declare a winner with fewer than 3 sessions.
+- Declare a winner with fewer than 3 sessions in that skill-chain group. If no group qualifies, report that no reliable winner exists and provide provisional comparisons only.

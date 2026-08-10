@@ -153,7 +153,7 @@ Calculate `score` (`[0.00, 1.00]`, 2 decimals). Compared against `${scoreThresho
 
 - `featureId`: MUST match `${featureId}` from context injection
 - `score`: `[0.00, 1.00]`. Compared against `${scoreThresholdTL}` by the orchestrator
-- `openPoints`: 3–6 Socratic questions (not directives). Must expose concrete production failure vectors. Each question must implicitly reflect its relevance tier (Critical / High / Medium / Low) so the score deduction is traceable
+- `openPoints`: 0–6 Socratic questions (not directives). Use `[]` when no evidence-backed issue exists. Each question must expose a concrete production failure vector and implicitly reflect its relevance tier so the score deduction is traceable
 - `architectureTip`: One sentence. Pattern or strategy only — never a code change
 
 ---
@@ -164,10 +164,10 @@ Calculate `score` (`[0.00, 1.00]`, 2 decimals). Compared against `${scoreThresho
 
 ## DECISION GATE INTEGRATION
 
-| Score | Decision | Orchestrator Action |
+| Validator Result | Decision | Orchestrator Action |
 |---|---|---|
-| `>= ${scoreThresholdTL}` | **PASS** | Feature → `COMPLETED` |
-| `= 2` | **BLOCK** | Feature → `BLOCKED` |
+| `score >= ${scoreThresholdTL}` | **PASS** | Evaluate this result together with `QA.json` |
+| `score < ${scoreThresholdTL}` | **FAIL** | Apply the orchestrator's configured RETRY/BLOCK/FAIL gate using its rework limit and failure impact |
 
 ---
 

@@ -10,7 +10,7 @@ description: Orchestrates development workflow using Test-Driven Development (TD
 ```
 IF invoked by autonomous-orchestrator:
     mode = AUTONOMOUS
-    → Read ${featureId}, ${domain}, ${projectPaths} from runtime context
+    → Read ${featureId}, ${domain}, ${projectPaths}, and ${tasks} from runtime context
     → Skip all interactive prompts
     → Use docs/specs/${domain}/ as single source of truth
 
@@ -93,7 +93,7 @@ REQUIRED: When `docs/specs/${domain}/REWORK-LOG.md` is present, apply these opti
 <step id="1" name="Write Tests — RED Phase">
 
 ```
-AUTONOMOUS → translate each Given-When-Then from 004-*-test-scenarios.md into executable test code
+AUTONOMOUS → translate the Given-When-Then scenarios relevant to `${tasks}` into executable test code
 INTERACTIVE → analyze requirement and identify what needs to be tested
 ```
 
@@ -109,7 +109,7 @@ INTERACTIVE → analyze requirement and identify what needs to be tested
 <step id="2" name="Implement Code — GREEN + REFACTOR Phases">
 
 ```
-AUTONOMOUS → follow ordered tasks from 003-*-tactical-design.md as implementation blueprint
+AUTONOMOUS → implement only `${tasks}`, following their order and dependencies in 003-*-tactical-design.md
 INTERACTIVE → analyze newly created tests to understand exact requirements
 ```
 
@@ -152,7 +152,7 @@ Task is COMPLETE only when: 100% tests pass WITH verified output evidence
 
 <step id="5" name="Update Documentation">
 
-When applicable, invoke `project-memory` to update:
+INTERACTIVE mode only: when applicable, invoke `project-memory` to update:
 - OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs
 - Input/Output schemas, descriptions, HTTP status codes
 - The `docs/feature/{FEATURE_NAME}.md` file must be updated whenever a feature is created or updated.
@@ -170,7 +170,7 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 ```json
 {
   "featureId": "string",
-  "status": "SUCCESS" | "FAILED",
+  "status": "SUCCESS",
   "metrics": {
     "totalTests": 0,
     "passed": 0,
@@ -184,6 +184,8 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
   "reworksCount": 0
 }
 ```
+
+`status` must be either `"SUCCESS"` or `"FAILED"`. Write `"SUCCESS"` only when the final test run has zero failures.
 
 </step>
 
@@ -236,7 +238,7 @@ The following must always be performed by the user — **never automate these**:
 
 ## Console Output Format
 
-At each step, emit a status block:
+In INTERACTIVE mode, emit a status block at each step. In AUTONOMOUS mode, keep console output minimal and rely on `TDD-OUTPUT.json` as the machine-readable result.
 
 ```
 📋 Step {N}: {Step Name} ({skill} — {phase})

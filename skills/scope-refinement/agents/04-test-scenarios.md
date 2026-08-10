@@ -23,6 +23,9 @@ SOURCE  — derive ONLY from Aggregates, VOs, Use Cases, and Events
           in 003-*-tactical-design.md of that project.
           Do NOT invent scenarios not traceable to the Tactical Design.
 LANGUAGE — use Ubiquitous Language terms exclusively — no generic placeholders.
+APPLICABILITY — every checklist item below is a candidate, not a mandatory scenario.
+                Include it only when traceable to the Tactical Design or an existing project contract.
+                Mark an inapplicable subsection N/A with one-line justification; never invent behavior.
 ```
 
 </spec_rules>
@@ -192,9 +195,9 @@ For each end-to-end business flow in the project's Tactical Design:
 
 <subsection id="3.2" name="Alternative and Error Flows">
 
-- [ ] Should return 403 when user without required permission attempts [action]
-- [ ] Should return 422 with standardized error body when [invalid input] is submitted
-- [ ] Should return 404 with project-standard message when [resource] is not found
+- [ ] Should return [project-defined forbidden result] when user without required permission attempts [action] — *(if authorization is in scope)*
+- [ ] Should return [project-defined validation result] when [invalid input] is submitted
+- [ ] Should return [project-defined not-found result] when [resource] is not found
 
 </subsection>
 

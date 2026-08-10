@@ -22,11 +22,11 @@ REQUIRED: Reject any attempt to include the following content in this file.
 
 | Prohibited content | Where it belongs |
 |---|---|
-| Architecture diagrams or design decisions | `docs/ARCHITECTURE.md` |
+| Architecture diagrams or design decisions | `docs/adr/ARCHITECTURE.md` |
 | Code examples, snippets, or commands | The document specific to that topic |
-| Explanations of layers, modules, or components | `docs/ARCHITECTURE.md` |
-| Test strategies or configurations | `docs/TESTS.md` |
-| Installation or environment setup guides | `docs/SETUP.md` (if it exists) |
+| Explanations of layers, modules, or components | `docs/adr/ARCHITECTURE.md` |
+| Test strategies or configurations | `docs/adr/TESTS.md` |
+| Installation or environment setup guides | `docs/adr/SETUP.md` (if explicitly approved and it exists) |
 | Business rules or domain flows | The document specific to that domain |
 | More than 2 sentences per document description | — (exceeds the table limit) |
 

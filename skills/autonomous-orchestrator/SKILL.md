@@ -5,7 +5,7 @@ description: Sovereign loop manager. Handles file initialization, feature lifecy
 
 <execution_gate>
 
-## ⚠️ Step 0 — Scope Check (ONLY permitted pause)
+## ⚠️ Step 0 — Initial Input Gate (ONLY permitted pause window)
 
 **Step 0a — Action selection.** ASK the user ONCE with the following options and HALT until answered:
 
@@ -29,7 +29,7 @@ IF user answered "reset" in Step 0a:
     → Use ${scope} collected in Step 0b. Proceed to BOOTSTRAP.
 ```
 
-**Once Step 0 is fully resolved — for the entire session:**
+**Once Step 0 and any missing Bootstrap inputs are resolved — for the entire session:**
 
 - NEVER stop, ask questions, request confirmations, or pause
 - Execute BOOTSTRAP → Phase E **atomically**
@@ -49,10 +49,10 @@ You do NOT write code, tests, or perform any sub-agent task.
 | Skill | Agent |
 |---|---|
 | `harness-kit:scope-refinement` | `software-architect` |
-| `harness-kit:tdd-orchestrator` | `developer-backend` / `developer-frontend` / `developer-debugging` |
+| `harness-kit:tdd-orchestrator` | `developer-backend` / `developer-frontend` (`developer-debugging` is diagnostic only) |
 | `harness-kit:adversarial-qa` | `harness-qa` |
 | `harness-kit:the-grumpy-tech-lead` | `harness-tech-lead` |
-| `harness-kit:project-memory` | `software-architect` (self — Phase E only) |
+| `harness-kit:project-memory` | `software-architect` (Phase E only) |
 
 </role>
 
@@ -114,10 +114,10 @@ For each required product file in `docs/product/`, if it does not already exist,
 | `BOOTSTRAP` | Scope confirmed, files initialized | `PHASE_A` | Select next `NOT_STARTED` feature |
 | `PHASE_A` | Any dependency `Status = BLOCKED` | `CASCADE_BLOCKED` | Set feature `BLOCKED`; log `DECISIONS.md`; skip to next |
 | `PHASE_A` | All `004-*-test-scenarios.md` present | `PHASE_B` | Append tasks to `DEVELOPMENT-STATE.md` |
-| `PHASE_B` | Task selected, `TDD-OUTPUT.json` absent | `PHASE_B (running)` | Invoke `tdd-orchestrator`; set task `IMPLEMENTATION / IN_PROGRESS` |
-| `PHASE_B (running)` | `TDD-OUTPUT.json` generated + tasks remain `NOT_STARTED` | `PHASE_B` | Advance to next `NOT_STARTED` task |
+| `PHASE_B` | Pending task chunk selected, `TDD-OUTPUT.json` absent | `PHASE_B (running)` | Invoke `tdd-orchestrator`; set selected tasks `IMPLEMENTATION / IN_PROGRESS` |
+| `PHASE_B (running)` | Successful `TDD-OUTPUT.json` generated + tasks remain `NOT_STARTED` | `PHASE_B` | Mark the completed chunk `COMPLETED`; advance to the next chunk |
 | `PHASE_B (running)` | `TDD-OUTPUT.json` generated + **all tasks** `COMPLETED` | `PHASE_C` | Set all task rows `Current Phase = VALIDATION` |
-| `PHASE_C` | Feature's Score A ≥ TL threshold AND Score B ≥ Adv threshold | `PHASE_D` | Mark feature `COMPLETED` in `BACKLOG.md`; update scores; increment `${completedCycles}` |
+| `PHASE_C` | Feature's Score A ≥ TL threshold AND Score B ≥ Adv threshold AND no HIGH/CRITICAL vulnerability | `PHASE_D` | Mark feature `COMPLETED` in `BACKLOG.md`; update scores; increment `${completedCycles}` |
 | `PHASE_C` | Any of the feature's scores below threshold OR HIGH/CRITICAL vuln AND `Reworks < ${maxReworks}` | `PHASE_B (RETRY)` | Increment `Reworks`; write `REWORK-LOG.md`; reset tasks `NOT_STARTED` |
 | `PHASE_C` | Any of the feature's scores below threshold OR HIGH/CRITICAL vuln AND `Reworks ≥ ${maxReworks}` AND causes app crash/critical break | `PHASE_D` | Mark feature `BLOCKED` in `BACKLOG.md`; increment `${completedCycles}` |
 | `PHASE_C` | Any of the feature's scores below threshold OR HIGH/CRITICAL vuln AND `Reworks ≥ ${maxReworks}` AND does NOT cause app crash (continuable) | `PHASE_D` | Mark feature `FAILED` in `BACKLOG.md`; increment `${completedCycles}` |
@@ -170,11 +170,11 @@ Feature ID | Task ID | Project | Description | Domain | Current Phase: - | Statu
 
 ### Phase B — Delegation of Implementation
 
-**B1. State log:**
+**B1. Select a task chunk and log state:**
 
 ```
-DEVELOPMENT-STATE.md[task].Current Phase → IMPLEMENTATION
-DEVELOPMENT-STATE.md[task].Status        → IN_PROGRESS
+DEVELOPMENT-STATE.md[selected tasks].Current Phase → IMPLEMENTATION
+DEVELOPMENT-STATE.md[selected tasks].Status        → IN_PROGRESS
 ```
 
 **B2. Delegate** → `harness-kit:tdd-orchestrator` via appropriate developer agent (Autonomous Mode):
@@ -184,12 +184,13 @@ inputs:
   ${featureId}    = feature ID (e.g., "F001")
   ${domain}       = Domain column value
   ${projectPaths} = paths from BOOTSTRAP
+  ${tasks}        = selected task IDs and descriptions from DEVELOPMENT-STATE.md
   impl_spec       = docs/specs/{domain}/003-*-tactical-design.md
   test_spec       = docs/specs/{domain}/004-*-test-scenarios.md
   // IF RETRY: also pass docs/specs/{domain}/REWORK-LOG.md
 ```
 
-**B3. Verify:** Wait for `docs/specs/{domain}/TDD-OUTPUT.json` to be generated.
+**B3. Verify:** Wait for `docs/specs/{domain}/TDD-OUTPUT.json`. Require matching `featureId`, `status = "SUCCESS"`, and zero failed tests before marking selected tasks `COMPLETED`. Missing, corrupt, mismatched, or failed output must not advance to Phase C; log the evidence and keep the affected tasks non-complete.
 
 </phase>
 
@@ -205,7 +206,7 @@ inputs:
 
 ```
 IF ${scoreThresholdTL} or ${scoreThresholdAdv} not in memory:
-    → Load from docs/product/BOOTSTRAP-CONFIG.json -> scoreThresholds.theGrumpyTechLead.threshold / scoreThresholds.adversarialQA.threshold
+    → Load from docs/product/BOOTSTRAP-CONFIG.json -> scoreThresholdTL / scoreThresholdAdv
 IF ${maxReworks} not in memory:
     → Load from docs/product/BOOTSTRAP-CONFIG.json -> completionCriteria.maxReworks
 ```
@@ -236,7 +237,8 @@ Read `docs/specs/${domain}/TL.json` (Score A) and `docs/specs/${domain}/QA.json`
 <gate id="PASS">
 
 ```
-IF feature's Score A >= ${scoreThresholdTL} AND Score B >= ${scoreThresholdAdv}:
+IF feature's Score A >= ${scoreThresholdTL} AND Score B >= ${scoreThresholdAdv}
+   AND no HIGH/CRITICAL vulnerability:
 ```
 
 1. `BACKLOG.md[feature]` (the active feature in backlog) → `Status: COMPLETED`, `Score (TL): A`, `Score (Adv): B`

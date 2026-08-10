@@ -49,7 +49,7 @@ Every delivery pipeline is structured in four mandatory stages:
 | Stage | Responsibility | Gate |
 |-------|---------------|------|
 | **Build** | Compile, lint, SBOM generation | Zero lint errors; image builds clean |
-| **Test** | Unit, integration, contract, CVE scan | All tests pass; no HIGH/CRITICAL CVEs |
+| **Test** | Unit, integration, contract, CVE scan | All tests pass; no unmitigated HIGH/CRITICAL CVEs |
 | **Publish** | Tag, push image/artifact to registry | Image digest recorded; changelog updated |
 | **Deploy** | Promote to target environment | Health checks pass; rollback ready |
 

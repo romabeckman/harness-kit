@@ -147,8 +147,8 @@ Score ceiling rule: a score above 0.90 requires no TIER 1 or TIER 2 findings and
   "isCrashing": false,
   "vulnerabilities": [
     {
-      "type": "SQL_INJECTION|XSS|RACE_CONDITION|AUTH_BYPASS|DATA_EXPOSURE|NULL_DEREF|...",
-      "severity": "LOW|MEDIUM|HIGH|CRITICAL",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
       "description": "Specific location and impact of the vulnerability."
     }
   ],
@@ -167,6 +167,8 @@ Score ceiling rule: a score above 0.90 requires no TIER 1 or TIER 2 findings and
 - `hasHighCriticalVuln`: `true` if any vulnerability is HIGH or CRITICAL
 - `isCrashing`: `true` if any vulnerability causes application crash or critical break
 - `vulnerabilities`: `[]` if none found. All `HIGH`/`CRITICAL` findings are mandatory
+- `vulnerabilities[].type`: precise category such as `SQL_INJECTION`, `XSS`, `RACE_CONDITION`, `AUTH_BYPASS`, `DATA_EXPOSURE`, `NULL_DEREF`, or `OTHER`
+- `vulnerabilities[].severity`: one of `LOW`, `MEDIUM`, `HIGH`, or `CRITICAL`
 - `edgeCasesMissed`: `[]` if all spec scenarios are covered
 
 ---
@@ -177,10 +179,10 @@ Score ceiling rule: a score above 0.90 requires no TIER 1 or TIER 2 findings and
 
 ## DECISION GATE INTEGRATION
 
-| Condition | Decision | Orchestrator Action |
+| Validator Result | Decision | Orchestrator Action |
 |---|---|---|
-| `score >= ${scoreThresholdAdv}` AND no HIGH/CRITICAL vulns | **PASS** | Feature → `COMPLETED` |
-| `score = 2` | **BLOCK** | Feature → `BLOCKED` |
+| `score >= ${scoreThresholdAdv}` AND no HIGH/CRITICAL vulnerabilities | **PASS** | Evaluate this result together with `TL.json` |
+| `score < ${scoreThresholdAdv}` OR any HIGH/CRITICAL vulnerability | **FAIL** | Apply the orchestrator's configured RETRY/BLOCK/FAIL gate using its rework limit and failure impact |
 
 ---
 

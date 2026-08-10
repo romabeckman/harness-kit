@@ -34,7 +34,7 @@ Record the execution trace of the invoking skill session. This trace becomes par
      baseline.md         ← currently active skill configuration (create from template if missing)
    ```
 
-4. **Compute session ID** — format: `session-YYYY-MM-DD-NNN` where NNN is zero-padded count of existing sessions that day.
+4. **Compute session ID** — format: `session-YYYY-MM-DD-NNN` where NNN is the zero-padded count of existing sessions that day plus 1 (`001` for the first session).
 
 ---
 
@@ -218,12 +218,12 @@ score = (1 / max(tdd_cycles, 1)) × 0.25
       + (1 / max(iterations_to_pass, 1)) × 0.20
       + (1 / max(reworksCount + 1, 1)) × 0.25
       + (grumpy_open_points / 10) × 0.20
-      + (1 / max(deviations, 1)) × 0.05
+      + (1 / (deviations + 1)) × 0.05
       + context_score × 0.05
 
 context_score = 1.0 if 3 ≤ context_docs_read ≤ 8
-              = 0.5 if context_docs_read < 3 or context_docs_read > 12
-              = 0.0 otherwise
+              = 0.5 if context_docs_read < 3 or 9 ≤ context_docs_read ≤ 12
+              = 0.0 if context_docs_read > 12
 
 ## Benchmark Task Set
 Skill chains will be compared across sessions with the same task_type.

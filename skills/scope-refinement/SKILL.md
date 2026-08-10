@@ -124,6 +124,8 @@ Pass `${orientation}` to every phase agent. Agents must not reread global indexe
 
 > ⏳ **Wait:** Both agents MUST complete before proceeding to review gate.
 
+**Reconciliation gate:** Compare bounded-context names, subdomains, events, and glossary terms across both documents. Resolve conflicts before Phase 3; `001-problem-space.md` is authoritative for Ubiquitous Language, while `002-context-map.md` is authoritative for integration relationships.
+
 <review_gate mode="INTERACTIVE">
 
 > ✅ **Strategic Design + Context Map** generated at `docs/specs/${domain}/001-problem-space.md` and `docs/specs/${domain}/002-context-map.md`  
@@ -196,7 +198,7 @@ INTERACTIVE → present markdown table of all 4 generated artifacts
 |---|---|
 | **Format** | Structured Markdown with H2/H3, lists, and tables. JSON must strictly validate. |
 | **Ubiquitous Language** | Use glossary terms consistently across ALL documents |
-| **No Code Output** | Under no circumstances generate implementation code |
+| **No Production Code** | Do not create implementation files. Short illustrative pseudocode required by Tactical Design remains allowed within its 4-line limit. |
 | **Fast-path Orientation** | Root reads digest and graph once, then passes `${orientation}`; sub-agents reread indexes only as fallback when shared orientation is absent, invalid, or stale |
 | **Harness Isolation** | PROHIBITED: read, create, or modify any file under `docs/harness-history/` |
 | **Spec Isolation** | PROHIBITED: read, create, or modify any file under `docs/specs/` except documents produced by Phases 1–4 of this skill |

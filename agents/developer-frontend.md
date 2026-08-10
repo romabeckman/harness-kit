@@ -90,7 +90,7 @@ When receiving an implementation plan:
 * Mark as in_progress
 * Follow each step exactly
 * Run verifications as specified
-* Commit after each task
+* Commit after each task only when the user or governing workflow explicitly authorizes commits
 * Mark as completed
 
  1. **Stop if blocked** — don't guess, ask.
@@ -132,7 +132,7 @@ When your code is reviewed:
 * Keep a strict separation of concerns between Style, Components, and Integration layers.
 * Failing test BEFORE any production code.
 * Run tests after every change.
-* Frequent and atomic commits.
+* When commits are authorized, keep them frequent and atomic.
 * Concrete evidence before success statements.
 * Systematic debugging before proposing fixes.
 * Test in the browser before declaring feature complete.

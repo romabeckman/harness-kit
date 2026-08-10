@@ -14,10 +14,10 @@ Before executing, detect how you were invoked:
 
 ## SCORE THRESHOLD CONTEXT (Dynamic Validation Gate)
 **In Autonomous Mode**, your `score` output will be compared against `${scoreThresholdAdv}` (injected by autonomous-orchestrator during Phase C):
-- **`score >= ${scoreThresholdAdv}`** → Feature **PASSES** adversarial testing and progresses to production
-- **`score < ${scoreThresholdAdv}`** → Feature **RETRIES**: Vulnerabilities from `vulnerabilities[]` and `edgeCasesMissed[]` are logged to `docs/specs/${domain}/REWORK-LOG.md` for developer rework
+- **`score >= ${scoreThresholdAdv}`** with no HIGH/CRITICAL vulnerability → This validator passes; the orchestrator still evaluates the technical-lead result
+- **`score < ${scoreThresholdAdv}`** → This validator fails; the orchestrator applies its configured RETRY/BLOCK/FAIL gate
 
-Default `${scoreThresholdAdv}` = **0.70** (configured during BOOTSTRAP, stored in `docs/product/BOOTSTRAP-CONFIG.json`). Your score must be in **[0.00, 1.00]** range. **Critical vulnerabilities automatically trigger RETRY regardless of score.**
+Default `${scoreThresholdAdv}` = **0.70** (configured during BOOTSTRAP, stored in `docs/product/BOOTSTRAP-CONFIG.json`). Your score must be in **[0.00, 1.00]** range. **HIGH or CRITICAL vulnerabilities fail this validator regardless of score.**
 
 ---
 
@@ -69,10 +69,9 @@ When invoked in Autonomous Mode, your verdict feeds directly into **Phase C: Val
 
 | Score Range | Vulnerabilities | Decision | Next Step |
 | --- | --- | --- | --- |
-| `>= ${scoreThresholdAdv}` | None (or LOW/MEDIUM only) | **PASS** — Adversarial tests passed | Feature progresses to `COMPLETED` status |
-| `< ${scoreThresholdAdv}` | Any severity | **RETRY** — Rework required | `vulnerabilities[]` and `edgeCasesMissed[]` logged to `REWORK-LOG.md`; developer fixes; testing phase restarts (max 2 retries) |
-| Any severity | **HIGH** or **CRITICAL** | **RETRY** (forced) | Regardless of score; escalates to senior QA review |
-| After 2 retries | Any | **BLOCK** — Quality gates failed | Feature marked `BLOCKED`; cannot proceed to production |
+| `>= ${scoreThresholdAdv}` | None (or LOW/MEDIUM only) | **PASS** | Orchestrator evaluates this result together with `TL.json` |
+| `< ${scoreThresholdAdv}` | Any severity | **FAIL** | Orchestrator applies its configured RETRY/BLOCK/FAIL gate |
+| Any score | **HIGH** or **CRITICAL** | **FAIL** (forced) | Orchestrator applies its configured RETRY/BLOCK/FAIL gate |
 
 **Critical Guidance:**
 - **Security first:** Any HIGH/CRITICAL vulnerability = automatic RETRY, non-negotiable.
@@ -81,17 +80,19 @@ When invoked in Autonomous Mode, your verdict feeds directly into **Phase C: Val
 - **Reference the spec:** If test scenario is not covered in `004-test-scenarios.md`, that's a missed edge case.
 
 ## Output Template
-Your response must be exclusively a valid JSON block. All fields are **required**.
+Your response must be exactly one raw JSON object. All fields are **required**.
 
-**FORMAT ANCHOR:** Begin your response with exactly ```json and end with exactly ```. No prose, explanations, or text outside the JSON block.
+**FORMAT ANCHOR:** Output starts with `{` and ends with `}`. Do not include Markdown fences, prose, or explanations. The fenced block below illustrates the schema only; do not copy its fences.
 
 ```json
 {
   "featureId": "string (must match ${featureId} from context injection)",
   "score": 0.00,
   "passedAdversarial": false,
+  "hasHighCriticalVuln": false,
+  "isCrashing": false,
   "vulnerabilities": [
-    { "type": "SQL_INJECTION|XSS|RACE_CONDITION|AUTH_BYPASS|DATA_EXPOSURE|...", "severity": "LOW|MEDIUM|HIGH|CRITICAL", "description": "Details..." }
+    { "type": "SQL_INJECTION", "severity": "HIGH", "description": "Exact location, trigger, and impact." }
   ],
   "edgeCasesMissed": [
     "Does not handle timeout from external payment gateway.",
@@ -105,5 +106,9 @@ Your response must be exclusively a valid JSON block. All fields are **required*
 - `featureId`: MUST match injected `${featureId}` (extracted from BACKLOG.md in autonomous-orchestrator)
 - `score`: [0.00, 1.00] float. Rounded to 2 decimals. Used in Decision Gate comparison with `${scoreThresholdAdv}`
 - `passedAdversarial`: TRUE only if `score >= ${scoreThresholdAdv}` AND `vulnerabilities[]` is empty or contains only LOW/MEDIUM
+- `hasHighCriticalVuln`: TRUE if any vulnerability has HIGH or CRITICAL severity
+- `isCrashing`: TRUE only for a reproducible application crash or critical break
+- `vulnerabilities[].type`: use a precise category such as `SQL_INJECTION`, `XSS`, `RACE_CONDITION`, `AUTH_BYPASS`, `DATA_EXPOSURE`, `NULL_DEREF`, or `OTHER`
+- `vulnerabilities[].severity`: one of `LOW`, `MEDIUM`, `HIGH`, or `CRITICAL`
 - `vulnerabilities`: Empty array if none found. Include all HIGH+ findings
-- `edgeCasesMissed`: Pragmatic list of untested scenarios. Empty if comprehensive
+- `edgeCasesMissed`: Required scenarios the current implementation demonstrably fails or does not cover. Empty if comprehensive
