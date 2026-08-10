@@ -76,6 +76,27 @@ describe('ReviewHandler', () => {
     expect(result).toBe(Phase.TRANSITION)
   })
 
+  it('passes validation thresholds and current output contracts to both review prompts', async () => {
+    vi.mocked(existsSync).mockReturnValue(true)
+    vi.mocked(readFileSync).mockImplementation((path) => {
+      if (path.toString().endsWith('TL.json')) return JSON.stringify(mockTL)
+      if (path.toString().endsWith('QA.json')) return JSON.stringify(mockQA)
+      return ''
+    })
+    vi.mocked(ValidationGate.evaluate).mockReturnValue({ verdict: Verdict.PASS, reason: 'Passed thresholds' })
+
+    await handler.handle(Phase.REVIEW, mockContext)
+
+    const tlPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string
+    const qaPrompt = mockContext.invokeAgent.mock.calls[1][0].prompt as string
+    expect(tlPrompt).toContain('scoreThresholdTL: 0.8')
+    expect(tlPrompt).toContain('0–6 Socratic questions')
+    expect(tlPrompt).not.toContain('"isCrashing"')
+    expect(qaPrompt).toContain('scoreThresholdAdv: 0.8')
+    expect(qaPrompt).toContain('no Markdown fences or prose')
+    expect(qaPrompt).not.toContain('SQL_INJECTION|XSS')
+  })
+
   it('deve solicitar RETRY se QA identificar falha grave no payload', async () => {
     vi.mocked(existsSync).mockReturnValue(true)
 

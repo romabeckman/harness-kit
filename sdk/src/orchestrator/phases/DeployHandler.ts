@@ -170,7 +170,7 @@ export class DeployHandler extends AbstractPhaseHandler {
 
     try {
       const output = await context.invokeAgent({
-        agent: 'harness-kit:developer-backend',
+        agent: 'harness-kit:developer-devops',
         mode: 'autonomous',
         phaseKey: 'memory',
         prompt,

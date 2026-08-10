@@ -191,6 +191,10 @@ describe('DevelopmentHandler', () => {
       const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
       expect(invokeCall.prompt).toContain(reworkLogPath)
       expect(invokeCall.prompt).toContain('<rework')
+      expect(invokeCall.prompt).toContain('<tasks>')
+      expect(invokeCall.prompt).toContain('[T01] Do something')
+      expect(invokeCall.prompt).toContain('"status": "SUCCESS"')
+      expect(invokeCall.prompt).not.toContain('"SUCCESS" | "FAILED"')
     })
   })
 })

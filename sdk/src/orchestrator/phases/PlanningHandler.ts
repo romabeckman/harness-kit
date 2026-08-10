@@ -87,7 +87,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       agent: "harness-kit:software-architect",
       mode: "autonomous",
       prompt,
-      phaseKey: "PLANNING",
+      phaseKey: "planning",
       domain: feature.domain,
     });
   }
@@ -101,7 +101,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
         ? payload.steeringRules.map((r) => `- ${r}`).join("\n")
         : "- No additional rules provided";
 
-    const complexity = context.config.complexity
+    const complexity = context.config.complexity ?? Complexity.AUTO
     const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
     const contextMapFile = join(payload.workingDir, '002-context-map.md');
     const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
@@ -133,7 +133,6 @@ export class PlanningHandler extends AbstractPhaseHandler {
       ``,
       `<skill_context>`,
       `Invoke the \`harness-kit:scope-refinement\` skill before starting.`,
-      `Use \`the-grumpy-tech-lead\` skill, its optional, only use it if you have questions.`,
       `Mode: autonomous`,
       `</skill_context>`,
       ``,
@@ -144,15 +143,15 @@ export class PlanningHandler extends AbstractPhaseHandler {
       `</react_workflow>`,
       ``,
       `<workflow>`,
-      `- Step 1: (Is Optional) Invoke the \`harness-kit:the-grumpy-tech-lead\` skill to make questions to clarify the scope if something is not clear. Save in memory the questions and answers for next step. If no questions are made, it means the feature is clear and we can proceed.`,
-      `- Step 2: Invoke the \`harness-kit:scope-refinement\` skill to start creating specs. If exists questions from step 1, pass them to the \`harness-kit:scope-refinement\` skill to improve the understanding of the feature.`,
+      `- Run all four autonomous phases of \`harness-kit:scope-refinement\` in order.`,
+      `- When <refinement_context> is present, treat its human-validated decisions as authoritative.`,
       `</workflow>`,
       ``,
       `<expected_outputs>`,
       `Produce, under \`${payload.workingDir}\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
       `- \`${problemSpaceFile}\`   Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature)`,
       `- \`${contextMapFile}\`   Bounded Contexts and Context Map`,
-      `- \`${tacticalDesignFile}\` (one per project)   Tactical Design; must include \`## Section 6   Ordered Development Tasks\` with a fenced JSON array objects`,
+      `- \`${tacticalDesignFile}\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array of objects`,
       `- \`${testScenariosFile}\` (one per project)   Test Scenarios`,
       `</expected_outputs>`,
       ``,
@@ -163,17 +162,16 @@ export class PlanningHandler extends AbstractPhaseHandler {
         ? (
           complexity === Complexity.LOW ?
             [
-              `- COMPLEXITY OVERRIDE: Classify as 'LOW'   do not re-evaluate scope complexity.`,
-              `- For 'LOW': Do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
+              `- COMPLEXITY OVERRIDE: Classify as 'LOW' — do not re-evaluate scope complexity.`,
+              `- For 'LOW': Keep analysis concise and reuse established patterns, but still produce all required 001–004 artifacts.`,
             ] :
             [
-              `- COMPLEXITY OVERRIDE: Classify as 'HIGH'   do not re-evaluate scope complexity.`,
-              `- For 'HIGH': Its required \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
+              `- COMPLEXITY OVERRIDE: Classify as 'HIGH' — do not re-evaluate scope complexity.`,
+              `- For 'HIGH': Give additional depth to integrations, failure modes, security boundaries, concurrency, and compatibility risks while producing all required 001–004 artifacts.`,
             ]
         ) : [
           `- Evaluate scope complexity between 'LOW' and 'HIGH'. LOW is characterized by crystal-clear requirements, zero structural ambiguities, isolated changes, zero cross-team dependencies, use of existing patterns, straightforward flows, zero backward compatibility risks, and standard unit testing without complex integrations.`,
-          `- If LOW: do not invoke \`harness-kit:the-grumpy-tech-lead\`. Generate ONLY '003-\${PROJECT_NAME}-tactical-design.md' and '004-\${PROJECT_NAME}-test-scenarios.md'.`,
-          `- If HIGH: invoke \`harness-kit:the-grumpy-tech-lead\` to get context, create answers and clarification about the scope before invoke \`harness-kit:scope-refinement\`.`,
+          `- If LOW: keep analysis concise and reuse established patterns. If HIGH: deepen analysis of integrations, failure modes, security boundaries, concurrency, and compatibility risks. In both cases, produce all required 001–004 artifacts.`,
         ]),
       `- Execute autonomously without pausing or asking for confirmation.`,
       `- Write every file to disk before advancing to the next.`,

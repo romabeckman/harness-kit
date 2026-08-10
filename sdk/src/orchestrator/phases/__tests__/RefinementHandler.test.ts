@@ -30,7 +30,7 @@ describe('RefinementHandler', () => {
         productDir: '/test/dir/docs/product',
       },
       invokeAgent: vi.fn().mockResolvedValue({
-        raw: '```json\n[{"id":1,"question":"Q1","recommendation":"R1","context":"C1"}]\n```',
+        raw: '[{"id":1,"question":"Q1","recommendation":"R1","context":"C1"}]',
       }),
     }
 
@@ -69,8 +69,10 @@ describe('RefinementHandler', () => {
     const next = await handler.handle(Phase.REFINEMENT, mockContext)
     expect(next).toBe(Phase.PLANNING)
     expect(mockContext.invokeAgent).toHaveBeenCalledTimes(2)
-    expect(mockContext.invokeAgent.mock.calls[0][0].agent).toBe('harness-kit:harness-tech-lead')
+    expect(mockContext.invokeAgent.mock.calls[0][0].agent).toBe('harness-kit:software-architect')
+    expect(mockContext.invokeAgent.mock.calls[0][0].skill).toBeUndefined()
     expect(mockContext.invokeAgent.mock.calls[1][0].agent).toBe('harness-kit:software-architect')
+    expect(mockContext.invokeAgent.mock.calls[1][0].skill).toBeUndefined()
 
     const questionsPath = join(productDir, 'QUESTIONS.json')
     expect(existsSync(questionsPath)).toBe(true)

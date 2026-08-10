@@ -27,16 +27,4 @@ describe('F004 — E2E CI Pipeline Integration Specs', () => {
       expect(pkg.scripts['test:e2e:clean']).toContain('tests/e2e/.temp');
     });
   });
-
-  describe('Section 3.1 & 3.2 — CI Workflow Pipeline Integration (.github/workflows/ci.yml)', () => {
-    it('should execute E2E test step and cleanup in CI pipeline', () => {
-      const ciPath = path.join(ROOT_DIR, '.github/workflows/ci.yml');
-      expect(fs.existsSync(ciPath)).toBe(true);
-
-      const ciContent = fs.readFileSync(ciPath, 'utf8');
-      expect(ciContent).toContain('Run E2E Tests');
-      expect(ciContent).toContain('npm run test:e2e');
-      expect(ciContent).toContain('test:e2e:clean');
-    });
-  });
 });

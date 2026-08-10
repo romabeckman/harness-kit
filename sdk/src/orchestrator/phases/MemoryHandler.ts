@@ -41,7 +41,7 @@ export class MemoryHandler extends AbstractPhaseHandler {
 
   private buildProjectMemoryPrompt(payload: MemoryPayload, context: Reviewontext): string {
     const backlogFile = join(context.workingDir, 'docs', 'product', 'BACKLOG.md')
-    const specsPattern = join(context.workingDir, 'docs', 'product', 'specs', '[domain]', '*.md')
+    const specsPattern = join(context.workingDir, 'docs', 'specs', '[domain]', '*.md')
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const rulesSection =
       payload.steeringRules && payload.steeringRules.length > 0
@@ -58,7 +58,7 @@ export class MemoryHandler extends AbstractPhaseHandler {
       `Each project must have its own \`docs/adr\` and \`docs/feature\` folders where all ADRs and features are stored.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`/harness-kit:project-memory\` skill before starting.`,
+      `Invoke the \`harness-kit:project-memory\` skill before starting.`,
       `Mode: autonomous`,
       `</skill_context>`,
       ``,
@@ -66,28 +66,27 @@ export class MemoryHandler extends AbstractPhaseHandler {
       ``,
       `## Workflow`,
       `1. Execute autonomously without pausing or asking for confirmation.`,
-      `2. Invoke the \`/harness-kit:project-memory\` skill and read \`./references/DOCUMENT-TEMPLATE.md\` before writing anything.`,
-      `3. Read \`${backlogFile}\` to identify the specification \`Domain\`. Use it to place/locate the feature doc at \`${specsPattern}\`.`,
+      `2. Invoke the \`harness-kit:project-memory\` skill and read \`./references/DOCUMENT-TEMPLATE.md\` before writing anything.`,
+      `3. Read \`${backlogFile}\` to identify completed features and their \`Domain\` values, then read the corresponding specification sources at \`${specsPattern}\`. Update feature documentation inside each target project, not inside the specification directory.`,
       `4. If an existing document already covers this feature's changes, fixes, updates or improvements, update that file. Otherwise, create a new one.`,
       `5. If architectural changes were introduced (new layers, patterns, integrations, test strategy changes), update the corresponding \`docs/adr/*.md\` file following its own rules file.`,
       `6. Update \`docs/.digest.md\` and \`docs/.graph.json\` at the end of the operation.`,
       ``,
       `## File Organization`,
-      `- Each project listed in \`<project_paths>\` must have its own \`docs/adr/\` and \`docs/feature/\` folders. These are the ONLY directories allowed for creation or modification inside \`docs/\`.`,
+      `- Each project listed in \`<project_paths>\` must have its own \`docs/adr/\` and \`docs/feature/\` folders. Create or modify topic documents only in those folders; root documentation indexes such as \`README.md\`, \`docs/README.md\`, \`docs/.digest.md\`, and \`docs/.graph.json\` may also be updated.`,
       `- Specification docs (SDD) live at \`${specsPattern}\`, grouped by the \`Domain\` column from BACKLOG.md.`,
-      `- Feature docs can live directly as \`docs/feature/FEATURE_NAME.md\` or grouped as \`docs/feature/[domain]/FEATURE_NAME.md\`.`,
-      `- NAMING: New filenames MUST be UPPER_CASE (e.g. \`FEATURE_NAME.md\`). NEVER prefix filenames with feature IDs such as F001, F002, etc.`,
+      `- Feature docs live directly under \`docs/feature/*.md\`. Preserve an existing project naming convention; otherwise default to a stable domain-based filename such as \`docs/feature/<domain>.md\`. Never prefix filenames with feature IDs such as F001 or F002.`,
       ``,
       `## Content Rules`,
       `- Follow \`./references/DOCUMENT-TEMPLATE.md\` strictly for structure and formatting.`,
       `- Write for a future LLM with no access to source files: state what the feature does, why it exists, key decisions, constraints — never how it was implemented step-by-step.`,
       `- AVOID code snippets. Only include one when prose cannot convey it (public interface signature, fixed schema, non-obvious config key), and keep it to a few lines. Never paste full functions, classes, or file contents — reference the file path instead.`,
       `- The \`FOLDER STRUCTURE\` section must reflect the module's current relevant structure, adding this cycle's paths without dropping paths from prior cycles.`,
-      `- All cross-references MUST point ONLY to \`./docs/adr/\` or \`./docs/feature/\` — validate every reference before finalizing.`,
+      `- Cross-references between topic documents must target files under the project's \`docs/adr/\` or \`docs/feature/\` folders and use a correct relative path from the source document. Validate every reference before finalizing.`,
       ``,
       `## Prohibited`,
       `- NEVER include TDD/validation/score details in feature docs — those belong in DECISIONS.md only.`,
-      `- NEVER add narrative explanations, justifications, or process history. \`TODO\`-style notes for future implementation are the only exception, and only in specification or decision files.`,
+      `- NEVER add process history or speculative future-work notes.`,
       `- NEVER create a new ADR file unless explicitly requested by a human.`,
       `- NEVER read, create, or modify any file under \`docs/harness-history/\`.`,
       ``,

@@ -75,7 +75,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `- Output ONLY the markdown table, no additional text.`,
       ``,
       `# FEATURE SIZING`,
-      `Each feature runs a full pipeline: scope refinement → TDD → tech lead review → QA review → documentation (4-7 agent calls per feature). A feature with broader scope does NOT cost more than a narrow one — the pipeline cost is per feature, not per unit of work inside it. Prefer fewer, well-scoped features.`,
+      `Each feature has fixed pipeline overhead: scope refinement → TDD → tech lead review → QA review → documentation (4-7 agent calls per feature). Broader scope still increases context, testing, and rework risk. Prefer the fewest cohesive features that each remain independently implementable and testable in one cycle.`,
       `- A feature is a cohesive, independently testable functional module. Think in user-facing flows, avoid technical layers.`,
       `- Group related work into ONE feature: all CRUD operations on the same entity, all endpoints of the same domain, tests with their implementation.`,
       `- NEVER create: single-endpoint features, single-file features, configuration-only features (e.g. "add CORS"), or features that separate tests from implementation.`,

@@ -111,6 +111,9 @@ describe('PlanningHandler', () => {
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
             expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'LOW'");
+            expect(invokedPrompt).toContain('all required 001–004 artifacts');
+            expect(invokedPrompt).not.toContain('the-grumpy-tech-lead');
+            expect(mockContext.invokeAgent.mock.calls[0][0].phaseKey).toBe('planning');
         });
 
         it('includes HIGH override rule when config.complexity is HIGH', async () => {
@@ -120,15 +123,18 @@ describe('PlanningHandler', () => {
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
             expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'HIGH'");
+            expect(invokedPrompt).toContain('integrations, failure modes, security boundaries, concurrency, and compatibility risks');
+            expect(invokedPrompt).not.toContain('the-grumpy-tech-lead');
         });
 
-        it('omits COMPLEXITY OVERRIDE rule when config.complexity is undefined (AUTO)', async () => {
+        it('uses AUTO complexity evaluation when config.complexity is undefined', async () => {
             mockContext.config = { ...mockContext.config, complexity: undefined };
 
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).not.toContain('Evaluate scope complexity between \'LOW\' and \'HIGH\'');
+            expect(invokedPrompt).toContain('Evaluate scope complexity between \'LOW\' and \'HIGH\'');
+            expect(invokedPrompt).not.toContain('COMPLEXITY OVERRIDE');
         });
 
         it('reloads latest scope from SCOPE.md via fsm.loadScope', async () => {

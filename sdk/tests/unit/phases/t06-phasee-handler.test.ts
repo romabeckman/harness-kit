@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryHandler } from '../../../src/orchestrator/phases/MemoryHandler'
 import { Phase } from '../../../src/orchestrator/types'
+import { join } from 'node:path'
 
 vi.mock('../../../src/context-assembler/ContextAssembler', () => ({
   ContextAssembler: {
@@ -55,8 +56,16 @@ describe('MemoryHandler', () => {
   it('invokes project-memory agent and proceeds to TRANSITION normally', async () => {
     const result = await handler.handle(Phase.MEMORY, mockContext)
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
-      expect.objectContaining({ phaseKey: 'memory' })
+      expect.objectContaining({
+        skill: 'harness-kit:project-memory',
+        phaseKey: 'memory',
+        prompt: expect.stringContaining(join('/mock/dir', 'docs', 'specs', '[domain]', '*.md')),
+      })
     )
+    const prompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string
+    expect(prompt).not.toContain(join('/mock/dir', 'docs', 'product', 'specs'))
+    expect(prompt).not.toContain('/harness-kit:project-memory')
+    expect(prompt).toContain('docs/feature/*.md')
     expect(result).toBe(Phase.DEPLOY)
   })
 

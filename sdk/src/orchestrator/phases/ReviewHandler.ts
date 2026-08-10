@@ -71,11 +71,11 @@ export class ReviewHandler extends AbstractPhaseHandler {
   }
 
   private async executeAgents(context: Reviewontext, payload: ReviewPayload, config: BootstrapConfig) {
-    const tlPrompt = this.buildTechLeadPrompt(payload, context)
-    const advPrompt = this.buildAdversarialQAPrompt(payload, context)
+    const tlPrompt = this.buildTechLeadPrompt(payload, context, config)
+    const advPrompt = this.buildAdversarialQAPrompt(payload, context, config)
     const isSimple = context.config.complexity === Complexity.LOW
 
-    const tlMock = { featureId: payload.featureId, score: 1, isCrashing: false, openPoints: [], architectureTip: '' }
+    const tlMock = { featureId: payload.featureId, score: 1, openPoints: [], architectureTip: '' }
     const specsDir = join(context.workingDir, 'docs', 'specs', payload.domain)
 
     if (isSimple && existsSync(specsDir)) {
@@ -218,7 +218,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     return sections.length > 0 ? sections.join('\n\n') : `Score TL: ${scores.scoreTL}, Score Adv: ${scores.scoreAdv}`
   }
 
-  private buildTechLeadPrompt(payload: ReviewPayload, context: Reviewontext): string {
+  private buildTechLeadPrompt(payload: ReviewPayload, context: Reviewontext, config: BootstrapConfig): string {
     const workingDir = context.workingDir
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const rulesSection = payload.steeringRules?.length
@@ -232,10 +232,10 @@ export class ReviewHandler extends AbstractPhaseHandler {
 
     return [
       `## Objective`,
-      `Review the implementation for feature as a Senior Tech Lead. Your job is to give an HONEST, EVIDENCE-BASED verdict on the code's real state not to guarantee a certain number of findings per run.`,
+      `Review the implementation for this feature as a Senior Tech Lead. Give an HONEST, EVIDENCE-BASED verdict on the code's real state; do not target a finding quota.`,
       ``,
       `<skill_context>`,
-      `Invoke the \`harness-kit:the-grumpy-tech-lead\` skill before starting for clarity and evaluation openPoints.`,
+      `Invoke the \`harness-kit:the-grumpy-tech-lead\` skill before evaluating openPoints.`,
       `Mode: autonomous`,
       `</skill_context>`,
       ``,
@@ -249,12 +249,15 @@ export class ReviewHandler extends AbstractPhaseHandler {
       ``,
       `<strict_rules>`,
       `- Execute autonomously without pausing or asking for confirmation`,
-      `- openPoints MUST be direct, actionable findings   NO questions, NO vague suggestions, NO speculative "might" or "could" wording`,
+      `- openPoints MUST contain 0–6 Socratic questions, each grounded in concrete code evidence and explaining the production impact; never write implementation directives`,
       `- Do NOT force a CRITICAL/HIGH finding when none genuinely exists   an empty or low-severity-only openPoints list is expected for solid code`,
       `- Each openPoint MUST start with [CRITICAL], [HIGH], [MEDIUM], or [LOW]`,
       `- score must be a float in [0.00, 1.00] rounded to 2 decimals, computed from severity weights of REAL findings only`,
-      `- isCrashing: true ONLY if a CRITICAL finding causes application crash, data loss, downtime, or security breach`,
       `</strict_rules>`,
+      ``,
+      `<validation_config>`,
+      `scoreThresholdTL: ${config.scoreThresholdTL}`,
+      `</validation_config>`,
       ``,
       `<rules>`,
       rulesSection,
@@ -271,21 +274,15 @@ export class ReviewHandler extends AbstractPhaseHandler {
       `</scope>`,
       ``,
       `<expected_output>`,
-      `Respond exclusively with a valid JSON block saved to \`${specsDir}/TL.json\`:`,
-      `\`\`\`json`,
+      `Write a raw JSON object to \`${specsDir}/TL.json\` and return the same raw object with no Markdown fences or prose:`,
       `{`,
       `  "featureId": "${payload.featureId}",`,
       `  "score": 0.00,`,
-      `  "isCrashing": false,`,
       `  "openPoints": [`,
-      `    "[CRITICAL] <file>:<line>   <direct description of the problem and its impact>",`,
-      `    "[HIGH] <file>   <direct description of the problem and its impact>",`,
-      `    "[MEDIUM] <area>   <direct description of the problem and its impact>",`,
-      `    "[LOW] <area>   <direct description of the problem and its impact>"`,
+      `    "[CRITICAL|HIGH|MEDIUM|LOW] <file>:<line> — What prevents <failure mode>? Evidence: <observed code>. Impact: <production consequence>."`,
       `  ],`,
       `  "architectureTip": "Single actionable sentence recommending an architectural improvement"`,
       `}`,
-      `\`\`\``,
       `Note: openPoints may be an empty array [] when no issue meets the evaluation_principle bar. An empty array with a high score is a fully valid response.`,
       `</expected_output>`,
       ``,
@@ -309,7 +306,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     ].join('\n')
   }
 
-  private buildAdversarialQAPrompt(payload: ReviewPayload, context: Reviewontext): string {
+  private buildAdversarialQAPrompt(payload: ReviewPayload, context: Reviewontext, config: BootstrapConfig): string {
     const workingDir = context.workingDir
     const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
     const rulesSection = payload.steeringRules?.length
@@ -323,7 +320,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
 
     return [
       `## Objective`,
-      `Attempt to break the implementation for feature by probing edge cases, boundary faults, and security vulnerabilities that standard TDD might miss. Your verdict must reflect what you actually found in the CURRENT code   not a quota of vulnerabilities to report.`,
+      `Attempt to break this feature's implementation by probing edge cases, boundary faults, and security vulnerabilities that standard TDD might miss. Report only what you find in the CURRENT code; do not target a vulnerability quota.`,
       ``,
       `<skill_context>`,
       `Invoke the \`harness-kit:adversarial-qa\` skill before starting.`,
@@ -345,6 +342,10 @@ export class ReviewHandler extends AbstractPhaseHandler {
       `- score must be a float in [0.00, 1.00] rounded to 2 decimals`,
       `</strict_rules>`,
       ``,
+      `<validation_config>`,
+      `scoreThresholdAdv: ${config.scoreThresholdAdv}`,
+      `</validation_config>`,
+      ``,
       `<rules>`,
       rulesSection,
       `</rules>`,
@@ -360,8 +361,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       `</scope>`,
       ``,
       `<expected_output>`,
-      `Respond exclusively with a valid JSON block saved to \`${specsDir}/QA.json\`:`,
-      `\`\`\`json`,
+      `Write a raw JSON object to \`${specsDir}/QA.json\` and return the same raw object with no Markdown fences or prose:`,
       `{`,
       `  "featureId": "${payload.featureId}",`,
       `  "score": 0.00,`,
@@ -369,11 +369,11 @@ export class ReviewHandler extends AbstractPhaseHandler {
       `  "hasHighCriticalVuln": false,`,
       `  "isCrashing": false,`,
       `  "vulnerabilities": [`,
-      `    { "type": "SQL_INJECTION|XSS|RACE_CONDITION|AUTH_BYPASS|DATA_EXPOSURE|NULL_DEREF|...", "severity": "LOW|MEDIUM|HIGH|CRITICAL", "description": "Specific location and impact." }`,
+      `    { "type": "SQL_INJECTION", "severity": "HIGH", "description": "Specific location and impact." }`,
       `  ],`,
       `  "edgeCasesMissed": ["Description of untested scenario from 004-*-test-scenarios.md or concrete failure vector"]`,
       `}`,
-      `\`\`\``,
+      `Allowed severity values: LOW, MEDIUM, HIGH, CRITICAL. Use a concise uppercase vulnerability type.`,
       `Note: vulnerabilities and edgeCasesMissed may be empty arrays when nothing meets the evaluation_principle bar. In that case passedAdversarial should be true and hasHighCriticalVuln false.`,
       `</expected_output>`,
       ``,

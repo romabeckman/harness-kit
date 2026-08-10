@@ -41,7 +41,7 @@ describe('RefinementHandler', () => {
         loadScope: vi.fn().mockReturnValue('Test scope'),
       },
       invokeAgent: vi.fn().mockImplementation(async (opts: any) => {
-        if (opts.skill === 'harness-kit:the-grumpy-tech-lead') {
+        if (opts.prompt.includes('raw JSON array')) {
           return {
             raw: questionsJson,
           }
@@ -51,10 +51,10 @@ describe('RefinementHandler', () => {
     }
   })
 
-  it('should ask generated questions and the optional "Any aditional informations?" question at the end', async () => {
+  it('should ask generated questions and the optional "Any additional information?" question at the end', async () => {
     vi.mocked(input)
       .mockResolvedValueOnce('Answer 1') // For Question 1
-      .mockResolvedValueOnce('Additional info text') // For "Any aditional informations?"
+      .mockResolvedValueOnce('Additional info text') // For "Any additional information?"
 
     const nextPhase = await handler.handle(Phase.REFINEMENT, mockContext)
 
@@ -65,15 +65,15 @@ describe('RefinementHandler', () => {
       default: 'Rec 1',
     })
     expect(input).toHaveBeenNthCalledWith(2, {
-      message: 'Any aditional informations?',
+      message: 'Any additional information?',
       default: '',
     })
 
     // Verify consolidateRefinement received both Q&A pairs including the additional question
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
-        skill: 'harness-kit:scope-refinement',
-        prompt: expect.stringContaining('Any aditional informations?'),
+        agent: 'harness-kit:software-architect',
+        prompt: expect.stringContaining('Any additional information?'),
       })
     )
   })
@@ -88,8 +88,8 @@ describe('RefinementHandler', () => {
     expect(input).toHaveBeenCalledTimes(2)
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
-        skill: 'harness-kit:scope-refinement',
-        prompt: expect.not.stringContaining('Any aditional informations?'),
+        agent: 'harness-kit:software-architect',
+        prompt: expect.not.stringContaining('Any additional information?'),
       })
     )
   })
