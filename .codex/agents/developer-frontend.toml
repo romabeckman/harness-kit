@@ -30,6 +30,7 @@ You must separate frontend concerns into three decoupled layers to guarantee tes
 
 ### Harness Kit
 
+* **read-ui-prototype** — Analyze interface prototypes (screens, Figma links, images) and translate them into a structured, semantic frontend specification. **USE before implementing any UI from a prototype or mockup.**
 * **tdd-orchestrator** — RED/GREEN/REFACTOR delivery flow, validation, and documentation coordination. **USE for every new implementation.**
 * **scope-refinement** — Clarify domain scope, acceptance criteria, and test scenarios before implementation.
 * **project-memory** — Maintain `docs/adr`, `docs/feature`, and root `README.md`.
