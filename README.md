@@ -127,6 +127,7 @@ To prevent role contamination, the orchestrator isolates operational contexts by
 | --- | --- |
 | **Project Memory** (`project-memory`) | Generates and maintains persistent technical documentation (`docs/README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`). The agent's long-term memory. |
 | **Scope Refinement** (`scope-refinement`) | DDD-based scope orchestrator. Maps Bounded Contexts, Aggregates, and Use Cases. Produces test scenarios before implementation starts. |
+| **Read UI Prototype** (`read-ui-prototype`) | Analyzes interface prototypes and produces structured, semantic frontend specifications for the `developer-frontend` agent. |
 | **Autonomous Orchestrator** (`autonomous-orchestrator`) | Sovereign loop manager. Fully automates execution across planning, implementation, validation, and auto-tuning phases without user interruption. |
 | **TDD Orchestrator** (`tdd-orchestrator`) | Enforces RED → GREEN → REFACTOR. Coordinates the full test-driven development cycle, blocking implementation without a failing test first. |
 | **The Grumpy Tech Lead** (`the-grumpy-tech-lead`) | Senior technical reviewer. Uses Socratic questioning to expose systemic risks (N+1, leaks, race conditions, SOLID violations). |
@@ -236,6 +237,7 @@ Explore the complete knowledge base inside the `docs/workflow/` directory. This 
 ## Contributors
 
 * [@lnonatto98](https://github.com/lnonatto98)
+* [@correriadev](https://github.com/correriadev)
 
 ---
 
