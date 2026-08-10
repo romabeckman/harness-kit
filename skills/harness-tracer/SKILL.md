@@ -92,7 +92,7 @@ Reconstruct the sequence of actions taken during the session. Be factual — rec
 # Execution Steps
 
 ## Skill Chain
-[List of skills invoked in order, e.g.: tdd-orchestrator → test-driven-development → systematic-debugging → project-memory]
+[List of skills invoked in order, e.g.: scope-refinement → tdd-orchestrator → project-memory → adversarial-qa]
 
 ## Action Sequence
 | # | Action | Tool Used | Outcome |
@@ -163,7 +163,7 @@ Last updated: {date}
 |------|-------|---------|
 | Development orchestration | tdd-orchestrator | baseline |
 | Scope analysis | scope-refinement | baseline |
-| Code review | code-reviewer | baseline |
+| Adversarial review | adversarial-qa | baseline |
 | Memory | project-memory | baseline |
 | Review | the-grumpy-tech-lead | baseline |
 

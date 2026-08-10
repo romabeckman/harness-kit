@@ -62,7 +62,7 @@ Compute per-group: `mean_score`, `best_score`, `worst_score`.
 Document the computation transparently:
 
 ```
-Group: tdd-orchestrator → test-driven-development → systematic-debugging → project-memory
+Group: scope-refinement → tdd-orchestrator → project-memory → adversarial-qa
   Sessions: 7
   tdd_cycles:          mean=2.1, std=0.8
   iterations_to_pass:  mean=1.4, std=0.6

@@ -52,13 +52,6 @@ Based on gate scores, the orchestrator updates the project state machine into fo
 
 HarnessKit is distributed as a command-line plugin compatible with major AI developer ecosystems.
 
-> **⚠️ IMPORTANT!**
-> This project requires the [Superpowers](https://github.com/obra/superpowers) skill. Install it before initializing HarnessKit:
-
-```bash
-/plugin install superpowers@claude-plugins-official
-```
-
 ### Claude Code
 
 ```bash
@@ -228,12 +221,6 @@ Explore the complete knowledge base inside the `docs/workflow/` directory. This 
 * **Domain-Driven Design** — Model the problem before solving it.
 * **Socratic over Prescriptive** — The Grumpy Tech Lead asks questions that force the engineer to think, rather than providing ready-made answers.
 * **Computational + Inferential** — Tests validate correctness. Reviews validate judgment.
-
----
-
-## Integration with Superpowers
-
-HarnessKit is designed to complement [Superpowers Skills](https://github.com/obra/superpowers). While HarnessKit defines the *strategy and discipline* (what to build and how to validate it), Superpowers provides the low-level *execution tools* (Git worktrees, parallel agents, etc.).
 
 ---
 

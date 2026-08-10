@@ -43,7 +43,7 @@ describe('GetReportsSummaryUseCase', () => {
       timestamp: '2026-08-07T10:00:00.000Z',
       agent: 'claude-cli',
       model: 'claude-3-5-sonnet',
-      skill: 'test-driven-development',
+      skill: 'tdd-orchestrator',
       executionMetrics: { durationMs: 4000, status: 'success' },
       tokenUsage: {
         inputTokens: 1000,
@@ -111,7 +111,7 @@ describe('GetReportsSummaryUseCase', () => {
       timestamp: '2026-08-01T10:00:00.000Z',
       agent: 'claude-cli',
       model: 'claude-3-5-sonnet',
-      skill: 'test-driven-development',
+      skill: 'tdd-orchestrator',
       executionMetrics: { durationMs: 4000, status: 'success' },
       tokenUsage: { inputTokens: 1000, outputTokens: 500, cacheCreationTokens: 0, cacheReadTokens: 0, calculatedCostUsd: 0.005 },
     })
@@ -123,7 +123,7 @@ describe('GetReportsSummaryUseCase', () => {
       timestamp: '2026-08-07T11:00:00.000Z',
       agent: 'claude-cli',
       model: 'claude-3-5-sonnet',
-      skill: 'test-driven-development',
+      skill: 'tdd-orchestrator',
       executionMetrics: { durationMs: 2000, status: 'success' },
       tokenUsage: { inputTokens: 2000, outputTokens: 1000, cacheCreationTokens: 0, cacheReadTokens: 0, calculatedCostUsd: 0.01 },
     })

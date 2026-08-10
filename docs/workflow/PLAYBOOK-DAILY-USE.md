@@ -84,7 +84,7 @@ docs/specs/mfa-totp/
 **Skill coordinates RED → GREEN → REFACTOR:**
 
 ```bash
-# Internal: skill invokes test-driven-development
+# Internal: tdd-orchestrator executes its RED phase
 
 ## RED
 npm test
@@ -144,9 +144,9 @@ npm test
 # ✅ PASS (REFACTOR ✅)
 ```
 
-**Skill automatically invokes:**
+**Skill automatically executes:**
 ```
-After each GREEN cycle → verification-before-completion
+After each GREEN cycle → tdd-orchestrator validation gate
          ↓
 All tests passing 100%? ✅
 
@@ -189,7 +189,7 @@ docs/harness-history/traces/session-2026-05-22-001/
 │   | 1 | Read docs/adr/ARCHITECTURE.md | Read | success |
 │   | 2 | Read docs/specs/mfa-totp/ | Read | success |
 │   | 3 | Wrote test 1 (happy path) | Write | success |
-│   | 4 | tdd-orchestrator invoked test-driven... | Chain | RED ✅ |
+│   | 4 | tdd-orchestrator executed RED phase | Chain | RED ✅ |
 │   | 5 | Implemented OTPValidator | Edit | success |
 │   | 6 | Cycle 1 passed | Bash | GREEN ✅ |
 │   | 7 | Refactored to classes | Edit | success |
