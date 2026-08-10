@@ -7,6 +7,9 @@ This document references the core skills and supporting documentation for the ha
 ### Adversarial QA
 @./skills/adversarial-qa/SKILL.md
 
+### Read UI Prototype
+@./skills/read-ui-prototype/SKILL.md
+
 ### Autonomous Orchestrator
 @./skills/autonomous-orchestrator/SKILL.md
 
