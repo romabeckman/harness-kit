@@ -1,5 +1,5 @@
 import { existsSync, rmSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
@@ -100,10 +100,15 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     let reworkSection = ''
 
     if (payload.isRetry) {
-      const reworkLogPath = join(workingDir, 'REWORK-LOG.md')
+      const reworkLogPath = payload.reworkLogPath
+        ? resolve(context.workingDir, payload.reworkLogPath)
+        : join(workingDir, 'REWORK-LOG.md')
+      const reworkLogContent = readFileSync(reworkLogPath, 'utf8')
       reworkSection = [
         `<rework>`,
         `You are fixing findings from previous runs. Read \`${reworkLogPath}\` for Tech Lead and QA feedback.`,
+        ``,
+        ...inlineOrReference('rework_log_content', reworkLogContent, reworkLogPath),
         ``,
         `MANDATORY STEPS:`,
         `1. Read \`${reworkLogPath}\` completely   every item is a required fix.`,

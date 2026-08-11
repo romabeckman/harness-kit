@@ -1,6 +1,6 @@
 {
   "name": "@romabeckman/hrns",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "CLI and SDK for harness-kit autonomous TDD orchestration",
   "license": "MIT",
   "main": "dist/index.js",

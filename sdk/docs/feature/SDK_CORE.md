@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-10"
+updated: "2026-08-11"
 ---
 # SDK CORE
 
@@ -99,6 +99,7 @@ REQUIRED: Use the provided `isExtractionError` / `isExtractionResult` type guard
 REQUIRED: Keep `001-problem-space.md` and `002-context-map.md` at or below `INLINE_THRESHOLD` (5,000 characters) during scope refinement.
 ALLOWED: Generate `003-*` tactical designs and `004-*` test scenarios without this prompt cap.
 PROHIBITED: Mutating state directly without using the `IFileStateManager` port.
+REQUIRED: On development retries, resolve `reworkLogPath` from the project working directory and embed its Markdown content in the TDD prompt.
 
 ## DOCUMENT MAP
 
@@ -118,5 +119,5 @@ graph TD
 
 ## CHANGE SUMMARY
 - **Added:** YAML frontmatter, CHANGE SUMMARY, code examples.
-- **Updated:** UPPERCASE sections, standard folder tree format, and canonical telemetry record contract.
+- **Updated:** UPPERCASE sections, standard folder tree format, canonical telemetry record contract, and retry prompts with inline rework-log content.
 - **Removed:** Open limitations section as they are bug tickets, not permanent documentation.
