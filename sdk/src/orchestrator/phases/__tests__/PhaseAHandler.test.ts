@@ -137,6 +137,27 @@ describe('PlanningHandler', () => {
             expect(invokedPrompt).not.toContain('COMPLEXITY OVERRIDE');
         });
 
+        it('limits only 001 and 002 output documents to INLINE_THRESHOLD characters', async () => {
+            mockContext.checkSpecFilesPresent = vi.fn().mockReturnValue(false);
+            mockContext.extractTasksFromTacticalDesign = vi.fn().mockReturnValue([
+                { taskId: 'T001', description: 'Task', file: 'project' },
+            ]);
+
+            await handler.handle(Phase.PLANNING, mockContext);
+
+            const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
+            const outputLines = invokedPrompt.split('\n');
+            const problemSpaceLine = outputLines.find((line) => line.includes('001-problem-space.md'));
+            const contextMapLine = outputLines.find((line) => line.includes('002-context-map.md'));
+            const tacticalDesignLine = outputLines.find((line) => line.includes('003-${PROJECT_NAME}-tactical-design.md'));
+            const testScenariosLine = outputLines.find((line) => line.includes('004-${PROJECT_NAME}-test-scenarios.md'));
+
+            expect(problemSpaceLine).toContain('maximum 5000 characters');
+            expect(contextMapLine).toContain('maximum 5000 characters');
+            expect(tacticalDesignLine).not.toContain('maximum 5000 characters');
+            expect(testScenariosLine).not.toContain('maximum 5000 characters');
+        });
+
         it('reloads latest scope from SCOPE.md via fsm.loadScope', async () => {
             mockFsm.existScope.mockReturnValue(true);
             mockFsm.loadScope.mockReturnValue('updated scope from SCOPE.md');

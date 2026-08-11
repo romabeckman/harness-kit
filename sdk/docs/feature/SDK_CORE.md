@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-08"
+updated: "2026-08-10"
 ---
 # SDK CORE
 
@@ -96,6 +96,8 @@ const orchestrator = new HarnessOrchestrator({});
 
 ## BEST PRACTICES
 REQUIRED: Use the provided `isExtractionError` / `isExtractionResult` type guards to branch on extraction outcomes.
+REQUIRED: Keep `001-problem-space.md` and `002-context-map.md` at or below `INLINE_THRESHOLD` (5,000 characters) during scope refinement.
+ALLOWED: Generate `003-*` tactical designs and `004-*` test scenarios without this prompt cap.
 PROHIBITED: Mutating state directly without using the `IFileStateManager` port.
 
 ## DOCUMENT MAP

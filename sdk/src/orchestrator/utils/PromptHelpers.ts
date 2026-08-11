@@ -1,5 +1,3 @@
-import { join } from 'node:path'
-
 const INLINE_THRESHOLD = 5000
 
 export function inlineOrReference(label: string, content: string | undefined, filePath: string): string[] {
@@ -12,6 +10,9 @@ export function inlineOrReference(label: string, content: string | undefined, fi
   return [
     `<${label}_ref>`,
     `Read file: \`${filePath}\` (content too large to inline — ${content.length} chars)`,
+    '```markdown',
+    content,
+    '```',
     `</${label}_ref>`,
   ]
 }

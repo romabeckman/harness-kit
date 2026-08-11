@@ -6,6 +6,8 @@ import type { PlanningPayload } from "../../context-assembler/types";
 import { join } from "node:path";
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 
+const INLINE_THRESHOLD = 5000
+
 export class PlanningHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.PLANNING) {
@@ -149,8 +151,8 @@ export class PlanningHandler extends AbstractPhaseHandler {
       ``,
       `<expected_outputs>`,
       `Produce, under \`${payload.workingDir}\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
-      `- \`${problemSpaceFile}\`   Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature)`,
-      `- \`${contextMapFile}\`   Bounded Contexts and Context Map`,
+      `- \`${problemSpaceFile}\`   Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature; maximum ${INLINE_THRESHOLD} characters)`,
+      `- \`${contextMapFile}\`   Bounded Contexts and Context Map (maximum ${INLINE_THRESHOLD} characters)`,
       `- \`${tacticalDesignFile}\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array of objects`,
       `- \`${testScenariosFile}\` (one per project)   Test Scenarios`,
       `</expected_outputs>`,
