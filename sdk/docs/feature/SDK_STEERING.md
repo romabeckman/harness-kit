@@ -58,6 +58,16 @@ REQUIRED: Use steering rules to configure phase-specific behavior constraints.
 PROHIBITED: Adding duplicate rules. The system does not deduplicate automatically.
 PROHIBITED: Calling `applySteeringActions` with an empty array.
 
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["SDK Steering Feature"] -->|implements| ARCH["Architecture ADR"]
+    THIS -->|tested_by| TESTS["Tests ADR"]
+    click ARCH "../adr/ARCHITECTURE.md"
+    click TESTS "../adr/TESTS.md"
+```
+
 ## REFERENCES
 - [**SDK_CORE.md**](./SDK_CORE.md): `BootstrapConfig` type and `applySteeringActions` method.
 - [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): `IAgentRunner` interface used by `SteeringAnalyzer`.

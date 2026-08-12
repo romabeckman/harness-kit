@@ -56,6 +56,16 @@ REQUIRED: Import `AnsiHelpers` statically — do not use `require()` inline.
 PROHIBITED: Writing raw ANSI escape strings outside of `AnsiHelpers`.
 PROHIBITED: Calling `startSpinner()` again without calling `stopSpinner()` first.
 
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["SDK Terminal UI Feature"] -->|implements| ARCH["Architecture ADR"]
+    THIS -->|tested_by| TESTS["Tests ADR"]
+    click ARCH "../adr/ARCHITECTURE.md"
+    click TESTS "../adr/TESTS.md"
+```
+
 ## REFERENCES
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Folder structure and module responsibilities.
 - [**SDK_CORE.md**](./SDK_CORE.md): Orchestrator integration points.

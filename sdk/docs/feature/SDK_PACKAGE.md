@@ -77,6 +77,16 @@ REQUIRED: Keep `exports` map as the authoritative entry point.
 REQUIRED: Add new public exports only through `sdk/src/index.ts`.
 PROHIBITED: Committing the `dist/` directory to source control.
 
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["SDK Package Feature"] -->|implements| ARCH["Architecture ADR"]
+    THIS -->|tested_by| TESTS["Tests ADR"]
+    click ARCH "../adr/ARCHITECTURE.md"
+    click TESTS "../adr/TESTS.md"
+```
+
 ## REFERENCES
 - [**SDK_CORE.md**](./SDK_CORE.md): Public API surface compiled into `dist/`.
 - [**SDK_STATE.md**](./SDK_STATE.md): High-level state mutation methods included in the published package.

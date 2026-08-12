@@ -50,14 +50,6 @@ FORBIDDEN: Test suites that share state or depend on execution order.
 - **Flaky tests:** Reset mock states using beforeEach and restoreAllMocks.
 - **Debug mode:** Run `rtk npx vitest` to watch and interactively debug tests.
 
-## DOCUMENT MAP
-
-```mermaid
-graph TD
-    THIS["Tests ADR"] -->|tests| ARCH["Architecture ADR"]
-    click ARCH "./ARCHITECTURE.md"
-```
-
 ## REFERENCES
 - [**ARCHITECTURE.md**](./ARCHITECTURE.md): System architecture, layers, and code patterns.
 - [**E2E_TESTING_SUITE.md**](../feature/E2E_TESTING_SUITE.md): End-to-End integration and CLI test suite specification.

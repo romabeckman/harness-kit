@@ -21,7 +21,7 @@ updated: "2026-08-08"
   "registration_files":["package.json"],
   "reference_files":["src/cli/services/run-service.ts"],
   "code_files":["src/cli/DebugContext.ts","src/cli/services/init-service.ts","src/cli/services/report-service.ts","src/cli/services/report/ReportDataAggregator.ts","src/cli/services/report/ReportRenderer.ts","src/cli/services/report/types.ts","src/cli/services/reset-service.ts","src/cli/services/settings-service.ts","src/cli/utils/cli-utils.ts","src/cli/utils/constants.ts","src/cli/utils/run-args-parser.ts"],
-  "test_files":["src/cli/services/report/__tests__/ReportDataAggregator.test.ts","src/cli/services/report/__tests__/ReportRenderer.test.ts","src/cli/utils/__tests__/run-args-parser.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/unit/t19-run-args-parser.test.ts","tests/unit/t20-debug-context.test.ts","tests/unit/t27-cli-utils.test.ts","tests/unit/t29-init-service.test.ts"]
+  "test_files":["src/cli/services/report/__tests__/ReportDataAggregator.test.ts","src/cli/services/report/__tests__/ReportRenderer.test.ts","src/cli/utils/__tests__/run-args-parser.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/unit/t19-run-args-parser.test.ts","tests/unit/t20-debug-context.test.ts","tests/unit/t27-cli-utils.test.ts","tests/unit/t29-init-service.test.ts","tests/unit/t30-resolve-mode.test.ts","tests/unit/t33-resume-phase-choices.test.ts"]
 }
 ```
 
@@ -92,6 +92,18 @@ hrns run --reset
 ## BEST PRACTICES
 REQUIRED: Skip the interactive wizard by providing at least one of `--scope`, `--path`, `--score`, or `--reworks`.
 PROHIBITED: Modifying workspace root source or production configuration manually while the CLI is running.
+
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["SDK CLI Feature"] -->|depends_on| CORE["SDK Core Feature"]
+    THIS -->|implements| ARCH["Architecture ADR"]
+    THIS -->|tested_by| TESTS["Tests ADR"]
+    click CORE "./SDK_CORE.md"
+    click ARCH "../adr/ARCHITECTURE.md"
+    click TESTS "../adr/TESTS.md"
+```
 
 ## REFERENCES
 - [**SDK_SETTINGS.md**](./SDK_SETTINGS.md): Settings and configuration resolver details.

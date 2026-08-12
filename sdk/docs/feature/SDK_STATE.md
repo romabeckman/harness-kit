@@ -63,6 +63,16 @@ REQUIRED: Call `resetTasksForRetry(featureId)` before re-entering DEVELOPMENT.
 REQUIRED: Pass `DecisionEntry` with `featureId` set to the active feature ID.
 PROHIBITED: Calling `incrementReworks` more than once per validation failure.
 
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["SDK State Feature"] -->|implements| ARCH["Architecture ADR"]
+    THIS -->|tested_by| TESTS["Tests ADR"]
+    click ARCH "../adr/ARCHITECTURE.md"
+    click TESTS "../adr/TESTS.md"
+```
+
 ## REFERENCES
 - [**SDK_CORE.md**](./SDK_CORE.md): Foundation — IFileStateManager port and adapter.
 - [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): Outbound port implementation.

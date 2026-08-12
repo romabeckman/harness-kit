@@ -13,7 +13,7 @@ updated: "2026-08-08"
 ---
 
 ```graph
-{"node_id":"feature:e2e_testing_suite","domain":"e2e_testing","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["tests/e2e/vitest.e2e.config.ts"],"registration_files":[],"reference_files":["tests/e2e/scenarios/02-full-orchestration-cycle.test.ts"],"code_files":["tests/e2e/helpers/AssertionHelpers.ts","tests/e2e/helpers/CliRunner.ts","tests/e2e/helpers/MockAgentCli.ts","tests/e2e/helpers/OrchestrationStateValidator.ts","tests/e2e/helpers/SandboxEnvironment.ts"],"test_files":["tests/e2e/helpers/AssertionHelpers.test.ts","tests/e2e/helpers/MockAgentCli.test.ts","tests/e2e/helpers/OrchestrationStateValidator.test.ts","tests/e2e/helpers/SandboxEnvironment.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/e2e/scenarios/01-init-and-bootstrap.test.ts","tests/e2e/scenarios/03-session-resume-and-steering.test.ts","tests/e2e/scenarios/04-multi-project-readonly-steering.test.ts","tests/e2e/scenarios/05-report-dashboard-and-telemetry.test.ts","tests/e2e/scenarios/06-quota-exceeded-and-halt-recovery.test.ts","tests/e2e/scenarios/07-http-server-daemon.test.ts"]}
+{"node_id":"feature:e2e_testing_suite","domain":"e2e_testing","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["tests/e2e/vitest.e2e.config.ts"],"registration_files":[],"reference_files":["tests/e2e/scenarios/02-full-orchestration-cycle.test.ts"],"code_files":["tests/e2e/helpers/AssertionHelpers.ts","tests/e2e/helpers/CliRunner.ts","tests/e2e/helpers/MockAgentCli.ts","tests/e2e/helpers/OrchestrationStateValidator.ts","tests/e2e/helpers/SandboxEnvironment.ts"],"test_files":["tests/e2e/helpers/AssertionHelpers.test.ts","tests/e2e/helpers/MockAgentCli.test.ts","tests/e2e/helpers/OrchestrationStateValidator.test.ts","tests/e2e/helpers/SandboxEnvironment.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/e2e/scenarios/01-init-and-bootstrap.test.ts","tests/e2e/scenarios/03-session-resume-and-steering.test.ts","tests/e2e/scenarios/04-multi-project-readonly-steering.test.ts","tests/e2e/scenarios/05-report-dashboard-and-telemetry.test.ts","tests/e2e/scenarios/06-quota-exceeded-and-halt-recovery.test.ts","tests/e2e/scenarios/07-http-server-daemon.test.ts","tests/unit/t32-e2e-ci-pipeline-integration.test.ts"]}
 ```
 
 # END-TO-END (E2E) TESTING SUITE
@@ -77,6 +77,16 @@ rtk npm run test:e2e
 REQUIRED: Clean up sandbox directories after test completion using hooks.
 REQUIRED: Execute CLI processes against compiled output rather than source TS files.
 PROHIBITED: Modifying workspace root source or production configuration during E2E test execution.
+
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["E2E Testing Suite Feature"] -->|implements| ARCH["Architecture ADR"]
+    THIS -->|tested_by| TESTS["Tests ADR"]
+    click ARCH "../adr/ARCHITECTURE.md"
+    click TESTS "../adr/TESTS.md"
+```
 
 ## REFERENCES
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Core architectural layers and CLI runner patterns.

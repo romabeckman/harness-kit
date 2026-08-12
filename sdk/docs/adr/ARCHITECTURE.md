@@ -158,16 +158,6 @@ class DevelopmentHandler extends AbstractPhaseHandler {
 | Antigravity CLI | Execution of Google coding agent | Spawn subprocess using agy binary |
 | `hrns` CLI | Command-line interface for running and steering feature orchestration | Spawn and run local executable via `npm run` or global symlink |
 
-## DOCUMENT MAP
-
-```mermaid
-graph TD
-    THIS["Architecture ADR"] -->|tested_by| TESTS["Tests ADR"]
-    THIS -->|implemented_by| CORE["SDK Core Feature"]
-    click TESTS "./TESTS.md"
-    click CORE "../feature/SDK_CORE.md"
-```
-
 ## REFERENCES
 - [**README.md**](../README.md): Main documentation index.
 - [**TESTS.md**](./TESTS.md): Testing strategies and commands.

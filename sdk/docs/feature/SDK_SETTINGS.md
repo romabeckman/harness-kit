@@ -64,6 +64,16 @@ sdk/src/settings/
 REQUIRED: Use valid phase keys (`bootstrap`, `PLANNING`, `implementation`, `review_tl`, `review_adv`, `memory`).
 REQUIRED: Resolve settings using the precedence order: Project > Global > Internal Defaults.
 
+## DOCUMENT MAP
+
+```mermaid
+graph TD
+    THIS["SDK Settings Feature"] -->|implements| ARCH["Architecture ADR"]
+    THIS -->|tested_by| TESTS["Tests ADR"]
+    click ARCH "../adr/ARCHITECTURE.md"
+    click TESTS "../adr/TESTS.md"
+```
+
 ## REFERENCES
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Structural details and registry patterns.
 
