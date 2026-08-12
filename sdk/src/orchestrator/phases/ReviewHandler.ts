@@ -10,7 +10,8 @@ import {
   EVALUATION_PRINCIPLE_TL,
   EVALUATION_PRINCIPLE_QA,
   buildReworkSection,
-  inlineOrReference
+  inlineOrReference,
+  buildDocsOrientationSection
 } from '../utils/PromptHelpers'
 import type { ReviewPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
@@ -295,6 +296,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       `</spec_sources>`,
       ``,
       `<inputs>`,
+      ...buildDocsOrientationSection(payload.projectPaths, workingDir),
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,
@@ -386,6 +388,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       `</spec_sources>`,
       ``,
       `<inputs>`,
+      ...buildDocsOrientationSection(payload.projectPaths, workingDir),
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,

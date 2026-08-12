@@ -3,6 +3,7 @@ import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
+import { buildDocsOrientationSection } from '../utils/PromptHelpers'
 
 export interface RefinementQuestion {
   id: number
@@ -42,6 +43,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
   private async generateQuestions(context: Reviewontext, scope: string): Promise<RefinementQuestion[]> {
     const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
     const questionsPath = join(productDir, 'QUESTIONS.json')
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
 
     const staticPrompt = [
       `<role>`,
@@ -83,6 +85,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
     const dynamicPrompt = [
       `<dynamic_context>`,
       `<output_path>${questionsPath}</output_path>`,
+      ...orientationSection,
       `<scope>`,
       '```markdown',
       scope.trim(),
@@ -196,6 +199,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
   ): Promise<void> {
     const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
     const refinementPath = join(productDir, 'REFINEMENT.md')
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
 
     const qaFormatted = qaPairs.length > 0
       ? qaPairs.map((pair, idx) => `| ${idx + 1} | ${pair.question} | ${pair.answer} |`).join('\n')
@@ -212,6 +216,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
       refinementPath,
       `</output_file>`,
       ``,
+      ...orientationSection,
       `<output_format>`,
       `Write the file with exactly this structure (Markdown):`,
       ``,

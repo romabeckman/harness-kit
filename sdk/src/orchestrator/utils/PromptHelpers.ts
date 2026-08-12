@@ -1,16 +1,24 @@
+import { existsSync, readFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+
 const INLINE_THRESHOLD = 5000
 
-export function inlineOrReference(label: string, content: string | undefined, filePath: string): string[] {
+export function inlineOrReference(
+  label: string,
+  content: string | undefined,
+  filePath: string,
+  lang: string = 'markdown'
+): string[] {
   if (!content) return []
 
   if (content.length < INLINE_THRESHOLD) {
-    return [`<${label}>`, '```markdown', content, '```', `</${label}>`]
+    return [`<${label}>`, `\`\`\`${lang}`, content, '```', `</${label}>`]
   }
 
   return [
     `<${label}_ref>`,
     `Read file: \`${filePath}\` (content too large to inline — ${content.length} chars)`,
-    '```markdown',
+    `\`\`\`${lang}`,
     content,
     '```',
     `</${label}_ref>`,
@@ -68,3 +76,76 @@ export function buildReworkSection(reworkLogPath: string, totalReworks: number, 
     ``,
   ]
 }
+
+/**
+ * Reads docs/.digest.md and docs/.graph.json from each project path (and workingDir) if present,
+ * and formats them for injection directly into phase execution prompts.
+ */
+export function buildDocsOrientationSection(projectPaths: string[], workingDir?: string): string[] {
+  const targets: string[] = []
+  if (Array.isArray(projectPaths)) {
+    targets.push(...projectPaths)
+  }
+  if (workingDir) {
+    targets.push(workingDir)
+  }
+
+  if (targets.length === 0) {
+    return []
+  }
+
+  const resolvedPaths: string[] = []
+  for (const t of targets) {
+    if (!t) continue
+    const fullPath = resolve(workingDir ?? '.', t)
+    if (!resolvedPaths.includes(fullPath)) {
+      resolvedPaths.push(fullPath)
+    }
+  }
+
+  const lines: string[] = []
+
+  for (const projPath of resolvedPaths) {
+    const digestPath = join(projPath, 'docs', '.digest.md')
+    const graphPath = join(projPath, 'docs', '.graph.json')
+
+    let digestContent: string | undefined
+    if (existsSync(digestPath)) {
+      try {
+        digestContent = readFileSync(digestPath, 'utf-8')
+      } catch {
+        // ignore
+      }
+    }
+
+    let graphContent: string | undefined
+    if (existsSync(graphPath)) {
+      try {
+        graphContent = readFileSync(graphPath, 'utf-8')
+      } catch {
+        // ignore
+      }
+    }
+
+    if (digestContent || graphContent) {
+      lines.push(`<project_orientation path="${projPath}">`)
+
+      if (digestContent) {
+        lines.push(...inlineOrReference('digest_md', digestContent, join(projPath, 'docs', '.digest.md'), 'markdown'))
+      }
+
+      if (graphContent) {
+        lines.push(...inlineOrReference('graph_json', graphContent, join(projPath, 'docs', '.graph.json'), 'json'))
+      }
+
+      lines.push('</project_orientation>')
+    }
+  }
+
+  if (lines.length > 0) {
+    lines.push('')
+  }
+
+  return lines
+}
+

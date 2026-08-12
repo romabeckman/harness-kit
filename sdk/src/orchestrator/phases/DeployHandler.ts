@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
+import { buildDocsOrientationSection } from '../utils/PromptHelpers'
 
 export class DeployHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
@@ -122,12 +123,15 @@ export class DeployHandler extends AbstractPhaseHandler {
       // ignore — diffOutput stays empty
     }
 
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
+
     const prompt = [
       `## Task`,
       `Produce exactly ONE Conventional Commit message for the staged changes listed below.`,
       `The commit message MUST include a brief subject line, a blank line, and a body with bullet points detailing the changes.`,
       `Output ONLY the commit message — no explanation, no markdown fences, no quotes.`,
       ``,
+      ...orientationSection,
       `## Conventional Commits format`,
       `<type>[(<scope>)]: <description>`,
       ``,
