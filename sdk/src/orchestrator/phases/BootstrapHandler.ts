@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { Phase, CliCommand } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
+import { buildDocsOrientationSection } from '../utils/PromptHelpers'
 
 export class BootstrapHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
@@ -88,12 +89,15 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `F001 User Management — full CRUD (create, read, update, delete) with input validation | F002 Authentication & Authorization — login, session, middleware, role-based access | F003 Database & Infrastructure — connection setup, migrations, seeding`
     ]
 
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
+
     promptLines.push(
       ``,
       `<context>`,
       `Project paths: ${context.config.projectPaths.join(', ')}`,
       `</context>`,
       ``,
+      ...orientationSection,
       `<scope>`,
       `\`\`\`markdown`,
       context.config.scope.trim(),

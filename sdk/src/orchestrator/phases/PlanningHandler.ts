@@ -5,6 +5,7 @@ import type { Feature } from "../../file-state/types";
 import type { PlanningPayload } from "../../context-assembler/types";
 import { join } from "node:path";
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
+import { buildDocsOrientationSection } from '../utils/PromptHelpers'
 
 const INLINE_THRESHOLD = 5000
 
@@ -129,6 +130,8 @@ export class PlanningHandler extends AbstractPhaseHandler {
       ]
       : []
 
+    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
+
     return [
       `## Objective`,
       `Perform scope refinement STRICTLY for the <target_feature>. Use the <scope> ONLY for system alignment and contextual awareness. Do NOT refine or generate specifications for the entire background context.`,
@@ -181,6 +184,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       ``,
       `<inputs>`,
       ``,
+      ...orientationSection,
       `<rules>`,
       rulesSection,
       `</rules>`,
@@ -258,6 +262,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       .map((p) => `- ${p}`)
       .join("\n");
     const tacticalDesignFile = join(context.workingDir, 'docs', 'specs', feature.domain, `003-*-tactical-design.md`)
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
 
     await context.invokeAgent({
       agent: "harness-kit:software-architect",
@@ -268,6 +273,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
         `## Objective`,
         `Extract ordered development tasks from the tactical design and append them to DEVELOPMENT-STATE.md.`,
         ``,
+        ...orientationSection,
         `<project_paths>`,
         projectPathsList,
         `</project_paths>`,

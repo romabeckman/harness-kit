@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
-import { inlineOrReference } from '../utils/PromptHelpers'
+import { inlineOrReference, buildDocsOrientationSection } from '../utils/PromptHelpers'
 import type { Feature, Task } from '../../file-state/types'
 import type { DevelopmenPayload } from '../../context-assembler/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
@@ -90,6 +90,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
         : '- No additional rules provided'
 
     const workingDir = join(context.workingDir, 'docs', 'specs', payload.domain)
+    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
 
     const tasksSection = [
       `<tasks>`,
@@ -187,6 +188,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       `</development_specifications>`,
       ``,
       `<inputs>`,
+      ...orientationSection,
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,

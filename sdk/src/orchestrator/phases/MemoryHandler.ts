@@ -4,6 +4,7 @@ import { ContextAssembler } from '../../context-assembler/ContextAssembler'
 import type { MemoryPayload } from '../../context-assembler/types'
 import { join } from 'node:path'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
+import { buildDocsOrientationSection } from '../utils/PromptHelpers'
 
 export class MemoryHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
@@ -47,6 +48,8 @@ export class MemoryHandler extends AbstractPhaseHandler {
       payload.steeringRules && payload.steeringRules.length > 0
         ? payload.steeringRules.map(r => `- ${r}`).join('\n')
         : '- No additional rules provided'
+
+    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
 
     // Static-first ordering: everything that doesn't change between invocations
     // goes before the variable blocks (scope, project_paths, rules), so those
@@ -95,6 +98,7 @@ export class MemoryHandler extends AbstractPhaseHandler {
       ``,
       `</instructions>`,
       ``,
+      ...orientationSection,
       `<scope>`,
       `\`\`\`markdown`,
       context.config.scope.trim(),
