@@ -8,6 +8,8 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 
 - REQUIRED: One document covers exactly **one** business domain, module, or architectural layer.
 - PROHIBITED: Mixing unrelated topics in a single file.
+- REQUIRED: Keep document compact, objective, and dense — strictly under **8,000 characters**.
+- REQUIRED: For complementary ADRs extracted from `ARCHITECTURE.md` (e.g., `SECURITY.md`, `OBSERVABILITY.md`, `TELEMETRY.md`, `DATABASE.md`), ensure strict compliance with the 8,000 character limit and cross-reference back to `ARCHITECTURE.md`.
 - REQUIRED: Cross-reference section at the end listing related `docs/` files.
 
 ---

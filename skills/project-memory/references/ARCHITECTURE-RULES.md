@@ -9,7 +9,21 @@ Defines the analysis framework and strict rules for generating and maintaining `
 | Field | Value |
 |---|---|
 | Target file | `docs/adr/ARCHITECTURE.md` |
+| Max size | 8,000 characters (strictly enforced) |
+| Content style | Compact, dense, and objective — no lengthy narrative explanations or verbose prose |
 | Agent action | Read the repository, apply the PRE-GENERATION ANALYSIS below, then generate or overwrite the file using the MANDATORY TEMPLATE exactly as specified |
+
+---
+
+## SIZE LIMIT & DECOMPOSITION RULES
+
+- REQUIRED: Keep `docs/adr/ARCHITECTURE.md` strictly under **8,000 characters**.
+- REQUIRED: Text must be compact, objective, and dense. PROHIBITED: Long theoretical explanations, conversational filler, or verbose historical context.
+- When `docs/adr/ARCHITECTURE.md` approaches or reaches the 8,000-character limit, apply one or both of the following pathways:
+  1. **Text Compacting:** Condense prose into concise bullet points, replace narrative with compact tables, and remove redundant explanations while preserving strict technical constraints.
+  2. **Decomposition into Complementary ADRs (`docs/adr/`):** Split deep or specialized architectural domains into separate complementary ADR documents inside `docs/adr/` (e.g., `docs/adr/SECURITY.md`, `docs/adr/OBSERVABILITY.md`, `docs/adr/TELEMETRY.md`, `docs/adr/DATABASE.md`, `docs/adr/API-DESIGN.md`).
+     - REQUIRED: Each complementary ADR document must also strictly observe the **8,000 character limit** and follow `./DOCUMENT-TEMPLATE.md`.
+     - REQUIRED: Retain only a high-level summary or reference row in `docs/adr/ARCHITECTURE.md` and register the edge in frontmatter (`edges: [{relation: references, target: "adr:<slug>"}]`) and `## REFERENCES`.
 
 ---
 
@@ -98,5 +112,6 @@ updated: YYYY-MM-DD
 
 ## LLM OPTIMIZATION RULES (MANDATORY)
 
+- REQUIRED: Keep document length strictly under 8,000 characters. If approaching the limit, compact prose or decompose into complementary `docs/adr/*.md` documents.
 - REQUIRED: Use tables for `## MODULES` and `## INTEGRATIONS` — never prose paragraphs for relational data.
 - REQUIRED: Annotate every directory in `## FOLDER STRUCTURE` with a `#` comment explaining where new files of each type should be created.

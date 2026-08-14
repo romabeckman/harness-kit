@@ -100,6 +100,14 @@ class BuildDocsGraphTests(unittest.TestCase):
 
         self.assertIn("exact path", rules.lower())
 
+    def test_architecture_rules_defines_size_limit_and_decomposition(self) -> None:
+        rules = (Path(__file__).parent.parent / "references" / "ARCHITECTURE-RULES.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("8,000", rules)
+        self.assertIn("docs/adr/", rules)
+
     def test_sorts_nodes_and_edges_for_stable_compact_output(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             docs = Path(temp_dir) / "docs"

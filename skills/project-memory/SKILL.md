@@ -43,6 +43,7 @@ You are a technical documentation specialist. Your sole responsibility is to cre
 - PROHIBITED: Long introductions and filler text — remove any sentence starting with "This document describes…", "This section describes…", or "This guide aims to…".
 - PROHIBITED: Decorative content — no emojis, filler phrases, or motivational text.
 - PROHIBITED: Sections longer than 15 lines — split into sub-sections if needed.
+- REQUIRED: Keep `docs/adr/ARCHITECTURE.md` and all complementary ADR/feature documents strictly under **8,000 characters**.
 
 ### LLM OPTIMIZATION & GRAPH TOPOLOGY
 
@@ -63,11 +64,11 @@ Use this table to determine which rules file to read and which constraints apply
 | Document | Rules file to read | Key constraint |
 |---|---|---|
 | `docs/README.md` | `./references/README-RULES.md` | Navigation index only — PROHIBITED: any technical content — MUST sync in Step 10 |
-| `docs/adr/ARCHITECTURE.md` | `./references/ARCHITECTURE-RULES.md` | Architecture, layers, patterns, integrations |
+| `docs/adr/ARCHITECTURE.md` | `./references/ARCHITECTURE-RULES.md` | Architecture, layers, patterns, integrations (max 8,000 chars; compact or decompose into `docs/adr/` when full) |
 | `docs/adr/TESTS.md` | `./references/TESTS-RULES.md` | Test strategies, standards, execution commands |
 | `docs/.digest.md` | N/A | Machine-readable orientation digest — MUST read in Step 1 and update in Step 8 |
 | `docs/.graph.json` | N/A | Macro relation graph index aggregating document nodes & high-level doc edges across docs — MUST update in Step 9 |
-| Any other ADR (e.g., `SECURITY.md`, `DATABASE.md`, `API-DESIGN.md`, `OBSERVABILITY.md`) | `./references/DOCUMENT-TEMPLATE.md` | OPTIONAL: Specific architectural decisions, standards, or guidelines. MUST only be created if explicitly requested/decided by a human |
+| Any other ADR (e.g., `SECURITY.md`, `DATABASE.md`, `API-DESIGN.md`, `OBSERVABILITY.md`, `TELEMETRY.md`) | `./references/DOCUMENT-TEMPLATE.md` | OPTIONAL: Specific architectural decisions, standards, or decomposed topics. MUST strictly stay under 8,000 characters |
 | Any feature document (e.g., `docs/feature/*.md`) | `./references/DOCUMENT-TEMPLATE.md` | One business domain or feature per file |
 | `docs/harness-history/**` | N/A | PROHIBITED: project-memory must never read, create, or modify any file under `docs/harness-history/`. This folder is managed exclusively by `harness-tracer`, `harness-evaluator`, and `meta-harness`. |
 
@@ -75,7 +76,7 @@ Use this table to determine which rules file to read and which constraints apply
 
 - REQUIRED: Only `docs/adr/` and `docs/feature/` folders may be created and manipulated inside the `docs/` directory.
 - ALLOWED: `docs/.digest.md` and `docs/.graph.json` directly under `docs/`.
-- REQUIRED: Save all Architecture Decision Records and baseline/optional technical guides (such as `ARCHITECTURE.md`, `TESTS.md`, `SECURITY.md`, `DATABASE.md`, `API-DESIGN.md`, `OBSERVABILITY.md`, `DEPLOYMENT.md`, etc.) in the `docs/adr/` folder.
+- REQUIRED: Save all Architecture Decision Records and baseline/optional technical guides (such as `ARCHITECTURE.md`, `TESTS.md`, `SECURITY.md`, `DATABASE.md`, `API-DESIGN.md`, `OBSERVABILITY.md`, `TELEMETRY.md`, `DEPLOYMENT.md`, etc.) in the `docs/adr/` folder.
 - REQUIRED: Save all feature and business domain documentation (such as specific features, modules) in the `docs/feature/` folder.
 - PROHIBITED: Creating documents directly under `docs/` other than `docs/README.md`, `docs/.digest.md`, and `docs/.graph.json`.
 - PROHIBITED: Creating or manipulating any folders under `docs/` other than `docs/adr/` and `docs/feature/`.
@@ -83,12 +84,13 @@ Use this table to determine which rules file to read and which constraints apply
 
 ### Rules for non-baseline documents
 
-- REQUIRED: The only mandatory ADR documents to be created are `docs/adr/ARCHITECTURE.md` and `docs/adr/TESTS.md`. Any other ADR documents are strictly optional and must only be created if explicitly requested/decided by a human.
+- REQUIRED: The only mandatory ADR documents to be created are `docs/adr/ARCHITECTURE.md` and `docs/adr/TESTS.md`. Any other ADR documents are strictly optional and must only be created if explicitly requested/decided by a human, or when decomposing `ARCHITECTURE.md` to stay under the 8,000-character limit.
+- REQUIRED: When `docs/adr/ARCHITECTURE.md` approaches the 8,000-character limit, apply one of two strategies: (1) compact text and tables, or (2) decompose specialized topics (e.g., security, observability, telemetry, database) into complementary ADR documents in `docs/adr/` (each also capped at 8,000 characters).
 - REQUIRED: Each file covers exactly **one** business domain, module, or architectural layer.
 - REQUIRED: Keep `MODULES` documentation in `ARCHITECTURE.md` strictly high-level (name + 1 line + link). Move detailed module documentation exclusively to the respective feature docs in `docs/feature/`.
 - PROHIBITED: Mixing unrelated topics in a single file.
 - REQUIRED: Follow `./references/DOCUMENT-TEMPLATE.md` structure when it exists.
-- REQUIRED: Keep documents short enough for a developer or LLM to extract the relevant information in a single pass.
+- REQUIRED: Keep documents short, dense, and strictly under 8,000 characters so an LLM or developer can extract all relevant context in a single pass.
 
 ### Rules for root `README.md`
 
@@ -129,6 +131,7 @@ Execute steps in order. Do not skip steps.
 
 **Step 6 — Validate before delivering**
 - Confirm every generated document.
+- Confirm `docs/adr/ARCHITECTURE.md` and all ADR/feature documents are strictly under 8,000 characters.
 - Confirm `node_id` format (`<type>:<slug>`) is unique and all `edges[].target` references resolve.
 - Confirm each feature micrograph contains `entrypoints`, `registration_files`, `reference_files`, `code_files`, and `test_files`; contains no duplicate paths; and resolves every path from project root.
 - Confirm `## DOCUMENT MAP` Mermaid graph is present for documents with 2+ edges and absent for single-edge documents.
