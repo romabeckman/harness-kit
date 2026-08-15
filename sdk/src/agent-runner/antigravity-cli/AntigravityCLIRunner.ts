@@ -12,7 +12,11 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     return 'agy'
   }
 
-  protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
+  protected override get writePromptToStdin(): boolean {
+    return true
+  }
+
+  protected buildArgs(_prompt: string, invocation: AgentInvocation): string[] {
     const args: string[] = []
     const timeout = invocation.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS
 
@@ -28,8 +32,7 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     // add 1000ms to timeout to avoid throw error for 1sec difference
     args.push('--print-timeout', `${timeout + 1000}ms`)
     args.push('--dangerously-skip-permissions')
-    args.push('--agent', invocation.agent)
-    args.push('-p', prompt)
+    if (invocation.agent) args.push('--agent', invocation.agent)
     return args
   }
 

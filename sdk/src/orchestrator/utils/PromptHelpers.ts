@@ -3,6 +3,29 @@ import { join, resolve } from 'node:path'
 
 const INLINE_THRESHOLD = 5000
 
+/**
+ * Global configuration controlling whether file contents should be inlined
+ * directly into prompts or only referenced by file path.
+ *
+ * Default is `true`. Runners with command-line length constraints (such as Copilot CLI)
+ * set this to `false` so prompts only provide file paths for reading without inflating argv.
+ */
+export class PromptInjectionContext {
+  private static _allowInlineContent = false
+
+  static get allowInlineContent(): boolean {
+    return this._allowInlineContent
+  }
+
+  static setAllowInlineContent(allow: boolean): void {
+    this._allowInlineContent = allow
+  }
+
+  static reset(): void {
+    this._allowInlineContent = false
+  }
+}
+
 export function inlineOrReference(
   label: string,
   content: string | undefined,
@@ -10,6 +33,14 @@ export function inlineOrReference(
   lang: string = 'markdown'
 ): string[] {
   if (!content) return []
+
+  if (!PromptInjectionContext.allowInlineContent) {
+    return [
+      `<${label}_ref>`,
+      `Read file: \`${filePath}\``,
+      `</${label}_ref>`,
+    ]
+  }
 
   if (content.length < INLINE_THRESHOLD) {
     return [`<${label}>`, `\`\`\`${lang}`, content, '```', `</${label}>`]

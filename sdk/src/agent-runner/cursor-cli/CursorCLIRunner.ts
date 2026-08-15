@@ -15,7 +15,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
     return true
   }
 
-  protected buildArgs(prompt: string, invocation: AgentInvocation): string[] {
+  protected buildArgs(_prompt: string, invocation: AgentInvocation): string[] {
     const args = [
       '--print',
       '--output-format', 'stream-json',

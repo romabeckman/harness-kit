@@ -72,7 +72,13 @@ describe('AntigravityCLIRunner', () => {
     }
   })
 
-  it('should build correct CLI arguments including output-format json by default', () => {
+  it('should enable writePromptToStdin to avoid ENAMETOOLONG on long prompts', () => {
+    const runner = new AntigravityCLIRunner()
+    // @ts-ignore - protected property access
+    expect(runner.writePromptToStdin).toBe(true)
+  })
+
+  it('should build correct CLI arguments without -p prompt flag', () => {
     const runner = new AntigravityCLIRunner()
     // @ts-ignore - protected method access
     const args = runner.buildArgs(invocation.prompt, invocation)
@@ -82,8 +88,9 @@ describe('AntigravityCLIRunner', () => {
       '--print-timeout', '1801000ms',
       '--dangerously-skip-permissions',
       '--agent', 'test-agent',
-      '-p', 'Hello Antigravity',
     ])
+    expect(args).not.toContain('-p')
+    expect(args).not.toContain('Hello Antigravity')
   })
 
   it('should correctly parse json output format from agy', async () => {
@@ -101,11 +108,14 @@ describe('AntigravityCLIRunner', () => {
       },
     })
 
-    mockSpawn.mockReturnValue(new MockChildProcess([mockJsonOutput]) as any)
+    const mockProcess = new MockChildProcess([mockJsonOutput]) as any
+    mockSpawn.mockReturnValue(mockProcess)
 
     const runner = new AntigravityCLIRunner()
     const result = await runner.run(invocation)
 
+    expect(mockProcess.stdin.write).toHaveBeenCalledWith('Hello Antigravity', 'utf8')
+    expect(mockProcess.stdin.end).toHaveBeenCalled()
     expect(result.success).toBe(true)
     expect(result.raw).toBe('Greeting response text')
     expect(result.usage).toMatchObject({
