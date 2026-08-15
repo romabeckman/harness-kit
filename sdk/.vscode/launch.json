@@ -2,12 +2,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "hrns init (antigravity-cli)",
+      "name": "hrns run (antigravity-cli)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/dist/cli/run.js",
       "args": [
-        "init",
+        "run",
         "--agent",
         "antigravity-cli",
         "--model",

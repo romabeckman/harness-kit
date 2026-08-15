@@ -87,8 +87,8 @@ export class ReviewHandler extends AbstractPhaseHandler {
     const tlAgent = 'harness-kit:harness-tech-lead'
     const advAgent = 'harness-kit:harness-qa'
 
-    const tlSession = this.getDeveloperSession(context, tlAgent, payload.featureId, Phase.REVIEW)
-    const advSession = this.getDeveloperSession(context, advAgent, payload.featureId, Phase.REVIEW)
+    const tlSession = context.getDeveloperSession?.(tlAgent, payload.featureId, Phase.REVIEW)
+    const advSession = context.getDeveloperSession?.(advAgent, payload.featureId, Phase.REVIEW)
 
     const tlPromise = isSimple
       ? Promise.resolve(tlMock)
@@ -102,7 +102,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
         ...(tlSession ? { session: tlSession } : {}),
       }).then(output => {
         if (output.session) {
-          this.saveDeveloperSession(context, {
+          context.setDeveloperSession?.({
             featureId: payload.featureId,
             agent: tlAgent,
             session: output.session,
@@ -122,7 +122,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       ...(advSession ? { session: advSession } : {}),
     }).then(output => {
       if (output.session) {
-        this.saveDeveloperSession(context, {
+        context.setDeveloperSession?.({
           featureId: payload.featureId,
           agent: advAgent,
           session: output.session,

@@ -61,7 +61,7 @@ function makeContext(
   invokeAgentImpl?: (inv: any) => Promise<any>,
   configOverrides: Partial<Reviewontext['config']> = {}
 ): Reviewontext {
-  return {
+  const ctx: Reviewontext = {
     config: { scope: 'test', score: 0.85, reworks: 3, projectPaths: [], complexity: Complexity.AUTO, ...configOverrides },
     workingDir,
     fsm,
@@ -69,7 +69,44 @@ function makeContext(
     getActiveFeature: vi.fn().mockReturnValue(makeFeature()),
     checkSpecFilesPresent: vi.fn().mockReturnValue(true),
     extractTasksFromTacticalDesign: vi.fn().mockReturnValue([]),
+    getDeveloperSession(agent: string, featureId?: string, phase?: Phase) {
+      if (!ctx.developerSession) return undefined
+      if (Array.isArray(ctx.developerSession)) {
+        return ctx.developerSession.find(
+          s => s.agent === agent && (!featureId || s.featureId === featureId) && (!phase || s.phase === phase)
+        )?.session
+      }
+      const session = ctx.developerSession as any
+      if (session.agent === agent && (!featureId || session.featureId === featureId) && (!phase || session.phase === phase)) {
+        return session.session
+      }
+      return undefined
+    },
+    setDeveloperSession(sessionState: any) {
+      if (!ctx.developerSession) {
+        ctx.developerSession = [sessionState]
+        return
+      }
+      if (Array.isArray(ctx.developerSession)) {
+        const idx = ctx.developerSession.findIndex(
+          s => s.agent === sessionState.agent && s.featureId === sessionState.featureId && s.phase === sessionState.phase
+        )
+        if (idx >= 0) {
+          ctx.developerSession[idx] = sessionState
+        } else {
+          ctx.developerSession.push(sessionState)
+        }
+      } else {
+        const existing = ctx.developerSession as any
+        if (existing.agent === sessionState.agent && existing.featureId === sessionState.featureId && existing.phase === sessionState.phase) {
+          ctx.developerSession = [sessionState]
+        } else {
+          ctx.developerSession = [existing, sessionState]
+        }
+      }
+    },
   }
+  return ctx
 }
 
 describe('ReviewHandler', () => {

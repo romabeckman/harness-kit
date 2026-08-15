@@ -70,7 +70,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
 
     // Check for compatible developer session on retry
     const developerSession = isRetry
-      ? this.getDeveloperSession(context, agent, activeFeature.id, Phase.DEVELOPMENT)
+      ? context.getDeveloperSession?.(agent, activeFeature.id, Phase.DEVELOPMENT)
       : undefined
 
     const prompt = this.buildTddOrchestratorPrompt(payload, context, agent, Boolean(developerSession))
@@ -86,7 +86,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     })
 
     if (output.session) {
-      this.saveDeveloperSession(context, {
+      context.setDeveloperSession?.({
         featureId: activeFeature.id,
         agent,
         session: output.session,
