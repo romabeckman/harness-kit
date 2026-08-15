@@ -14,6 +14,7 @@ import {
   buildDocsOrientationSection
 } from '../utils/PromptHelpers'
 import { clearFeatureDeveloperSessions } from '../utils/SessionHelpers'
+import { getSpecsDir } from '../utils/PhaseFileUtils'
 import type { ReviewPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
@@ -66,7 +67,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
   }
 
   private cleanTemporaryFiles(context: Reviewontext, domain: string): void {
-    const specsDir = join(context.workingDir, 'docs', 'specs', domain)
+    const specsDir = getSpecsDir(context.workingDir, domain)
     for (const file of ['TL.json', 'QA.json']) {
       const p = join(specsDir, file)
       if (existsSync(p)) rmSync(p, { force: true })
@@ -79,7 +80,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     const isSimple = context.config.complexity === Complexity.LOW
 
     const tlMock = { featureId: payload.featureId, score: 1, openPoints: [], architectureTip: '' }
-    const specsDir = join(context.workingDir, 'docs', 'specs', payload.domain)
+    const specsDir = getSpecsDir(context.workingDir, payload.domain)
 
     if (isSimple && existsSync(specsDir)) {
       writeFileSync(join(specsDir, 'TL.json'), JSON.stringify(tlMock, null, 2), 'utf8')
@@ -137,7 +138,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
   }
 
   private extractScores(context: Reviewontext, domain: string, tlOutput: any, advOutput: any) {
-    const specsDir = join(context.workingDir, 'docs', 'specs', domain)
+    const specsDir = getSpecsDir(context.workingDir, domain)
     const tlData = this.parseAgentOutput(join(specsDir, 'TL.json'), tlOutput, 'review_tl')
     const advData = this.parseAgentOutput(join(specsDir, 'QA.json'), advOutput, 'review_adv')
 

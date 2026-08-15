@@ -3,7 +3,14 @@ import { join, resolve } from 'node:path'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
-import { inlineOrReference, buildDocsOrientationSection } from '../utils/PromptHelpers'
+import {
+  inlineOrReference,
+  buildDocsOrientationSection,
+  formatRulesSection,
+  formatProjectPathsList,
+  formatTasksList,
+} from '../utils/PromptHelpers'
+import { getSpecsDir } from '../utils/PhaseFileUtils'
 import type { Feature, Task } from '../../file-state/types'
 import type { DevelopmenPayload } from '../../context-assembler/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
@@ -18,7 +25,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const activeFeature = context.getActiveFeature(features)
     if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
 
-    const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
+    const tddOutputPath = join(getSpecsDir(context.workingDir, activeFeature.domain), 'TDD-OUTPUT.json')
     let pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
 
     const shouldGoToReview = this.shouldGoToReview(activeFeature, tddOutputPath, context, pendingTasks)
@@ -105,19 +112,16 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
   }
 
   buildDevelopmentPrompt(payload: DevelopmenPayload, context: Reviewontext, _agent?: string): string {
-    const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
-    const tasksList = payload.tasks.map(t => `- [${t.taskId}] ${t.description}`).join('\n')
-    const rulesSection =
-      payload.steeringRules && payload.steeringRules.length > 0
-        ? payload.steeringRules.map(r => `- ${r}`).join('\n')
-        : '- No additional rules provided'
+    const projectPathsList = formatProjectPathsList(payload.projectPaths)
+    const tasksList = formatTasksList(payload.tasks)
+    const rulesSection = formatRulesSection(payload.steeringRules)
 
-    const workingDir = join(context.workingDir, 'docs', 'specs', payload.domain)
+    const workingDir = getSpecsDir(context.workingDir, payload.domain)
     const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
 
     const tasksSection = [
       `<tasks>`,
-      tasksList || '- No pending tasks provided',
+      tasksList,
       `</tasks>`,
       ``,
     ].join('\n')
@@ -194,19 +198,16 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
   }
 
   buildStandaloneReworkPrompt(payload: DevelopmenPayload, context: Reviewontext, _agent?: string): string {
-    const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
-    const tasksList = payload.tasks.map(t => `- [${t.taskId}] ${t.description}`).join('\n')
-    const rulesSection =
-      payload.steeringRules && payload.steeringRules.length > 0
-        ? payload.steeringRules.map(r => `- ${r}`).join('\n')
-        : '- No additional rules provided'
+    const projectPathsList = formatProjectPathsList(payload.projectPaths)
+    const tasksList = formatTasksList(payload.tasks)
+    const rulesSection = formatRulesSection(payload.steeringRules)
 
-    const workingDir = join(context.workingDir, 'docs', 'specs', payload.domain)
+    const workingDir = getSpecsDir(context.workingDir, payload.domain)
     const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
 
     const tasksSection = [
       `<tasks>`,
-      tasksList || '- No pending tasks provided',
+      tasksList,
       `</tasks>`,
       ``,
     ].join('\n')
@@ -279,13 +280,13 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
   }
 
   buildContinuationReworkPrompt(payload: DevelopmenPayload, context: Reviewontext): string {
-    const tasksList = payload.tasks.map(t => `- [${t.taskId}] ${t.description}`).join('\n')
-    const workingDir = join(context.workingDir, 'docs', 'specs', payload.domain)
+    const tasksList = formatTasksList(payload.tasks)
+    const workingDir = getSpecsDir(context.workingDir, payload.domain)
     const reworkSection = this.buildReworkSection(payload, context)
 
     const tasksSection = [
       `<tasks>`,
-      tasksList || '- No pending tasks provided',
+      tasksList,
       `</tasks>`,
       ``,
     ].join('\n')

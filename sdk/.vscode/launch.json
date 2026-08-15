@@ -2,12 +2,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "hrns run (antigravity-cli)",
+      "name": "hrns init (antigravity-cli)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/dist/cli/run.js",
       "args": [
-        "run",
+        "init",
         "--agent",
         "antigravity-cli",
         "--model",
@@ -24,12 +24,12 @@
       ]
     },
     {
-      "name": "hrns run (codex-cli)",
+      "name": "hrns init (codex-cli)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/dist/cli/run.js",
       "args": [
-        "run",
+        "init",
         "--agent",
         "codex-cli",
         "--model",

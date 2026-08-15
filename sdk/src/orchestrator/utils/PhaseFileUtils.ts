@@ -95,3 +95,14 @@ export function readTddOutput(tddOutputPath: string): TddOutputSummary {
     return { status: 'PARSE_ERROR', rationale: `Failed to parse TDD-OUTPUT.json: ${err.message}` }
   }
 }
+
+/** Resolves the product directory from orchestrator context or config. */
+export function getProductDir(context: { config?: { productDir?: string }; workingDir?: string }): string {
+  return context.config?.productDir ?? join(context.workingDir ?? process.cwd(), 'docs', 'product')
+}
+
+/** Resolves the domain specs directory under a working directory. */
+export function getSpecsDir(workingDir: string, domain: string): string {
+  return join(workingDir, 'docs', 'specs', domain)
+}
+

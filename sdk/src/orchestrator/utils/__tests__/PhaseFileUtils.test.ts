@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
-import { listSpecFiles, listDocFiles, readTddOutput } from '../../utils/PhaseFileUtils'
+import { listSpecFiles, listDocFiles, readTddOutput, getProductDir, getSpecsDir } from '../../utils/PhaseFileUtils'
 
 function makeTempDir(): string {
   const dir = join(tmpdir(), `phase-file-utils-test-${Math.random().toString(36).slice(2)}`)
@@ -161,6 +161,34 @@ describe('PhaseFileUtils', () => {
       const result = readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
 
       expect(result.rationale).toContain('Reworks: 3')
+    })
+  })
+
+  // ─── getProductDir ────────────────────────────────────────────────────────
+
+  describe('getProductDir', () => {
+    it('returns custom productDir when specified in config', () => {
+      const context = {
+        config: { productDir: '/custom/product' },
+        workingDir: '/workspace',
+      }
+      expect(getProductDir(context as any)).toBe('/custom/product')
+    })
+
+    it('defaults to docs/product under workingDir when productDir is not configured', () => {
+      const context = {
+        config: {},
+        workingDir: '/workspace',
+      }
+      expect(getProductDir(context as any)).toBe(join('/workspace', 'docs', 'product'))
+    })
+  })
+
+  // ─── getSpecsDir ──────────────────────────────────────────────────────────
+
+  describe('getSpecsDir', () => {
+    it('returns docs/specs/{domain} under workingDir', () => {
+      expect(getSpecsDir('/workspace', 'auth')).toBe(join('/workspace', 'docs', 'specs', 'auth'))
     })
   })
 })

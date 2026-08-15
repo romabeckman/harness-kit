@@ -4,6 +4,7 @@ import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { buildDocsOrientationSection } from '../utils/PromptHelpers'
+import { getProductDir } from '../utils/PhaseFileUtils'
 
 export interface RefinementQuestion {
   id: number
@@ -41,7 +42,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
   }
 
   private async generateQuestions(context: Reviewontext, scope: string): Promise<RefinementQuestion[]> {
-    const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
+    const productDir = getProductDir(context)
     const questionsPath = join(productDir, 'QUESTIONS.json')
     const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
 
@@ -197,7 +198,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
     scope: string,
     qaPairs: Array<{ question: string; answer: string }>
   ): Promise<void> {
-    const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
+    const productDir = getProductDir(context)
     const refinementPath = join(productDir, 'REFINEMENT.md')
     const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
 

@@ -4,7 +4,12 @@ import { ContextAssembler } from '../../context-assembler/ContextAssembler'
 import type { MemoryPayload } from '../../context-assembler/types'
 import { join } from 'node:path'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
-import { buildDocsOrientationSection } from '../utils/PromptHelpers'
+import {
+  buildDocsOrientationSection,
+  formatRulesSection,
+  formatProjectPathsList,
+} from '../utils/PromptHelpers'
+import { getProductDir } from '../utils/PhaseFileUtils'
 
 export class MemoryHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
@@ -41,13 +46,10 @@ export class MemoryHandler extends AbstractPhaseHandler {
   }
 
   private buildProjectMemoryPrompt(payload: MemoryPayload, context: Reviewontext): string {
-    const backlogFile = join(context.workingDir, 'docs', 'product', 'BACKLOG.md')
+    const backlogFile = join(getProductDir(context), 'BACKLOG.md')
     const specsPattern = join(context.workingDir, 'docs', 'specs', '[domain]', '*.md')
-    const projectPathsList = payload.projectPaths.map(p => `- ${p}`).join('\n')
-    const rulesSection =
-      payload.steeringRules && payload.steeringRules.length > 0
-        ? payload.steeringRules.map(r => `- ${r}`).join('\n')
-        : '- No additional rules provided'
+    const projectPathsList = formatProjectPathsList(payload.projectPaths)
+    const rulesSection = formatRulesSection(payload.steeringRules)
 
     const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
 

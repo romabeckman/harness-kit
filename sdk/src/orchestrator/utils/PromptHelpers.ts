@@ -1,5 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { Complexity } from '../types'
+import type { Feature } from '../../file-state/types'
 
 export type InlinePolicy = 'never' | 'auto' | 'always'
 
@@ -182,4 +184,57 @@ export function buildDocsOrientationSection(
 
   return lines
 }
+
+/** Formats steering rules or user rules into a bullet list or fallback. */
+export function formatRulesSection(rules?: string[]): string {
+  if (rules && rules.length > 0) {
+    return rules.map((r) => `- ${r}`).join('\n')
+  }
+  return '- No additional rules provided'
+}
+
+/** Formats project paths into a markdown bullet list. */
+export function formatProjectPathsList(projectPaths: string[]): string {
+  return projectPaths.map((p) => `- ${p}`).join('\n')
+}
+
+/** Builds the scope complexity rules block for LOW, HIGH, or AUTO evaluation. */
+export function buildComplexityRules(complexity?: Complexity): string[] {
+  const resolved = complexity ?? Complexity.AUTO
+  if (resolved === Complexity.LOW) {
+    return [
+      `- COMPLEXITY OVERRIDE: Classify as 'LOW' — do not re-evaluate scope complexity.`,
+      `- For 'LOW': Keep analysis concise and reuse established patterns, but still produce all required 001–004 artifacts.`,
+    ]
+  }
+  if (resolved === Complexity.HIGH) {
+    return [
+      `- COMPLEXITY OVERRIDE: Classify as 'HIGH' — do not re-evaluate scope complexity.`,
+      `- For 'HIGH': Give additional depth to integrations, failure modes, security boundaries, concurrency, and compatibility risks while producing all required 001–004 artifacts.`,
+    ]
+  }
+  return [
+    `- Evaluate scope complexity between 'LOW' and 'HIGH'. LOW is characterized by crystal-clear requirements, zero structural ambiguities, isolated changes, zero cross-team dependencies, use of existing patterns, straightforward flows, zero backward compatibility risks, and standard unit testing without complex integrations.`,
+    `- If LOW: keep analysis concise and reuse established patterns. If HIGH: deepen analysis of integrations, failure modes, security boundaries, concurrency, and compatibility risks. In both cases, produce all required 001–004 artifacts.`,
+  ]
+}
+
+/** Formats feature dependencies as a comma-separated list of specs folders or 'None'. */
+export function formatFeatureDependencies(backlog: Feature[], feature: Feature): string {
+  return (
+    backlog
+      .filter((f) => feature.dependencies.includes(f.id))
+      .map((f) => `\`${join('docs', 'specs', f.domain)}\``)
+      .join(', ') || 'None'
+  )
+}
+
+/** Formats pending tasks into a markdown list with taskId and description. */
+export function formatTasksList(tasks: Array<{ taskId: string; description: string }>): string {
+  if (tasks.length === 0) {
+    return '- No pending tasks provided'
+  }
+  return tasks.map((t) => `- [${t.taskId}] ${t.description}`).join('\n')
+}
+
 
