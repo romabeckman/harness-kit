@@ -7,7 +7,7 @@ tags: [state, persistence, atomic, file-state]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-08-08"
+updated: "2026-08-15"
 ---
 # State Persistence
 Governs localized file state mutations and data structures for features and tasks.
@@ -22,7 +22,10 @@ sdk/
 │   └── file-state/               # File state ports and parsers
 │       ├── FileStateManager.ts   # Writes and reads state files atomically
 │       ├── types.ts              # Defines backlog, task, and rules types
-│       └── parsers/              # Backlog parser and bootstrap parser
+│       └── parsers/              # Backlog, bootstrap config, and dev state parsers
+│           ├── BacklogParser.ts          # Strips markdown wrapping from IDs
+│           ├── BootstrapConfigParser.ts  # Parses BOOTSTRAP-CONFIG.json
+│           └── DevStateParser.ts         # Parses DEVELOPMENT-STATE.md tables
 └── docs/
     └── product/
         ├── BACKLOG.md            # Features backlog index markdown file

@@ -7,7 +7,7 @@ tags: [telemetry, ledger, tokens, costs]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-08-08"
+updated: "2026-08-15"
 ---
 # Telemetry and Ledger
 Tracks token consumption, execution costs, and quota limits across agent run cycles.

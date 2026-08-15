@@ -7,7 +7,7 @@ tags: [steering, rules, rollback, overrides]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-08-08"
+updated: "2026-08-15"
 ---
 # Session Steering
 Guides the runtime classification and application of developer steering overrides in the orchestration loop.
@@ -20,7 +20,9 @@ Session steering permits developers to inject custom instructions and execute st
 sdk/src/
 ├── orchestrator/
 │   ├── SteeringAnalyzer.ts       # Parses developer text into steering actions
-│   └── HarnessOrchestrator.ts    # Executes state machine rollbacks and applies overrides
+│   ├── HarnessOrchestrator.ts    # Executes state machine rollbacks and applies overrides
+│   └── services/
+│       └── SteeringService.ts    # Applies steering actions to config and state
 └── file-state/
     └── types.ts                  # Defines steering rules configuration schema
 </folder_structure>

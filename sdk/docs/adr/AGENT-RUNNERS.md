@@ -30,7 +30,8 @@ sdk/src/
     ├── copilot-cli/             # GitHub Copilot CLI execution adapter
     ├── copilot-sdk/             # GitHub Copilot SDK execution adapter
     ├── cursor-cli/              # Cursor agent CLI execution adapter
-    └── cursor-sdk/             # Cursor SDK execution adapter
+    ├── cursor-sdk/             # Cursor SDK execution adapter
+    └── kiro-cli/               # AWS Kiro CLI execution adapter
 </folder_structure>
 
 ## HOW TO REGISTER AND RUN AN AGENT
@@ -76,6 +77,10 @@ const runner = new ClaudeCLIRunner() // Violates ports and adapters decoupling
 - Executes binary `agent` with `--print --force --output-format stream-json`.
 - Resumes conversations via `--resume <session.id>`.
 - Extracts session ID from `session_id` stream events.
+### KiroCLIRunner (`kiro-cli`)
+- Executes binary `kiro-cli` with subcommand `chat --no-interactive --trust-all-tools`.
+- Does not support session resumption.
+- Parses `result` events from stdout JSON stream; extracts token counts with both snake_case and camelCase fallbacks.
 
 ## PARAMETERS / CONFIGURATIONS
 | Name | Type | Required | Description | Default |
