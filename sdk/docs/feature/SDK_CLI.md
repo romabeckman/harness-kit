@@ -11,7 +11,7 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_core"
-updated: "2026-08-08"
+updated: "2026-08-14"
 ---
 
 ```graph
@@ -110,9 +110,3 @@ graph TD
 - [**SDK_STEERING.md**](./SDK_STEERING.md): Orchestration phase steering rules details.
 - [**SDK_CORE.md**](./SDK_CORE.md): Core orchestrator lifecycle and phases.
 
----
-
-## CHANGE SUMMARY
-- **Added:** YAML frontmatter, template compliance.
-- **Updated:** Section titles to UPPERCASE, command usages formatted appropriately.
-- **Removed:** Verbose descriptions not fitting the short template style.

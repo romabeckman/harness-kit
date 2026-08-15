@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-08"
+updated: "2026-08-14"
 ---
 
 ```graph
@@ -17,7 +17,7 @@ updated: "2026-08-08"
 ```
 
 # SDK PACKAGE
-Defines the publication surface of `harness-kit-sdk` for npm.
+Defines the publication surface of `@romabeckman/hrns` for npm.
 
 ## OVERVIEW
 The `sdk_package` configures `package.json` and `tsconfig.build.json` so that `npm publish` emits a clean, type-safe CJS-only package. The exports map exposes a single entry and restricts the tarball to compiled files.
@@ -74,7 +74,7 @@ sdk/
 
 ## BEST PRACTICES
 REQUIRED: Keep `exports` map as the authoritative entry point.
-REQUIRED: Add new public exports only through `sdk/src/index.ts`.
+REQUIRED: Add new public exports only through `src/index.ts`.
 PROHIBITED: Committing the `dist/` directory to source control.
 
 ## DOCUMENT MAP
@@ -92,10 +92,3 @@ graph TD
 - [**SDK_STATE.md**](./SDK_STATE.md): High-level state mutation methods included in the published package.
 - [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): Agent Runner error types included in the published package.
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): CJS-only exports boundary decision.
-
----
-
-## CHANGE SUMMARY
-- **Added:** Frontmatter fields, code examples, change summary.
-- **Updated:** Section titles uppercase, reformatted concepts.
-- **Removed:** Extraneous implementation details that belong in code.

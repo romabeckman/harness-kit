@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-08"
+updated: "2026-08-14"
 ---
 
 ```graph
@@ -73,9 +73,3 @@ graph TD
 - [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): `IAgentRunner` interface used by `SteeringAnalyzer`.
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): `SteeringAnalyzer` module responsibilities.
 
----
-
-## CHANGE SUMMARY
-- **Added:** YAML frontmatter, CHANGE SUMMARY, code examples.
-- **Updated:** UPPERCASE section titles.
-- **Removed:** Redundant flow diagrams.

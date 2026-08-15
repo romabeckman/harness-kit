@@ -9,10 +9,8 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-11"
+updated: "2026-08-14"
 ---
-# SDK CORE
-
 ```graph
 {
   "node_id": "feature:sdk_core",
@@ -22,10 +20,12 @@ updated: "2026-08-11"
   "entrypoints": ["src/orchestrator/HarnessOrchestrator.ts"],
   "registration_files": ["src/orchestrator/ChainBuilder.ts","src/orchestrator/phases/index.ts"],
   "reference_files": ["src/orchestrator/phases/AbstractPhaseHandler.ts"],
-  "code_files": ["src/context-assembler/ContextAssembler.ts","src/context-assembler/types.ts","src/json-extraction/JsonExtractionProtocol.ts","src/json-extraction/types.ts","src/orchestrator/BootstrapConfigParser.ts","src/orchestrator/ReentryResolver.ts","src/orchestrator/phases/BootstrapHandler.ts","src/orchestrator/phases/CascadeBlockedHandler.ts","src/orchestrator/phases/DeployHandler.ts","src/orchestrator/phases/DevelopmentHandler.ts","src/orchestrator/phases/MemoryHandler.ts","src/orchestrator/phases/PlanningHandler.ts","src/orchestrator/phases/RefinementHandler.ts","src/orchestrator/phases/ReviewHandler.ts","src/orchestrator/phases/TransitionHandler.ts","src/orchestrator/services/AgentInvocationService.ts","src/orchestrator/services/PhaseDecisionLogger.ts","src/orchestrator/services/ProjectStateService.ts","src/orchestrator/types.ts","src/orchestrator/utils/OrchestratorFormatter.ts","src/orchestrator/utils/PhaseFileUtils.ts","src/orchestrator/utils/PromptHelpers.ts","src/telemetry/TokenLedger.ts","src/validation-gate/ValidationGate.ts","src/validation-gate/types.ts"],
+  "code_files": ["src/context-assembler/ContextAssembler.ts","src/context-assembler/types.ts","src/json-extraction/JsonExtractionProtocol.ts","src/json-extraction/types.ts","src/orchestrator/ReentryResolver.ts","src/orchestrator/phases/BootstrapHandler.ts","src/orchestrator/phases/CascadeBlockedHandler.ts","src/orchestrator/phases/DeployHandler.ts","src/orchestrator/phases/DevelopmentHandler.ts","src/orchestrator/phases/MemoryHandler.ts","src/orchestrator/phases/PlanningHandler.ts","src/orchestrator/phases/RefinementHandler.ts","src/orchestrator/phases/ReviewHandler.ts","src/orchestrator/phases/TransitionHandler.ts","src/orchestrator/services/AgentInvocationService.ts","src/orchestrator/services/PhaseDecisionLogger.ts","src/orchestrator/services/ProjectStateService.ts","src/orchestrator/types.ts","src/orchestrator/utils/OrchestratorFormatter.ts","src/orchestrator/utils/PhaseFileUtils.ts","src/orchestrator/utils/PromptHelpers.ts","src/telemetry/TokenLedger.ts","src/validation-gate/ValidationGate.ts","src/validation-gate/types.ts"],
   "test_files": ["src/context-assembler/__tests__/ContextAssembler.test.ts","src/orchestrator/__tests__/ChainBuilder.test.ts","src/orchestrator/__tests__/types.test.ts","src/orchestrator/phases/__tests__/PhaseAHandler.test.ts","src/orchestrator/phases/__tests__/PhaseBHandler.test.ts","src/orchestrator/phases/__tests__/PhaseFHandler.test.ts","src/orchestrator/phases/__tests__/RefinementHandler.test.ts","src/orchestrator/services/__tests__/AgentInvocationService.test.ts","src/orchestrator/services/__tests__/PhaseDecisionLogger.test.ts","src/orchestrator/services/__tests__/ProjectStateService.test.ts","src/orchestrator/utils/__tests__/PhaseFileUtils.test.ts","src/orchestrator/utils/__tests__/PromptHelpers.test.ts","src/telemetry/__tests__/TokenLedger.test.ts","src/validation-gate/__tests__/ValidationGate.test.ts","tests/integration/t11-orchestrator-bootstrap-phasea.test.ts","tests/integration/t12-orchestrator-phaseb.test.ts","tests/integration/t13-orchestrator-phasec.test.ts","tests/integration/t14-orchestrator-phased-e.test.ts","tests/unit/phases/t04-phasec-handler.test.ts","tests/unit/phases/t06-phasee-handler.test.ts","tests/unit/phases/t07-deploy-handler.test.ts","tests/unit/phases/t08-refinement-handler.test.ts","tests/unit/t02-types.test.ts","tests/unit/t04-json-extraction.test.ts","tests/unit/t05-validation-gate.test.ts","tests/unit/t08-context-assembler.test.ts","tests/unit/t09-reentry-resolver.test.ts","tests/unit/t10-state-machine.test.ts"]
 }
 ```
+
+# SDK CORE
 
 Implements the autonomous-orchestrator state machine as an importable library.
 
@@ -39,8 +39,8 @@ sdk/src/
 ├── index.ts                          # Public re-exports only
 ├── orchestrator/
 │   ├── HarnessOrchestrator.ts        # State machine loop
-│   ├── StateMachine.ts               # Pure phase transition function
-│   └── ReentryResolver.ts            # Ordered predicate table
+│   ├── phases/                       # Chain-of-Responsibility handlers
+│   └── ReentryResolver.ts            # Ordered re-entry predicates
 ├── file-state/
 │   └── FileStateManager.ts           # IFileStateManager implementation
 ├── agent-runner/
@@ -65,7 +65,7 @@ sdk/src/
 ## HOW TO USE THE ORCHESTRATOR API
 
 ### Prerequisites
-1. Import `HarnessOrchestrator` from `harness-kit-sdk`.
+1. Import `HarnessOrchestrator` from `@romabeckman/hrns`.
 2. Provide a valid `IAgentRunner` implementation.
 
 ### Steps
@@ -77,7 +77,8 @@ sdk/src/
 const orchestrator = new HarnessOrchestrator({
   scope: "Implement login",
   projectPaths: ["./src"],
-  agentRunner: myAgentRunner
+  agentRunner: myAgentRunner,
+  complexity: "AUTO"
 });
 await orchestrator.run();
 
@@ -114,10 +115,3 @@ graph TD
 ## REFERENCES
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Architectural decisions like Ports and Adapters.
 - [**TESTS.md**](../adr/TESTS.md): Test documentation.
-
----
-
-## CHANGE SUMMARY
-- **Added:** YAML frontmatter, CHANGE SUMMARY, code examples.
-- **Updated:** UPPERCASE sections, standard folder tree format, canonical telemetry record contract, and retry prompts with inline rework-log content.
-- **Removed:** Open limitations section as they are bug tickets, not permanent documentation.

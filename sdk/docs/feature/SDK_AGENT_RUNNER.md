@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-08"
+updated: "2026-08-14"
 ---
 
 ```graph
@@ -100,10 +100,3 @@ graph TD
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Arch patterns and integrations.
 - [**TESTS.md**](../adr/TESTS.md): Testing guidelines.
 
----
-
-## CHANGE SUMMARY
-- **Added:** YAML frontmatter, standard folder structure block, CHANGE SUMMARY.
-- **Updated:** `AntigravityCLIRunner` defaults to `--output-format json` with structured JSON output parsing for tokens (`inputTokens`, `outputTokens`, `cacheReadTokens`), artefacts, and error handling.
-- **Updated:** Section titles converted to uppercase, imperative tone applied.
-- **Removed:** Extra boilerplate text.

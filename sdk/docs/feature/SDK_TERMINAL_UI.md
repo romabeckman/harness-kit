@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-08"
+updated: "2026-08-14"
 ---
 
 ```graph
@@ -71,9 +71,3 @@ graph TD
 - [**SDK_CORE.md**](./SDK_CORE.md): Orchestrator integration points.
 - [**SDK_STEERING.md**](./SDK_STEERING.md): Steering output confirmation UI dependencies.
 
----
-
-## CHANGE SUMMARY
-- **Added:** YAML frontmatter, CHANGE SUMMARY, code examples.
-- **Updated:** UPPERCASE section titles.
-- **Removed:** Detailed table of internal ANSI sequences.

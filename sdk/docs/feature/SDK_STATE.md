@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-08"
+updated: "2026-08-14"
 ---
 
 ```graph
@@ -78,9 +78,3 @@ graph TD
 - [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): Outbound port implementation.
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Ports-and-Adapters structure.
 
----
-
-## CHANGE SUMMARY
-- **Added:** YAML frontmatter, CHANGE SUMMARY, code examples.
-- **Updated:** UPPERCASE section titles.
-- **Removed:** Deeply granular defect fix histories.

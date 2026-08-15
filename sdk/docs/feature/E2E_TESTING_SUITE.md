@@ -9,11 +9,11 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-08"
+updated: "2026-08-14"
 ---
 
 ```graph
-{"node_id":"feature:e2e_testing_suite","domain":"e2e_testing","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["tests/e2e/vitest.e2e.config.ts"],"registration_files":[],"reference_files":["tests/e2e/scenarios/02-full-orchestration-cycle.test.ts"],"code_files":["tests/e2e/helpers/AssertionHelpers.ts","tests/e2e/helpers/CliRunner.ts","tests/e2e/helpers/MockAgentCli.ts","tests/e2e/helpers/OrchestrationStateValidator.ts","tests/e2e/helpers/SandboxEnvironment.ts"],"test_files":["tests/e2e/helpers/AssertionHelpers.test.ts","tests/e2e/helpers/MockAgentCli.test.ts","tests/e2e/helpers/OrchestrationStateValidator.test.ts","tests/e2e/helpers/SandboxEnvironment.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/e2e/scenarios/01-init-and-bootstrap.test.ts","tests/e2e/scenarios/03-session-resume-and-steering.test.ts","tests/e2e/scenarios/04-multi-project-readonly-steering.test.ts","tests/e2e/scenarios/05-report-dashboard-and-telemetry.test.ts","tests/e2e/scenarios/06-quota-exceeded-and-halt-recovery.test.ts","tests/e2e/scenarios/07-http-server-daemon.test.ts","tests/unit/t32-e2e-ci-pipeline-integration.test.ts"]}
+{"node_id":"feature:e2e_testing_suite","domain":"e2e_testing","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["vitest.e2e.config.ts"],"registration_files":[],"reference_files":["tests/e2e/scenarios/02-full-orchestration-cycle.test.ts"],"code_files":["tests/e2e/vitest.e2e.config.ts","tests/e2e/helpers/AssertionHelpers.ts","tests/e2e/helpers/CliRunner.ts","tests/e2e/helpers/MockAgentCli.ts","tests/e2e/helpers/OrchestrationStateValidator.ts","tests/e2e/helpers/SandboxEnvironment.ts"],"test_files":["tests/e2e/helpers/AssertionHelpers.test.ts","tests/e2e/helpers/MockAgentCli.test.ts","tests/e2e/helpers/OrchestrationStateValidator.test.ts","tests/e2e/helpers/SandboxEnvironment.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/e2e/scenarios/01-init-and-bootstrap.test.ts","tests/e2e/scenarios/03-session-resume-and-steering.test.ts","tests/e2e/scenarios/04-multi-project-readonly-steering.test.ts","tests/e2e/scenarios/05-report-dashboard-and-telemetry.test.ts","tests/e2e/scenarios/06-quota-exceeded-and-halt-recovery.test.ts","tests/e2e/scenarios/07-http-server-daemon.test.ts","tests/unit/t32-e2e-ci-pipeline-integration.test.ts"]}
 ```
 
 # END-TO-END (E2E) TESTING SUITE
@@ -26,18 +26,10 @@ The E2E testing suite executes non-interactive end-to-end test scenarios against
 <folder_structure>
 ```
 tests/e2e/
-├── helpers/
-│   ├── SandboxEnvironment.ts    # Temporary folder isolation and cleanup
-│   ├── MockAgentCli.ts          # Subprocess stub for simulating agent behavior
-│   └── AssertionHelpers.ts      # Disk state validators
-├── scenarios/
-│   ├── 01-init-and-bootstrap.test.ts
-│   ├── 02-full-orchestration-cycle.test.ts
-│   ├── 03-session-resume-and-steering.test.ts
-│   ├── 04-multi-project-readonly-steering.test.ts
-│   ├── 05-report-dashboard-and-telemetry.test.ts
-│   └── 06-quota-exceeded-and-halt-recovery.test.ts
-└── vitest.e2e.config.ts         # Dedicated Vitest runner configuration
+├── helpers/                     # Sandbox, CLI, and assertion infrastructure
+├── integration/                 # Compiled CLI sandbox integration
+├── scenarios/                   # Full lifecycle and daemon scenarios
+└── vitest.e2e.config.ts         # Alternate path-aware test configuration
 ```
 </folder_structure>
 
@@ -71,7 +63,7 @@ rtk npm run test:e2e
 | Name | Type | Required | Description | Default |
 |------|------|----------|-------------|---------|
 | testTimeout | int | Yes | Timeout in milliseconds for long-running E2E CLI processes | 30000 |
-| include | string[] | Yes | Glob pattern for E2E scenario files | `['tests/e2e/scenarios/**/*.test.ts']` |
+| include | string[] | Yes | Glob pattern for E2E tests | `['tests/e2e/**/*.test.ts']` |
 
 ## BEST PRACTICES
 REQUIRED: Clean up sandbox directories after test completion using hooks.
@@ -90,12 +82,6 @@ graph TD
 
 ## REFERENCES
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Core architectural layers and CLI runner patterns.
-- [**TESTS.md**](../adr/TESTS.md): Overall test strategies, coverage targets, and execution standards.
+- [**TESTS.md**](../adr/TESTS.md): Test strategies, tooling, and execution standards.
 - [**SDK_CLI.md**](./SDK_CLI.md): CLI command flag definitions and interactive wizard specifications.
 
----
-
-## CHANGE SUMMARY
-- **Added:** YAML frontmatter, CHANGE SUMMARY section.
-- **Updated:** Section titles converted to uppercase, adjusted rules format.
-- **Removed:** Introductory filler text.

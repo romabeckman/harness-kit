@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-08"
+updated: "2026-08-14"
 ---
 
 ```graph
@@ -77,9 +77,3 @@ graph TD
 ## REFERENCES
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Structural details and registry patterns.
 
----
-
-## CHANGE SUMMARY
-- **Added:** YAML frontmatter, CHANGE SUMMARY, code examples.
-- **Updated:** Section titles converted to uppercase, adjusted rules format.
-- **Removed:** Redundant explanatory text.
