@@ -3,6 +3,7 @@ import { Phase, CliCommand } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 import { buildDocsOrientationSection } from '../utils/PromptHelpers'
+import { getProductDir } from '../utils/PhaseFileUtils'
 
 export class BootstrapHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
@@ -38,7 +39,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
 
     if (existing.length > 0) return shouldRefine ? Phase.REFINEMENT : Phase.PLANNING
 
-    const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
+    const productDir = getProductDir(context)
     const backlogPath = join(productDir, 'BACKLOG.md')
 
     const rulesList: string[] = []

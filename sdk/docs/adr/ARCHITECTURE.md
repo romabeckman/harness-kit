@@ -7,7 +7,7 @@ tags: [architecture, ports-and-adapters, state-machine, orchestrator]
 edges:
   - relation: references
     target: "adr:tests"
-updated: "2026-08-14"
+updated: "2026-08-15"
 ---
 # Project Architecture
 
@@ -66,6 +66,7 @@ REQUIRED: Register runner strategies with `AgentRunnerRegistry`; instantiate the
 REQUIRED: Propagate `AbortSignal` into child processes and SDK requests.
 REQUIRED: Mutate persistent state through `IFileStateManager` using atomic temporary-file replacement.
 REQUIRED: Validate changes in order: `rtk npm install`, lint, build, typecheck, then tests.
+REQUIRED: Track and isolate agent sessions across phases using `DeveloperSessionState` with mandatory `phase` tag; resume Development and Review sessions on retries and clear all sessions on feature transition.
 PROHIBITED: Import concrete agent runners into orchestration decisions.
 PROHIBITED: Put HTTP transport logic inside use cases.
 PROHIBITED: Bypass state adapters with direct writes from phase handlers.

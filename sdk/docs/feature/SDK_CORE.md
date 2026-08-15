@@ -20,8 +20,8 @@ updated: "2026-08-15"
   "entrypoints": ["src/orchestrator/HarnessOrchestrator.ts"],
   "registration_files": ["src/orchestrator/ChainBuilder.ts","src/orchestrator/phases/index.ts"],
   "reference_files": ["src/orchestrator/phases/AbstractPhaseHandler.ts"],
-  "code_files": ["src/context-assembler/ContextAssembler.ts","src/context-assembler/types.ts","src/json-extraction/JsonExtractionProtocol.ts","src/json-extraction/types.ts","src/orchestrator/ReentryResolver.ts","src/orchestrator/phases/BootstrapHandler.ts","src/orchestrator/phases/CascadeBlockedHandler.ts","src/orchestrator/phases/DeployHandler.ts","src/orchestrator/phases/DevelopmentHandler.ts","src/orchestrator/phases/MemoryHandler.ts","src/orchestrator/phases/PlanningHandler.ts","src/orchestrator/phases/RefinementHandler.ts","src/orchestrator/phases/ReviewHandler.ts","src/orchestrator/phases/TransitionHandler.ts","src/orchestrator/services/AgentInvocationService.ts","src/orchestrator/services/PhaseDecisionLogger.ts","src/orchestrator/services/ProjectStateService.ts","src/orchestrator/types.ts","src/orchestrator/utils/OrchestratorFormatter.ts","src/orchestrator/utils/PhaseFileUtils.ts","src/orchestrator/utils/PromptHelpers.ts","src/telemetry/TokenLedger.ts","src/validation-gate/ValidationGate.ts","src/validation-gate/types.ts"],
-  "test_files": ["src/context-assembler/__tests__/ContextAssembler.test.ts","src/orchestrator/__tests__/ChainBuilder.test.ts","src/orchestrator/__tests__/types.test.ts","src/orchestrator/phases/__tests__/PhaseAHandler.test.ts","src/orchestrator/phases/__tests__/PhaseBHandler.test.ts","src/orchestrator/phases/__tests__/PhaseFHandler.test.ts","src/orchestrator/phases/__tests__/RefinementHandler.test.ts","src/orchestrator/services/__tests__/AgentInvocationService.test.ts","src/orchestrator/services/__tests__/PhaseDecisionLogger.test.ts","src/orchestrator/services/__tests__/ProjectStateService.test.ts","src/orchestrator/utils/__tests__/PhaseFileUtils.test.ts","src/orchestrator/utils/__tests__/PromptHelpers.test.ts","src/telemetry/__tests__/TokenLedger.test.ts","src/validation-gate/__tests__/ValidationGate.test.ts","tests/integration/t11-orchestrator-bootstrap-phasea.test.ts","tests/integration/t12-orchestrator-phaseb.test.ts","tests/integration/t13-orchestrator-phasec.test.ts","tests/integration/t14-orchestrator-phased-e.test.ts","tests/unit/phases/t04-phasec-handler.test.ts","tests/unit/phases/t06-phasee-handler.test.ts","tests/unit/phases/t07-deploy-handler.test.ts","tests/unit/phases/t08-refinement-handler.test.ts","tests/unit/t02-types.test.ts","tests/unit/t04-json-extraction.test.ts","tests/unit/t05-validation-gate.test.ts","tests/unit/t08-context-assembler.test.ts","tests/unit/t09-reentry-resolver.test.ts","tests/unit/t10-state-machine.test.ts"]
+  "code_files": ["src/context-assembler/ContextAssembler.ts","src/context-assembler/types.ts","src/json-extraction/JsonExtractionProtocol.ts","src/json-extraction/types.ts","src/orchestrator/ReentryResolver.ts","src/orchestrator/phases/BootstrapHandler.ts","src/orchestrator/phases/CascadeBlockedHandler.ts","src/orchestrator/phases/DeployHandler.ts","src/orchestrator/phases/DevelopmentHandler.ts","src/orchestrator/phases/MemoryHandler.ts","src/orchestrator/phases/PlanningHandler.ts","src/orchestrator/phases/RefinementHandler.ts","src/orchestrator/phases/ReviewHandler.ts","src/orchestrator/phases/TransitionHandler.ts","src/orchestrator/services/AgentInvocationService.ts","src/orchestrator/services/PhaseDecisionLogger.ts","src/orchestrator/services/ProjectStateService.ts","src/orchestrator/types.ts","src/orchestrator/utils/OrchestratorFormatter.ts","src/orchestrator/utils/PhaseFileUtils.ts","src/orchestrator/utils/PromptHelpers.ts","src/orchestrator/utils/SessionHelpers.ts","src/telemetry/TokenLedger.ts","src/validation-gate/ValidationGate.ts","src/validation-gate/types.ts"],
+  "test_files": ["src/context-assembler/__tests__/ContextAssembler.test.ts","src/orchestrator/__tests__/ChainBuilder.test.ts","src/orchestrator/__tests__/HarnessOrchestrator.test.ts","src/orchestrator/__tests__/types.test.ts","src/orchestrator/phases/__tests__/PhaseAHandler.test.ts","src/orchestrator/phases/__tests__/PhaseBHandler.test.ts","src/orchestrator/phases/__tests__/PhaseFHandler.test.ts","src/orchestrator/phases/__tests__/RefinementHandler.test.ts","src/orchestrator/phases/__tests__/ReviewHandler.test.ts","src/orchestrator/services/__tests__/AgentInvocationService.test.ts","src/orchestrator/services/__tests__/PhaseDecisionLogger.test.ts","src/orchestrator/services/__tests__/ProjectStateService.test.ts","src/orchestrator/utils/__tests__/PhaseFileUtils.test.ts","src/orchestrator/utils/__tests__/PromptHelpers.test.ts","src/orchestrator/utils/__tests__/SessionHelpers.test.ts","src/telemetry/__tests__/TokenLedger.test.ts","src/validation-gate/__tests__/ValidationGate.test.ts","tests/integration/t11-orchestrator-bootstrap-phasea.test.ts","tests/integration/t12-orchestrator-phaseb.test.ts","tests/integration/t13-orchestrator-phasec.test.ts","tests/integration/t14-orchestrator-phased-e.test.ts","tests/unit/phases/t04-phasec-handler.test.ts","tests/unit/phases/t06-phasee-handler.test.ts","tests/unit/phases/t07-deploy-handler.test.ts","tests/unit/phases/t08-refinement-handler.test.ts","tests/unit/t02-types.test.ts","tests/unit/t04-json-extraction.test.ts","tests/unit/t05-validation-gate.test.ts","tests/unit/t08-context-assembler.test.ts","tests/unit/t09-reentry-resolver.test.ts","tests/unit/t10-state-machine.test.ts"]
 }
 ```
 
@@ -30,7 +30,7 @@ updated: "2026-08-15"
 Implements the autonomous-orchestrator state machine as an importable library.
 
 ## OVERVIEW
-The `sdk_core` module provides a `HarnessOrchestrator` class and all supporting ports, adapters, and utility types needed to drive a full orchestration cycle.
+The `sdk_core` module provides `HarnessOrchestrator` and supporting ports, adapters, and types to drive full orchestration cycles.
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -38,7 +38,7 @@ The `sdk_core` module provides a `HarnessOrchestrator` class and all supporting 
 sdk/src/
 ├── index.ts                          # Public re-exports only
 ├── orchestrator/
-│   ├── HarnessOrchestrator.ts        # State machine loop
+│   ├── HarnessOrchestrator.ts        # State machine loop & session storage
 │   ├── phases/                       # Chain-of-Responsibility handlers
 │   └── ReentryResolver.ts            # Ordered re-entry predicates
 ├── file-state/
@@ -57,10 +57,11 @@ sdk/src/
 ## MAIN CONCEPTS
 
 ### State Machine Architecture
-- **Ports-and-Adapters**: The orchestrator domain has zero runtime dependencies outside the standard library.
-- **Atomic Writes**: `FileStateManager` writes all files via a write-to-temp-then-rename pattern.
-- **Never-Throws JSON Extraction**: Returns an outcome union and never throws an exception.
-- **Canonical Telemetry Writes**: `TokenLedger` stores token metrics only inside `tokenUsage` while reading legacy flat records.
+- **Ports-and-Adapters**: Zero runtime dependencies outside standard library.
+- **Atomic Writes**: Writes files via write-to-temp-then-rename pattern.
+- **Never-Throws JSON Extraction**: Returns outcome union without throwing exceptions.
+- **Canonical Telemetry Writes**: Stores token metrics inside `tokenUsage` while reading legacy records.
+- **Developer Session Lifecycle**: Managed via `DeveloperSessionState` (`{ featureId, agent, session, phase }`) in `HarnessOrchestrator`. `PlanningHandler` preserves software-architect sessions across features with `phase: Phase.PLANNING` and `featureId: ""` (cumulative across features), using `buildScopeRefinementPrompt` when no session exists and `buildFeatureScopeRefinementPrompt` when continuing. `DevelopmentHandler` preserves sessions with `phase: Phase.DEVELOPMENT`, resuming on rework retries (`reworks > 0`) with concise continuation prompt (`REWORK-LOG.md` items without resending full specs). `ReviewHandler` preserves Tech Lead and Adversarial QA sessions with `phase: Phase.REVIEW`, reusing them across review retries for the same feature while preventing cross-phase collision. Feature-specific sessions are cleared on feature transition, while `Phase.PLANNING` cumulative sessions persist across features.
 
 ## HOW TO USE THE ORCHESTRATOR API
 
@@ -97,12 +98,14 @@ const orchestrator = new HarnessOrchestrator({});
 
 ## BEST PRACTICES
 
-REQUIRED: Use the provided `isExtractionError` / `isExtractionResult` type guards to branch on extraction outcomes.
-REQUIRED: Keep `001-problem-space.md` and `002-context-map.md` at or below `INLINE_THRESHOLD` (5,000 characters) during scope refinement with `InlinePolicy` = `'never'`. This prevents prompt overflow.
-ALLOWED: Generate `003-*` tactical designs and `004-*` test scenarios without this prompt cap with `InlinePolicy` = `'always'`. This is useful for large context.
-REQUIRED: Use `inlineOrReference` with `InlinePolicy` (`'never' | 'auto' | 'always'`) to manage context prompt injection with `FORCE_INLINE_MAX` (15,000 characters) safeguard.
-PROHIBITED: Mutating state directly without using the `IFileStateManager` port.
-REQUIRED: On development retries, resolve `reworkLogPath` from the project working directory and embed its Markdown content in the TDD prompt.
+REQUIRED: Use `isExtractionError` / `isExtractionResult` type guards to branch on extraction outcomes.
+REQUIRED: Keep `001-problem-space.md` and `002-context-map.md` $\le$ 5,000 characters (`INLINE_THRESHOLD`) with `InlinePolicy` = `'never'`.
+ALLOWED: Generate `003-*` tactical designs and `004-*` test scenarios with `InlinePolicy` = `'always'`.
+REQUIRED: Use `inlineOrReference` with `InlinePolicy` and `FORCE_INLINE_MAX` (15,000 chars) safeguard.
+PROHIBITED: Mutating state directly without using `IFileStateManager`.
+REQUIRED: Tag all developer sessions with mandatory `phase` (`DeveloperSessionState`) to isolate `DEVELOPMENT` and `REVIEW` sessions.
+REQUIRED: On development retries with matching developer session, resume with concise continuation prompt containing `REWORK-LOG.md`; fall back to standalone prompt when no session exists.
+REQUIRED: In review phase, reuse phase-isolated review sessions (`Phase.REVIEW`) on retries; discard all sessions on feature transition or pass.
 
 ## DOCUMENT MAP
 

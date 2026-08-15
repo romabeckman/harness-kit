@@ -78,7 +78,7 @@ function makeFsm(overrides: Partial<IFileStateManager> = {}): IFileStateManager 
 }
 
 function makeContext(workingDir: string, fsm: IFileStateManager, invokeAgentImpl?: () => Promise<any>): Reviewontext {
-  return {
+  const ctx: Reviewontext = {
     config: { scope: 'test', score: 0.85, reworks: 3, projectPaths: [], complexity: Complexity.AUTO },
     workingDir,
     fsm,
@@ -86,7 +86,44 @@ function makeContext(workingDir: string, fsm: IFileStateManager, invokeAgentImpl
     getActiveFeature: vi.fn().mockReturnValue(makeFeature()),
     checkSpecFilesPresent: vi.fn().mockReturnValue(true),
     extractTasksFromTacticalDesign: vi.fn().mockReturnValue([]),
+    getDeveloperSession(agent: string, featureId?: string, phase?: Phase) {
+      if (!ctx.developerSession) return undefined
+      if (Array.isArray(ctx.developerSession)) {
+        return ctx.developerSession.find(
+          s => s.agent === agent && (!featureId || s.featureId === featureId) && (!phase || s.phase === phase)
+        )?.session
+      }
+      const session = ctx.developerSession as any
+      if (session.agent === agent && (!featureId || session.featureId === featureId) && (!phase || session.phase === phase)) {
+        return session.session
+      }
+      return undefined
+    },
+    setDeveloperSession(sessionState: any) {
+      if (!ctx.developerSession) {
+        ctx.developerSession = [sessionState]
+        return
+      }
+      if (Array.isArray(ctx.developerSession)) {
+        const idx = ctx.developerSession.findIndex(
+          s => s.agent === sessionState.agent && s.featureId === sessionState.featureId && s.phase === sessionState.phase
+        )
+        if (idx >= 0) {
+          ctx.developerSession[idx] = sessionState
+        } else {
+          ctx.developerSession.push(sessionState)
+        }
+      } else {
+        const existing = ctx.developerSession as any
+        if (existing.agent === sessionState.agent && existing.featureId === sessionState.featureId && existing.phase === sessionState.phase) {
+          ctx.developerSession = [sessionState]
+        } else {
+          ctx.developerSession = [existing, sessionState]
+        }
+      }
+    },
   }
+  return ctx
 }
 
 describe('DevelopmentHandler', () => {
@@ -163,7 +200,7 @@ describe('DevelopmentHandler', () => {
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
     })
 
-    it('embeds REWORK-LOG.md content in the prompt on retry run', async () => {
+    it('embeds REWORK-LOG.md content in the prompt on retry run (standalone without session)', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
       const reworkLogPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'REWORK-LOG.md')
       writeFileSync(reworkLogPath, 'Mocked rework content here')
@@ -189,14 +226,173 @@ describe('DevelopmentHandler', () => {
 
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
       const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
+      expect(invokeCall.session).toBeUndefined()
       expect(invokeCall.prompt).toContain(reworkLogPath)
       expect(invokeCall.prompt).toContain('<rework_log_content>')
       expect(invokeCall.prompt).toContain('Mocked rework content here')
       expect(invokeCall.prompt).toContain('<rework')
+      expect(invokeCall.prompt).toContain('<development_specifications>')
       expect(invokeCall.prompt).toContain('<tasks>')
       expect(invokeCall.prompt).toContain('[T01] Do something')
       expect(invokeCall.prompt).toContain('"status": "SUCCESS"')
       expect(invokeCall.prompt).not.toContain('"SUCCESS" | "FAILED"')
+    })
+
+    it('captures developer session on initial run when output returns a session', async () => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      const fsm = makeFsm({
+        loadBootstrapConfig: vi.fn().mockReturnValue(makeConfig()),
+        loadBacklog: vi.fn().mockReturnValue([makeFeature({ reworks: 0 })]),
+        updateTaskStatus: vi.fn(),
+      })
+
+      const context = makeContext(workingDir, fsm, async () => {
+        writeFileSync(tddPath, JSON.stringify({
+          featureId: 'F001',
+          status: 'SUCCESS',
+          metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1.0 },
+          reworksCount: 0
+        }))
+        return { success: true, stdout: '', stderr: '', raw: '', session: { id: 'DEV-123' } }
+      })
+
+      await handler.handle(Phase.DEVELOPMENT, context)
+
+      expect(context.developerSession).toEqual([
+        {
+          featureId: 'F001',
+          agent: 'harness-kit:developer-backend',
+          session: { id: 'DEV-123' },
+          phase: Phase.DEVELOPMENT,
+        }
+      ])
+      const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
+      expect(invokeCall.session).toBeUndefined()
+    })
+
+    it('resumes developer session and uses continuation prompt on retry when matching session exists in array', async () => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      const reworkLogPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'REWORK-LOG.md')
+      writeFileSync(reworkLogPath, 'Review finding: Missing null check')
+
+      const fsm = makeFsm({
+        loadBootstrapConfig: vi.fn().mockReturnValue(makeConfig()),
+        loadBacklog: vi.fn().mockReturnValue([makeFeature({ reworks: 1 })]),
+        updateTaskStatus: vi.fn(),
+      })
+
+      const context = makeContext(workingDir, fsm, async () => {
+        writeFileSync(tddPath, JSON.stringify({
+          featureId: 'F001',
+          status: 'SUCCESS',
+          metrics: { totalTests: 2, passed: 2, failed: 0, coverage: 1.0 },
+          reworksCount: 1
+        }))
+        return { success: true, stdout: '', stderr: '', raw: '', session: { id: 'DEV-123' } }
+      })
+      context.getActiveFeature = vi.fn().mockReturnValue(makeFeature({ reworks: 1 }))
+      context.developerSession = [
+        {
+          featureId: 'F001',
+          agent: 'harness-kit:harness-tech-lead',
+          session: { id: 'TL-123' },
+          phase: Phase.REVIEW,
+        },
+        {
+          featureId: 'F001',
+          agent: 'harness-kit:developer-backend',
+          session: { id: 'DEV-123' },
+          phase: Phase.DEVELOPMENT,
+        }
+      ]
+
+      await handler.handle(Phase.DEVELOPMENT, context)
+
+      expect(context.invokeAgent).toHaveBeenCalledTimes(1)
+      const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
+      expect(invokeCall.session).toEqual({ id: 'DEV-123' })
+      expect(invokeCall.prompt).toContain('Address the findings from the latest review.')
+      expect(invokeCall.prompt).toContain('Review finding: Missing null check')
+      expect(invokeCall.prompt).toContain('<tasks>')
+      expect(invokeCall.prompt).toContain('<expected_output>')
+      // Continuation prompt should NOT re-send full development specifications or project paths/orientation
+      expect(invokeCall.prompt).not.toContain('<development_specifications>')
+      expect(invokeCall.prompt).not.toContain('<project_paths>')
+      expect(invokeCall.prompt).not.toContain('<orientation>')
+    })
+
+    it('falls back to standalone rework prompt if developerSession is for a different phase', async () => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      const reworkLogPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'REWORK-LOG.md')
+      writeFileSync(reworkLogPath, 'Review finding: Missing null check')
+
+      const fsm = makeFsm({
+        loadBootstrapConfig: vi.fn().mockReturnValue(makeConfig()),
+        loadBacklog: vi.fn().mockReturnValue([makeFeature({ reworks: 1 })]),
+        updateTaskStatus: vi.fn(),
+      })
+
+      const context = makeContext(workingDir, fsm, async () => {
+        writeFileSync(tddPath, JSON.stringify({
+          featureId: 'F001',
+          status: 'SUCCESS',
+          metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1.0 },
+          reworksCount: 1
+        }))
+        return { success: true, stdout: '', stderr: '', raw: '' }
+      })
+      context.getActiveFeature = vi.fn().mockReturnValue(makeFeature({ reworks: 1 }))
+      context.developerSession = [
+        {
+          featureId: 'F001',
+          agent: 'harness-kit:developer-backend',
+          session: { id: 'DEV-123' },
+          phase: Phase.REVIEW,
+        }
+      ]
+
+      await handler.handle(Phase.DEVELOPMENT, context)
+
+      const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
+      expect(invokeCall.session).toBeUndefined()
+      expect(invokeCall.prompt).toContain('<development_specifications>')
+      expect(invokeCall.prompt).toContain('<project_paths>')
+    })
+
+    it('falls back to standalone rework prompt if developerSession is for a different feature', async () => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      const reworkLogPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'REWORK-LOG.md')
+      writeFileSync(reworkLogPath, 'Rework items')
+
+      const fsm = makeFsm({
+        loadBootstrapConfig: vi.fn().mockReturnValue(makeConfig()),
+        loadBacklog: vi.fn().mockReturnValue([makeFeature({ id: 'F002', reworks: 1 })]),
+        updateTaskStatus: vi.fn(),
+      })
+
+      const context = makeContext(workingDir, fsm, async () => {
+        writeFileSync(tddPath, JSON.stringify({
+          featureId: 'F002',
+          status: 'SUCCESS',
+          metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1.0 },
+          reworksCount: 1
+        }))
+        return { success: true, stdout: '', stderr: '', raw: '' }
+      })
+      context.getActiveFeature = vi.fn().mockReturnValue(makeFeature({ id: 'F002', reworks: 1 }))
+      context.developerSession = {
+        featureId: 'F001',
+        agent: 'harness-kit:developer-backend',
+        session: { id: 'DEV-123' },
+        phase: Phase.DEVELOPMENT,
+      }
+
+      await handler.handle(Phase.DEVELOPMENT, context)
+
+      const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
+      expect(invokeCall.session).toBeUndefined()
+      expect(invokeCall.prompt).toContain('<development_specifications>')
+      expect(invokeCall.prompt).toContain('<project_paths>')
     })
   })
 })

@@ -5,6 +5,10 @@ export interface BaseRunnerConfig {
 
 export type RunnerConfig = BaseRunnerConfig & Record<string, any>
 
+export interface AgentSession {
+  readonly id: string
+}
+
 export interface AgentInvocation {
   readonly agent: string
   readonly mode: 'autonomous' | 'default'
@@ -19,6 +23,7 @@ export interface AgentInvocation {
   readonly timeoutMs?: number
   readonly additionalDirs?: string[]
   readonly domain?: string
+  readonly session?: AgentSession
 }
 
 export interface AgentOutput {
@@ -28,6 +33,7 @@ export interface AgentOutput {
   readonly raw: string
   readonly artefacts?: Record<string, string>
   readonly usage?: TokenUsage
+  readonly session?: AgentSession
 }
 
 export interface TokenUsage {

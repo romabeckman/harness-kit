@@ -156,4 +156,33 @@ describe('AntigravityCLIRunner', () => {
     expect(result.success).toBe(true)
     expect(result.raw).toBe('Plain text response from agy')
   })
+
+  it('should pass --conversation flag when invocation.session is provided', () => {
+    const runner = new AntigravityCLIRunner()
+    const sessionInvocation: AgentInvocation = {
+      ...invocation,
+      session: { id: 'conv-agy-123' },
+    }
+
+    // @ts-ignore - protected method access
+    const args = runner.buildArgs(sessionInvocation.prompt, sessionInvocation)
+
+    expect(args).toContain('--conversation')
+    expect(args).toContain('conv-agy-123')
+  })
+
+  it('should extract session from conversation_id in output', async () => {
+    const mockJsonOutput = JSON.stringify({
+      conversation_id: 'conv-agy-123',
+      status: 'SUCCESS',
+      response: 'Ok',
+    })
+
+    mockSpawn.mockReturnValue(new MockChildProcess([mockJsonOutput]) as any)
+
+    const runner = new AntigravityCLIRunner()
+    const result = await runner.run(invocation)
+
+    expect(result.session).toEqual({ id: 'conv-agy-123' })
+  })
 })

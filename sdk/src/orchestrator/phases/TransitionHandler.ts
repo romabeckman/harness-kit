@@ -1,12 +1,15 @@
 import { Feature } from '../../file-state/types'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
+import { clearFeatureDeveloperSessions } from '../utils/SessionHelpers'
 
 export class TransitionHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.TRANSITION) {
       return super.handle(phase, context)
     }
+
+    clearFeatureDeveloperSessions(context)
 
     const features = context.fsm.loadBacklog()
     const config = context.fsm.loadBootstrapConfig()

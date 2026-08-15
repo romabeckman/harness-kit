@@ -13,7 +13,8 @@ import { AnsiHelpers } from '../ui/AnsiHelpers'
 import {
   IPhaseHandler,
   Reviewontext,
-  ExtractedTask
+  ExtractedTask,
+  DeveloperSessionState
 } from './phases'
 import { ChainBuilder } from './ChainBuilder'
 import { OrchestratorFormatter } from './utils/OrchestratorFormatter'
@@ -21,7 +22,7 @@ import { ProjectStateService } from './services/ProjectStateService'
 import { AgentInvocationService } from './services/AgentInvocationService'
 import { SteeringService } from './services/SteeringService'
 import { exit } from 'process'
-import { AgentInvocation, AgentOutput, Runner } from '../agent-runner/types'
+import { AgentInvocation, AgentOutput, AgentSession, Runner } from '../agent-runner/types'
 import { SteeringAction } from './SteeringAnalyzer'
 import { IAgentRunner } from '../agent-runner/IAgentRunner'
 
@@ -33,6 +34,7 @@ export class HarnessOrchestrator implements Reviewontext {
   readonly config: OrchestratorConfig
   readonly workingDir: string
   readonly fsm: IFileStateManager
+  developerSession?: DeveloperSessionState[]
   state: OrchestratorState
   private readonly agentRunner: IAgentRunner
   private readonly ledger: TokenLedger
@@ -244,6 +246,44 @@ export class HarnessOrchestrator implements Reviewontext {
 
   public applySteeringActions(actions: SteeringAction[]): void {
     this.steeringService.applySteeringActions(actions)
+  }
+
+  public getDeveloperSession(agent: string, featureId?: string, phase?: Phase): AgentSession | undefined {
+    if (!this.developerSession) return undefined
+    if (Array.isArray(this.developerSession)) {
+      return this.developerSession.find(
+        s => s.agent === agent && (!featureId || s.featureId === featureId) && (!phase || s.phase === phase)
+      )?.session
+    }
+    const session = this.developerSession as DeveloperSessionState
+    if (session.agent === agent && (!featureId || session.featureId === featureId) && (!phase || session.phase === phase)) {
+      return session.session
+    }
+    return undefined
+  }
+
+  public setDeveloperSession(sessionState: DeveloperSessionState): void {
+    if (!this.developerSession) {
+      this.developerSession = [sessionState]
+      return
+    }
+    if (Array.isArray(this.developerSession)) {
+      const idx = this.developerSession.findIndex(
+        s => s.agent === sessionState.agent && s.featureId === sessionState.featureId && s.phase === sessionState.phase
+      )
+      if (idx >= 0) {
+        this.developerSession[idx] = sessionState
+      } else {
+        this.developerSession.push(sessionState)
+      }
+    } else {
+      const existing = this.developerSession as DeveloperSessionState
+      if (existing.agent === sessionState.agent && existing.featureId === sessionState.featureId && existing.phase === sessionState.phase) {
+        this.developerSession = [sessionState]
+      } else {
+        this.developerSession = [existing, sessionState]
+      }
+    }
   }
 
   public invokeAgent(invocation: AgentInvocation): Promise<AgentOutput> {

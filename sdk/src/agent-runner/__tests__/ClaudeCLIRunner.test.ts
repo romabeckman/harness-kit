@@ -170,4 +170,36 @@ describe('ClaudeCLIRunner', () => {
       expect.anything()
     )
   })
+
+  it('should pass --resume flag when invocation.session is provided', async () => {
+    const invocationWithSession: AgentInvocation = {
+      ...invocation,
+      session: { id: 'sess-claude-999' },
+    }
+
+    mockSpawn.mockReturnValue(new MockChildProcess() as any)
+
+    const runner = new ClaudeCLIRunner()
+    await runner.run(invocationWithSession)
+
+    expect(mockSpawn).toHaveBeenCalledWith(
+      'claude',
+      expect.arrayContaining(['--resume', 'sess-claude-999']),
+      expect.anything()
+    )
+  })
+
+  it('should extract session from stream-json output when session_id is returned', async () => {
+    const mockOutputLines = [
+      '{"type":"assistant","message":{"content":[{"type":"text","text":"Working..."}]}}\n',
+      '{"type":"result","subtype":"success","result":"Done","session_id":"sess-claude-abc"}\n',
+    ]
+
+    mockSpawn.mockReturnValue(new MockChildProcess(mockOutputLines) as any)
+
+    const runner = new ClaudeCLIRunner()
+    const result = await runner.run(invocation)
+
+    expect(result.session).toEqual({ id: 'sess-claude-abc' })
+  })
 })

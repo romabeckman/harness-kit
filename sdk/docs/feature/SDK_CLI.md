@@ -11,7 +11,7 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_core"
-updated: "2026-08-14"
+updated: "2026-08-15"
 ---
 
 ```graph
@@ -36,10 +36,13 @@ The CLI module delegates execution to `HarnessOrchestrator` after resolving all 
 ```
 src/cli/
 ├── run.ts                        # Main CLI binary
+├── DebugContext.ts               # Global debug flag singleton
 ├── services/
 │   ├── run-service.ts            # cmdRun() implementation
 │   ├── init-service.ts           # cmdInit() implementation
-│   └── reset-service.ts          # resetOptions() wizard
+│   ├── reset-service.ts          # resetOptions() wizard
+│   ├── report-service.ts         # cmdReport() implementation
+│   └── settings-service.ts       # cmdSettings() implementation
 └── utils/
     ├── run-args-parser.ts        # parseRunArgs() pure parser
     ├── cli-utils.ts              # Path and validation helpers
@@ -78,16 +81,22 @@ hrns run --reset
 
 | Name | Type | Required | Description | Default |
 |------|------|----------|-------------|---------|
-| `--agent` | string | No | Agent type (e.g. `claude-cli`) | — |
-| `--model` | string | No | Model name | — |
+| `--agent, -a` | string | No | Agent type (e.g. `claude-cli`) | — |
+| `--model, -m` | string | No | Model name | — |
+| `--effort, -e` | string | No | Reasoning effort level for the model | — |
+| `--mode, -M` | string | No | Execution mode: `quick \| fast \| thinking \| deep_thinking` | `thinking` |
 | `--reset` | boolean | No | Force a new cycle | false |
 | `--resume` | boolean | No | Resume from last saved session | false |
 | `--scope` | string | No | Project scope / PRD | — |
-| `--path` | string | No | Add a directory to projectPaths | `cwd` |
+| `--path` | string | No | Add a directory to projectPaths (repeatable) | `cwd` |
 | `--score` | float | No | Minimum acceptance score | `0.7` |
 | `--reworks` | int | No | Max rework cycles | `2` |
 | `--steering` | string | No | Additional orchestration rules | — |
 | `--refine` | boolean | No | Enable interactive refinement | false |
+| `--skip-validation` | boolean | No | Skip Review phase (Phase C) | false |
+| `--skip-memory` | boolean | No | Skip Memory phase (Phase E) | false |
+| `--skip-deploy` | boolean | No | Skip Deploy phase | false |
+| `--debug` | boolean | No | Enable debug output to stderr | false |
 
 ## BEST PRACTICES
 REQUIRED: Skip the interactive wizard by providing at least one of `--scope`, `--path`, `--score`, or `--reworks`.
@@ -109,4 +118,3 @@ graph TD
 - [**SDK_SETTINGS.md**](./SDK_SETTINGS.md): Settings and configuration resolver details.
 - [**SDK_STEERING.md**](./SDK_STEERING.md): Orchestration phase steering rules details.
 - [**SDK_CORE.md**](./SDK_CORE.md): Core orchestrator lifecycle and phases.
-

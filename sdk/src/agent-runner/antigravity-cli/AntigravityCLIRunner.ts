@@ -33,6 +33,7 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     args.push('--print-timeout', `${timeout + 1000}ms`)
     args.push('--dangerously-skip-permissions')
     if (invocation.agent) args.push('--agent', invocation.agent)
+    if (invocation.session?.id) args.push('--conversation', invocation.session.id)
     return args
   }
 
@@ -63,12 +64,21 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
       parsedJson = null
     }
 
+    let sessionId: string | undefined = invocation.session?.id
+    if (parsedJson) {
+      if (typeof parsedJson.conversation_id === 'string') sessionId = parsedJson.conversation_id
+      else if (typeof parsedJson.conversationId === 'string') sessionId = parsedJson.conversationId
+      else if (typeof parsedJson.session_id === 'string') sessionId = parsedJson.session_id
+      else if (typeof parsedJson.sessionId === 'string') sessionId = parsedJson.sessionId
+    }
+
     if (!parsedJson || typeof parsedJson !== 'object') {
       return {
         success: true,
         stdout,
         stderr,
         raw: stdout,
+        session: sessionId ? { id: sessionId } : undefined,
         artefacts: (() => {
           const j = extractJsonOrNull(stdout)
           if (j && typeof j === 'object' && !Array.isArray(j)) {
@@ -111,6 +121,7 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
       raw: rawResponse,
       artefacts,
       usage: finalUsage,
+      session: sessionId ? { id: sessionId } : undefined,
     }
   }
 }

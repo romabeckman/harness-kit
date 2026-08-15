@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ensure-temp-dir",
+      "type": "process",
+      "command": "node",
+      "args": [
+        "-e",
+        "require('fs').mkdirSync('.vscode/.temp', { recursive: true })"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "type": "npm",
+      "script": "build",
+      "group": "build",
+      "problemMatcher": [
+        "$tsc"
+      ],
+      "label": "npm: build",
+      "detail": "tsc -p tsconfig.build.json && node -e ..."
+    },
+    {
+      "label": "prepare-debug",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "ensure-temp-dir",
+        "npm: build"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

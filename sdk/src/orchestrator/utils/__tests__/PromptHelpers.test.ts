@@ -4,7 +4,12 @@ import {
   buildReworkSection,
   buildDocsOrientationSection,
   INLINE_THRESHOLD,
-  FORCE_INLINE_MAX
+  FORCE_INLINE_MAX,
+  formatRulesSection,
+  formatProjectPathsList,
+  buildComplexityRules,
+  formatFeatureDependencies,
+  formatTasksList,
 } from '../PromptHelpers'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -249,6 +254,79 @@ describe('PromptHelpers', () => {
       expect(joined).toContain('proj2')
 
       rmSync(tempDir, { recursive: true, force: true })
+    })
+  })
+
+  describe('formatRulesSection', () => {
+    it('returns default fallback when rules are undefined or empty', () => {
+      expect(formatRulesSection(undefined)).toBe('- No additional rules provided')
+      expect(formatRulesSection([])).toBe('- No additional rules provided')
+    })
+
+    it('formats array of rules into bullet list', () => {
+      expect(formatRulesSection(['rule 1', 'rule 2'])).toBe('- rule 1\n- rule 2')
+    })
+  })
+
+  describe('formatProjectPathsList', () => {
+    it('formats project paths array into bullet list', () => {
+      expect(formatProjectPathsList(['/path/a', '/path/b'])).toBe('- /path/a\n- /path/b')
+    })
+
+    it('returns empty string for empty array', () => {
+      expect(formatProjectPathsList([])).toBe('')
+    })
+  })
+
+  describe('buildComplexityRules', () => {
+    it('returns LOW override rules when complexity is LOW', () => {
+      const result = buildComplexityRules('LOW' as any)
+      expect(result).toContain("- COMPLEXITY OVERRIDE: Classify as 'LOW' — do not re-evaluate scope complexity.")
+      expect(result).toContain('- For \'LOW\': Keep analysis concise and reuse established patterns, but still produce all required 001–004 artifacts.')
+    })
+
+    it('returns HIGH override rules when complexity is HIGH', () => {
+      const result = buildComplexityRules('HIGH' as any)
+      expect(result).toContain("- COMPLEXITY OVERRIDE: Classify as 'HIGH' — do not re-evaluate scope complexity.")
+      expect(result).toContain('- For \'HIGH\': Give additional depth to integrations, failure modes, security boundaries, concurrency, and compatibility risks while producing all required 001–004 artifacts.')
+    })
+
+    it('returns AUTO evaluation rules when complexity is AUTO or undefined', () => {
+      const resultAuto = buildComplexityRules('AUTO' as any)
+      expect(resultAuto[0]).toContain("Evaluate scope complexity between 'LOW' and 'HIGH'")
+      const resultUndef = buildComplexityRules(undefined)
+      expect(resultUndef[0]).toContain("Evaluate scope complexity between 'LOW' and 'HIGH'")
+    })
+  })
+
+  describe('formatFeatureDependencies', () => {
+    it('returns None when feature has no dependencies', () => {
+      const backlog = [{ id: 'F001', domain: 'auth', dependencies: [] }] as any
+      const feature = { id: 'F001', dependencies: [] } as any
+      expect(formatFeatureDependencies(backlog, feature)).toBe('None')
+    })
+
+    it('returns formatted spec paths for existing dependencies', () => {
+      const backlog = [
+        { id: 'F001', domain: 'auth', dependencies: [] },
+        { id: 'F002', domain: 'billing', dependencies: [] },
+      ] as any
+      const feature = { id: 'F003', dependencies: ['F001', 'F002'] } as any
+      expect(formatFeatureDependencies(backlog, feature)).toBe(`\`${join('docs', 'specs', 'auth')}\`, \`${join('docs', 'specs', 'billing')}\``)
+    })
+  })
+
+  describe('formatTasksList', () => {
+    it('returns fallback when tasks array is empty', () => {
+      expect(formatTasksList([])).toBe('- No pending tasks provided')
+    })
+
+    it('formats tasks array into markdown list', () => {
+      const tasks = [
+        { taskId: 'T01', description: 'Setup database' },
+        { taskId: 'T02', description: 'Create model' },
+      ]
+      expect(formatTasksList(tasks)).toBe('- [T01] Setup database\n- [T02] Create model')
     })
   })
 })

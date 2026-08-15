@@ -192,4 +192,89 @@ describe('PlanningHandler', () => {
         });
     });
 
+    describe('developer session management', () => {
+        beforeEach(() => {
+            mockContext.checkSpecFilesPresent = vi.fn().mockReturnValue(false);
+            mockContext.extractTasksFromTacticalDesign = vi.fn().mockReturnValue([
+                { taskId: 'T001', description: 'Task', file: 'project' },
+            ]);
+            mockContext.getDeveloperSession = vi.fn();
+            mockContext.setDeveloperSession = vi.fn();
+        });
+
+        it('queries session ignoring featureId (passing empty string / no specific feature) and uses full prompt when no session exists', async () => {
+            mockContext.getDeveloperSession.mockReturnValue(undefined);
+            mockContext.invokeAgent.mockResolvedValue({
+                success: true,
+                session: { id: 'PLANNING-SESSION-1' },
+                raw: '',
+            });
+
+            await handler.handle(Phase.PLANNING, mockContext);
+
+            expect(mockContext.getDeveloperSession).toHaveBeenCalledWith(
+                'harness-kit:software-architect',
+                undefined,
+                Phase.PLANNING
+            );
+
+            const invokeCall = mockContext.invokeAgent.mock.calls[0][0];
+            expect(invokeCall.session).toBeUndefined();
+            expect(invokeCall.prompt).toContain('<scope>');
+            expect(invokeCall.prompt).toContain('test scope');
+            expect(invokeCall.prompt).toContain('<project_paths>');
+
+            expect(mockContext.setDeveloperSession).toHaveBeenCalledWith({
+                featureId: '',
+                agent: 'harness-kit:software-architect',
+                session: { id: 'PLANNING-SESSION-1' },
+                phase: Phase.PLANNING,
+            });
+        });
+
+        it('uses feature-focused prompt and passes session when developer session exists', async () => {
+            const existingSession = { id: 'PLANNING-SESSION-1' };
+            mockContext.getDeveloperSession.mockReturnValue(existingSession);
+            mockContext.invokeAgent.mockResolvedValue({
+                success: true,
+                session: { id: 'PLANNING-SESSION-2' },
+                raw: '',
+            });
+
+            await handler.handle(Phase.PLANNING, mockContext);
+
+            expect(mockContext.getDeveloperSession).toHaveBeenCalledWith(
+                'harness-kit:software-architect',
+                undefined,
+                Phase.PLANNING
+            );
+
+            const invokeCall = mockContext.invokeAgent.mock.calls[0][0];
+            expect(invokeCall.session).toEqual(existingSession);
+            // Feature-focused prompt should contain target feature and outputs but not full scope markdown dump
+            expect(invokeCall.prompt).toContain('<target_feature>');
+            expect(invokeCall.prompt).toContain('ID: F001');
+            expect(invokeCall.prompt).not.toContain('<scope>');
+
+            expect(mockContext.setDeveloperSession).toHaveBeenCalledWith({
+                featureId: '',
+                agent: 'harness-kit:software-architect',
+                session: { id: 'PLANNING-SESSION-2' },
+                phase: Phase.PLANNING,
+            });
+        });
+
+        it('supports buildFeatureScopeRefinementPrompt with LOW complexity override', async () => {
+            mockContext.config = { ...mockContext.config, complexity: 'LOW' };
+            mockContext.getDeveloperSession.mockReturnValue({ id: 'PREV-SESSION' });
+
+            await handler.handle(Phase.PLANNING, mockContext);
+
+            const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
+            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'LOW'");
+            expect(invokedPrompt).toContain('<target_feature>');
+            expect(invokedPrompt).not.toContain('<scope>');
+        });
+    });
+
 });

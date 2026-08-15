@@ -13,6 +13,8 @@ import {
   inlineOrReference,
   buildDocsOrientationSection
 } from '../utils/PromptHelpers'
+import { clearFeatureDeveloperSessions } from '../utils/SessionHelpers'
+import { getSpecsDir } from '../utils/PhaseFileUtils'
 import type { ReviewPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
@@ -35,6 +37,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     // --skip-validation: bypass all agent calls and jump straight to Phase D
     if (context.config.skipValidation) {
       process.stdout.write(`[phase_review] --skip-validation active — skipping review for feature ${activeFeature.id}\n`)
+      clearFeatureDeveloperSessions(context)
       context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED', { tl: 1, adv: 1 })
       context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'COMPLETED')
       return Phase.TRANSITION
@@ -64,7 +67,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
   }
 
   private cleanTemporaryFiles(context: Reviewontext, domain: string): void {
-    const specsDir = join(context.workingDir, 'docs', 'specs', domain)
+    const specsDir = getSpecsDir(context.workingDir, domain)
     for (const file of ['TL.json', 'QA.json']) {
       const p = join(specsDir, file)
       if (existsSync(p)) rmSync(p, { force: true })
@@ -77,36 +80,65 @@ export class ReviewHandler extends AbstractPhaseHandler {
     const isSimple = context.config.complexity === Complexity.LOW
 
     const tlMock = { featureId: payload.featureId, score: 1, openPoints: [], architectureTip: '' }
-    const specsDir = join(context.workingDir, 'docs', 'specs', payload.domain)
+    const specsDir = getSpecsDir(context.workingDir, payload.domain)
 
     if (isSimple && existsSync(specsDir)) {
       writeFileSync(join(specsDir, 'TL.json'), JSON.stringify(tlMock, null, 2), 'utf8')
     }
 
-    return Promise.all([
-      isSimple
-        ? tlMock
-        : context.invokeAgent({
-          skill: 'harness-kit:the-grumpy-tech-lead',
-          agent: 'harness-kit:harness-tech-lead',
-          mode: 'autonomous',
-          prompt: tlPrompt,
-          phaseKey: 'review_tl',
-          domain: payload.domain,
-        }),
-      context.invokeAgent({
-        skill: 'harness-kit:adversarial-qa',
-        agent: 'harness-kit:harness-qa',
+    const tlAgent = 'harness-kit:harness-tech-lead'
+    const advAgent = 'harness-kit:harness-qa'
+
+    const tlSession = context.getDeveloperSession?.(tlAgent, payload.featureId, Phase.REVIEW)
+    const advSession = context.getDeveloperSession?.(advAgent, payload.featureId, Phase.REVIEW)
+
+    const tlPromise = isSimple
+      ? Promise.resolve(tlMock)
+      : context.invokeAgent({
+        skill: 'harness-kit:the-grumpy-tech-lead',
+        agent: tlAgent,
         mode: 'autonomous',
-        prompt: advPrompt,
-        phaseKey: 'review_adv',
+        prompt: tlPrompt,
+        phaseKey: 'review_tl',
         domain: payload.domain,
+        ...(tlSession ? { session: tlSession } : {}),
+      }).then(output => {
+        if (output.session) {
+          context.setDeveloperSession?.({
+            featureId: payload.featureId,
+            agent: tlAgent,
+            session: output.session,
+            phase: Phase.REVIEW,
+          })
+        }
+        return output
       })
-    ])
+
+    const advPromise = context.invokeAgent({
+      skill: 'harness-kit:adversarial-qa',
+      agent: advAgent,
+      mode: 'autonomous',
+      prompt: advPrompt,
+      phaseKey: 'review_adv',
+      domain: payload.domain,
+      ...(advSession ? { session: advSession } : {}),
+    }).then(output => {
+      if (output.session) {
+        context.setDeveloperSession?.({
+          featureId: payload.featureId,
+          agent: advAgent,
+          session: output.session,
+          phase: Phase.REVIEW,
+        })
+      }
+      return output
+    })
+
+    return Promise.all([tlPromise, advPromise])
   }
 
   private extractScores(context: Reviewontext, domain: string, tlOutput: any, advOutput: any) {
-    const specsDir = join(context.workingDir, 'docs', 'specs', domain)
+    const specsDir = getSpecsDir(context.workingDir, domain)
     const tlData = this.parseAgentOutput(join(specsDir, 'TL.json'), tlOutput, 'review_tl')
     const advData = this.parseAgentOutput(join(specsDir, 'QA.json'), advOutput, 'review_adv')
 
@@ -187,6 +219,9 @@ export class ReviewHandler extends AbstractPhaseHandler {
     activeFeature.status = statusMap[result.verdict] || activeFeature.status
     context.fsm.updateFeatureStatus(activeFeature.id, activeFeature.status, { tl: scores.scoreTL, adv: scores.scoreAdv })
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', activeFeature.status)
+
+    // Clear developer session upon exiting the dev/review cycle for this feature
+    clearFeatureDeveloperSessions(context)
 
     // Proceed to TRANSITION
     return Phase.TRANSITION
