@@ -209,10 +209,10 @@ describe('CodexCLIRunner', () => {
 
     expect(args).toEqual([
       'exec',
-      'resume',
-      'thread_abc123',
       '--json',
       '--dangerously-bypass-approvals-and-sandbox',
+      'resume',
+      'thread_abc123',
     ])
   })
 

@@ -170,7 +170,9 @@ export abstract class AbstractCliRunner implements IAgentRunner {
         process.stderr.write(`[DEBUG] timeout: ${this.#timeoutMs}ms\n\n`)
       }
 
+      const cwd = invocation.workspacePath ?? process.cwd()
       const child = spawn(this.binaryName, args, {
+        cwd,
         stdio: ['pipe', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
         env: { ...AbstractCliRunner.filterSensitiveEnv(process.env), ...(invocation.env ?? {}) },

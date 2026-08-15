@@ -36,7 +36,7 @@ describe('T21 — CopilotCLIRunner', () => {
     const args = (runner as any).buildArgs('hello world', invocation)
 
     // Assert
-    expect(args).toContain('--allow-all-tools')
+    expect(args).toContain('--allow-all')
     expect(args).toContain('--autopilot')
     expect(args).toContain('--output-format')
     expect(args).toContain('json')
@@ -66,7 +66,7 @@ describe('T21 — CopilotCLIRunner', () => {
     const args = (minimalRunner as any).buildArgs('my prompt', invocation)
 
     // Assert
-    expect(args).toContain('--allow-all-tools')
+    expect(args).toContain('--allow-all')
     expect(args).not.toContain('--model')
     expect(args).not.toContain('--reasoning-effort')
     expect(args).not.toContain('--agent')

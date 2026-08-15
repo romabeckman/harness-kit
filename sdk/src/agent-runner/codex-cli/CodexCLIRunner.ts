@@ -18,24 +18,28 @@ export class CodexCLIRunner extends AbstractCliRunner {
   protected buildArgs(_prompt: string, invocation: AgentInvocation): string[] {
     const args = [
       'exec',
-    ]
-
-    if (invocation.session?.id) {
-      args.push('resume', invocation.session.id)
-    }
-
-    args.push(
       '--json',
       '--dangerously-bypass-approvals-and-sandbox',
-    )
+    ]
 
     const model = this.getModelName(invocation)
     if (model) args.push('--model', model)
 
-    if (invocation.workspacePath) args.push('--cd', invocation.workspacePath)
+    const effort = this.getEffort(invocation)
+    if (effort) {
+      args.push('--config', `model_reasoning_effort="${effort}"`)
+    }
+
+    if (invocation.workspacePath) {
+      args.push('--cd', invocation.workspacePath)
+    }
 
     for (const dir of invocation.additionalDirs ?? []) {
       args.push('--add-dir', dir)
+    }
+
+    if (invocation.session?.id) {
+      args.push('resume', invocation.session.id)
     }
 
     return args
@@ -155,8 +159,8 @@ export class CodexCLIRunner extends AbstractCliRunner {
         const totalCostUsd = typeof event.total_cost_usd === 'number'
           ? event.total_cost_usd
           : typeof event.cost_usd === 'number'
-          ? event.cost_usd
-          : 0
+            ? event.cost_usd
+            : 0
 
         if (u) {
           finalUsage = {

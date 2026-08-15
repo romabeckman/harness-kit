@@ -60,7 +60,7 @@ describe('CopilotCLIRunner', () => {
   })
 
   // TS02 — buildArgs: base flags always present
-  it('TS02 — buildArgs always includes --prompt and --allow-all-tools', async () => {
+  it('TS02 — buildArgs always includes --prompt and --allow-all', async () => {
     const mockChild = createMockChild()
     vi.mocked(spawn).mockReturnValue(mockChild as any)
 
@@ -69,7 +69,7 @@ describe('CopilotCLIRunner', () => {
 
     expect(vi.mocked(spawn)).toHaveBeenCalledWith(
       'copilot',
-      expect.arrayContaining(['--prompt', 'do something', '--allow-all-tools']),
+      expect.arrayContaining(['--prompt', 'do something', '--allow-all']),
       expect.any(Object),
     )
 
@@ -131,7 +131,7 @@ describe('CopilotCLIRunner', () => {
   })
 
   // TS06 — buildArgs: no model/effort flags when both absent
-  it('TS06 — no --model or --reasoning-effort when both absent; --prompt and --allow-all-tools present', async () => {
+  it('TS06 — no --model or --reasoning-effort when both absent; --prompt and --allow-all present', async () => {
     const mockChild = createMockChild()
     vi.mocked(spawn).mockReturnValue(mockChild as any)
 
@@ -142,7 +142,7 @@ describe('CopilotCLIRunner', () => {
     expect(args).not.toContain('--model')
     expect(args).not.toContain('--reasoning-effort')
     expect(args).toContain('--prompt')
-    expect(args).toContain('--allow-all-tools')
+    expect(args).toContain('--allow-all')
 
     mockChild._emit('close', 0)
     await promise
