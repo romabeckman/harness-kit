@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-14"
+updated: "2026-08-15"
 ---
 ```graph
 {
@@ -89,16 +89,18 @@ const orchestrator = new HarnessOrchestrator({});
 ## PARAMETERS / CONFIGURATIONS
 
 | Name | Type | Required | Description | Default |
-|------|------|----------|-------------|---------|
+|---|---|---|---|---|
 | `scope` | string | Yes | The objective for the current cycle | — |
 | `projectPaths` | string[] | Yes | Directories involved | — |
 | `agentRunner` | IAgentRunner | No | Runner implementation | Auto-detected |
 | `productDir` | string | No | Custom output directory for docs | `docs/product/` |
 
 ## BEST PRACTICES
+
 REQUIRED: Use the provided `isExtractionError` / `isExtractionResult` type guards to branch on extraction outcomes.
-REQUIRED: Keep `001-problem-space.md` and `002-context-map.md` at or below `INLINE_THRESHOLD` (5,000 characters) during scope refinement.
-ALLOWED: Generate `003-*` tactical designs and `004-*` test scenarios without this prompt cap.
+REQUIRED: Keep `001-problem-space.md` and `002-context-map.md` at or below `INLINE_THRESHOLD` (5,000 characters) during scope refinement with `InlinePolicy` = `'never'`. This prevents prompt overflow.
+ALLOWED: Generate `003-*` tactical designs and `004-*` test scenarios without this prompt cap with `InlinePolicy` = `'always'`. This is useful for large context.
+REQUIRED: Use `inlineOrReference` with `InlinePolicy` (`'never' | 'auto' | 'always'`) to manage context prompt injection with `FORCE_INLINE_MAX` (15,000 characters) safeguard.
 PROHIBITED: Mutating state directly without using the `IFileStateManager` port.
 REQUIRED: On development retries, resolve `reworkLogPath` from the project working directory and embed its Markdown content in the TDD prompt.
 
@@ -113,5 +115,6 @@ graph TD
 ```
 
 ## REFERENCES
+
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Architectural decisions like Ports and Adapters.
 - [**TESTS.md**](../adr/TESTS.md): Test documentation.
