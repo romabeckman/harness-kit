@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { inlineOrReference, buildReworkSection, buildDocsOrientationSection, PromptInjectionContext } from '../PromptHelpers'
+import { inlineOrReference, buildReworkSection, buildDocsOrientationSection } from '../PromptHelpers'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
@@ -12,7 +12,6 @@ describe('PromptHelpers', () => {
     })
 
     it('omits content and only references file path by default (allowInlineContent = false)', () => {
-      PromptInjectionContext.reset()
       const content = 'Some critical content that should not be inlined'
       const result = inlineOrReference('spec_label', content, '/path/to/spec.md')
       expect(result).toEqual([
@@ -23,9 +22,8 @@ describe('PromptHelpers', () => {
     })
 
     it('inlines content if allowInlineContent is true and length is less than 5000 chars', () => {
-      PromptInjectionContext.setAllowInlineContent(true)
       const content = 'Small content here'
-      const result = inlineOrReference('test_label', content, '/path/to/file.md')
+      const result = inlineOrReference('test_label', content, '/path/to/file.md', 'markdown', true)
       expect(result).toEqual([
         '<test_label>',
         '```markdown',
@@ -33,13 +31,11 @@ describe('PromptHelpers', () => {
         '```',
         '</test_label>'
       ])
-      PromptInjectionContext.reset()
     })
 
     it('references file path and provides content if allowInlineContent is true and content is 5000 chars or more', () => {
-      PromptInjectionContext.setAllowInlineContent(true)
       const content = 'a'.repeat(5000)
-      const result = inlineOrReference('test_label', content, '/path/to/file.md')
+      const result = inlineOrReference('test_label', content, '/path/to/file.md', 'markdown', true)
       expect(result).toEqual([
         '<test_label_ref>',
         'Read file: `/path/to/file.md` (content too large to inline — 5000 chars)',
@@ -48,13 +44,11 @@ describe('PromptHelpers', () => {
         '```',
         '</test_label_ref>'
       ])
-      PromptInjectionContext.reset()
     })
 
     it('uses custom language tag when allowInlineContent is true and lang parameter is supplied', () => {
-      PromptInjectionContext.setAllowInlineContent(true)
       const content = '{"key":"value"}'
-      const result = inlineOrReference('json_label', content, '/path/to/file.json', 'json')
+      const result = inlineOrReference('json_label', content, '/path/to/file.json', 'json', true)
       expect(result).toEqual([
         '<json_label>',
         '```json',
@@ -62,21 +56,6 @@ describe('PromptHelpers', () => {
         '```',
         '</json_label>'
       ])
-      PromptInjectionContext.reset()
-    })
-  })
-
-  describe('PromptInjectionContext', () => {
-    it('defaults to allowInlineContent = false', () => {
-      PromptInjectionContext.reset()
-      expect(PromptInjectionContext.allowInlineContent).toBe(false)
-    })
-
-    it('can toggle allowInlineContent and reset', () => {
-      PromptInjectionContext.setAllowInlineContent(true)
-      expect(PromptInjectionContext.allowInlineContent).toBe(true)
-      PromptInjectionContext.reset()
-      expect(PromptInjectionContext.allowInlineContent).toBe(false)
     })
   })
 
@@ -86,13 +65,47 @@ describe('PromptHelpers', () => {
       expect(result).toEqual([])
     })
 
-    it('builds rework section if reworkLogExists is true', () => {
-      const result = buildReworkSection('/path/to/rework.md', 2, true)
+    it('builds rework section with fallback file reference if file does not exist on disk', () => {
+      const result = buildReworkSection('/path/to/nonexistent-rework.md', 2, true)
       expect(result.length).toBeGreaterThan(0)
       const joinedResult = result.join('\n')
       expect(joinedResult).toContain('<rework_history totalReworks="2">')
-      expect(joinedResult).toContain('Read the file `/path/to/rework.md`')
+      expect(joinedResult).toContain('Read the file `/path/to/nonexistent-rework.md`')
       expect(joinedResult).toContain('<rework_directive round="2">')
+    })
+
+    it('embeds file content via inlineOrReference in rework section when file exists on disk and allowInlineContent is true', () => {
+      const tempDir = join(tmpdir(), `rework-test-${Math.random().toString(36).slice(2)}`)
+      mkdirSync(tempDir, { recursive: true })
+      const filePath = join(tempDir, 'REWORK-LOG.md')
+      writeFileSync(filePath, '### Action Items\n- [ ] Fix memory leak', 'utf-8')
+
+      const result = buildReworkSection(filePath, 3, true, true)
+      const joinedResult = result.join('\n')
+      expect(joinedResult).toContain('<rework_history totalReworks="3">')
+      expect(joinedResult).toContain('<rework_log_content>')
+      expect(joinedResult).toContain('### Action Items\n- [ ] Fix memory leak')
+      expect(joinedResult).toContain('</rework_log_content>')
+      expect(joinedResult).toContain('<rework_directive round="3">')
+
+      rmSync(tempDir, { recursive: true, force: true })
+    })
+
+    it('references file via inlineOrReference in rework section when allowInlineContent is false', () => {
+      const tempDir = join(tmpdir(), `rework-test-${Math.random().toString(36).slice(2)}`)
+      mkdirSync(tempDir, { recursive: true })
+      const filePath = join(tempDir, 'REWORK-LOG.md')
+      writeFileSync(filePath, '### Action Items\n- [ ] Fix memory leak', 'utf-8')
+
+      const result = buildReworkSection(filePath, 3, true, false)
+      const joinedResult = result.join('\n')
+      expect(joinedResult).toContain('<rework_history totalReworks="3">')
+      expect(joinedResult).toContain('<rework_log_content_ref>')
+      expect(joinedResult).toContain('Read file:')
+      expect(joinedResult).toContain('</rework_log_content_ref>')
+      expect(joinedResult).toContain('<rework_directive round="3">')
+
+      rmSync(tempDir, { recursive: true, force: true })
     })
   })
 
@@ -108,7 +121,6 @@ describe('PromptHelpers', () => {
     })
 
     it('injects docs/.digest.md and docs/.graph.json references by default', () => {
-      PromptInjectionContext.reset()
       const tempDir = join(tmpdir(), `prompt-helpers-test-${Math.random().toString(36).slice(2)}`)
       const projDir = join(tempDir, 'proj-a')
       const docsDir = join(projDir, 'docs')
@@ -133,7 +145,6 @@ describe('PromptHelpers', () => {
     })
 
     it('injects inlined docs when allowInlineContent is true', () => {
-      PromptInjectionContext.setAllowInlineContent(true)
       const tempDir = join(tmpdir(), `prompt-helpers-test-${Math.random().toString(36).slice(2)}`)
       const projDir = join(tempDir, 'proj-a')
       const docsDir = join(projDir, 'docs')
@@ -145,7 +156,7 @@ describe('PromptHelpers', () => {
       writeFileSync(join(docsDir, '.digest.md'), digestText)
       writeFileSync(join(docsDir, '.graph.json'), graphText)
 
-      const result = buildDocsOrientationSection([projDir], tempDir)
+      const result = buildDocsOrientationSection([projDir], tempDir, true)
       const joined = result.join('\n')
 
       expect(joined).toContain('<project_orientation')
@@ -155,7 +166,6 @@ describe('PromptHelpers', () => {
       expect(joined).toContain('{"nodes":[{"id":"doc:readme"}],"edges":[]}')
       expect(joined).toContain('</project_orientation>')
 
-      PromptInjectionContext.reset()
       rmSync(tempDir, { recursive: true, force: true })
     })
 

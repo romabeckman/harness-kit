@@ -3,38 +3,16 @@ import { join, resolve } from 'node:path'
 
 const INLINE_THRESHOLD = 5000
 
-/**
- * Global configuration controlling whether file contents should be inlined
- * directly into prompts or only referenced by file path.
- *
- * Default is `true`. Runners with command-line length constraints (such as Copilot CLI)
- * set this to `false` so prompts only provide file paths for reading without inflating argv.
- */
-export class PromptInjectionContext {
-  private static _allowInlineContent = false
-
-  static get allowInlineContent(): boolean {
-    return this._allowInlineContent
-  }
-
-  static setAllowInlineContent(allow: boolean): void {
-    this._allowInlineContent = allow
-  }
-
-  static reset(): void {
-    this._allowInlineContent = false
-  }
-}
-
 export function inlineOrReference(
   label: string,
   content: string | undefined,
   filePath: string,
-  lang: string = 'markdown'
+  lang: string = 'markdown',
+  allowInlineContent: boolean = false
 ): string[] {
   if (!content) return []
 
-  if (!PromptInjectionContext.allowInlineContent) {
+  if (!allowInlineContent) {
     return [
       `<${label}_ref>`,
       `Read file: \`${filePath}\``,
@@ -86,12 +64,30 @@ export const EVALUATION_PRINCIPLE_QA = [
  * §4.6: Shared rework directive builder for TL and QA review prompts.
  * Prevents re-reporting of already-fixed issues across rework cycles.
  */
-export function buildReworkSection(reworkLogPath: string, totalReworks: number, reworkLogExists: boolean): string[] {
+export function buildReworkSection(
+  reworkLogPath: string,
+  totalReworks: number,
+  reworkLogExists: boolean,
+  allowInlineContent: boolean = true
+): string[] {
   if (!reworkLogExists) return []
+
+  let content: string | undefined
+  if (existsSync(reworkLogPath)) {
+    try {
+      content = readFileSync(reworkLogPath, 'utf-8').trim()
+    } catch {
+      content = undefined
+    }
+  }
+
+  const reworkLines = content
+    ? inlineOrReference('rework_log_content', content, reworkLogPath, 'markdown', allowInlineContent)
+    : [`Read the file \`${reworkLogPath}\` to know what was fixed in previous rounds.`]
 
   return [
     `<rework_history totalReworks="${totalReworks}">`,
-    `Read the file \`${reworkLogPath}\` to know what was fixed in previous rounds.`,
+    ...reworkLines,
     `</rework_history>`,
     ``,
     `<rework_directive round="${totalReworks}">`,
@@ -112,7 +108,11 @@ export function buildReworkSection(reworkLogPath: string, totalReworks: number, 
  * Reads docs/.digest.md and docs/.graph.json from each project path (and workingDir) if present,
  * and formats them for injection directly into phase execution prompts.
  */
-export function buildDocsOrientationSection(projectPaths: string[], workingDir?: string): string[] {
+export function buildDocsOrientationSection(
+  projectPaths: string[],
+  workingDir?: string,
+  allowInlineContent: boolean = false
+): string[] {
   const targets: string[] = []
   if (Array.isArray(projectPaths)) {
     targets.push(...projectPaths)
@@ -162,11 +162,11 @@ export function buildDocsOrientationSection(projectPaths: string[], workingDir?:
       lines.push(`<project_orientation path="${projPath}">`)
 
       if (digestContent) {
-        lines.push(...inlineOrReference('digest_md', digestContent, join(projPath, 'docs', '.digest.md'), 'markdown'))
+        lines.push(...inlineOrReference('digest_md', digestContent, join(projPath, 'docs', '.digest.md'), 'markdown', allowInlineContent))
       }
 
       if (graphContent) {
-        lines.push(...inlineOrReference('graph_json', graphContent, join(projPath, 'docs', '.graph.json'), 'json'))
+        lines.push(...inlineOrReference('graph_json', graphContent, join(projPath, 'docs', '.graph.json'), 'json', allowInlineContent))
       }
 
       lines.push('</project_orientation>')
