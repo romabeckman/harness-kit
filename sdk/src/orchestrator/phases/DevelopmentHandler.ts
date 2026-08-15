@@ -109,7 +109,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
         `<rework>`,
         `You are fixing findings from previous runs. Read \`${reworkLogPath}\` for Tech Lead and QA feedback.`,
         ``,
-        ...inlineOrReference('rework_log_content', reworkLogContent, reworkLogPath),
+        ...inlineOrReference('rework_log_content', reworkLogContent, reworkLogPath, 'markdown', 'always'),
         ``,
         `MANDATORY STEPS:`,
         `1. Read \`${reworkLogPath}\` completely   every item is a required fix.`,
@@ -209,12 +209,12 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const sections: string[] = []
 
     if (!payload.isRetry) {
-      sections.push(...inlineOrReference('problem_space', specs.problemSpace, join(specsDir, '001-problem-space.md')))
-      sections.push(...inlineOrReference('context_map', specs.contextMap, join(specsDir, '002-context-map.md')))
+      sections.push(...inlineOrReference('problem_space', specs.problemSpace, join(specsDir, '001-problem-space.md'), 'markdown'))
+      sections.push(...inlineOrReference('context_map', specs.contextMap, join(specsDir, '002-context-map.md'), 'markdown'))
     }
 
-    sections.push(...inlineOrReference('tactical_design', specs.tacticalDesign, join(specsDir, '003-*-tactical-design.md')))
-    sections.push(...inlineOrReference('test_scenarios', specs.testScenarios, join(specsDir, '004-*-test-scenarios.md')))
+    sections.push(...inlineOrReference('tactical_design', specs.tacticalDesign, join(specsDir, '003-*-tactical-design.md'), 'markdown', 'always'))
+    sections.push(...inlineOrReference('test_scenarios', specs.testScenarios, join(specsDir, '004-*-test-scenarios.md'), 'markdown', 'always'))
 
     return sections
   }

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { inlineOrReference, buildReworkSection, buildDocsOrientationSection } from '../PromptHelpers'
+import {
+  inlineOrReference,
+  buildReworkSection,
+  buildDocsOrientationSection,
+  INLINE_THRESHOLD,
+  FORCE_INLINE_MAX
+} from '../PromptHelpers'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
@@ -11,8 +17,8 @@ describe('PromptHelpers', () => {
       expect(result).toEqual([])
     })
 
-    it('omits content and only references file path by default (allowInlineContent = false)', () => {
-      const content = 'Some critical content that should not be inlined'
+    it('omits content and only references file path by default (policy = "never")', () => {
+      const content = 'Some content that should only be referenced'
       const result = inlineOrReference('spec_label', content, '/path/to/spec.md')
       expect(result).toEqual([
         '<spec_label_ref>',
@@ -21,9 +27,9 @@ describe('PromptHelpers', () => {
       ])
     })
 
-    it('inlines content if allowInlineContent is true and length is less than 5000 chars', () => {
-      const content = 'Small content here'
-      const result = inlineOrReference('test_label', content, '/path/to/file.md', 'markdown', true)
+    it('inlines content when policy is "auto" and content length is <= INLINE_THRESHOLD (5000 chars)', () => {
+      const content = 'a'.repeat(INLINE_THRESHOLD)
+      const result = inlineOrReference('test_label', content, '/path/to/file.md', 'markdown', 'auto')
       expect(result).toEqual([
         '<test_label>',
         '```markdown',
@@ -33,22 +39,41 @@ describe('PromptHelpers', () => {
       ])
     })
 
-    it('references file path and provides content if allowInlineContent is true and content is 5000 chars or more', () => {
-      const content = 'a'.repeat(5000)
-      const result = inlineOrReference('test_label', content, '/path/to/file.md', 'markdown', true)
+    it('references file path WITHOUT content when policy is "auto" and content length is > INLINE_THRESHOLD', () => {
+      const content = 'a'.repeat(INLINE_THRESHOLD + 1)
+      const result = inlineOrReference('test_label', content, '/path/to/file.md', 'markdown', 'auto')
       expect(result).toEqual([
         '<test_label_ref>',
-        'Read file: `/path/to/file.md` (content too large to inline — 5000 chars)',
-        '```markdown',
-        content,
-        '```',
+        'Read file: `/path/to/file.md`',
         '</test_label_ref>'
       ])
     })
 
-    it('uses custom language tag when allowInlineContent is true and lang parameter is supplied', () => {
+    it('inlines content when policy is "always" and content length is <= FORCE_INLINE_MAX (15000 chars)', () => {
+      const content = 'a'.repeat(12000)
+      const result = inlineOrReference('test_label', content, '/path/to/file.md', 'markdown', 'always')
+      expect(result).toEqual([
+        '<test_label>',
+        '```markdown',
+        content,
+        '```',
+        '</test_label>'
+      ])
+    })
+
+    it('references file path WITHOUT content when policy is "always" but content length exceeds FORCE_INLINE_MAX', () => {
+      const content = 'a'.repeat(FORCE_INLINE_MAX + 1)
+      const result = inlineOrReference('test_label', content, '/path/to/file.md', 'markdown', 'always')
+      expect(result).toEqual([
+        '<test_label_ref>',
+        'Read file: `/path/to/file.md`',
+        '</test_label_ref>'
+      ])
+    })
+
+    it('uses custom language tag when inlined and lang parameter is supplied', () => {
       const content = '{"key":"value"}'
-      const result = inlineOrReference('json_label', content, '/path/to/file.json', 'json', true)
+      const result = inlineOrReference('json_label', content, '/path/to/file.json', 'json', 'auto')
       expect(result).toEqual([
         '<json_label>',
         '```json',
@@ -74,13 +99,13 @@ describe('PromptHelpers', () => {
       expect(joinedResult).toContain('<rework_directive round="2">')
     })
 
-    it('embeds file content via inlineOrReference in rework section when file exists on disk and allowInlineContent is true', () => {
+    it('embeds file content via inlineOrReference in rework section when file exists on disk by default (policy = "always")', () => {
       const tempDir = join(tmpdir(), `rework-test-${Math.random().toString(36).slice(2)}`)
       mkdirSync(tempDir, { recursive: true })
       const filePath = join(tempDir, 'REWORK-LOG.md')
       writeFileSync(filePath, '### Action Items\n- [ ] Fix memory leak', 'utf-8')
 
-      const result = buildReworkSection(filePath, 3, true, true)
+      const result = buildReworkSection(filePath, 3, true)
       const joinedResult = result.join('\n')
       expect(joinedResult).toContain('<rework_history totalReworks="3">')
       expect(joinedResult).toContain('<rework_log_content>')
@@ -91,19 +116,34 @@ describe('PromptHelpers', () => {
       rmSync(tempDir, { recursive: true, force: true })
     })
 
-    it('references file via inlineOrReference in rework section when allowInlineContent is false', () => {
+    it('references file via inlineOrReference in rework section when policy is "never"', () => {
       const tempDir = join(tmpdir(), `rework-test-${Math.random().toString(36).slice(2)}`)
       mkdirSync(tempDir, { recursive: true })
       const filePath = join(tempDir, 'REWORK-LOG.md')
       writeFileSync(filePath, '### Action Items\n- [ ] Fix memory leak', 'utf-8')
 
-      const result = buildReworkSection(filePath, 3, true, false)
+      const result = buildReworkSection(filePath, 3, true, 'never')
       const joinedResult = result.join('\n')
       expect(joinedResult).toContain('<rework_history totalReworks="3">')
       expect(joinedResult).toContain('<rework_log_content_ref>')
       expect(joinedResult).toContain('Read file:')
       expect(joinedResult).toContain('</rework_log_content_ref>')
       expect(joinedResult).toContain('<rework_directive round="3">')
+
+      rmSync(tempDir, { recursive: true, force: true })
+    })
+
+    it('references file without inlining when rework log exceeds FORCE_INLINE_MAX', () => {
+      const tempDir = join(tmpdir(), `rework-test-${Math.random().toString(36).slice(2)}`)
+      mkdirSync(tempDir, { recursive: true })
+      const filePath = join(tempDir, 'REWORK-LOG.md')
+      writeFileSync(filePath, 'a'.repeat(FORCE_INLINE_MAX + 100), 'utf-8')
+
+      const result = buildReworkSection(filePath, 3, true, 'always')
+      const joinedResult = result.join('\n')
+      expect(joinedResult).toContain('<rework_history totalReworks="3">')
+      expect(joinedResult).toContain('<rework_log_content_ref>')
+      expect(joinedResult).not.toContain('<rework_log_content>')
 
       rmSync(tempDir, { recursive: true, force: true })
     })
@@ -120,7 +160,7 @@ describe('PromptHelpers', () => {
       rmSync(tempDir, { recursive: true, force: true })
     })
 
-    it('injects docs/.digest.md and docs/.graph.json references by default', () => {
+    it('by default references both .digest.md and .graph.json (never policy)', () => {
       const tempDir = join(tmpdir(), `prompt-helpers-test-${Math.random().toString(36).slice(2)}`)
       const projDir = join(tempDir, 'proj-a')
       const docsDir = join(projDir, 'docs')
@@ -144,7 +184,7 @@ describe('PromptHelpers', () => {
       rmSync(tempDir, { recursive: true, force: true })
     })
 
-    it('injects inlined docs when allowInlineContent is true', () => {
+    it('inlines .digest.md when digestPolicy is "auto"', () => {
       const tempDir = join(tmpdir(), `prompt-helpers-test-${Math.random().toString(36).slice(2)}`)
       const projDir = join(tempDir, 'proj-a')
       const docsDir = join(projDir, 'docs')
@@ -156,15 +196,36 @@ describe('PromptHelpers', () => {
       writeFileSync(join(docsDir, '.digest.md'), digestText)
       writeFileSync(join(docsDir, '.graph.json'), graphText)
 
-      const result = buildDocsOrientationSection([projDir], tempDir, true)
+      const result = buildDocsOrientationSection([projDir], tempDir, 'auto', 'never')
       const joined = result.join('\n')
 
       expect(joined).toContain('<project_orientation')
       expect(joined).toContain('<digest_md>')
       expect(joined).toContain('# Digest Summary')
+      expect(joined).toContain('<graph_json_ref>')
+      expect(joined).toContain('</project_orientation>')
+
+      rmSync(tempDir, { recursive: true, force: true })
+    })
+
+    it('inlines .graph.json when graphPolicy is "always"', () => {
+      const tempDir = join(tmpdir(), `prompt-helpers-test-${Math.random().toString(36).slice(2)}`)
+      const projDir = join(tempDir, 'proj-a')
+      const docsDir = join(projDir, 'docs')
+      mkdirSync(docsDir, { recursive: true })
+
+      const digestText = '# Digest Summary'
+      const graphText = '{"nodes":[{"id":"doc:readme"}],"edges":[]}'
+
+      writeFileSync(join(docsDir, '.digest.md'), digestText)
+      writeFileSync(join(docsDir, '.graph.json'), graphText)
+
+      const result = buildDocsOrientationSection([projDir], tempDir, 'auto', 'always')
+      const joined = result.join('\n')
+
+      expect(joined).toContain('<digest_md>')
       expect(joined).toContain('<graph_json>')
       expect(joined).toContain('{"nodes":[{"id":"doc:readme"}],"edges":[]}')
-      expect(joined).toContain('</project_orientation>')
 
       rmSync(tempDir, { recursive: true, force: true })
     })
@@ -183,7 +244,7 @@ describe('PromptHelpers', () => {
       const joined = result.join('\n')
 
       expect(joined).toContain(`<project_orientation path="${proj1.replace(/\\/g, '\\\\')}">`.replace(/\\\\/g, '\\'))
-      expect(joined).toContain('Read file:')
+      expect(joined).toContain('<digest_md_ref>')
       expect(joined).toContain('proj1')
       expect(joined).toContain('proj2')
 

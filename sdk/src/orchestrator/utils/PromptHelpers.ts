@@ -1,18 +1,25 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
-const INLINE_THRESHOLD = 5000
+export type InlinePolicy = 'never' | 'auto' | 'always'
+
+export const INLINE_THRESHOLD = 5000
+export const FORCE_INLINE_MAX = 15000
 
 export function inlineOrReference(
   label: string,
   content: string | undefined,
   filePath: string,
   lang: string = 'markdown',
-  allowInlineContent: boolean = false
+  policy: InlinePolicy = 'never'
 ): string[] {
   if (!content) return []
 
-  if (!allowInlineContent) {
+  const shouldInline =
+    policy === 'always' ? content.length <= FORCE_INLINE_MAX :
+      policy === 'auto' ? content.length <= INLINE_THRESHOLD : false
+
+  if (!shouldInline) {
     return [
       `<${label}_ref>`,
       `Read file: \`${filePath}\``,
@@ -20,17 +27,12 @@ export function inlineOrReference(
     ]
   }
 
-  if (content.length < INLINE_THRESHOLD) {
-    return [`<${label}>`, `\`\`\`${lang}`, content, '```', `</${label}>`]
-  }
-
   return [
-    `<${label}_ref>`,
-    `Read file: \`${filePath}\` (content too large to inline — ${content.length} chars)`,
+    `<${label}>`,
     `\`\`\`${lang}`,
     content,
     '```',
-    `</${label}_ref>`,
+    `</${label}>`,
   ]
 }
 
@@ -68,7 +70,7 @@ export function buildReworkSection(
   reworkLogPath: string,
   totalReworks: number,
   reworkLogExists: boolean,
-  allowInlineContent: boolean = true
+  policy: InlinePolicy = 'always'
 ): string[] {
   if (!reworkLogExists) return []
 
@@ -82,7 +84,7 @@ export function buildReworkSection(
   }
 
   const reworkLines = content
-    ? inlineOrReference('rework_log_content', content, reworkLogPath, 'markdown', allowInlineContent)
+    ? inlineOrReference('rework_log_content', content, reworkLogPath, 'markdown', policy)
     : [`Read the file \`${reworkLogPath}\` to know what was fixed in previous rounds.`]
 
   return [
@@ -111,7 +113,8 @@ export function buildReworkSection(
 export function buildDocsOrientationSection(
   projectPaths: string[],
   workingDir?: string,
-  allowInlineContent: boolean = false
+  digestPolicy: InlinePolicy = 'never',
+  graphPolicy: InlinePolicy = 'never'
 ): string[] {
   const targets: string[] = []
   if (Array.isArray(projectPaths)) {
@@ -162,11 +165,11 @@ export function buildDocsOrientationSection(
       lines.push(`<project_orientation path="${projPath}">`)
 
       if (digestContent) {
-        lines.push(...inlineOrReference('digest_md', digestContent, join(projPath, 'docs', '.digest.md'), 'markdown', allowInlineContent))
+        lines.push(...inlineOrReference('digest_md', digestContent, join(projPath, 'docs', '.digest.md'), 'markdown', digestPolicy))
       }
 
       if (graphContent) {
-        lines.push(...inlineOrReference('graph_json', graphContent, join(projPath, 'docs', '.graph.json'), 'json', allowInlineContent))
+        lines.push(...inlineOrReference('graph_json', graphContent, join(projPath, 'docs', '.graph.json'), 'json', graphPolicy))
       }
 
       lines.push('</project_orientation>')
