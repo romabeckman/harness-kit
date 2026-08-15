@@ -254,6 +254,8 @@ describe('PlanningHandler', () => {
             // Feature-focused prompt should contain target feature and outputs but not full scope markdown dump
             expect(invokeCall.prompt).toContain('<target_feature>');
             expect(invokeCall.prompt).toContain('ID: F001');
+            expect(invokeCall.prompt).toContain('<project_paths>');
+            expect(invokeCall.prompt).toContain('PROJECT NAME RULE');
             expect(invokeCall.prompt).not.toContain('<scope>');
 
             expect(mockContext.setDeveloperSession).toHaveBeenCalledWith({
@@ -273,6 +275,7 @@ describe('PlanningHandler', () => {
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
             expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'LOW'");
             expect(invokedPrompt).toContain('<target_feature>');
+            expect(invokedPrompt).toContain('PROJECT NAME RULE');
             expect(invokedPrompt).not.toContain('<scope>');
         });
     });
