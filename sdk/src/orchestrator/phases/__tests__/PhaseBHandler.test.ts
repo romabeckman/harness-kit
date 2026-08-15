@@ -221,16 +221,18 @@ describe('DevelopmentHandler', () => {
 
       await handler.handle(Phase.DEVELOPMENT, context)
 
-      expect(context.developerSession).toEqual({
-        featureId: 'F001',
-        agent: 'harness-kit:developer-backend',
-        session: { id: 'DEV-123' }
-      })
+      expect(context.developerSession).toEqual([
+        {
+          featureId: 'F001',
+          agent: 'harness-kit:developer-backend',
+          session: { id: 'DEV-123' }
+        }
+      ])
       const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
       expect(invokeCall.session).toBeUndefined()
     })
 
-    it('resumes developer session and uses continuation prompt on retry when matching session exists', async () => {
+    it('resumes developer session and uses continuation prompt on retry when matching session exists in array', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
       const reworkLogPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'REWORK-LOG.md')
       writeFileSync(reworkLogPath, 'Review finding: Missing null check')
@@ -251,11 +253,18 @@ describe('DevelopmentHandler', () => {
         return { success: true, stdout: '', stderr: '', raw: '', session: { id: 'DEV-123' } }
       })
       context.getActiveFeature = vi.fn().mockReturnValue(makeFeature({ reworks: 1 }))
-      context.developerSession = {
-        featureId: 'F001',
-        agent: 'harness-kit:developer-backend',
-        session: { id: 'DEV-123' }
-      }
+      context.developerSession = [
+        {
+          featureId: 'F001',
+          agent: 'harness-kit:harness-tech-lead',
+          session: { id: 'TL-123' }
+        },
+        {
+          featureId: 'F001',
+          agent: 'harness-kit:developer-backend',
+          session: { id: 'DEV-123' }
+        }
+      ]
 
       await handler.handle(Phase.DEVELOPMENT, context)
 

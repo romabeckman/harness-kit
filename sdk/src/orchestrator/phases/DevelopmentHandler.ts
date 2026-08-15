@@ -69,12 +69,9 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const agent = activeFeature.layer ? 'harness-kit:developer-' + activeFeature.layer : 'harness-kit:developer-backend'
 
     // Check for compatible developer session on retry
-    const developerSession =
-      isRetry &&
-      context.developerSession?.featureId === activeFeature.id &&
-      context.developerSession?.agent === agent
-        ? context.developerSession.session
-        : undefined
+    const developerSession = isRetry
+      ? this.getDeveloperSession(context, agent, activeFeature.id)
+      : undefined
 
     const prompt = this.buildTddOrchestratorPrompt(payload, context, agent, Boolean(developerSession))
 
@@ -89,11 +86,11 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     })
 
     if (output.session) {
-      context.developerSession = {
+      this.saveDeveloperSession(context, {
         featureId: activeFeature.id,
         agent,
         session: output.session,
-      }
+      })
     }
 
     PhaseDecisionLogger.logDevelopmen(context.fsm, activeFeature, tddOutputPath)

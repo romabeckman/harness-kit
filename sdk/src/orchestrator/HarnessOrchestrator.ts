@@ -22,7 +22,7 @@ import { ProjectStateService } from './services/ProjectStateService'
 import { AgentInvocationService } from './services/AgentInvocationService'
 import { SteeringService } from './services/SteeringService'
 import { exit } from 'process'
-import { AgentInvocation, AgentOutput, Runner } from '../agent-runner/types'
+import { AgentInvocation, AgentOutput, AgentSession, Runner } from '../agent-runner/types'
 import { SteeringAction } from './SteeringAnalyzer'
 import { IAgentRunner } from '../agent-runner/IAgentRunner'
 
@@ -34,7 +34,7 @@ export class HarnessOrchestrator implements Reviewontext {
   readonly config: OrchestratorConfig
   readonly workingDir: string
   readonly fsm: IFileStateManager
-  developerSession?: DeveloperSessionState
+  developerSession?: DeveloperSessionState[]
   state: OrchestratorState
   private readonly agentRunner: IAgentRunner
   private readonly ledger: TokenLedger
@@ -246,6 +246,44 @@ export class HarnessOrchestrator implements Reviewontext {
 
   public applySteeringActions(actions: SteeringAction[]): void {
     this.steeringService.applySteeringActions(actions)
+  }
+
+  public getDeveloperSession(agent: string, featureId?: string): AgentSession | undefined {
+    if (!this.developerSession) return undefined
+    if (Array.isArray(this.developerSession)) {
+      return this.developerSession.find(
+        s => s.agent === agent && (!featureId || s.featureId === featureId)
+      )?.session
+    }
+    const session = this.developerSession as DeveloperSessionState
+    if (session.agent === agent && (!featureId || session.featureId === featureId)) {
+      return session.session
+    }
+    return undefined
+  }
+
+  public setDeveloperSession(sessionState: DeveloperSessionState): void {
+    if (!this.developerSession) {
+      this.developerSession = [sessionState]
+      return
+    }
+    if (Array.isArray(this.developerSession)) {
+      const idx = this.developerSession.findIndex(
+        s => s.agent === sessionState.agent && s.featureId === sessionState.featureId
+      )
+      if (idx >= 0) {
+        this.developerSession[idx] = sessionState
+      } else {
+        this.developerSession.push(sessionState)
+      }
+    } else {
+      const existing = this.developerSession as DeveloperSessionState
+      if (existing.agent === sessionState.agent && existing.featureId === sessionState.featureId) {
+        this.developerSession = [sessionState]
+      } else {
+        this.developerSession = [existing, sessionState]
+      }
+    }
   }
 
   public invokeAgent(invocation: AgentInvocation): Promise<AgentOutput> {

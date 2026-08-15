@@ -84,26 +84,53 @@ export class ReviewHandler extends AbstractPhaseHandler {
       writeFileSync(join(specsDir, 'TL.json'), JSON.stringify(tlMock, null, 2), 'utf8')
     }
 
-    return Promise.all([
-      isSimple
-        ? tlMock
-        : context.invokeAgent({
-          skill: 'harness-kit:the-grumpy-tech-lead',
-          agent: 'harness-kit:harness-tech-lead',
-          mode: 'autonomous',
-          prompt: tlPrompt,
-          phaseKey: 'review_tl',
-          domain: payload.domain,
-        }),
-      context.invokeAgent({
-        skill: 'harness-kit:adversarial-qa',
-        agent: 'harness-kit:harness-qa',
+    const tlAgent = 'harness-kit:harness-tech-lead'
+    const advAgent = 'harness-kit:harness-qa'
+
+    const tlSession = this.getDeveloperSession(context, tlAgent, payload.featureId)
+    const advSession = this.getDeveloperSession(context, advAgent, payload.featureId)
+
+    const tlPromise = isSimple
+      ? Promise.resolve(tlMock)
+      : context.invokeAgent({
+        skill: 'harness-kit:the-grumpy-tech-lead',
+        agent: tlAgent,
         mode: 'autonomous',
-        prompt: advPrompt,
-        phaseKey: 'review_adv',
+        prompt: tlPrompt,
+        phaseKey: 'review_tl',
         domain: payload.domain,
+        ...(tlSession ? { session: tlSession } : {}),
+      }).then(output => {
+        if (output.session) {
+          this.saveDeveloperSession(context, {
+            featureId: payload.featureId,
+            agent: tlAgent,
+            session: output.session,
+          })
+        }
+        return output
       })
-    ])
+
+    const advPromise = context.invokeAgent({
+      skill: 'harness-kit:adversarial-qa',
+      agent: advAgent,
+      mode: 'autonomous',
+      prompt: advPrompt,
+      phaseKey: 'review_adv',
+      domain: payload.domain,
+      ...(advSession ? { session: advSession } : {}),
+    }).then(output => {
+      if (output.session) {
+        this.saveDeveloperSession(context, {
+          featureId: payload.featureId,
+          agent: advAgent,
+          session: output.session,
+        })
+      }
+      return output
+    })
+
+    return Promise.all([tlPromise, advPromise])
   }
 
   private extractScores(context: Reviewontext, domain: string, tlOutput: any, advOutput: any) {

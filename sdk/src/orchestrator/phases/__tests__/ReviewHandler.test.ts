@@ -194,4 +194,122 @@ describe('ReviewHandler', () => {
     expect(result).toBe(Phase.TRANSITION)
     expect(context.developerSession).toBeUndefined()
   })
+
+  it('captures and preserves sessions from invokeAgent output in developerSession array on RETRY', async () => {
+    const fsm = makeFsm()
+    const specsDir = join(workingDir, 'docs', 'specs', 'sdk_core')
+
+    const context = makeContext(workingDir, fsm, async (inv: any) => {
+      if (inv.phaseKey === 'review_tl') {
+        const data = { featureId: 'F001', score: 0.50, openPoints: ['[HIGH] Bug'], architectureTip: '' }
+        writeFileSync(join(specsDir, 'TL.json'), JSON.stringify(data))
+        return { success: true, stdout: '', stderr: '', raw: JSON.stringify(data), session: { id: 'TL-SESSION-1' } }
+      } else {
+        const data = { featureId: 'F001', score: 0.50, passedAdversarial: false, vulnerabilities: [], edgeCasesMissed: ['Missed case'] }
+        writeFileSync(join(specsDir, 'QA.json'), JSON.stringify(data))
+        return { success: true, stdout: '', stderr: '', raw: JSON.stringify(data), session: { id: 'QA-SESSION-1' } }
+      }
+    })
+    context.developerSession = [{
+      featureId: 'F001',
+      agent: 'harness-kit:developer-backend',
+      session: { id: 'DEV-123' }
+    }]
+
+    const result = await handler.handle(Phase.REVIEW, context)
+
+    expect(result).toBe(Phase.DEVELOPMENT)
+    expect(context.developerSession).toEqual([
+      {
+        featureId: 'F001',
+        agent: 'harness-kit:developer-backend',
+        session: { id: 'DEV-123' }
+      },
+      {
+        featureId: 'F001',
+        agent: 'harness-kit:harness-tech-lead',
+        session: { id: 'TL-SESSION-1' }
+      },
+      {
+        featureId: 'F001',
+        agent: 'harness-kit:harness-qa',
+        session: { id: 'QA-SESSION-1' }
+      }
+    ])
+  })
+
+  it('reuses existing review sessions when invoking agents for the same feature', async () => {
+    const fsm = makeFsm()
+    const specsDir = join(workingDir, 'docs', 'specs', 'sdk_core')
+
+    const context = makeContext(workingDir, fsm, async (inv: any) => {
+      if (inv.phaseKey === 'review_tl') {
+        const data = { featureId: 'F001', score: 0.50, openPoints: ['[HIGH] Bug'], architectureTip: '' }
+        writeFileSync(join(specsDir, 'TL.json'), JSON.stringify(data))
+        return { success: true, stdout: '', stderr: '', raw: JSON.stringify(data), session: { id: 'TL-SESSION-2' } }
+      } else {
+        const data = { featureId: 'F001', score: 0.50, passedAdversarial: false, vulnerabilities: [], edgeCasesMissed: ['Missed case'] }
+        writeFileSync(join(specsDir, 'QA.json'), JSON.stringify(data))
+        return { success: true, stdout: '', stderr: '', raw: JSON.stringify(data), session: { id: 'QA-SESSION-2' } }
+      }
+    })
+    context.developerSession = [
+      {
+        featureId: 'F001',
+        agent: 'harness-kit:harness-tech-lead',
+        session: { id: 'TL-SESSION-1' }
+      },
+      {
+        featureId: 'F001',
+        agent: 'harness-kit:harness-qa',
+        session: { id: 'QA-SESSION-1' }
+      }
+    ]
+
+    await handler.handle(Phase.REVIEW, context)
+
+    expect(context.invokeAgent).toHaveBeenCalledTimes(2)
+    const tlCall = (context.invokeAgent as any).mock.calls[0][0]
+    const qaCall = (context.invokeAgent as any).mock.calls[1][0]
+
+    expect(tlCall.session).toEqual({ id: 'TL-SESSION-1' })
+    expect(qaCall.session).toEqual({ id: 'QA-SESSION-1' })
+  })
+
+  it('does NOT reuse review sessions belonging to a different feature', async () => {
+    const fsm = makeFsm()
+    const specsDir = join(workingDir, 'docs', 'specs', 'sdk_core')
+
+    const context = makeContext(workingDir, fsm, async (inv: any) => {
+      if (inv.phaseKey === 'review_tl') {
+        const data = { featureId: 'F001', score: 0.95, openPoints: [], architectureTip: '' }
+        writeFileSync(join(specsDir, 'TL.json'), JSON.stringify(data))
+        return { success: true, stdout: '', stderr: '', raw: JSON.stringify(data) }
+      } else {
+        const data = { featureId: 'F001', score: 0.95, passedAdversarial: true, vulnerabilities: [], edgeCasesMissed: [] }
+        writeFileSync(join(specsDir, 'QA.json'), JSON.stringify(data))
+        return { success: true, stdout: '', stderr: '', raw: JSON.stringify(data) }
+      }
+    })
+    context.developerSession = [
+      {
+        featureId: 'F002',
+        agent: 'harness-kit:harness-tech-lead',
+        session: { id: 'TL-DIFF-FEATURE' }
+      },
+      {
+        featureId: 'F002',
+        agent: 'harness-kit:harness-qa',
+        session: { id: 'QA-DIFF-FEATURE' }
+      }
+    ]
+
+    await handler.handle(Phase.REVIEW, context)
+
+    const tlCall = (context.invokeAgent as any).mock.calls[0][0]
+    const qaCall = (context.invokeAgent as any).mock.calls[1][0]
+
+    expect(tlCall.session).toBeUndefined()
+    expect(qaCall.session).toBeUndefined()
+  })
 })
