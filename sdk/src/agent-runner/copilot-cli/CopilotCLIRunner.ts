@@ -24,6 +24,7 @@ export class CopilotCLIRunner extends AbstractCliRunner {
     if (effort) args.push('--reasoning-effort', effort)
     if (invocation.agent) args.push('--agent', invocation.agent)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
+    if (invocation.session?.id) args.push('--resume', invocation.session.id)
 
     args.push('--prompt', prompt)
     return args
@@ -71,6 +72,7 @@ export class CopilotCLIRunner extends AbstractCliRunner {
     let finalContent = ''
     let outputTokens: number | undefined
     let isSuccess = true
+    let sessionId: string | undefined = invocation.session?.id
 
     const lines = stdout.split('\n').filter(Boolean)
 
@@ -78,6 +80,10 @@ export class CopilotCLIRunner extends AbstractCliRunner {
       let event: Record<string, unknown>
       try { event = JSON.parse(line) as Record<string, unknown> }
       catch { continue }
+
+      if (typeof event.session_id === 'string') sessionId = event.session_id
+      else if (typeof event.sessionId === 'string') sessionId = event.sessionId
+      else if (typeof event.conversation_id === 'string') sessionId = event.conversation_id
 
       const type = event.type as string
 
@@ -101,6 +107,7 @@ export class CopilotCLIRunner extends AbstractCliRunner {
       stderr: stderr,
       raw: finalContent || stdout,
       usage: outputTokens ? { inputTokens: 0, outputTokens, cacheCreationTokens: 0, cacheReadTokens: 0, costUsd: 0, model: this.getModelName(invocation), effort: this.getEffort(invocation) } : undefined,
+      session: sessionId ? { id: sessionId } : undefined,
       artefacts: extractJsonOrNull(finalContent || stdout) as Record<string, string> | undefined,
     }
   }

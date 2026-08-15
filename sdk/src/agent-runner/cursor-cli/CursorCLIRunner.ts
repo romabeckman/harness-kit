@@ -36,6 +36,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
     }
     if (invocation.workspacePath) args.push('--workspace', invocation.workspacePath)
     for (const dir of invocation.additionalDirs ?? []) args.push('--add-dir', dir)
+    if (invocation.session?.id) args.push('--resume', invocation.session.id)
     return args
   }
 
@@ -108,6 +109,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
     let finalUsage: AgentOutput['usage'] | undefined
     let finalResult = ''
     let isFinalError = false
+    let sessionId: string | undefined = invocation.session?.id
 
     const lines = stdout.split('\n').filter(Boolean)
 
@@ -115,6 +117,9 @@ export class CursorCLIRunner extends AbstractCliRunner {
       let event: Record<string, unknown>
       try { event = JSON.parse(line) as Record<string, unknown> }
       catch { continue }
+
+      if (typeof event.session_id === 'string') sessionId = event.session_id
+      else if (typeof event.sessionId === 'string') sessionId = event.sessionId
 
       const type = event.type as string
 
@@ -144,6 +149,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
       stderr: stderr,
       raw: finalResult || stdout,
       usage: finalUsage,
+      session: sessionId ? { id: sessionId } : undefined,
       artefacts: (() => {
         const j = extractJsonOrNull(finalResult)
         if (j && typeof j === 'object' && !Array.isArray(j)) {

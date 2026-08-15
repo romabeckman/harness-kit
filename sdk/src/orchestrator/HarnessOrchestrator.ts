@@ -13,7 +13,8 @@ import { AnsiHelpers } from '../ui/AnsiHelpers'
 import {
   IPhaseHandler,
   Reviewontext,
-  ExtractedTask
+  ExtractedTask,
+  DeveloperSessionState
 } from './phases'
 import { ChainBuilder } from './ChainBuilder'
 import { OrchestratorFormatter } from './utils/OrchestratorFormatter'
@@ -33,6 +34,7 @@ export class HarnessOrchestrator implements Reviewontext {
   readonly config: OrchestratorConfig
   readonly workingDir: string
   readonly fsm: IFileStateManager
+  developerSession?: DeveloperSessionState
   state: OrchestratorState
   private readonly agentRunner: IAgentRunner
   private readonly ledger: TokenLedger

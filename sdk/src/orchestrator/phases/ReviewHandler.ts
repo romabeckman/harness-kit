@@ -35,6 +35,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     // --skip-validation: bypass all agent calls and jump straight to Phase D
     if (context.config.skipValidation) {
       process.stdout.write(`[phase_review] --skip-validation active — skipping review for feature ${activeFeature.id}\n`)
+      context.developerSession = undefined
       context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED', { tl: 1, adv: 1 })
       context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'COMPLETED')
       return Phase.TRANSITION
@@ -187,6 +188,9 @@ export class ReviewHandler extends AbstractPhaseHandler {
     activeFeature.status = statusMap[result.verdict] || activeFeature.status
     context.fsm.updateFeatureStatus(activeFeature.id, activeFeature.status, { tl: scores.scoreTL, adv: scores.scoreAdv })
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', activeFeature.status)
+
+    // Clear developer session upon exiting the dev/review cycle for this feature
+    context.developerSession = undefined
 
     // Proceed to TRANSITION
     return Phase.TRANSITION

@@ -290,12 +290,17 @@ export abstract class AbstractCliRunner implements IAgentRunner {
         const parseError = this.checkParsed(parsed, invocation)
         if (parseError) { reject(parseError); return }
 
+        if (DebugContext.enabled && parsed.session) {
+          process.stderr.write(`[DEBUG] session captured: ${parsed.session.id}\n\n`)
+        }
+
         resolve({
           success: true,
           stdout,
           stderr,
           raw: parsed.raw ?? stdout,
           artefacts: parsed.artefacts,
+          session: parsed.session,
           usage: {
             inputTokens: parsed.usage?.inputTokens ?? 0,
             outputTokens: parsed.usage?.outputTokens ?? 0,

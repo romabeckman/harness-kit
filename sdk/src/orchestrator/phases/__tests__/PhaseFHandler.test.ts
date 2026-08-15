@@ -112,10 +112,16 @@ describe('TransitionHandler', () => {
         .mockReturnValueOnce(updatedFeatures) // reload after cascade
 
       const ctx = makeContext(fsm, f1)
+      ctx.developerSession = {
+        featureId: 'F001',
+        agent: 'harness-kit:developer-backend',
+        session: { id: 'DEV-123' }
+      }
       const result = await handler.handle(Phase.TRANSITION, ctx)
 
       expect(fsm.blockDependents).not.toHaveBeenCalled()
       expect(result).toBe(Phase.PLANNING)
+      expect(ctx.developerSession).toBeUndefined()
       expect(fsm.saveBootstrapConfig).toHaveBeenCalledWith(
         expect.objectContaining({ activeFeatureId: 'F002' })
       )

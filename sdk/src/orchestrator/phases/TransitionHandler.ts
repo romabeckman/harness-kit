@@ -8,6 +8,8 @@ export class TransitionHandler extends AbstractPhaseHandler {
       return super.handle(phase, context)
     }
 
+    context.developerSession = undefined
+
     const features = context.fsm.loadBacklog()
     const config = context.fsm.loadBootstrapConfig()
 

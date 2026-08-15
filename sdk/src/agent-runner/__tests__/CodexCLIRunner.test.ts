@@ -196,4 +196,37 @@ describe('CodexCLIRunner', () => {
       })
     )
   })
+
+  it('should include exec resume <id> in args when invocation.session is provided', () => {
+    const runner = new CodexCLIRunner()
+    const sessionInvocation: AgentInvocation = {
+      ...invocation,
+      session: { id: 'thread_abc123' },
+    }
+
+    // @ts-ignore - protected method testing
+    const args = runner.buildArgs(sessionInvocation.prompt, sessionInvocation)
+
+    expect(args).toEqual([
+      'exec',
+      'resume',
+      'thread_abc123',
+      '--json',
+      '--dangerously-bypass-approvals-and-sandbox',
+    ])
+  })
+
+  it('should extract session from thread_id in output', async () => {
+    const mockOutputLines = [
+      '{"type":"thread.started","thread_id":"019fdcc2-b0ac-73e2-922d-3f5a496c903e"}\n',
+      '{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Hi!"}}\n',
+    ]
+
+    mockSpawn.mockReturnValue(new MockChildProcess(mockOutputLines) as any)
+
+    const runner = new CodexCLIRunner()
+    const result = await runner.run(invocation)
+
+    expect(result.session).toEqual({ id: '019fdcc2-b0ac-73e2-922d-3f5a496c903e' })
+  })
 })

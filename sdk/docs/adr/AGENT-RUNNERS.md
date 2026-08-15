@@ -7,7 +7,7 @@ tags: [agent-runner, strategies, factory, registry]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-08-08"
+updated: "2026-08-15"
 ---
 # Agent Runners
 Decouples agent execution clients and strategies from the orchestrator engine.
@@ -55,15 +55,27 @@ const runner = new ClaudeCLIRunner() // Violates ports and adapters decoupling
 </code_example>
 
 ## RUNNER FORMAT SPECIFICATIONS
+### ClaudeCLIRunner (`claude-cli`)
+- Executes binary `claude` with `--output-format stream-json`.
+- Resumes conversations via `--resume <session.id>`.
+- Extracts session ID from `session_id`/`sessionId` stream events.
 ### AntigravityCLIRunner (`antigravity-cli`)
 - Executes binary `agy` with `--output-format json` by default.
-- Parses stdout JSON structure containing `status`, `response`, `structured_output`, and `usage`.
-- Extracts token counts: `inputTokens`, `outputTokens`, `cacheReadTokens`. Note that `outputTokens` already includes `thinking_tokens`.
+- Resumes conversations via `--conversation <session.id>`.
+- Parses stdout JSON structure containing `status`, `response`, `structured_output`, `usage`, and `conversation_id`.
+- Extracts token counts: `inputTokens`, `outputTokens`, `cacheReadTokens`.
 ### CodexCLIRunner (`codex-cli`)
 - Executes binary `codex` with subcommand `exec --json --dangerously-bypass-approvals-and-sandbox`.
-- Writes prompt to stdin and streams JSON events.
-- Extracts token counts and cost: `inputTokens`, `outputTokens`, `cacheCreationTokens`, `cacheReadTokens`, `costUsd`.
-
+- Resumes conversations via `exec resume <session.id>`.
+- Extracts token counts, cost, and session ID (`thread_id`/`session_id`).
+### CopilotCLIRunner (`copilot-cli`)
+- Executes binary `copilot` with `--output-format json --allow-all-tools`.
+- Resumes conversations via `--resume <session.id>`.
+- Extracts session ID from `sessionId`/`session_id` in result events.
+### CursorCLIRunner (`cursor-cli`)
+- Executes binary `agent` with `--print --force --output-format stream-json`.
+- Resumes conversations via `--resume <session.id>`.
+- Extracts session ID from `session_id` stream events.
 
 ## PARAMETERS / CONFIGURATIONS
 | Name | Type | Required | Description | Default |
@@ -72,11 +84,13 @@ const runner = new ClaudeCLIRunner() // Violates ports and adapters decoupling
 | timeoutMs | number | No | Timeout override for the invocation | — |
 | model | string | No | Model override for the invocation | — |
 | effort | string | No | Effort parameter override for reasoning models | — |
+| session | AgentSession | No | Session identifier for resuming active conversations | — |
 
 ## BEST PRACTICES
 REQUIRED: Propagate AbortSignal downward to child process groups or API requests to prevent resource leaks.
 REQUIRED: Import all built-in strategies inside `AgentRunnerFactory` to force self-registration.
 FORBIDDEN: Making direct external API calls without wrapping them in concrete adapter strategies.
+REQUIRED: Return extracted `session` in `AgentOutput` whenever the underlying agent runner provides conversation state.
 
 ## REFERENCES
 - [**ARCHITECTURE.md**](./ARCHITECTURE.md): Architecture overview and public public-facing package entry points.

@@ -175,4 +175,21 @@ describe('CursorCLIRunner', () => {
       code: AgentRunnerErrorCode.TIMEOUT,
     })
   })
+
+  it('includes --resume when session is provided in invocation', () => {
+    mockSpawn.mockReturnValue(makeChild({ stdout: 'ok' }))
+    const runner = new CursorCLIRunner()
+    runner.run({ ...baseInvocation, session: { id: 'cursor-sess-123' } })
+    const args = mockSpawn.mock.calls[0][1] as string[]
+    expect(args).toContain('--resume')
+    expect(args[args.indexOf('--resume') + 1]).toBe('cursor-sess-123')
+  })
+
+  it('extracts session from session_id event in stdout', async () => {
+    const jsonLine = JSON.stringify({ type: 'assistant', session_id: 'cursor-sess-abc', timestamp_ms: 123456, message: { content: [] } })
+    mockSpawn.mockReturnValue(makeChild({ stdout: jsonLine + '\n' }))
+    const runner = new CursorCLIRunner()
+    const out = await runner.run(baseInvocation)
+    expect(out.session).toEqual({ id: 'cursor-sess-abc' })
+  })
 })

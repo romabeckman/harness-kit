@@ -259,4 +259,34 @@ describe('CopilotCLIRunner', () => {
 
     vi.useRealTimers()
   })
+
+  it('TS13 — buildArgs includes --resume when invocation provides session', async () => {
+    const mockChild = createMockChild()
+    vi.mocked(spawn).mockReturnValue(mockChild as any)
+
+    const runner = new CopilotCLIRunner()
+    const promise = runner.run({ agent: 'a', mode: 'autonomous', prompt: 'x', session: { id: 'copilot-sess-456' } })
+
+    const [, args] = vi.mocked(spawn).mock.calls[0]
+    expect(args).toContain('--resume')
+    const resumeIdx = (args as string[]).indexOf('--resume')
+    expect((args as string[])[resumeIdx + 1]).toBe('copilot-sess-456')
+
+    mockChild._emit('close', 0)
+    await promise
+  })
+
+  it('TS14 — extracts session from session_id event in stdout', async () => {
+    const mockChild = createMockChild()
+    vi.mocked(spawn).mockReturnValue(mockChild as any)
+
+    const runner = new CopilotCLIRunner()
+    const promise = runner.run({ agent: 'a', mode: 'autonomous', prompt: 'x' })
+
+    mockChild._emitStdout('{"type":"session","session_id":"copilot-sess-789"}\n{"type":"result","exitCode":0}\n')
+    mockChild._emit('close', 0)
+
+    const result = await promise
+    expect(result.session).toEqual({ id: 'copilot-sess-789' })
+  })
 })

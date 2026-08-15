@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-14"
+updated: "2026-08-15"
 ---
 
 ```graph
@@ -27,7 +27,7 @@ updated: "2026-08-14"
 Provides a decoupled, pluggable architecture for executing coding agents.
 
 ## OVERVIEW
-The `sdk_agent_runner` module provides a pluggable architecture for executing coding agents. It supports multiple strategies including Claude Code, Anthropic API, and Google's Antigravity (agy).
+The `sdk_agent_runner` module provides a pluggable architecture for executing coding agents. It supports multiple strategies including Claude Code, Anthropic API, GitHub Copilot, OpenAI Codex, and Google's Antigravity (agy).
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -37,11 +37,12 @@ sdk/src/agent-runner/
 ├── NullAgentRunner.ts        # No-op stub implementation
 ├── AbstractCliRunner.ts      # Base class for all CLI subprocess runners
 ├── types.ts                  # Shared types and config schemas
-├── AgentRunnerRegistry.ts    # Static registry of strategy classes
+├── AgentRunnerRegistry.ts    # Static singleton runner strategy registry
 ├── AgentRunnerFactory.ts     # Instantiation factory executing validations
 ├── claude-cli/               # Subdirectory for local Claude Code CLI execution
 ├── claude-sdk/               # Subdirectory for Anthropic SDK API calls
 ├── antigravity-cli/          # Subdirectory for Google's agy CLI execution
+├── codex-cli/                # Subdirectory for OpenAI Codex CLI execution
 ├── copilot-cli/              # Subdirectory for GitHub Copilot CLI execution
 ├── copilot-sdk/              # Subdirectory for GitHub Copilot SDK execution
 ├── cursor-cli/               # Subdirectory for Cursor agent CLI execution
@@ -55,6 +56,7 @@ sdk/src/agent-runner/
 ### Patterns
 - **Strategy Pattern**: Concrete execution engines implement the `IAgentRunner` interface.
 - **Factory & Registry Pattern**: Decouples orchestrator from concrete implementations.
+- **Session Continuity**: `AgentSession` (`{ readonly id: string }`) tracks active conversations. CLI runners extract native session IDs from stdout events and support resuming via native flags (`--resume`, `--conversation`, `exec resume`).
 
 ## HOW TO RUN AGENTS
 
@@ -84,6 +86,7 @@ hrns run --agent unknown-agent
 ## BEST PRACTICES
 REQUIRED: Pass agent selection flags when running orchestration command.
 PROHIBITED: Hardcoding agent implementations directly into the orchestrator.
+REQUIRED: Parse and return native session identifiers in `AgentOutput.session` when emitted by CLI or API runners.
 
 ## DOCUMENT MAP
 
@@ -99,4 +102,3 @@ graph TD
 - [**README.md**](../README.md): Main documentation index.
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Arch patterns and integrations.
 - [**TESTS.md**](../adr/TESTS.md): Testing guidelines.
-

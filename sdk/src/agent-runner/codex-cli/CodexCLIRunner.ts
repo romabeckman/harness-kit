@@ -18,9 +18,16 @@ export class CodexCLIRunner extends AbstractCliRunner {
   protected buildArgs(_prompt: string, invocation: AgentInvocation): string[] {
     const args = [
       'exec',
+    ]
+
+    if (invocation.session?.id) {
+      args.push('resume', invocation.session.id)
+    }
+
+    args.push(
       '--json',
       '--dangerously-bypass-approvals-and-sandbox',
-    ]
+    )
 
     const model = this.getModelName(invocation)
     if (model) args.push('--model', model)
@@ -99,6 +106,7 @@ export class CodexCLIRunner extends AbstractCliRunner {
     let finalUsage: AgentOutput['usage'] | undefined
     let finalResult = ''
     let isFinalError = false
+    let sessionId: string | undefined = invocation.session?.id
 
     const lines = stdout.split('\n').filter(Boolean)
 
@@ -109,6 +117,11 @@ export class CodexCLIRunner extends AbstractCliRunner {
       } catch {
         continue
       }
+
+      if (typeof event.session_id === 'string') sessionId = event.session_id
+      else if (typeof event.sessionId === 'string') sessionId = event.sessionId
+      else if (typeof event.thread_id === 'string') sessionId = event.thread_id
+      else if (typeof event.conversation_id === 'string') sessionId = event.conversation_id
 
       const type = event.type as string | undefined
 
@@ -167,6 +180,7 @@ export class CodexCLIRunner extends AbstractCliRunner {
       stderr,
       raw: outputText,
       usage: finalUsage,
+      session: sessionId ? { id: sessionId } : undefined,
       artefacts: (() => {
         const j = extractJsonOrNull(outputText)
         if (j && typeof j === 'object' && !Array.isArray(j)) {
