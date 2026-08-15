@@ -13,12 +13,14 @@ export class DeployHandler extends AbstractPhaseHandler {
     // --skip-deploy: bypass git operations entirely
     if (context.config.skipDeploy) {
       process.stdout.write(`[DEPLOY] --skip-deploy active — skipping git deployment\n`)
+      this.finalizeDeployPhase(context)
       return Phase.HALTED
     }
 
     const projectPaths = context.config.projectPaths
     if (!projectPaths || projectPaths.length === 0) {
       process.stdout.write(`[DEPLOY] No project paths configured — skipping deploy\n`)
+      this.finalizeDeployPhase(context)
       return Phase.HALTED
     }
 
@@ -99,7 +101,19 @@ export class DeployHandler extends AbstractPhaseHandler {
       )
     }
 
+    this.finalizeDeployPhase(context)
     return Phase.HALTED
+  }
+
+  private finalizeDeployPhase(context: Reviewontext): void {
+    const features = context.fsm.loadBacklog()
+    const hasBlocked = features.some(f => f.status === 'BLOCKED')
+    const config = context.fsm.loadBootstrapConfig()
+    config.currentPhase = hasBlocked ? Phase.TRANSITION : Phase.HALTED
+    if ('activeFeatureId' in config) {
+      delete config.activeFeatureId
+    }
+    context.fsm.saveBootstrapConfig(config)
   }
 
   /**
