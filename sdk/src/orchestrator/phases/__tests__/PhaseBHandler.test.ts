@@ -190,8 +190,8 @@ describe('DevelopmentHandler', () => {
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
       const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
       expect(invokeCall.prompt).toContain(reworkLogPath)
-      expect(invokeCall.prompt).toContain('Mocked rework content here')
-      expect(invokeCall.prompt).toContain('<rework_log_content>\n```markdown\nMocked rework content here\n```\n</rework_log_content>')
+      expect(invokeCall.prompt).toContain('<rework_log_content_ref>')
+      expect(invokeCall.prompt).toContain('Read file:')
       expect(invokeCall.prompt).toContain('<rework')
       expect(invokeCall.prompt).toContain('<tasks>')
       expect(invokeCall.prompt).toContain('[T01] Do something')

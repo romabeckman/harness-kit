@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { inlineOrReference, buildReworkSection, buildDocsOrientationSection } from '../PromptHelpers'
+import { inlineOrReference, buildReworkSection, buildDocsOrientationSection, PromptInjectionContext } from '../PromptHelpers'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
@@ -11,7 +11,19 @@ describe('PromptHelpers', () => {
       expect(result).toEqual([])
     })
 
-    it('inlines content if length is less than 3000 chars', () => {
+    it('omits content and only references file path by default (allowInlineContent = false)', () => {
+      PromptInjectionContext.reset()
+      const content = 'Some critical content that should not be inlined'
+      const result = inlineOrReference('spec_label', content, '/path/to/spec.md')
+      expect(result).toEqual([
+        '<spec_label_ref>',
+        'Read file: `/path/to/spec.md`',
+        '</spec_label_ref>'
+      ])
+    })
+
+    it('inlines content if allowInlineContent is true and length is less than 5000 chars', () => {
+      PromptInjectionContext.setAllowInlineContent(true)
       const content = 'Small content here'
       const result = inlineOrReference('test_label', content, '/path/to/file.md')
       expect(result).toEqual([
@@ -21,9 +33,11 @@ describe('PromptHelpers', () => {
         '```',
         '</test_label>'
       ])
+      PromptInjectionContext.reset()
     })
 
-    it('references file path and provides content if content is 5000 chars or more', () => {
+    it('references file path and provides content if allowInlineContent is true and content is 5000 chars or more', () => {
+      PromptInjectionContext.setAllowInlineContent(true)
       const content = 'a'.repeat(5000)
       const result = inlineOrReference('test_label', content, '/path/to/file.md')
       expect(result).toEqual([
@@ -34,9 +48,11 @@ describe('PromptHelpers', () => {
         '```',
         '</test_label_ref>'
       ])
+      PromptInjectionContext.reset()
     })
 
-    it('uses custom language tag when lang parameter is supplied', () => {
+    it('uses custom language tag when allowInlineContent is true and lang parameter is supplied', () => {
+      PromptInjectionContext.setAllowInlineContent(true)
       const content = '{"key":"value"}'
       const result = inlineOrReference('json_label', content, '/path/to/file.json', 'json')
       expect(result).toEqual([
@@ -46,6 +62,21 @@ describe('PromptHelpers', () => {
         '```',
         '</json_label>'
       ])
+      PromptInjectionContext.reset()
+    })
+  })
+
+  describe('PromptInjectionContext', () => {
+    it('defaults to allowInlineContent = false', () => {
+      PromptInjectionContext.reset()
+      expect(PromptInjectionContext.allowInlineContent).toBe(false)
+    })
+
+    it('can toggle allowInlineContent and reset', () => {
+      PromptInjectionContext.setAllowInlineContent(true)
+      expect(PromptInjectionContext.allowInlineContent).toBe(true)
+      PromptInjectionContext.reset()
+      expect(PromptInjectionContext.allowInlineContent).toBe(false)
     })
   })
 
@@ -76,7 +107,33 @@ describe('PromptHelpers', () => {
       rmSync(tempDir, { recursive: true, force: true })
     })
 
-    it('injects docs/.digest.md and docs/.graph.json when present for a project path', () => {
+    it('injects docs/.digest.md and docs/.graph.json references by default', () => {
+      PromptInjectionContext.reset()
+      const tempDir = join(tmpdir(), `prompt-helpers-test-${Math.random().toString(36).slice(2)}`)
+      const projDir = join(tempDir, 'proj-a')
+      const docsDir = join(projDir, 'docs')
+      mkdirSync(docsDir, { recursive: true })
+
+      const digestText = '# Digest Summary\nArchitecture: Clean Architecture'
+      const graphText = '{"nodes":[{"id":"doc:readme"}],"edges":[]}'
+
+      writeFileSync(join(docsDir, '.digest.md'), digestText)
+      writeFileSync(join(docsDir, '.graph.json'), graphText)
+
+      const result = buildDocsOrientationSection([projDir], tempDir)
+      const joined = result.join('\n')
+
+      expect(joined).toContain('<project_orientation')
+      expect(joined).toContain('<digest_md_ref>')
+      expect(joined).toContain('Read file:')
+      expect(joined).toContain('<graph_json_ref>')
+      expect(joined).toContain('</project_orientation>')
+
+      rmSync(tempDir, { recursive: true, force: true })
+    })
+
+    it('injects inlined docs when allowInlineContent is true', () => {
+      PromptInjectionContext.setAllowInlineContent(true)
       const tempDir = join(tmpdir(), `prompt-helpers-test-${Math.random().toString(36).slice(2)}`)
       const projDir = join(tempDir, 'proj-a')
       const docsDir = join(projDir, 'docs')
@@ -98,6 +155,7 @@ describe('PromptHelpers', () => {
       expect(joined).toContain('{"nodes":[{"id":"doc:readme"}],"edges":[]}')
       expect(joined).toContain('</project_orientation>')
 
+      PromptInjectionContext.reset()
       rmSync(tempDir, { recursive: true, force: true })
     })
 
@@ -115,8 +173,9 @@ describe('PromptHelpers', () => {
       const joined = result.join('\n')
 
       expect(joined).toContain(`<project_orientation path="${proj1.replace(/\\/g, '\\\\')}">`.replace(/\\\\/g, '\\'))
-      expect(joined).toContain('# Digest 1')
-      expect(joined).toContain('# Digest 2')
+      expect(joined).toContain('Read file:')
+      expect(joined).toContain('proj1')
+      expect(joined).toContain('proj2')
 
       rmSync(tempDir, { recursive: true, force: true })
     })
