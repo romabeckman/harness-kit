@@ -225,7 +225,8 @@ describe('DevelopmentHandler', () => {
         {
           featureId: 'F001',
           agent: 'harness-kit:developer-backend',
-          session: { id: 'DEV-123' }
+          session: { id: 'DEV-123' },
+          phase: Phase.DEVELOPMENT,
         }
       ])
       const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
@@ -257,12 +258,14 @@ describe('DevelopmentHandler', () => {
         {
           featureId: 'F001',
           agent: 'harness-kit:harness-tech-lead',
-          session: { id: 'TL-123' }
+          session: { id: 'TL-123' },
+          phase: Phase.REVIEW,
         },
         {
           featureId: 'F001',
           agent: 'harness-kit:developer-backend',
-          session: { id: 'DEV-123' }
+          session: { id: 'DEV-123' },
+          phase: Phase.DEVELOPMENT,
         }
       ]
 
@@ -279,6 +282,44 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).not.toContain('<development_specifications>')
       expect(invokeCall.prompt).not.toContain('<project_paths>')
       expect(invokeCall.prompt).not.toContain('<orientation>')
+    })
+
+    it('falls back to standalone rework prompt if developerSession is for a different phase', async () => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      const reworkLogPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'REWORK-LOG.md')
+      writeFileSync(reworkLogPath, 'Review finding: Missing null check')
+
+      const fsm = makeFsm({
+        loadBootstrapConfig: vi.fn().mockReturnValue(makeConfig()),
+        loadBacklog: vi.fn().mockReturnValue([makeFeature({ reworks: 1 })]),
+        updateTaskStatus: vi.fn(),
+      })
+
+      const context = makeContext(workingDir, fsm, async () => {
+        writeFileSync(tddPath, JSON.stringify({
+          featureId: 'F001',
+          status: 'SUCCESS',
+          metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1.0 },
+          reworksCount: 1
+        }))
+        return { success: true, stdout: '', stderr: '', raw: '' }
+      })
+      context.getActiveFeature = vi.fn().mockReturnValue(makeFeature({ reworks: 1 }))
+      context.developerSession = [
+        {
+          featureId: 'F001',
+          agent: 'harness-kit:developer-backend',
+          session: { id: 'DEV-123' },
+          phase: Phase.REVIEW,
+        }
+      ]
+
+      await handler.handle(Phase.DEVELOPMENT, context)
+
+      const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
+      expect(invokeCall.session).toBeUndefined()
+      expect(invokeCall.prompt).toContain('<development_specifications>')
+      expect(invokeCall.prompt).toContain('<project_paths>')
     })
 
     it('falls back to standalone rework prompt if developerSession is for a different feature', async () => {
@@ -305,7 +346,8 @@ describe('DevelopmentHandler', () => {
       context.developerSession = {
         featureId: 'F001',
         agent: 'harness-kit:developer-backend',
-        session: { id: 'DEV-123' }
+        session: { id: 'DEV-123' },
+        phase: Phase.DEVELOPMENT,
       }
 
       await handler.handle(Phase.DEVELOPMENT, context)

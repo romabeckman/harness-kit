@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdirSync } from 'node:fs'
 import { HarnessOrchestrator } from '../HarnessOrchestrator'
-import { Complexity, OrchestratorConfig } from '../types'
+import { Complexity, OrchestratorConfig, Phase } from '../types'
 
 function makeTempDir(): string {
   const dir = join(tmpdir(), `orch-test-${Math.random().toString(36).slice(2)}`)
@@ -36,12 +36,14 @@ describe('HarnessOrchestrator session management', () => {
       featureId: 'F001',
       agent: 'harness-kit:developer-backend',
       session: { id: 'DEV-1' },
+      phase: Phase.DEVELOPMENT,
     })
 
     orchestrator.setDeveloperSession({
       featureId: 'F001',
       agent: 'harness-kit:harness-tech-lead',
       session: { id: 'TL-1' },
+      phase: Phase.REVIEW,
     })
 
     expect(orchestrator.getDeveloperSession('harness-kit:developer-backend')).toEqual({ id: 'DEV-1' })
@@ -49,14 +51,38 @@ describe('HarnessOrchestrator session management', () => {
     expect(orchestrator.getDeveloperSession('harness-kit:developer-backend', 'F002')).toBeUndefined()
     expect(orchestrator.getDeveloperSession('harness-kit:harness-tech-lead', 'F001')).toEqual({ id: 'TL-1' })
 
-    // Updating existing session for same feature and agent
+    // Updating existing session for same feature and agent and phase
     orchestrator.setDeveloperSession({
       featureId: 'F001',
       agent: 'harness-kit:developer-backend',
       session: { id: 'DEV-2' },
+      phase: Phase.DEVELOPMENT,
     })
 
     expect(orchestrator.getDeveloperSession('harness-kit:developer-backend', 'F001')).toEqual({ id: 'DEV-2' })
+    expect(orchestrator.developerSession).toHaveLength(2)
+  })
+
+  it('isolates sessions for the same agent and feature across different phases', () => {
+    const orchestrator = new HarnessOrchestrator(config, { workingDir })
+
+    orchestrator.setDeveloperSession({
+      featureId: 'F001',
+      agent: 'harness-kit:software-architect',
+      session: { id: 'PLANNING-SESSION' },
+      phase: Phase.PLANNING,
+    })
+
+    orchestrator.setDeveloperSession({
+      featureId: 'F001',
+      agent: 'harness-kit:software-architect',
+      session: { id: 'MEMORY-SESSION' },
+      phase: Phase.MEMORY,
+    })
+
+    expect(orchestrator.getDeveloperSession('harness-kit:software-architect', 'F001', Phase.PLANNING)).toEqual({ id: 'PLANNING-SESSION' })
+    expect(orchestrator.getDeveloperSession('harness-kit:software-architect', 'F001', Phase.MEMORY)).toEqual({ id: 'MEMORY-SESSION' })
+    expect(orchestrator.getDeveloperSession('harness-kit:software-architect', 'F001', Phase.DEVELOPMENT)).toBeUndefined()
     expect(orchestrator.developerSession).toHaveLength(2)
   })
 })

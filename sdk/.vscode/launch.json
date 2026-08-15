@@ -17,19 +17,19 @@
         "--debug"
       ],
       "cwd": "${workspaceFolder}/.vscode/.temp",
-      "preLaunchTask": "npm: build",
+      "preLaunchTask": "prepare-debug",
       "console": "integratedTerminal",
       "skipFiles": [
         "<node_internals>/**"
       ]
     },
     {
-      "name": "hrns init (codex-cli)",
+      "name": "hrns run (codex-cli)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/dist/cli/run.js",
       "args": [
-        "init",
+        "run",
         "--agent",
         "codex-cli",
         "--model",
@@ -39,7 +39,7 @@
         "--debug"
       ],
       "cwd": "${workspaceFolder}/.vscode/.temp",
-      "preLaunchTask": "npm: build",
+      "preLaunchTask": "prepare-debug",
       "console": "integratedTerminal",
       "skipFiles": [
         "<node_internals>/**"

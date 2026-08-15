@@ -14,6 +14,7 @@ export interface DeveloperSessionState {
   readonly featureId: string
   readonly agent: string
   readonly session: AgentSession
+  readonly phase: Phase
 }
 
 export interface Reviewontext {
@@ -21,7 +22,7 @@ export interface Reviewontext {
   readonly workingDir: string
   readonly fsm: IFileStateManager
   developerSession?: DeveloperSessionState[] | DeveloperSessionState
-  getDeveloperSession?(agent: string, featureId?: string): AgentSession | undefined
+  getDeveloperSession?(agent: string, featureId?: string, phase?: Phase): AgentSession | undefined
   setDeveloperSession?(sessionState: DeveloperSessionState): void
   invokeAgent(invocation: AgentInvocation): Promise<AgentOutput>
   getActiveFeature(features: Feature[]): Feature | null
@@ -50,19 +51,20 @@ export abstract class AbstractPhaseHandler implements IPhaseHandler {
     return null
   }
 
-  protected getDeveloperSession(context: Reviewontext, agent: string, featureId?: string): AgentSession | undefined {
+  protected getDeveloperSession(context: Reviewontext, agent: string, featureId?: string, phase?: Phase): AgentSession | undefined {
     if (typeof context.getDeveloperSession === 'function') {
-      return context.getDeveloperSession(agent, featureId)
+      return context.getDeveloperSession(agent, featureId, phase)
     }
     if (Array.isArray(context.developerSession)) {
       return context.developerSession.find(
-        s => s.agent === agent && (!featureId || s.featureId === featureId)
+        s => s.agent === agent && (!featureId || s.featureId === featureId) && (!phase || !s.phase || s.phase === phase)
       )?.session
     }
     if (
       context.developerSession &&
       (context.developerSession as any).agent === agent &&
-      (!featureId || (context.developerSession as any).featureId === featureId)
+      (!featureId || (context.developerSession as any).featureId === featureId) &&
+      (!phase || !(context.developerSession as any).phase || (context.developerSession as any).phase === phase)
     ) {
       return (context.developerSession as any).session
     }
@@ -80,7 +82,7 @@ export abstract class AbstractPhaseHandler implements IPhaseHandler {
     }
     if (Array.isArray(context.developerSession)) {
       const idx = context.developerSession.findIndex(
-        s => s.agent === sessionState.agent && s.featureId === sessionState.featureId
+        s => s.agent === sessionState.agent && s.featureId === sessionState.featureId && s.phase === sessionState.phase
       )
       if (idx >= 0) {
         context.developerSession[idx] = sessionState
@@ -89,7 +91,7 @@ export abstract class AbstractPhaseHandler implements IPhaseHandler {
       }
     } else {
       const existing = context.developerSession as DeveloperSessionState
-      if (existing.agent === sessionState.agent && existing.featureId === sessionState.featureId) {
+      if (existing.agent === sessionState.agent && existing.featureId === sessionState.featureId && existing.phase === sessionState.phase) {
         context.developerSession = [sessionState]
       } else {
         context.developerSession = [existing, sessionState]

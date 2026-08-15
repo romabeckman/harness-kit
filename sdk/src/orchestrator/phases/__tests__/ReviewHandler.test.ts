@@ -95,7 +95,8 @@ describe('ReviewHandler', () => {
     context.developerSession = {
       featureId: 'F001',
       agent: 'harness-kit:developer-backend',
-      session: { id: 'DEV-123' }
+      session: { id: 'DEV-123' },
+      phase: Phase.DEVELOPMENT,
     }
 
     const result = await handler.handle(Phase.REVIEW, context)
@@ -122,7 +123,8 @@ describe('ReviewHandler', () => {
     context.developerSession = {
       featureId: 'F001',
       agent: 'harness-kit:developer-backend',
-      session: { id: 'DEV-123' }
+      session: { id: 'DEV-123' },
+      phase: Phase.DEVELOPMENT,
     }
 
     await handler.handle(Phase.REVIEW, context)
@@ -153,7 +155,8 @@ describe('ReviewHandler', () => {
     context.developerSession = {
       featureId: 'F001',
       agent: 'harness-kit:developer-backend',
-      session: { id: 'DEV-123' }
+      session: { id: 'DEV-123' },
+      phase: Phase.DEVELOPMENT,
     }
 
     const result = await handler.handle(Phase.REVIEW, context)
@@ -162,7 +165,8 @@ describe('ReviewHandler', () => {
     expect(context.developerSession).toEqual({
       featureId: 'F001',
       agent: 'harness-kit:developer-backend',
-      session: { id: 'DEV-123' }
+      session: { id: 'DEV-123' },
+      phase: Phase.DEVELOPMENT,
     })
     expect(fsm.incrementReworks).toHaveBeenCalledWith('F001')
     expect(fsm.writeReworkLog).toHaveBeenCalled()
@@ -186,7 +190,8 @@ describe('ReviewHandler', () => {
     context.developerSession = {
       featureId: 'F001',
       agent: 'harness-kit:developer-backend',
-      session: { id: 'DEV-123' }
+      session: { id: 'DEV-123' },
+      phase: Phase.DEVELOPMENT,
     }
 
     const result = await handler.handle(Phase.REVIEW, context)
@@ -213,7 +218,8 @@ describe('ReviewHandler', () => {
     context.developerSession = [{
       featureId: 'F001',
       agent: 'harness-kit:developer-backend',
-      session: { id: 'DEV-123' }
+      session: { id: 'DEV-123' },
+      phase: Phase.DEVELOPMENT,
     }]
 
     const result = await handler.handle(Phase.REVIEW, context)
@@ -223,22 +229,25 @@ describe('ReviewHandler', () => {
       {
         featureId: 'F001',
         agent: 'harness-kit:developer-backend',
-        session: { id: 'DEV-123' }
+        session: { id: 'DEV-123' },
+        phase: Phase.DEVELOPMENT,
       },
       {
         featureId: 'F001',
         agent: 'harness-kit:harness-tech-lead',
-        session: { id: 'TL-SESSION-1' }
+        session: { id: 'TL-SESSION-1' },
+        phase: Phase.REVIEW,
       },
       {
         featureId: 'F001',
         agent: 'harness-kit:harness-qa',
-        session: { id: 'QA-SESSION-1' }
+        session: { id: 'QA-SESSION-1' },
+        phase: Phase.REVIEW,
       }
     ])
   })
 
-  it('reuses existing review sessions when invoking agents for the same feature', async () => {
+  it('reuses existing review sessions when invoking agents for the same feature and phase', async () => {
     const fsm = makeFsm()
     const specsDir = join(workingDir, 'docs', 'specs', 'sdk_core')
 
@@ -257,12 +266,14 @@ describe('ReviewHandler', () => {
       {
         featureId: 'F001',
         agent: 'harness-kit:harness-tech-lead',
-        session: { id: 'TL-SESSION-1' }
+        session: { id: 'TL-SESSION-1' },
+        phase: Phase.REVIEW,
       },
       {
         featureId: 'F001',
         agent: 'harness-kit:harness-qa',
-        session: { id: 'QA-SESSION-1' }
+        session: { id: 'QA-SESSION-1' },
+        phase: Phase.REVIEW,
       }
     ]
 
@@ -274,6 +285,45 @@ describe('ReviewHandler', () => {
 
     expect(tlCall.session).toEqual({ id: 'TL-SESSION-1' })
     expect(qaCall.session).toEqual({ id: 'QA-SESSION-1' })
+  })
+
+  it('does NOT reuse review sessions belonging to a different phase', async () => {
+    const fsm = makeFsm()
+    const specsDir = join(workingDir, 'docs', 'specs', 'sdk_core')
+
+    const context = makeContext(workingDir, fsm, async (inv: any) => {
+      if (inv.phaseKey === 'review_tl') {
+        const data = { featureId: 'F001', score: 0.95, openPoints: [], architectureTip: '' }
+        writeFileSync(join(specsDir, 'TL.json'), JSON.stringify(data))
+        return { success: true, stdout: '', stderr: '', raw: JSON.stringify(data) }
+      } else {
+        const data = { featureId: 'F001', score: 0.95, passedAdversarial: true, vulnerabilities: [], edgeCasesMissed: [] }
+        writeFileSync(join(specsDir, 'QA.json'), JSON.stringify(data))
+        return { success: true, stdout: '', stderr: '', raw: JSON.stringify(data) }
+      }
+    })
+    context.developerSession = [
+      {
+        featureId: 'F001',
+        agent: 'harness-kit:harness-tech-lead',
+        session: { id: 'TL-DEV-PHASE' },
+        phase: Phase.DEVELOPMENT,
+      },
+      {
+        featureId: 'F001',
+        agent: 'harness-kit:harness-qa',
+        session: { id: 'QA-DEV-PHASE' },
+        phase: Phase.DEVELOPMENT,
+      }
+    ]
+
+    await handler.handle(Phase.REVIEW, context)
+
+    const tlCall = (context.invokeAgent as any).mock.calls[0][0]
+    const qaCall = (context.invokeAgent as any).mock.calls[1][0]
+
+    expect(tlCall.session).toBeUndefined()
+    expect(qaCall.session).toBeUndefined()
   })
 
   it('does NOT reuse review sessions belonging to a different feature', async () => {
@@ -295,12 +345,14 @@ describe('ReviewHandler', () => {
       {
         featureId: 'F002',
         agent: 'harness-kit:harness-tech-lead',
-        session: { id: 'TL-DIFF-FEATURE' }
+        session: { id: 'TL-DIFF-FEATURE' },
+        phase: Phase.REVIEW,
       },
       {
         featureId: 'F002',
         agent: 'harness-kit:harness-qa',
-        session: { id: 'QA-DIFF-FEATURE' }
+        session: { id: 'QA-DIFF-FEATURE' },
+        phase: Phase.REVIEW,
       }
     ]
 

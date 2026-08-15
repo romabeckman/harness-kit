@@ -248,15 +248,15 @@ export class HarnessOrchestrator implements Reviewontext {
     this.steeringService.applySteeringActions(actions)
   }
 
-  public getDeveloperSession(agent: string, featureId?: string): AgentSession | undefined {
+  public getDeveloperSession(agent: string, featureId?: string, phase?: Phase): AgentSession | undefined {
     if (!this.developerSession) return undefined
     if (Array.isArray(this.developerSession)) {
       return this.developerSession.find(
-        s => s.agent === agent && (!featureId || s.featureId === featureId)
+        s => s.agent === agent && (!featureId || s.featureId === featureId) && (!phase || s.phase === phase)
       )?.session
     }
     const session = this.developerSession as DeveloperSessionState
-    if (session.agent === agent && (!featureId || session.featureId === featureId)) {
+    if (session.agent === agent && (!featureId || session.featureId === featureId) && (!phase || session.phase === phase)) {
       return session.session
     }
     return undefined
@@ -269,7 +269,7 @@ export class HarnessOrchestrator implements Reviewontext {
     }
     if (Array.isArray(this.developerSession)) {
       const idx = this.developerSession.findIndex(
-        s => s.agent === sessionState.agent && s.featureId === sessionState.featureId
+        s => s.agent === sessionState.agent && s.featureId === sessionState.featureId && s.phase === sessionState.phase
       )
       if (idx >= 0) {
         this.developerSession[idx] = sessionState
@@ -278,7 +278,7 @@ export class HarnessOrchestrator implements Reviewontext {
       }
     } else {
       const existing = this.developerSession as DeveloperSessionState
-      if (existing.agent === sessionState.agent && existing.featureId === sessionState.featureId) {
+      if (existing.agent === sessionState.agent && existing.featureId === sessionState.featureId && existing.phase === sessionState.phase) {
         this.developerSession = [sessionState]
       } else {
         this.developerSession = [existing, sessionState]

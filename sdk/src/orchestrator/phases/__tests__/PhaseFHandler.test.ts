@@ -115,7 +115,8 @@ describe('TransitionHandler', () => {
       ctx.developerSession = {
         featureId: 'F001',
         agent: 'harness-kit:developer-backend',
-        session: { id: 'DEV-123' }
+        session: { id: 'DEV-123' },
+        phase: Phase.DEVELOPMENT,
       }
       const result = await handler.handle(Phase.TRANSITION, ctx)
 
