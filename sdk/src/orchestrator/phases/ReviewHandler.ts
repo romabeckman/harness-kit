@@ -13,6 +13,7 @@ import {
   inlineOrReference,
   buildDocsOrientationSection
 } from '../utils/PromptHelpers'
+import { clearFeatureDeveloperSessions } from '../utils/SessionHelpers'
 import type { ReviewPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
@@ -35,7 +36,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     // --skip-validation: bypass all agent calls and jump straight to Phase D
     if (context.config.skipValidation) {
       process.stdout.write(`[phase_review] --skip-validation active — skipping review for feature ${activeFeature.id}\n`)
-      context.developerSession = undefined
+      clearFeatureDeveloperSessions(context)
       context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED', { tl: 1, adv: 1 })
       context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'COMPLETED')
       return Phase.TRANSITION
@@ -219,7 +220,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', activeFeature.status)
 
     // Clear developer session upon exiting the dev/review cycle for this feature
-    context.developerSession = undefined
+    clearFeatureDeveloperSessions(context)
 
     // Proceed to TRANSITION
     return Phase.TRANSITION

@@ -85,4 +85,31 @@ describe('HarnessOrchestrator session management', () => {
     expect(orchestrator.getDeveloperSession('harness-kit:software-architect', 'F001', Phase.DEVELOPMENT)).toBeUndefined()
     expect(orchestrator.developerSession).toHaveLength(2)
   })
+
+  it('manages cumulative planning session across features when featureId is empty string', () => {
+    const orchestrator = new HarnessOrchestrator(config, { workingDir })
+
+    orchestrator.setDeveloperSession({
+      featureId: '',
+      agent: 'harness-kit:software-architect',
+      session: { id: 'ACCUMULATED-PLANNING-SESSION' },
+      phase: Phase.PLANNING,
+    })
+
+    // Searching with empty featureId or undefined returns the cumulative planning session
+    expect(orchestrator.getDeveloperSession('harness-kit:software-architect', '', Phase.PLANNING)).toEqual({ id: 'ACCUMULATED-PLANNING-SESSION' })
+    expect(orchestrator.getDeveloperSession('harness-kit:software-architect', undefined, Phase.PLANNING)).toEqual({ id: 'ACCUMULATED-PLANNING-SESSION' })
+    expect(orchestrator.getDeveloperSession('harness-kit:software-architect')).toEqual({ id: 'ACCUMULATED-PLANNING-SESSION' })
+
+    // Updating existing cumulative session
+    orchestrator.setDeveloperSession({
+      featureId: '',
+      agent: 'harness-kit:software-architect',
+      session: { id: 'UPDATED-ACCUMULATED-PLANNING-SESSION' },
+      phase: Phase.PLANNING,
+    })
+
+    expect(orchestrator.getDeveloperSession('harness-kit:software-architect', undefined, Phase.PLANNING)).toEqual({ id: 'UPDATED-ACCUMULATED-PLANNING-SESSION' })
+    expect(orchestrator.developerSession).toHaveLength(1)
+  })
 })

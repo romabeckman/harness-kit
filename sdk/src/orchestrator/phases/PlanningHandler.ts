@@ -83,19 +83,34 @@ export class PlanningHandler extends AbstractPhaseHandler {
       config.steeringRules,
     );
 
-    const prompt = this.buildScopeRefinementPrompt(payload, feature, context);
+    const agent = 'harness-kit:software-architect'
+    const developerSession = context.getDeveloperSession?.(agent, undefined, Phase.PLANNING)
 
-    await context.invokeAgent({
+    const prompt = developerSession
+      ? this.buildFeatureScopeRefinementPrompt(payload, feature, context)
+      : this.buildScopeRefinementPrompt(payload, feature, context);
+
+    const output = await context.invokeAgent({
       skill: "harness-kit:scope-refinement",
-      agent: "harness-kit:software-architect",
+      agent,
       mode: "autonomous",
       prompt,
       phaseKey: "planning",
       domain: feature.domain,
+      ...(developerSession ? { session: developerSession } : {}),
     });
+
+    if (output?.session) {
+      context.setDeveloperSession?.({
+        featureId: "",
+        agent,
+        session: output.session,
+        phase: Phase.PLANNING,
+      });
+    }
   }
 
-  private buildScopeRefinementPrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
+  buildScopeRefinementPrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
     const projectPathsList = payload.projectPaths
       .map((p) => `- ${p}`)
       .join("\n");
@@ -210,6 +225,94 @@ export class PlanningHandler extends AbstractPhaseHandler {
       ``,
       `</inputs>`,
     ].join("\n");
+  }
+
+  buildFeatureScopeRefinementPrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
+    const complexity = context.config.complexity ?? Complexity.AUTO
+    const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
+    const contextMapFile = join(payload.workingDir, '002-context-map.md');
+    const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
+    const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
+
+    const backlog = context.fsm.loadBacklog();
+    const dependenciesText = backlog
+      .filter((f) => feature.dependencies.includes(f.id))
+      .map((f) => `\`${join('docs', 'specs', f.domain)}\``)
+      .join(", ") || 'None';
+
+    const rulesSection =
+      payload.steeringRules && payload.steeringRules.length > 0
+        ? payload.steeringRules.map((r) => `- ${r}`).join("\n")
+        : "- No additional rules provided";
+
+    return [
+      `## Objective`,
+      `Perform scope refinement STRICTLY for the <target_feature>. Use previous context and architectural decisions for system alignment. Do NOT refine or generate specifications for the entire background context.`,
+      ``,
+      `<skill_context>`,
+      `Invoke the \`harness-kit:scope-refinement\` skill before starting.`,
+      `Mode: autonomous`,
+      `</skill_context>`,
+      ``,
+      `<react_workflow>`,
+      `- THOUGHT: Analyze feature scope and architectural constraints.`,
+      `- ACTION: Draft tactical design and test scenarios.`,
+      `- OBSERVATION: Verify if specs strictly cover the target feature.`,
+      `</react_workflow>`,
+      ``,
+      `<workflow>`,
+      `- Run all four autonomous phases of \`harness-kit:scope-refinement\` in order.`,
+      `</workflow>`,
+      ``,
+      `<expected_outputs>`,
+      `Produce, under \`${payload.workingDir}\` (one file per project for phases 3 and 4, where \${PROJECT_NAME} = root folder name of each project path):`,
+      `- \`${problemSpaceFile}\`   Strategic Design: Domain Events, Subdomains, Ubiquitous Language, Socratic Questions (Focused ONLY on the target feature; maximum ${INLINE_THRESHOLD} characters)`,
+      `- \`${contextMapFile}\`   Bounded Contexts and Context Map (maximum ${INLINE_THRESHOLD} characters)`,
+      `- \`${tacticalDesignFile}\` (one per project) — Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array of objects`,
+      `- \`${testScenariosFile}\` (one per project)   Test Scenarios`,
+      `</expected_outputs>`,
+      ``,
+      `<strict_rules>`,
+      `- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features present in the scope.`,
+      `- DEPENDENCY RULE: If the <target_feature> has dependencies, acknowledge them as assumptions or interfaces in your design, but DO NOT design, spec, or generate tasks for the dependencies themselves.`,
+      ...(complexity !== Complexity.AUTO
+        ? (
+          complexity === Complexity.LOW ?
+            [
+              `- COMPLEXITY OVERRIDE: Classify as 'LOW' — do not re-evaluate scope complexity.`,
+              `- For 'LOW': Keep analysis concise and reuse established patterns, but still produce all required 001–004 artifacts.`,
+            ] :
+            [
+              `- COMPLEXITY OVERRIDE: Classify as 'HIGH' — do not re-evaluate scope complexity.`,
+              `- For 'HIGH': Give additional depth to integrations, failure modes, security boundaries, concurrency, and compatibility risks while producing all required 001–004 artifacts.`,
+            ]
+        ) : [
+          `- Evaluate scope complexity between 'LOW' and 'HIGH'. LOW is characterized by crystal-clear requirements, zero structural ambiguities, isolated changes, zero cross-team dependencies, use of existing patterns, straightforward flows, zero backward compatibility risks, and standard unit testing without complex integrations.`,
+          `- If LOW: keep analysis concise and reuse established patterns. If HIGH: deepen analysis of integrations, failure modes, security boundaries, concurrency, and compatibility risks. In both cases, produce all required 001–004 artifacts.`,
+        ]),
+      `- Execute autonomously without pausing or asking for confirmation.`,
+      `- Write every file to disk before advancing to the next.`,
+      `</strict_rules>`,
+      ``,
+      `<inputs>`,
+      `<rules>`,
+      rulesSection,
+      `</rules>`,
+      ``,
+      `<target_feature>`,
+      `ID: ${feature.id}`,
+      `Title: ${payload.featureTitle}`,
+      `Domain: ${payload.domain}`,
+      `Priority: ${feature.priority || 'No priority set'}`,
+      `Dependencies: ${dependenciesText}`,
+      `</target_feature>`,
+      ``,
+      `</inputs>`,
+    ].join("\n");
+  }
+
+  buildFeaturePrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
+    return this.buildFeatureScopeRefinementPrompt(payload, feature, context);
   }
 
   private async ensureTasksAppended(
