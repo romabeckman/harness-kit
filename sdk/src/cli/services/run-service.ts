@@ -373,8 +373,10 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
       const { SessionIdGenerator } = await import("../../diagnose/SessionIdGenerator.js");
       const { MetaHarnessAgentAdapter } = await import("../../diagnose/MetaHarnessAgentAdapter.js");
       const { DiagnoseService } = await import("../../diagnose/DiagnoseService.js");
+      const { DiagnoseReportRenderer } = await import("../../diagnose/DiagnoseReportRenderer.js");
+      const { DiagnosePaths } = await import("../../diagnose/utils/DiagnosePaths.js");
 
-      const ledger = new JsonlSessionLedger(join(productDir, "diagnose-sessions.jsonl"));
+      const ledger = new JsonlSessionLedger(DiagnosePaths.ledgerPath(cwd));
       const scanner = new TraceDirectoryScanner(cwd);
       const idGenerator = new SessionIdGenerator(scanner);
       const agentAdapter = new MetaHarnessAgentAdapter({ agentRunner, workingDir: cwd });
@@ -397,7 +399,11 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
           `  ${AnsiHelpers.green("✓")} Diagnose batch completed: ${batch.processed} processed, ${batch.remaining} remaining.`
         );
       });
-      console.log(`\n${AnsiHelpers.green("✓")} Diagnose completed (${result.processed} session(s) optimized).`);
+      if (result.report) {
+        DiagnoseReportRenderer.render(result.report);
+      } else {
+        console.log(`\n${AnsiHelpers.green("✓")} Diagnose completed (${result.processed} session(s) optimized).`);
+      }
     } catch (err: any) {
       console.error(`\n${AnsiHelpers.yellow("⚠")} Diagnose encountered an error:`, err?.message ?? err);
     }

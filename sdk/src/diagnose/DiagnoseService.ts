@@ -1,4 +1,6 @@
 import type {
+  CandidateReportInfo,
+  DiagnoseReportData,
   DiagnoseSessionRecord,
   DiagnoseSettings,
   IMetaHarnessAgentAdapter,
@@ -7,6 +9,7 @@ import type {
 } from './types'
 import { sanitizeSessionSnapshot } from './types'
 import type { SessionIdGenerator } from './SessionIdGenerator'
+import { CandidateReader } from './CandidateReader'
 import { HarnessSettings } from '../settings/HarnessSettings'
 
 export interface DiagnoseServiceOptions {
@@ -21,6 +24,10 @@ export interface DiagnoseServiceOptions {
 export interface BatchResult {
   processed: number
   remaining: number
+  sessionIds?: string[]
+  traceIds?: string[]
+  candidateCreated?: CandidateReportInfo | null
+  report?: DiagnoseReportData
 }
 
 export interface CaptureContext {
@@ -37,6 +44,7 @@ export class DiagnoseService {
   private readonly idGenerator: SessionIdGenerator
   private readonly settings: HarnessSettings
   private readonly cliSettings?: DiagnoseSettings
+  private readonly workingDir: string
 
   constructor(options: DiagnoseServiceOptions) {
     this.ledger = options.ledger
@@ -44,6 +52,7 @@ export class DiagnoseService {
     this.idGenerator = options.idGenerator
     this.settings = options.settings ?? HarnessSettings.load(options.workingDir)
     this.cliSettings = options.cliSettings
+    this.workingDir = options.workingDir ?? process.cwd()
   }
 
   private resolveDiagnoseSettings(runnerType: string): DiagnoseSettings | undefined {
@@ -67,11 +76,13 @@ export class DiagnoseService {
   async processNextBatch(batchSize = 3): Promise<BatchResult> {
     const pending = this.ledger.loadPending()
     if (pending.length === 0) {
-      return { processed: 0, remaining: 0 }
+      return { processed: 0, remaining: 0, sessionIds: [], traceIds: [] }
     }
 
     const batch = pending.slice(0, batchSize)
     const dateOffsets: Record<string, number> = {}
+    const sessionIds: string[] = []
+    const traceIds: string[] = []
     let processed = 0
 
     for (let i = 0; i < batch.length; i++) {
@@ -86,6 +97,8 @@ export class DiagnoseService {
       try {
         await this.agentAdapter.invoke(session, preComputedId, settings)
         this.ledger.rewriteStatus(session.sessionId, 'completed')
+        sessionIds.push(session.sessionId)
+        traceIds.push(preComputedId)
         processed++
       } catch (err) {
         // Leave session as pending on failure so it can retry next time
@@ -94,7 +107,7 @@ export class DiagnoseService {
     }
 
     const remaining = this.ledger.loadPending().length
-    return { processed, remaining }
+    return { processed, remaining, sessionIds, traceIds }
   }
 
   async processAllPendingInBatches(
@@ -104,6 +117,8 @@ export class DiagnoseService {
     let totalProcessed = 0
     let lastRemaining = 0
     let lastProcessedSession: DiagnoseSessionRecord | undefined
+    const allSessionIds: string[] = []
+    const allTraceIds: string[] = []
 
     while (true) {
       const pending = this.ledger.loadPending()
@@ -119,6 +134,8 @@ export class DiagnoseService {
 
       totalProcessed += result.processed
       lastRemaining = result.remaining
+      if (result.sessionIds) allSessionIds.push(...result.sessionIds)
+      if (result.traceIds) allTraceIds.push(...result.traceIds)
 
       if (onProgress) {
         const shouldContinue = onProgress(result)
@@ -132,16 +149,37 @@ export class DiagnoseService {
       }
     }
 
+    let candidateCreated: CandidateReportInfo | null = null
+
     if (totalProcessed > 0 && lastProcessedSession && this.agentAdapter.invokeMetaHarness) {
       try {
         const settings = this.resolveDiagnoseSettings(lastProcessedSession.runner)
-        await this.agentAdapter.invokeMetaHarness(lastProcessedSession, settings)
+        const metaOutput = await this.agentAdapter.invokeMetaHarness(lastProcessedSession, settings)
+        candidateCreated = CandidateReader.resolveCandidate(metaOutput, this.workingDir)
       } catch (err) {
         console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
+        candidateCreated = CandidateReader.resolveCandidate(undefined, this.workingDir)
       }
+    } else if (totalProcessed > 0) {
+      candidateCreated = CandidateReader.resolveCandidate(undefined, this.workingDir)
     }
 
-    return { processed: totalProcessed, remaining: lastRemaining }
+    const report: DiagnoseReportData = {
+      processedSessions: totalProcessed,
+      remainingSessions: lastRemaining,
+      sessionIds: allSessionIds,
+      traceIds: allTraceIds,
+      candidateCreated,
+    }
+
+    return {
+      processed: totalProcessed,
+      remaining: lastRemaining,
+      sessionIds: allSessionIds,
+      traceIds: allTraceIds,
+      candidateCreated,
+      report,
+    }
   }
 
   async captureSession(
@@ -199,16 +237,36 @@ export class DiagnoseService {
   async captureAndProcessInline(
     orchestrator: any,
     context: CaptureContext
-  ): Promise<void> {
+  ): Promise<BatchResult> {
     const record = await this.captureSession(orchestrator, context)
-    await this.processNextBatch(1)
+    const batchResult = await this.processNextBatch(1)
+    let candidateCreated: CandidateReportInfo | null = null
+
     if (this.agentAdapter.invokeMetaHarness) {
       try {
         const settings = this.resolveDiagnoseSettings(record.runner)
-        await this.agentAdapter.invokeMetaHarness(record, settings)
+        const metaOutput = await this.agentAdapter.invokeMetaHarness(record, settings)
+        candidateCreated = CandidateReader.resolveCandidate(metaOutput, this.workingDir)
       } catch (err) {
         console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
+        candidateCreated = CandidateReader.resolveCandidate(undefined, this.workingDir)
       }
+    } else {
+      candidateCreated = CandidateReader.resolveCandidate(undefined, this.workingDir)
+    }
+
+    const report: DiagnoseReportData = {
+      processedSessions: batchResult.processed,
+      remainingSessions: batchResult.remaining,
+      sessionIds: batchResult.sessionIds ?? [record.sessionId],
+      traceIds: batchResult.traceIds,
+      candidateCreated,
+    }
+
+    return {
+      ...batchResult,
+      candidateCreated,
+      report,
     }
   }
 }

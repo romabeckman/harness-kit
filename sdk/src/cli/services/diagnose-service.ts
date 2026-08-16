@@ -5,6 +5,8 @@ import { TraceDirectoryScanner } from '../../diagnose/TraceDirectoryScanner'
 import { SessionIdGenerator } from '../../diagnose/SessionIdGenerator'
 import { MetaHarnessAgentAdapter } from '../../diagnose/MetaHarnessAgentAdapter'
 import { DiagnoseService } from '../../diagnose/DiagnoseService'
+import { DiagnoseReportRenderer } from '../../diagnose/DiagnoseReportRenderer'
+import { DiagnosePaths } from '../../diagnose/utils/DiagnosePaths'
 import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 import { Runner } from '../../agent-runner/types'
 import { HarnessSettings } from '../../settings/HarnessSettings'
@@ -58,8 +60,7 @@ export function parseDiagnoseArgs(args: string[]): DiagnoseCliOptions {
 
 export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
   const options = parseDiagnoseArgs(args)
-  const productDir = join(cwd, 'docs', 'product')
-  const ledgerPath = join(productDir, 'diagnose-sessions.jsonl')
+  const ledgerPath = DiagnosePaths.ledgerPath(cwd)
 
   const ledger = new JsonlSessionLedger(ledgerPath)
   const pending = ledger.loadPending()
@@ -109,5 +110,9 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
     return true
   })
 
-  console.log(`\n${AnsiHelpers.green('✔')} All diagnose batches completed (${result.processed} total sessions processed).\n`)
+  if (result.report) {
+    DiagnoseReportRenderer.render(result.report)
+  } else {
+    console.log(`\n${AnsiHelpers.green('✔')} All diagnose batches completed (${result.processed} total sessions processed).\n`)
+  }
 }

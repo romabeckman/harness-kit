@@ -1,12 +1,13 @@
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ITraceDirectoryScanner } from './types'
+import { DiagnosePaths } from './utils/DiagnosePaths'
 
 export class TraceDirectoryScanner implements ITraceDirectoryScanner {
   private readonly tracesDir: string
 
   constructor(workspacePath: string) {
-    this.tracesDir = join(workspacePath, 'docs', 'harness-history', 'traces')
+    this.tracesDir = DiagnosePaths.tracesDir(workspacePath)
   }
 
   private resolveDate(date?: string): string {

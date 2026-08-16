@@ -205,4 +205,35 @@ describe('DiagnoseService', () => {
       undefined
     )
   })
+
+  it('captures candidate info and includes report data in processAllPendingInBatches result', async () => {
+    mockAdapter.invokeMetaHarness = vi.fn().mockResolvedValue({
+      success: true,
+      raw: 'Candidate created',
+      parsedJson: {
+        candidateId: 'v001',
+        targetSkill: 'autonomous-orchestrator',
+        status: 'PROPOSED',
+        decision: {
+          action: 'EVALUATE_CANDIDATE',
+        },
+      },
+    })
+
+    const service = new DiagnoseService({
+      ledger: mockLedger,
+      agentAdapter: mockAdapter,
+      idGenerator,
+    })
+
+    const result = await service.processAllPendingInBatches(10)
+    expect(result.processed).toBe(4)
+    expect(result.candidateCreated).not.toBeNull()
+    expect(result.candidateCreated?.candidateId).toBe('v001')
+    expect(result.candidateCreated?.targetSkill).toBe('autonomous-orchestrator')
+    expect(result.candidateCreated?.action).toBe('EVALUATE_CANDIDATE')
+    expect(result.report).toBeDefined()
+    expect(result.report?.processedSessions).toBe(4)
+    expect(result.report?.sessionIds).toHaveLength(4)
+  })
 })

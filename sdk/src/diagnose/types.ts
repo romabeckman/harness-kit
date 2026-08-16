@@ -68,3 +68,22 @@ export interface IMetaHarnessAgentAdapter {
   invoke(session: DiagnoseSessionRecord, preComputedId: string, settings?: DiagnoseSettings): Promise<AgentOutput>
   invokeMetaHarness?(session: DiagnoseSessionRecord, settings?: DiagnoseSettings): Promise<AgentOutput>
 }
+
+export interface CandidateReportInfo {
+  candidateId: string
+  targetSkill: string
+  status?: string
+  path?: string
+  rationale?: string
+  action?: string
+  proposedChange?: string
+}
+
+export interface DiagnoseReportData {
+  processedSessions: number
+  remainingSessions: number
+  sessionIds: string[]
+  traceIds?: string[]
+  candidateCreated?: CandidateReportInfo | null
+  summary?: string
+}

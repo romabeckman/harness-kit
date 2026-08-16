@@ -50,6 +50,11 @@ describe('MetaHarnessAgentAdapter', () => {
         prompt: expect.stringContaining('multiple of 6'),
       })
     )
+    expect(mockRunner.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('STRICT WORKSPACE CONSTRAINTS'),
+      })
+    )
   })
 
   it('invokes harness-kit:meta-harness separately when invokeMetaHarness is called', async () => {
@@ -60,6 +65,7 @@ describe('MetaHarnessAgentAdapter', () => {
 
     const adapter = new MetaHarnessAgentAdapter({
       agentRunner: mockRunner as any,
+      workingDir: '/workspace/custom-project',
     })
 
     const output = await adapter.invokeMetaHarness(
@@ -78,6 +84,16 @@ describe('MetaHarnessAgentAdapter', () => {
         model: 'anthropic.claude-5-sonnet',
         effort: 'low',
         prompt: expect.stringContaining('harness-kit:meta-harness'),
+      })
+    )
+    expect(mockRunner.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('/workspace/custom-project/docs/harness-history/candidates'),
+      })
+    )
+    expect(mockRunner.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('STRICT WORKSPACE CONSTRAINTS'),
       })
     )
   })

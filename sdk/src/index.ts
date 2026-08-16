@@ -101,11 +101,16 @@ export { JsonlSessionLedger } from './diagnose/JsonlSessionLedger'
 export { SessionIdGenerator } from './diagnose/SessionIdGenerator'
 export { TraceDirectoryScanner } from './diagnose/TraceDirectoryScanner'
 export { MetaHarnessAgentAdapter } from './diagnose/MetaHarnessAgentAdapter'
+export { CandidateReader } from './diagnose/CandidateReader'
+export { DiagnoseReportRenderer } from './diagnose/DiagnoseReportRenderer'
+export { DiagnosePaths } from './diagnose/utils/DiagnosePaths'
 export type {
   SessionStatus,
   SessionSnapshot,
   DiagnoseSessionRecord,
   DiagnoseSettings,
+  CandidateReportInfo,
+  DiagnoseReportData,
   ISessionLedger,
   ITraceDirectoryScanner,
   IMetaHarnessAgentAdapter,

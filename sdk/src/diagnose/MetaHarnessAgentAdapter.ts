@@ -3,6 +3,7 @@ import type { IAgentRunner } from '../agent-runner/IAgentRunner'
 import type { AgentInvocation, AgentOutput } from '../agent-runner/types'
 import { Runner } from '../agent-runner/types'
 import type { DiagnoseSessionRecord, DiagnoseSettings, IMetaHarnessAgentAdapter } from './types'
+import { DiagnosePaths } from './utils/DiagnosePaths'
 
 export interface MetaHarnessAgentAdapterOptions {
   agentRunner?: IAgentRunner
@@ -32,10 +33,21 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
       effort,
     })
 
+    const normalizedWorkingDir = DiagnosePaths.toForwardSlashes(this.workingDir)
+    const tracesBasePath = DiagnosePaths.toForwardSlashes(DiagnosePaths.tracesDir(this.workingDir))
+    const sessionTracePath = DiagnosePaths.toForwardSlashes(DiagnosePaths.sessionTraceDir(this.workingDir, preComputedId))
+    const paretoPath = DiagnosePaths.toForwardSlashes(DiagnosePaths.paretoFrontierPath(this.workingDir))
+
     const prompt = [
       `You are \`harness-kit:meta-harness-agent\`. Execute the trace and evaluation lifecycle for this session:`,
       ``,
-      `1. Invoke \`harness-kit:harness-tracer\` to record the execution trace for this session in \`docs/harness-history/traces/${preComputedId}/\`.`,
+      `TARGET WORKSPACE ROOT: ${normalizedWorkingDir}`,
+      `STRICT WORKSPACE CONSTRAINTS (MANDATORY):`,
+      `- All file operations, trace records, and directories MUST be read and created strictly inside the project root: \`${normalizedWorkingDir}\`.`,
+      `- PROHIBITED: NEVER search, read, create, or write files in home directories, user profiles, ~/.gemini/, or any location outside \`${normalizedWorkingDir}\`.`,
+      ``,
+      `1. Invoke \`harness-kit:harness-tracer\` to record the execution trace for this session in \`${sessionTracePath}/\` (relative: \`docs/harness-history/traces/${preComputedId}/\`).`,
+      `   - Target directory: ${sessionTracePath}/`,
       `   - Use pre-computed session_id: ${preComputedId}`,
       `   - Skill: ${session.skill ?? 'unknown'}`,
       `   - Agent: ${session.agent}`,
@@ -43,7 +55,7 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
       `   - Effort: ${effort || 'default'}`,
       ``,
       `2. Evaluate activation rules:`,
-      `   - Check trace count in \`docs/harness-history/traces/\`. If count is a positive multiple of 6 (6, 12, 18, ...), invoke \`harness-kit:harness-evaluator\` to update \`pareto-frontier.md\`.`,
+      `   - Check trace count in \`${tracesBasePath}/\`. If count is a positive multiple of 6 (6, 12, 18, ...), invoke \`harness-kit:harness-evaluator\` to update \`${paretoPath}\`.`,
     ].join('\n')
 
     const invocation: AgentInvocation = {
@@ -73,15 +85,30 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
       effort,
     })
 
+    const normalizedWorkingDir = DiagnosePaths.toForwardSlashes(this.workingDir)
+    const tracesBasePath = DiagnosePaths.toForwardSlashes(DiagnosePaths.tracesDir(this.workingDir))
+    const paretoPath = DiagnosePaths.toForwardSlashes(DiagnosePaths.paretoFrontierPath(this.workingDir))
+    const candidatesBasePath = DiagnosePaths.toForwardSlashes(DiagnosePaths.candidatesDir(this.workingDir))
+
     const prompt = [
       `You are \`harness-kit:meta-harness-agent\`.`,
-      `All execution sessions have been traced in \`docs/harness-history/traces/\`.`,
+      `TARGET WORKSPACE ROOT: ${normalizedWorkingDir}`,
+      ``,
+      `STRICT WORKSPACE CONSTRAINTS (MANDATORY):`,
+      `- All operations, file reads, and file writes MUST be performed strictly inside the project root: \`${normalizedWorkingDir}\`.`,
+      `- PROHIBITED: NEVER search for, read, create, or modify files in home directory, user profile, ~/.gemini/, or any location outside \`${normalizedWorkingDir}\`.`,
+      `- Traces directory: \`${tracesBasePath}/\``,
+      `- Pareto frontier file: \`${paretoPath}\``,
+      `- Candidates directory: \`${candidatesBasePath}/\``,
+      ``,
+      `All execution sessions have been traced in \`${tracesBasePath}/\`.`,
       ``,
       `Execute \`harness-kit:meta-harness\` optimization workflow:`,
-      `1. Read the trace history and verify that \`docs/harness-history/pareto-frontier.md\` is compiled (invoke \`harness-kit:harness-evaluator\` if needed).`,
+      `1. Read the trace history strictly from \`${tracesBasePath}/\` and verify that \`${paretoPath}\` is compiled (invoke \`harness-kit:harness-evaluator\` if needed).`,
       `2. Diagnose patterns of regression, failure modes, or stagnation across skills.`,
-      `3. Create the candidate directory in \`docs/harness-history/candidates/{candidate_id}/\` (e.g. \`v001\`, \`v002\`, etc.).`,
-      `4. Write the proposed candidate modification to the target skill's \`SKILL.md\` and store the candidate metadata in \`docs/harness-history/candidates/{candidate_id}/\`.`,
+      `3. Create the candidate directory strictly in \`${candidatesBasePath}/{candidate_id}/\` (relative: \`docs/harness-history/candidates/{candidate_id}/\`, e.g. \`v001\`, \`v002\`, etc.).`,
+      `4. Write the proposed candidate modification to the target skill's \`SKILL.md\` and store all candidate metadata files (\`rationale.md\`, \`diff.md\`, \`score.md\`, \`SKILL.md\`) inside \`${candidatesBasePath}/{candidate_id}/\`.`,
+      `5. Output final decision strictly as a JSON block with candidateId, targetSkill, status, and decision.`,
     ].join('\n')
 
     const invocation: AgentInvocation = {
