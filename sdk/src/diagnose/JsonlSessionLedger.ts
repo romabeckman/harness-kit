@@ -1,0 +1,70 @@
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { isSessionStatus, type DiagnoseSessionRecord, type ISessionLedger, type SessionStatus } from './types'
+
+export class JsonlSessionLedger implements ISessionLedger {
+  readonly #ledgerPath: string
+
+  constructor(ledgerPath: string) {
+    this.#ledgerPath = ledgerPath
+  }
+
+  append(record: DiagnoseSessionRecord): void {
+    const dir = dirname(this.#ledgerPath)
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true })
+    }
+    const line = JSON.stringify(record) + '\n'
+    appendFileSync(this.#ledgerPath, line, 'utf8')
+  }
+
+  loadAll(): DiagnoseSessionRecord[] {
+    if (!existsSync(this.#ledgerPath)) return []
+
+    const content = readFileSync(this.#ledgerPath, 'utf8')
+    const lines = content.split('\n')
+    const records: DiagnoseSessionRecord[] = []
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed) continue
+
+      try {
+        const parsed = JSON.parse(trimmed)
+        if (
+          parsed &&
+          typeof parsed === 'object' &&
+          typeof parsed.sessionId === 'string' &&
+          isSessionStatus(parsed.status)
+        ) {
+          records.push(parsed as DiagnoseSessionRecord)
+        }
+      } catch {
+        // skip malformed lines
+      }
+    }
+
+    return records
+  }
+
+  loadPending(): DiagnoseSessionRecord[] {
+    return this.loadAll().filter((record) => record.status === 'pending')
+  }
+
+  rewriteStatus(sessionId: string, status: SessionStatus): void {
+    const all = this.loadAll()
+    const updated = all.map((record) =>
+      record.sessionId === sessionId ? { ...record, status } : record
+    )
+
+    const dir = dirname(this.#ledgerPath)
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true })
+    }
+
+    const tempPath = join(dir, `.temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jsonl`)
+    const lines = updated.map((r) => JSON.stringify(r)).join('\n') + (updated.length > 0 ? '\n' : '')
+    writeFileSync(tempPath, lines, 'utf8')
+    renameSync(tempPath, this.#ledgerPath)
+  }
+}

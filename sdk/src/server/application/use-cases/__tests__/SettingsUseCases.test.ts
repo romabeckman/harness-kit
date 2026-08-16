@@ -4,7 +4,6 @@ import { join } from 'node:path'
 import { GetSettingsUseCase } from '../GetSettingsUseCase'
 import { UpdateSettingsUseCase } from '../UpdateSettingsUseCase'
 import { HttpServerError } from '../../../domain/types'
-import type { HarnessSettingsMap } from '../../../../settings/SettingsSchema'
 
 describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', () => {
   const testWorkspaceDir = join(process.cwd(), 'tests', '.temp', 'settings-use-case-test')
@@ -177,8 +176,8 @@ describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', 
 
       const result = await updateUseCase.execute(flatPayload)
       expect(result.project).toBe('backend')
-      expect(result.settings['antigravity']?.phases?.bootstrap?.model).toBe('gemini-3.6-flash')
-      expect(result.settings['antigravity']?.phases?.planning?.model).toBe('gemini-3.1-pro')
+      expect(result.settings['antigravity']?.phases?.bootstrap?.model).toBe('gemini-3.7-flash')
+      expect(result.settings['antigravity']?.phases?.planning?.model).toBe('gemini-3.7-flash')
     })
 
     it('supports piped string in phases array (e.g. ["bootstrap|planning"])', async () => {

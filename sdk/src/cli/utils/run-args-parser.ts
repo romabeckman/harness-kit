@@ -35,6 +35,9 @@ export interface ParsedRunArgs {
   // Enable interactive pre-planning REFINEMENT phase
   refine?: boolean
 
+  // Trigger harness optimization diagnosis after run completes
+  diagnose?: boolean
+
   // Complexity hint for Phase A scope refinement ('LOW' | 'HIGH' | undefined = AUTO)
   // Controlled via --mode; kept here for backward-compat when set programmatically
   mode?: RunMode
@@ -144,6 +147,10 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
 
       case '--refine':
         result.refine = true
+        break
+
+      case '--diagnose':
+        result.diagnose = true
         break
       case '--mode':
       case '-M': {

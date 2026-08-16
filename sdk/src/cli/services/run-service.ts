@@ -195,7 +195,8 @@ function logOrchestrationStart(
   modeLabel: RunMode | string,
   skipValidation: boolean,
   skipMemory: boolean,
-  skipDeploy: boolean
+  skipDeploy: boolean,
+  diagnose?: boolean
 ) {
   console.log("\n── Starting orchestration ──────────────────────────────");
   if (action === "reset") {
@@ -222,6 +223,9 @@ function logOrchestrationStart(
   }
   if (skipDeploy) {
     console.log(`  skip-deploy: true  (Phase DEPLOY skipped)`);
+  }
+  if (diagnose) {
+    console.log(`  diagnose: true  (Post-orchestration harness optimization enabled)`);
   }
   console.log("────────────────────────────────────────────────────────\n");
 }
@@ -309,7 +313,8 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     parsed.mode ?? RunMode.THINKING,
     skipValidation,
     skipMemory,
-    skipDeploy
+    skipDeploy,
+    parsed.diagnose
   );
 
   if (action === "reset" && existsSync(productDir) && !isFromInit) {
@@ -359,4 +364,37 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
   await orchestrator.run();
   console.log("\n✓ All features completed.");
   orchestrator.tokenReport();
+
+  if (parsed.diagnose) {
+    console.log(`\n${AnsiHelpers.blue("►")} ${AnsiHelpers.dim("Running post-run diagnose optimization...")}`);
+    try {
+      const { JsonlSessionLedger } = await import("../../diagnose/JsonlSessionLedger.js");
+      const { TraceDirectoryScanner } = await import("../../diagnose/TraceDirectoryScanner.js");
+      const { SessionIdGenerator } = await import("../../diagnose/SessionIdGenerator.js");
+      const { MetaHarnessAgentAdapter } = await import("../../diagnose/MetaHarnessAgentAdapter.js");
+      const { DiagnoseService } = await import("../../diagnose/DiagnoseService.js");
+
+      const ledger = new JsonlSessionLedger(join(productDir, "diagnose-sessions.jsonl"));
+      const scanner = new TraceDirectoryScanner(cwd);
+      const idGenerator = new SessionIdGenerator(scanner);
+      const agentAdapter = new MetaHarnessAgentAdapter({ agentRunner, workingDir: cwd });
+
+      const diagnoseService = new DiagnoseService({
+        ledger,
+        agentAdapter,
+        idGenerator,
+        settings,
+        workingDir: cwd,
+      });
+
+      const result = await diagnoseService.processAllPendingInBatches(3, (batch) => {
+        console.log(
+          `  ${AnsiHelpers.green("✓")} Diagnose batch completed: ${batch.processed} processed, ${batch.remaining} remaining.`
+        );
+      });
+      console.log(`\n${AnsiHelpers.green("✓")} Diagnose completed (${result.processed} session(s) optimized).`);
+    } catch (err: any) {
+      console.error(`\n${AnsiHelpers.yellow("⚠")} Diagnose encountered an error:`, err?.message ?? err);
+    }
+  }
 }
