@@ -22,15 +22,29 @@ export function parseDiagnoseArgs(args: string[]): DiagnoseCliOptions {
   const result: DiagnoseCliOptions = {}
 
   for (let i = 0; i < args.length; i++) {
-    const arg = args[i]
+    const currentArg = args[i]
+    let arg: string
+    let value: string | undefined
+
+    const equalsIndex = currentArg.indexOf('=')
+    if (currentArg.startsWith('--') && equalsIndex !== -1) {
+      arg = currentArg.substring(0, equalsIndex)
+      value = currentArg.substring(equalsIndex + 1)
+    } else {
+      arg = currentArg
+    }
+
+    const nextArg = () => (value !== undefined ? value : args[++i])
+
     if (arg === '--agent' || arg === '-a') {
-      result.agentType = args[++i]
+      result.agentType = nextArg()
     } else if (arg === '--model' || arg === '-m') {
-      result.model = args[++i]
+      result.model = nextArg()
     } else if (arg === '--effort' || arg === '-e') {
-      result.effort = args[++i]
+      result.effort = nextArg()
     } else if (arg === '--batch-size') {
-      const parsed = parseInt(args[++i], 10)
+      const val = nextArg()
+      const parsed = parseInt(val, 10)
       if (!isNaN(parsed) && parsed > 0) {
         result.batchSize = parsed
       }
@@ -70,12 +84,16 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
   const idGenerator = new SessionIdGenerator(scanner)
   const agentAdapter = new MetaHarnessAgentAdapter({ agentRunner, workingDir: cwd })
   const settings = HarnessSettings.load(cwd)
+  const cliSettings = (options.model || options.effort)
+    ? { model: options.model ?? '', effort: options.effort ?? '' }
+    : undefined
 
   const service = new DiagnoseService({
     ledger,
     agentAdapter,
     idGenerator,
     settings,
+    cliSettings,
     workingDir: cwd,
   })
 

@@ -15,10 +15,10 @@ describe('MetaHarnessAgentAdapter', () => {
     timestamp: '2026-08-15T10:00:00.000Z',
   }
 
-  it('invokes runner inside the existing session with 3-skill guidance and pre-computed trace ID', async () => {
+  it('invokes runner inside the existing session with trace guidance, pre-computed ID, and multiple of 6 check', async () => {
     const mockRunner = {
       type: 'copilot-cli',
-      run: vi.fn().mockResolvedValue({ success: true, raw: 'Optimization proposed' }),
+      run: vi.fn().mockResolvedValue({ success: true, raw: 'Trace recorded' }),
     }
 
     const adapter = new MetaHarnessAgentAdapter({
@@ -47,11 +47,36 @@ describe('MetaHarnessAgentAdapter', () => {
     )
     expect(mockRunner.run).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: expect.stringContaining('harness-kit:harness-evaluator'),
+        prompt: expect.stringContaining('multiple of 6'),
       })
     )
+  })
+
+  it('invokes harness-kit:meta-harness separately when invokeMetaHarness is called', async () => {
+    const mockRunner = {
+      type: 'claude-cli',
+      run: vi.fn().mockResolvedValue({ success: true, raw: 'Proposal created' }),
+    }
+
+    const adapter = new MetaHarnessAgentAdapter({
+      agentRunner: mockRunner as any,
+    })
+
+    const output = await adapter.invokeMetaHarness(
+      { ...sampleRecord, runner: 'claude-cli' },
+      {
+        model: 'anthropic.claude-5-sonnet',
+        effort: 'low',
+      }
+    )
+
+    expect(output.success).toBe(true)
     expect(mockRunner.run).toHaveBeenCalledWith(
       expect.objectContaining({
+        agent: 'harness-kit:meta-harness-agent',
+        skill: 'harness-kit:meta-harness',
+        model: 'anthropic.claude-5-sonnet',
+        effort: 'low',
         prompt: expect.stringContaining('harness-kit:meta-harness'),
       })
     )

@@ -14,6 +14,7 @@ export interface DiagnoseServiceOptions {
   agentAdapter: IMetaHarnessAgentAdapter
   idGenerator: SessionIdGenerator
   settings?: HarnessSettings
+  cliSettings?: DiagnoseSettings
   workingDir?: string
 }
 
@@ -35,21 +36,29 @@ export class DiagnoseService {
   private readonly agentAdapter: IMetaHarnessAgentAdapter
   private readonly idGenerator: SessionIdGenerator
   private readonly settings: HarnessSettings
+  private readonly cliSettings?: DiagnoseSettings
 
   constructor(options: DiagnoseServiceOptions) {
     this.ledger = options.ledger
     this.agentAdapter = options.agentAdapter
     this.idGenerator = options.idGenerator
     this.settings = options.settings ?? HarnessSettings.load(options.workingDir)
+    this.cliSettings = options.cliSettings
   }
 
   private resolveDiagnoseSettings(runnerType: string): DiagnoseSettings | undefined {
+    if (this.cliSettings && (this.cliSettings.model || this.cliSettings.effort)) {
+      return this.cliSettings
+    }
+
     const key = this.settings.hasSettings(runnerType) ? runnerType : runnerType.split('-')[0]
     const phaseSettings = this.settings.resolve(key, 'diagnose')
-    if (phaseSettings.model || phaseSettings.effort) {
+    const model = phaseSettings.model && phaseSettings.model.trim().length > 0 ? phaseSettings.model.trim() : undefined
+    const effort = phaseSettings.effort && phaseSettings.effort.trim().length > 0 ? phaseSettings.effort.trim() : undefined
+    if (model || effort) {
       return {
-        model: phaseSettings.model ?? '',
-        effort: phaseSettings.effort ?? '',
+        model: model ?? '',
+        effort: effort ?? '',
       }
     }
     return undefined
@@ -94,8 +103,14 @@ export class DiagnoseService {
   ): Promise<BatchResult> {
     let totalProcessed = 0
     let lastRemaining = 0
+    let lastProcessedSession: DiagnoseSessionRecord | undefined
 
     while (true) {
+      const pending = this.ledger.loadPending()
+      if (pending.length > 0) {
+        lastProcessedSession = pending[0]
+      }
+
       const result = await this.processNextBatch(batchSize)
       if (result.processed === 0) {
         lastRemaining = result.remaining
@@ -114,6 +129,15 @@ export class DiagnoseService {
 
       if (result.remaining === 0) {
         break
+      }
+    }
+
+    if (totalProcessed > 0 && lastProcessedSession && this.agentAdapter.invokeMetaHarness) {
+      try {
+        const settings = this.resolveDiagnoseSettings(lastProcessedSession.runner)
+        await this.agentAdapter.invokeMetaHarness(lastProcessedSession, settings)
+      } catch (err) {
+        console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
       }
     }
 
@@ -176,7 +200,15 @@ export class DiagnoseService {
     orchestrator: any,
     context: CaptureContext
   ): Promise<void> {
-    await this.captureSession(orchestrator, context)
+    const record = await this.captureSession(orchestrator, context)
     await this.processNextBatch(1)
+    if (this.agentAdapter.invokeMetaHarness) {
+      try {
+        const settings = this.resolveDiagnoseSettings(record.runner)
+        await this.agentAdapter.invokeMetaHarness(record, settings)
+      } catch (err) {
+        console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
+      }
+    }
   }
 }

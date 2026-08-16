@@ -187,4 +187,22 @@ describe('DiagnoseService', () => {
     expect(record.snapshot?.featureIds).toEqual(['F001', 'F002'])
     expect(mockLedger.append).toHaveBeenCalledWith(record)
   })
+
+  it('calls invokeMetaHarness with the session when all pending sessions finish', async () => {
+    mockAdapter.invokeMetaHarness = vi.fn().mockResolvedValue({ success: true, raw: 'Meta harness OK' })
+
+    const service = new DiagnoseService({
+      ledger: mockLedger,
+      agentAdapter: mockAdapter,
+      idGenerator,
+    })
+
+    const result = await service.processAllPendingInBatches(10)
+    expect(result.processed).toBe(4)
+    expect(result.remaining).toBe(0)
+    expect(mockAdapter.invokeMetaHarness).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: 'session-2026-08-15-001' }),
+      undefined
+    )
+  })
 })

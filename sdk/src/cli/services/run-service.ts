@@ -379,11 +379,16 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
       const idGenerator = new SessionIdGenerator(scanner);
       const agentAdapter = new MetaHarnessAgentAdapter({ agentRunner, workingDir: cwd });
 
+      const cliSettings = (parsed.model || parsed.effort)
+        ? { model: parsed.model ?? '', effort: parsed.effort ?? '' }
+        : undefined
+
       const diagnoseService = new DiagnoseService({
         ledger,
         agentAdapter,
         idGenerator,
         settings,
+        cliSettings,
         workingDir: cwd,
       });
 
