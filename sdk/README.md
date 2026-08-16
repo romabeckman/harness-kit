@@ -260,7 +260,7 @@ Each runner is a self-contained strategy for invoking a specific AI backend. The
 |---|---|---|
 | `claude-cli` | `claude` CLI | _(from settings)_ |
 | `claude-sdk` | `@anthropic-ai/sdk` | `anthropic.claude-5-sonnet` |
-| `antigravity-cli` | `agy` CLI | `gemini-3.6-flash` |
+| `antigravity-cli` | `agy` CLI | `gemini-3.7-flash` |
 | `codex-cli` | `codex` CLI | `gpt-5.6-sol` / `gpt-5.6-luna` |
 | `copilot-cli` | `copilot` CLI | _(from settings)_ |
 | `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.6-sol` / `gpt-5.6-luna` |
@@ -347,6 +347,7 @@ The global file is created automatically on first run. You can also set `HARNESS
 | `review_tl` | Phase C — tech-lead review |
 | `review_adv` | Phase C — adversarial-qa review |
 | `memory` | Phase E — project-memory |
+| `diagnose` | Harness diagnosis — meta-harness-agent |
 
 ### Default settings
 
@@ -360,18 +361,20 @@ The global file is created automatically on first run. You can also set `HARNESS
       "implementation": { "model": "anthropic.claude-5-sonnet", "effort": "medium" },
       "review_tl":      { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
       "review_adv":     { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
-      "memory":         { "model": "anthropic.claude-5-sonnet", "effort": "low"    }
+      "memory":         { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
+      "diagnose":       { "model": "anthropic.claude-5-sonnet", "effort": "low"    }
     }
   },
   "antigravity": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":      { "model": "gemini-3.6-flash", "effort": "high"   },
-      "planning":       { "model": "gemini-3.1-pro",   "effort": "high"   },
-      "implementation": { "model": "gemini-3.6-flash", "effort": "medium" },
-      "review_tl":      { "model": "gemini-3.1-pro",   "effort": "low"    },
-      "review_adv":     { "model": "gemini-3.1-pro",   "effort": "low"    },
-      "memory":         { "model": "gemini-3.6-flash", "effort": "low"    }
+      "bootstrap":      { "model": "gemini-3.7-flash", "effort": "medium" },
+      "planning":       { "model": "gemini-3.7-flash", "effort": "high"   },
+      "implementation": { "model": "gemini-3.7-flash", "effort": "medium" },
+      "review_tl":      { "model": "gemini-3.7-flash", "effort": "low"    },
+      "review_adv":     { "model": "gemini-3.7-flash", "effort": "low"    },
+      "memory":         { "model": "gemini-3.7-flash", "effort": "low"    },
+      "diagnose":       { "model": "gemini-3.7-flash", "effort": "low"    }
     }
   },
   "copilot": {
@@ -379,21 +382,23 @@ The global file is created automatically on first run. You can also set `HARNESS
     "phases": {
       "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
       "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
-      "implementation": { "model": "gpt-5.6-luna", "effort": "max"    },
-      "review_tl":      { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "review_adv":     { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "memory":         { "model": "gpt-5.6-luna", "effort": "high"   }
+      "implementation": { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "memory":         { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  }
     }
   },
   "cursor": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":      { "model": "gpt-5.3-codex",  "effort": "medium" },
-      "planning":       { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
-      "implementation": { "model": "gpt-5.3-codex",  "effort": "medium" },
-      "review_tl":      { "model": "gpt-5.3-codex",  "effort": "low"    },
-      "review_adv":     { "model": "gpt-5.3-codex",  "effort": "low"    },
-      "memory":         { "model": "gpt-5.3-codex",  "effort": "low"    }
+      "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
+      "implementation": { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "memory":         { "model": "gpt-5.6-sol",  "effort": "low"    },
+      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  }
     }
   },
   "codex": {
@@ -401,10 +406,11 @@ The global file is created automatically on first run. You can also set `HARNESS
     "phases": {
       "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
       "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
-      "implementation": { "model": "gpt-5.6-luna", "effort": "max"    },
-      "review_tl":      { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "review_adv":     { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "memory":         { "model": "gpt-5.6-luna", "effort": "high"   }
+      "implementation": { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "memory":         { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  }
     }
   }
 }
@@ -425,91 +431,6 @@ Create `.harness-kit/settings.json` inside your project root:
 ```
 
 Only the fields you specify are overridden — everything else falls back to defaults.
-
----
-
-## Using the SDK programmatically
-
-Install as a dependency:
-
-```bash
-npm install @romabeckman/hrns
-```
-
-### Example — run with default chain
-
-```typescript
-import {
-  HarnessOrchestrator,
-  AgentRunnerFactory,
-  ChainBuilder,
-} from '@romabeckman/hrns'
-import { Complexity } from '@romabeckman/hrns'
-
-// Pick any registered runner (claude-cli, claude-sdk, antigravity-cli, copilot-sdk, etc.)
-const runner = AgentRunnerFactory.create({
-  type: 'claude-sdk',   // reads ANTHROPIC_API_KEY from env
-  model: 'anthropic.claude-5-sonnet',
-})
-
-const orchestrator = new HarnessOrchestrator({
-  scope: 'REST API with JWT auth and PostgreSQL',
-  projectPaths: ['/path/to/my-api'],
-  score: 0.7,           // minimum acceptance score (0–1)
-  reworks: 3,           // max rework cycles before cascade-blocking
-  complexity: Complexity.AUTO,
-  agentRunner: runner,
-  chain: ChainBuilder.buildDefault(),
-})
-
-await orchestrator.run()
-orchestrator.tokenReport()
-```
-
-> When a backlog already exists on disk, the orchestrator re-enters at the last persisted phase automatically. The `scope` value is overridden by the persisted scope.
-
-### Example — custom phase chain
-
-```typescript
-import {
-  HarnessOrchestrator,
-  ChainBuilder,
-  PlanningHandler,
-  DevelopmentHandler,
-  ReviewHandler,
-  StateCheckHandler,
-  TransitionHandler,
-  MemoryHandler,
-  DeployHandler,
-  CascadeBlockedHandler,
-} from '@romabeckman/hrns'
-import { Complexity } from '@romabeckman/hrns'
-
-const chain = new ChainBuilder()
-  .addPhase(new PlanningHandler())
-  .addPhase(new DevelopmentHandler())
-  .addPhase(new ReviewHandler())
-  .addPhase(new StateCheckHandler())
-  .addPhase(new TransitionHandler())
-  .addPhase(new MemoryHandler())
-  .addPhase(new DeployHandler())
-  .addPhase(new CascadeBlockedHandler())
-  .build()
-
-const orchestrator = new HarnessOrchestrator({
-  scope: 'REST API with JWT auth and PostgreSQL',
-  projectPaths: ['/path/to/my-api'],
-  score: 0.7,      // minimum acceptance score (0–1)
-  reworks: 3,      // max rework cycles before cascade-blocking
-  agentRunner: runner,
-  chain,
-})
-
-await orchestrator.run()
-orchestrator.tokenReport()
-```
-
-> When a backlog already exists on disk, the orchestrator re-enters at the last persisted phase automatically. The `scope` value is overridden by the persisted scope.
 
 ---
 
