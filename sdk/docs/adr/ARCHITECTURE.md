@@ -27,6 +27,7 @@ sdk/
 │   ├── context-assembler/   # Typed phase payload construction
 │   ├── validation-gate/     # Review score evaluation
 │   ├── telemetry/           # NDJSON token ledger
+│   ├── diagnose/            # Performance tracing, session ledger, and meta-harness adapter
 │   ├── server/              # HTTP ports, use cases, and adapters
 │   ├── settings/            # Runner and phase configuration
 │   └── ui/                  # Terminal rendering helpers
@@ -54,6 +55,7 @@ sdk/
 | File state | Parse and atomically mutate Markdown and JSON project state. | [SDK_STATE.md](../feature/SDK_STATE.md) |
 | Steering | Validate free-text directives and apply rule, rollback, or score actions. | [SDK_STEERING.md](../feature/SDK_STEERING.md) |
 | Settings | Resolve runner defaults and per-phase overrides. | [SDK_SETTINGS.md](../feature/SDK_SETTINGS.md) |
+| Diagnose | Process pending sessions, trace execution, and trigger meta-harness optimization. | [SDK_DIAGNOSE.md](../feature/SDK_DIAGNOSE.md) |
 | CLI | Parse `hrns` commands and coordinate interactive execution. | [SDK_CLI.md](../feature/SDK_CLI.md) |
 | HTTP server | Expose non-interactive orchestration, settings, telemetry, reports, and health endpoints. | [HTTP_SERVER.md](../feature/HTTP_SERVER.md) |
 | Terminal UI | Render banners, progress, and ANSI output. | [SDK_TERMINAL_UI.md](../feature/SDK_TERMINAL_UI.md) |

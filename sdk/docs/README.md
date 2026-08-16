@@ -19,6 +19,7 @@ Index of technical documentation for **harness-kit SDK**. Use links below for do
 | [**SDK_AGENT_RUNNER.md**](./feature/SDK_AGENT_RUNNER.md) | SDK agent runner feature guide. | Optional |
 | [**SDK_CLI.md**](./feature/SDK_CLI.md) | SDK CLI feature guide. | Optional |
 | [**SDK_CORE.md**](./feature/SDK_CORE.md) | SDK core feature guide. | Optional |
+| [**SDK_DIAGNOSE.md**](./feature/SDK_DIAGNOSE.md) | SDK diagnose and meta-harness feature guide. | Optional |
 | [**SDK_PACKAGE.md**](./feature/SDK_PACKAGE.md) | SDK package feature guide. | Optional |
 | [**SDK_SETTINGS.md**](./feature/SDK_SETTINGS.md) | SDK settings feature guide. | Optional |
 | [**SDK_STATE.md**](./feature/SDK_STATE.md) | SDK state feature guide. | Optional |
