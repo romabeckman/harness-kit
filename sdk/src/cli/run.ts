@@ -64,6 +64,13 @@ async function main(): Promise<void> {
     return
   }
 
+  if (cmd === 'candidate') {
+    const { cmdCandidate } = await import('./services/candidate-service.js')
+    const candidateArgs = args.slice(1)
+    await cmdCandidate(cwd, candidateArgs)
+    return
+  }
+
   console.error(`Unknown command: ${cmd}\nRun "hrns help" for usage.`)
   process.exit(1)
 }

@@ -36,6 +36,11 @@ describe('DiagnoseReportRenderer', () => {
     expect(combined).toContain('PROPOSED')
     expect(combined).toContain('EVALUATE_CANDIDATE')
     expect(combined).toContain('Worst sessions diverged at phase C')
+    expect(combined).toContain('How to Apply Candidate v001')
+    expect(combined).toContain('Review Changes')
+    expect(combined).toContain('docs/harness-history/candidates/v001/diff.md')
+    expect(combined).toContain('skills/autonomous-orchestrator/SKILL.md')
+    expect(combined).toContain('promoted: true')
   })
 
   it('renders report when no candidate was created', () => {
@@ -74,5 +79,23 @@ describe('DiagnoseReportRenderer', () => {
     expect(output).toContain('Harness Diagnose Report')
     expect(output).toContain('v005')
     expect(output).toContain('meta-harness')
+  })
+
+  it('appends --agent, --model, and --effort to candidate review suggestion when provided', () => {
+    const data: DiagnoseReportData = {
+      processedSessions: 1,
+      remainingSessions: 0,
+      sessionIds: ['s1'],
+      candidateCreated: {
+        candidateId: 'v002',
+        targetSkill: 'tdd-orchestrator',
+      },
+      agent: 'antigravity-cli',
+      model: 'gemini-3.7-flash',
+      effort: 'high',
+    }
+
+    const output = DiagnoseReportRenderer.format(data)
+    expect(output).toContain('hrns candidate review v002 --agent antigravity-cli --model gemini-3.7-flash --effort high')
   })
 })

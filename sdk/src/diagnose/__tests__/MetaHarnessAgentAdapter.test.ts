@@ -124,4 +124,45 @@ describe('MetaHarnessAgentAdapter', () => {
 
     createSpy.mockRestore()
   })
+
+  it('invokes autonomous candidate promotion with phaseKey diagnose and candidate metadata', async () => {
+    const mockRunner = {
+      type: 'claude-cli',
+      run: vi.fn().mockResolvedValue({
+        success: true,
+        raw: '{"candidateId":"v001","targetSkill":"tdd-orchestrator","status":"PROMOTED","promoted":true}',
+      }),
+    }
+
+    const adapter = new MetaHarnessAgentAdapter({
+      agentRunner: mockRunner as any,
+      workingDir: '/workspace/project-root',
+    })
+
+    const output = await adapter.invokeCandidatePromotion(
+      'v001',
+      'tdd-orchestrator',
+      'claude-cli',
+      {
+        model: 'anthropic.claude-3-7-sonnet',
+        effort: 'high',
+      }
+    )
+
+    expect(output.success).toBe(true)
+    expect(mockRunner.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agent: 'harness-kit:meta-harness-agent',
+        phaseKey: 'diagnose',
+        model: 'anthropic.claude-3-7-sonnet',
+        effort: 'high',
+        prompt: expect.stringContaining('candidate v001'),
+      })
+    )
+    expect(mockRunner.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('/workspace/project-root/docs/harness-history/candidates/v001'),
+      })
+    )
+  })
 })

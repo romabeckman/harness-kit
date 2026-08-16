@@ -7,6 +7,7 @@ import { MetaHarnessAgentAdapter } from '../../diagnose/MetaHarnessAgentAdapter'
 import { DiagnoseService } from '../../diagnose/DiagnoseService'
 import { DiagnoseReportRenderer } from '../../diagnose/DiagnoseReportRenderer'
 import { DiagnosePaths } from '../../diagnose/utils/DiagnosePaths'
+import type { DiagnoseSettings } from '../../diagnose/types'
 import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 import { Runner } from '../../agent-runner/types'
 import { HarnessSettings } from '../../settings/HarnessSettings'
@@ -85,8 +86,12 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
   const idGenerator = new SessionIdGenerator(scanner)
   const agentAdapter = new MetaHarnessAgentAdapter({ agentRunner, workingDir: cwd })
   const settings = HarnessSettings.load(cwd)
-  const cliSettings = (options.model || options.effort)
-    ? { model: options.model ?? '', effort: options.effort ?? '' }
+  const cliSettings: DiagnoseSettings | undefined = (options.agentType || options.model || options.effort)
+    ? {
+        agent: options.agentType,
+        model: options.model ?? '',
+        effort: options.effort ?? '',
+      }
     : undefined
 
   const service = new DiagnoseService({

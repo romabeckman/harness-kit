@@ -57,6 +57,7 @@ src/cli/
 - **`hrns init`**: Initialize workspace files and configure steering rules.
 - **`hrns run`**: Start or resume an orchestration session.
 - **`hrns diagnose`**: Run post-orchestration harness diagnosis on pending sessions.
+- **`hrns candidate`**: Review and apply meta-harness optimization candidates (`list`, `review [id]`, `review [id] --auto`).
 - **`hrns report`**: Print token usage report.
 - **`hrns version`**: Show version.
 - **`hrns help`**: Show help.
@@ -70,14 +71,18 @@ src/cli/
 ### Steps
 1. Run `hrns init` for a new workspace.
 2. Run `hrns run` to start the autonomous cycle.
-3. Run `hrns diagnose` to process pending diagnosis sessions.
+3. Run `hrns diagnose` to process pending diagnosis sessions and propose improvements.
+4. Run `hrns candidate review <id>` to review and apply improvements with your AI runner.
 
 <code_example>
 # CORRECT: Non-interactive full reset
 hrns run --reset --scope "Build REST API" --path ./src --score 0.9 --reworks 3
 
-# CORRECT: Run with post-run diagnose
-hrns run --diagnose --reset --scope "Build REST API" --path ./src
+# CORRECT: Run diagnosis separately
+hrns diagnose --agent antigravity-cli
+
+# CORRECT: Review candidate with AI runner
+hrns candidate review v001 --agent antigravity-cli
 
 # WRONG: Running without path or scope on a new project
 hrns run --reset
@@ -99,7 +104,6 @@ hrns run --reset
 | `--reworks` | int | No | Max rework cycles | `2` |
 | `--steering` | string | No | Additional orchestration rules | — |
 | `--refine` | boolean | No | Enable interactive refinement | false |
-| `--diagnose` | boolean | No | Trigger harness optimization diagnosis after run completes | false |
 | `--skip-validation` | boolean | No | Skip Review phase (Phase C) | false |
 | `--skip-memory` | boolean | No | Skip Memory phase (Phase E) | false |
 | `--skip-deploy` | boolean | No | Skip Deploy phase | false |

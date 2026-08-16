@@ -13,6 +13,7 @@ COMMANDS
   init      Initialize docs/product files and configure steering rules
   settings  Manage settings (edit|renew|delete)
   diagnose  Run post-orchestration harness diagnosis on pending sessions
+  candidate Review and apply meta-harness optimization candidates
   report    Print development status and token usage report for the current session
   version   Show version
   help      Show this help message
@@ -20,7 +21,6 @@ COMMANDS
 RUN OPTIONS
   --agent, -a <type>        Specify agent type (e.g., 'copilot-sdk', 'antigravity-cli')
   --model, -m <name>        Specify model name for the agent
-  --diagnose                Trigger harness optimization diagnosis after run completes
 
 ACTION (skips interactive prompt)
   --reset                   Discard current session and start a new cycle
@@ -56,7 +56,6 @@ OPTIONS
 
 EXAMPLES
   hrns run
-  hrns run --diagnose
   hrns run --agent copilot-sdk --model gpt-4o
   hrns run --reset --scope "Build a REST API" --path ./api --path ./web --score 0.9
   hrns run --resume --steering "focus on security hardening"
@@ -66,6 +65,8 @@ EXAMPLES
   hrns run --reset --scope "My app" --path ./api --mode quick
   hrns run --reset --scope "My app" --path ./api --skip-deploy
   hrns diagnose
+  hrns candidate list
+  hrns candidate review v001
   hrns report
 
 DOCS
@@ -85,7 +86,6 @@ RUN OPTIONS
   --agent, -a <type>        Specify agent runner (e.g. 'claude-cli', 'copilot-cli', 'antigravity-cli')
   --model, -m <name>        Specify model name for the agent
   --effort, -e <level>      Reasoning effort level (low | medium | high | xhigh)
-  --diagnose                Trigger harness optimization diagnosis after run completes
 
 ACTION (skips interactive prompt)
   --reset                   Discard current session and start a new cycle
@@ -203,6 +203,32 @@ EXAMPLES
   hrns diagnose --batch-size 5
 `
 
+export const HELP_CANDIDATE = `
+@romabeckman/harness-kit — hrns candidate
+
+USAGE
+  hrns candidate <action> [options]
+
+DESCRIPTION
+  Review and apply meta-harness optimization candidates created in docs/harness-history/candidates/.
+
+ACTIONS
+  list, ls                  List all candidates and their promotion status
+  review [candidate_id]     Launch interactive AI runner session to review & apply candidate (default)
+  review [id] --auto        Apply candidate autonomously via LLM using phaseKey: diagnose
+
+OPTIONS
+  --model, -m <name>        Override model name for autonomous promotion
+  --effort, -e <level>      Override reasoning effort level
+  --non-interactive, --auto Apply candidate autonomously without interactive runner
+  --help, -h                Show this help message
+
+EXAMPLES
+  hrns candidate list
+  hrns candidate review v001
+  hrns candidate review v001 --auto
+`
+
 export const HELP_REPORT = `
 @romabeckman/harness-kit — hrns report
 
@@ -236,6 +262,7 @@ export const COMMAND_HELP: Record<string, string> = {
   init: HELP_INIT,
   settings: HELP_SETTINGS,
   diagnose: HELP_DIAGNOSE,
+  candidate: HELP_CANDIDATE,
   report: HELP_REPORT,
   version: HELP_VERSION,
 }

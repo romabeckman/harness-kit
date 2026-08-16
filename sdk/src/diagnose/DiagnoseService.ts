@@ -170,6 +170,9 @@ export class DiagnoseService {
       sessionIds: allSessionIds,
       traceIds: allTraceIds,
       candidateCreated,
+      agent: this.cliSettings?.agent,
+      model: this.cliSettings?.model,
+      effort: this.cliSettings?.effort,
     }
 
     return {

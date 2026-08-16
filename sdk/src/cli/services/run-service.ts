@@ -195,8 +195,7 @@ function logOrchestrationStart(
   modeLabel: RunMode | string,
   skipValidation: boolean,
   skipMemory: boolean,
-  skipDeploy: boolean,
-  diagnose?: boolean
+  skipDeploy: boolean
 ) {
   console.log("\n── Starting orchestration ──────────────────────────────");
   if (action === "reset") {
@@ -223,9 +222,6 @@ function logOrchestrationStart(
   }
   if (skipDeploy) {
     console.log(`  skip-deploy: true  (Phase DEPLOY skipped)`);
-  }
-  if (diagnose) {
-    console.log(`  diagnose: true  (Post-orchestration harness optimization enabled)`);
   }
   console.log("────────────────────────────────────────────────────────\n");
 }
@@ -313,8 +309,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     parsed.mode ?? RunMode.THINKING,
     skipValidation,
     skipMemory,
-    skipDeploy,
-    parsed.diagnose
+    skipDeploy
   );
 
   if (action === "reset" && existsSync(productDir) && !isFromInit) {
@@ -364,48 +359,4 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
   await orchestrator.run();
   console.log("\n✓ All features completed.");
   orchestrator.tokenReport();
-
-  if (parsed.diagnose) {
-    console.log(`\n${AnsiHelpers.blue("►")} ${AnsiHelpers.dim("Running post-run diagnose optimization...")}`);
-    try {
-      const { JsonlSessionLedger } = await import("../../diagnose/JsonlSessionLedger.js");
-      const { TraceDirectoryScanner } = await import("../../diagnose/TraceDirectoryScanner.js");
-      const { SessionIdGenerator } = await import("../../diagnose/SessionIdGenerator.js");
-      const { MetaHarnessAgentAdapter } = await import("../../diagnose/MetaHarnessAgentAdapter.js");
-      const { DiagnoseService } = await import("../../diagnose/DiagnoseService.js");
-      const { DiagnoseReportRenderer } = await import("../../diagnose/DiagnoseReportRenderer.js");
-      const { DiagnosePaths } = await import("../../diagnose/utils/DiagnosePaths.js");
-
-      const ledger = new JsonlSessionLedger(DiagnosePaths.ledgerPath(cwd));
-      const scanner = new TraceDirectoryScanner(cwd);
-      const idGenerator = new SessionIdGenerator(scanner);
-      const agentAdapter = new MetaHarnessAgentAdapter({ agentRunner, workingDir: cwd });
-
-      const cliSettings = (parsed.model || parsed.effort)
-        ? { model: parsed.model ?? '', effort: parsed.effort ?? '' }
-        : undefined
-
-      const diagnoseService = new DiagnoseService({
-        ledger,
-        agentAdapter,
-        idGenerator,
-        settings,
-        cliSettings,
-        workingDir: cwd,
-      });
-
-      const result = await diagnoseService.processAllPendingInBatches(3, (batch) => {
-        console.log(
-          `  ${AnsiHelpers.green("✓")} Diagnose batch completed: ${batch.processed} processed, ${batch.remaining} remaining.`
-        );
-      });
-      if (result.report) {
-        DiagnoseReportRenderer.render(result.report);
-      } else {
-        console.log(`\n${AnsiHelpers.green("✓")} Diagnose completed (${result.processed} session(s) optimized).`);
-      }
-    } catch (err: any) {
-      console.error(`\n${AnsiHelpers.yellow("⚠")} Diagnose encountered an error:`, err?.message ?? err);
-    }
-  }
 }

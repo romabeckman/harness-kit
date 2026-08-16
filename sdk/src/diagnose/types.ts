@@ -48,6 +48,7 @@ export interface DiagnoseSessionRecord {
 }
 
 export interface DiagnoseSettings {
+  agent?: string
   model: string
   effort: string
 }
@@ -85,5 +86,8 @@ export interface DiagnoseReportData {
   sessionIds: string[]
   traceIds?: string[]
   candidateCreated?: CandidateReportInfo | null
+  agent?: string
+  model?: string
+  effort?: string
   summary?: string
 }

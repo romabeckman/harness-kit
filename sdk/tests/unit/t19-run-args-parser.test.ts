@@ -168,16 +168,6 @@ describe('T19 — parseRunArgs', () => {
     expect(result.mode).toBeUndefined()
   })
 
-  it('parses --diagnose flag as boolean', () => {
-    const result = parseRunArgs(['--diagnose'])
-    expect(result.diagnose).toBe(true)
-  })
-
-  it('leaves diagnose undefined when not supplied', () => {
-    const result = parseRunArgs(['--reset', '--scope', 'Test'])
-    expect(result.diagnose).toBeUndefined()
-  })
-
   it('parses --mode quick', () => {
     expect(parseRunArgs(['--mode', 'quick']).mode).toBe('quick')
   })

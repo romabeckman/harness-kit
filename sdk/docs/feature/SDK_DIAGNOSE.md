@@ -41,6 +41,7 @@ updated: "2026-08-15"
     "src/diagnose/SessionIdGenerator.ts"
   ],
   "code_files": [
+    "src/diagnose/CandidatePromotionService.ts",
     "src/diagnose/CandidateReader.ts",
     "src/diagnose/DiagnoseReportRenderer.ts",
     "src/diagnose/MetaHarnessAgentAdapter.ts",
@@ -49,6 +50,7 @@ updated: "2026-08-15"
     "src/diagnose/utils/DiagnosePaths.ts"
   ],
   "test_files": [
+    "src/diagnose/__tests__/CandidatePromotionService.test.ts",
     "src/diagnose/__tests__/CandidateReader.test.ts",
     "src/diagnose/__tests__/DiagnoseReportRenderer.test.ts",
     "src/diagnose/__tests__/DiagnoseService.test.ts",
@@ -63,25 +65,26 @@ updated: "2026-08-15"
 ```
 
 # SDK DIAGNOSE
-Automates execution trace recording, session ledger persistence, meta-harness optimization triggering, and terminal diagnosis reporting.
+Automates execution trace recording, session ledger persistence, meta-harness optimization triggering, terminal diagnosis reporting, and candidate review delegation.
 
 ## OVERVIEW
-The diagnose module captures orchestration run performance into `docs/product/diagnose-sessions.jsonl`. It processes pending sessions in batches, generates sequential trace session IDs (`session-YYYY-MM-DD-NNN`), delegates trace logging to `harness-kit:meta-harness-agent`, triggers candidate generation upon completing batches, and renders a final summary report with candidate details to the terminal.
+The diagnose module captures orchestration run performance into `docs/product/diagnose-sessions.jsonl`. It processes pending sessions in batches, generates sequential trace session IDs (`session-YYYY-MM-DD-NNN`), delegates trace logging to `harness-kit:meta-harness-agent`, triggers candidate generation upon completing batches, renders a final summary report with candidate details, and delegates candidate review/promotion interactively or autonomously via `CandidatePromotionService`.
 
 ## FOLDER STRUCTURE
 <folder_structure>
 ```
 src/diagnose/
-├── CandidateReader.ts          # Inspects and extracts candidate metadata from agent output or disk
-├── DiagnoseReportRenderer.ts   # Formats and renders final diagnosis report and candidate summary
-├── DiagnoseService.ts          # Core service coordinating batch processing and session capture
-├── JsonlSessionLedger.ts       # Atomic JSONL persistence for session records
-├── SessionIdGenerator.ts       # Sequential session ID generator (session-YYYY-MM-DD-NNN)
-├── TraceDirectoryScanner.ts    # Filesystem scanner for trace sequence numbers
-├── MetaHarnessAgentAdapter.ts  # Adapter invoking meta-harness agent and tracer
-├── types.ts                    # Interfaces, snapshot types, candidate types, and sanitize helpers
+├── CandidatePromotionService.ts # Builds interactive prompts, runner CLI commands, and spawns review
+├── CandidateReader.ts           # Inspects and extracts candidate metadata from agent output or disk
+├── DiagnoseReportRenderer.ts    # Formats and renders final diagnosis report and candidate summary
+├── DiagnoseService.ts           # Core service coordinating batch processing and session capture
+├── JsonlSessionLedger.ts        # Atomic JSONL persistence for session records
+├── SessionIdGenerator.ts        # Sequential session ID generator (session-YYYY-MM-DD-NNN)
+├── TraceDirectoryScanner.ts     # Filesystem scanner for trace sequence numbers
+├── MetaHarnessAgentAdapter.ts   # Adapter invoking meta-harness agent and tracer
+├── types.ts                     # Interfaces, snapshot types, candidate types, and sanitize helpers
 └── utils/
-    └── DiagnosePaths.ts        # Centralized path builder for traces, candidates, and ledgers
+    └── DiagnosePaths.ts         # Centralized path builder for traces, candidates, and ledgers
 ```
 </folder_structure>
 
