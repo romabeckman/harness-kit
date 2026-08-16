@@ -145,6 +145,7 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
       case '--refine':
         result.refine = true
         break
+
       case '--mode':
       case '-M': {
         const val = nextArg()?.toLowerCase()

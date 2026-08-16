@@ -95,3 +95,26 @@ export type {
   JobStatusDto,
 } from './server'
 
+// Diagnose
+export { DiagnoseService } from './diagnose/DiagnoseService'
+export { JsonlSessionLedger } from './diagnose/JsonlSessionLedger'
+export { SessionIdGenerator } from './diagnose/SessionIdGenerator'
+export { TraceDirectoryScanner } from './diagnose/TraceDirectoryScanner'
+export { MetaHarnessAgentAdapter } from './diagnose/MetaHarnessAgentAdapter'
+export { CandidateReader } from './diagnose/CandidateReader'
+export { CandidatePromotionService } from './diagnose/CandidatePromotionService'
+export { DiagnoseReportRenderer } from './diagnose/DiagnoseReportRenderer'
+export { DiagnosePaths } from './diagnose/utils/DiagnosePaths'
+export type {
+  SessionStatus,
+  SessionSnapshot,
+  DiagnoseSessionRecord,
+  DiagnoseSettings,
+  CandidateReportInfo,
+  DiagnoseReportData,
+  ISessionLedger,
+  ITraceDirectoryScanner,
+  IMetaHarnessAgentAdapter,
+} from './diagnose/types'
+
+

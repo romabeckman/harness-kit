@@ -2,6 +2,27 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "hrns diagnose (antigravity-cli)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/dist/cli/run.js",
+      "args": [
+        "diagnose",
+        "--agent",
+        "antigravity-cli",
+        "--model",
+        "gemini-3.7-flash",
+        "--effort=low",
+        "--debug"
+      ],
+      "cwd": "${workspaceFolder}/.vscode/.temp",
+      "preLaunchTask": "prepare-debug",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
       "name": "hrns init (antigravity-cli)",
       "type": "node",
       "request": "launch",

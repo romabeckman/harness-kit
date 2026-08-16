@@ -2,7 +2,7 @@
 import { cmdRun } from './services/run-service'
 import { printVersion } from './utils/cli-utils'
 import { cmdReport } from './services/report-service'
-import { HELP } from './utils/constants'
+import { HELP, COMMAND_HELP } from './utils/constants'
 import { DebugContext } from './DebugContext'
 
 async function main(): Promise<void> {
@@ -11,8 +11,20 @@ async function main(): Promise<void> {
   const cwd = process.cwd()
 
   if (!cmd || cmd === '--help' || cmd === '-h' || cmd === 'help') {
-    console.log(HELP)
+    const target = args[1]
+    if (target && COMMAND_HELP[target]) {
+      console.log(COMMAND_HELP[target])
+    } else {
+      console.log(HELP)
+    }
     return
+  }
+
+  if (args.includes('--help') || args.includes('-h')) {
+    if (COMMAND_HELP[cmd]) {
+      console.log(COMMAND_HELP[cmd])
+      return
+    }
   }
 
   if (cmd === '--version' || cmd === '-v' || cmd === 'version') {
@@ -42,6 +54,20 @@ async function main(): Promise<void> {
     const { cmdSettings } = await import('./services/settings-service.js')
     const settingsArgs = args.slice(1)
     await cmdSettings(cwd, settingsArgs)
+    return
+  }
+
+  if (cmd === 'diagnose') {
+    const { cmdDiagnose } = await import('./services/diagnose-service.js')
+    const diagnoseArgs = args.slice(1)
+    await cmdDiagnose(cwd, diagnoseArgs)
+    return
+  }
+
+  if (cmd === 'candidate') {
+    const { cmdCandidate } = await import('./services/candidate-service.js')
+    const candidateArgs = args.slice(1)
+    await cmdCandidate(cwd, candidateArgs)
     return
   }
 

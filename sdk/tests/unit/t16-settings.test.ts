@@ -100,8 +100,29 @@ describe('T16 — HarnessSettings', () => {
       effort: 'high',
     })
     expect(settings.resolve('codex', 'implementation')).toEqual({
-      model: 'gpt-5.6-sol',
-      effort: 'medium',
+      model: 'gpt-5.6-luna',
+      effort: 'xhigh',
+    })
+  })
+
+  it('resolves diagnose settings for runners', () => {
+    const globalDir = join(tmpDir, 'global-config')
+    const globalFile = join(globalDir, 'harness-kit', 'settings.json')
+    process.env.HARNESS_SETTINGS_PATH = globalFile
+
+    const settings = HarnessSettings.load(tmpDir)
+
+    expect(settings.resolve('claude', 'diagnose')).toEqual({
+      model: 'anthropic.claude-5-sonnet',
+      effort: 'low',
+    })
+    expect(settings.resolve('antigravity', 'diagnose')).toEqual({
+      model: 'gemini-3.7-flash',
+      effort: 'low',
+    })
+    expect(settings.resolve('copilot', 'diagnose')).toEqual({
+      model: 'gpt-5.6-luna',
+      effort: 'xhigh',
     })
   })
 })

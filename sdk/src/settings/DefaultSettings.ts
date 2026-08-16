@@ -14,17 +14,19 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       review_tl: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
       review_adv: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
       memory: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
+      diagnose: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
     }
   },
   'antigravity': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'gemini-3.6-flash', effort: 'high' },
-      planning: { model: 'gemini-3.1-pro', effort: 'high' },
-      implementation: { model: 'gemini-3.6-flash', effort: 'medium' },
-      review_tl: { model: 'gemini-3.1-pro', effort: 'low' },
-      review_adv: { model: 'gemini-3.1-pro', effort: 'low' },
-      memory: { model: 'gemini-3.6-flash', effort: 'low' },
+      bootstrap: { model: 'gemini-3.7-flash', effort: 'medium' },
+      planning: { model: 'gemini-3.7-flash', effort: 'high' },
+      implementation: { model: 'gemini-3.7-flash', effort: 'medium' },
+      review_tl: { model: 'gemini-3.7-flash', effort: 'low' },
+      review_adv: { model: 'gemini-3.7-flash', effort: 'low' },
+      memory: { model: 'gemini-3.7-flash', effort: 'low' },
+      diagnose: { model: 'gemini-3.7-flash', effort: 'low' },
     }
   },
   'copilot': {
@@ -32,10 +34,11 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     phases: {
       bootstrap: { model: 'gpt-5.6-sol', effort: 'medium' },
       planning: { model: 'gpt-5.6-sol', effort: 'high' },
-      implementation: { model: 'gpt-5.6-sol', effort: 'medium' },
+      implementation: { model: 'gpt-5.6-luna', effort: 'xhigh' },
       review_tl: { model: 'gpt-5.6-luna', effort: 'xhigh' },
       review_adv: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      memory: { model: 'gpt-5.6-sol', effort: 'low' },
+      memory: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      diagnose: { model: 'gpt-5.6-luna', effort: 'xhigh' },
     }
   },
   'cursor': {
@@ -47,6 +50,7 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       review_tl: { model: 'gpt-5.6-luna', effort: 'xhigh' },
       review_adv: { model: 'gpt-5.6-luna', effort: 'xhigh' },
       memory: { model: 'gpt-5.6-sol', effort: 'low' },
+      diagnose: { model: 'gpt-5.6-luna', effort: 'xhigh' },
     }
   },
   'codex': {
@@ -54,10 +58,11 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
     phases: {
       bootstrap: { model: 'gpt-5.6-sol', effort: 'medium' },
       planning: { model: 'gpt-5.6-sol', effort: 'high' },
-      implementation: { model: 'gpt-5.6-sol', effort: 'medium' },
+      implementation: { model: 'gpt-5.6-luna', effort: 'xhigh' },
       review_tl: { model: 'gpt-5.6-luna', effort: 'xhigh' },
       review_adv: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      memory: { model: 'gpt-5.6-sol', effort: 'low' },
+      memory: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      diagnose: { model: 'gpt-5.6-luna', effort: 'xhigh' },
     }
   }
 }

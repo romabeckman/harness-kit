@@ -6,6 +6,7 @@ import type { OrchestratorConfig } from '../types'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../../agent-runner/AgentRunnerError'
 import type { HarnessSettings } from '../../settings/HarnessSettings'
 import type { TokenLedger } from '../../telemetry/TokenLedger'
+import type { ISessionLedger } from '../../diagnose/types'
 import { DEFAULT_PHASE_TIMEOUT_MS, DEFAULT_WAIT_TIMEOUT_MS } from '../../settings/DefaultSettings'
 import { OrchestratorFormatter } from '../utils/OrchestratorFormatter'
 import { TerminalProgress } from '../../ui/TerminalProgress'
@@ -15,7 +16,8 @@ import { DebugContext } from '../../cli/DebugContext'
 export class AgentInvocationService {
   constructor(
     private readonly agentRunner: IAgentRunner,
-    private readonly ledger: TokenLedger
+    private readonly ledger: TokenLedger,
+    private readonly diagnoseLedger?: ISessionLedger
   ) { }
 
   async invokeAgent(
@@ -167,6 +169,28 @@ export class AgentInvocationService {
     let cancelTimeout = scheduleTimeout(0)
     try {
       const output = await this.agentRunner.run(finalInvocation, { signal: controller.signal })
+      if (this.diagnoseLedger) {
+        try {
+          const sessionId = output.session?.id ?? `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+          this.diagnoseLedger.append({
+            sessionId,
+            runner: runnerType,
+            agent: finalInvocation.agent,
+            skill: finalInvocation.skill,
+            model: output.usage?.model ?? finalInvocation.model,
+            effort: output.usage?.effort ?? finalInvocation.effort,
+            featureId: (finalInvocation.payload as any)?.featureId,
+            domain: finalInvocation.domain ?? (finalInvocation.payload as any)?.domain,
+            durationMs: Date.now() - startTime,
+            tokenUsage: output.usage,
+            status: 'pending',
+            timestamp: new Date().toISOString(),
+          })
+        } catch {
+          // ignore diagnose recording errors to prevent failing agent execution
+        }
+      }
+
       if (output.usage) {
         this.ledger.record(finalInvocation.skill ?? '', finalInvocation.agent, output.usage)
         const elapsedMs = Date.now() - startTime

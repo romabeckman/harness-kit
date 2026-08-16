@@ -11,7 +11,7 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_core"
-updated: "2026-08-15"
+updated: "2026-08-16"
 ---
 
 ```graph
@@ -20,8 +20,8 @@ updated: "2026-08-15"
   "entrypoints":["src/cli/run.ts"],
   "registration_files":["package.json"],
   "reference_files":["src/cli/services/run-service.ts"],
-  "code_files":["src/cli/DebugContext.ts","src/cli/services/init-service.ts","src/cli/services/report-service.ts","src/cli/services/report/ReportDataAggregator.ts","src/cli/services/report/ReportRenderer.ts","src/cli/services/report/types.ts","src/cli/services/reset-service.ts","src/cli/services/settings-service.ts","src/cli/utils/cli-utils.ts","src/cli/utils/constants.ts","src/cli/utils/run-args-parser.ts"],
-  "test_files":["src/cli/services/report/__tests__/ReportDataAggregator.test.ts","src/cli/services/report/__tests__/ReportRenderer.test.ts","src/cli/utils/__tests__/run-args-parser.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/unit/t19-run-args-parser.test.ts","tests/unit/t20-debug-context.test.ts","tests/unit/t27-cli-utils.test.ts","tests/unit/t29-init-service.test.ts","tests/unit/t30-resolve-mode.test.ts","tests/unit/t33-resume-phase-choices.test.ts"]
+  "code_files":["src/cli/DebugContext.ts","src/cli/services/candidate-service.ts","src/cli/services/diagnose-service.ts","src/cli/services/init-service.ts","src/cli/services/report-service.ts","src/cli/services/report/ReportDataAggregator.ts","src/cli/services/report/ReportRenderer.ts","src/cli/services/report/types.ts","src/cli/services/reset-service.ts","src/cli/services/settings-service.ts","src/cli/utils/cli-utils.ts","src/cli/utils/constants.ts","src/cli/utils/run-args-parser.ts","src/cli/utils/runner-args-parser.ts"],
+  "test_files":["src/cli/services/__tests__/candidate-service.test.ts","src/cli/services/__tests__/diagnose-service.test.ts","src/cli/services/report/__tests__/ReportDataAggregator.test.ts","src/cli/services/report/__tests__/ReportRenderer.test.ts","src/cli/utils/__tests__/run-args-parser.test.ts","src/cli/utils/__tests__/runner-args-parser.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/unit/t19-run-args-parser.test.ts","tests/unit/t20-debug-context.test.ts","tests/unit/t27-cli-utils.test.ts","tests/unit/t29-init-service.test.ts","tests/unit/t30-resolve-mode.test.ts","tests/unit/t33-resume-phase-choices.test.ts"]
 }
 ```
 
@@ -29,7 +29,7 @@ updated: "2026-08-15"
 Provides the `hrns` command-line interface for launching and managing orchestration sessions.
 
 ## OVERVIEW
-The CLI module delegates execution to `HarnessOrchestrator` after resolving all runtime options. It features commands for initialization, running orchestration sessions, and reporting token usage.
+The CLI module delegates execution to `HarnessOrchestrator` after resolving all runtime options. It features commands for initialization, running orchestration sessions, diagnosing performance, reviewing meta-harness candidates, and reporting token usage.
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -39,12 +39,15 @@ src/cli/
 ├── DebugContext.ts               # Global debug flag singleton
 ├── services/
 │   ├── run-service.ts            # cmdRun() implementation
+│   ├── diagnose-service.ts       # cmdDiagnose() implementation
+│   ├── candidate-service.ts      # cmdCandidate() implementation
 │   ├── init-service.ts           # cmdInit() implementation
 │   ├── reset-service.ts          # resetOptions() wizard
 │   ├── report-service.ts         # cmdReport() implementation
 │   └── settings-service.ts       # cmdSettings() implementation
 └── utils/
     ├── run-args-parser.ts        # parseRunArgs() pure parser
+    ├── runner-args-parser.ts     # parseStandardRunnerArgs() pure parser
     ├── cli-utils.ts              # Path and validation helpers
     └── constants.ts              # Shared constants and help string
 ```
@@ -55,6 +58,8 @@ src/cli/
 ### Available Commands
 - **`hrns init`**: Initialize workspace files and configure steering rules.
 - **`hrns run`**: Start or resume an orchestration session.
+- **`hrns diagnose`**: Run post-orchestration harness diagnosis on pending sessions.
+- **`hrns candidate`**: Review and apply meta-harness optimization candidates (`list`, `review [id]`, `review [id] --auto`).
 - **`hrns report`**: Print token usage report.
 - **`hrns version`**: Show version.
 - **`hrns help`**: Show help.
@@ -68,10 +73,18 @@ src/cli/
 ### Steps
 1. Run `hrns init` for a new workspace.
 2. Run `hrns run` to start the autonomous cycle.
+3. Run `hrns diagnose` to process pending diagnosis sessions and propose improvements.
+4. Run `hrns candidate review <id>` to review and apply improvements with your AI runner.
 
 <code_example>
 # CORRECT: Non-interactive full reset
 hrns run --reset --scope "Build REST API" --path ./src --score 0.9 --reworks 3
+
+# CORRECT: Run diagnosis separately
+hrns diagnose --agent antigravity-cli
+
+# CORRECT: Review candidate with AI runner
+hrns candidate review v001 --agent antigravity-cli
 
 # WRONG: Running without path or scope on a new project
 hrns run --reset

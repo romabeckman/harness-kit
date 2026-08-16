@@ -9,6 +9,7 @@ import type { Feature } from '../file-state/types'
 import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../agent-runner/AgentRunnerError'
 import { TokenLedger } from '../telemetry/TokenLedger'
+import { JsonlSessionLedger } from '../diagnose/JsonlSessionLedger'
 import { AnsiHelpers } from '../ui/AnsiHelpers'
 import {
   IPhaseHandler,
@@ -60,7 +61,8 @@ export class HarnessOrchestrator implements Reviewontext {
 
     this.projectStateService = new ProjectStateService(this.workingDir)
     this.ledger = new TokenLedger(join(productDir, 'tokens.jsonl'))
-    this.agentInvocationService = new AgentInvocationService(this.agentRunner, this.ledger)
+    const diagnoseLedger = new JsonlSessionLedger(join(productDir, 'diagnose-sessions.jsonl'))
+    this.agentInvocationService = new AgentInvocationService(this.agentRunner, this.ledger, diagnoseLedger)
 
     // When user resumes execution, we need to use the same scope as the original execution
     this.ensureConfig()
