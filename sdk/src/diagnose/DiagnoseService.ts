@@ -83,6 +83,7 @@ export class DiagnoseService {
     const dateOffsets: Record<string, number> = {}
     const sessionIds: string[] = []
     const traceIds: string[] = []
+    const completedStatuses: Record<string, 'completed'> = {}
     let processed = 0
 
     for (let i = 0; i < batch.length; i++) {
@@ -96,13 +97,23 @@ export class DiagnoseService {
 
       try {
         await this.agentAdapter.invoke(session, preComputedId, settings)
-        this.ledger.rewriteStatus(session.sessionId, 'completed')
+        completedStatuses[session.sessionId] = 'completed'
         sessionIds.push(session.sessionId)
         traceIds.push(preComputedId)
         processed++
       } catch (err) {
         // Leave session as pending on failure so it can retry next time
         console.error(`[DiagnoseService] Error diagnosing session ${session.sessionId}:`, err)
+      }
+    }
+
+    if (processed > 0) {
+      if (this.ledger.rewriteBatchStatuses) {
+        this.ledger.rewriteBatchStatuses(completedStatuses)
+      } else {
+        for (const sid of Object.keys(completedStatuses)) {
+          this.ledger.rewriteStatus(sid, 'completed')
+        }
       }
     }
 

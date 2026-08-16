@@ -14,6 +14,8 @@ import { HarnessSettings } from '../../settings/HarnessSettings'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
 import { DebugContext } from '../DebugContext'
 
+import { parseStandardRunnerArgs } from '../utils/runner-args-parser'
+
 export interface DiagnoseCliOptions {
   agentType?: string
   model?: string
@@ -22,10 +24,19 @@ export interface DiagnoseCliOptions {
 }
 
 export function parseDiagnoseArgs(args: string[]): DiagnoseCliOptions {
-  const result: DiagnoseCliOptions = {}
+  const runnerArgs = parseStandardRunnerArgs(args)
+  if (runnerArgs.debug) {
+    DebugContext.enable()
+  }
 
-  for (let i = 0; i < args.length; i++) {
-    const currentArg = args[i]
+  const result: DiagnoseCliOptions = {
+    agentType: runnerArgs.agentType,
+    model: runnerArgs.model,
+    effort: runnerArgs.effort,
+  }
+
+  for (let i = 0; i < runnerArgs.restArgs.length; i++) {
+    const currentArg = runnerArgs.restArgs[i]
     let arg: string
     let value: string | undefined
 
@@ -37,22 +48,14 @@ export function parseDiagnoseArgs(args: string[]): DiagnoseCliOptions {
       arg = currentArg
     }
 
-    const nextArg = () => (value !== undefined ? value : args[++i])
+    const nextArg = () => (value !== undefined ? value : runnerArgs.restArgs[++i])
 
-    if (arg === '--agent' || arg === '-a') {
-      result.agentType = nextArg()
-    } else if (arg === '--model' || arg === '-m') {
-      result.model = nextArg()
-    } else if (arg === '--effort' || arg === '-e') {
-      result.effort = nextArg()
-    } else if (arg === '--batch-size') {
+    if (arg === '--batch-size') {
       const val = nextArg()
       const parsed = parseInt(val, 10)
       if (!isNaN(parsed) && parsed > 0) {
         result.batchSize = parsed
       }
-    } else if (arg === '--debug') {
-      DebugContext.enable()
     }
   }
 

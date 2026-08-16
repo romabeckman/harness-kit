@@ -6,6 +6,8 @@ import { AnsiHelpers } from '../../ui/AnsiHelpers'
 import { readdirSync, existsSync, readFileSync } from 'node:fs'
 import { DiagnosePaths } from '../../diagnose/utils/DiagnosePaths'
 
+import { parseStandardRunnerArgs } from '../utils/runner-args-parser'
+
 export async function cmdCandidate(cwd: string, args: string[]): Promise<void> {
   const subCommand = args[0] ?? 'list'
 
@@ -61,30 +63,16 @@ export async function cmdCandidate(cwd: string, args: string[]): Promise<void> {
   }
 
   if (subCommand === 'review' || subCommand === 'apply') {
-    const isNonInteractive = args.includes('--non-interactive') || args.includes('--auto') || args.includes('-y')
-    const modelArg = args.find((a) => a.startsWith('--model='))?.split('=')[1] ??
-      (args.indexOf('--model') !== -1 ? args[args.indexOf('--model') + 1] : undefined) ??
-      (args.indexOf('-m') !== -1 ? args[args.indexOf('-m') + 1] : undefined)
-    const effortArg = args.find((a) => a.startsWith('--effort='))?.split('=')[1] ??
-      (args.indexOf('--effort') !== -1 ? args[args.indexOf('--effort') + 1] : undefined) ??
-      (args.indexOf('-e') !== -1 ? args[args.indexOf('-e') + 1] : undefined)
-    const agentArg = args.find((a) => a.startsWith('--agent='))?.split('=')[1] ??
-      (args.indexOf('--agent') !== -1 ? args[args.indexOf('--agent') + 1] : undefined) ??
-      (args.indexOf('-a') !== -1 ? args[args.indexOf('-a') + 1] : undefined)
+    const runnerArgs = parseStandardRunnerArgs(args.slice(1))
+    const isNonInteractive = runnerArgs.restArgs.includes('--non-interactive') ||
+      runnerArgs.restArgs.includes('--auto') ||
+      runnerArgs.restArgs.includes('-y')
+    const modelArg = runnerArgs.model
+    const effortArg = runnerArgs.effort
+    const agentArg = runnerArgs.agentType
 
-    let candidateId: string | undefined = undefined
-    for (let i = 1; i < args.length; i++) {
-      const a = args[i]
-      if (a === '--agent' || a === '-a' || a === '--model' || a === '-m' || a === '--effort' || a === '-e') {
-        i++ // skip value
-        continue
-      }
-      if (a.startsWith('--') || a.startsWith('-')) {
-        continue
-      }
-      candidateId = a
-      break
-    }
+    const candidateIdArg = runnerArgs.restArgs.find((a) => !a.startsWith('-'))
+    let candidateId = candidateIdArg
 
     if (!candidateId) {
       const latest = CandidateReader.readCandidateFromDisk(cwd)

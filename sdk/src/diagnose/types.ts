@@ -58,6 +58,7 @@ export interface ISessionLedger {
   loadAll(): DiagnoseSessionRecord[]
   loadPending(): DiagnoseSessionRecord[]
   rewriteStatus(sessionId: string, status: SessionStatus): void
+  rewriteBatchStatuses?(statusMap: Record<string, SessionStatus> | Map<string, SessionStatus>): void
 }
 
 export interface ITraceDirectoryScanner {

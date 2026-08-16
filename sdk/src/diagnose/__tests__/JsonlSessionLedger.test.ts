@@ -114,4 +114,22 @@ describe('JsonlSessionLedger', () => {
       'session-2026-08-15-002',
     ])
   })
+
+  it('updates multiple session statuses atomically with rewriteBatchStatuses', () => {
+    const ledger = new JsonlSessionLedger(ledgerPath)
+    ledger.append(sampleRecord1)
+    ledger.append(sampleRecord2)
+
+    ledger.rewriteBatchStatuses({
+      'session-2026-08-15-001': 'completed',
+      'session-2026-08-15-002': 'completed',
+    })
+
+    const pending = ledger.loadPending()
+    expect(pending).toHaveLength(0)
+
+    const all = ledger.loadAll()
+    expect(all[0].status).toBe('completed')
+    expect(all[1].status).toBe('completed')
+  })
 })

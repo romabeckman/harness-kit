@@ -52,10 +52,18 @@ export class JsonlSessionLedger implements ISessionLedger {
   }
 
   rewriteStatus(sessionId: string, status: SessionStatus): void {
+    this.rewriteBatchStatuses({ [sessionId]: status })
+  }
+
+  rewriteBatchStatuses(statusMap: Record<string, SessionStatus> | Map<string, SessionStatus>): void {
     const all = this.loadAll()
-    const updated = all.map((record) =>
-      record.sessionId === sessionId ? { ...record, status } : record
-    )
+    const getStatus = (id: string): SessionStatus | undefined =>
+      statusMap instanceof Map ? statusMap.get(id) : statusMap[id]
+
+    const updated = all.map((record) => {
+      const newStatus = getStatus(record.sessionId)
+      return newStatus ? { ...record, status: newStatus } : record
+    })
 
     const dir = dirname(this.#ledgerPath)
     if (!existsSync(dir)) {
