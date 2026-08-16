@@ -161,13 +161,47 @@ hrns settings renew     # recreate with defaults
 hrns settings delete    # remove the file
 ```
 
+### `hrns diagnose`
+
+Runs post-orchestration harness diagnosis and meta-harness optimization. It reads recorded sessions from `docs/product/diagnose-sessions.jsonl`, processes pending sessions in batches, and creates candidate skill improvements in `docs/harness-history/candidates/`.
+
+```bash
+hrns diagnose                                    # process pending sessions in default batches of 3
+hrns diagnose --agent copilot-cli                # specify runner for diagnosis
+hrns diagnose --model gpt-5.6-luna --effort high # override model and reasoning effort
+hrns diagnose --batch-size 5                     # process 5 sessions per batch
+```
+
+### `hrns candidate`
+
+Reviews and applies meta-harness optimization candidates generated during diagnosis.
+
+```bash
+hrns candidate list                              # list all candidate improvements and status (PROPOSED / APPLIED / PROMOTED)
+hrns candidate review <candidate_id>             # launch interactive AI runner session to review & apply
+hrns candidate review <candidate_id> --auto      # apply candidate autonomously via LLM
+```
+
 ### `hrns report`
 
-Prints token usage report for the current session.
+Prints development status, feature progress, and token usage ledger analytics aggregated from `docs/product/tokens.jsonl` for the current session.
+
+```bash
+hrns report
+```
 
 ### `hrns version` / `hrns help`
 
-Show version or help message.
+Displays version information or help text for any command:
+
+```bash
+hrns version              # show CLI version
+hrns help                 # show general help
+hrns help run             # show help for hrns run
+hrns help diagnose        # show help for hrns diagnose
+hrns help candidate       # show help for hrns candidate
+hrns help settings        # show help for hrns settings
+```
 
 ---
 
