@@ -162,4 +162,41 @@ Increase timeout and add circuit breaker.
     const candidate = CandidateReader.resolveCandidate(output, tmpDir)
     expect(candidate).toBeNull()
   })
+
+  it('detects PROMOTED status when score.md has promoted: true', () => {
+    const candidateDir = join(tmpDir, 'docs', 'harness-history', 'candidates', 'v001')
+    mkdirSync(candidateDir, { recursive: true })
+    writeFileSync(join(candidateDir, 'score.md'), 'promoted: true\n', 'utf8')
+
+    const status = CandidateReader.getCandidateStatus(tmpDir, 'v001', 'tdd-orchestrator')
+    expect(status).toBe('PROMOTED')
+  })
+
+  it('detects APPLIED status when candidate SKILL.md matches active workspace skill', () => {
+    const candidateDir = join(tmpDir, 'docs', 'harness-history', 'candidates', 'v001')
+    mkdirSync(candidateDir, { recursive: true })
+    writeFileSync(join(candidateDir, 'score.md'), 'promoted: false\n', 'utf8')
+    writeFileSync(join(candidateDir, 'SKILL.md'), '# Improved Skill Content', 'utf8')
+
+    const activeSkillDir = join(tmpDir, 'skills', 'tdd-orchestrator')
+    mkdirSync(activeSkillDir, { recursive: true })
+    writeFileSync(join(activeSkillDir, 'SKILL.md'), '# Improved Skill Content', 'utf8')
+
+    const status = CandidateReader.getCandidateStatus(tmpDir, 'v001', 'tdd-orchestrator')
+    expect(status).toBe('APPLIED')
+  })
+
+  it('detects PROPOSED status when candidate is unpromoted and does not match active skill', () => {
+    const candidateDir = join(tmpDir, 'docs', 'harness-history', 'candidates', 'v001')
+    mkdirSync(candidateDir, { recursive: true })
+    writeFileSync(join(candidateDir, 'score.md'), 'promoted: false\n', 'utf8')
+    writeFileSync(join(candidateDir, 'SKILL.md'), '# Improved Skill Content', 'utf8')
+
+    const activeSkillDir = join(tmpDir, 'skills', 'tdd-orchestrator')
+    mkdirSync(activeSkillDir, { recursive: true })
+    writeFileSync(join(activeSkillDir, 'SKILL.md'), '# Old Skill Content', 'utf8')
+
+    const status = CandidateReader.getCandidateStatus(tmpDir, 'v001', 'tdd-orchestrator')
+    expect(status).toBe('PROPOSED')
+  })
 })

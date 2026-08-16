@@ -37,16 +37,14 @@ export async function cmdCandidate(cwd: string, args: string[]): Promise<void> {
 
     for (const id of candidateDirs) {
       const info = CandidateReader.readCandidateFromDisk(cwd, id)
-      const scorePath = DiagnosePaths.candidateScorePath(cwd, id)
-      let isPromoted = false
-      if (existsSync(scorePath)) {
-        const scoreContent = readFileSync(scorePath, 'utf8')
-        isPromoted = /promoted:\s*true/i.test(scoreContent)
-      }
+      const status = info?.status ?? CandidateReader.getCandidateStatus(cwd, id, info?.targetSkill)
 
-      const statusBadge = isPromoted
-        ? AnsiHelpers.green('PROMOTED')
-        : AnsiHelpers.yellow('PROPOSED')
+      let statusBadge = AnsiHelpers.yellow('PROPOSED')
+      if (status === 'PROMOTED') {
+        statusBadge = AnsiHelpers.green('PROMOTED')
+      } else if (status === 'APPLIED') {
+        statusBadge = AnsiHelpers.cyan('APPLIED')
+      }
 
       console.log(`• ${id} [${statusBadge}]`)
       if (info?.targetSkill) console.log(`  Target Skill: ${info.targetSkill}`)

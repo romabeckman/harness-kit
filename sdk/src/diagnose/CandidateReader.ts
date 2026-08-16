@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { homedir } from 'node:os'
 import type { AgentOutput } from '../agent-runner/types'
 import { JsonExtractionProtocol } from '../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../json-extraction/types'
@@ -7,6 +8,51 @@ import type { CandidateReportInfo } from './types'
 import { DiagnosePaths } from './utils/DiagnosePaths'
 
 export class CandidateReader {
+  static getCandidateStatus(
+    workingDir: string,
+    candidateId: string,
+    targetSkill?: string
+  ): 'PROMOTED' | 'APPLIED' | 'PROPOSED' {
+    const scorePath = DiagnosePaths.candidateScorePath(workingDir, candidateId)
+    if (existsSync(scorePath)) {
+      try {
+        const scoreContent = readFileSync(scorePath, 'utf8')
+        if (/promoted:\s*true/i.test(scoreContent) || /status:\s*PROMOTED/i.test(scoreContent)) {
+          return 'PROMOTED'
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (targetSkill && targetSkill !== 'unknown') {
+      const candidateSkillPath = DiagnosePaths.candidateSkillPath(workingDir, candidateId)
+      if (existsSync(candidateSkillPath)) {
+        try {
+          const candidateSkillContent = readFileSync(candidateSkillPath, 'utf8').trim()
+          const candidateDestinations = [
+            join(workingDir, 'skills', targetSkill, 'SKILL.md'),
+            join(workingDir, '..', 'skills', targetSkill, 'SKILL.md'),
+            join(homedir(), '.gemini', 'config', 'plugins', 'harness-kit', 'skills', targetSkill, 'SKILL.md'),
+            join(homedir(), '.claude-plugin', 'harness-kit', 'skills', targetSkill, 'SKILL.md'),
+          ]
+
+          for (const activePath of candidateDestinations) {
+            if (existsSync(activePath)) {
+              const activeContent = readFileSync(activePath, 'utf8').trim()
+              if (activeContent === candidateSkillContent) {
+                return 'APPLIED'
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    return 'PROPOSED'
+  }
   static extractCandidateFromAgentOutput(
     output: AgentOutput,
     workingDir?: string
@@ -118,7 +164,7 @@ export class CandidateReader {
     return {
       candidateId: targetId,
       targetSkill,
-      status: 'PROPOSED',
+      status: CandidateReader.getCandidateStatus(workingDir, targetId, targetSkill),
       path: `docs/harness-history/candidates/${targetId}`,
       rationale: rationaleText,
       proposedChange,
