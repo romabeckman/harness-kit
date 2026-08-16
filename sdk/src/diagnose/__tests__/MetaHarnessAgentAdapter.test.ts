@@ -96,6 +96,16 @@ describe('MetaHarnessAgentAdapter', () => {
         prompt: expect.stringContaining('STRICT WORKSPACE CONSTRAINTS'),
       })
     )
+    expect(mockRunner.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('up to 3 candidates'),
+      })
+    )
+    expect(mockRunner.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('significant impact'),
+      })
+    )
   })
 
   it('creates runner dynamically using session.runner when no custom runner is injected', async () => {

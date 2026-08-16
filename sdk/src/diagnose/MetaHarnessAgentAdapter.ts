@@ -106,9 +106,10 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
       `Execute \`harness-kit:meta-harness\` optimization workflow:`,
       `1. Read the trace history strictly from \`${tracesBasePath}/\` and verify that \`${paretoPath}\` is compiled (invoke \`harness-kit:harness-evaluator\` if needed).`,
       `2. Diagnose patterns of regression, failure modes, or stagnation across skills.`,
-      `3. Create the candidate directory strictly in \`${candidatesBasePath}/{candidate_id}/\` (relative: \`docs/harness-history/candidates/{candidate_id}/\`, e.g. \`v001\`, \`v002\`, etc.).`,
-      `4. Write the proposed candidate modification to the target skill's \`SKILL.md\` and store all candidate metadata files (\`rationale.md\`, \`diff.md\`, \`score.md\`, \`SKILL.md\`) inside \`${candidatesBasePath}/{candidate_id}/\`.`,
-      `5. Output final decision strictly as a JSON block with candidateId, targetSkill, status, and decision.`,
+      `3. You may generate and propose up to 3 candidates (e.g. \`v001\`, \`v002\`, \`v003\`, \`vXXX\`). For each candidate, create its directory strictly in \`${candidatesBasePath}/{candidate_id}/\` (relative: \`docs/harness-history/candidates/{candidate_id}/\`).`,
+      `4. Candidate Selection Criterion: Only elect or propose a candidate if the proposed modification causes a significant impact and measurable improvement to the target \`SKILL.md\`.`,
+      `5. Write the proposed candidate modification to the target skill's \`SKILL.md\` and store all candidate metadata files (\`rationale.md\`, \`diff.md\`, \`score.md\`, \`SKILL.md\`) inside each candidate's directory \`${candidatesBasePath}/{candidate_id}/\`.`,
+      `6. Output final decision strictly as a JSON block with candidateId, targetSkill, status, and decision.`,
     ].join('\n')
 
     const invocation: AgentInvocation = {
