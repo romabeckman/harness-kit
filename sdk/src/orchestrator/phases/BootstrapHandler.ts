@@ -1,9 +1,11 @@
+import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Phase, CliCommand } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 import { buildDocsOrientationSection } from '../utils/PromptHelpers'
 import { getProductDir } from '../utils/PhaseFileUtils'
+import { BacklogParser } from '../../file-state/parsers/BacklogParser'
 
 export class BootstrapHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
@@ -60,7 +62,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `You are software architect defining the backlog of a project. Understand the project scope and generate a \`BACKLOG.md\` table with all the features of the project.`,
       ``,
       `# OBJECTIVE`,
-      `Parse the project scope below and generate a \`BACKLOG.md\` table. Write it to: \`${backlogPath}\``,
+      `Parse the project scope below and generate the \`BACKLOG.md\` table. Write it to: \`${backlogPath}\``,
       ``,
       `# OUTPUT FORMAT`,
       `Table columns (exact):`,
@@ -115,14 +117,21 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     }
     const prompt = promptLines.join('\n')
 
-    await context.invokeAgent({
+    const output = await context.invokeAgent({
       agent: 'harness-kit:software-architect',
       mode: 'autonomous',
       prompt,
       phaseKey: 'bootstrap',
     })
 
-    const created = context.fsm.loadBacklog()
+    let created = context.fsm.loadBacklog()
+    if (created.length === 0 && output?.raw) {
+      const parsed = BacklogParser.parse(output.raw)
+      if (parsed.length > 0) {
+        writeFileSync(backlogPath, output.raw.trim() + '\n', 'utf-8')
+        created = context.fsm.loadBacklog()
+      }
+    }
     PhaseDecisionLogger.logBootstrap(context.fsm, created)
 
     return shouldRefine ? Phase.REFINEMENT : Phase.PLANNING

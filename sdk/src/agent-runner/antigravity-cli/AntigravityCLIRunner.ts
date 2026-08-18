@@ -38,15 +38,16 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
   }
 
   protected override checkParsed(
-    parsed: Partial<AgentOutput>,
+    parsed: Partial<AgentOutput> & { errorDetail?: string },
     invocation: AgentInvocation,
   ): AgentRunnerError | null {
     if (parsed.success === false) {
+      const errorMsg = parsed.errorDetail || parsed.raw || ''
       return new AgentRunnerError({
         code: AgentRunnerErrorCode.API_ERROR,
         skill: invocation.skill ?? '',
         phase: 'dispatch',
-        message: `${this.binaryName} agent returned an error: ${parsed.raw ?? ''}`,
+        message: `${this.binaryName} agent returned an error: ${errorMsg}`,
       })
     }
     return null
@@ -90,8 +91,17 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     }
 
     const status = parsedJson.status
-    const isError = status === 'FAILED' || status === 'ERROR'
+    const errorDetail = typeof parsedJson.error === 'string'
+      ? parsedJson.error
+      : (typeof parsedJson.error_message === 'string'
+          ? parsedJson.error_message
+          : (typeof parsedJson.message === 'string' ? parsedJson.message : undefined))
+
     const rawResponse = typeof parsedJson.response === 'string' ? parsedJson.response : stdout
+
+    // If status is FAILED, or status is ERROR and there is no response content, treat as error.
+    // If status is ERROR but rawResponse has valid content, the turn completed (e.g. tool warning recovery).
+    const isError = status === 'FAILED' || (status === 'ERROR' && (!rawResponse || rawResponse.trim().length === 0))
 
     const artefacts = parsedJson.structured_output ?? (() => {
       const j = extractJsonOrNull(rawResponse)
@@ -122,7 +132,8 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
       artefacts,
       usage: finalUsage,
       session: sessionId ? { id: sessionId } : undefined,
-    }
+      ...(errorDetail ? { errorDetail } : {}),
+    } as Partial<AgentOutput>
   }
 }
 
