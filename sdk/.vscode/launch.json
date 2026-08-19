@@ -45,12 +45,56 @@
       ]
     },
     {
+      "name": "hrns run (antigravity-cli)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/dist/cli/run.js",
+      "args": [
+        "run",
+        "--agent",
+        "antigravity-cli",
+        "--model",
+        "gemini-3.7-flash",
+        "--effort=low",
+        "--skip-deploy",
+        "--debug"
+      ],
+      "cwd": "${workspaceFolder}/.vscode/.temp",
+      "preLaunchTask": "prepare-debug",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
       "name": "hrns init (codex-cli)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/dist/cli/run.js",
       "args": [
         "init",
+        "--agent",
+        "codex-cli",
+        "--model",
+        "gpt-5.6-luna",
+        "--effort=low",
+        "--skip-deploy",
+        "--debug"
+      ],
+      "cwd": "${workspaceFolder}/.vscode/.temp",
+      "preLaunchTask": "prepare-debug",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "hrns run (codex-cli)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/dist/cli/run.js",
+      "args": [
+        "run",
         "--agent",
         "codex-cli",
         "--model",

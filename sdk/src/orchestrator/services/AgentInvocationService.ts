@@ -187,7 +187,6 @@ export class AgentInvocationService {
               domain: domain || undefined,
             } : {}),
             durationMs: Date.now() - startTime,
-            tokenUsage: output.usage,
             status: 'pending',
             timestamp: new Date().toISOString(),
           })

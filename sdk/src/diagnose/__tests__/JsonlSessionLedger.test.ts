@@ -132,4 +132,33 @@ describe('JsonlSessionLedger', () => {
     expect(all[0].status).toBe('completed')
     expect(all[1].status).toBe('completed')
   })
+
+  it('updates existing record instead of duplicating when appending with existing sessionId', () => {
+    const ledger = new JsonlSessionLedger(ledgerPath)
+    ledger.append(sampleRecord1)
+    ledger.append(sampleRecord2)
+
+    const updatedRecord1: DiagnoseSessionRecord = {
+      ...sampleRecord1,
+      model: 'updated-claude-model',
+      durationMs: 4200,
+      phase: 'DEVELOPMENT',
+      domain: 'auth-domain',
+    }
+
+    ledger.append(updatedRecord1)
+
+    const content = readFileSync(ledgerPath, 'utf8')
+    const lines = content.trim().split('\n')
+    expect(lines).toHaveLength(2)
+
+    const all = ledger.loadAll()
+    expect(all).toHaveLength(2)
+    expect(all[0].sessionId).toBe('session-2026-08-15-001')
+    expect(all[0].model).toBe('updated-claude-model')
+    expect(all[0].durationMs).toBe(4200)
+    expect(all[0].phase).toBe('DEVELOPMENT')
+    expect(all[0].domain).toBe('auth-domain')
+    expect(all[1].sessionId).toBe('session-2026-08-15-002')
+  })
 })

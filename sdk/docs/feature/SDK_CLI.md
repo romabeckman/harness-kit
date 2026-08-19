@@ -11,7 +11,7 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_core"
-updated: "2026-08-16"
+updated: "2026-08-18"
 ---
 
 ```graph
@@ -98,6 +98,7 @@ hrns run --reset
 | `--model, -m` | string | No | Model name | — |
 | `--effort, -e` | string | No | Reasoning effort level for the model | — |
 | `--mode, -M` | string | No | Execution mode: `quick \| fast \| thinking \| deep_thinking` | `thinking` |
+| `--complexity, -c` | string | No | Scope complexity override: `LOW \| HIGH \| AUTO` | Mode-inferred |
 | `--reset` | boolean | No | Force a new cycle | false |
 | `--resume` | boolean | No | Resume from last saved session | false |
 | `--scope` | string | No | Project scope / PRD | — |

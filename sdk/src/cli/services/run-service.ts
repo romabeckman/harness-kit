@@ -193,6 +193,7 @@ function logOrchestrationStart(
   optionsReset: ResetOptions | null,
   steeringMessage: string,
   modeLabel: RunMode | string,
+  complexity: Complexity,
   skipValidation: boolean,
   skipMemory: boolean,
   skipDeploy: boolean
@@ -213,7 +214,8 @@ function logOrchestrationStart(
       `  steering:  ${steeringMessage.slice(0, DEFAULT_LINE_LENGTH)}${steeringMessage.length > DEFAULT_LINE_LENGTH ? "…" : ""}`,
     );
   }
-  console.log(`  mode:     ${modeLabel}`);
+  console.log(`  mode:        ${modeLabel}`);
+  console.log(`  complexity:  ${complexity}`);
   if (skipValidation) {
     console.log(`  skip-validation: true  (Phase REVIEW skipped)`);
   }
@@ -284,6 +286,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
   parsed.mode = await promptForMode(parsed.mode);
 
   const resolved = resolveMode(parsed.mode)
+  const complexity = parsed.complexity ?? resolved.complexity
   const skipValidation = resolved.skipValidation || !!parsed.skipValidation
   const skipMemory = resolved.skipMemory || !!parsed.skipMemory
   const enableRefinement = resolved.enableRefinement || !!parsed.refine
@@ -307,6 +310,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     optionsReset,
     steeringMessage,
     parsed.mode ?? RunMode.THINKING,
+    complexity,
     skipValidation,
     skipMemory,
     skipDeploy
@@ -332,7 +336,7 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     agentRunner,
     settings,
     initialRules: steeringMessage.length > 0 ? steeringMessage : undefined,
-    complexity: resolved.complexity,
+    complexity,
     chain: ChainBuilder.buildDefault(),
     cliCommand: isFromInit ? CliCommand.INIT : CliCommand.RUN,
     skipValidation,

@@ -279,8 +279,15 @@ describe('AgentInvocationService', () => {
   })
 
   describe('diagnose ledger recording', () => {
-    it('records session with phase and domain when currentPhase is Phase.DEVELOPMENT', async () => {
-      const runner = makeRunner()
+    it('records session with phase and domain when currentPhase is Phase.DEVELOPMENT without tokenUsage', async () => {
+      const usage: TokenUsage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheCreationTokens: 0,
+        cacheReadTokens: 0,
+        costUsd: 0.001,
+      }
+      const runner = makeRunner({ usage })
       const diagnoseLedger = { append: vi.fn() } as unknown as ISessionLedger
       const service = new AgentInvocationService(runner, makeLedger(), diagnoseLedger)
 
@@ -295,10 +302,18 @@ describe('AgentInvocationService', () => {
       const appended = (diagnoseLedger.append as ReturnType<typeof vi.fn>).mock.calls[0][0]
       expect(appended.phase).toBe(Phase.DEVELOPMENT)
       expect(appended.domain).toBe('auth-service')
+      expect(appended.tokenUsage).toBeUndefined()
     })
 
-    it('records session with phase and domain from payload when currentPhase is Phase.REVIEW', async () => {
-      const runner = makeRunner()
+    it('records session with phase and domain from payload when currentPhase is Phase.REVIEW without tokenUsage', async () => {
+      const usage: TokenUsage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheCreationTokens: 0,
+        cacheReadTokens: 0,
+        costUsd: 0.001,
+      }
+      const runner = makeRunner({ usage })
       const diagnoseLedger = { append: vi.fn() } as unknown as ISessionLedger
       const service = new AgentInvocationService(runner, makeLedger(), diagnoseLedger)
 
@@ -313,6 +328,7 @@ describe('AgentInvocationService', () => {
       const appended = (diagnoseLedger.append as ReturnType<typeof vi.fn>).mock.calls[0][0]
       expect(appended.phase).toBe(Phase.REVIEW)
       expect(appended.domain).toBe('billing')
+      expect(appended.tokenUsage).toBeUndefined()
     })
 
     it('does NOT include domain when currentPhase is not development or review (e.g. PLANNING) but still includes phase', async () => {
@@ -331,6 +347,7 @@ describe('AgentInvocationService', () => {
       const appended = (diagnoseLedger.append as ReturnType<typeof vi.fn>).mock.calls[0][0]
       expect(appended.phase).toBe(Phase.PLANNING)
       expect(appended.domain).toBeUndefined()
+      expect(appended.tokenUsage).toBeUndefined()
     })
 
     it('does NOT include domain when currentPhase is BOOTSTRAP but still includes phase', async () => {
@@ -349,6 +366,7 @@ describe('AgentInvocationService', () => {
       const appended = (diagnoseLedger.append as ReturnType<typeof vi.fn>).mock.calls[0][0]
       expect(appended.phase).toBe(Phase.BOOTSTRAP)
       expect(appended.domain).toBeUndefined()
+      expect(appended.tokenUsage).toBeUndefined()
     })
   })
 
