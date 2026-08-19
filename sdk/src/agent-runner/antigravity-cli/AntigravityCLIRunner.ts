@@ -97,11 +97,12 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
           ? parsedJson.error_message
           : (typeof parsedJson.message === 'string' ? parsedJson.message : undefined))
 
+    const hasResponse = typeof parsedJson.response === 'string' && parsedJson.response.trim().length > 0
     const rawResponse = typeof parsedJson.response === 'string' ? parsedJson.response : stdout
 
-    // If status is FAILED, or status is ERROR and there is no response content, treat as error.
-    // If status is ERROR but rawResponse has valid content, the turn completed (e.g. tool warning recovery).
-    const isError = status === 'FAILED' || (status === 'ERROR' && (!rawResponse || rawResponse.trim().length === 0))
+    // If status is FAILED, or status is ERROR and there is no valid response content, treat as error.
+    // If status is ERROR but response has valid content, the turn completed (e.g. tool warning recovery).
+    const isError = status === 'FAILED' || (status === 'ERROR' && !hasResponse)
 
     const artefacts = parsedJson.structured_output ?? (() => {
       const j = extractJsonOrNull(rawResponse)

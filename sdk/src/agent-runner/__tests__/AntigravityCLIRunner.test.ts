@@ -202,6 +202,25 @@ describe('AntigravityCLIRunner', () => {
     )
   })
 
+  it('should fail when status is ERROR and response field is omitted', async () => {
+    const mockJsonOutput = JSON.stringify({
+      conversation_id: '123-abc',
+      status: 'ERROR',
+      error: 'Fatal crash before generating response',
+    })
+
+    mockSpawn.mockReturnValue(new MockChildProcess([mockJsonOutput]) as any)
+
+    const runner = new AntigravityCLIRunner()
+
+    await expect(runner.run(invocation)).rejects.toThrow(
+      expect.objectContaining({
+        code: AgentRunnerErrorCode.API_ERROR,
+        message: expect.stringContaining('Fatal crash before generating response'),
+      })
+    )
+  })
+
   it('should fallback to plain text if agy stdout is not JSON', async () => {
     const plainText = 'Plain text response from agy'
 
