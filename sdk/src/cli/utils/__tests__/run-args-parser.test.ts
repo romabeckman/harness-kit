@@ -61,12 +61,37 @@ describe('parseRunArgs', () => {
     })
   })
 
-  describe('--complexity is removed', () => {
-    it('silently ignores --complexity flag', () => {
-      // --complexity no longer exists; it should be consumed by the unknown-flag handler
-      // and not throw, and mode should remain undefined
-      const result = parseRunArgs(['--complexity', 'LOW'])
-      expect(result.mode).toBeUndefined()
+  describe('--complexity / -c', () => {
+    it('returns undefined complexity when flag is absent', () => {
+      const result = parseRunArgs([])
+      expect(result.complexity).toBeUndefined()
+    })
+
+    it.each([
+      ['--complexity LOW', 'LOW', Complexity.LOW],
+      ['--complexity low', 'low', Complexity.LOW],
+      ['--complexity HIGH', 'HIGH', Complexity.HIGH],
+      ['--complexity high', 'high', Complexity.HIGH],
+      ['--complexity AUTO', 'AUTO', Complexity.AUTO],
+      ['--complexity auto', 'auto', Complexity.AUTO],
+    ])('parses %s', (_, rawValue, expected) => {
+      const result = parseRunArgs(['--complexity', rawValue])
+      expect(result.complexity).toBe(expected)
+    })
+
+    it('parses -c alias', () => {
+      const result = parseRunArgs(['-c', 'HIGH'])
+      expect(result.complexity).toBe(Complexity.HIGH)
+    })
+
+    it('supports --complexity=LOW inline syntax', () => {
+      const result = parseRunArgs(['--complexity=LOW'])
+      expect(result.complexity).toBe(Complexity.LOW)
+    })
+
+    it('ignores unknown complexity values', () => {
+      const result = parseRunArgs(['--complexity', 'EXTREME'])
+      expect(result.complexity).toBeUndefined()
     })
   })
 

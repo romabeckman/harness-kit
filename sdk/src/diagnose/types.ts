@@ -1,4 +1,4 @@
-import type { AgentOutput, TokenUsage } from '../agent-runner/types'
+import type { AgentOutput } from '../agent-runner/types'
 
 export type SessionStatus = 'pending' | 'completed'
 
@@ -39,9 +39,9 @@ export interface DiagnoseSessionRecord {
   model?: string
   effort?: string
   featureId?: string
+  phase?: string
   domain?: string
   durationMs?: number
-  tokenUsage?: TokenUsage
   status: SessionStatus
   timestamp: string
   snapshot?: SessionSnapshot

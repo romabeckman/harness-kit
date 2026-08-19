@@ -5,7 +5,7 @@ import { DevStateParser } from './parsers/DevStateParser'
 import { BootstrapConfigParser } from './parsers/BootstrapConfigParser'
 import type { Feature, Task, BootstrapConfig, FeatureStatus, TaskStatus, CurrentPhase, DecisionEntry } from './types'
 import { createDefaultSteeringRules } from './types'
-import { OrchestratorConfig, Phase } from '../orchestrator/types'
+import { OrchestratorConfig, Phase, Complexity } from '../orchestrator/types'
 
 export interface IFileStateManager {
   // ─── Scope ───────────────────────────────────────────────────────────────

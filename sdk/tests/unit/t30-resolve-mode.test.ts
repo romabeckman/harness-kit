@@ -14,4 +14,12 @@ describe('resolveMode', () => {
     expect(resolveMode(RunMode.FAST).enableRefinement).toBeFalsy()
     expect(resolveMode(RunMode.QUICK).enableRefinement).toBeFalsy()
   })
+
+  it('maps RunModes to expected Complexity levels', () => {
+    expect(resolveMode(RunMode.QUICK).complexity).toBe(Complexity.LOW)
+    expect(resolveMode(RunMode.FAST).complexity).toBe(Complexity.LOW)
+    expect(resolveMode(RunMode.THINKING).complexity).toBe(Complexity.AUTO)
+    expect(resolveMode(RunMode.DEEP_THINKING).complexity).toBe(Complexity.HIGH)
+    expect(resolveMode(undefined).complexity).toBe(Complexity.AUTO)
+  })
 })

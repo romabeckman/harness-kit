@@ -7,7 +7,7 @@ tags: [architecture, ports-and-adapters, state-machine, orchestrator]
 edges:
   - relation: references
     target: "adr:tests"
-updated: "2026-08-15"
+updated: "2026-08-18"
 ---
 # Project Architecture
 

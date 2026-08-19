@@ -145,6 +145,82 @@ describe('AntigravityCLIRunner', () => {
     )
   })
 
+  it('should prioritize error field in error message when status is FAILED', async () => {
+    const mockJsonOutput = JSON.stringify({
+      conversation_id: '123-abc',
+      status: 'FAILED',
+      error: 'Model quota exhausted',
+      response: '',
+    })
+
+    mockSpawn.mockReturnValue(new MockChildProcess([mockJsonOutput]) as any)
+
+    const runner = new AntigravityCLIRunner()
+
+    await expect(runner.run(invocation)).rejects.toThrow(
+      expect.objectContaining({
+        code: AgentRunnerErrorCode.API_ERROR,
+        message: expect.stringContaining('Model quota exhausted'),
+      })
+    )
+  })
+
+  it('should succeed when status is ERROR but response contains valid output (tool recovery)', async () => {
+    const mockJsonOutput = JSON.stringify({
+      conversation_id: '123-abc',
+      status: 'ERROR',
+      error: 'declaring permissions: cortex tool write_to_file: invalid artifact path',
+      response: '| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |\n| F001 | Feature | dom | backend | HIGH | None | 0 | - | - | NOT_STARTED |',
+    })
+
+    mockSpawn.mockReturnValue(new MockChildProcess([mockJsonOutput]) as any)
+
+    const runner = new AntigravityCLIRunner()
+    const result = await runner.run(invocation)
+
+    expect(result.success).toBe(true)
+    expect(result.raw).toContain('F001')
+  })
+
+  it('should fail when status is ERROR and response is empty', async () => {
+    const mockJsonOutput = JSON.stringify({
+      conversation_id: '123-abc',
+      status: 'ERROR',
+      error: 'Failed to initialize agent',
+      response: '',
+    })
+
+    mockSpawn.mockReturnValue(new MockChildProcess([mockJsonOutput]) as any)
+
+    const runner = new AntigravityCLIRunner()
+
+    await expect(runner.run(invocation)).rejects.toThrow(
+      expect.objectContaining({
+        code: AgentRunnerErrorCode.API_ERROR,
+        message: expect.stringContaining('Failed to initialize agent'),
+      })
+    )
+  })
+
+  it('should fail when status is ERROR and response field is omitted', async () => {
+    const mockJsonOutput = JSON.stringify({
+      conversation_id: '123-abc',
+      status: 'ERROR',
+      error: 'Fatal crash before generating response',
+    })
+
+    mockSpawn.mockReturnValue(new MockChildProcess([mockJsonOutput]) as any)
+
+    const runner = new AntigravityCLIRunner()
+
+    await expect(runner.run(invocation)).rejects.toThrow(
+      expect.objectContaining({
+        code: AgentRunnerErrorCode.API_ERROR,
+        message: expect.stringContaining('Fatal crash before generating response'),
+      })
+    )
+  })
+
   it('should fallback to plain text if agy stdout is not JSON', async () => {
     const plainText = 'Plain text response from agy'
 

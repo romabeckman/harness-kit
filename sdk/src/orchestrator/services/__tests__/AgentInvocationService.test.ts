@@ -7,6 +7,7 @@ import type { AgentInvocation, AgentOutput, TokenUsage } from '../../../agent-ru
 import type { OrchestratorConfig } from '../../types'
 import type { HarnessSettings } from '../../../settings/HarnessSettings'
 import type { TokenLedger } from '../../../telemetry/TokenLedger'
+import type { ISessionLedger } from '../../../diagnose/types'
 
 vi.mock('../../../ui/TerminalProgress', () => ({
   TerminalProgress: {
@@ -274,6 +275,98 @@ describe('AgentInvocationService', () => {
       await service.invokeAgent(makeInvocation(), Phase.DEVELOPMENT, makeConfig(), makeSettings())
 
       expect(ledger.record).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('diagnose ledger recording', () => {
+    it('records session with phase and domain when currentPhase is Phase.DEVELOPMENT without tokenUsage', async () => {
+      const usage: TokenUsage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheCreationTokens: 0,
+        cacheReadTokens: 0,
+        costUsd: 0.001,
+      }
+      const runner = makeRunner({ usage })
+      const diagnoseLedger = { append: vi.fn() } as unknown as ISessionLedger
+      const service = new AgentInvocationService(runner, makeLedger(), diagnoseLedger)
+
+      await service.invokeAgent(
+        makeInvocation({ domain: 'auth-service', skill: 'tdd-orchestrator', agent: 'developer-backend' }),
+        Phase.DEVELOPMENT,
+        makeConfig(),
+        makeSettings()
+      )
+
+      expect(diagnoseLedger.append).toHaveBeenCalledTimes(1)
+      const appended = (diagnoseLedger.append as ReturnType<typeof vi.fn>).mock.calls[0][0]
+      expect(appended.phase).toBe(Phase.DEVELOPMENT)
+      expect(appended.domain).toBe('auth-service')
+      expect(appended.tokenUsage).toBeUndefined()
+    })
+
+    it('records session with phase and domain from payload when currentPhase is Phase.REVIEW without tokenUsage', async () => {
+      const usage: TokenUsage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheCreationTokens: 0,
+        cacheReadTokens: 0,
+        costUsd: 0.001,
+      }
+      const runner = makeRunner({ usage })
+      const diagnoseLedger = { append: vi.fn() } as unknown as ISessionLedger
+      const service = new AgentInvocationService(runner, makeLedger(), diagnoseLedger)
+
+      await service.invokeAgent(
+        makeInvocation({ payload: { domain: 'billing' }, skill: 'the-grumpy-tech-lead', agent: 'harness-tech-lead' }),
+        Phase.REVIEW,
+        makeConfig(),
+        makeSettings()
+      )
+
+      expect(diagnoseLedger.append).toHaveBeenCalledTimes(1)
+      const appended = (diagnoseLedger.append as ReturnType<typeof vi.fn>).mock.calls[0][0]
+      expect(appended.phase).toBe(Phase.REVIEW)
+      expect(appended.domain).toBe('billing')
+      expect(appended.tokenUsage).toBeUndefined()
+    })
+
+    it('does NOT include domain when currentPhase is not development or review (e.g. PLANNING) but still includes phase', async () => {
+      const runner = makeRunner()
+      const diagnoseLedger = { append: vi.fn() } as unknown as ISessionLedger
+      const service = new AgentInvocationService(runner, makeLedger(), diagnoseLedger)
+
+      await service.invokeAgent(
+        makeInvocation({ domain: 'auth-service', payload: { domain: 'auth-service' } }),
+        Phase.PLANNING,
+        makeConfig(),
+        makeSettings()
+      )
+
+      expect(diagnoseLedger.append).toHaveBeenCalledTimes(1)
+      const appended = (diagnoseLedger.append as ReturnType<typeof vi.fn>).mock.calls[0][0]
+      expect(appended.phase).toBe(Phase.PLANNING)
+      expect(appended.domain).toBeUndefined()
+      expect(appended.tokenUsage).toBeUndefined()
+    })
+
+    it('does NOT include domain when currentPhase is BOOTSTRAP but still includes phase', async () => {
+      const runner = makeRunner()
+      const diagnoseLedger = { append: vi.fn() } as unknown as ISessionLedger
+      const service = new AgentInvocationService(runner, makeLedger(), diagnoseLedger)
+
+      await service.invokeAgent(
+        makeInvocation({ domain: 'auth-service' }),
+        Phase.BOOTSTRAP,
+        makeConfig(),
+        makeSettings()
+      )
+
+      expect(diagnoseLedger.append).toHaveBeenCalledTimes(1)
+      const appended = (diagnoseLedger.append as ReturnType<typeof vi.fn>).mock.calls[0][0]
+      expect(appended.phase).toBe(Phase.BOOTSTRAP)
+      expect(appended.domain).toBeUndefined()
+      expect(appended.tokenUsage).toBeUndefined()
     })
   })
 

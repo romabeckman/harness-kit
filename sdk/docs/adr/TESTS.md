@@ -5,7 +5,7 @@ stack: [Vitest 4.1.10, TypeScript 7.0.2, V8 coverage]
 node_id: "adr:tests"
 tags: [testing, vitest, unit-tests, e2e-tests, coverage]
 edges: []
-updated: "2026-08-14"
+updated: "2026-08-18"
 ---
 # Testing Protocol
 

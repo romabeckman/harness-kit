@@ -9,13 +9,38 @@ export class JsonlSessionLedger implements ISessionLedger {
     this.#ledgerPath = ledgerPath
   }
 
-  append(record: DiagnoseSessionRecord): void {
+  private writeAll(records: DiagnoseSessionRecord[]): void {
     const dir = dirname(this.#ledgerPath)
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true })
     }
-    const line = JSON.stringify(record) + '\n'
-    appendFileSync(this.#ledgerPath, line, 'utf8')
+
+    const tempPath = join(dir, `.temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jsonl`)
+    const lines = records.map((r) => JSON.stringify(r)).join('\n') + (records.length > 0 ? '\n' : '')
+    writeFileSync(tempPath, lines, 'utf8')
+    renameSync(tempPath, this.#ledgerPath)
+  }
+
+  append(record: DiagnoseSessionRecord): void {
+    if (!existsSync(this.#ledgerPath)) {
+      const dir = dirname(this.#ledgerPath)
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true })
+      }
+      const line = JSON.stringify(record) + '\n'
+      appendFileSync(this.#ledgerPath, line, 'utf8')
+      return
+    }
+
+    const all = this.loadAll()
+    const index = all.findIndex((r) => r.sessionId === record.sessionId)
+    if (index >= 0) {
+      all[index] = record
+      this.writeAll(all)
+    } else {
+      const line = JSON.stringify(record) + '\n'
+      appendFileSync(this.#ledgerPath, line, 'utf8')
+    }
   }
 
   loadAll(): DiagnoseSessionRecord[] {
@@ -65,14 +90,6 @@ export class JsonlSessionLedger implements ISessionLedger {
       return newStatus ? { ...record, status: newStatus } : record
     })
 
-    const dir = dirname(this.#ledgerPath)
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true })
-    }
-
-    const tempPath = join(dir, `.temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jsonl`)
-    const lines = updated.map((r) => JSON.stringify(r)).join('\n') + (updated.length > 0 ? '\n' : '')
-    writeFileSync(tempPath, lines, 'utf8')
-    renameSync(tempPath, this.#ledgerPath)
+    this.writeAll(updated)
   }
 }

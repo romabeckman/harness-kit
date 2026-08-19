@@ -537,4 +537,35 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
     // Steering rules should be preserved!
     expect(savedConfig.steeringRules.user).toEqual(['custom user rule'])
   })
+
+  it('saves BACKLOG.md from agent raw output when agent does not write to disk directly', async () => {
+    const rawBacklogTable = [
+      '| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| F001 | Portfolio Landing Page | home_profile | frontend | CRITICAL | None | 0 | - | - | NOT_STARTED |',
+    ].join('\n')
+
+    fake.setDefault({
+      raw: rawBacklogTable,
+    })
+
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'Create a portfolio landing page',
+      projectPaths: [tmpDir],
+      agentRunner: fake,
+      productDir,
+      complexity: Complexity.AUTO,
+    }, { workingDir: tmpDir })
+
+    await orchestrator.runBootstrapOnly()
+
+    const { FileStateManager } = await import('../../src/file-state/FileStateManager.js')
+    const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
+    const backlog = fsm.loadBacklog()
+
+    expect(backlog.length).toBe(1)
+    expect(backlog[0].id).toBe('F001')
+    expect(backlog[0].title).toBe('Portfolio Landing Page')
+    expect(backlog[0].domain).toBe('home_profile')
+  })
 })

@@ -42,6 +42,7 @@ EXECUTION MODE
                               fast    — All phases, simplify planning and only QA review
                               default — All phases, LLM decide complexity [default]
                               slow    — All phases, forced to high planning and deep review
+  --complexity, -c <level>  Explicit complexity override: LOW | HIGH | AUTO
 
 SKIP OPTIONS
   --skip-validation         Skip Phase REVIEW (code review + QA) - jump directly to TRANSITION
@@ -63,6 +64,7 @@ EXAMPLES
   hrns run --reset --scope "Fix login bug" --path ./api --mode fast
   hrns run --reset --scope "New payment flow" --path ./api --mode slow
   hrns run --reset --scope "My app" --path ./api --mode quick
+  hrns run --reset --scope "My app" --path ./api --complexity LOW
   hrns run --reset --scope "My app" --path ./api --skip-deploy
   hrns diagnose
   hrns candidate list
@@ -86,6 +88,7 @@ RUN OPTIONS
   --agent, -a <type>        Specify agent runner (e.g. 'claude-cli', 'copilot-cli', 'antigravity-cli')
   --model, -m <name>        Specify model name for the agent
   --effort, -e <level>      Reasoning effort level (low | medium | high | xhigh)
+  --complexity, -c <level>  Explicit complexity override: LOW | HIGH | AUTO
 
 ACTION (skips interactive prompt)
   --reset                   Discard current session and start a new cycle
@@ -107,6 +110,7 @@ EXECUTION MODE
                               fast    — All phases, simplified planning, QA review only
                               default — All phases, LLM decides complexity [default]
                               slow    — All phases, forced high planning and deep review
+  --complexity, -c <level>  Explicit complexity override: LOW | HIGH | AUTO
 
 SKIP OPTIONS
   --skip-validation         Skip Phase REVIEW (code review + QA) — jump directly to TRANSITION

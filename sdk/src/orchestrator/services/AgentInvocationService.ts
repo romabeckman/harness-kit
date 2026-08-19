@@ -172,6 +172,8 @@ export class AgentInvocationService {
       if (this.diagnoseLedger) {
         try {
           const sessionId = output.session?.id ?? `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+          const isDevOrReview = currentPhase === Phase.DEVELOPMENT || currentPhase === Phase.REVIEW
+          const domain = finalInvocation.domain ?? (finalInvocation.payload as any)?.domain
           this.diagnoseLedger.append({
             sessionId,
             runner: runnerType,
@@ -180,9 +182,11 @@ export class AgentInvocationService {
             model: output.usage?.model ?? finalInvocation.model,
             effort: output.usage?.effort ?? finalInvocation.effort,
             featureId: (finalInvocation.payload as any)?.featureId,
-            domain: finalInvocation.domain ?? (finalInvocation.payload as any)?.domain,
+            phase: currentPhase,
+            ...(isDevOrReview ? {
+              domain: domain || undefined,
+            } : {}),
             durationMs: Date.now() - startTime,
-            tokenUsage: output.usage,
             status: 'pending',
             timestamp: new Date().toISOString(),
           })

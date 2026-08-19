@@ -1,4 +1,4 @@
-import { RunMode } from "../../orchestrator/types"
+import { Complexity, RunMode } from "../../orchestrator/types"
 
 /**
  * Parsed result of CLI run arguments.
@@ -36,8 +36,9 @@ export interface ParsedRunArgs {
   refine?: boolean
 
   // Complexity hint for Phase A scope refinement ('LOW' | 'HIGH' | undefined = AUTO)
-  // Controlled via --mode; kept here for backward-compat when set programmatically
+  // Controlled via --mode or explicitly via --complexity / -c
   mode?: RunMode
+  complexity?: Complexity
 }
 
 /**
@@ -153,6 +154,15 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
         else if (val === RunMode.FAST) result.mode = RunMode.FAST
         else if (val === RunMode.THINKING || val === 'default') result.mode = RunMode.THINKING
         else if (val === RunMode.DEEP_THINKING || val === 'deep_thinking' || val === 'slow') result.mode = RunMode.DEEP_THINKING
+        break
+      }
+
+      case '--complexity':
+      case '-c': {
+        const val = nextArg()?.toUpperCase()
+        if (val === Complexity.LOW) result.complexity = Complexity.LOW
+        else if (val === Complexity.HIGH) result.complexity = Complexity.HIGH
+        else if (val === Complexity.AUTO) result.complexity = Complexity.AUTO
         break
       }
 
