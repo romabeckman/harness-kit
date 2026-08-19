@@ -13,7 +13,7 @@ edges:
     target: "feature:sdk_agent_runner"
   - relation: depends_on
     target: "feature:sdk_settings"
-updated: "2026-08-16"
+updated: "2026-08-18"
 ---
 
 ```graph
@@ -54,7 +54,7 @@ updated: "2026-08-16"
 Automates execution trace recording, session ledger persistence, meta-harness optimization triggering, terminal diagnosis reporting, and candidate review delegation.
 
 ## OVERVIEW
-The diagnose module captures orchestration performance in `docs/product/diagnose-sessions.jsonl`. It processes pending sessions in batches, generates sequential trace session IDs (`session-YYYY-MM-DD-NNN`), delegates trace logging to `harness-kit:meta-harness-agent`, triggers candidate generation upon completing batches, renders diagnosis reports, and delegates candidate review/promotion interactively or autonomously via `CandidatePromotionService`.
+The diagnose module captures orchestration performance in `docs/product/diagnose-sessions.jsonl` (recording runner, agent, skill, model, effort, phase across all executions, and domain during `DEVELOPMENT` and `REVIEW` phases). It processes pending sessions in batches, generates sequential trace session IDs (`session-YYYY-MM-DD-NNN`), delegates trace logging to `harness-kit:meta-harness-agent`, triggers candidate generation upon completing batches, renders diagnosis reports, and delegates candidate review/promotion interactively or autonomously via `CandidatePromotionService`.
 
 ## FOLDER STRUCTURE
 <folder_structure>
