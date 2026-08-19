@@ -39,6 +39,7 @@ export interface DiagnoseSessionRecord {
   model?: string
   effort?: string
   featureId?: string
+  phase?: string
   domain?: string
   durationMs?: number
   tokenUsage?: TokenUsage

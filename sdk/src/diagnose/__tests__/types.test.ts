@@ -62,6 +62,8 @@ describe('Diagnose Domain Types & Helpers', () => {
       sessionId: 'session-2026-08-15-001',
       runner: 'antigravity-cli',
       agent: 'developer-backend',
+      phase: 'DEVELOPMENT',
+      domain: 'auth-service',
       status: 'pending',
       snapshot: {
         runner: 'antigravity-cli',
@@ -75,6 +77,8 @@ describe('Diagnose Domain Types & Helpers', () => {
     }
 
     expect(record.sessionId).toBe('session-2026-08-15-001')
+    expect(record.phase).toBe('DEVELOPMENT')
+    expect(record.domain).toBe('auth-service')
     expect(record.status).toBe('pending')
   })
 
