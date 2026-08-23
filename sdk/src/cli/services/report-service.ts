@@ -1,11 +1,13 @@
 import { join } from 'node:path'
+import { writeFileSync } from 'node:fs'
 import { FileStateManager } from '../../file-state/FileStateManager'
 import { TokenLedger } from '../../telemetry/TokenLedger'
 import { ReportDataAggregator } from './report/ReportDataAggregator'
 import { ReportRenderer } from './report/ReportRenderer'
 import { ReportExporter } from './report/ReportExporter'
-import { parseReportArgs } from '../utils/report-args-parser'
+import { parseReportArgs, generateReportFilename } from '../utils/report-args-parser'
 import { HELP_REPORT } from '../utils/constants'
+import { AnsiHelpers } from '../../ui/AnsiHelpers'
 
 export function cmdReport(cwd: string, args: string[] = []): void {
   const options = parseReportArgs(args)
@@ -24,7 +26,10 @@ export function cmdReport(cwd: string, args: string[] = []): void {
   if (options.export) {
     const exporter = new ReportExporter()
     const output = exporter.export(report, options.export)
-    process.stdout.write(output)
+    const filename = options.output ?? generateReportFilename(options.export)
+    const targetPath = join(cwd, filename)
+    writeFileSync(targetPath, output, 'utf8')
+    console.log(`\n  ${AnsiHelpers.green('✔')} Report exported to: ${AnsiHelpers.cyan(filename)}\n`)
     return
   }
 

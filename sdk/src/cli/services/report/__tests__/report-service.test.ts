@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { cmdReport } from '../../report-service'
 
 describe('cmdReport', () => {
   let tempDir: string
-  let stdoutWriteSpy: any
+  let consoleLogSpy: any
 
   beforeEach(() => {
     tempDir = mkdtempSync(join(tmpdir(), 'report-service-test-'))
@@ -35,11 +35,11 @@ describe('cmdReport', () => {
     ].join('\n')
     writeFileSync(join(productDir, 'tokens.jsonl'), sampleTokens, 'utf8')
 
-    stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
   })
 
   afterEach(() => {
-    stdoutWriteSpy.mockRestore()
+    consoleLogSpy.mockRestore()
     try {
       rmSync(tempDir, { recursive: true, force: true })
     } catch {
@@ -47,26 +47,51 @@ describe('cmdReport', () => {
     }
   })
 
-  it('outputs raw JSON when called with --export json', () => {
+  it('generates report-harness-kit-TIMESTAMP.json on local root when called with --export json', () => {
     cmdReport(tempDir, ['--export', 'json'])
 
-    expect(stdoutWriteSpy).toHaveBeenCalled()
-    const written = stdoutWriteSpy.mock.calls.map((c: any) => c[0]).join('')
-    const parsed = JSON.parse(written)
+    const files = readdirSync(tempDir)
+    const reportFile = files.find((f) => f.startsWith('report-harness-kit-') && f.endsWith('.json'))
+    expect(reportFile).toBeDefined()
+
+    const content = readFileSync(join(tempDir, reportFile!), 'utf8')
+    const parsed = JSON.parse(content)
     expect(parsed.schemaVersion).toBe(1)
     expect(parsed.records).toHaveLength(1)
     expect(parsed.records[0].featureId).toBe('F001')
     expect(parsed.records[0].effort).toBe('high')
+
+    const logCalls = consoleLogSpy.mock.calls.flat().join('\n')
+    expect(logCalls).toContain('Report exported to:')
+    expect(logCalls).toContain(reportFile!)
   })
 
-  it('outputs raw CSV when called with --export csv', () => {
+  it('generates report-harness-kit-TIMESTAMP.csv on local root when called with --export csv', () => {
     cmdReport(tempDir, ['--export', 'csv'])
 
-    expect(stdoutWriteSpy).toHaveBeenCalled()
-    const written = stdoutWriteSpy.mock.calls.map((c: any) => c[0]).join('')
-    const lines = written.trim().split('\n')
+    const files = readdirSync(tempDir)
+    const reportFile = files.find((f) => f.startsWith('report-harness-kit-') && f.endsWith('.csv'))
+    expect(reportFile).toBeDefined()
+
+    const content = readFileSync(join(tempDir, reportFile!), 'utf8')
+    const lines = content.trim().split('\n')
     expect(lines[0]).toBe('timestamp,featureId,phase,runner,agent,skill,model,effort,inputTokens,outputTokens,cacheCreationTokens,cacheReadTokens,costUsd,durationMs,status')
     expect(lines[1]).toContain('F001')
     expect(lines[1]).toContain('high')
+
+    const logCalls = consoleLogSpy.mock.calls.flat().join('\n')
+    expect(logCalls).toContain('Report exported to:')
+    expect(logCalls).toContain(reportFile!)
+  })
+
+  it('supports custom output path with --output', () => {
+    cmdReport(tempDir, ['--export', 'json', '--output', 'custom-report.json'])
+
+    const files = readdirSync(tempDir)
+    expect(files).toContain('custom-report.json')
+
+    const content = readFileSync(join(tempDir, 'custom-report.json'), 'utf8')
+    const parsed = JSON.parse(content)
+    expect(parsed.records).toHaveLength(1)
   })
 })

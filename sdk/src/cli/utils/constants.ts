@@ -244,14 +244,15 @@ DESCRIPTION
   analytics aggregated from docs/product/tokens.jsonl for the current workspace.
 
 OPTIONS
-  --export <json|csv>       Export report data as raw JSON or CSV to stdout
+  --export <json|csv>       Export report data as JSON or CSV file (default: report-harness-kit-TIMESTAMP.<ext>)
+  --output, -o <file>       Specify custom output filename for exported report
   --help, -h                Show this help message
 
 EXAMPLES
   hrns report
   hrns report --export json
   hrns report --export csv
-  hrns report --export json > harness-report.json
+  hrns report --export json --output custom-report.json
 `
 
 export const HELP_VERSION = `

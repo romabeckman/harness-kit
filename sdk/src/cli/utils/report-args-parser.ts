@@ -2,6 +2,7 @@ export type ReportExportFormat = 'json' | 'csv'
 
 export interface ReportArgsOptions {
   export?: ReportExportFormat
+  output?: string
   help: boolean
   restArgs: string[]
 }
@@ -9,8 +10,16 @@ export interface ReportArgsOptions {
 const VALID_EXPORT_FORMATS = new Set<string>(['json', 'csv'])
 
 /**
+ * Generates the default export filename: `report-harness-kit-YYYY-MM-DDTHH-mm-ss.<format>`
+ */
+export function generateReportFilename(format: ReportExportFormat, date: Date = new Date()): string {
+  const timestamp = date.toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  return `report-harness-kit-${timestamp}.${format}`
+}
+
+/**
  * Parses arguments for `hrns report`.
- * Supports `--export json|csv`, `--export=<format>`, `--help`, `-h`.
+ * Supports `--export json|csv`, `--export=<format>`, `--output <file>`, `-o <file>`, `--help`, `-h`.
  */
 export function parseReportArgs(args: string[]): ReportArgsOptions {
   const result: ReportArgsOptions = {
@@ -43,6 +52,8 @@ export function parseReportArgs(args: string[]): ReportArgsOptions {
         throw new Error(`Invalid export format "${format}". Supported formats: json, csv`)
       }
       result.export = normalizedFormat as ReportExportFormat
+    } else if (arg === '--output' || arg === '-o') {
+      result.output = value !== undefined ? value : args[++i]
     } else {
       result.restArgs.push(currentArg)
     }

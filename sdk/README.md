@@ -184,19 +184,19 @@ hrns candidate review <candidate_id> --auto      # apply candidate autonomously 
 
 ### `hrns report`
 
-Prints development status, feature progress, and token usage ledger analytics aggregated from `docs/product/tokens.jsonl` for the current session. Supports exporting machine-readable datasets in raw JSON or CSV directly to `stdout`.
+Prints development status, feature progress, and token usage ledger analytics aggregated from `docs/product/tokens.jsonl` for the current session. Supports exporting machine-readable datasets in JSON or CSV. When `--export` is used, the report is saved directly to a file on your local root (e.g. `report-harness-kit-TIMESTAMP.json|csv`).
 
 ```bash
 # Terminal human-readable report
 hrns report
 
-# Export normalized dataset to stdout as JSON or CSV
+# Export report file to workspace root (report-harness-kit-TIMESTAMP.json|csv)
 hrns report --export json
 hrns report --export csv
 
-# Stream directly to files or analytics pipelines
-hrns report --export json > harness-report.json
-hrns report --export csv > harness-report.csv
+# Export with custom filename/path
+hrns report --export json --output ./reports/my-report.json
+hrns report --export csv -o ./reports/my-report.csv
 ```
 
 ### `hrns version` / `hrns help`
