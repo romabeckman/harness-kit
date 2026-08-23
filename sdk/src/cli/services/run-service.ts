@@ -159,35 +159,6 @@ export function buildResumePhaseChoices(currentPhase: Phase): ResumePhaseChoice[
   return choices;
 }
 
-/**
- * Prompts the user to continue at the current phase or roll back
- * to an earlier one. Returns the chosen phase, or the current phase
- * if no override is available.
- */
-async function promptResumePhaseOverride(
-  orchestrator: HarnessOrchestrator,
-  currentPhase: Phase
-): Promise<void> {
-  const choices = buildResumePhaseChoices(currentPhase);
-  if (!choices || choices.length <= 1) return;
-
-  const isInteractive = process.stdout.isTTY && process.stdin.isTTY && process.env.NODE_ENV !== 'test';
-  if (!isInteractive) return;
-
-  const { select } = await import("@inquirer/prompts");
-  const selected = await select({
-    message: `Current phase is ${currentPhase}. Where do you want to resume?`,
-    choices,
-  });
-
-  if (selected !== currentPhase) {
-    console.log(
-      `\n${AnsiHelpers.blue("⟳")} ${AnsiHelpers.dim("Rolling back to:")} ${AnsiHelpers.cyan(selected)}`
-    );
-    orchestrator.state = { ...orchestrator.state, currentPhase: selected };
-  }
-}
-
 function logOrchestrationStart(
   action: RunAction,
   optionsReset: ResetOptions | null,
@@ -356,7 +327,6 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
       );
     }
 
-    await promptResumePhaseOverride(orchestrator, state.currentPhase);
     await applySteeringRules(orchestrator, agentRunner, options, steeringMessage);
   }
 
