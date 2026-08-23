@@ -32,37 +32,37 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   'copilot': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'gpt-5.6-sol', effort: 'medium' },
-      planning: { model: 'gpt-5.6-sol', effort: 'high' },
+      bootstrap: { model: 'gpt-5.6-luna', effort: 'high' },
+      planning: { model: 'gpt-5.6-sol', effort: 'medium' },
       implementation: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      review_tl: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      review_adv: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      memory: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      diagnose: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      review_tl: { model: 'gpt-5.6-luna', effort: 'high' },
+      review_adv: { model: 'gpt-5.6-luna', effort: 'high' },
+      memory: { model: 'gpt-5.6-luna', effort: 'high' },
+      diagnose: { model: 'gpt-5.6-luna', effort: 'high' },
     }
   },
   'cursor': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'gpt-5.6-sol', effort: 'medium' },
-      planning: { model: 'gpt-5.6-sol', effort: 'high' },
-      implementation: { model: 'gpt-5.6-sol', effort: 'medium' },
-      review_tl: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      review_adv: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      memory: { model: 'gpt-5.6-sol', effort: 'low' },
-      diagnose: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      bootstrap: { model: 'gpt-5.6-luna', effort: 'high' },
+      planning: { model: 'gpt-5.6-sol', effort: 'medium' },
+      implementation: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      review_tl: { model: 'gpt-5.6-luna', effort: 'high' },
+      review_adv: { model: 'gpt-5.6-luna', effort: 'high' },
+      memory: { model: 'gpt-5.6-luna', effort: 'high' },
+      diagnose: { model: 'gpt-5.6-luna', effort: 'high' },
     }
   },
   'codex': {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: 'gpt-5.6-sol', effort: 'medium' },
-      planning: { model: 'gpt-5.6-sol', effort: 'high' },
+      bootstrap: { model: 'gpt-5.6-luna', effort: 'high' },
+      planning: { model: 'gpt-5.6-sol', effort: 'medium' },
       implementation: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      review_tl: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      review_adv: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      memory: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      diagnose: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      review_tl: { model: 'gpt-5.6-luna', effort: 'high' },
+      review_adv: { model: 'gpt-5.6-luna', effort: 'high' },
+      memory: { model: 'gpt-5.6-luna', effort: 'high' },
+      diagnose: { model: 'gpt-5.6-luna', effort: 'high' },
     }
   }
 }
