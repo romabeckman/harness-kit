@@ -1,7 +1,7 @@
 name = "software-architect"
 description = "Senior Software Architect specialized in DDD, system design, technical refinement, and technical decision-making. Use for architecture decisions, scope refinement, design refinement, and technical quality gates."
 model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
+model_reasoning_effort = "medium"
 
 developer_instructions = """
 <role_definition>

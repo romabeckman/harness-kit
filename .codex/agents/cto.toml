@@ -1,7 +1,7 @@
 name = "cto"
 description = "Chief Technology Officer for the autonomous-orchestrator. Governs execution strategies, evaluates metrics, and triggers the autonomous loop."
 model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
+model_reasoning_effort = "medium"
 
 developer_instructions = """
 <role_definition>
