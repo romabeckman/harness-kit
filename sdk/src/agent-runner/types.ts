@@ -56,6 +56,7 @@ export enum Runner {
   CURSOR_CLI = 'cursor-cli',
   CURSOR_SDK = 'cursor-sdk',
   KIRO_CLI = 'kiro-cli',
+  OPENCODE_CLI = 'opencode-cli',
 }
 
 export type ContextPayload = Record<string, unknown>

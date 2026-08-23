@@ -40,6 +40,7 @@ export { CursorSDKRunner } from './agent-runner/cursor-sdk/CursorSDKRunner'
 export type { CursorSDKRunnerConfig } from './agent-runner/cursor-sdk/CursorSDKRunner'
 export { KiroCLIRunner } from './agent-runner/kiro-cli/KiroCLIRunner'
 export { CodexCLIRunner } from './agent-runner/codex-cli/CodexCLIRunner'
+export { OpenCodeCLIRunner } from './agent-runner/opencode-cli/OpenCodeCliRunner'
 
 // File state types
 export type {
