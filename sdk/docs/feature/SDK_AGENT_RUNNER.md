@@ -1,95 +1,87 @@
 ---
 doc_type: feature
 domain: agent_runner
-stack: [TypeScript, Node.js]
+stack: [TypeScript, Node.js, cross-spawn]
 node_id: "feature:sdk_agent_runner"
-tags: [agent-runner, strategies, factory, runner]
+tags: [agent-runner, opencode, cli, registry, sessions]
 edges:
   - relation: implements
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-18"
+updated: "2026-08-23"
 ---
 
 ```graph
 {
   "node_id":"feature:sdk_agent_runner","domain":"agent_runner","implements":["adr:architecture"],"tested_by":["adr:tests"],
   "entrypoints":["src/agent-runner/IAgentRunner.ts"],
-  "registration_files":["src/agent-runner/AgentRunnerRegistry.ts","src/agent-runner/AgentRunnerFactory.ts"],
+  "registration_files":["src/agent-runner/AgentRunnerRegistry.ts","src/agent-runner/AgentRunnerFactory.ts","src/index.ts"],
   "reference_files":["src/agent-runner/codex-cli/CodexCLIRunner.ts"],
-  "code_files":["src/agent-runner/AbstractCliRunner.ts","src/agent-runner/AgentRunnerError.ts","src/agent-runner/CliRunnerProgress.ts","src/agent-runner/NullAgentRunner.ts","src/agent-runner/antigravity-cli/AntigravityCLIRunner.ts","src/agent-runner/claude-cli/ClaudeCLIRunner.ts","src/agent-runner/claude-sdk/AgentRunnerConfig.ts","src/agent-runner/claude-sdk/ClaudeSDKRunner.ts","src/agent-runner/copilot-cli/CopilotCLIRunner.ts","src/agent-runner/copilot-sdk/CopilotSDKRunner.ts","src/agent-runner/cursor-cli/CursorCLIRunner.ts","src/agent-runner/cursor-sdk/CursorSDKRunner.ts","src/agent-runner/kiro-cli/KiroCLIRunner.ts","src/agent-runner/types.ts"],
-  "test_files":["src/agent-runner/__tests__/AgentRunnerConfig.test.ts","src/agent-runner/__tests__/AgentRunnerError.test.ts","src/agent-runner/__tests__/AgentRunnerModular.test.ts","src/agent-runner/__tests__/AntigravityCLIRunner.test.ts","src/agent-runner/__tests__/ClaudeAgentRunner.test.ts","src/agent-runner/__tests__/ClaudeCLIRunner.test.ts","src/agent-runner/__tests__/CodexCLIRunner.test.ts","src/agent-runner/__tests__/CopilotCLIRunner.test.ts","src/agent-runner/__tests__/CopilotRunner.test.ts","src/agent-runner/__tests__/CursorCLIRunner.test.ts","src/agent-runner/__tests__/CursorRunner.test.ts","src/agent-runner/__tests__/EnvFiltering.test.ts","src/agent-runner/__tests__/KiroCLIRunner.test.ts","tests/helpers/FakeAgentRunner.ts","tests/integration/t17-cursor-runner.test.ts","tests/integration/t18-antigravity-runner.test.ts","tests/unit/t03-agent-runner.test.ts","tests/unit/t11-copilot-runner.test.ts","tests/unit/t21-copilot-cli-runner.test.ts","tests/unit/t22-cursor-cli-runner.test.ts","tests/unit/t23-abstract-cli-runner.test.ts","tests/unit/t24-agent-invocation-service.test.ts","tests/unit/t25-cli-runner-progress.test.ts"]
+  "code_files":["src/agent-runner/AbstractCliRunner.ts","src/agent-runner/AgentRunnerError.ts","src/agent-runner/CliRunnerProgress.ts","src/agent-runner/NullAgentRunner.ts","src/agent-runner/antigravity-cli/AntigravityCLIRunner.ts","src/agent-runner/claude-cli/ClaudeCLIRunner.ts","src/agent-runner/claude-sdk/AgentRunnerConfig.ts","src/agent-runner/claude-sdk/ClaudeSDKRunner.ts","src/agent-runner/copilot-cli/CopilotCLIRunner.ts","src/agent-runner/copilot-sdk/CopilotSDKRunner.ts","src/agent-runner/cursor-cli/CursorCLIRunner.ts","src/agent-runner/cursor-sdk/CursorSDKRunner.ts","src/agent-runner/kiro-cli/KiroCLIRunner.ts","src/agent-runner/opencode-cli/OpenCodeCliRunner.ts","src/agent-runner/types.ts"],
+  "test_files":["src/agent-runner/__tests__/AgentRunnerConfig.test.ts","src/agent-runner/__tests__/AgentRunnerError.test.ts","src/agent-runner/__tests__/AgentRunnerModular.test.ts","src/agent-runner/__tests__/AntigravityCLIRunner.test.ts","src/agent-runner/__tests__/ClaudeAgentRunner.test.ts","src/agent-runner/__tests__/ClaudeCLIRunner.test.ts","src/agent-runner/__tests__/CodexCLIRunner.test.ts","src/agent-runner/__tests__/CopilotCLIRunner.test.ts","src/agent-runner/__tests__/CopilotRunner.test.ts","src/agent-runner/__tests__/CursorCLIRunner.test.ts","src/agent-runner/__tests__/CursorRunner.test.ts","src/agent-runner/__tests__/EnvFiltering.test.ts","src/agent-runner/__tests__/KiroCLIRunner.test.ts","src/agent-runner/__tests__/OpenCodeCLIRunner.test.ts","tests/helpers/FakeAgentRunner.ts","tests/integration/t17-cursor-runner.test.ts","tests/integration/t18-antigravity-runner.test.ts","tests/unit/t03-agent-runner.test.ts","tests/unit/t11-copilot-runner.test.ts","tests/unit/t21-copilot-cli-runner.test.ts","tests/unit/t22-cursor-cli-runner.test.ts","tests/unit/t23-abstract-cli-runner.test.ts","tests/unit/t24-agent-invocation-service.test.ts","tests/unit/t25-cli-runner-progress.test.ts"]
 }
 ```
 
 # SDK AGENT RUNNER
-Provides a decoupled, pluggable architecture for executing coding agents.
+Provides pluggable agent execution strategies behind `IAgentRunner`, including the OpenCode CLI adapter.
 
 ## OVERVIEW
-The `sdk_agent_runner` module provides a pluggable architecture for executing coding agents. It supports multiple strategies including Claude Code, Anthropic API, GitHub Copilot, OpenAI Codex, and Google's Antigravity (agy).
+Use the runner port to keep orchestration independent from vendor clients. `OpenCodeCLIRunner` extends `AbstractCliRunner`, runs the `opencode run` command, writes prompts to stdin, maps invocation options, and normalizes object or JSON-lines output into `AgentOutput`.
 
 ## FOLDER STRUCTURE
 <folder_structure>
 ```
-sdk/src/agent-runner/
-├── IAgentRunner.ts           # Outbound port interface
-├── NullAgentRunner.ts        # No-op stub implementation
-├── AbstractCliRunner.ts      # Base class for all CLI subprocess runners
-├── types.ts                  # Shared types and config schemas
-├── AgentRunnerRegistry.ts    # Static singleton runner strategy registry
-├── AgentRunnerFactory.ts     # Instantiation factory executing validations
-├── claude-cli/               # Subdirectory for local Claude Code CLI execution
-├── claude-sdk/               # Subdirectory for Anthropic SDK API calls
-├── antigravity-cli/          # Subdirectory for Google's agy CLI execution
-├── codex-cli/                # Subdirectory for OpenAI Codex CLI execution
-├── copilot-cli/              # Subdirectory for GitHub Copilot CLI execution
-├── copilot-sdk/              # Subdirectory for GitHub Copilot SDK execution
-├── cursor-cli/               # Subdirectory for Cursor agent CLI execution
-├── cursor-sdk/               # Subdirectory for Cursor SDK execution
-└── README.md                 # Blueprint for custom runner plugins
+src/agent-runner/
+├── core ports and types/       # IAgentRunner, invocation, output, and errors
+├── registry and factory/       # Strategy registration and construction
+├── shared CLI adapter/         # Spawn, timeout, abort, environment, and parsing hooks
+├── vendor-cli adapters/        # Claude, Codex, Copilot, Cursor, Kiro, and OpenCode
+└── vendor-SDK adapters/        # Provider SDK implementations
 ```
 </folder_structure>
 
-## DESIGN SYSTEM & PATTERNS
-
-### Patterns
-- **Strategy Pattern**: Concrete execution engines implement the `IAgentRunner` interface.
-- **Factory & Registry Pattern**: Decouples orchestrator from concrete implementations.
-- **Session Continuity**: `AgentSession` (`{ readonly id: string }`) tracks active conversations. CLI runners extract native session IDs from stdout events and support resuming via native flags (`--resume`, `--conversation`, `exec resume`).
+## MAIN CONCEPTS
+- **Strategy**: Each runner implements the same invocation and output contract.
+- **Composition boundary**: `AgentRunnerRegistry` stores constructors; `AgentRunnerFactory` imports built-ins and creates validated instances.
+- **OpenCode adapter**: Registers `Runner.OPENCODE_CLI` (`opencode-cli`) and isolates vendor flags and output events from domain types.
+- **Session continuity**: Preserve an incoming session ID and replace it with a native `conversation_id`, `conversationId`, `session_id`, `sessionId`, or `thread_id` when output provides one.
 
 ## HOW TO RUN AGENTS
-
 ### Prerequisites
-1. Provide necessary API keys (e.g. `ANTHROPIC_API_KEY`, `CURSOR_API_KEY`).
-2. Have the CLI tool installed for the chosen agent (e.g. `claude`, `agy`).
+1. Install the `opencode` executable and configure its provider credentials.
+2. Select `opencode-cli` as the runner type.
 
 ### Steps
-1. Select the agent type using the CLI flag.
-2. Execute the `hrns run` command with the selected agent.
-
-<code_example>
-# CORRECT: Providing agent flag
-hrns run --agent antigravity-cli
-
-# WRONG: Running without configuring the default agent correctly
-hrns run --agent unknown-agent
-</code_example>
+1. Create the runner through `AgentRunnerFactory` or select it through the SDK CLI.
+2. Pass an `AgentInvocation` with the prompt, workspace, optional model, agent, and session.
+3. Consume normalized text, artefacts, usage, and session data from `AgentOutput`.
 
 ## PARAMETERS / CONFIGURATIONS
+| SDK value | OpenCode mapping | Description |
+|---|---|---|
+| `model` | `--model <provider/model>` | Select the provider/model pair. |
+| `effort` | `--effort <value>` | Forward configured effort when supported by the installed CLI. |
+| `agent` | `--agent <name>` | Select an OpenCode agent. |
+| `session.id` | `--session <id>` | Continue an existing session. |
+| `workspacePath` | `--dir <path>` | Set the working directory argument. |
+| `additionalDirs` | repeated `--add-dir <path>` | Grant additional directory access. |
+| `prompt` | stdin | Avoid positional prompt arguments and preserve prompt length. |
 
-| Name | Type | Required | Description | Default |
-|------|------|----------|-------------|---------|
-| `--agent` | string | No | Resolves custom strategy named `<type>` | `claude-cli` |
-| `--model` | string | No | Overrides the default model for the selected runner | Varies |
+## OUTPUT AND FAILURE BOUNDARIES
+- Parse ANSI-clean JSON objects and JSON-lines events; extract response text, structured artefacts, usage, cost, and session identifiers.
+- Emit text and tool progress from assistant, item, text, tool, and function-call events through `defaultProgress`.
+- Translate missing binaries to `NETWORK_ERROR`, timeouts to `TIMEOUT`, non-zero exits to `API_ERROR`, and parsed agent failures to `API_ERROR`.
+- Filter sensitive environment variables after merging process and invocation environments.
 
 ## BEST PRACTICES
-REQUIRED: Pass agent selection flags when running orchestration command.
-PROHIBITED: Hardcoding agent implementations directly into the orchestrator.
-REQUIRED: Parse and return native session identifiers in `AgentOutput.session` when emitted by CLI or API runners.
+REQUIRED: Register built-in runners at composition boundaries and resolve them through `AgentRunnerFactory`.
+REQUIRED: Propagate `AbortSignal`, apply per-invocation or constructor timeout, and preserve session identifiers.
+REQUIRED: Verify installed OpenCode help before relying on optional flags such as `--effort`, `--dir`, or `--add-dir`.
+PROHIBITED: Bind orchestration decisions to `OpenCodeCLIRunner` or expose OpenCode-specific types through `IAgentRunner`.
+PROHIBITED: Pass credentials or other sensitive environment values to child processes.
 
 ## DOCUMENT MAP
-
 ```mermaid
 graph TD
     THIS["SDK Agent Runner Feature"] -->|implements| ARCH["Architecture ADR"]
@@ -99,6 +91,6 @@ graph TD
 ```
 
 ## REFERENCES
-- [**README.md**](../README.md): Main documentation index.
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Arch patterns and integrations.
-- [**TESTS.md**](../adr/TESTS.md): Testing guidelines.
+- [**AGENT-RUNNERS.md**](../adr/AGENT-RUNNERS.md): Runner registration, adapter boundaries, and vendor-specific conventions.
+- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Ports, layers, composition boundaries, and integrations.
+- [**TESTS.md**](../adr/TESTS.md): Vitest commands and external-process test boundaries.

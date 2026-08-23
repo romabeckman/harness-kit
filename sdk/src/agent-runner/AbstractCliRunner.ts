@@ -64,12 +64,20 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   /** CLI binary name passed as the first argument to `spawn`. */
   protected abstract readonly binaryName: string
 
+  /** Error classification for a non-zero child exit, customizable by adapters. */
+  protected get nonZeroExitErrorCode(): AgentRunnerErrorCode {
+    return AgentRunnerErrorCode.UNKNOWN_ERROR
+  }
+
   /** Returns the argument list for the CLI invocation, excluding the binary itself. */
   protected abstract buildArgs(prompt: string, invocation: AgentInvocation): string[]
 
   constructor(config?: Record<string, unknown>) {
     if (config && 'model' in config && config.model !== undefined) this.#model = String(config.model)
     if (config && 'effort' in config && config.effort !== undefined) this.#effort = String(config.effort)
+    if (config && typeof config.timeoutMs === 'number' && Number.isFinite(config.timeoutMs)) {
+      this.#timeoutMs = config.timeoutMs
+    }
   }
 
   /**
@@ -152,14 +160,15 @@ export abstract class AbstractCliRunner implements IAgentRunner {
   ): Promise<AgentOutput> {
     const prompt = invocation.prompt ?? this.buildPrompt(invocation)
     const args = this.buildArgs(prompt, invocation)
-    if (invocation.timeoutMs) this.#timeoutMs = invocation.timeoutMs
-    return this.spawnAndCollect(prompt, args, invocation, options)
+    const timeoutMs = invocation.timeoutMs ?? this.#timeoutMs
+    return this.spawnAndCollect(prompt, args, invocation, timeoutMs, options)
   }
 
   private spawnAndCollect(
     prompt: string,
     args: string[],
     invocation: AgentInvocation,
+    timeoutMs: number,
     options?: { signal?: AbortSignal },
   ): Promise<AgentOutput> {
     AbstractCliRunner.registerSignalHandlers()
@@ -167,7 +176,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
     return new Promise<AgentOutput>((resolve, reject) => {
       if (DebugContext.enabled) {
         process.stderr.write(`[DEBUG] spawn: ${this.binaryName} ${args.join(' ')}\n\n`)
-        process.stderr.write(`[DEBUG] timeout: ${this.#timeoutMs}ms\n\n`)
+        process.stderr.write(`[DEBUG] timeout: ${timeoutMs}ms\n\n`)
       }
 
       const cwd = invocation.workspacePath ?? process.cwd()
@@ -175,7 +184,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
         cwd,
         stdio: ['pipe', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
-        env: { ...AbstractCliRunner.filterSensitiveEnv(process.env), ...(invocation.env ?? {}) },
+        env: AbstractCliRunner.filterSensitiveEnv({ ...process.env, ...(invocation.env ?? {}) }),
       })
 
       let timer: ReturnType<typeof setTimeout> | undefined
@@ -203,16 +212,16 @@ export abstract class AbstractCliRunner implements IAgentRunner {
 
       AbstractCliRunner.activeKillFns.add(killProcessGroup)
 
-      if (this.#timeoutMs > 0 && !options?.signal) {
+      if (timeoutMs > 0) {
         timer = setTimeout(() => {
           killProcessGroup()
           reject(new AgentRunnerError({
             code: AgentRunnerErrorCode.TIMEOUT,
             skill: invocation.skill ?? '',
             phase: 'dispatch',
-            message: `${this.binaryName} runner timed out after ${this.#timeoutMs}ms`,
+            message: `${this.binaryName} runner timed out after ${timeoutMs}ms`,
           }))
-        }, this.#timeoutMs)
+        }, timeoutMs)
       }
 
       if (options?.signal) {
@@ -280,7 +289,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
             process.stderr.write(`[DEBUG] exit code: ${code}\n`)
           }
           reject(new AgentRunnerError({
-            code: isQuota ? AgentRunnerErrorCode.QUOTA_EXCEEDED : AgentRunnerErrorCode.UNKNOWN_ERROR,
+            code: isQuota ? AgentRunnerErrorCode.QUOTA_EXCEEDED : this.nonZeroExitErrorCode,
             skill: invocation.skill ?? '',
             phase: 'dispatch',
             message: `${this.binaryName} CLI exited with code ${code}${detail}`,

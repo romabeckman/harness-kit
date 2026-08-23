@@ -64,7 +64,7 @@ async function promptForMode(parsedMode?: RunMode): Promise<RunMode> {
       { name: "Thinking", value: RunMode.THINKING, description: "Bootstrap → Planning → Development → Review → Memory → Deploy" },
       { name: "Deep Thinking", value: RunMode.DEEP_THINKING, description: "Bootstrap → Planning (Deep Thinking) → Development → Review → Memory → Deploy" },
     ],
-    default: RunMode.THINKING,
+    default: RunMode.FAST,
   });
 }
 

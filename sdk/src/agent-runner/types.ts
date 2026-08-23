@@ -5,6 +5,12 @@ export interface BaseRunnerConfig {
 
 export type RunnerConfig = BaseRunnerConfig & Record<string, any>
 
+export interface OpenCodeRunnerConfig extends BaseRunnerConfig {
+  readonly model?: string
+  readonly effort?: string
+  readonly agent?: string
+}
+
 export interface AgentSession {
   readonly id: string
 }

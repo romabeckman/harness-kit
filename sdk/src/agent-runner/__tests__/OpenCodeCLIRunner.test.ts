@@ -240,6 +240,12 @@ describe('OpenCodeCLIRunner', () => {
       // @ts-ignore
       expect(() => runner.onStdoutLine('raw log line that is not json', baseInvocation)).not.toThrow()
     })
+
+    it('REWORK: should ignore a JSON null stream event without throwing', () => {
+      const runner = new OpenCodeCLIRunner()
+      // @ts-ignore
+      expect(() => runner.onStdoutLine('null', baseInvocation)).not.toThrow()
+    })
   })
 
   describe('Output Extraction (parseOutput)', () => {
@@ -353,6 +359,14 @@ describe('OpenCodeCLIRunner', () => {
         costUsd: 0.005,
       })
     })
+
+    it('REWORK: should ignore JSON null while parsing stream output', () => {
+      const runner = new OpenCodeCLIRunner()
+      // @ts-ignore
+      const parsed = runner.parseOutput('null\n', '', baseInvocation)
+
+      expect(parsed).toMatchObject({ success: true, raw: 'null' })
+    })
   })
 
   describe('Error Handling & Edge Cases', () => {
@@ -376,13 +390,22 @@ describe('OpenCodeCLIRunner', () => {
       })
     })
 
-    it('should throw AgentRunnerError with UNKNOWN_ERROR code when child process exits with non-zero exit code', async () => {
+    it('should throw AgentRunnerError with API_ERROR code when child process exits with non-zero exit code', async () => {
       mockSpawn.mockReturnValue(makeChild({ exitCode: 1, stderr: 'Unknown flag --invalid' }))
 
       const runner = new OpenCodeCLIRunner()
       await expect(runner.run(baseInvocation)).rejects.toMatchObject({
-        code: AgentRunnerErrorCode.UNKNOWN_ERROR,
+        code: AgentRunnerErrorCode.API_ERROR,
         message: expect.stringContaining('opencode CLI exited with code 1'),
+      })
+    })
+
+    it('REWORK: should classify every non-zero child exit as API_ERROR', async () => {
+      mockSpawn.mockReturnValue(makeChild({ exitCode: 2, stderr: 'Invalid invocation' }))
+
+      const runner = new OpenCodeCLIRunner()
+      await expect(runner.run(baseInvocation)).rejects.toMatchObject({
+        code: AgentRunnerErrorCode.API_ERROR,
       })
     })
 
@@ -413,6 +436,86 @@ describe('OpenCodeCLIRunner', () => {
         code: AgentRunnerErrorCode.API_ERROR,
         message: expect.stringContaining('opencode agent returned an error: Syntax error in input prompt'),
       })
+    })
+
+    it('REWORK: should apply timeoutMs when an AbortSignal is present but not aborted', async () => {
+      vi.useFakeTimers()
+      try {
+        mockSpawn.mockReturnValue(makeChild({ hang: true }))
+        const runner = new OpenCodeCLIRunner()
+        const controller = new AbortController()
+        const pending = runner.run({ ...baseInvocation, timeoutMs: 10 }, { signal: controller.signal })
+        let settled = false
+        void pending.then(() => { settled = true }, () => { settled = true })
+
+        await vi.advanceTimersByTimeAsync(11)
+
+        expect(settled).toBe(true)
+        await expect(pending).rejects.toMatchObject({ code: AgentRunnerErrorCode.TIMEOUT })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('REWORK: should filter sensitive invocation environment overrides before spawning', async () => {
+      mockSpawn.mockReturnValue(makeChild({ stdout: 'safe' }))
+      const runner = new OpenCodeCLIRunner()
+
+      await runner.run({
+        ...baseInvocation,
+        env: { API_KEY: 'secret', SAFE_VALUE: 'kept' },
+      })
+
+      const spawnOptions = mockSpawn.mock.calls[0][2]
+      expect(spawnOptions.env.API_KEY).toBeUndefined()
+      expect(spawnOptions.env.SAFE_VALUE).toBe('kept')
+    })
+
+    it('REWORK: should apply constructor timeout configuration', async () => {
+      vi.useFakeTimers()
+      try {
+        mockSpawn.mockReturnValue(makeChild({ hang: true }))
+        const runner = new OpenCodeCLIRunner({ type: Runner.OPENCODE_CLI, timeoutMs: 10 })
+        const pending = runner.run(baseInvocation)
+        let settled = false
+        void pending.then(() => { settled = true }, () => { settled = true })
+
+        await vi.advanceTimersByTimeAsync(11)
+
+        expect(settled).toBe(true)
+        await expect(pending).rejects.toMatchObject({ code: AgentRunnerErrorCode.TIMEOUT })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('REWORK: should isolate timeout state between concurrent invocations', async () => {
+      vi.useFakeTimers()
+      try {
+        mockSpawn
+          .mockReturnValueOnce(makeChild({ hang: true }))
+          .mockReturnValueOnce(makeChild({ hang: true }))
+        const runner = new OpenCodeCLIRunner()
+        const first = runner.run({ ...baseInvocation, timeoutMs: 10 })
+        const second = runner.run({ ...baseInvocation, timeoutMs: 100 })
+        let firstSettled = false
+        let secondSettled = false
+        void first.then(() => { firstSettled = true }, () => { firstSettled = true })
+        void second.then(() => { secondSettled = true }, () => { secondSettled = true })
+
+        await vi.advanceTimersByTimeAsync(11)
+
+        expect(firstSettled).toBe(true)
+        expect(secondSettled).toBe(false)
+        await expect(first).rejects.toMatchObject({ code: AgentRunnerErrorCode.TIMEOUT })
+
+        await vi.advanceTimersByTimeAsync(90)
+
+        expect(secondSettled).toBe(true)
+        await expect(second).rejects.toMatchObject({ code: AgentRunnerErrorCode.TIMEOUT })
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 

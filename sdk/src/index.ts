@@ -17,7 +17,8 @@ export type { SteeringAction } from './orchestrator/SteeringAnalyzer'
 // Agent runner interface and null implementation
 export type { IAgentRunner } from './agent-runner/IAgentRunner'
 export { NullAgentRunner } from './agent-runner/NullAgentRunner'
-export type { AgentInvocation, AgentOutput, ContextPayload } from './agent-runner/types'
+export { Runner } from './agent-runner/types'
+export type { AgentInvocation, AgentOutput, ContextPayload, OpenCodeRunnerConfig } from './agent-runner/types'
 
 // Agent runner — ClaudeCLIRunner (default, uses local claude CLI)
 export { ClaudeCLIRunner } from './agent-runner/claude-cli/ClaudeCLIRunner'

@@ -1,102 +1,81 @@
 ---
 doc_type: adr
 domain: agent_runner
-stack: [TypeScript, Node.js]
+stack: [TypeScript, Node.js, cross-spawn]
 node_id: "adr:agent_runners"
-tags: [agent-runner, strategies, factory, registry]
+tags: [agent-runner, strategies, factory, registry, opencode]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-08-15"
+updated: "2026-08-23"
 ---
 # Agent Runners
 Decouples agent execution clients and strategies from the orchestrator engine.
 
 ## OVERVIEW
-Agent runners abstract target LLM client integrations (CLI, API) for executing development, review, and QA tasks. They use a registry and factory to support dynamic instantiation.
+Agent runners abstract target LLM client integrations (CLI, API) for development, review, and QA tasks. A registry and factory provide dynamic instantiation while concrete adapters own vendor-specific process and protocol translation.
 
 ## FOLDER STRUCTURE
 <folder_structure>
-sdk/src/
-└── agent-runner/                 # Agent runner port and adapters
-    ├── IAgentRunner.ts           # Core interface for running invocations
-    ├── AbstractCliRunner.ts      # Shared spawn/abort/kill base for CLI runners
-    ├── AgentRunnerRegistry.ts    # Static singleton runner strategy registry
-    ├── AgentRunnerFactory.ts     # Dynamic factory creating strategy instances
-    ├── claude-cli/              # Claude CLI execution adapter
-    ├── claude-sdk/             # Anthropic API execution adapter
-    ├── antigravity-cli/         # Google Antigravity execution adapter
-    ├── codex-cli/               # Codex CLI execution adapter
-    ├── copilot-cli/             # GitHub Copilot CLI execution adapter
-    ├── copilot-sdk/             # GitHub Copilot SDK execution adapter
-    ├── cursor-cli/              # Cursor agent CLI execution adapter
-    ├── cursor-sdk/             # Cursor SDK execution adapter
-    └── kiro-cli/               # AWS Kiro CLI execution adapter
+```
+src/agent-runner/
+├── ports and shared types/      # IAgentRunner, invocation, output, and errors
+├── registry and factory/        # Composition and self-registration
+├── shared CLI base/             # Spawn, abort, timeout, environment, and hooks
+├── CLI adapters/                # Claude, Antigravity, Codex, Copilot, Cursor, Kiro, OpenCode
+└── SDK adapters/                # Anthropic, Copilot, and Cursor integrations
+```
 </folder_structure>
 
 ## HOW TO REGISTER AND RUN AN AGENT
 ### Prerequisites
-1. Concrete runner implementation of `IAgentRunner`.
-2. Static registration inside the registry.
+1. Provide a concrete `IAgentRunner` implementation.
+2. Register its constructor at the registry composition boundary.
 
 ### Steps
-1. Invoke `AgentRunnerRegistry.register` passing the runner type and constructor class.
-2. Instantiate the target runner class dynamically using `AgentRunnerFactory.create({ type })`.
-3. Invoke `run` on the instantiated runner with an `AgentInvocation` payload and options.
-
-<code_example>
-# CORRECT: Statically register runner strategy constructors
-AgentRunnerRegistry.register({
-  type: 'custom-runner',
-  constructor: CustomRunner
-})
-
-# WRONG: Hardcode and instantiate concrete runner strategies in core logic
-const runner = new ClaudeCLIRunner() // Violates ports and adapters decoupling
-</code_example>
+1. Register the runner type and constructor with `AgentRunnerRegistry`.
+2. Import the built-in adapter from `AgentRunnerFactory` so module evaluation registers it.
+3. Create the runner with `AgentRunnerFactory.create({ type })`.
+4. Invoke `run` with an `AgentInvocation` and options.
 
 ## RUNNER FORMAT SPECIFICATIONS
 ### ClaudeCLIRunner (`claude-cli`)
-- Executes binary `claude` with `--output-format stream-json`.
-- Resumes conversations via `--resume <session.id>`.
-- Extracts session ID from `session_id`/`sessionId` stream events.
+- Executes `claude` with stream JSON output and resumes with `--resume <session.id>`.
+- Extracts session IDs from `session_id` or `sessionId` events.
 ### AntigravityCLIRunner (`antigravity-cli`)
-- Executes binary `agy` with `--output-format json` by default.
-- Resumes conversations via `--conversation <session.id>`.
-- Parses stdout JSON structure containing `status`, `response`, `structured_output`, `usage`, and `conversation_id`.
-- Extracts token counts: `inputTokens`, `outputTokens`, `cacheReadTokens`.
+- Executes `agy` with JSON output, resumes with `--conversation <session.id>`, and extracts response, structured output, usage, and `conversation_id`.
 ### CodexCLIRunner (`codex-cli`)
-- Executes binary `codex` with subcommand `exec --json --dangerously-bypass-approvals-and-sandbox`.
-- Resumes conversations via `exec resume <session.id>`.
-- Extracts token counts, cost, and session ID (`thread_id`/`session_id`).
+- Executes `codex exec --json --dangerously-bypass-approvals-and-sandbox`, resumes with `exec resume <session.id>`, and extracts usage and thread IDs.
 ### CopilotCLIRunner (`copilot-cli`)
-- Executes binary `copilot` with `--output-format json --allow-all-tools`.
-- Resumes conversations via `--resume <session.id>`.
-- Extracts session ID from `sessionId`/`session_id` in result events.
+- Executes JSON output with all tools enabled, resumes with `--resume <session.id>`, and extracts `sessionId` or `session_id`.
 ### CursorCLIRunner (`cursor-cli`)
-- Executes binary `agent` with `--print --force --output-format stream-json`.
-- Resumes conversations via `--resume <session.id>`.
-- Extracts session ID from `session_id` stream events.
+- Executes `agent --print --force --output-format stream-json`, resumes with `--resume <session.id>`, and extracts `session_id`.
 ### KiroCLIRunner (`kiro-cli`)
-- Executes binary `kiro-cli` with subcommand `chat --no-interactive --trust-all-tools`.
-- Does not support session resumption.
-- Parses `result` events from stdout JSON stream; extracts token counts with both snake_case and camelCase fallbacks.
+- Executes `kiro-cli chat --no-interactive --trust-all-tools`; parses result events and does not resume sessions.
+### OpenCodeCLIRunner (`opencode-cli`)
+- Executes the `opencode run` subcommand with prompts on stdin.
+- Maps model, effort, agent, session, workspace, and additional-directory invocation values to CLI flags.
+- Parses ANSI-clean JSON objects or JSON-lines events for response text, structured artefacts, usage, cost, and session IDs.
+- Emits text/tool progress from assistant and item events; classifies non-zero exits and parsed agent failures as `API_ERROR`.
 
 ## PARAMETERS / CONFIGURATIONS
 | Name | Type | Required | Description | Default |
-|------|------|----------|-------------|---------|
-| type | string | Yes | The strategy name identifier of the runner | — |
-| timeoutMs | number | No | Timeout override for the invocation | — |
-| model | string | No | Model override for the invocation | — |
-| effort | string | No | Effort parameter override for reasoning models | — |
-| session | AgentSession | No | Session identifier for resuming active conversations | — |
+|---|---|---|---|---|
+| `type` | string | Yes | Strategy identifier. | — |
+| `timeoutMs` | number | No | Invocation or constructor timeout override. | phase default |
+| `model` | string | No | Provider/model override. | — |
+| `effort` | string | No | Reasoning effort forwarded by supporting adapters. | — |
+| `session` | AgentSession | No | Native conversation identifier for resume. | — |
 
 ## BEST PRACTICES
-REQUIRED: Propagate AbortSignal downward to child process groups or API requests to prevent resource leaks.
-REQUIRED: Import all built-in strategies inside `AgentRunnerFactory` to force self-registration.
-FORBIDDEN: Making direct external API calls without wrapping them in concrete adapter strategies.
-REQUIRED: Return extracted `session` in `AgentOutput` whenever the underlying agent runner provides conversation state.
+REQUIRED: Propagate `AbortSignal` to child processes or SDK requests.
+REQUIRED: Import built-in strategies inside `AgentRunnerFactory` to force self-registration.
+REQUIRED: Filter merged process and invocation environments before spawning a CLI.
+REQUIRED: Return extracted session state in `AgentOutput` when an adapter provides it.
+PROHIBITED: Make direct external API calls without a concrete adapter.
+PROHIBITED: Assume optional vendor flags exist without checking the installed CLI contract.
 
 ## REFERENCES
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md): Architecture overview and public public-facing package entry points.
-- [**TESTS.md**](./TESTS.md): Vitest runner mock execution protocols.
+- [**ARCHITECTURE.md**](./ARCHITECTURE.md): System layers, ports, adapters, and composition boundaries.
+- [**SDK_AGENT_RUNNER.md**](../feature/SDK_AGENT_RUNNER.md): Operational runner behavior, including OpenCode mapping and output normalization.
+- [**TESTS.md**](./TESTS.md): Vitest commands and external-process test boundaries.

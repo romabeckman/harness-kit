@@ -7,6 +7,10 @@ import { defaultProgress, extractJsonOrNull } from '../CliRunnerProgress'
 export class OpenCodeCLIRunner extends AbstractCliRunner {
   readonly type = Runner.OPENCODE_CLI
 
+  protected override get nonZeroExitErrorCode(): AgentRunnerErrorCode {
+    return AgentRunnerErrorCode.API_ERROR
+  }
+
   protected get binaryName(): string {
     return 'opencode'
   }
@@ -38,7 +42,9 @@ export class OpenCodeCLIRunner extends AbstractCliRunner {
   protected override onStdoutLine(line: string, invocation: AgentInvocation): void {
     let event: Record<string, unknown>
     try {
-      event = JSON.parse(line) as Record<string, unknown>
+      const parsed: unknown = JSON.parse(line)
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return
+      event = parsed as Record<string, unknown>
     } catch {
       return
     }
@@ -232,7 +238,9 @@ export class OpenCodeCLIRunner extends AbstractCliRunner {
     for (const raw of lines) {
       let event: Record<string, unknown>
       try {
-        event = JSON.parse(raw) as Record<string, unknown>
+        const parsed: unknown = JSON.parse(raw)
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) continue
+        event = parsed as Record<string, unknown>
       } catch {
         continue
       }
