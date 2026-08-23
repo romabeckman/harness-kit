@@ -239,6 +239,41 @@ describe('TokenLedger', () => {
       expect(event.tokenUsage.calculatedCostUsd).toBe(0.003)
       expect(event.executionMetrics.status).toBe('success')
     })
+
+    it('preserves effort, featureId, phase, and runner across serialization and report', () => {
+      const ledger = new TokenLedger(ledgerPath)
+      ledger.record('tdd-orchestrator', 'developer-backend', {
+        inputTokens: 1000,
+        outputTokens: 200,
+        cacheCreationTokens: 50,
+        cacheReadTokens: 100,
+        costUsd: 0.005,
+        model: 'gpt-5.6',
+        effort: 'xhigh',
+        featureId: 'F001',
+        phase: 'DEVELOPMENT',
+        runner: 'copilot-cli',
+        durationMs: 3400,
+        status: 'success',
+      })
+
+      const report = ledger.report()
+      expect(report.entries).toHaveLength(1)
+      const entry = report.entries[0]
+      expect(entry.effort).toBe('xhigh')
+      expect(entry.featureId).toBe('F001')
+      expect(entry.phase).toBe('DEVELOPMENT')
+      expect(entry.runner).toBe('copilot-cli')
+      expect(entry.durationMs).toBe(3400)
+      expect(entry.status).toBe('success')
+
+      expect(report.events).toHaveLength(1)
+      const event = report.events[0]
+      expect(event.effort).toBe('xhigh')
+      expect(event.featureId).toBe('F001')
+      expect(event.phase).toBe('DEVELOPMENT')
+      expect(event.runner).toBe('copilot-cli')
+    })
   })
 })
 

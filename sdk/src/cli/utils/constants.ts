@@ -237,17 +237,21 @@ export const HELP_REPORT = `
 @romabeckman/harness-kit — hrns report
 
 USAGE
-  hrns report
+  hrns report [options]
 
 DESCRIPTION
   Print the development status report, feature progress, and detailed token usage
   analytics aggregated from docs/product/tokens.jsonl for the current workspace.
 
 OPTIONS
+  --export <json|csv>       Export report data as raw JSON or CSV to stdout
   --help, -h                Show this help message
 
 EXAMPLES
   hrns report
+  hrns report --export json
+  hrns report --export csv
+  hrns report --export json > harness-report.json
 `
 
 export const HELP_VERSION = `

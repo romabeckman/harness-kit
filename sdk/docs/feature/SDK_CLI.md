@@ -20,8 +20,8 @@ updated: "2026-08-18"
   "entrypoints":["src/cli/run.ts"],
   "registration_files":["package.json"],
   "reference_files":["src/cli/services/run-service.ts"],
-  "code_files":["src/cli/DebugContext.ts","src/cli/services/candidate-service.ts","src/cli/services/diagnose-service.ts","src/cli/services/init-service.ts","src/cli/services/report-service.ts","src/cli/services/report/ReportDataAggregator.ts","src/cli/services/report/ReportRenderer.ts","src/cli/services/report/types.ts","src/cli/services/reset-service.ts","src/cli/services/settings-service.ts","src/cli/utils/cli-utils.ts","src/cli/utils/constants.ts","src/cli/utils/run-args-parser.ts","src/cli/utils/runner-args-parser.ts"],
-  "test_files":["src/cli/services/__tests__/candidate-service.test.ts","src/cli/services/__tests__/diagnose-service.test.ts","src/cli/services/report/__tests__/ReportDataAggregator.test.ts","src/cli/services/report/__tests__/ReportRenderer.test.ts","src/cli/utils/__tests__/run-args-parser.test.ts","src/cli/utils/__tests__/runner-args-parser.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/unit/t19-run-args-parser.test.ts","tests/unit/t20-debug-context.test.ts","tests/unit/t27-cli-utils.test.ts","tests/unit/t29-init-service.test.ts","tests/unit/t30-resolve-mode.test.ts","tests/unit/t33-resume-phase-choices.test.ts"]
+  "code_files":["src/cli/DebugContext.ts","src/cli/services/candidate-service.ts","src/cli/services/diagnose-service.ts","src/cli/services/init-service.ts","src/cli/services/report-service.ts","src/cli/services/report/ReportDataAggregator.ts","src/cli/services/report/ReportExporter.ts","src/cli/services/report/ReportRenderer.ts","src/cli/services/report/types.ts","src/cli/services/reset-service.ts","src/cli/services/settings-service.ts","src/cli/utils/cli-utils.ts","src/cli/utils/constants.ts","src/cli/utils/report-args-parser.ts","src/cli/utils/run-args-parser.ts","src/cli/utils/runner-args-parser.ts"],
+  "test_files":["src/cli/services/__tests__/candidate-service.test.ts","src/cli/services/__tests__/diagnose-service.test.ts","src/cli/services/report/__tests__/ReportDataAggregator.test.ts","src/cli/services/report/__tests__/ReportExporter.test.ts","src/cli/services/report/__tests__/ReportRenderer.test.ts","src/cli/services/report/__tests__/report-service.test.ts","src/cli/utils/__tests__/report-args-parser.test.ts","src/cli/utils/__tests__/run-args-parser.test.ts","src/cli/utils/__tests__/runner-args-parser.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/unit/t19-run-args-parser.test.ts","tests/unit/t20-debug-context.test.ts","tests/unit/t27-cli-utils.test.ts","tests/unit/t29-init-service.test.ts","tests/unit/t30-resolve-mode.test.ts","tests/unit/t33-resume-phase-choices.test.ts"]
 }
 ```
 
@@ -44,8 +44,14 @@ src/cli/
 │   ├── init-service.ts           # cmdInit() implementation
 │   ├── reset-service.ts          # resetOptions() wizard
 │   ├── report-service.ts         # cmdReport() implementation
+│   ├── report/
+│   │   ├── ReportDataAggregator.ts
+│   │   ├── ReportExporter.ts     # JSON/CSV export serialization
+│   │   ├── ReportRenderer.ts     # Human terminal rendering
+│   │   └── types.ts
 │   └── settings-service.ts       # cmdSettings() implementation
 └── utils/
+    ├── report-args-parser.ts     # parseReportArgs() for --export json|csv
     ├── run-args-parser.ts        # parseRunArgs() pure parser
     ├── runner-args-parser.ts     # parseStandardRunnerArgs() pure parser
     ├── cli-utils.ts              # Path and validation helpers
@@ -60,7 +66,7 @@ src/cli/
 - **`hrns run`**: Start or resume an orchestration session.
 - **`hrns diagnose`**: Run post-orchestration harness diagnosis on pending sessions.
 - **`hrns candidate`**: Review and apply meta-harness optimization candidates (`list`, `review [id]`, `review [id] --auto`).
-- **`hrns report`**: Print token usage report.
+- **`hrns report`**: Print token usage report or export machine-readable datasets (`--export json|csv`).
 - **`hrns version`**: Show version.
 - **`hrns help`**: Show help.
 

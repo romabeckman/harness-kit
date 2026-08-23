@@ -129,13 +129,13 @@ describe('DiagnoseService', () => {
       1,
       expect.objectContaining({ sessionId: 'session-2026-08-15-001' }),
       'session-2026-08-15-001',
-      undefined
+      { model: 'anthropic.claude-5-sonnet', effort: 'low' }
     )
     expect(mockAdapter.invoke).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ sessionId: 'session-2026-08-15-002' }),
       'session-2026-08-15-002',
-      undefined
+      { model: 'gemini-3.7-flash', effort: 'low' }
     )
   })
 
@@ -202,7 +202,7 @@ describe('DiagnoseService', () => {
     expect(result.remaining).toBe(0)
     expect(mockAdapter.invokeMetaHarness).toHaveBeenCalledWith(
       expect.objectContaining({ sessionId: 'session-2026-08-15-001' }),
-      undefined
+      { model: 'anthropic.claude-5-sonnet', effort: 'low' }
     )
   })
 
