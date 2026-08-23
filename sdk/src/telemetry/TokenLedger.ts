@@ -25,6 +25,10 @@ export interface TelemetryAuditEvent {
   agent: string
   model: string
   skill: string
+  effort?: string
+  featureId?: string
+  phase?: string
+  runner?: string
   executionMetrics: ExecutionMetrics
   tokenUsage: DetailedTokenUsage
 }
@@ -35,6 +39,11 @@ export interface TokenEntry extends TokenUsage {
   agent: string
   model: string
   effort: string
+  featureId?: string
+  phase?: string
+  runner?: string
+  durationMs?: number
+  status?: string
   auditId?: string
   jobId?: string
   projectId?: string
@@ -52,6 +61,11 @@ export interface TokenReport {
 }
 
 export function normalizeTelemetryEvent(raw: any): TelemetryAuditEvent {
+  const effort = raw?.effort ?? raw?.tokenUsage?.effort
+  const featureId = raw?.featureId ?? raw?.tokenUsage?.featureId
+  const phase = raw?.phase ?? raw?.tokenUsage?.phase
+  const runner = raw?.runner ?? raw?.tokenUsage?.runner
+
   if (raw && typeof raw === 'object' && raw.tokenUsage && typeof raw.tokenUsage === 'object') {
     const tu = raw.tokenUsage
     const em = raw.executionMetrics ?? {}
@@ -65,9 +79,13 @@ export function normalizeTelemetryEvent(raw: any): TelemetryAuditEvent {
       agent: raw.agent ?? 'unknown',
       model: raw.model ?? 'unknown',
       skill: raw.skill ?? 'unknown',
+      ...(effort ? { effort } : {}),
+      ...(featureId ? { featureId } : {}),
+      ...(phase ? { phase } : {}),
+      ...(runner ? { runner } : {}),
       executionMetrics: {
-        durationMs: typeof em.durationMs === 'number' ? em.durationMs : 0,
-        status: em.status ?? 'success',
+        durationMs: typeof em.durationMs === 'number' ? em.durationMs : (typeof raw.durationMs === 'number' ? raw.durationMs : 0),
+        status: em.status ?? raw.status ?? 'success',
       },
       tokenUsage: {
         inputTokens: typeof tu.inputTokens === 'number' ? tu.inputTokens : 0,
@@ -96,6 +114,10 @@ export function normalizeTelemetryEvent(raw: any): TelemetryAuditEvent {
     agent: raw.agent ?? 'unknown',
     model: raw.model ?? 'unknown',
     skill: raw.skill ?? 'unknown',
+    ...(effort ? { effort } : {}),
+    ...(featureId ? { featureId } : {}),
+    ...(phase ? { phase } : {}),
+    ...(runner ? { runner } : {}),
     executionMetrics: {
       durationMs: typeof raw.durationMs === 'number' ? raw.durationMs : (raw.executionMetrics?.durationMs ?? 0),
       status: raw.status ?? raw.executionMetrics?.status ?? 'success',
@@ -125,7 +147,7 @@ export class TokenLedger {
     const calculatedCostUsd = usage.costUsd ?? usage.calculatedCostUsd ?? 0
     const timestamp = usage.timestamp ?? usage.ts ?? new Date().toISOString()
 
-    const event = {
+    const event: any = {
       auditId: usage.auditId ?? `aud_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       jobId: usage.jobId,
       projectId: usage.projectId ?? usage.project ?? 'default',
@@ -149,6 +171,10 @@ export class TokenLedger {
         calculatedCostUsd,
       },
     }
+    if (usage.featureId) event.featureId = usage.featureId
+    if (usage.phase) event.phase = usage.phase
+    if (usage.runner) event.runner = usage.runner
+
     const dir = dirname(this.#ledgerPath)
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
     appendFileSync(this.#ledgerPath, JSON.stringify(event) + '\n', 'utf8')
@@ -162,7 +188,7 @@ export class TokenLedger {
     const calculatedCostUsd = event.tokenUsage?.calculatedCostUsd ?? event.costUsd ?? 0
     const timestamp = event.timestamp ?? event.ts ?? new Date().toISOString()
 
-    const fullEvent = {
+    const fullEvent: any = {
       auditId: event.auditId ?? `aud_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       jobId: event.jobId,
       projectId: event.projectId ?? 'default',
@@ -186,6 +212,10 @@ export class TokenLedger {
         calculatedCostUsd,
       },
     }
+    if (event.featureId) fullEvent.featureId = event.featureId
+    if (event.phase) fullEvent.phase = event.phase
+    if (event.runner) fullEvent.runner = event.runner
+
     const dir = dirname(this.#ledgerPath)
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
     appendFileSync(this.#ledgerPath, JSON.stringify(fullEvent) + '\n', 'utf8')
@@ -206,7 +236,12 @@ export class TokenLedger {
       skill: ev.skill,
       agent: ev.agent,
       model: ev.model,
-      effort: 'default',
+      effort: ev.effort ?? 'default',
+      featureId: ev.featureId,
+      phase: ev.phase,
+      runner: ev.runner,
+      durationMs: ev.executionMetrics?.durationMs,
+      status: ev.executionMetrics?.status,
       auditId: ev.auditId,
       jobId: ev.jobId,
       projectId: ev.projectId,

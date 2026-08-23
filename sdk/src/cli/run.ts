@@ -46,7 +46,8 @@ async function main(): Promise<void> {
   }
 
   if (cmd === 'report') {
-    cmdReport(cwd)
+    const reportArgs = args.slice(1)
+    cmdReport(cwd, reportArgs)
     return
   }
 

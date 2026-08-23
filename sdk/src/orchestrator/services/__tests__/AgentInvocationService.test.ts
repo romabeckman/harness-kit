@@ -264,7 +264,7 @@ describe('AgentInvocationService', () => {
         makeSettings()
       )
 
-      expect(ledger.record).toHaveBeenCalledWith('tdd-orchestrator', 'developer-backend', usage)
+      expect(ledger.record).toHaveBeenCalledWith('tdd-orchestrator', 'developer-backend', expect.objectContaining(usage))
     })
 
     it('does NOT record when output has no usage', async () => {

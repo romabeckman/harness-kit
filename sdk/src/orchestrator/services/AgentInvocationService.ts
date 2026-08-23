@@ -196,8 +196,17 @@ export class AgentInvocationService {
       }
 
       if (output.usage) {
-        this.ledger.record(finalInvocation.skill ?? '', finalInvocation.agent, output.usage)
         const elapsedMs = Date.now() - startTime
+        this.ledger.record(finalInvocation.skill ?? '', finalInvocation.agent, {
+          ...output.usage,
+          model: output.usage.model ?? finalInvocation.model,
+          effort: output.usage.effort ?? finalInvocation.effort,
+          featureId: (finalInvocation.payload as any)?.featureId,
+          phase: currentPhase,
+          runner: runnerType,
+          durationMs: elapsedMs,
+          status: 'success',
+        })
         const durationStr = OrchestratorFormatter.formatDuration(elapsedMs)
         const { inputTokens, outputTokens } = output.usage
         const total = inputTokens + outputTokens

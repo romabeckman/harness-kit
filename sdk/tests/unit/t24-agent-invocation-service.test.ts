@@ -166,6 +166,6 @@ describe('T24 — AgentInvocationService', () => {
     await service.invokeAgent(invocation, Phase.PLANNING, config, settings)
 
     // Assert
-    expect(mockLedger.record).toHaveBeenCalledWith('my-skill', 'my-agent', mockUsage)
+    expect(mockLedger.record).toHaveBeenCalledWith('my-skill', 'my-agent', expect.objectContaining(mockUsage))
   })
 })
