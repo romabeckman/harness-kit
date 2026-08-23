@@ -272,8 +272,6 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     const resetResult = await resolveResetOptions(cwd, parsed);
     optionsReset = resetResult.optionsReset;
     steeringMessage = resetResult.steeringMessage;
-  } else {
-    steeringMessage = await resolveResumeOptions(parsed);
   }
 
   logOrchestrationStart(
@@ -317,6 +315,8 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
   });
 
   if (action === "resume") {
+    steeringMessage = await resolveResumeOptions(parsed);
+
     const state = orchestrator.getState();
     console.log(
       `\n${AnsiHelpers.blue("►")} ${AnsiHelpers.dim("Current State:")} ${AnsiHelpers.cyan(state.currentPhase)}`,
