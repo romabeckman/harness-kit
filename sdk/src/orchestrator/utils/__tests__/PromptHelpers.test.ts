@@ -282,7 +282,7 @@ describe('PromptHelpers', () => {
     it('returns LOW override rules when complexity is LOW', () => {
       const result = buildComplexityRules('LOW' as any)
       expect(result).toContain("- COMPLEXITY OVERRIDE: Classify as 'LOW' — do not re-evaluate scope complexity.")
-      expect(result).toContain('- For \'LOW\': Keep analysis concise and reuse established patterns, but still produce all required 001–004 artifacts.')
+      expect(result).toContain('- For \'LOW\': Keep analysis concise, reuse established patterns, and produce only the required 003–004 artifacts. Do not produce 001–002 artifacts.')
     })
 
     it('returns HIGH override rules when complexity is HIGH', () => {
