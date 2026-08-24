@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-23"
+updated: "2026-08-24"
 ---
 
 ```graph
@@ -61,11 +61,11 @@ src/agent-runner/
 | SDK value | OpenCode mapping | Description |
 |---|---|---|
 | `model` | `--model <provider/model>` | Select the provider/model pair. |
-| `effort` | `--effort <value>` | Forward configured effort when supported by the installed CLI. |
+| `effort` | `--variant <value>` | Forward configured effort using OpenCode's variant option. |
 | `agent` | `--agent <name>` | Select an OpenCode agent. |
 | `session.id` | `--session <id>` | Continue an existing session. |
 | `workspacePath` | `--dir <path>` | Set the working directory argument. |
-| `additionalDirs` | repeated `--add-dir <path>` | Grant additional directory access. |
+| `additionalDirs` | not forwarded | OpenCode 1.18.21 has no additional-directory CLI flag; workspacePath remains the process working directory. |
 | `prompt` | stdin | Avoid positional prompt arguments and preserve prompt length. |
 
 ## OUTPUT AND FAILURE BOUNDARIES
@@ -77,7 +77,7 @@ src/agent-runner/
 ## BEST PRACTICES
 REQUIRED: Register built-in runners at composition boundaries and resolve them through `AgentRunnerFactory`.
 REQUIRED: Propagate `AbortSignal`, apply per-invocation or constructor timeout, and preserve session identifiers.
-REQUIRED: Verify installed OpenCode help before relying on optional flags such as `--effort`, `--dir`, or `--add-dir`.
+REQUIRED: Verify installed OpenCode help before relying on vendor flags; this adapter uses `--variant` and `--dir`, while OpenCode 1.18.21 has no additional-directory flag.
 PROHIBITED: Bind orchestration decisions to `OpenCodeCLIRunner` or expose OpenCode-specific types through `IAgentRunner`.
 PROHIBITED: Pass credentials or other sensitive environment values to child processes.
 

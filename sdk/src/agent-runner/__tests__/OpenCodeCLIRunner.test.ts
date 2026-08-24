@@ -96,11 +96,11 @@ describe('OpenCodeCLIRunner', () => {
   })
 
   describe('CLI Argument Mapping (buildArgs)', () => {
-    it('should build base CLI args ["run"] when minimal invocation is provided', () => {
+    it('should build JSON CLI args when minimal invocation is provided', () => {
       const runner = new OpenCodeCLIRunner()
       // @ts-ignore - protected method access
       const args = runner.buildArgs(baseInvocation.prompt!, baseInvocation)
-      expect(args).toEqual(['run', '--agent', 'test-agent'])
+      expect(args).toEqual(['run', '--format', 'json', '--agent', 'test-agent'])
     })
 
     it('should build base CLI args ["run"] with no agent if agent not provided', () => {
@@ -112,7 +112,7 @@ describe('OpenCodeCLIRunner', () => {
       }
       // @ts-ignore - protected method access
       const args = runner.buildArgs(inv.prompt!, inv)
-      expect(args).toEqual(['run'])
+      expect(args).toEqual(['run', '--format', 'json'])
     })
 
     it('should append -m or --model when model is provided in invocation', () => {
@@ -171,7 +171,7 @@ describe('OpenCodeCLIRunner', () => {
       expect(args[args.indexOf('--dir') + 1]).toBe('/path/to/project')
     })
 
-    it('should append --effort when effort is provided', () => {
+    it('should append --variant when effort is provided', () => {
       const runner = new OpenCodeCLIRunner()
       const inv: AgentInvocation = {
         ...baseInvocation,
@@ -179,11 +179,12 @@ describe('OpenCodeCLIRunner', () => {
       }
       // @ts-ignore - protected method access
       const args = runner.buildArgs(inv.prompt!, inv)
-      expect(args).toContain('--effort')
-      expect(args[args.indexOf('--effort') + 1]).toBe('high')
+      expect(args).toContain('--variant')
+      expect(args[args.indexOf('--variant') + 1]).toBe('high')
+      expect(args).not.toContain('--effort')
     })
 
-    it('should append --add-dir for each additional directory', () => {
+    it('should not append unsupported --add-dir flags for additional directories', () => {
       const runner = new OpenCodeCLIRunner()
       const inv: AgentInvocation = {
         ...baseInvocation,
@@ -191,8 +192,8 @@ describe('OpenCodeCLIRunner', () => {
       }
       // @ts-ignore - protected method access
       const args = runner.buildArgs(inv.prompt!, inv)
-      expect(args).toContain('--add-dir')
-      expect(args).toEqual(expect.arrayContaining(['--add-dir', '/extra/dir1', '--add-dir', '/extra/dir2']))
+      expect(args).not.toContain('--add-dir')
+      expect(args).toEqual(['run', '--format', 'json', '--agent', 'test-agent'])
     })
 
     it('should write prompt to stdin (writePromptToStdin is true)', () => {

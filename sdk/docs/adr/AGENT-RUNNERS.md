@@ -7,7 +7,7 @@ tags: [agent-runner, strategies, factory, registry, opencode]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-08-23"
+updated: "2026-08-24"
 ---
 # Agent Runners
 Decouples agent execution clients and strategies from the orchestrator engine.
@@ -54,7 +54,7 @@ src/agent-runner/
 - Executes `kiro-cli chat --no-interactive --trust-all-tools`; parses result events and does not resume sessions.
 ### OpenCodeCLIRunner (`opencode-cli`)
 - Executes the `opencode run` subcommand with prompts on stdin.
-- Maps model, effort, agent, session, workspace, and additional-directory invocation values to CLI flags.
+- Maps model, effort (via `--variant`), agent, session, and workspace values to supported CLI flags; ignores additional-directory values because OpenCode 1.18.21 has no equivalent flag.
 - Parses ANSI-clean JSON objects or JSON-lines events for response text, structured artefacts, usage, cost, and session IDs.
 - Emits text/tool progress from assistant and item events; classifies non-zero exits and parsed agent failures as `API_ERROR`.
 

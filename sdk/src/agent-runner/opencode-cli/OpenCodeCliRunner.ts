@@ -20,21 +20,20 @@ export class OpenCodeCLIRunner extends AbstractCliRunner {
   }
 
   protected buildArgs(_prompt: string, invocation: AgentInvocation): string[] {
-    const args: string[] = ['run']
+    const args: string[] = ['run', '--format', 'json']
 
     const model = this.getModelName(invocation)
     if (model) args.push('--model', model)
 
     const effort = this.getEffort(invocation)
-    if (effort) args.push('--effort', effort)
+    if (effort) args.push('--variant', effort)
 
     if (invocation.agent) args.push('--agent', invocation.agent)
     if (invocation.session?.id) args.push('--session', invocation.session.id)
     if (invocation.workspacePath) args.push('--dir', invocation.workspacePath)
 
-    for (const dir of invocation.additionalDirs ?? []) {
-      args.push('--add-dir', dir)
-    }
+    // OpenCode 1.18.21 has no CLI equivalent for additional directory grants.
+    // The child process still runs from workspacePath via AbstractCliRunner.
 
     return args
   }
