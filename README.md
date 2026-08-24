@@ -2,6 +2,8 @@
 
 ![HarnessKit - 5-Step Engineering Cycle](docs/assets/harness-cycle-banner.png)
 
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/romabeckman?style=flat&logo=githubsponsors&label=Sponsor)](https://github.com/sponsors/romabeckman)
+
 > **Harness Engineering**: A reliable AI agent is not just a raw model. It is defined as:
 > $$\text{Reliable Agent} = \text{Model (AI)} + \text{Harness (Controls)} + \text{Human Auditor}$$
 
@@ -249,6 +251,15 @@ Explore the complete knowledge base inside `docs/workflow/`:
 * **Continuous Self-Improvement** — Measure every session and evolve prompts empirically.
 
 ---
+
+## Support HarnessKit
+
+HarnessKit is an open-source project. If it helps your development workflow,
+consider supporting its continued development.
+
+[Sponsor HarnessKit](https://github.com/sponsors/romabeckman)
+
+Your support helps fund maintenance, documentation, research, and new features.
 
 ## Contributing & Community
 
