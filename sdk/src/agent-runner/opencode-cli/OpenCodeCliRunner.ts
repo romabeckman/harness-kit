@@ -23,6 +23,14 @@ export class OpenCodeCLIRunner extends AbstractCliRunner {
     const args: string[] = ['run', '--format', 'json']
 
     const model = this.getModelName(invocation)
+    if (model && !model.includes('/')) {
+      throw new AgentRunnerError({
+        code: AgentRunnerErrorCode.API_ERROR,
+        skill: invocation.skill ?? '',
+        phase: 'dispatch',
+        message: 'OpenCode model must use provider/model format; run opencode models to list valid identifiers.',
+      })
+    }
     if (model) args.push('--model', model)
 
     const effort = this.getEffort(invocation)

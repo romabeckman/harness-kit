@@ -135,6 +135,14 @@ describe('OpenCodeCLIRunner', () => {
       expect(args[args.indexOf('--model') + 1]).toBe('openai/gpt-4o')
     })
 
+    it('should reject a model without its OpenCode provider prefix', () => {
+      const runner = new OpenCodeCLIRunner()
+      const inv: AgentInvocation = { ...baseInvocation, model: 'gpt56luna' }
+
+      // @ts-ignore - protected method access
+      expect(() => runner.buildArgs(inv.prompt!, inv)).toThrow('provider/model')
+    })
+
     it('should append --agent when agent is provided in invocation', () => {
       const runner = new OpenCodeCLIRunner()
       const inv: AgentInvocation = {
