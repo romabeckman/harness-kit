@@ -124,6 +124,7 @@ describe('PlanningHandler', () => {
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
             expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'HIGH'");
             expect(invokedPrompt).toContain('integrations, failure modes, security boundaries, concurrency, and compatibility risks');
+            expect(invokedPrompt).toContain('Read the generated `001-problem-space.md` and explicitly answer every question from its `Socratic Questions` section');
             expect(invokedPrompt).not.toContain('the-grumpy-tech-lead');
         });
 

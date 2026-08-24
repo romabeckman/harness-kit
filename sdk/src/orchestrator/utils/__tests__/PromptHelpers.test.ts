@@ -289,6 +289,7 @@ describe('PromptHelpers', () => {
       const result = buildComplexityRules('HIGH' as any)
       expect(result).toContain("- COMPLEXITY OVERRIDE: Classify as 'HIGH' — do not re-evaluate scope complexity.")
       expect(result).toContain('- For \'HIGH\': Give additional depth to integrations, failure modes, security boundaries, concurrency, and compatibility risks while producing all required 001–004 artifacts.')
+      expect(result).toContain("- For 'HIGH': Read the generated `001-problem-space.md` and explicitly answer every question from its `Socratic Questions` section in downstream 003–004 artifacts.")
     })
 
     it('returns AUTO evaluation rules when complexity is AUTO or undefined', () => {

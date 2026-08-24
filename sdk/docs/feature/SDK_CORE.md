@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-18"
+updated: "2026-08-24"
 ---
 ```graph
 {
@@ -101,6 +101,7 @@ const orchestrator = new HarnessOrchestrator({});
 REQUIRED: Use `isExtractionError` / `isExtractionResult` type guards to branch on extraction outcomes.
 REQUIRED: Keep `001-problem-space.md` and `002-context-map.md` $\le$ 5,000 characters (`INLINE_THRESHOLD`) with `InlinePolicy` = `'never'`.
 ALLOWED: Generate `003-*` tactical designs and `004-*` test scenarios with `InlinePolicy` = `'always'`.
+REQUIRED: For `HIGH` complexity, read `001-problem-space.md` and explicitly answer every question from its `Socratic Questions` section in downstream `003–004` artifacts.
 REQUIRED: Use `inlineOrReference` with `InlinePolicy` and `FORCE_INLINE_MAX` (15,000 chars) safeguard.
 PROHIBITED: Mutating state directly without using `IFileStateManager`.
 REQUIRED: Tag all developer sessions with mandatory `phase` (`DeveloperSessionState`) to isolate `DEVELOPMENT` and `REVIEW` sessions.
