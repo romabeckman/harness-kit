@@ -230,7 +230,7 @@ hrns help settings        # show help for hrns settings
 | `--reworks <1–10>` | | Max rework cycles before cascade fail | `--reworks 3` |
 | `--steering <text>` | | Additional orchestration rules | `--steering "prefer async/await"` |
 | `--refine` | | Enable interactive pre-planning Socratic questionnaire | `--refine` |
-| `--mode <mode>` | `-M` | Execution mode: `quick`, `fast`, `thinking` (default), `deep_thinking` | `--mode fast` |
+| `--mode <mode>` | `-M` | Execution mode: `quick`, `fast` (default), `thinking`, `deep_thinking` | `--mode fast` |
 | `--skip-validation` | | Skip Phase C entirely — jump straight to Phase D | |
 | `--skip-memory` | | Skip Phase E entirely — jump straight to Phase F | |
 | `--skip-deploy` | | Skip DEPLOY phase — pipeline halts after Phase F | |
