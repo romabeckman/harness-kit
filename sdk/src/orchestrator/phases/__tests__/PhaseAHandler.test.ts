@@ -111,7 +111,7 @@ describe('PlanningHandler', () => {
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
             expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'LOW'");
-            expect(invokedPrompt).toContain('all required 001–004 artifacts');
+            expect(invokedPrompt).toContain('only the required 003–004 artifacts');
             expect(invokedPrompt).not.toContain('the-grumpy-tech-lead');
             expect(mockContext.invokeAgent.mock.calls[0][0].phaseKey).toBe('planning');
         });

@@ -1,7 +1,7 @@
 name = "developer-debugging"
 description = "Systematic Investigation and Debugging Specialist. Uses an evidence-driven workflow and the \"5 Whys\" to identify the root cause of bugs before implementation."
 model = "gpt-5.6-luna"
-model_reasoning_effort = "max"
+model_reasoning_effort = "xhigh"
 
 developer_instructions = """
 <role_definition>

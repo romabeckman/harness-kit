@@ -5,6 +5,12 @@ export interface BaseRunnerConfig {
 
 export type RunnerConfig = BaseRunnerConfig & Record<string, any>
 
+export interface OpenCodeRunnerConfig extends BaseRunnerConfig {
+  readonly model?: string
+  readonly effort?: string
+  readonly agent?: string
+}
+
 export interface AgentSession {
   readonly id: string
 }
@@ -56,6 +62,7 @@ export enum Runner {
   CURSOR_CLI = 'cursor-cli',
   CURSOR_SDK = 'cursor-sdk',
   KIRO_CLI = 'kiro-cli',
+  OPENCODE_CLI = 'opencode-cli',
 }
 
 export type ContextPayload = Record<string, unknown>

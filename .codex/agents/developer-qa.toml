@@ -1,7 +1,7 @@
 name = "developer-qa"
 description = "Senior QA Engineer specialized in test strategy, automation, exploratory testing, and quality gates. Use for implementing test suites, writing E2E/contract/load tests, auditing test coverage, and establishing quality standards across the pipeline."
 model = "gpt-5.6-luna"
-model_reasoning_effort = "max"
+model_reasoning_effort = "xhigh"
 
 developer_instructions = """
 <role_definition>
