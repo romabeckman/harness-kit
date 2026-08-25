@@ -198,6 +198,9 @@ describe('DevelopmentHandler', () => {
 
       expect(result).toBe(Phase.REVIEW)
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
+      const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
+      expect(invokeCall.prompt).toContain('"developerNotes"')
+      expect(invokeCall.prompt).toContain('maximum 500 characters')
     })
 
     it('embeds REWORK-LOG.md content in the prompt on retry run (standalone without session)', async () => {
@@ -235,6 +238,8 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).toContain('<tasks>')
       expect(invokeCall.prompt).toContain('[T01] Do something')
       expect(invokeCall.prompt).toContain('"status": "SUCCESS"')
+      expect(invokeCall.prompt).toContain('"developerNotes"')
+      expect(invokeCall.prompt).toContain('maximum 500 characters')
       expect(invokeCall.prompt).not.toContain('"SUCCESS" | "FAILED"')
     })
 
@@ -315,6 +320,8 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).toContain('Review finding: Missing null check')
       expect(invokeCall.prompt).toContain('<tasks>')
       expect(invokeCall.prompt).toContain('<expected_output>')
+      expect(invokeCall.prompt).toContain('"developerNotes"')
+      expect(invokeCall.prompt).toContain('maximum 500 characters')
       // Continuation prompt should NOT re-send full development specifications or project paths/orientation
       expect(invokeCall.prompt).not.toContain('<development_specifications>')
       expect(invokeCall.prompt).not.toContain('<project_paths>')
