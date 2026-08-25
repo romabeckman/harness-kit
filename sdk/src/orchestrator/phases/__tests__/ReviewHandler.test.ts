@@ -145,6 +145,14 @@ describe('ReviewHandler', () => {
   it('invokes Tech Lead and Adversarial QA without passing developerSession', async () => {
     const fsm = makeFsm()
     const specsDir = join(workingDir, 'docs', 'specs', 'sdk_core')
+    writeFileSync(join(specsDir, 'TDD-OUTPUT.json'), JSON.stringify({
+      featureId: 'F001',
+      status: 'SUCCESS',
+      metrics: { totalTests: 2, passed: 2, failed: 0, coverage: 1 },
+      modifiedFiles: ['src/example.ts'],
+      developerHandoff: 'Implemented retry handling. Review concurrency cleanup.',
+      reworksCount: 0,
+    }))
 
     const context = makeContext(workingDir, fsm, async (inv: any) => {
       if (inv.phaseKey === 'review_tl') {
@@ -172,8 +180,14 @@ describe('ReviewHandler', () => {
 
     expect(tlCall.session).toBeUndefined()
     expect(qaCall.session).toBeUndefined()
-    expect(tlCall.prompt).toContain('developerNotes')
-    expect(qaCall.prompt).toContain('developerNotes')
+    expect(tlCall.prompt).toContain('<development_handoff>')
+    expect(qaCall.prompt).toContain('<development_handoff>')
+    expect(tlCall.prompt).toContain('Implemented retry handling. Review concurrency cleanup.')
+    expect(qaCall.prompt).toContain('Implemented retry handling. Review concurrency cleanup.')
+    expect(tlCall.prompt).toContain('navigation context only')
+    expect(qaCall.prompt).toContain('navigation context only')
+    expect(tlCall.prompt).not.toContain('Read `developerNotes`')
+    expect(qaCall.prompt).not.toContain('Read `developerNotes`')
   })
 
   it('preserves developerSession on RETRY verdict', async () => {

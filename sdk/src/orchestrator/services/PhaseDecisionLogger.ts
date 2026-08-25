@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import type { IFileStateManager } from '../../file-state/FileStateManager'
 import type { Feature } from '../../file-state/types'
-import { listSpecFiles, listDocFiles, readTddOutput } from '../utils/PhaseFileUtils'
+import { listSpecFiles, listDocFiles, summarizeTddOutput } from '../utils/PhaseFileUtils'
 
 /**
  * Centralized service for writing phase-level audit entries to DECISIONS.md.
@@ -61,7 +61,7 @@ export class PhaseDecisionLogger {
     feature: Feature,
     tddOutputPath: string
   ): void {
-    const summary = readTddOutput(tddOutputPath)
+    const summary = summarizeTddOutput(tddOutputPath)
 
     fsm.appendDecision({
       featureId: feature.id,

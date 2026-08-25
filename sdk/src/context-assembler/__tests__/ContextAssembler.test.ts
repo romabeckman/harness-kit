@@ -1,5 +1,7 @@
 import { join } from 'node:path'
 import { ContextAssembler } from '../ContextAssembler'
+import { tmpdir } from 'node:os'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 
 describe('ContextAssembler', () => {
@@ -30,9 +32,21 @@ describe('ContextAssembler', () => {
 
   it('should build phase C payload', () => {
     const feature = { id: '1', title: 'feature title', domain: 'domain' }
-    const payload = ContextAssembler.buildReviewPayload(feature as any, 'workdir', ['path1'])
+    const workingDir = mkdtempSync(join(tmpdir(), 'context-assembler-'))
+    mkdirSync(join(workingDir, 'docs', 'specs', 'domain'), { recursive: true })
+    writeFileSync(join(workingDir, 'docs', 'specs', 'domain', 'TDD-OUTPUT.json'), JSON.stringify({
+      featureId: '1',
+      status: 'SUCCESS',
+      metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 },
+      modifiedFiles: [],
+      developerHandoff: 'Implemented typed handoff.',
+      reworksCount: 0,
+    }))
+    const payload = ContextAssembler.buildReviewPayload(feature as any, workingDir, ['path1'])
     expect(payload.featureId).toBe('1')
     expect(payload.domain).toBe('domain')
+    expect(payload.developerHandoff).toBe('Implemented typed handoff.')
+    rmSync(workingDir, { recursive: true, force: true })
   })
 
   it('should build phase E payload', () => {

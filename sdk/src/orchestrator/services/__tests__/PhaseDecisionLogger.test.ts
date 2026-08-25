@@ -128,8 +128,8 @@ describe('PhaseDecisionLogger', () => {
   // ─── logDevelopmen ────────────────────────────────────────────────────────────
 
   describe('logDevelopmen', () => {
-    it('records TDD status and rationale from readTddOutput', () => {
-      vi.mocked(PhaseFileUtils.readTddOutput).mockReturnValue({
+    it('records TDD status and rationale from summarizeTddOutput', () => {
+      vi.mocked(PhaseFileUtils.summarizeTddOutput).mockReturnValue({
         status: 'SUCCESS',
         rationale: 'tests: 5 total, 5 passed, 0 failed, coverage: 0.95. modified: src/a.ts.',
       })
@@ -138,7 +138,7 @@ describe('PhaseDecisionLogger', () => {
 
       PhaseDecisionLogger.logDevelopmen(fsm, makeFeature(), tddPath)
 
-      expect(PhaseFileUtils.readTddOutput).toHaveBeenCalledWith(tddPath)
+      expect(PhaseFileUtils.summarizeTddOutput).toHaveBeenCalledWith(tddPath)
       const call = (fsm.appendDecision as any).mock.calls[0][0]
       expect(call.decision).toContain('SUCCESS')
       expect(call.decision).toContain('sdk_core')
@@ -146,7 +146,7 @@ describe('PhaseDecisionLogger', () => {
     })
 
     it('records UNKNOWN when TDD output missing', () => {
-      vi.mocked(PhaseFileUtils.readTddOutput).mockReturnValue({
+      vi.mocked(PhaseFileUtils.summarizeTddOutput).mockReturnValue({
         status: 'UNKNOWN',
         rationale: 'TDD-OUTPUT.json not found.',
       })

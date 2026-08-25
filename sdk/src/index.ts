@@ -81,6 +81,14 @@ export type {
   ReviewPayload,
   MemoryPayload,
 } from './context-assembler/types'
+export {
+  readTddOutput,
+  summarizeTddOutput,
+} from './orchestrator/utils/PhaseFileUtils'
+export type {
+  TddOutput,
+  TddOutputSummary,
+} from './orchestrator/utils/PhaseFileUtils'
 
 // HTTP Server
 export { HttpServer, startHttpServer } from './server'
