@@ -172,6 +172,8 @@ describe('ReviewHandler', () => {
 
     expect(tlCall.session).toBeUndefined()
     expect(qaCall.session).toBeUndefined()
+    expect(tlCall.prompt).toContain('developerNotes')
+    expect(qaCall.prompt).toContain('developerNotes')
   })
 
   it('preserves developerSession on RETRY verdict', async () => {

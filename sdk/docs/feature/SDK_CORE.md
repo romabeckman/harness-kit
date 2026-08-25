@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-24"
+updated: "2026-08-25"
 ---
 ```graph
 {
@@ -61,17 +61,15 @@ sdk/src/
 - **Atomic Writes**: Writes files via write-to-temp-then-rename pattern.
 - **Never-Throws JSON Extraction**: Returns outcome union without throwing exceptions.
 - **Canonical Telemetry Writes**: Stores token metrics inside `tokenUsage` while reading legacy records.
-- **Developer Session Lifecycle**: Managed via `DeveloperSessionState` (`{ featureId, agent, session, phase }`) in `HarnessOrchestrator`. `PlanningHandler` preserves software-architect sessions across features with `phase: Phase.PLANNING` and `featureId: ""` (cumulative across features), using `buildScopeRefinementPrompt` when no session exists and `buildFeatureScopeRefinementPrompt` when continuing. `DevelopmentHandler` preserves sessions with `phase: Phase.DEVELOPMENT`, resuming on rework retries (`reworks > 0`) with concise continuation prompt (`REWORK-LOG.md` items without resending full specs). `ReviewHandler` preserves Tech Lead and Adversarial QA sessions with `phase: Phase.REVIEW`, reusing them across review retries for the same feature while preventing cross-phase collision. Feature-specific sessions are cleared on feature transition, while `Phase.PLANNING` cumulative sessions persist across features.
+- **Developer Sessions**: Tag sessions with `{ featureId, agent, session, phase }`. Planning sessions remain cumulative; development and review sessions remain feature- and phase-isolated. Resume matching sessions during rework; clear feature sessions after transition.
+- **Review Handoff**: Require `TDD-OUTPUT.json.developerNotes` (maximum 500 characters). Review agents read it first, then verify claims against code and tests.
 
 ## HOW TO USE THE ORCHESTRATOR API
 
-### Prerequisites
-1. Import `HarnessOrchestrator` from `@romabeckman/hrns`.
-2. Provide a valid `IAgentRunner` implementation.
-
 ### Steps
-1. Instantiate the orchestrator with required options.
-2. Call `run()` to start the cycle.
+1. Import `HarnessOrchestrator` from `@romabeckman/hrns`.
+2. Instantiate it with required options and an `IAgentRunner`.
+3. Call `run()`.
 
 <code_example>
 # CORRECT: Instantiating with an agent runner
@@ -99,14 +97,15 @@ const orchestrator = new HarnessOrchestrator({});
 ## BEST PRACTICES
 
 REQUIRED: Use `isExtractionError` / `isExtractionResult` type guards to branch on extraction outcomes.
-REQUIRED: Keep `001-problem-space.md` and `002-context-map.md` $\le$ 5,000 characters (`INLINE_THRESHOLD`) with `InlinePolicy` = `'never'`.
-ALLOWED: Generate `003-*` tactical designs and `004-*` test scenarios with `InlinePolicy` = `'always'`.
+REQUIRED: Keep `001-*` and `002-*` files at most 5,000 characters with `InlinePolicy = 'never'`.
+ALLOWED: Generate `003-*` and `004-*` files with `InlinePolicy = 'always'`.
 REQUIRED: For `HIGH` complexity, read `001-problem-space.md` and explicitly answer every question from its `Socratic Questions` section in downstream `003–004` artifacts.
 REQUIRED: Use `inlineOrReference` with `InlinePolicy` and `FORCE_INLINE_MAX` (15,000 chars) safeguard.
 PROHIBITED: Mutating state directly without using `IFileStateManager`.
 REQUIRED: Tag all developer sessions with mandatory `phase` (`DeveloperSessionState`) to isolate `DEVELOPMENT` and `REVIEW` sessions.
 REQUIRED: On development retries with matching developer session, resume with concise continuation prompt containing `REWORK-LOG.md`; fall back to standalone prompt when no session exists.
 REQUIRED: In review phase, reuse phase-isolated review sessions (`Phase.REVIEW`) on retries; discard all sessions on feature transition or pass.
+REQUIRED: Summarize completed work in `TDD-OUTPUT.json.developerNotes` using at most 500 characters for review handoff.
 
 ## DOCUMENT MAP
 
