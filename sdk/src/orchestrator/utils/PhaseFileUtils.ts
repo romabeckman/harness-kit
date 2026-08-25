@@ -63,36 +63,88 @@ export interface TddOutputSummary {
   rationale: string
 }
 
-/** Reads and summarises TDD-OUTPUT.json, returning a safe default when absent or invalid. */
-export function readTddOutput(tddOutputPath: string): TddOutputSummary {
+export interface TddOutput {
+  featureId: string
+  status: 'SUCCESS' | 'FAILED'
+  metrics: {
+    totalTests: number
+    passed: number
+    failed: number
+    coverage: number
+  }
+  modifiedFiles: string[]
+  developerHandoff?: string
+  reworksCount: number
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+/** Reads and validates the structural TDD-OUTPUT.json contract. */
+export function readTddOutput(tddOutputPath: string): TddOutput {
   if (!existsSync(tddOutputPath)) {
-    return { status: 'UNKNOWN', rationale: 'TDD-OUTPUT.json not found.' }
+    throw new Error('TDD-OUTPUT.json not found.')
   }
 
+  let data: unknown
   try {
     const raw = readFileSync(tddOutputPath, 'utf-8')
-    const data = JSON.parse(raw) as {
-      status?: string
-      metrics?: { totalTests?: number; passed?: number; failed?: number; coverage?: number }
-      modifiedFiles?: string[]
-      reworksCount?: number
-    }
+    data = JSON.parse(raw)
+  } catch (err: any) {
+    throw new Error(`Failed to parse TDD-OUTPUT.json: ${err.message}`)
+  }
 
-    const metrics = data.metrics
-    const metricStr = metrics
-      ? `tests: ${metrics.totalTests ?? '?'} total, ${metrics.passed ?? '?'} passed, ${metrics.failed ?? '?'} failed, coverage: ${metrics.coverage ?? '?'}`
-      : 'no metrics'
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid TDD-OUTPUT.json: root must be an object.')
+  }
 
-    const files = data.modifiedFiles?.length
-      ? `modified: ${data.modifiedFiles.slice(0, 5).join(', ')}${data.modifiedFiles.length > 5 ? ` (+${data.modifiedFiles.length - 5} more)` : ''}`
+  const candidate = data as Record<string, unknown>
+  const metrics = candidate.metrics
+  const validMetrics = metrics !== null
+    && typeof metrics === 'object'
+    && !Array.isArray(metrics)
+    && isFiniteNumber((metrics as Record<string, unknown>).totalTests)
+    && isFiniteNumber((metrics as Record<string, unknown>).passed)
+    && isFiniteNumber((metrics as Record<string, unknown>).failed)
+    && isFiniteNumber((metrics as Record<string, unknown>).coverage)
+
+  if (
+    typeof candidate.featureId !== 'string'
+    || (candidate.status !== 'SUCCESS' && candidate.status !== 'FAILED')
+    || !validMetrics
+    || !Array.isArray(candidate.modifiedFiles)
+    || !candidate.modifiedFiles.every(file => typeof file === 'string')
+    || (candidate.developerHandoff !== undefined && typeof candidate.developerHandoff !== 'string')
+    || !Number.isInteger(candidate.reworksCount as number)
+    || (candidate.reworksCount as number) < 0
+  ) {
+    throw new Error('Invalid TDD-OUTPUT.json: contract fields are missing or malformed.')
+  }
+
+  return candidate as unknown as TddOutput
+}
+
+/** Formats a TDD result for audit logging without exposing parser failures. */
+export function summarizeTddOutput(tddOutputPath: string): TddOutputSummary {
+  try {
+    const output = readTddOutput(tddOutputPath)
+    const metrics = output.metrics
+    const metricStr = `tests: ${metrics.totalTests} total, ${metrics.passed} passed, ${metrics.failed} failed, coverage: ${metrics.coverage}`
+    const files = output.modifiedFiles.length
+      ? `modified: ${output.modifiedFiles.slice(0, 5).join(', ')}${output.modifiedFiles.length > 5 ? ` (+${output.modifiedFiles.length - 5} more)` : ''}`
       : 'no modified files listed'
 
     return {
-      status: data.status ?? 'UNKNOWN',
-      rationale: `${metricStr}. ${files}. Reworks: ${data.reworksCount ?? 0}.`,
+      status: output.status,
+      rationale: `${metricStr}. ${files}. Reworks: ${output.reworksCount}.`,
     }
   } catch (err: any) {
-    return { status: 'PARSE_ERROR', rationale: `Failed to parse TDD-OUTPUT.json: ${err.message}` }
+    const rationale = err instanceof Error ? err.message : String(err)
+    return {
+      status: rationale.includes('not found') ? 'UNKNOWN' : 'PARSE_ERROR',
+      rationale,
+    }
   }
 }
 

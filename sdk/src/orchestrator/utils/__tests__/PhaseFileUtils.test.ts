@@ -2,7 +2,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
-import { listSpecFiles, listDocFiles, readTddOutput, getProductDir, getSpecsDir } from '../../utils/PhaseFileUtils'
+import {
+  listSpecFiles,
+  listDocFiles,
+  readTddOutput,
+  summarizeTddOutput,
+  getProductDir,
+  getSpecsDir,
+} from '../../utils/PhaseFileUtils'
 
 function makeTempDir(): string {
   const dir = join(tmpdir(), `phase-file-utils-test-${Math.random().toString(36).slice(2)}`)
@@ -90,77 +97,65 @@ describe('PhaseFileUtils', () => {
   // ─── readTddOutput ────────────────────────────────────────────────────────
 
   describe('readTddOutput', () => {
-    it('returns UNKNOWN status when file does not exist', () => {
-      const result = readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
-
-      expect(result.status).toBe('UNKNOWN')
-      expect(result.rationale).toContain('not found')
+    it('throws when file does not exist', () => {
+      expect(() => readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))).toThrow('not found')
     })
 
-    it('parses a valid TDD-OUTPUT.json and includes metrics in rationale', () => {
+    it('returns the typed TDD output contract', () => {
       const output = {
         featureId: 'F001',
         status: 'SUCCESS',
         metrics: { totalTests: 10, passed: 9, failed: 1, coverage: 0.92 },
         modifiedFiles: ['src/index.ts', 'src/utils.ts'],
+        developerHandoff: 'Review retry handling.',
         reworksCount: 0,
       }
       writeFileSync(join(tmpDir, 'TDD-OUTPUT.json'), JSON.stringify(output))
 
       const result = readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
 
-      expect(result.status).toBe('SUCCESS')
-      expect(result.rationale).toContain('10 total')
-      expect(result.rationale).toContain('9 passed')
-      expect(result.rationale).toContain('1 failed')
-      expect(result.rationale).toContain('0.92')
-      expect(result.rationale).toContain('src/index.ts')
+      expect(result).toEqual(output)
     })
 
-    it('truncates modified files list when more than 5 files', () => {
+    it('throws when file contains invalid JSON', () => {
+      writeFileSync(join(tmpDir, 'TDD-OUTPUT.json'), '{ not valid json }')
+
+      expect(() => readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))).toThrow('Failed to parse')
+    })
+
+    it('rejects malformed contract fields', () => {
+      writeFileSync(join(tmpDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+
+      expect(() => readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))).toThrow('Invalid TDD-OUTPUT.json')
+    })
+  })
+
+  describe('summarizeTddOutput', () => {
+    it('formats metrics and truncates modified files for audit logging', () => {
       const files = ['a.ts', 'b.ts', 'c.ts', 'd.ts', 'e.ts', 'f.ts', 'g.ts']
       writeFileSync(join(tmpDir, 'TDD-OUTPUT.json'), JSON.stringify({
+        featureId: 'F001',
         status: 'SUCCESS',
         metrics: { totalTests: 5, passed: 5, failed: 0, coverage: 1.0 },
         modifiedFiles: files,
+        developerHandoff: 'Ready for review.',
         reworksCount: 1,
       }))
 
-      const result = readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
+      const result = summarizeTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
 
+      expect(result.status).toBe('SUCCESS')
+      expect(result.rationale).toContain('5 total')
       expect(result.rationale).toContain('+2 more')
     })
 
-    it('returns PARSE_ERROR status when file contains invalid JSON', () => {
-      writeFileSync(join(tmpDir, 'TDD-OUTPUT.json'), '{ not valid json }')
+    it('returns PARSE_ERROR without throwing for invalid JSON', () => {
+      writeFileSync(join(tmpDir, 'TDD-OUTPUT.json'), '{ invalid }')
 
-      const result = readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
+      const result = summarizeTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
 
       expect(result.status).toBe('PARSE_ERROR')
       expect(result.rationale).toContain('Failed to parse')
-    })
-
-    it('handles missing optional fields gracefully', () => {
-      writeFileSync(join(tmpDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
-
-      const result = readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
-
-      expect(result.status).toBe('UNKNOWN')
-      expect(result.rationale).toContain('no metrics')
-      expect(result.rationale).toContain('no modified files listed')
-    })
-
-    it('reports rework count from file', () => {
-      writeFileSync(join(tmpDir, 'TDD-OUTPUT.json'), JSON.stringify({
-        status: 'SUCCESS',
-        metrics: { totalTests: 2, passed: 2, failed: 0, coverage: 1.0 },
-        modifiedFiles: [],
-        reworksCount: 3,
-      }))
-
-      const result = readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
-
-      expect(result.rationale).toContain('Reworks: 3')
     })
   })
 

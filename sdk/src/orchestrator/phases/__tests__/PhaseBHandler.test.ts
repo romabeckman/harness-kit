@@ -159,7 +159,14 @@ describe('DevelopmentHandler', () => {
   describe('handle — handleResumedExecution transitions to REVIEW', () => {
     it('returns REVIEW when TDD-OUTPUT.json exists', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
-      writeFileSync(tddPath, JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0.9 } }))
+      writeFileSync(tddPath, JSON.stringify({
+        featureId: 'F001',
+        status: 'SUCCESS',
+        metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0.9 },
+        modifiedFiles: [],
+        developerHandoff: 'Ready for review.',
+        reworksCount: 0,
+      }))
 
       const fsm = makeFsm({
         loadBacklog: vi.fn().mockReturnValue([makeFeature()]),
@@ -170,6 +177,19 @@ describe('DevelopmentHandler', () => {
       const result = await handler.handle(Phase.DEVELOPMENT, context)
 
       expect(result).toBe(Phase.REVIEW)
+    })
+
+    it('returns REVIEW without invoking developer when TDD-OUTPUT.json exists', async () => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      writeFileSync(tddPath, '{ existing output }')
+      const fsm = makeFsm({ updateTaskStatus: vi.fn() })
+      const context = makeContext(workingDir, fsm)
+
+      const result = await handler.handle(Phase.DEVELOPMENT, context)
+
+      expect(result).toBe(Phase.REVIEW)
+      expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+      expect(context.invokeAgent).not.toHaveBeenCalled()
     })
   })
 
@@ -189,7 +209,10 @@ describe('DevelopmentHandler', () => {
         writeFileSync(tddPath, JSON.stringify({
           featureId: 'F001',
           status: 'SUCCESS',
-          metrics: { totalTests: 3, passed: 3, failed: 0, coverage: 0.85 }
+          metrics: { totalTests: 3, passed: 3, failed: 0, coverage: 0.85 },
+          modifiedFiles: [],
+          developerHandoff: 'Ready for review.',
+          reworksCount: 0,
         }))
         return { success: true, stdout: '', stderr: '', raw: '' }
       })
@@ -199,8 +222,17 @@ describe('DevelopmentHandler', () => {
       expect(result).toBe(Phase.REVIEW)
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
       const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
-      expect(invokeCall.prompt).toContain('"developerNotes"')
+      expect(invokeCall.prompt).toContain('"developerHandoff"')
       expect(invokeCall.prompt).toContain('maximum 500 characters')
+    })
+
+    it('advances to REVIEW after agent invocation when TDD output is absent', async () => {
+      const fsm = makeFsm({ updateTaskStatus: vi.fn() })
+      const context = makeContext(workingDir, fsm)
+
+      const result = await handler.handle(Phase.DEVELOPMENT, context)
+
+      expect(result).toBe(Phase.REVIEW)
     })
 
     it('embeds REWORK-LOG.md content in the prompt on retry run (standalone without session)', async () => {
@@ -219,6 +251,8 @@ describe('DevelopmentHandler', () => {
           featureId: 'F001',
           status: 'SUCCESS',
           metrics: { totalTests: 3, passed: 3, failed: 0, coverage: 0.85 },
+          modifiedFiles: [],
+          developerHandoff: 'Rework complete.',
           reworksCount: 1
         }))
         return { success: true, stdout: '', stderr: '', raw: '' }
@@ -238,7 +272,7 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).toContain('<tasks>')
       expect(invokeCall.prompt).toContain('[T01] Do something')
       expect(invokeCall.prompt).toContain('"status": "SUCCESS"')
-      expect(invokeCall.prompt).toContain('"developerNotes"')
+      expect(invokeCall.prompt).toContain('"developerHandoff"')
       expect(invokeCall.prompt).toContain('maximum 500 characters')
       expect(invokeCall.prompt).not.toContain('"SUCCESS" | "FAILED"')
     })
@@ -256,6 +290,8 @@ describe('DevelopmentHandler', () => {
           featureId: 'F001',
           status: 'SUCCESS',
           metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1.0 },
+          modifiedFiles: [],
+          developerHandoff: 'Ready for review.',
           reworksCount: 0
         }))
         return { success: true, stdout: '', stderr: '', raw: '', session: { id: 'DEV-123' } }
@@ -291,6 +327,8 @@ describe('DevelopmentHandler', () => {
           featureId: 'F001',
           status: 'SUCCESS',
           metrics: { totalTests: 2, passed: 2, failed: 0, coverage: 1.0 },
+          modifiedFiles: [],
+          developerHandoff: 'Retry findings addressed.',
           reworksCount: 1
         }))
         return { success: true, stdout: '', stderr: '', raw: '', session: { id: 'DEV-123' } }
@@ -320,7 +358,7 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).toContain('Review finding: Missing null check')
       expect(invokeCall.prompt).toContain('<tasks>')
       expect(invokeCall.prompt).toContain('<expected_output>')
-      expect(invokeCall.prompt).toContain('"developerNotes"')
+      expect(invokeCall.prompt).toContain('"developerHandoff"')
       expect(invokeCall.prompt).toContain('maximum 500 characters')
       // Continuation prompt should NOT re-send full development specifications or project paths/orientation
       expect(invokeCall.prompt).not.toContain('<development_specifications>')
@@ -344,6 +382,8 @@ describe('DevelopmentHandler', () => {
           featureId: 'F001',
           status: 'SUCCESS',
           metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1.0 },
+          modifiedFiles: [],
+          developerHandoff: 'Retry findings addressed.',
           reworksCount: 1
         }))
         return { success: true, stdout: '', stderr: '', raw: '' }
@@ -382,6 +422,8 @@ describe('DevelopmentHandler', () => {
           featureId: 'F002',
           status: 'SUCCESS',
           metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1.0 },
+          modifiedFiles: [],
+          developerHandoff: 'Retry findings addressed.',
           reworksCount: 1
         }))
         return { success: true, stdout: '', stderr: '', raw: '' }

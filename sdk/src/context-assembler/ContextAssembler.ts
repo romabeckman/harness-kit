@@ -2,7 +2,7 @@ import { join } from 'path'
 import type { Feature, Task, SteeringRulesConfig } from '../file-state/types'
 import type { BootstrapPayload, PlanningPayload, DevelopmenPayload, ReviewPayload, MemoryPayload } from './types'
 import { Phase } from '../orchestrator/types'
-import { loadDomainSpecsContent } from '../orchestrator/utils/PhaseFileUtils'
+import { loadDomainSpecsContent, readTddOutput } from '../orchestrator/utils/PhaseFileUtils'
 
 
 export class ContextAssembler {
@@ -74,13 +74,19 @@ export class ContextAssembler {
    * Phase C: validation — featureId, domain, projectPaths only
    */
   static buildReviewPayload(feature: Feature, workingDir: string, projectPaths: string[], steeringRules?: SteeringRulesConfig): ReviewPayload {
+    const specsDir = join(workingDir, 'docs', 'specs', feature.domain)
     const payload: ReviewPayload = {
       featureId: feature.id,
       featureTitle: feature.title,
       domain: feature.domain,
       projectPaths,
       totalReworks: feature.reworks || 0,
-      specsContent: loadDomainSpecsContent(join(workingDir, 'docs', 'specs', feature.domain)),
+      specsContent: loadDomainSpecsContent(specsDir),
+    }
+    try {
+      payload.developerHandoff = readTddOutput(join(specsDir, 'TDD-OUTPUT.json')).developerHandoff
+    } catch {
+      // Development validation owns transition safety. Keep payload construction tolerant for direct callers.
     }
     const flattened = this.flattenRules(Phase.REVIEW, steeringRules)
     if (flattened) {

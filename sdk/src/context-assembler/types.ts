@@ -41,6 +41,7 @@ export interface ReviewPayload extends ContextPayload {
   featureTitle: string
   domain: string
   projectPaths: string[]
+  developerHandoff?: string
   steeringRules?: string[]
   totalReworks: number
   specsContent?: DomainSpecs
