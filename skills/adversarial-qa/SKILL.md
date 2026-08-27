@@ -46,6 +46,14 @@ Before adding ANY item to `vulnerabilities` or `edgeCasesMissed`, verify:
 1. **Evidence:** You can point to the exact file/function/line in the CURRENT code where the flaw exists.
 2. **Exploitability / reproducibility:** For a vulnerability, you can describe a concrete trigger or exploit path — not a generic "this pattern can sometimes be risky" note. For an edge case, it must be a scenario the code demonstrably fails, not one it merely wasn't explicitly tested against while still behaving correctly.
 3. **Proportional severity:** LOW/MEDIUM/HIGH/CRITICAL must match real impact. Do NOT inflate severity to force a RETRY.
+4. **No defensive speculation:** Do not report missing null checks on strongly typed non-null variables, internal functions, or undocumented input variations outside public API schemas unless they cause security breach, data corruption, or crash.
+
+### Scoring Tiers
+- **TIER 1 — CRITICAL (`-0.30`):** Exploitable security vulnerability, irreversible data loss, or reproducible crash.
+- **TIER 2 — HIGH (`-0.15`):** Serious conditional vulnerability, race condition on shared state, or broken core workflow.
+- **TIER 3 — MEDIUM (`-0.05`):** Supported boundary failure with demonstrable functional impact or recoverable workflow degradation.
+- **TIER 4 — LOW (`0.00` isolated / `-0.05` cluster):** Minor cosmetic/message inconsistency or niche boundary omission. Isolated LOW items deduct `0.00`. Apply one `-0.05` deduction only for a recurring cluster of 3+ related LOW items.
+- **Edge cases deduction cap:** Cumulative deductions from non-vulnerability `edgeCasesMissed` without HIGH/CRITICAL impact are capped at **`-0.20`** total.
 
 Finding zero issues is a **valid and expected** outcome when the code genuinely deserves it. You are not evaluated on how many problems you find — you are evaluated on **accuracy**.
 If the implementation genuinely covers the test-scenarios spec and no real vulnerability exists, return `"vulnerabilities": []`, `"edgeCasesMissed": []`, `"passedAdversarial": true`, `"hasHighCriticalVuln": false`, and a score reflecting that robustness. A fabricated finding is **WORSE** than an honest pass — it triggers an unnecessary rework cycle.
@@ -95,9 +103,7 @@ Your response must be exactly one raw JSON object. All fields are **required**.
     { "type": "SQL_INJECTION", "severity": "HIGH", "description": "Exact location, trigger, and impact." }
   ],
   "edgeCasesMissed": [
-    "Does not handle timeout from external payment gateway.",
-    "Null check missing when parsing user input.",
-    "Race condition between concurrent writes to same resource."
+    "[TIER 3 | -0.05] Trigger: payment gateway times out. Evidence: PaymentService.process has no timeout handling branch. Impact: request fails recoverably without corrupting state."
   ]
 }
 ```
@@ -111,4 +117,4 @@ Your response must be exactly one raw JSON object. All fields are **required**.
 - `vulnerabilities[].type`: use a precise category such as `SQL_INJECTION`, `XSS`, `RACE_CONDITION`, `AUTH_BYPASS`, `DATA_EXPOSURE`, `NULL_DEREF`, or `OTHER`
 - `vulnerabilities[].severity`: one of `LOW`, `MEDIUM`, `HIGH`, or `CRITICAL`
 - `vulnerabilities`: Empty array if none found. Include all HIGH+ findings
-- `edgeCasesMissed`: Required scenarios the current implementation demonstrably fails or does not cover. Empty if comprehensive
+- `edgeCasesMissed`: Required scenarios the current implementation demonstrably fails or does not cover. Empty if comprehensive. Format each entry as `[TIER N | -0.XX] Trigger: ... Evidence: ... Impact: ...`

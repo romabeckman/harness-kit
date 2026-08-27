@@ -182,9 +182,10 @@ Do **not** report:
 - missing tests when behavior is correct;
 - missing documentation;
 - style or refactoring preferences;
-- defensive suggestions without failure evidence;
+- defensive suggestions without failure evidence (e.g. redundant null checks on strongly-typed non-nullable parameters or internal private functions);
 - hypothetical risks without reachable trigger;
-- unsupported inputs unless they cause security breach, corruption, or crash;
+- undocumented or uncontracted input variations outside public API schemas unless they cause security breach, data corruption, or crash;
+- missing speculative edge cases when implementation covers all specified acceptance criteria and standard boundary conditions;
 - multiple symptoms caused by the same root defect;
 - the same root cause in both `vulnerabilities` and `edgeCasesMissed`.
 
@@ -226,23 +227,32 @@ Serious but conditional or business-critical failure:
 - cross-user mutation/access;
 - dependency failure silently corrupting state.
 
-### TIER 3 — MEDIUM (`-0.10`)
+### TIER 3 — MEDIUM (`-0.05`)
 
 Recoverable correctness or robustness failure:
 
-- supported boundary failure;
-- incorrect non-critical output;
-- incomplete external failure handling;
+- supported boundary failure with demonstrable functional impact;
+- incorrect non-critical calculation or output;
+- incomplete external failure handling where core flow degrades recoverably;
 - recoverable workflow degradation;
 - accessibility failure where core flow remains possible.
 
-### TIER 4 — LOW (`-0.05`)
+### TIER 4 — LOW (`0.00` isolated / `-0.05` cluster)
 
 Minor reproducible supported defect:
 
 - cosmetic/layout degradation;
-- minor feedback inconsistency;
-- recoverable inconvenience with negligible workflow impact.
+- minor feedback or log message inconsistency;
+- recoverable inconvenience with negligible workflow impact;
+- niche boundary omission without data loss or crash.
+
+Isolated TIER 4 findings do not deduct individually.
+
+Apply one `-0.05` deduction only when **3 or more related LOW edge cases** demonstrate a recurring pattern across the reviewed scope. Treat that cluster as one root cause.
+
+### Edge cases deduction cap
+
+Cumulative deductions from non-vulnerability `edgeCasesMissed` without HIGH/CRITICAL impact are capped at **`-0.20`** total.
 
 ### Deterministic scoring
 
@@ -250,11 +260,11 @@ Minor reproducible supported defect:
 2. One root cause receives one deduction.
 3. Assign exactly one tier.
 4. Map severity:
-   - `CRITICAL` → TIER 1
-   - `HIGH` → TIER 2
-   - `MEDIUM` → TIER 3
-   - `LOW` → TIER 4
-5. Prefix `edgeCasesMissed` with `[TIER N | -0.XX]`.
+   - `CRITICAL` → TIER 1 (`-0.30`)
+   - `HIGH` → TIER 2 (`-0.15`)
+   - `MEDIUM` → TIER 3 (`-0.05`)
+   - `LOW` → TIER 4 (`0.00` isolated, `-0.05` for recurring cluster of 3+)
+5. Prefix `edgeCasesMissed` with `[TIER N | -0.XX]`. Use `[TIER 4 | -0.00]` for isolated LOW items.
 6. Calculate:
 
 `rawScore = 1.00 - sum(unique active deductions)`
@@ -265,9 +275,14 @@ Round to 2 decimals.
 
 Do not interpolate or use confidence-based deductions.
 
-Example:
+Examples:
 
-`1 HIGH + 1 LOW = 1.00 - 0.15 - 0.05 = 0.80`
+- `1 HIGH = 1.00 - 0.15 = 0.85`
+- `1 MEDIUM = 1.00 - 0.05 = 0.95`
+- `1 HIGH + 1 MEDIUM = 1.00 - 0.15 - 0.05 = 0.80`
+- `2 MEDIUM = 1.00 - 0.05 - 0.05 = 0.90`
+- `1 isolated LOW = 1.00 - 0.00 = 1.00`
+- `3 related LOW = 1.00 - 0.05 = 0.95`
 
 ### Security severity floor
 
@@ -327,7 +342,7 @@ Also return the same JSON object only on stdout — no prose, markdown fences, o
     }
   ],
   "edgeCasesMissed": [
-    "[TIER 3 | -0.10] Trigger: payment gateway times out. Evidence: PaymentService.process has no timeout handling branch. Impact: request fails recoverably without corrupting state."
+    "[TIER 3 | -0.05] Trigger: payment gateway times out. Evidence: PaymentService.process has no timeout handling branch. Impact: request fails recoverably without corrupting state."
   ]
 }
 ```
