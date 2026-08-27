@@ -15,6 +15,7 @@ COMMANDS
   diagnose  Run post-orchestration harness diagnosis on pending sessions
   candidate Review and apply meta-harness optimization candidates
   report    Print development status and token usage report for the current session
+  erase     Preview and erase selected agent CLI project history
   version   Show version
   help      Show this help message
 
@@ -70,6 +71,7 @@ EXAMPLES
   hrns candidate list
   hrns candidate review v001
   hrns report
+  hrns erase
 
 DOCS
   https://github.com/romabeckman/harness-kit
@@ -266,6 +268,29 @@ DESCRIPTION
   Display the currently installed version of @romabeckman/harness-kit SDK.
 `
 
+export const HELP_ERASE = `
+@romabeckman/harness-kit — hrns erase
+
+USAGE
+  hrns erase [--target <target>]
+
+DESCRIPTION
+  Select Claude Code, Codex, Copilot, Antigravity, or OpenCode. Shows an exact
+  deletion preview, then requires explicit confirmation whose default is no.
+  Cancellation changes nothing. Partial failures list every failed path.
+
+PRESERVED
+  Credentials, authentication, configuration, permissions, extensions, plugins,
+  skills, agents, downloaded tools, unknown files, and project-authored files.
+
+TARGETS
+  claude-code | codex | copilot | antigravity | opencode
+
+OPTIONS
+  --target <target>         Select target without target prompt
+  --help, -h                Show this help message
+`
+
 export const COMMAND_HELP: Record<string, string> = {
   run: HELP_RUN,
   init: HELP_INIT,
@@ -273,5 +298,6 @@ export const COMMAND_HELP: Record<string, string> = {
   diagnose: HELP_DIAGNOSE,
   candidate: HELP_CANDIDATE,
   report: HELP_REPORT,
+  erase: HELP_ERASE,
   version: HELP_VERSION,
 }
