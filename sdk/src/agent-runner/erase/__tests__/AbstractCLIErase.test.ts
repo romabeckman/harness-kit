@@ -104,6 +104,39 @@ describe('AbstractCLIErase', () => {
     expect(preview.entries.map(entry => entry.path)).toEqual([path.join(root, 'state_1.sqlite-wal')])
   })
 
+  it('discovers and previews symlinks matching filename-only regex patterns without following them', async () => {
+    const homeDir = 'C:\\Users\\sandbox'
+    const root = 'C:\\Users\\sandbox\\.codex'
+    const symlinkPath = path.join(root, 'state_1.sqlite-wal')
+
+    const fileSystem: EraseFileSystem = {
+      lstat: async targetPath => {
+        if (targetPath === root) return { kind: 'directory', bytes: 0, identity: 'dir-1' }
+        if (targetPath === symlinkPath) return { kind: 'symlink', bytes: 10, identity: 'symlink-1' }
+        return null
+      },
+      readDirectory: async targetPath => {
+        if (targetPath === root) return ['state_1.sqlite-wal']
+        return []
+      },
+      unlink: async () => {},
+      removeEmptyDirectory: async () => {},
+      removeIfUnchanged: async () => 'deleted',
+    }
+
+    const value: EraseManifest = {
+      target: 'codex', roots: [{ id: 'runtime', path: root }],
+      entries: [{ rootId: 'runtime', relativePath: '.', fileNamePattern: '^state_.*\\.sqlite(?:-shm|-wal)?$' }],
+    }
+
+    const erase = new TestErase(environment(homeDir), value, fileSystem)
+    const preview = await erase.discover()
+
+    expect(preview.entries).toHaveLength(1)
+    expect(preview.entries[0]?.path).toBe(symlinkPath)
+    expect(preview.entries[0]?.kind).toBe('symlink')
+  })
+
   it('does not recurse into a directory whose name matches a filename-only pattern', async () => {
     const homeDir = await temporaryDirectory()
     const root = path.join(homeDir, '.codex')

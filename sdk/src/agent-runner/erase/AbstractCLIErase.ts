@@ -142,7 +142,7 @@ export abstract class AbstractCLIErase {
       if (!pattern.test(child)) continue
       const childPath = this.path.join(directory, child)
       const childStat = await this.fileSystem.lstat(childPath)
-      if (childStat?.kind === 'file') {
+      if (childStat && childStat.kind !== 'directory') {
         matched = true
         await this.enumerate(root, childPath, childStat, entries)
       }
