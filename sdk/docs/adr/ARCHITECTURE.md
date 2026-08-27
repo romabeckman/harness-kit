@@ -57,6 +57,7 @@ sdk/
 | Settings | Resolve runner defaults and per-phase overrides. | [SDK_SETTINGS.md](../feature/SDK_SETTINGS.md) |
 | Diagnose | Process pending sessions, trace execution, and trigger meta-harness optimization. | [SDK_DIAGNOSE.md](../feature/SDK_DIAGNOSE.md) |
 | CLI | Parse `hrns` commands and coordinate interactive execution. | [SDK_CLI.md](../feature/SDK_CLI.md) |
+| Project history erasure | Discover and safely delete agent-generated runtime history for Claude Code, Codex, Copilot, Antigravity, and OpenCode via `hrns erase`. | [SDK_PROJECT_HISTORY_ERASURE.md](../feature/SDK_PROJECT_HISTORY_ERASURE.md) |
 | HTTP server | Expose non-interactive orchestration, settings, telemetry, reports, and health endpoints. | [HTTP_SERVER.md](../feature/HTTP_SERVER.md) |
 | Terminal UI | Render banners, progress, and ANSI output. | [SDK_TERMINAL_UI.md](../feature/SDK_TERMINAL_UI.md) |
 | Package | Define public exports and npm build output. | [SDK_PACKAGE.md](../feature/SDK_PACKAGE.md) |

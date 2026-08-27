@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest'
 // TS-U-05: BootstrapConfig default thresholds
 // TS-U-06: OrchestratorConfig.agentRunner is optional (compile-time — verified via tsc)
 
+import { createDefaultSteeringRules } from '../../src/file-state/types'
 import type { FeatureStatus, Feature, Task, BootstrapConfig } from '../../src/file-state/types'
 import type { AgentOutput, AgentInvocation, TokenUsage } from '../../src/agent-runner/types'
 import type { ExtractionResult, ExtractionError } from '../../src/json-extraction/types'
@@ -83,6 +84,25 @@ describe('T02 — Shared type definitions', () => {
       expect(cfg.scoreThresholdTL).toBe(0.70)
       expect(cfg.scoreThresholdAdv).toBe(0.70)
       expect(cfg.completionCriteria.maxReworks).toBe(2)
+    })
+  })
+
+  describe('createDefaultSteeringRules', () => {
+    const quietCompletionRule = 'CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally. After completing all required work, return only the final output explicitly required by the current prompt. If no final output is required, return exactly {}.'
+
+    it('includes the quiet completion rule in user defaults', () => {
+      const rules = createDefaultSteeringRules()
+
+      expect(rules.user).toEqual([quietCompletionRule])
+    })
+
+    it('preserves an initial user rule before the quiet completion rule', () => {
+      const rules = createDefaultSteeringRules('Keep public APIs backwards compatible')
+
+      expect(rules.user).toEqual([
+        'Keep public APIs backwards compatible',
+        quietCompletionRule,
+      ])
     })
   })
 

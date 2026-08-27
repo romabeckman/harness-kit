@@ -204,3 +204,29 @@ export async function runCliReport(
   });
 }
 
+export async function runCliErase(
+  sandbox: SandboxEnvironment,
+  sandboxDir: string,
+  args: string[] = [],
+  env: Record<string, string> = {},
+  input = ''
+): Promise<CliRunResult> {
+  const cliBin = getCliBinPath();
+
+  return new Promise((resolve) => {
+    let stdout = '';
+    let stderr = '';
+    const child = spawn('node', [cliBin, 'erase', ...args], {
+      cwd: sandboxDir,
+      env: { ...process.env, ...env, NODE_ENV: 'test' },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    if (child.pid) sandbox.registerPid(child.pid);
+    child.stdout?.on('data', data => { stdout += data.toString(); });
+    child.stderr?.on('data', data => { stderr += data.toString(); });
+    child.stdin?.end(input);
+    child.on('close', exitCode => resolve({ exitCode, stdout, stderr }));
+    child.on('error', error => resolve({ exitCode: 1, stdout, stderr: stderr + error.message }));
+  });
+}
+

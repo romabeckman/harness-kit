@@ -72,6 +72,12 @@ async function main(): Promise<void> {
     return
   }
 
+  if (cmd === 'erase') {
+    const { cmdErase } = await import('./services/erase-service.js')
+    await cmdErase(args.slice(1))
+    return
+  }
+
   console.error(`Unknown command: ${cmd}\nRun "hrns help" for usage.`)
   process.exit(1)
 }
