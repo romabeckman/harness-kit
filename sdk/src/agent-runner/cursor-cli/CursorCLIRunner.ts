@@ -11,7 +11,7 @@ export class CursorCLIRunner extends AbstractCliRunner {
     return 'agent'
   }
 
-  protected override get writePromptToStdin(): boolean {
+  override get writePromptToStdin(): boolean {
     return true
   }
 
@@ -165,4 +165,3 @@ AgentRunnerRegistry.register({
   type: Runner.CURSOR_CLI,
   constructor: CursorCLIRunner,
 })
-

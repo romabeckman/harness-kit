@@ -14,6 +14,12 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import type { IAgentRunner } from '../../../agent-runner/IAgentRunner'
+
+const runnerWithPromptTransport = (writePromptToStdin: boolean): IAgentRunner => ({
+  writePromptToStdin,
+  run: async () => ({ success: true, stdout: '', stderr: '', raw: '' }),
+})
 
 describe('PromptHelpers', () => {
   describe('inlineOrReference', () => {
@@ -85,6 +91,47 @@ describe('PromptHelpers', () => {
         content,
         '```',
         '</json_label>'
+      ])
+    })
+
+    it('forces inline content and includes its file path when the active runner cannot write prompts to stdin', () => {
+      const content = 'a'.repeat(FORCE_INLINE_MAX + 1)
+      const runner = runnerWithPromptTransport(false)
+
+      const result = inlineOrReference(
+        'test_label',
+        content,
+        '/path/to/file.md',
+        'markdown',
+        'never',
+        runner,
+      )
+
+      expect(result).toEqual([
+        '<test_label path="/path/to/file.md">',
+        '```markdown',
+        content,
+        '```',
+        '</test_label>',
+      ])
+    })
+
+    it('keeps the requested policy when the active runner writes prompts to stdin', () => {
+      const runner = runnerWithPromptTransport(true)
+
+      const result = inlineOrReference(
+        'test_label',
+        'content',
+        '/path/to/file.md',
+        'markdown',
+        'never',
+        runner,
+      )
+
+      expect(result).toEqual([
+        '<test_label_ref>',
+        'Read file: `/path/to/file.md`',
+        '</test_label_ref>',
       ])
     })
   })
@@ -331,4 +378,3 @@ describe('PromptHelpers', () => {
     })
   })
 })
-

@@ -144,7 +144,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       ]
       : []
 
-    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     return [
       `## Objective`,
@@ -334,7 +334,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
   ): Promise<void> {
     const projectPathsList = formatProjectPathsList(context.config.projectPaths)
     const tacticalDesignFile = join(context.workingDir, 'docs', 'specs', feature.domain, `003-*-tactical-design.md`)
-    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     await context.invokeAgent({
       agent: "harness-kit:software-architect",

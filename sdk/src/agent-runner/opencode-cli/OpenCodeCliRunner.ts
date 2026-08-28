@@ -15,7 +15,7 @@ export class OpenCodeCLIRunner extends AbstractCliRunner {
     return 'opencode'
   }
 
-  protected override get writePromptToStdin(): boolean {
+  override get writePromptToStdin(): boolean {
     return true
   }
 

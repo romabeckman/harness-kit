@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { Complexity } from '../types'
 import type { Feature } from '../../file-state/types'
+import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
 
 export type InlinePolicy = 'never' | 'auto' | 'always'
 
@@ -13,13 +14,15 @@ export function inlineOrReference(
   content: string | undefined,
   filePath: string,
   lang: string = 'markdown',
-  policy: InlinePolicy = 'never'
+  policy: InlinePolicy = 'never',
+  activeRunner?: IAgentRunner,
 ): string[] {
   if (!content) return []
 
-  const shouldInline =
-    policy === 'always' ? content.length <= FORCE_INLINE_MAX :
-      policy === 'auto' ? content.length <= INLINE_THRESHOLD : false
+  const runnerRequiresInlinePrompt = activeRunner?.writePromptToStdin === false
+  const shouldInline = runnerRequiresInlinePrompt ||
+    (policy === 'always' ? content.length <= FORCE_INLINE_MAX :
+      policy === 'auto' ? content.length <= INLINE_THRESHOLD : false)
 
   if (!shouldInline) {
     return [
@@ -29,8 +32,14 @@ export function inlineOrReference(
     ]
   }
 
+  const sourcePath = filePath
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+
   return [
-    `<${label}>`,
+    runnerRequiresInlinePrompt ? `<${label} path="${sourcePath}">` : `<${label}>`,
     `\`\`\`${lang}`,
     content,
     '```',
@@ -72,7 +81,8 @@ export function buildReworkSection(
   reworkLogPath: string,
   totalReworks: number,
   reworkLogExists: boolean,
-  policy: InlinePolicy = 'always'
+  policy: InlinePolicy = 'always',
+  activeRunner?: IAgentRunner,
 ): string[] {
   if (!reworkLogExists) return []
 
@@ -86,7 +96,7 @@ export function buildReworkSection(
   }
 
   const reworkLines = content
-    ? inlineOrReference('rework_log_content', content, reworkLogPath, 'markdown', policy)
+    ? inlineOrReference('rework_log_content', content, reworkLogPath, 'markdown', policy, activeRunner)
     : [`Read the file \`${reworkLogPath}\` to know what was fixed in previous rounds.`]
 
   return [
@@ -116,7 +126,8 @@ export function buildDocsOrientationSection(
   projectPaths: string[],
   workingDir?: string,
   digestPolicy: InlinePolicy = 'never',
-  graphPolicy: InlinePolicy = 'never'
+  graphPolicy: InlinePolicy = 'never',
+  activeRunner?: IAgentRunner,
 ): string[] {
   const targets: string[] = []
   if (Array.isArray(projectPaths)) {
@@ -167,11 +178,11 @@ export function buildDocsOrientationSection(
       lines.push(`<project_orientation path="${projPath}">`)
 
       if (digestContent) {
-        lines.push(...inlineOrReference('digest_md', digestContent, join(projPath, 'docs', '.digest.md'), 'markdown', digestPolicy))
+        lines.push(...inlineOrReference('digest_md', digestContent, join(projPath, 'docs', '.digest.md'), 'markdown', digestPolicy, activeRunner))
       }
 
       if (graphContent) {
-        lines.push(...inlineOrReference('graph_json', graphContent, join(projPath, 'docs', '.graph.json'), 'json', graphPolicy))
+        lines.push(...inlineOrReference('graph_json', graphContent, join(projPath, 'docs', '.graph.json'), 'json', graphPolicy, activeRunner))
       }
 
       lines.push('</project_orientation>')
@@ -239,5 +250,3 @@ export function formatTasksList(tasks: Array<{ taskId: string; description: stri
   }
   return tasks.map((t) => `- [${t.taskId}] ${t.description}`).join('\n')
 }
-
-

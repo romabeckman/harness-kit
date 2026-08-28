@@ -44,7 +44,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
   private async generateQuestions(context: Reviewontext, scope: string): Promise<RefinementQuestion[]> {
     const productDir = getProductDir(context)
     const questionsPath = join(productDir, 'QUESTIONS.json')
-    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     const staticPrompt = [
       `<role>`,
@@ -200,7 +200,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
   ): Promise<void> {
     const productDir = getProductDir(context)
     const refinementPath = join(productDir, 'REFINEMENT.md')
-    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     const qaFormatted = qaPairs.length > 0
       ? qaPairs.map((pair, idx) => `| ${idx + 1} | ${pair.question} | ${pair.answer} |`).join('\n')

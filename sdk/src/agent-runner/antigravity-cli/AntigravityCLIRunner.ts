@@ -12,7 +12,7 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     return 'agy'
   }
 
-  protected override get writePromptToStdin(): boolean {
+  override get writePromptToStdin(): boolean {
     return true
   }
 

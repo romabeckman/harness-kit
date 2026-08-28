@@ -264,7 +264,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     const specsDir = join(workingDir, 'docs', 'specs', payload.domain)
     const reworkLogPath = join(workingDir, 'docs', 'specs', payload.domain, 'REWORK-LOG.md')
 
-    const reworkSection = buildReworkSection(reworkLogPath, payload.totalReworks, existsSync(reworkLogPath))
+    const reworkSection = buildReworkSection(reworkLogPath, payload.totalReworks, existsSync(reworkLogPath), 'always', context.config.agentRunner)
 
     return [
       `## Objective`,
@@ -328,14 +328,14 @@ export class ReviewHandler extends AbstractPhaseHandler {
       payload.developerHandoff ?? 'No developer handoff provided.',
       `</development_handoff>`,
       `Treat the developer handoff as navigation context only. Independently verify every claim against code and tests.`,
-      ...inlineOrReference('problem_space', payload.specsContent?.problemSpace, join(specsDir, '001-problem-space.md'), 'markdown'),
-      ...inlineOrReference('context_map', payload.specsContent?.contextMap, join(specsDir, '002-context-map.md'), 'markdown'),
-      ...inlineOrReference('tactical_design', payload.specsContent?.tacticalDesign, join(specsDir, '003-*-tactical-design.md'), 'markdown', 'always'),
-      ...inlineOrReference('test_scenarios', payload.specsContent?.testScenarios, join(specsDir, '004-*-test-scenarios.md'), 'markdown', 'always'),
+      ...inlineOrReference('problem_space', payload.specsContent?.problemSpace, join(specsDir, '001-problem-space.md'), 'markdown', 'never', context.config.agentRunner),
+      ...inlineOrReference('context_map', payload.specsContent?.contextMap, join(specsDir, '002-context-map.md'), 'markdown', 'never', context.config.agentRunner),
+      ...inlineOrReference('tactical_design', payload.specsContent?.tacticalDesign, join(specsDir, '003-*-tactical-design.md'), 'markdown', 'always', context.config.agentRunner),
+      ...inlineOrReference('test_scenarios', payload.specsContent?.testScenarios, join(specsDir, '004-*-test-scenarios.md'), 'markdown', 'always', context.config.agentRunner),
       `</spec_sources>`,
       ``,
       `<inputs>`,
-      ...buildDocsOrientationSection(payload.projectPaths, workingDir),
+      ...buildDocsOrientationSection(payload.projectPaths, workingDir, undefined, undefined, context.config.agentRunner),
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,
@@ -357,7 +357,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     const specsDir = join(workingDir, 'docs', 'specs', payload.domain)
     const reworkLogPath = join(workingDir, 'docs', 'specs', payload.domain, 'REWORK-LOG.md')
 
-    const reworkSection = buildReworkSection(reworkLogPath, payload.totalReworks, existsSync(reworkLogPath))
+    const reworkSection = buildReworkSection(reworkLogPath, payload.totalReworks, existsSync(reworkLogPath), 'always', context.config.agentRunner)
 
     return [
       `## Objective`,
@@ -424,14 +424,14 @@ export class ReviewHandler extends AbstractPhaseHandler {
       payload.developerHandoff ?? 'No developer handoff provided.',
       `</development_handoff>`,
       `Treat the developer handoff as navigation context only. Independently verify every claim against code and tests.`,
-      ...inlineOrReference('problem_space', payload.specsContent?.problemSpace, join(specsDir, '001-problem-space.md'), 'markdown'),
-      ...inlineOrReference('context_map', payload.specsContent?.contextMap, join(specsDir, '002-context-map.md'), 'markdown'),
-      ...inlineOrReference('tactical_design', payload.specsContent?.tacticalDesign, join(specsDir, '003-*-tactical-design.md'), 'markdown', 'always'),
-      ...inlineOrReference('test_scenarios', payload.specsContent?.testScenarios, join(specsDir, '004-*-test-scenarios.md'), 'markdown', 'always'),
+      ...inlineOrReference('problem_space', payload.specsContent?.problemSpace, join(specsDir, '001-problem-space.md'), 'markdown', 'never', context.config.agentRunner),
+      ...inlineOrReference('context_map', payload.specsContent?.contextMap, join(specsDir, '002-context-map.md'), 'markdown', 'never', context.config.agentRunner),
+      ...inlineOrReference('tactical_design', payload.specsContent?.tacticalDesign, join(specsDir, '003-*-tactical-design.md'), 'markdown', 'always', context.config.agentRunner),
+      ...inlineOrReference('test_scenarios', payload.specsContent?.testScenarios, join(specsDir, '004-*-test-scenarios.md'), 'markdown', 'always', context.config.agentRunner),
       `</spec_sources>`,
       ``,
       `<inputs>`,
-      ...buildDocsOrientationSection(payload.projectPaths, workingDir),
+      ...buildDocsOrientationSection(payload.projectPaths, workingDir, undefined, undefined, context.config.agentRunner),
       `<feature>`,
       `Feature ID: ${payload.featureId}`,
       `Title: ${payload.featureTitle}`,

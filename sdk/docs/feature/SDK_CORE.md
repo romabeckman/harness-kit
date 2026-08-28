@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-25"
+updated: "2026-08-28"
 ---
 ```graph
 {
@@ -99,7 +99,8 @@ REQUIRED: Use `isExtractionError` / `isExtractionResult` type guards to branch o
 REQUIRED: Keep `001-*` and `002-*` files at most 5,000 characters with `InlinePolicy = 'never'`.
 ALLOWED: Generate `003-*` and `004-*` files with `InlinePolicy = 'always'`.
 REQUIRED: For `HIGH` complexity, read `001-problem-space.md` and explicitly answer every question from its `Socratic Questions` section in downstream `003–004` artifacts.
-REQUIRED: Use `inlineOrReference` with `InlinePolicy` and `FORCE_INLINE_MAX` (15,000 chars) safeguard.
+REQUIRED: Pass the active `IAgentRunner` to `inlineOrReference`; when `writePromptToStdin` is `false`, inline content regardless of policy or size and include its source path.
+REQUIRED: Otherwise use `InlinePolicy` and the `FORCE_INLINE_MAX` (15,000 chars) safeguard.
 PROHIBITED: Mutating state directly without using `IFileStateManager`.
 REQUIRED: Tag `DeveloperSessionState` with `phase` to isolate development and review.
 REQUIRED: Resume matching retry sessions with `REWORK-LOG.md`; otherwise use a standalone prompt.

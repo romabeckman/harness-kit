@@ -92,7 +92,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `F001 User Management — full CRUD (create, read, update, delete) with input validation | F002 Authentication & Authorization — login, session, middleware, role-based access | F003 Database & Infrastructure — connection setup, migrations, seeding`
     ]
 
-    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     promptLines.push(
       ``,

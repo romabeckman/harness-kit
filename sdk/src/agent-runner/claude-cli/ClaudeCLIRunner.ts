@@ -12,7 +12,7 @@ export class ClaudeCLIRunner extends AbstractCliRunner {
     return 'claude'
   }
 
-  protected override get writePromptToStdin(): boolean {
+  override get writePromptToStdin(): boolean {
     return true
   }
 

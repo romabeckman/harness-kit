@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-24"
+updated: "2026-08-28"
 ---
 
 ```graph
@@ -43,6 +43,7 @@ src/agent-runner/
 
 ## MAIN CONCEPTS
 - **Strategy**: Each runner implements the same invocation and output contract.
+- **Prompt transport**: `IAgentRunner.writePromptToStdin` controls forced inlining with a source path.
 - **Composition boundary**: `AgentRunnerRegistry` stores constructors; `AgentRunnerFactory` imports built-ins and creates validated instances.
 - **OpenCode adapter**: Registers `Runner.OPENCODE_CLI` (`opencode-cli`) and isolates vendor flags and output events from domain types.
 - **Session continuity**: Preserve an incoming session ID and replace it with a native `conversation_id`, `conversationId`, `session_id`, `sessionId`, or `thread_id` when output provides one.
@@ -67,6 +68,8 @@ src/agent-runner/
 | `workspacePath` | `--dir <path>` | Set the working directory argument. |
 | `additionalDirs` | not forwarded | OpenCode 1.18.21 has no additional-directory CLI flag; workspacePath remains the process working directory. |
 | `prompt` | stdin | Avoid positional prompt arguments and preserve prompt length. |
+
+REQUIRED: Expose `writePromptToStdin`; CLI adapters default to `false` and override it for stdin.
 
 ## OUTPUT AND FAILURE BOUNDARIES
 - Parse ANSI-clean JSON objects and JSON-lines events; extract response text, structured artefacts, usage, cost, and session identifiers.
