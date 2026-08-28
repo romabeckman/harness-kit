@@ -11,7 +11,7 @@ export class CodexCLIRunner extends AbstractCliRunner {
     return 'codex'
   }
 
-  protected override get writePromptToStdin(): boolean {
+  override get writePromptToStdin(): boolean {
     return true
   }
 

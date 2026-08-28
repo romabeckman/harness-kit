@@ -50,7 +50,7 @@ export class HarnessOrchestrator implements Reviewontext {
       ?? (process.env.ANTHROPIC_API_KEY
         ? AgentRunnerFactory.create({ type: Runner.CLAUDE_SDK })
         : AgentRunnerFactory.create({ type: Runner.CLAUDE_CLI }))
-    this.config = config
+    this.config = { ...config, agentRunner: this.agentRunner }
     this.workingDir = options.workingDir ?? process.cwd()
     this.settings = config.settings ?? HarnessSettings.load(this.workingDir)
     const productDir = config.productDir ?? join(this.workingDir, 'docs', 'product')

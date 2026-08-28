@@ -117,7 +117,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const rulesSection = formatRulesSection(payload.steeringRules)
 
     const workingDir = getSpecsDir(context.workingDir, payload.domain)
-    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     const tasksSection = [
       `<tasks>`,
@@ -176,7 +176,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       `</expected_output>`,
       ``,
       `<development_specifications>`,
-      ...this.buildSpecsSection(payload, context.workingDir),
+      ...this.buildSpecsSection(payload, context.workingDir, context.config.agentRunner),
       `</development_specifications>`,
       ``,
       `<inputs>`,
@@ -205,7 +205,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const rulesSection = formatRulesSection(payload.steeringRules)
 
     const workingDir = getSpecsDir(context.workingDir, payload.domain)
-    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     const tasksSection = [
       `<tasks>`,
@@ -266,7 +266,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       `</expected_output>`,
       ``,
       `<development_specifications>`,
-      ...this.buildSpecsSection(payload, context.workingDir),
+      ...this.buildSpecsSection(payload, context.workingDir, context.config.agentRunner),
       `</development_specifications>`,
       ``,
       `<inputs>`,
@@ -349,7 +349,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       `<rework>`,
       `You are fixing findings from previous runs. Read \`${reworkLogPath}\` for Tech Lead and QA feedback.`,
       ``,
-      ...inlineOrReference('rework_log_content', reworkLogContent, reworkLogPath, 'markdown', 'always'),
+      ...inlineOrReference('rework_log_content', reworkLogContent, reworkLogPath, 'markdown', 'always', context.config.agentRunner),
       ``,
       `MANDATORY STEPS:`,
       `1. Read \`${reworkLogPath}\` completely — every item is a required fix.`,
@@ -376,7 +376,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     ].join('\n')
   }
 
-  private buildSpecsSection(payload: DevelopmenPayload, workingDir: string): string[] {
+  private buildSpecsSection(payload: DevelopmenPayload, workingDir: string, activeRunner?: Reviewontext['config']['agentRunner']): string[] {
     const specsDir = join(workingDir, 'docs', 'specs', payload.domain)
     const specs = payload.specsContent
     if (!specs) return []
@@ -384,12 +384,12 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const sections: string[] = []
 
     if (!payload.isRetry) {
-      sections.push(...inlineOrReference('problem_space', specs.problemSpace, join(specsDir, '001-problem-space.md'), 'markdown'))
-      sections.push(...inlineOrReference('context_map', specs.contextMap, join(specsDir, '002-context-map.md'), 'markdown'))
+      sections.push(...inlineOrReference('problem_space', specs.problemSpace, join(specsDir, '001-problem-space.md'), 'markdown', 'never', activeRunner))
+      sections.push(...inlineOrReference('context_map', specs.contextMap, join(specsDir, '002-context-map.md'), 'markdown', 'never', activeRunner))
     }
 
-    sections.push(...inlineOrReference('tactical_design', specs.tacticalDesign, join(specsDir, '003-*-tactical-design.md'), 'markdown', 'always'))
-    sections.push(...inlineOrReference('test_scenarios', specs.testScenarios, join(specsDir, '004-*-test-scenarios.md'), 'markdown', 'always'))
+    sections.push(...inlineOrReference('tactical_design', specs.tacticalDesign, join(specsDir, '003-*-tactical-design.md'), 'markdown', 'always', activeRunner))
+    sections.push(...inlineOrReference('test_scenarios', specs.testScenarios, join(specsDir, '004-*-test-scenarios.md'), 'markdown', 'always', activeRunner))
 
     return sections
   }

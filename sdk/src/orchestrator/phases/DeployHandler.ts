@@ -137,7 +137,7 @@ export class DeployHandler extends AbstractPhaseHandler {
       // ignore — diffOutput stays empty
     }
 
-    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     const prompt = [
       `## Task`,

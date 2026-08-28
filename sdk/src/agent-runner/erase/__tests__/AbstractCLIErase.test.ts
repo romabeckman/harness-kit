@@ -107,7 +107,7 @@ describe('AbstractCLIErase', () => {
   it('discovers and previews symlinks matching filename-only regex patterns without following them', async () => {
     const homeDir = 'C:\\Users\\sandbox'
     const root = 'C:\\Users\\sandbox\\.codex'
-    const symlinkPath = path.join(root, 'state_1.sqlite-wal')
+    const symlinkPath = path.win32.join(root, 'state_1.sqlite-wal')
 
     const fileSystem: EraseFileSystem = {
       lstat: async targetPath => {
@@ -129,7 +129,7 @@ describe('AbstractCLIErase', () => {
       entries: [{ rootId: 'runtime', relativePath: '.', fileNamePattern: '^state_.*\\.sqlite(?:-shm|-wal)?$' }],
     }
 
-    const erase = new TestErase(environment(homeDir), value, fileSystem)
+    const erase = new TestErase({ ...environment(homeDir), platform: 'win32' }, value, fileSystem)
     const preview = await erase.discover()
 
     expect(preview.entries).toHaveLength(1)

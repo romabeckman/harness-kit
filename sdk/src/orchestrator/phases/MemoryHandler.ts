@@ -51,7 +51,7 @@ export class MemoryHandler extends AbstractPhaseHandler {
     const projectPathsList = formatProjectPathsList(payload.projectPaths)
     const rulesSection = formatRulesSection(payload.steeringRules)
 
-    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     // Static-first ordering: everything that doesn't change between invocations
     // goes before the variable blocks (scope, project_paths, rules), so those

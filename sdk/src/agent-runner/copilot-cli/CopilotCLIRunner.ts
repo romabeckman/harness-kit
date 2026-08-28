@@ -11,7 +11,7 @@ export class CopilotCLIRunner extends AbstractCliRunner {
     return 'copilot'
   }
 
-  protected get writePromptToStdin(): boolean {
+  get writePromptToStdin(): boolean {
     return false
   }
 

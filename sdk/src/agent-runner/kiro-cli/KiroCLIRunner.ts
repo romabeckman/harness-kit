@@ -11,7 +11,7 @@ export class KiroCLIRunner extends AbstractCliRunner {
     return 'kiro-cli'
   }
 
-  protected override get writePromptToStdin(): boolean {
+  override get writePromptToStdin(): boolean {
     return true
   }
 

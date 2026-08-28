@@ -223,7 +223,7 @@ describe('T23 — AbstractCliRunner', () => {
     class TestCliRunner extends AbstractCliRunner {
       protected readonly binaryName = 'test-cli'
       protected buildArgs(prompt: string, invocation: any): string[] { return [] }
-      protected override get writePromptToStdin(): boolean { return true }
+      override get writePromptToStdin(): boolean { return true }
     }
     const runner = new TestCliRunner()
 

@@ -85,7 +85,7 @@ export abstract class AbstractCliRunner implements IAgentRunner {
    * appended as a positional arg. Use this when the CLI reads from stdin to
    * avoid OS ARG_MAX limits on long prompts.
    */
-  protected get writePromptToStdin(): boolean {
+  get writePromptToStdin(): boolean {
     return false
   }
 

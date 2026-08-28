@@ -11,8 +11,9 @@ import {
   formatProjectPathsList,
   buildComplexityRules,
   formatFeatureDependencies,
+  inlineOrReference,
 } from '../utils/PromptHelpers'
-import { getSpecsDir } from '../utils/PhaseFileUtils'
+import { getProductDir, getSpecsDir } from '../utils/PhaseFileUtils'
 
 const INLINE_THRESHOLD = 5000
 
@@ -144,7 +145,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       ]
       : []
 
-    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     return [
       `## Objective`,
@@ -194,11 +195,14 @@ export class PlanningHandler extends AbstractPhaseHandler {
       projectPathsList,
       `</project_paths>`,
       ``,
-      `<scope>`,
-      `\`\`\`markdown`,
-      payload.scope.trim(),
-      `\`\`\``,
-      `</scope>`,
+      ...inlineOrReference(
+        'scope',
+        payload.scope.trim(),
+        join(getProductDir(context), 'SCOPE.md'),
+        'markdown',
+        'always',
+        context.config.agentRunner,
+      ),
       ...refinementBlock,
       ``,
       `<target_feature>`,
@@ -334,7 +338,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
   ): Promise<void> {
     const projectPathsList = formatProjectPathsList(context.config.projectPaths)
     const tacticalDesignFile = join(context.workingDir, 'docs', 'specs', feature.domain, `003-*-tactical-design.md`)
-    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir)
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     await context.invokeAgent({
       agent: "harness-kit:software-architect",
