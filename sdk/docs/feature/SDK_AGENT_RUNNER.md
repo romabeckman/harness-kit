@@ -43,7 +43,7 @@ src/agent-runner/
 
 ## MAIN CONCEPTS
 - **Strategy**: Each runner implements the same invocation and output contract.
-- **Prompt transport**: `IAgentRunner.writePromptToStdin` controls forced inlining with a source path.
+- **Prompt transport**: `IAgentRunner.writePromptToStdin = false` keeps assembled prompts path-only, avoiding oversized positional spawn arguments.
 - **Composition boundary**: `AgentRunnerRegistry` stores constructors; `AgentRunnerFactory` imports built-ins and creates validated instances.
 - **OpenCode adapter**: Registers `Runner.OPENCODE_CLI` (`opencode-cli`) and isolates vendor flags and output events from domain types.
 - **Session continuity**: Preserve an incoming session ID and replace it with a native `conversation_id`, `conversationId`, `session_id`, `sessionId`, or `thread_id` when output provides one.

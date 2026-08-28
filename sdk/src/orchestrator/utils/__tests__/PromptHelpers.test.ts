@@ -94,8 +94,8 @@ describe('PromptHelpers', () => {
       ])
     })
 
-    it('forces inline content and includes its file path when the active runner cannot write prompts to stdin', () => {
-      const content = 'a'.repeat(FORCE_INLINE_MAX + 1)
+    it('returns only the file path when the active runner cannot write prompts to stdin', () => {
+      const content = 'a'.repeat(FORCE_INLINE_MAX)
       const runner = runnerWithPromptTransport(false)
 
       const result = inlineOrReference(
@@ -103,28 +103,7 @@ describe('PromptHelpers', () => {
         content,
         '/path/to/file.md',
         'markdown',
-        'never',
-        runner,
-      )
-
-      expect(result).toEqual([
-        '<test_label path="/path/to/file.md">',
-        '```markdown',
-        content,
-        '```',
-        '</test_label>',
-      ])
-    })
-
-    it('keeps the requested policy when the active runner writes prompts to stdin', () => {
-      const runner = runnerWithPromptTransport(true)
-
-      const result = inlineOrReference(
-        'test_label',
-        'content',
-        '/path/to/file.md',
-        'markdown',
-        'never',
+        'always',
         runner,
       )
 
@@ -132,6 +111,48 @@ describe('PromptHelpers', () => {
         '<test_label_ref>',
         'Read file: `/path/to/file.md`',
         '</test_label_ref>',
+      ])
+      expect(result.join('\n')).not.toContain(content)
+    })
+
+    it('keeps aggregate positional prompt content below spawn argument limits for non-stdin runners', () => {
+      const runner = runnerWithPromptTransport(false)
+      const content = 'a'.repeat(FORCE_INLINE_MAX)
+
+      const prompt = Array.from({ length: 20 }, (_, index) =>
+        inlineOrReference(
+          `file_${index}`,
+          content,
+          `/path/to/file-${index}.md`,
+          'markdown',
+          'always',
+          runner,
+        ).join('\n')
+      ).join('\n')
+
+      expect(prompt.length).toBeLessThan(4096)
+      expect(prompt).not.toContain(content)
+      expect(prompt).toContain('Read file: `/path/to/file-19.md`')
+    })
+
+    it('keeps the requested inline policy when the active runner writes prompts to stdin', () => {
+      const runner = runnerWithPromptTransport(true)
+
+      const result = inlineOrReference(
+        'test_label',
+        'content',
+        '/path/to/file.md',
+        'markdown',
+        'always',
+        runner,
+      )
+
+      expect(result).toEqual([
+        '<test_label>',
+        '```markdown',
+        'content',
+        '```',
+        '</test_label>',
       ])
     })
   })

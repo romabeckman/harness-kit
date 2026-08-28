@@ -19,12 +19,12 @@ export function inlineOrReference(
 ): string[] {
   if (!content) return []
 
-  const runnerRequiresInlinePrompt = activeRunner?.writePromptToStdin === false
-  const shouldInline = runnerRequiresInlinePrompt ||
-    (policy === 'always' ? content.length <= FORCE_INLINE_MAX :
-      policy === 'auto' ? content.length <= INLINE_THRESHOLD : false)
+  const runnerRequiresFilePath = activeRunner?.writePromptToStdin === false
+  const shouldInline =
+    policy === 'always' ? content.length <= FORCE_INLINE_MAX :
+      policy === 'auto' ? content.length <= INLINE_THRESHOLD : false
 
-  if (!shouldInline) {
+  if (runnerRequiresFilePath || !shouldInline) {
     return [
       `<${label}_ref>`,
       `Read file: \`${filePath}\``,
@@ -32,14 +32,8 @@ export function inlineOrReference(
     ]
   }
 
-  const sourcePath = filePath
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-
   return [
-    runnerRequiresInlinePrompt ? `<${label} path="${sourcePath}">` : `<${label}>`,
+    `<${label}>`,
     `\`\`\`${lang}`,
     content,
     '```',
