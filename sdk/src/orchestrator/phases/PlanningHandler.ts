@@ -11,8 +11,9 @@ import {
   formatProjectPathsList,
   buildComplexityRules,
   formatFeatureDependencies,
+  inlineOrReference,
 } from '../utils/PromptHelpers'
-import { getSpecsDir } from '../utils/PhaseFileUtils'
+import { getProductDir, getSpecsDir } from '../utils/PhaseFileUtils'
 
 const INLINE_THRESHOLD = 5000
 
@@ -194,11 +195,14 @@ export class PlanningHandler extends AbstractPhaseHandler {
       projectPathsList,
       `</project_paths>`,
       ``,
-      `<scope>`,
-      `\`\`\`markdown`,
-      payload.scope.trim(),
-      `\`\`\``,
-      `</scope>`,
+      ...inlineOrReference(
+        'scope',
+        payload.scope.trim(),
+        join(getProductDir(context), 'SCOPE.md'),
+        'markdown',
+        'always',
+        context.config.agentRunner,
+      ),
       ...refinementBlock,
       ``,
       `<target_feature>`,

@@ -3,7 +3,7 @@ import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
-import { buildDocsOrientationSection } from '../utils/PromptHelpers'
+import { buildDocsOrientationSection, inlineOrReference } from '../utils/PromptHelpers'
 import { getProductDir } from '../utils/PhaseFileUtils'
 
 export interface RefinementQuestion {
@@ -87,11 +87,14 @@ export class RefinementHandler extends AbstractPhaseHandler {
       `<dynamic_context>`,
       `<output_path>${questionsPath}</output_path>`,
       ...orientationSection,
-      `<scope>`,
-      '```markdown',
-      scope.trim(),
-      '```',
-      `</scope>`,
+      ...inlineOrReference(
+        'scope',
+        scope.trim(),
+        join(productDir, 'SCOPE.md'),
+        'markdown',
+        'always',
+        context.config.agentRunner,
+      ),
       `</dynamic_context>`,
       ``,
       `Write the final JSON array to the file at <output_path> above.`,
@@ -243,11 +246,14 @@ export class RefinementHandler extends AbstractPhaseHandler {
       `  instead of omitting the heading.`,
       `</rules>`,
       ``,
-      `<scope>`,
-      '```markdown',
-      scope.trim(),
-      '```',
-      `</scope>`,
+      ...inlineOrReference(
+        'scope',
+        scope.trim(),
+        join(productDir, 'SCOPE.md'),
+        'markdown',
+        'always',
+        context.config.agentRunner,
+      ),
       ``,
       `<qa_pairs>`,
       qaFormatted,

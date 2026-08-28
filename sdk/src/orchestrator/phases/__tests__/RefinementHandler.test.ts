@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { RefinementHandler } from '../RefinementHandler'
 import { Phase } from '../../types'
 import { ChainBuilder } from '../../ChainBuilder'
+import { FORCE_INLINE_MAX } from '../../utils/PromptHelpers'
 
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn().mockImplementation(async ({ default: defVal }) => defVal ?? 'User specified answer'),
@@ -86,5 +87,28 @@ describe('RefinementHandler', () => {
   it('includes RefinementHandler in ChainBuilder.buildDefault()', () => {
     const chain = ChainBuilder.buildDefault()
     expect(chain).toBeDefined()
+  })
+
+  it('references SCOPE.md in both prompts when an always-inline scope exceeds FORCE_INLINE_MAX', async () => {
+    const { mkdtempSync, rmSync } = await import('node:fs')
+    const { tmpdir } = await import('node:os')
+    const { join } = await import('node:path')
+    const workingDir = mkdtempSync(join(tmpdir(), 'refinement-scope-test-'))
+    mockContext.workingDir = workingDir
+    mockContext.config.productDir = join(workingDir, 'docs', 'product')
+    const scope = 'a'.repeat(FORCE_INLINE_MAX + 1)
+    mockFsm.loadScope.mockReturnValue(scope)
+
+    await handler.handle(Phase.REFINEMENT, mockContext)
+
+    const prompts = mockContext.invokeAgent.mock.calls.map((call: any[]) => call[0].prompt as string)
+    expect(prompts).toHaveLength(2)
+    for (const prompt of prompts) {
+      expect(prompt).toContain('<scope_ref>')
+      expect(prompt).toContain(`Read file: \`${join(mockContext.config.productDir, 'SCOPE.md')}\``)
+      expect(prompt).not.toContain('<scope>')
+    }
+
+    rmSync(workingDir, { recursive: true, force: true })
   })
 })

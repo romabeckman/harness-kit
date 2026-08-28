@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PlanningHandler } from '../PlanningHandler';
 import { Phase } from '../../types';
+import { FORCE_INLINE_MAX } from '../../utils/PromptHelpers';
 
 describe('PlanningHandler', () => {
     let handler: PlanningHandler;
@@ -166,6 +167,17 @@ describe('PlanningHandler', () => {
             await handler.handle(Phase.PLANNING, mockContext);
 
             expect(mockContext.config.scope).toBe('updated scope from SCOPE.md');
+        });
+
+        it('references SCOPE.md when an always-inline scope exceeds FORCE_INLINE_MAX', async () => {
+            mockFsm.loadScope.mockReturnValue('a'.repeat(FORCE_INLINE_MAX + 1));
+
+            await handler.handle(Phase.PLANNING, mockContext);
+
+            const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
+            expect(invokedPrompt).toContain('<scope_ref>');
+            expect(invokedPrompt).toContain('Read file: `/test/working-dir/docs/product/SCOPE.md`');
+            expect(invokedPrompt).not.toContain('<scope>\n```markdown');
         });
 
         it('throws error if SCOPE.md does not exist', async () => {

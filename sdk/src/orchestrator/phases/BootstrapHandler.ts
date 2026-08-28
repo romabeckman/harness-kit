@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { Phase, CliCommand } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
-import { buildDocsOrientationSection } from '../utils/PromptHelpers'
+import { buildDocsOrientationSection, inlineOrReference } from '../utils/PromptHelpers'
 import { getProductDir } from '../utils/PhaseFileUtils'
 import { BacklogParser } from '../../file-state/parsers/BacklogParser'
 
@@ -101,11 +101,14 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `</context>`,
       ``,
       ...orientationSection,
-      `<scope>`,
-      `\`\`\`markdown`,
-      context.config.scope.trim(),
-      `\`\`\``,
-      `</scope>`
+      ...inlineOrReference(
+        'scope',
+        context.config.scope.trim(),
+        join(productDir, 'SCOPE.md'),
+        'markdown',
+        'always',
+        context.config.agentRunner,
+      )
     )
 
     if (rulesList.length > 0) {
