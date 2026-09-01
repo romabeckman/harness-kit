@@ -1,2 +1,2 @@
-| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

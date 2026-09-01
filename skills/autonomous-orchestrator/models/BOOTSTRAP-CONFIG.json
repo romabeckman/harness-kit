@@ -1,4 +1,5 @@
 {
+  "projectPaths": [],
   "scoreThresholdTL": 0.70,
   "scoreThresholdAdv": 0.70,
   "completionCriteria": {
@@ -8,6 +9,17 @@
   "cycleCounter": {
     "completedCycles": 0,
     "lastAutoTuningAt": null
+  },
+  "currentPhase": "BOOTSTRAP",
+  "activeFeatureId": null,
+  "steeringRules": {
+    "user": [],
+    "bootstrap": [],
+    "planning": [],
+    "implementation": [],
+    "review": [],
+    "state_check": [],
+    "memory": []
   },
   "statusDefinitions": {
     "featureStatuses": {
