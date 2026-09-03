@@ -51,7 +51,10 @@ READ docs/specs/${domain}/001-problem-space.md       → Ubiquitous Language
 READ docs/specs/${domain}/002-context-map.md         → integration boundaries
 READ docs/specs/${domain}/003-*-tactical-design.md   → source of truth for all scenarios
      (load the file corresponding to each project being analyzed)
+     → treat its Refinement Questions and Answers as requirements for that project
 ```
+
+Confirmed refinement answers are traceable requirements. Deferred or unknown answers must not become invented expected behavior.
 
 </context_loading>
 

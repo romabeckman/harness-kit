@@ -113,6 +113,9 @@ describe('PlanningHandler', () => {
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
             expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'LOW'");
             expect(invokedPrompt).toContain('only the required 003–004 artifacts');
+            expect(invokedPrompt).toContain('Before writing any specification, run autonomous refinement');
+            expect(invokedPrompt).toContain('project-scoped Refinement Questions and Answers plus Tactical Design');
+            expect(invokedPrompt).not.toContain('Socratic Questions');
             expect(invokedPrompt).not.toContain('the-grumpy-tech-lead');
             expect(mockContext.invokeAgent.mock.calls[0][0].phaseKey).toBe('planning');
         });
@@ -125,7 +128,9 @@ describe('PlanningHandler', () => {
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
             expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'HIGH'");
             expect(invokedPrompt).toContain('integrations, failure modes, security boundaries, concurrency, and compatibility risks');
-            expect(invokedPrompt).toContain('Read the generated `001-problem-space.md` and explicitly answer every question from its `Socratic Questions` section');
+            expect(invokedPrompt).toContain('Before writing specifications, resolve refinement questions from scope and project evidence');
+            expect(invokedPrompt).toContain('record each answer in every applicable `003-${PROJECT_NAME}-tactical-design.md`');
+            expect(invokedPrompt).not.toContain('Socratic Questions');
             expect(invokedPrompt).not.toContain('the-grumpy-tech-lead');
         });
 

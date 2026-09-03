@@ -98,7 +98,7 @@ const orchestrator = new HarnessOrchestrator({});
 REQUIRED: Use `isExtractionError` / `isExtractionResult` type guards to branch on extraction outcomes.
 REQUIRED: Keep `001-*` and `002-*` files at most 5,000 characters with `InlinePolicy = 'never'`.
 ALLOWED: Generate `003-*` and `004-*` files with `InlinePolicy = 'always'`.
-REQUIRED: For `HIGH` complexity, read `001-problem-space.md` and explicitly answer every question from its `Socratic Questions` section in downstream `003–004` artifacts.
+REQUIRED: Before writing `HIGH` complexity specifications, resolve refinement questions from scope and project evidence and record each answer in every applicable `003-${PROJECT_NAME}-tactical-design.md`.
 REQUIRED: Pass the active runner to `inlineOrReference`; `writePromptToStdin = false` emits only file-reference paths so positional spawn arguments stay bounded.
 REQUIRED: Render Bootstrap, Planning, and Refinement scope with policy `always` and canonical `SCOPE.md`; otherwise honor `FORCE_INLINE_MAX` (15,000 chars).
 PROHIBITED: Mutating state directly without using `IFileStateManager`.

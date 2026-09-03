@@ -216,14 +216,14 @@ export function buildComplexityRules(complexity?: Complexity): string[] {
     return [
       `- COMPLEXITY OVERRIDE: Classify as 'HIGH' — do not re-evaluate scope complexity.`,
       `- For 'HIGH': Give additional depth to integrations, failure modes, security boundaries, concurrency, and compatibility risks while producing all required 001–004 artifacts.`,
-      `- For 'HIGH': Read the generated \`001-problem-space.md\` and explicitly answer every question from its \`Socratic Questions\` section in downstream 003–004 artifacts.`,
+      `- For 'HIGH': Before writing specifications, resolve refinement questions from scope and project evidence; record each answer in every applicable \`003-\${PROJECT_NAME}-tactical-design.md\`.`,
     ]
   }
   return [
     `- Evaluate scope complexity between 'LOW' and 'HIGH'. LOW is characterized by crystal-clear requirements, zero structural ambiguities, isolated changes, zero cross-team dependencies, use of existing patterns, straightforward flows, zero backward compatibility risks, and standard unit testing without complex integrations.`,
     `- If LOW: keep analysis concise, reuse established patterns, and produce only 003–004 artifacts. Do not produce 001–002 artifacts.`,
     `- If HIGH: deepen analysis of integrations, failure modes, security boundaries, concurrency, and compatibility risks, and produce all required 001–004 artifacts.`,
-    `- If HIGH: Read the generated \`001-problem-space.md\` and explicitly answer every question from its \`Socratic Questions\` section in downstream 003–004 artifacts.`,
+    `- If HIGH: Before writing specifications, resolve refinement questions from scope and project evidence; record each answer in every applicable \`003-\${PROJECT_NAME}-tactical-design.md\`.`,
   ]
 }
 

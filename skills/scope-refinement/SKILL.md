@@ -20,12 +20,13 @@ IF invoked by autonomous-orchestrator:
     mode = AUTONOMOUS
     → Read ${scope}, ${projectPaths}, ${domain} from runtime context
     → Set ${rules} = "No additional rules provided" (unless injected)
-    → Skip ALL interactive prompts and review pauses
-    → Run Phases 1–4 sequentially in a single pass without stopping
+    → Run the refinement interview without pausing; use each generated recommendation as its answer
+    → Skip human prompts and review pauses
+    → Run document phases sequentially in a single pass without stopping
 
-IF invoked directly by human:
+OTHERWISE (default):
     mode = INTERACTIVE
-    → Execute Phase 0 inputs and verification gates normally
+    → Execute Phase 0, the refinement interview, and verification gates normally
 ```
 
 </execution_mode>
@@ -111,26 +112,78 @@ Pass `${orientation}` to every phase agent. Agents must not reread global indexe
 
 ---
 
-<phase id="1-2" name="Strategic Design + Context Map (PARALLEL)">
+<phase id="0.5" name="Refinement Interview — BEFORE document generation">
 
-> 💡 **Optimization:** Phases 1 and 2 have no data dependency. Invoke both in parallel to reduce Phase A latency by ~35%.
+Run this phase after `${orientation}` is loaded and before invoking any agent under `scope-refinement/agents/`. Do not create or modify any `001–004` document until this phase completes.
 
-**Invoke skills in parallel:**
+1. Classify each project as frontend, backend, or other from its architecture and routed files.
+2. Analyze `${scope}`, `${orientation}`, `${projectPaths}`, and `${rules}` for decision-changing gaps involving business outcomes, invariants, scope boundaries, architecture, data ownership, integrations, authorization, sensitive data, performance, concurrency, failures, maintainability, or acceptance criteria. Simulate relevant flows under production load and partial failure before selecting questions.
+3. Generate only relevant questions. Do not repeat supplied facts or ask about syntax, style, or decisions that cannot affect the specifications.
+4. For every question, record:
 
-| Agent | Skill Path | Inputs | Output |
-|---|---|---|---|
-| Strategic Design | `scope-refinement/agents/01-problem-space` | `${scope}`, `${projectPaths}`, `${domain}`, `${rules}`, `${orientation}` | `docs/specs/${domain}/001-problem-space.md` |
-| Context Map | `scope-refinement/agents/02-context-map` | `${scope}`, `${projectPaths}`, `${domain}`, `${rules}`, `${orientation}` | `docs/specs/${domain}/002-context-map.md` |
+```json
+{
+  "id": "Q01",
+  "applies_to": ["PROJECT_NAME"],
+  "category": "business | boundary | architecture | data | integration | security | performance | concurrency | failure | maintainability | acceptance",
+  "question": "decision-focused question",
+  "recommendation": "evidence-based recommended answer",
+  "answer": "resolved answer",
+  "answered_by": "human | model",
+  "evidence": ["project-relative path or supplied-scope reference"]
+}
+```
 
-> ⏳ **Wait:** Both agents MUST complete before proceeding to review gate.
+Use exact project root folder names in `applies_to`; use `"ALL"` for a decision affecting every project. A question may name multiple projects.
+
+```
+INTERACTIVE → Ask one question at a time.
+              Show affected projects, why the decision matters, and the recommendation.
+              Allow the human to accept, replace, defer, or mark the answer unknown.
+              Preserve the human's answer exactly and set answered_by = "human".
+
+AUTONOMOUS  → Do not ask or pause.
+              Set answer to the generated recommendation and answered_by = "model".
+              Make unsupported assumptions explicit in the recommendation.
+```
+
+Stop when no decision-changing gap remains or 8 questions have been resolved. Store all entries as `${refinementAnswers}`. Consolidate their resolved decisions into `${refinedScope}` without changing the original `${scope}`. Explicit human answers outrank the original scope, repository evidence, and inference, in that order. Preserve deferred and unknown answers; never invent certainty.
+
+</phase>
+
+---
+
+<phase id="1" name="Strategic Design — Problem Space">
+
+**Invoke skill:** `scope-refinement/agents/01-problem-space`
+
+```
+inputs: ${refinedScope}, ${projectPaths}, ${domain}, ${rules}, ${orientation}
+output: docs/specs/${domain}/001-problem-space.md
+```
+
+</phase>
+
+---
+
+<phase id="2" name="Context Map">
+
+Invoke only after Phase 1 completes because `001-problem-space.md` is this phase's domain-language source of truth.
+
+**Invoke skill:** `scope-refinement/agents/02-context-map`
+
+```
+inputs: ${refinedScope}, ${projectPaths}, ${domain}, ${rules}, ${orientation}
+output: docs/specs/${domain}/002-context-map.md
+```
 
 **Reconciliation gate:** Compare bounded-context names, subdomains, events, and glossary terms across both documents. Resolve conflicts before Phase 3; `001-problem-space.md` is authoritative for Ubiquitous Language, while `002-context-map.md` is authoritative for integration relationships.
 
 <review_gate mode="INTERACTIVE">
 
 > ✅ **Strategic Design + Context Map** generated at `docs/specs/${domain}/001-problem-space.md` and `docs/specs/${domain}/002-context-map.md`  
-> Documents contain: Problem Space (Domain Events, Subdomains, Glossary, Socratic Questions) and Context Map (Bounded Contexts, Relationships).  
-> 📝 **Answer the questions in the documents**, adjust if needed, then confirm to proceed.
+> Documents contain: Problem Space (Domain Events, Subdomains, Glossary) and Context Map (Bounded Contexts, Relationships).
+> 📝 Review the generated model, provide corrections if needed, then confirm to proceed.
 
 ```
 INTERACTIVE → WAIT for user confirmation.
@@ -149,7 +202,7 @@ AUTONOMOUS  → DO NOT PAUSE. Proceed immediately to Phase 3.
 **Invoke skill:** `scope-refinement/agents/03-tactical-design`
 
 ```
-inputs: ${scope}, ${projectPaths}, ${domain}, ${rules}, ${orientation}
+inputs: ${refinedScope}, ${refinementAnswers}, ${projectPaths}, ${domain}, ${rules}, ${orientation}
 output: one document PER project in ${projectPaths}
         → docs/specs/${domain}/003-${PROJECT_NAME}-tactical-design.md
            where ${PROJECT_NAME} = root folder name of each project
@@ -164,7 +217,7 @@ output: one document PER project in ${projectPaths}
 **Invoke skill:** `scope-refinement/agents/04-test-scenarios`
 
 ```
-inputs: ${scope}, ${projectPaths}, ${domain}, ${rules}, ${orientation}
+inputs: ${refinedScope}, ${projectPaths}, ${domain}, ${rules}, ${orientation}
 output: one document PER project in ${projectPaths}
         → docs/specs/${domain}/004-${PROJECT_NAME}-test-scenarios.md
            where ${PROJECT_NAME} = root folder name of each project

@@ -1,6 +1,6 @@
 ---
 name: scope-refinement/agents/01-problem-space
-description: Strategic Design subagent — executes Big Picture Event Storming, Subdomain classification, Ubiquitous Language glossary, and Socratic Questions for the given domain scope.
+description: Strategic Design subagent — executes Big Picture Event Storming, Subdomain classification, and Ubiquitous Language modeling for the given domain scope.
 ---
 
 <role>
@@ -33,11 +33,11 @@ Use loaded context as foundation. Do not proceed without reading available archi
 
 ## Mission: Strategic Design — Problem Space
 
-Execute the four sections below **in order**. Output is machine-consumed by the next subagent — maximize information density, eliminate prose filler.
+Execute the three sections below **in order**. Output is machine-consumed by the next subagent — maximize information density, eliminate prose filler.
 
 <section id="1" name="Event Storming">
 
-Simulate a Big Picture Event Storming session over ${scope}. Produce a table ordered by temporal flow:
+Simulate a Big Picture Event Storming session over ${refinedScope}. Produce a table ordered by temporal flow:
 
 | # | Domain Event (past tense) | Command (trigger) | Aggregate | External Systems | Read Models |
 |---|---|---|---|---|---|
@@ -76,42 +76,6 @@ Rules:
 - Terms exactly as used by Domain Experts
 - Definitions in business language — no technical jargon
 - Notes: synonyms, anti-patterns, or common misuses to avoid
-
-</section>
-
-<section id="4" name="Socratic Questions">
-
-Act as a Senior Tech Lead stress-testing this domain under: high load, network failures, and concurrency.
-
-**Pre-generation checklist (internal — do not output):**
-```
-1. Review Events, Aggregates, and Subdomains from Section 1–2
-2. Identify blind spots: trusted input, missing pagination, ignored timeouts, sync coupling
-3. Evaluate behavior at 100 → 1M records scale
-4. Check: race conditions, memory leaks, database locks
-5. Evaluate: SOLID violations, DRY breaches, layer contract violations
-```
-
-Generate **minimum 5 questions** across these categories. Do not provide solutions — expose gaps.
-
-**Business Invariants and Consistency**
-Questions challenging rules that can never be violated in the identified Aggregates.
-
-**Scalability and Performance**
-Questions about N+1 queries, pagination, memory leaks, behavior under high load.
-
-**Security and Sensitive Data**
-Questions about input sanitization, authentication, authorization, data leakage (LGPD/GDPR).
-
-**Concurrency and Failures**
-Questions about race conditions, timeouts, retry policies, eventual consistency between Bounded Contexts.
-
-**Responsibility Boundaries Between Layers**
-Questions about SOLID violations, undue coupling, contracts between layers.
-
----
-
-**Architecture Tip:** *(1–2 sentences maximum — direction only, no solution)*
 
 </section>
 
