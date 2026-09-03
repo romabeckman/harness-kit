@@ -10,19 +10,19 @@ Immediately after running **BOOTSTRAP**, the files are initialized with their ba
 
 ### `docs/product/BACKLOG.md`
 ```markdown
-| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **F001** | **Database Connection pool** | `db_pool` | **CRITICAL** | None | 0 | - | - | `NOT_STARTED` |
-| **F002** | **User Register API** | `user_reg` | **HIGH** | F001 | 0 | - | - | `NOT_STARTED` |
-| **F003** | **Broken Core Feature** | `broken_core` | **MEDIUM** | F001 | 0 | - | - | `NOT_STARTED` |
-| **F004** | **Minor Security Issue Feature** | `minor_sec` | **LOW** | F001 | 0 | - | - | `NOT_STARTED` |
+| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **F001** | **Database Connection pool** | `db_pool` | `backend` | **CRITICAL** | None | 0 | - | - | `NOT_STARTED` |
+| **F002** | **User Register API** | `user_reg` | `backend` | **HIGH** | F001 | 0 | - | - | `NOT_STARTED` |
+| **F003** | **Broken Core Feature** | `broken_core` | `backend` | **MEDIUM** | F001 | 0 | - | - | `NOT_STARTED` |
+| **F004** | **Minor Security Issue Feature** | `minor_sec` | `backend` | **LOW** | F001 | 0 | - | - | `NOT_STARTED` |
 ```
 
 ### `docs/product/DEVELOPMENT-STATE.md`
 *(Empty table, only headers initialized)*
 ```markdown
-| Feature ID | Task ID | Description | Domain | Current Phase | Status |
-| --- | --- | --- | --- | --- | --- |
+| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |
+| --- | --- | --- | --- | --- | --- | --- |
 ```
 
 ### `docs/product/DECISIONS.md`
@@ -43,20 +43,20 @@ When **F001** is selected, planning tasks are broken down and added to `DEVELOPM
 
 #### `docs/product/BACKLOG.md`
 ```markdown
-| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **F001** | **Database Connection pool** | `db_pool` | **CRITICAL** | None | 0 | - | - | `IN_PROGRESS` |
-| **F002** | **User Register API** | `user_reg` | **HIGH** | F001 | 0 | - | - | `NOT_STARTED` |
-| **F003** | **Broken Core Feature** | `broken_core` | **MEDIUM** | F001 | 0 | - | - | `NOT_STARTED` |
-| **F004** | **Minor Security Issue Feature** | `minor_sec` | **LOW** | F001 | 0 | - | - | `NOT_STARTED` |
+| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **F001** | **Database Connection pool** | `db_pool` | `backend` | **CRITICAL** | None | 0 | - | - | `IN_PROGRESS` |
+| **F002** | **User Register API** | `user_reg` | `backend` | **HIGH** | F001 | 0 | - | - | `NOT_STARTED` |
+| **F003** | **Broken Core Feature** | `broken_core` | `backend` | **MEDIUM** | F001 | 0 | - | - | `NOT_STARTED` |
+| **F004** | **Minor Security Issue Feature** | `minor_sec` | `backend` | **LOW** | F001 | 0 | - | - | `NOT_STARTED` |
 ```
 
 #### `docs/product/DEVELOPMENT-STATE.md`
 ```markdown
-| Feature ID | Task ID | Description | Domain | Current Phase | Status |
-| --- | --- | --- | --- | --- | --- |
-| F001 | T001 | Setup pg connection pool config | `db_pool` | - | `NOT_STARTED` |
-| F001 | T002 | Implement healthcheck endpoint | `db_pool` | - | `NOT_STARTED` |
+| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| F001 | T001 | api | Setup pg connection pool config | `db_pool` | - | `NOT_STARTED` |
+| F001 | T002 | api | Implement healthcheck endpoint | `db_pool` | - | `NOT_STARTED` |
 ```
 
 #### `docs/product/DECISIONS.md`
@@ -67,14 +67,14 @@ When **F001** is selected, planning tasks are broken down and added to `DEVELOPM
 ```
 
 ### Phase B (Running & Completed Tasks)
-Tasks are executed sequentially.
+All pending feature tasks are delegated in one development invocation.
 
 #### `docs/product/DEVELOPMENT-STATE.md`
 ```markdown
-| Feature ID | Task ID | Description | Domain | Current Phase | Status |
-| --- | --- | --- | --- | --- | --- |
-| F001 | T001 | Setup pg connection pool config | `db_pool` | - | `COMPLETED` |
-| F001 | T002 | Implement healthcheck endpoint | `db_pool` | `IMPLEMENTATION` | `IN_PROGRESS` |
+| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| F001 | T001 | api | Setup pg connection pool config | `db_pool` | `IMPLEMENTATION` | `IN_PROGRESS` |
+| F001 | T002 | api | Implement healthcheck endpoint | `db_pool` | `IMPLEMENTATION` | `IN_PROGRESS` |
 ```
 
 ### Phase C (Validation Gate - PASS)
@@ -82,20 +82,20 @@ All tasks are completed. Validation scores are extracted. Both scores (TL: 0.85,
 
 #### `docs/product/BACKLOG.md`
 ```markdown
-| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **F001** | **Database Connection pool** | `db_pool` | **CRITICAL** | None | 0 | 0.85 | 0.90 | `COMPLETED` |
-| **F002** | **User Register API** | `user_reg` | **HIGH** | F001 | 0 | - | - | `NOT_STARTED` |
-| **F003** | **Broken Core Feature** | `broken_core` | **MEDIUM** | F001 | 0 | - | - | `NOT_STARTED` |
-| **F004** | **Minor Security Issue Feature** | `minor_sec` | **LOW** | F001 | 0 | - | - | `NOT_STARTED` |
+| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **F001** | **Database Connection pool** | `db_pool` | `backend` | **CRITICAL** | None | 0 | 0.85 | 0.90 | `COMPLETED` |
+| **F002** | **User Register API** | `user_reg` | `backend` | **HIGH** | F001 | 0 | - | - | `NOT_STARTED` |
+| **F003** | **Broken Core Feature** | `broken_core` | `backend` | **MEDIUM** | F001 | 0 | - | - | `NOT_STARTED` |
+| **F004** | **Minor Security Issue Feature** | `minor_sec` | `backend` | **LOW** | F001 | 0 | - | - | `NOT_STARTED` |
 ```
 
 #### `docs/product/DEVELOPMENT-STATE.md`
 ```markdown
-| Feature ID | Task ID | Description | Domain | Current Phase | Status |
-| --- | --- | --- | --- | --- | --- |
-| F001 | T001 | Setup pg connection pool config | `db_pool` | - | `COMPLETED` |
-| F001 | T002 | Implement healthcheck endpoint | `db_pool` | - | `COMPLETED` |
+| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| F001 | T001 | api | Setup pg connection pool config | `db_pool` | - | `COMPLETED` |
+| F001 | T002 | api | Implement healthcheck endpoint | `db_pool` | - | `COMPLETED` |
 ```
 
 #### `docs/product/DECISIONS.md`
@@ -117,22 +117,22 @@ The number of reworks increments in `BACKLOG.md`, tasks are reset to `NOT_STARTE
 
 #### `docs/product/BACKLOG.md`
 ```markdown
-| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **F001** | **Database Connection pool** | `db_pool` | **CRITICAL** | None | 0 | 0.85 | 0.90 | `COMPLETED` |
-| **F002** | **User Register API** | `user_reg` | **HIGH** | F001 | 1 | - | - | `IN_PROGRESS` |
-| **F003** | **Broken Core Feature** | `broken_core` | **MEDIUM** | F001 | 0 | - | - | `NOT_STARTED` |
-| **F004** | **Minor Security Issue Feature** | `minor_sec` | **LOW** | F001 | 0 | - | - | `NOT_STARTED` |
+| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **F001** | **Database Connection pool** | `db_pool` | `backend` | **CRITICAL** | None | 0 | 0.85 | 0.90 | `COMPLETED` |
+| **F002** | **User Register API** | `user_reg` | `backend` | **HIGH** | F001 | 1 | - | - | `IN_PROGRESS` |
+| **F003** | **Broken Core Feature** | `broken_core` | `backend` | **MEDIUM** | F001 | 0 | - | - | `NOT_STARTED` |
+| **F004** | **Minor Security Issue Feature** | `minor_sec` | `backend` | **LOW** | F001 | 0 | - | - | `NOT_STARTED` |
 ```
 
 #### `docs/product/DEVELOPMENT-STATE.md`
 ```markdown
-| Feature ID | Task ID | Description | Domain | Current Phase | Status |
-| --- | --- | --- | --- | --- | --- |
-| F001 | T001 | Setup pg connection pool config | `db_pool` | - | `COMPLETED` |
-| F001 | T002 | Implement healthcheck endpoint | `db_pool` | - | `COMPLETED` |
-| F002 | T001 | Create signup endpoint handler | `user_reg` | `IMPLEMENTATION` | `NOT_STARTED` |
-| F002 | T002 | Implement password hashing | `user_reg` | `IMPLEMENTATION` | `NOT_STARTED` |
+| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| F001 | T001 | api | Setup pg connection pool config | `db_pool` | - | `COMPLETED` |
+| F001 | T002 | api | Implement healthcheck endpoint | `db_pool` | - | `COMPLETED` |
+| F002 | T001 | api | Create signup endpoint handler | `user_reg` | - | `NOT_STARTED` |
+| F002 | T002 | api | Implement password hashing | `user_reg` | - | `NOT_STARTED` |
 ```
 
 #### `docs/product/DECISIONS.md`
@@ -155,23 +155,23 @@ Status becomes `BLOCKED` for the feature in both backlog and development state.
 
 #### `docs/product/BACKLOG.md`
 ```markdown
-| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **F001** | **Database Connection pool** | `db_pool` | **CRITICAL** | None | 0 | 0.85 | 0.90 | `COMPLETED` |
-| **F002** | **User Register API** | `user_reg` | **HIGH** | F001 | 1 | 0.80 | 0.80 | `COMPLETED` |
-| **F003** | **Broken Core Feature** | `broken_core` | **MEDIUM** | F001 | 2 | 0.30 | 0.40 | `BLOCKED` |
-| **F004** | **Minor Security Issue Feature** | `minor_sec` | **LOW** | F001 | 0 | - | - | `NOT_STARTED` |
+| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **F001** | **Database Connection pool** | `db_pool` | `backend` | **CRITICAL** | None | 0 | 0.85 | 0.90 | `COMPLETED` |
+| **F002** | **User Register API** | `user_reg` | `backend` | **HIGH** | F001 | 1 | 0.80 | 0.80 | `COMPLETED` |
+| **F003** | **Broken Core Feature** | `broken_core` | `backend` | **MEDIUM** | F001 | 2 | 0.30 | 0.40 | `BLOCKED` |
+| **F004** | **Minor Security Issue Feature** | `minor_sec` | `backend` | **LOW** | F001 | 0 | - | - | `NOT_STARTED` |
 ```
 
 #### `docs/product/DEVELOPMENT-STATE.md`
 ```markdown
-| Feature ID | Task ID | Description | Domain | Current Phase | Status |
-| --- | --- | --- | --- | --- | --- |
-| F001 | T001 | Setup pg connection pool config | `db_pool` | - | `COMPLETED` |
-| F001 | T002 | Implement healthcheck endpoint | `db_pool` | - | `COMPLETED` |
-| F002 | T001 | Create signup endpoint handler | `user_reg` | - | `COMPLETED` |
-| F002 | T002 | Implement password hashing | `user_reg` | - | `COMPLETED` |
-| F003 | T001 | Setup memory intensive component | `broken_core` | - | `BLOCKED` |
+| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| F001 | T001 | api | Setup pg connection pool config | `db_pool` | - | `COMPLETED` |
+| F001 | T002 | api | Implement healthcheck endpoint | `db_pool` | - | `COMPLETED` |
+| F002 | T001 | api | Create signup endpoint handler | `user_reg` | - | `COMPLETED` |
+| F002 | T002 | api | Implement password hashing | `user_reg` | - | `COMPLETED` |
+| F003 | T001 | api | Setup memory intensive component | `broken_core` | - | `BLOCKED` |
 ```
 
 #### `docs/product/DECISIONS.md`
@@ -193,24 +193,24 @@ Status becomes `FAILED` for the feature in both backlog and development state. T
 
 #### `docs/product/BACKLOG.md`
 ```markdown
-| ID | Title | Domain | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **F001** | **Database Connection pool** | `db_pool` | **CRITICAL** | None | 0 | 0.85 | 0.90 | `COMPLETED` |
-| **F002** | **User Register API** | `user_reg` | **HIGH** | F001 | 1 | 0.80 | 0.80 | `COMPLETED` |
-| **F003** | **Broken Core Feature** | `broken_core` | **MEDIUM** | F001 | 2 | 0.30 | 0.40 | `BLOCKED` |
-| **F004** | **Minor Security Issue Feature** | `minor_sec` | **LOW** | F001 | 2 | 0.65 | 0.60 | `FAILED` |
+| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **F001** | **Database Connection pool** | `db_pool` | `backend` | **CRITICAL** | None | 0 | 0.85 | 0.90 | `COMPLETED` |
+| **F002** | **User Register API** | `user_reg` | `backend` | **HIGH** | F001 | 1 | 0.80 | 0.80 | `COMPLETED` |
+| **F003** | **Broken Core Feature** | `broken_core` | `backend` | **MEDIUM** | F001 | 2 | 0.30 | 0.40 | `BLOCKED` |
+| **F004** | **Minor Security Issue Feature** | `minor_sec` | `backend` | **LOW** | F001 | 2 | 0.65 | 0.60 | `FAILED` |
 ```
 
 #### `docs/product/DEVELOPMENT-STATE.md`
 ```markdown
-| Feature ID | Task ID | Description | Domain | Current Phase | Status |
-| --- | --- | --- | --- | --- | --- |
-| F001 | T001 | Setup pg connection pool config | `db_pool` | - | `COMPLETED` |
-| F001 | T002 | Implement healthcheck endpoint | `db_pool` | - | `COMPLETED` |
-| F002 | T001 | Create signup endpoint handler | `user_reg` | - | `COMPLETED` |
-| F002 | T002 | Implement password hashing | `user_reg` | - | `COMPLETED` |
-| F003 | T001 | Setup memory intensive component | `broken_core` | - | `BLOCKED` |
-| F004 | T001 | Implement CSRF protection | `minor_sec` | - | `FAILED` |
+| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| F001 | T001 | api | Setup pg connection pool config | `db_pool` | - | `COMPLETED` |
+| F001 | T002 | api | Implement healthcheck endpoint | `db_pool` | - | `COMPLETED` |
+| F002 | T001 | api | Create signup endpoint handler | `user_reg` | - | `COMPLETED` |
+| F002 | T002 | api | Implement password hashing | `user_reg` | - | `COMPLETED` |
+| F003 | T001 | api | Setup memory intensive component | `broken_core` | - | `BLOCKED` |
+| F004 | T001 | api | Implement CSRF protection | `minor_sec` | - | `FAILED` |
 ```
 
 #### `docs/product/DECISIONS.md`
