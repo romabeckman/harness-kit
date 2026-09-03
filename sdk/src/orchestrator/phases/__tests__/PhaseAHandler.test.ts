@@ -1,5 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { join } from 'node:path';
 import { PlanningHandler } from '../PlanningHandler';
 import { Phase } from '../../types';
 import { FORCE_INLINE_MAX } from '../../utils/PromptHelpers';
@@ -181,7 +182,7 @@ describe('PlanningHandler', () => {
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
             expect(invokedPrompt).toContain('<scope_ref>');
-            expect(invokedPrompt).toContain('Read file: `/test/working-dir/docs/product/SCOPE.md`');
+            expect(invokedPrompt).toContain(`Read file: \`${join(mockContext.workingDir, 'docs', 'product', 'SCOPE.md')}\``);
             expect(invokedPrompt).not.toContain('<scope>\n```markdown');
         });
 
