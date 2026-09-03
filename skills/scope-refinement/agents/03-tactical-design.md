@@ -69,7 +69,22 @@ READ docs/specs/${domain}/002-context-map.md    → Bounded Contexts, integratio
 <mission>
 ## Mission: Tactical Design — one document per project
 
-For each project in ${projectPaths}, execute sections 1–6 **adapted to that project's architecture**.
+For each project in ${projectPaths}, write the refinement record, then execute sections 1–6 **adapted to that project's architecture**.
+
+<section id="0" name="Refinement Questions and Answers">
+  Filter `${refinementAnswers}` for the current `${PROJECT_NAME}`. Include an entry only when `applies_to` contains the exact `${PROJECT_NAME}` or `ALL`. Never include an entry belonging exclusively to another project.
+
+  Copy each applicable question, recommendation, answer, and answer source without changing its meaning:
+
+  | ID | Category | Question | Recommendation | Final Answer | Answered By |
+  |---|---|---|---|---|---|
+
+  Rules:
+  * Global entries (`ALL`) appear in every project's tactical document.
+  * Entries naming multiple projects appear in each named project's tactical document.
+  * Confirmed answers are binding design inputs.
+  * Deferred or unknown answers remain explicit and must not become invented requirements.
+</section>
 
 <section id="1" name="Main Structure">
   Define the primary structural elements according to the project's architecture:
@@ -227,6 +242,11 @@ For EACH project in ${projectPaths}:
 # Tactical Design — order-service
 **Domain:** ecommerce | **Project:** order-service
 
+## Refinement Questions and Answers
+| ID | Category | Question | Recommendation | Final Answer | Answered By |
+|---|---|---|---|---|---|
+| Q01 | concurrency | How are duplicate confirmations handled? | Require idempotent confirmation. | Require idempotent confirmation. | model |
+
 ## Section 1 — Main Structure
 | Element | Layer / Type | Invariants / Tech Rules | 4-line Snippet |
 |---|---|---|---|
@@ -326,6 +346,11 @@ interface OrderRepository:
 
 # Tactical Design — checkout-ui
 **Domain:** ecommerce | **Project:** checkout-ui
+
+## Refinement Questions and Answers
+| ID | Category | Question | Recommendation | Final Answer | Answered By |
+|---|---|---|---|---|---|
+| Q02 | failure | What should the UI show when submission times out? | Preserve cart and show retry state. | Preserve cart and show retry state. | human |
 
 ## Section 1 — Main Structure
 | Element | Layer / Type | Invariants / Tech Rules | 4-line Snippet |
