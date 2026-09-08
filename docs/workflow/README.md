@@ -1,69 +1,76 @@
 # 📖 HarnessKit: Workflow Documentation
 
-Complete entry guide for using HarnessKit in a structured, data-driven sequence. This folder contains the essential blueprints to understand, plan, and execute your harness-based development workflow.
+User guide for HarnessKit skills and specialist agents.
 
----
+The source of truth for exact behavior is each file under `skills/*/SKILL.md` and `agents/*.md`.
 
-## 🚀 Quick Navigation
+## Start here
 
-Choose your entry point based on what you need right now:
+| Goal | Guide |
+| --- | --- |
+| Choose and invoke skills for daily work | [PLAYBOOK-DAILY-USE.md](PLAYBOOK-DAILY-USE.md) |
+| Run the sovereign skill-driven loop | [AUTONOMOUS-ORCHESTRATOR.md](AUTONOMOUS-ORCHESTRATOR.md) |
+| Record and improve harness behavior | [META-HARNESS.md](META-HARNESS.md) |
 
-### **📚 Conceptual & Architectural Foundation**
-→ **[META-HARNESS.md](META-HARNESS.md)**
-- Complete architectural mapping based on the *"Meta-Harness"* paper.
-- Explanation of the 3-Layer structure: Developer → Skills → Filesystem $\mathcal{D}$.
-- The continuous optimization algorithm, mathematical loop formulation, and the Pareto frontier.
-- Comprehensive 8-day practical execution history and simulation.
+## Skill groups
 
-### **🎯 Hands-On Operational Playbook**
-→ **[PLAYBOOK-DAILY-USE.md](PLAYBOOK-DAILY-USE.md)**
-- Actionable checklists and step-by-step instructions for daily engineering routines.
-- Concrete terminal execution flows: introducing new features, managing bug fixes, and harness optimization loops.
-- Real-world timeline tracking examples, specific command syntaxes, expected outputs, and troubleshooting recipes.
-- Skill routing rules under the `meta-harness-agent` for `harness-tracer`, `harness-evaluator`, and `meta-harness`.
+### Foundation
 
-### **🤖 Autonomous Loop Orchestration**
-→ **[AUTONOMOUS-ORCHESTRATOR.md](AUTONOMOUS-ORCHESTRATOR.md)**
-- Step-by-step workflow for running the sovereign, fully automated execution loop.
-- Full status lifecycle: `PASS`, `RETRY`, `BLOCKED`, and `FAILED`.
-- Best practices for initializing project documentation and defining scope-refinement contexts.
+| Skill | Use when | Primary output |
+| --- | --- | --- |
+| `project-memory` | Create or update durable project documentation | `docs/adr/`, `docs/feature/`, `docs/.digest.md`, `docs/.graph.json` |
+| `scope-refinement` | Convert a requirement into DDD design and executable scenarios | `docs/specs/{domain}/001-*` through `004-*` |
+| `tdd-orchestrator` | Implement approved scenarios through RED, GREEN, and REFACTOR | Code, tests, validation evidence, and autonomous `TDD-OUTPUT.json` |
 
----
+### Orchestration and UI
 
-## 🗂️ The Core Documentation Architecture
+| Skill | Use when | Primary output |
+| --- | --- | --- |
+| `autonomous-orchestrator` | Drive a backlog through planning, implementation, review, memory, and authorized deployment | Product state under `docs/product/` |
+| `read-ui-prototype` | Translate supplied screens or frames into a frontend implementation specification | Semantic UI specification for `developer-frontend` |
 
-The workspace documentation is organized into three primary pillars to cover theoretical foundations, manual operations, and automated orchestration:
+### Quality gates
 
-| Document | Nature | Primary Objective | Key Target Focus |
-|:---|:---|:---|:---|
-| **META-HARNESS.md** | Conceptual & Analytical | Explains *why* and *how* the system evolves natively. | Core Architecture, Optimization Loop, Ecosystem State. |
-| **PLAYBOOK-DAILY-USE.md** | Practical & Operational | Provides immediate tactical guidance for day-to-day engineering. | Terminal Commands, Checklists, Agent Routing, Metrics Tracking. |
-| **AUTONOMOUS-ORCHESTRATOR.md** | Automated Workflow | Guides the sovereign orchestration cycle and prerequisite setup. | Orchestration Loop, Status Machine (PASS/RETRY/BLOCKED/FAILED), Dynamic Thresholds. |
+| Skill | Use when | Primary output |
+| --- | --- | --- |
+| `the-grumpy-tech-lead` | Review systemic architecture, security, performance, and maintainability risks | Socratic review or `TL.json` |
+| `adversarial-qa` | Probe boundaries, failures, and security against machine-readable specs | QA verdict or `QA.json` |
 
----
+### Harness optimization
 
-## 📞 Quick Reference Guide
+| Skill | Use when | Primary output |
+| --- | --- | --- |
+| `harness-tracer` | Record one completed skill session | `docs/harness-history/traces/session-*/` |
+| `harness-evaluator` | Score accumulated traces and compare skill chains | `docs/harness-history/pareto-frontier.md` |
+| `meta-harness` | Propose one evidence-backed skill improvement | `docs/harness-history/candidates/vNNN/` |
 
-| If you are asking... | Find the answer in... | Section / Anchor |
-|:---|:---|:---|
-| *"Where do I start my daily task?"* | `PLAYBOOK-DAILY-USE.md` | Checklist: Before Starting |
-| *"What does each skill do internally?"* | `META-HARNESS.md` | Layer 2: Skills |
-| *"Which skill should I invoke next?"* | `PLAYBOOK-DAILY-USE.md` | Flow 1 & Flow 2 |
-| *"How does the meta-harness improve code?"* | `META-HARNESS.md` | The Continuous Optimization Loop |
-| *"How do I run the sovereign automated loop?"* | `AUTONOMOUS-ORCHESTRATOR.md` | 🚀 Execution Phases in Detail |
-| *"What are the recommendations for project documentation?"* | `AUTONOMOUS-ORCHESTRATOR.md` | 💡 Best Practice Recommendations |
-| *"What is the difference between FAILED and BLOCKED?"* | `AUTONOMOUS-ORCHESTRATOR.md` | Phase C: Decision Gate Verdict |
-| *"Where are score thresholds configured?"* | `AUTONOMOUS-ORCHESTRATOR.md` | Phase C: Dynamic Quality Thresholds |
-| *"When does harness-evaluator run automatically?"* | `PLAYBOOK-DAILY-USE.md` | Flow 2: Optimize Harness |
-| *"An execution error occurred, how do I solve it?"* | `PLAYBOOK-DAILY-USE.md` | Troubleshooting |
+## Agent routing
 
----
+| Agent | Responsibility | Must not do |
+| --- | --- | --- |
+| `software-architect` | DDD, architecture, scope refinement, planning, memory | Implement production code |
+| `developer-backend` | APIs, services, persistence, backend tests | Own frontend or infrastructure work |
+| `developer-frontend` | UI implementation, accessibility, client performance | Invent visual requirements absent from specs |
+| `developer-qa` | Test strategy and test implementation | Implement product features |
+| `developer-devops` | CI/CD, containers, infrastructure, observability | Implement business logic or deploy without rollback plan |
+| `developer-debugging` | Evidence-based root-cause investigation | Implement the final fix |
+| `harness-tech-lead` | Autonomous systemic review | Implement reviewed changes |
+| `harness-qa` | Autonomous adversarial validation | Replace implementation agents |
+| `meta-harness-agent` | Route tracing, evaluation, and skill optimization | Modify active skills without approval |
+| `cto` | Govern strategy and trigger the autonomous loop | Perform tactical implementation |
 
-## ✅ System Readiness Checklist
+## Core artifact boundaries
 
-Your HarnessKit environment is fully operational when:
-- [ ] The core workspace contains `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md`.
-- [ ] You understand the **`meta-harness-agent` skill routing rules**: `harness-tracer` (default), `harness-evaluator` (multiples of 5 traces), `meta-harness` (explicit request only).
-- [ ] You know that score thresholds (`scoreThresholdTL`, `scoreThresholdAdv`) and `maxReworks` are loaded from `docs/product/BOOTSTRAP-CONFIG.json` — never asked interactively.
-- [ ] You understand the four terminal statuses: `COMPLETED` (pass), `RETRY` (in-progress rework), `FAILED` (non-blocking issue, dev continues), `BLOCKED` (crash/critical break, must be resolved).
-- [ ] You understand the lifecycle pipeline: **Develop → Trace → Evaluate (every 5 traces) → Optimize (explicit)**.
+- `project-memory` owns durable project documents. It must not touch `docs/harness-history/`.
+- `scope-refinement` owns specification documents created during its four DDD phases.
+- `autonomous-orchestrator` owns product state and delegates technical work.
+- `harness-tracer`, `harness-evaluator`, and `meta-harness` own harness history.
+- Human approval is required before a meta-harness candidate replaces an active skill.
+
+## Readiness checklist
+
+- [ ] Identify whether the task needs documentation, design, implementation, validation, or optimization.
+- [ ] Select the narrowest matching skill and agent.
+- [ ] Provide exact project paths, domain, acceptance criteria, and constraints.
+- [ ] Preserve repository rules; skill instructions do not override user or repository policy.
+- [ ] Require executed test evidence before accepting implementation work.

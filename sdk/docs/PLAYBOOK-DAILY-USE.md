@@ -1,389 +1,307 @@
 # Playbook — Daily Use
 
-Practical recipes for common `hrns` workflows. Each scenario describes a real situation, the CLI commands to handle it, and the files you will touch.
+Practical recipes for the `hrns` CLI. Read the [SDK README](../README.md) first for installation, runner setup, and complete command reference.
 
-> [!TIP]
-> Read the [README](../README.md) first for installation, CLI flags, and phase overview. This playbook assumes you already have `hrns` available.
+## Safety first
 
----
+`hrns run` includes a DEPLOY phase. Unless `--skip-deploy` is present, that phase runs `git add --all`, creates a commit, and runs `git push` in every configured project path.
 
-## Table of Contents
+Use `--skip-deploy` when:
 
-- [Scenario 1 — Multi-Project with a Read-Only Reference](#scenario-1--multi-project-with-a-read-only-reference)
-- [Scenario 2 — Synchronized Frontend + Backend](#scenario-2--synchronized-frontend--backend)
-- [Scenario 3 — Quick POC with Relaxed Scoring](#scenario-3--quick-poc-with-relaxed-scoring)
-- [Scenario 4 — Mid-Run Corrections (Manual Edits)](#scenario-4--mid-run-corrections-manual-edits)
+- Repository policy forbids automated staging, commits, or pushes.
+- A human must review the diff first.
+- Project paths contain unrelated working-tree changes.
+- A path is only a reference repository.
 
----
+The CLI runner may use unattended permission flags. Steering text guides the model but does not enforce filesystem isolation. Use OS permissions, sandboxing, or a disposable copy for technically read-only content.
 
-## Scenario 1 — Multi-Project with a Read-Only Reference
+## Current defaults
 
-**Situation:** You have two projects — your application codebase where all development happens, and a template repository (downloaded from ChatGPT, a boilerplate, etc.) that should only be used as a **read-only reference**. The agents must never modify files in the template.
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Runner | `claude-cli` | Override with `--agent` |
+| Interactive mode choice | `fast` | Pass `--mode` to avoid the mode prompt |
+| Acceptance scores | `0.70` | Both values use `[0.00, 1.00]` |
+| Maximum reworks | `2` | Applies before final `FAILED` or `BLOCKED` verdict |
+| Phase timeout | 30 minutes | Configurable in settings |
+| Deploy | enabled | Disable with `--skip-deploy` |
 
-### Setup
+## Execution modes
 
-```
-workspace/
-├── my-mcp-server/        ← your project (read-write)
-└── mcp-template/         ← reference template (read-only)
-```
+| Mode | Complexity | Review | Refinement | Memory | Deploy |
+| --- | --- | --- | --- | --- | --- |
+| `quick` | LOW | skipped | no | skipped | enabled |
+| `fast` | LOW | adversarial QA only | no | enabled | enabled |
+| `thinking` / `default` | AUTO | tech lead + QA | no | enabled | enabled |
+| `deep_thinking` / `slow` | HIGH | tech lead + QA | yes | enabled | enabled |
 
-### Step 1 — Initialize with both paths
+`--complexity LOW|HIGH|AUTO` overrides planning complexity, but it does not change a mode's skip behavior. `--skip-validation`, `--skip-memory`, and `--skip-deploy` add independent skips.
 
-```bash
-hrns init
-```
-
-When the wizard asks for project directories, list both:
-
-```
-? Project paths: ./my-mcp-server, ./mcp-template
-```
-
-Or skip the wizard entirely:
+## Scenario 1 — Start a reviewed project safely
 
 ```bash
 hrns run \
   --reset \
-  --scope "Build an MCP server for database introspection following the mcp-template patterns" \
-  --path ./my-mcp-server \
-  --path ./mcp-template
+  --mode thinking \
+  --scope "Add customer account recovery with email tokens, expiry, rate limits, audit logs, and automated tests." \
+  --path ./app \
+  --skip-deploy
 ```
 
-### Step 2 — Add a global steering rule
+This command:
 
-The key constraint is a **global steering rule** that tells every agent to treat the template as read-only. Add it via CLI:
+1. Deletes and recreates `docs/product/` for a new cycle.
+2. Persists scope and project paths.
+3. Lets planning classify LOW or HIGH complexity.
+4. Runs both review agents.
+5. Updates project memory.
+6. Stops without staging, committing, or pushing.
+
+Use `--reset` only when existing product state may be discarded.
+
+## Scenario 2 — Multi-project frontend and backend
 
 ```bash
 hrns run \
   --reset \
-  --scope "Build an MCP server for database introspection following the mcp-template patterns" \
-  --path ./my-mcp-server \
-  --path ./mcp-template \
-  --steering "NEVER modify, create, or delete any file inside the mcp-template/ directory. Use it only as a read-only reference for patterns, structure, and conventions."
-```
-
-Or add it during `hrns init` when the steering wizard asks for **Global rules**:
-
-```
-? Global steering rules (applied to all phases):
-  NEVER modify, create, or delete any file inside the mcp-template/ directory. Use it only as a read-only reference for patterns, structure, and conventions.
-```
-
-### Step 3 — Verify in BOOTSTRAP-CONFIG.json
-
-After initialization, confirm the rule is persisted:
-
-```json
-// docs/product/BOOTSTRAP-CONFIG.json
-{
-  "steeringRules": {
-    "user": [
-      "NEVER modify, create, or delete any file inside the mcp-template/ directory. Use it only as a read-only reference for patterns, structure, and conventions."
-    ]
-  }
-}
-```
-
-The `user` key means this rule is injected into **every** phase payload — bootstrap, planning, implementation, and validation all see it.
-
-### Why this works
-
-- The orchestrator passes `projectPaths` to every agent, giving them filesystem access to both directories.
-- The global steering rule acts as a hard constraint in every prompt. Agents read the template for patterns but write exclusively to `my-mcp-server/`.
-- If a validation agent flags a pattern mismatch, the implementation agent can look at the template for reference during rework — without touching it.
-
----
-
-## Scenario 2 — Synchronized Frontend + Backend
-
-**Situation:** A standard full-stack project — a backend API and a frontend SPA. You want the orchestrator to plan and implement features across both codebases in a coordinated way.
-
-### Setup
-
-```
-workspace/
-├── api/       ← Node.js / Express backend
-└── web/       ← React / Vue / Angular frontend
-```
-
-### Step 1 — Provide both paths and a clear scope
-
-```bash
-hrns run \
-  --reset \
-  --scope "User management module: REST API with JWT authentication (api/) and React admin dashboard with login, user list, and role management (web/). The frontend consumes the backend API." \
+  --mode thinking \
+  --scope "Build JWT authentication in api/ and a React login flow in web/. The web project consumes the api project. Implement and validate the API contract before dependent UI work." \
   --path ./api \
-  --path ./web
+  --path ./web \
+  --steering "Preserve shared request and response types across api/ and web/. Run each project's documented tests." \
+  --skip-deploy
 ```
 
-> [!IMPORTANT]
-> Mention **both projects** in the scope text and clarify their relationship. The bootstrap agent uses this to split features correctly and understand cross-project dependencies.
+State dependencies explicitly in scope. The architect should encode them in `BACKLOG.md`, but dependency order is only as reliable as the generated backlog. Inspect it before allowing a long unattended run.
 
-### Step 2 — Leverage the feature dependency graph
+Each `--path` is passed to agent invocations. It does not assign ownership by itself; scope, backlog layer, and steering provide that context.
 
-The bootstrap agent (`software-architect`) will generate a `BACKLOG.md` that respects natural dependencies. A typical output looks like:
+## Scenario 3 — Read-only reference repository
 
-```markdown
-| ID      | Feature                           | Priority | Status      | Depends On |
-|---------|-----------------------------------|----------|-------------|------------|
-| **F001** | JWT Auth Middleware (api/)        | 1        | NOT_STARTED |            |
-| **F002** | User CRUD Endpoints (api/)       | 2        | NOT_STARTED | F001       |
-| **F003** | Login Page + Auth Context (web/) | 3        | NOT_STARTED | F001       |
-| **F004** | User Management Dashboard (web/) | 4        | NOT_STARTED | F002, F003 |
+```text
+workspace/
+├── app/          # writable target
+└── template/     # reference only
 ```
-
-The orchestrator processes features in dependency order: `F001 → F002 → F003 → F004`. A backend API endpoint is always built and validated before the frontend that consumes it.
-
-### Step 3 — Add phase-specific steering rules (optional)
-
-For tighter control, add steering rules that apply only to specific phases:
-
-```json
-// docs/product/BOOTSTRAP-CONFIG.json
-{
-  "steeringRules": {
-    "user": [
-      "The api/ directory is a Node.js + Express project. The web/ directory is a React + TypeScript project."
-    ],
-    "implementation": [
-      "When implementing API endpoints in api/, always create corresponding TypeScript interfaces in web/src/types/ so the frontend can consume them type-safely.",
-      "Run tests for both projects: 'cd api && npm test' and 'cd web && npm test'."
-    ]
-  }
-}
-```
-
-### Why this works
-
-- Listing both `--path` entries gives agents full read-write access to both codebases.
-- The scope describes the relationship between projects, so the architect agent creates features that span both or respect dependencies.
-- Phase B (TDD implementation) sees both project trees and can write to both in a single feature cycle.
-- Phase C (validation) reviews code across both directories for consistency.
-
----
-
-## Scenario 3 — Quick POC with Relaxed Scoring
-
-**Situation:** You need to build a proof-of-concept for a client presentation. The scope is detailed (you used ChatGPT / Gemini / Claude to help refine the PRD), and you want the orchestrator to be **more permissive** — accepting implementations faster without strict code review cycles.
-
-### Step 1 — Refine the scope externally
-
-Before running `hrns`, use your preferred chat tool (ChatGPT, Gemini, Claude) to refine the product requirements:
-
-1. Describe the client's needs conversationally.
-2. Ask the LLM to produce a structured PRD with user stories, acceptance criteria, and technical constraints.
-3. Copy the final PRD text.
-
-### Step 2 — Pass the full scope as text
-
-For long scope text, use `hrns init` and paste into the editor, or pass it inline:
 
 ```bash
 hrns run \
   --reset \
-  --path ./poc-project \
-  --score 0.6 \
-  --reworks 1 \
-  --scope "
-## POC: Real-Time Analytics Dashboard for Acme Corp
-
-### Context
-Acme Corp needs a real-time dashboard prototype that visualizes sales pipeline metrics.
-This is a POC for the Q3 board meeting — not production code.
-
-### Features
-1. WebSocket connection to receive mock sales events
-2. Dashboard with 4 KPI cards (revenue, deals, conversion rate, avg deal size)
-3. Real-time line chart showing revenue over the last 24 hours
-4. Filter by region (NA, EMEA, APAC)
-
-### Technical Constraints
-- React + TypeScript frontend
-- Node.js + Express + ws backend
-- No database — in-memory data store is fine
-- Mock data generator that simulates sales events
-
-### Acceptance Criteria
-- Dashboard updates in real-time without page refresh
-- Charts render within 200ms of receiving a new event
-- Region filter works without reconnecting the WebSocket
-"
+  --mode thinking \
+  --scope "Build the service in app/ using patterns found in template/." \
+  --path ./app \
+  --path ./template \
+  --steering "NEVER create, modify, rename, or delete files in template/. Treat template/ as read-only. Write only in app/." \
+  --skip-deploy
 ```
 
-### Key flags explained
+This steering rule is not a security boundary. For a hard guarantee, make `template/` read-only through the operating system or provide a disposable copy. Also keep `--skip-deploy`; otherwise DEPLOY processes every configured project path.
 
-| Flag | Value | Why |
-|---|---|---|
-| `--score 0.6` | 60% acceptance threshold | The default is `0.7` (70%). Lowering to `0.6` means the validation agents (tech lead + adversarial QA) will pass implementations that score 6/10 or higher. For a POC, you accept "good enough" code. |
-| `--reworks 1` | 1 rework cycle max | The default is `2`. With `1`, a feature gets one chance at rework before being marked BLOCKED. This speeds up the pipeline at the cost of polish. |
+## Scenario 4 — Quick proof of concept
 
-### Step 3 — Add POC-specific steering rules
+Fast mode retains adversarial QA and memory while simplifying planning:
 
 ```bash
 hrns run \
   --reset \
-  --path ./poc-project \
-  --score 0.6 \
+  --mode fast \
+  --score 0.60 \
   --reworks 1 \
-  --scope "..." \
-  --steering "This is a proof-of-concept, not production code. Prioritize speed and working demos over code quality, error handling, and edge cases."
+  --scope "Create a disposable analytics dashboard POC with mocked data. Prioritize the demonstrated flows listed in the acceptance criteria." \
+  --path ./poc \
+  --skip-deploy
 ```
 
-Or add granular rules directly in `BOOTSTRAP-CONFIG.json`:
+`--score 0.60` sets both review thresholds to `0.60`. `--reworks 1` permits one rework before the final verdict:
 
-```json
-{
-  "steeringRules": {
-    "user": [
-      "This is a proof-of-concept. Prioritize working demos over production quality."
-    ],
-    "review": [
-      "Be lenient on error handling, logging, and edge-case coverage. Focus review on whether the feature works end-to-end.",
-      "Do not fail a feature for missing input validation or incomplete error messages."
-    ]
-  }
-}
+- `BLOCKED` when a crash or unresolved HIGH/CRITICAL vulnerability remains.
+- `FAILED` for a non-critical gate failure after budget exhaustion.
+
+Use `--mode quick` only when skipping review and memory is intentional. Quick mode marks features complete without reviewer calls. It still deploys unless `--skip-deploy` is present.
+
+## Scenario 5 — Deep refinement
+
+```bash
+hrns run \
+  --reset \
+  --mode deep_thinking \
+  --scope "Introduce tenant-aware authorization across the API, workers, and admin UI without breaking existing clients." \
+  --path ./api \
+  --path ./workers \
+  --path ./web \
+  --skip-deploy
 ```
 
-### Why this works
+`deep_thinking` forces HIGH-complexity planning and enables the interactive REFINEMENT questionnaire. Use it for ambiguous requirements, cross-domain changes, migrations, and compatibility-sensitive work.
 
-- A low `--score` tells Phase D (completion gate) to pass features with lower review scores — the 6/10 threshold avoids endless rework loops on a throwaway prototype.
-- `--reworks 1` caps the B↔C cycle, so the pipeline moves forward quickly.
-- The POC steering rule makes Phase C reviewers focus on "does it work?" rather than "is it production-ready?".
-- Long, detailed scope text gives the bootstrap agent enough context to produce a well-structured backlog, even without interactive refinement.
+## Scenario 6 — Resume after interruption or timeout
 
----
-
-## Scenario 4 — Mid-Run Corrections (Manual Edits)
-
-**Situation:** The orchestrator is running and you realize something needs to change — maybe a feature is missing from the backlog, a steering rule is needed only for implementation, or the current phase should be rolled back. You need to interrupt, edit state files manually, and resume.
-
-### When to intervene
-
-- A feature is missing from `BACKLOG.md` and you want to add it.
-- The implementation agent is going in the wrong direction and needs a new constraint.
-- You want to skip validation and force a feature back to implementation.
-
-### Step 1 — Stop the orchestrator
-
-Press `Ctrl+C` to stop the running session. The orchestrator persists its state to disk on every phase transition, so your progress is safe.
-
-### Step 2 — Edit BOOTSTRAP-CONFIG.json
-
-Open `docs/product/BOOTSTRAP-CONFIG.json` and make your changes:
-
-#### Add a rule only for implementation (Phase B)
-
-```json
-{
-  "steeringRules": {
-    "implementation": [
-      "Always validate request bodies using Zod schemas before processing.",
-      "Use repository pattern for database access — never call the ORM directly from route handlers."
-    ]
-  }
-}
+```bash
+hrns run --resume --mode thinking --skip-deploy
 ```
 
-> [!NOTE]
-> Rules in `implementation` are only injected into implementation agent payloads. Bootstrap, planning, and validation agents never see them.
+Resume loads `SCOPE.md` and state from `docs/product/`. It uses persisted `currentPhase` and `activeFeatureId` when valid.
 
-#### Rollback the current phase to implementation
+Always repeat runtime safety flags such as `--skip-deploy` on the resumed command.
 
-Change `currentPhase` to force the orchestrator back to a specific phase:
+For a correction:
 
-```json
-{
-  "currentPhase": "DEVELOPMENT"
-}
+```bash
+hrns run \
+  --resume \
+  --mode thinking \
+  --steering "rollback to DEVELOPMENT and use the existing repository abstraction" \
+  --skip-deploy
 ```
 
-> [!WARNING]
-> When you manually roll back to `DEVELOPMENT` or `PLANNING`, the orchestrator will **not** automatically reset task statuses. You may need to also edit `DEVELOPMENT-STATE.md` to set task statuses back to `NOT_STARTED`. Alternatively, use the steering prompt when resuming to trigger a proper rollback.
+For most runners, `SteeringAnalyzer` converts the message into validated actions:
 
-### Step 3 — Edit BACKLOG.md (add a missing feature)
+- `add_rule`
+- `rollback` to `BOOTSTRAP`, `PLANNING`, `DEVELOPMENT`, `REVIEW`, or `MEMORY`
+- `override_score`
 
-If you discover a missing feature, add a new row to `docs/product/BACKLOG.md`:
+With `antigravity-cli`, resume steering is added directly as a global rule. It does not perform structured rollback or score override parsing.
+
+## Manual state edits
+
+Stop the active process before editing state files.
+
+| File | Owns |
+| --- | --- |
+| `docs/product/SCOPE.md` | Original project scope |
+| `docs/product/BACKLOG.md` | Feature order, dependencies, scores, reworks, and status |
+| `docs/product/DEVELOPMENT-STATE.md` | Task state |
+| `docs/product/DECISIONS.md` | Transition and verdict audit log |
+| `docs/product/BOOTSTRAP-CONFIG.json` | Paths, thresholds, current phase, active feature, and steering |
+
+Prefer a resume steering action for rollback because it also resets active feature tasks when returning to `PLANNING` or `DEVELOPMENT`.
+
+If manually adding a feature, keep the current backlog schema:
 
 ```markdown
-| ID       | Feature                            | Priority | Status      | Depends On | Score (TL) | Score (Adv) | Reworks |
-|----------|------------------------------------|----------|-------------|------------|------------|-------------|---------|
-| **F001** | JWT Auth Middleware                 | 1        | COMPLETED   |            | 9          | 8           | 0       |
-| **F002** | User CRUD Endpoints                | 2        | IN_PROGRESS | F001       |            |             | 0       |
-| **F003** | Rate Limiting Middleware           | 3        | NOT_STARTED | F001       |            |             | 0       |
+| ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| F003 | Rate limiting | rate_limiting | backend | 3 | F001 | 0 | - | - | NOT_STARTED |
 ```
 
-Rules for manually adding features:
+Valid `Agent` values are `backend`, `frontend`, `qa`, and `devops`. Use a unique sequential ID and valid dependency IDs. Manual state edits can create illegal transitions; update related files consistently.
 
-1. **ID format**: Use the next sequential ID (e.g., `F003` if `F002` exists). Wrap in bold: `**F003**`.
-2. **Status**: Set to `NOT_STARTED`.
-3. **Dependencies**: List feature IDs that must complete first. The orchestrator skips features whose dependencies are not `COMPLETED`.
-4. **Priority**: Assign a numeric priority. Lower numbers run first (among features with satisfied dependencies).
-5. **Score columns**: Leave empty for new features.
-6. **Reworks**: Set to `0`.
+## Review outcomes
 
-### Step 4 — Resume the session
+| Outcome | Meaning | Next action |
+| --- | --- | --- |
+| `COMPLETED` | Gates passed, or review was explicitly skipped | Transition to next feature |
+| `RETRY` | Gate failed with rework budget remaining | Write `REWORK-LOG.md`, reset tasks, return to development |
+| `FAILED` | Budget exhausted; no crash or unresolved HIGH/CRITICAL vulnerability | Continue unrelated work; retain debt for audit |
+| `BLOCKED` | Budget exhausted with crash or unresolved HIGH/CRITICAL vulnerability | Block dependents and require intervention |
+
+`RETRY` is a gate verdict, not a persisted feature status.
+
+## Inspect progress and cost
 
 ```bash
-hrns run --resume
+hrns report
+hrns report --export json
+hrns report --export csv --output ./reports/harness.csv
 ```
 
-The orchestrator reads the updated state files and continues from the phase you set. If you want to add a steering rule **at resume time** without editing files:
+Also inspect `BACKLOG.md` and `DECISIONS.md`. A final `HALTED` state does not prove every feature passed or every deploy operation succeeded.
+
+## Diagnose and optimize sessions
+
+Each successful agent invocation appends a pending record to `docs/product/diagnose-sessions.jsonl`.
 
 ```bash
-hrns run --resume --steering "Focus F002 implementation on input validation with Zod"
+hrns diagnose
 ```
 
-### Alternative — Use the interactive steering prompt
-
-Instead of editing files manually, you can use the interactive steering prompt when resuming:
+Diagnosis processes all pending records in batches of `3` by default. Override batch size when useful:
 
 ```bash
-hrns run
-# Select: Resume
-# Steering message: "rollback to implementation, add rule: use Zod for all request validation"
+hrns diagnose --batch-size 6
 ```
 
-The `SteeringAnalyzer` will parse your natural language into structured actions:
+The diagnosis adapter asks `harness-evaluator` to update the Pareto report when trace count is a positive multiple of `6`. After pending sessions are processed, it invokes meta-harness candidate proposal. The meta-harness skill requires at least `3` traces.
 
-```json
-[
-  { "type": "rollback", "targetPhase": "DEVELOPMENT" },
-  { "type": "add_rule", "rule": "use Zod for all request validation" }
-]
+Review candidates:
+
+```bash
+hrns candidate list
+hrns candidate review v001
 ```
 
-This is the **preferred approach** for rollbacks because it automatically resets task statuses to `NOT_STARTED`, which manual file edits do not.
+Autonomous application is also available:
 
-### Why this works
+```bash
+hrns candidate review v001 --auto
+```
 
-- The orchestrator's state is entirely file-based (`BACKLOG.md`, `DEVELOPMENT-STATE.md`, `BOOTSTRAP-CONFIG.json`). You can edit any of them between runs.
-- `--resume` reads the current state from disk — it does not rely on in-memory state from the previous session.
-- Phase-scoped steering rules (`implementation`, `review`, etc.) give fine-grained control over specific agents without affecting others.
-- The `SteeringAnalyzer` handles natural-language rollback instructions, saving you from manual file surgery.
+Inspect `rationale.md`, `diff.md`, and candidate `SKILL.md` before using `--auto` when change control matters.
 
----
+## Supported runners
 
-## Quick Reference — Common Flag Combinations
+```text
+antigravity-cli
+claude-cli
+claude-sdk
+codex-cli
+copilot-cli
+copilot-sdk
+cursor-cli
+cursor-sdk
+kiro-cli
+opencode-cli
+```
+
+Example:
+
+```bash
+hrns run \
+  --agent codex-cli \
+  --model <runner-supported-model> \
+  --effort high \
+  --resume \
+  --mode thinking \
+  --skip-deploy
+```
+
+Model and effort support depend on the runner. Use `.harness-kit/settings.json` for per-runner and per-phase defaults.
+
+## Quick reference
 
 | Goal | Command |
-|---|---|
-| Start fresh with full scope | `hrns run --reset --scope "..." --path ./src` |
-| Resume where you left off | `hrns run --resume` |
-| Resume with a new rule | `hrns run --resume --steering "prefer async/await"` |
-| POC mode (fast, permissive) | `hrns run --reset --score 0.6 --reworks 1 --scope "..."` |
-| Multi-project | `hrns run --reset --path ./api --path ./web --scope "..."` |
-| Read-only reference project | Add `--steering "NEVER modify files in <dir>/"` |
-| Specific agent runner | `hrns run --agent antigravity-cli` |
-| Specific model | `hrns run --model claude-opus-4-8` |
+| --- | --- |
+| Interactive setup | `hrns init` |
+| Safe reviewed reset | `hrns run --reset --mode thinking --scope "..." --path ./app --skip-deploy` |
+| Safe resume | `hrns run --resume --mode thinking --skip-deploy` |
+| Fast reviewed run | `hrns run --reset --mode fast --scope "..." --path ./app --skip-deploy` |
+| Deep refinement | `hrns run --reset --mode deep_thinking --scope "..." --path ./app --skip-deploy` |
+| Add runtime steering | `hrns run --resume --mode thinking --steering "..." --skip-deploy` |
+| Skip review | Add `--skip-validation` |
+| Skip memory | Add `--skip-memory` |
+| Allow normal deploy phase | Omit `--skip-deploy` only with explicit authorization |
+| Status and token report | `hrns report` |
+| Diagnose pending sessions | `hrns diagnose` |
+| List optimization candidates | `hrns candidate list` |
+| Manage runner settings | `hrns settings` |
 
----
+## Troubleshooting
 
-## Further Reading
+| Symptom | Check |
+| --- | --- |
+| Scope or paths missing on resume | `SCOPE.md` and `BOOTSTRAP-CONFIG.json.projectPaths` |
+| Planning repeats | Required `004-*-test-scenarios.md` and ordered task JSON in tactical design |
+| Development does not advance | Matching `TDD-OUTPUT.json`, `SUCCESS`, zero failed tests |
+| Review retries | `TL.json`, `QA.json`, and `REWORK-LOG.md` |
+| Dependents become blocked | A dependency received `BLOCKED` and cascade propagated |
+| Diagnosis reports no pending sessions | `diagnose-sessions.jsonl` has no pending records |
+| Candidate is not created | Fewer than `3` traces, stale/missing frontier, or no significant evidence-backed improvement |
+| Deploy rejects a project after sensitive-file check | Add the file to `.gitignore`, review the unstaged changes, then rerun only when authorized |
 
-- [README — CLI flags and phase overview](../README.md)
-- [AGENTS.md — Agent invocation reference](../AGENTS.md)
-- [sdk_steering — Steering analyzer internals](./feature/sdk_steering.md)
-- [sdk_cli — CLI commands and arg parsing](./feature/sdk_cli.md)
-- [adr/STATE-PERSISTENCE — File state manager](./adr/STATE-PERSISTENCE.md)
+## Further reading
+
+- [README — installation, commands, flags, and runners](../README.md)
+- [AGENTS.md — SDK development rules](../AGENTS.md)
+- [Steering internals](./feature/sdk_steering.md)
+- [CLI internals](./feature/sdk_cli.md)
+- [State persistence](./adr/STATE-PERSISTENCE.md)
