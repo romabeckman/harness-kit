@@ -46,7 +46,7 @@
     "@anthropic-ai/sdk": "^0.115.0",
     "@cursor/sdk": "^1.0.26",
     "@github/copilot-sdk": "^1.0.8",
-    "@inquirer/prompts": "^8.5.2",
+    "@inquirer/prompts": "^8.7.1",
     "@vitest/coverage-v8": "^4.1.10",
     "cross-spawn": "^7.0.6"
   },
