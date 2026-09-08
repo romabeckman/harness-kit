@@ -47,7 +47,7 @@
     "@cursor/sdk": "^1.0.31",
     "@github/copilot-sdk": "^1.0.8",
     "@inquirer/prompts": "^8.7.1",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^5.0.0",
     "cross-spawn": "^7.0.6"
   },
   "overrides": {
