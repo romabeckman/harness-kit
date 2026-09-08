@@ -1,0 +1,21 @@
+[scanner]
+# Test fixtures intentionally exercise credential filtering and authentication.
+# The example file contains placeholders only. Local sdk/.env is ignored by Git.
+ignore_paths = [
+  "sdk/.env",
+  "sdk/.env.example",
+  "sdk/src/**/__tests__/*",
+  "sdk/tests/**/*",
+  "sdk/src/agent-runner/AgentRunnerError.ts",
+]
+
+[rules]
+# These fields are optional and intentionally omitted because this plugin does not
+# publish branded assets or project-specific privacy and terms pages.
+disabled = [
+  "PLUGIN_JSON_INTERFACE_ASSET_PRIVACYPOLICYURL",
+  "PLUGIN_JSON_INTERFACE_ASSET_TERMSOFSERVICEURL",
+  "PLUGIN_JSON_INTERFACE_ASSET_COMPOSERICON",
+  "PLUGIN_JSON_INTERFACE_ASSET_LOGO",
+  "PLUGIN_JSON_INTERFACE_ASSET_SCREENSHOTS",
+]

@@ -1,6 +1,6 @@
 import { join, dirname } from 'node:path'
 import { existsSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import spawn from 'cross-spawn'
 import { HarnessSettings } from '../../settings/HarnessSettings'
 import { DEFAULT_SETTINGS } from '../../settings/DefaultSettings'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
@@ -76,19 +76,18 @@ export async function cmdSettings(cwd: string, args: string[] = []): Promise<voi
 
     let hasVsCode = false;
     try {
-      execSync('code -v', { stdio: 'ignore' });
-      hasVsCode = true;
+      hasVsCode = spawn.sync('code', ['-v'], { stdio: 'ignore' }).status === 0;
     } catch (e) {
       // VS Code not available
     }
 
     if (hasVsCode) {
-      execSync(`code "${settingsPath}"`);
+      spawn.sync('code', [settingsPath], { stdio: 'ignore' });
     } else if (isWindows) {
-      execSync(`start "" "${settingsPath}"`);
+      spawn.sync('explorer.exe', [settingsPath], { stdio: 'ignore' });
     } else {
       const editor = process.env.EDITOR || process.env.VISUAL || 'nano';
-      execSync(`${editor} "${settingsPath}"`, { stdio: 'inherit' });
+      spawn.sync(editor, [settingsPath], { stdio: 'inherit' });
     }
   } catch (err: any) {
     console.error(`Failed to open the editor. Please open the file manually: ${settingsPath}`);

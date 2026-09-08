@@ -1,0 +1,9 @@
+# Local secrets and generated SDK artifacts
+sdk/.env
+sdk/dist/
+sdk/coverage/
+sdk/tests/e2e/.temp/
+
+# Local development state
+.harness-kit/
+*.log

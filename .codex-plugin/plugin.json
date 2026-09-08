@@ -1,0 +1,38 @@
+{
+  "name": "harness-kit",
+  "version": "1.4.0",
+  "description": "Expert skills for TDD, DDD, debugging, code review, orchestration, and project memory.",
+  "author": {
+    "name": "Romario Beckman",
+    "email": "romabeckman@gmail.com",
+    "url": "https://github.com/romabeckman"
+  },
+  "homepage": "https://github.com/romabeckman/harness-kit",
+  "repository": "https://github.com/romabeckman/harness-kit",
+  "license": "MIT",
+  "keywords": [
+    "tdd",
+    "ddd",
+    "debugging",
+    "code-review",
+    "orchestration"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Harness Kit",
+    "shortDescription": "Disciplined software engineering workflows",
+    "longDescription": "Expert skills for test-driven development, domain-driven design, debugging, code review, autonomous orchestration, and persistent project memory.",
+    "developerName": "Romario Beckman",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/romabeckman/harness-kit",
+    "defaultPrompt": [
+      "Build this feature with test-driven development.",
+      "Review this change for production risks.",
+      "Refine this feature into testable scenarios."
+    ]
+  }
+}
