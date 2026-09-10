@@ -23,6 +23,7 @@ export class KiroCLIRunner extends AbstractCliRunner {
     const effort = this.getEffort(invocation)
     if (effort) args.push('--effort', effort)
     if (invocation.agent) args.push('--agent', invocation.agent)
+    if (invocation.session?.id) args.push('--resume-id', invocation.session.id)
 
     return args
   }
@@ -121,6 +122,7 @@ export class KiroCLIRunner extends AbstractCliRunner {
       stdout: outputText,
       stderr: stderr,
       raw: outputText,
+      session: invocation.session?.id ? { id: invocation.session.id } : undefined,
       usage: finalUsage,
       artefacts: (() => {
         const j = extractJsonOrNull(outputText)

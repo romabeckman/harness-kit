@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-28"
+updated: "2026-09-10"
 ---
 
 ```graph
@@ -24,22 +24,25 @@ updated: "2026-08-28"
 ```
 
 # SDK AGENT RUNNER
-Provides pluggable agent execution strategies behind `IAgentRunner`, including the OpenCode CLI adapter.
+Provides vendor adapters behind `IAgentRunner`.
 
 ## OVERVIEW
-Use the runner port to keep orchestration independent from vendor clients. `OpenCodeCLIRunner` extends `AbstractCliRunner`, runs the `opencode run` command, writes prompts to stdin, maps invocation options, and normalizes object or JSON-lines output into `AgentOutput`.
+Use `IAgentRunner` to isolate vendor clients. CLI adapters extend `AbstractCliRunner` and normalize output into `AgentOutput`.
 
-## FOLDER STRUCTURE
-<folder_structure>
-```
-src/agent-runner/
-├── core ports and types/       # IAgentRunner, invocation, output, and errors
-├── registry and factory/       # Strategy registration and construction
-├── shared CLI adapter/         # Spawn, timeout, abort, environment, and parsing hooks
-├── vendor-cli adapters/        # Claude, Codex, Copilot, Cursor, Kiro, and OpenCode
-└── vendor-SDK adapters/        # Provider SDK implementations
-```
-</folder_structure>
+## CLI HELP REVIEW (2026-09-10)
+Compare installed help before changing flags. Live model requests were not tested.
+
+| Runner | Evidence | Result |
+|---|---|---|
+| Antigravity | `agy --help`; changelog starts at 1.1.28 | Existing flags supported; retain piped text input. |
+| Claude | 2.1.268 `claude --help` | Existing flags supported. |
+| Codex | 0.154.0 `codex exec --help`, `codex exec resume --help` | Existing flags supported; workspace flags precede `resume`. |
+| Copilot | 1.0.83 `copilot --help` | `--reasoning-effort` remains an alias of `--effort`. |
+| Cursor | 2026.07.23-e383d2b `agent --help` | Existing flags and bracketed model effort supported. |
+| OpenCode | 1.17.8 `opencode run --help` | Existing flags supported; no additional-directory flag. |
+| Kiro | Binary unavailable; [official reference](https://kiro.dev/docs/reference/cli-commands/) | Forward supplied session ID with `--resume-id`; preserve it in output. Local compatibility unverified. |
+
+SDK runners and `NullAgentRunner` have no CLI help contract. Kiro does not discover new session IDs from plain text output.
 
 ## MAIN CONCEPTS
 - **Strategy**: Each runner implements the same invocation and output contract.
@@ -49,14 +52,7 @@ src/agent-runner/
 - **Session continuity**: Preserve an incoming session ID and replace it with a native `conversation_id`, `conversationId`, `session_id`, `sessionId`, or `thread_id` when output provides one.
 
 ## HOW TO RUN AGENTS
-### Prerequisites
-1. Install the `opencode` executable and configure its provider credentials.
-2. Select `opencode-cli` as the runner type.
-
-### Steps
-1. Create the runner through `AgentRunnerFactory` or select it through the SDK CLI.
-2. Pass an `AgentInvocation` with the prompt, workspace, optional model, agent, and session.
-3. Consume normalized text, artefacts, usage, and session data from `AgentOutput`.
+Install the vendor CLI and configure credentials. Select its type through `AgentRunnerFactory`; pass an `AgentInvocation` with prompt, workspace, model, and optional session.
 
 ## PARAMETERS / CONFIGURATIONS
 | SDK value | OpenCode mapping | Description |
@@ -80,8 +76,8 @@ REQUIRED: Expose `writePromptToStdin`; CLI adapters default to `false` and overr
 ## BEST PRACTICES
 REQUIRED: Register built-in runners at composition boundaries and resolve them through `AgentRunnerFactory`.
 REQUIRED: Propagate `AbortSignal`, apply per-invocation or constructor timeout, and preserve session identifiers.
-REQUIRED: Verify installed OpenCode help before relying on vendor flags; this adapter uses `--variant` and `--dir`, while OpenCode 1.18.21 has no additional-directory flag.
-PROHIBITED: Bind orchestration decisions to `OpenCodeCLIRunner` or expose OpenCode-specific types through `IAgentRunner`.
+REQUIRED: Verify installed help before relying on vendor flags.
+PROHIBITED: Expose vendor-specific types through `IAgentRunner`.
 PROHIBITED: Pass credentials or other sensitive environment values to child processes.
 
 ## DOCUMENT MAP

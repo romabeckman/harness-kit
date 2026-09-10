@@ -88,6 +88,34 @@ describe('KiroCLIRunner', () => {
     expect(args[args.indexOf('--effort') + 1]).toBe('high')
   })
 
+  it('resumes the requested session and preserves its ID with plain text output', async () => {
+    const child = makeChild({ stdout: 'Continued task' })
+    mockSpawn.mockReturnValue(child)
+    const runner = new KiroCLIRunner()
+
+    const result = await runner.run({ ...baseInvocation, session: { id: 'kiro-session-123' } })
+
+    const args = mockSpawn.mock.calls[0][1] as string[]
+    expect(args.slice(args.indexOf('--resume-id'), args.indexOf('--resume-id') + 2))
+      .toEqual(['--resume-id', 'kiro-session-123'])
+    expect(args).not.toContain('--resume')
+    expect(child.stdin.write).toHaveBeenCalledWith('Hello Kiro', 'utf8')
+    expect(result.session).toEqual({ id: 'kiro-session-123' })
+    expect(result.raw).toBe('Continued task')
+  })
+
+  it('does not resume or invent a session when no ID is supplied', async () => {
+    mockSpawn.mockReturnValue(makeChild({ stdout: 'New task' }))
+    const runner = new KiroCLIRunner()
+
+    const result = await runner.run(baseInvocation)
+
+    const args = mockSpawn.mock.calls[0][1] as string[]
+    expect(args).not.toContain('--resume-id')
+    expect(args).not.toContain('--resume')
+    expect(result.session).toBeUndefined()
+  })
+
   it('correctly parses JSON output with result and usage', async () => {
     const mockOutputLines = [
       '{"type":"assistant","message":{"content":[{"type":"text","text":"Working..."}]}}\n',
