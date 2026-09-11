@@ -201,13 +201,14 @@ hrns report --export csv -o ./reports/my-report.csv
 
 ### `hrns qa`
 
-Runs independent, agentic runtime acceptance after development. The agentic workflow operates in four stages:
-1. **Planning**: LLM inspects the project, preserves supplied scenario intent, maps acceptance criteria to executable scenarios, enforces risk coverage across categories (`functional`, `negative`, `boundary`, `security`, `accessibility`, `resilience`), and selects the appropriate profile (`api`, `web`, `web-game`, `security`, or `full`).
-2. **Deterministic Execution**: Real `curl` or Playwright drivers execute actions and verify concrete assertions with origin boundary isolation, request/response secret redaction, and cancellation signal handling.
-3. **Adaptive Analysis**: An evidence analysis loop evaluates observations and state transitions, discovering untested edge cases and generating bounded follow-up scenarios within explicit iteration budgets.
-4. **Verified Reporting**: Reconciles findings against actual runtime evidence, deduplicates shared root causes, calculates the deterministic risk coverage matrix (explicitly reporting tested vs untested areas), and guarantees fallback reports if LLM synthesis fails.
+Runs independent, agentic runtime acceptance after development. The agentic workflow operates in five stages:
+1. **Planning**: LLM inspects the project, preserves supplied scenario intent, maps acceptance criteria to executable scenarios, enforces risk coverage across categories (`functional`, `negative`, `boundary`, `security`, `accessibility`, `resilience`), and selects the appropriate profile (`api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, `websocket`, `security`, or `full`).
+2. **Plan validation and preflight**: Validates target URL/protocol, scenario payloads, driver availability, safety limits, and target reachability before execution.
+3. **Deterministic Execution**: Drivers execute actions and verify concrete assertions with origin boundary isolation, request/response secret redaction, and cancellation signal handling.
+4. **Adaptive Analysis**: An evidence analysis loop evaluates observations and state transitions, discovering untested edge cases and generating bounded follow-up scenarios within explicit iteration budgets.
+5. **Verified Reporting**: Reconciles findings against actual runtime evidence, deduplicates shared root causes, calculates the deterministic risk coverage matrix (explicitly reporting tested vs untested areas), and guarantees fallback reports if LLM synthesis fails.
 
-Plans are immutably versioned under `.harness-kit/qa/plans/<planId>/<version>.json`, while run state, evidence, and `report.json` persist under `.harness-kit/qa/runs/<runId>/`.
+Plans are immutably versioned under `.harness-kit/qa/plans/<planId>/<version>.json`. Run state and `report.json` persist under `.harness-kit/qa/runs/<runId>/`; each evidence directory is prefixed by execution order (`001-<scenarioId>`, `002-<scenarioId>`, ...).
 
 ```bash
 # Open scope: LLM discovers and creates required scenarios
@@ -226,7 +227,7 @@ hrns qa --project ../web-game --scope "Validate gameplay" --scenario "Player sta
 hrns qa doctor --profile web-game
 ```
 
-Supply either `--scope` or one or more `--scenario` values. Use `--profile api`, `web`, `web-game`, `security`, or `full` as an optional hint; the planning phase can infer it. Browser checks require Chromium installed once with `npx playwright install chromium`. Low-level `plan`, `execute`, `run`, and `report` subcommands remain available for deterministic workflows. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md).
+Supply either `--scope` or one or more `--scenario` values. Use `--profile api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, `websocket`, `security`, or `full` as an optional hint; the planning phase can infer it. When no action, scope, or scenario is supplied and saved plans exist, choose one plan to resume; only the selected plan executes. Browser checks require Chromium installed once with `npx playwright install chromium`. Low-level `plan`, `execute`, `renew`, `resume`, `run`, and `report` subcommands remain available for deterministic workflows. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md).
 
 ### `hrns erase`
 
@@ -414,83 +415,16 @@ The global file is created automatically on first run. You can also set `HARNESS
 
 ```json
 {
-  "claude": {
-    "timeoutMs": 1800000,
-    "phases": {
-      "bootstrap":      { "model": "anthropic.claude-5-sonnet", "effort": "medium" },
-      "planning":       { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
-      "implementation": { "model": "anthropic.claude-5-sonnet", "effort": "medium" },
-      "review_tl":      { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
-      "review_adv":     { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
-      "memory":         { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
-      "diagnose":       { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
-      "qa_planning":    { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
-      "qa_analysis":    { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
-      "qa_reporting":   { "model": "anthropic.claude-5-sonnet", "effort": "low"    }
-    }
-  },
-  "antigravity": {
-    "timeoutMs": 1800000,
-    "phases": {
-      "bootstrap":      { "model": "gemini-3.8-flash", "effort": "medium" },
-      "planning":       { "model": "gemini-3.8-flash", "effort": "high"   },
-      "implementation": { "model": "gemini-3.8-flash", "effort": "medium" },
-      "review_tl":      { "model": "gemini-3.8-flash", "effort": "low"    },
-      "review_adv":     { "model": "gemini-3.8-flash", "effort": "low"    },
-      "memory":         { "model": "gemini-3.8-flash", "effort": "low"    },
-      "diagnose":       { "model": "gemini-3.8-flash", "effort": "low"    },
-      "qa_planning":    { "model": "gemini-3.8-flash", "effort": "high"   },
-      "qa_analysis":    { "model": "gemini-3.8-flash", "effort": "high"   },
-      "qa_reporting":   { "model": "gemini-3.8-flash", "effort": "low"    }
-    }
-  },
-  "copilot": {
-    "timeoutMs": 1800000,
-    "phases": {
-      "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
-      "implementation": { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "memory":         { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "qa_planning":    { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "qa_analysis":    { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "qa_reporting":   { "model": "gpt-5.6-sol",  "effort": "low"    }
-    }
-  },
-  "cursor": {
-    "timeoutMs": 1800000,
-    "phases": {
-      "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
-      "implementation": { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "memory":         { "model": "gpt-5.6-sol",  "effort": "low"    },
-      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "qa_planning":    { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "qa_analysis":    { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "qa_reporting":   { "model": "gpt-5.6-sol",  "effort": "low"    }
-    }
-  },
   "codex": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
-      "implementation": { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "memory":         { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "qa_planning":    { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "qa_analysis":    { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "qa_reporting":   { "model": "gpt-5.6-sol",  "effort": "low"    }
+      "qa_planning": { "model": "gpt-5.6-sol", "effort": "medium" }
     }
   }
 }
 ```
+
+This compact example shows the settings shape. See [src/settings/DefaultSettings.ts](./src/settings/DefaultSettings.ts) for every built-in runner, phase, model, effort, and timeout default.
 
 ### Example — override Phase B for a project
 
@@ -618,7 +552,7 @@ The built-in JWT implementation supports **HS256 only** and validates the `alg` 
 
 - [Daily Use Playbook](./docs/PLAYBOOK-DAILY-USE.md) — real-world recipes for multi-project setups, POCs, mid-run corrections, and more
 - [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md) — independent API, interface, and web-game acceptance checks
-- [Agent runner architecture](./docs/feature/sdk_agent_runner.md) — runner internals and extension points
+- [Agent runner architecture](./docs/feature/SDK_AGENT_RUNNER.md) — runner internals and extension points
 
 ---
 

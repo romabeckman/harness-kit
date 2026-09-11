@@ -1,19 +1,30 @@
-# Independent QA / Tester — Development Scope
+---
+doc_type: guide
+domain: qa
+stack: [TypeScript, Node.js, Vitest, curl, Playwright]
+node_id: "doc:qa-tester-scope"
+tags: [qa, acceptance, scope, runtime]
+edges:
+  - relation: references
+    target: "feature:qa_tester"
+updated: "2026-09-11"
+---
+# Independent QA / Tester — Scope and Implementation Status
 
-Status: proposed; no runtime implementation or tool installation.
+Status: core standalone workflow implemented under `src/qa/` and exposed by `hrns qa`. This document records the implemented boundary and remaining roadmap items.
 Date: 2026-09-11.
 
-## 1. Objective
+## 1. OBJECTIVE
 
-Add an independent QA workflow that plans and performs acceptance testing against a running product. It must exercise public interfaces as a user would: HTTP requests for APIs, navigation and input for websites, and actual gameplay for games.
+The independent QA workflow plans and performs acceptance testing against a running product. It exercises public interfaces as a user would: HTTP requests for APIs, navigation and input for websites, and gameplay for browser games.
 
 “As a human” means observing the product, choosing an action, performing it through normal controls, and checking the result. Reading source, generating tests, receiving a developer's success claim, or taking an initial screenshot does not demonstrate acceptance. Automated interaction also does not establish subjective human usability or enjoyment.
 
 Deliver separate planning and execution commands, durable evidence, reproducible defects, and an explicit verdict. Allow QA to run against software developed outside Harness. Development integration is optional and consumes the same independent workflow.
 
-## 2. Repository findings
+## 2. REPOSITORY FINDINGS
 
-These findings describe inspected code, not proposed behavior.
+These findings reflect current code. Design consequences identify implemented boundaries or explicit roadmap work.
 
 | Existing component | Finding | Design consequence |
 | --- | --- | --- |
@@ -22,170 +33,165 @@ These findings describe inspected code, not proposed behavior.
 | [ReviewHandler](../src/orchestrator/phases/ReviewHandler.ts) | Marks features completed on PASS. `skipValidation` also marks completion using synthetic scores. | An integrated QA gate must run before completion; a skipped review cannot fabricate acceptance. |
 | [ChainBuilder](../src/orchestrator/ChainBuilder.ts), [ReentryResolver](../src/orchestrator/ReentryResolver.ts) | Development pipeline owns phase order and resume logic. | A standalone QA state machine avoids requiring development artifacts or a backlog. Integration requires explicit phase and resume changes. |
 | [IAgentRunner](../src/agent-runner/IAgentRunner.ts), [runner types](../src/agent-runner/types.ts) | Common contract covers prompts, sessions, results, and cancellation. No shared tool capability or browser-session contract. | Reusing an agent invocation does not prove browser or terminal execution is available. |
-| [SettingsSchema](../src/settings/SettingsSchema.ts), [HarnessSettings](../src/settings/HarnessSettings.ts) | Phase settings expose model, effort, and timeout. | Reuse `qa_plan` / `qa_execute` settings; introduce explicit runtime configuration separately. |
-| [CLI entrypoint](../src/cli/run.ts) | No `qa` command exists. | Add command routing and a QA application service. |
-| [DiagnoseService](../src/diagnose/DiagnoseService.ts) | Demonstrates an independent service with injected ports and separate state. | Follow this architectural pattern without coupling QA to diagnosis. |
-| `src/qa/`, [package.json](../package.json) | QA directory has no implementation files; package declares no Playwright dependency. | QA runtime and browser provisioning are new work. |
-| [Testing protocol](./adr/TESTS.md), [E2E helpers](../tests/e2e/helpers/MockAgentCli.ts) | Existing SDK tests use isolated sandboxes and mocked agents. | Keep SDK verification deterministic; add real local HTTP/browser fixtures for interaction proof. |
+| [SettingsSchema](../src/settings/SettingsSchema.ts), [HarnessSettings](../src/settings/HarnessSettings.ts) | Phase settings expose model, effort, and timeout. QA resolves `qa_planning`, `qa_analysis`, and `qa_reporting`. | Keep QA model settings independent from runtime target configuration. |
+| [CLI entrypoint](../src/cli/run.ts), [QA CLI service](../src/cli/services/qa-service.ts) | `hrns qa` is registered with agentic and deterministic actions, including plan selection on resume. | Keep CLI prompts at the inbound boundary; delegate execution to `QaAgenticOrchestrator` and `QaService`. |
+| [DiagnoseService](../src/diagnose/DiagnoseService.ts) | Demonstrates an independent service with injected ports and separate state. | Keep QA state and lifecycle independent from diagnosis and development orchestration. |
+| `src/qa/`, [package.json](../package.json) | QA implementation includes services, phases, terminal presentation, curl, Playwright, and extended drivers. | Extend through injected drivers and services; do not couple verdict policy to a concrete runner. |
+| [Testing protocol](./adr/TESTS.md), [E2E helpers](../tests/e2e/helpers/MockAgentCli.ts) | SDK tests use isolated sandboxes and mocked agents. | Keep deterministic tests synthetic and origin-neutral; reserve target HTTP/browser calls for an explicit `hrns qa` runtime run. |
 
-Documentation mentions Vitest 4.1.10, while the inspected manifest declares Vitest 5.0.0. Use the actual manifest and lockfile when implementing; do not copy outdated version assumptions.
+The manifest and lockfile declare Vitest 5.0.0. Use those files as the source of truth for verification commands and dependency versions.
 
-## 3. Scope and rollout
+## 3. SCOPE AND ROLLOUT
 
-The first usable release includes standalone API, web interface, and browser-game QA. Browser games must be tested through keyboard, mouse, or touch controls, including canvas/WebGL games when visual interpretation is available.
+The implemented standalone workflow covers API, web, browser-game, mobile-web, accessibility, MCP, CLI, and WebSocket drivers. `security` and `full` profiles compose API/web scenarios through the planner and validator. Drivers execute only typed actions represented in a persisted plan. Unsupported capabilities remain visible as `BLOCKED` or `INCONCLUSIVE`; they cannot produce `PASS`.
 
-Subsequent milestones add optional development gating and a native-game adapter. Native desktop, mobile, console, VR, hardware input, and arbitrary high-speed gameplay must not be advertised as supported by Playwright. Unsupported targets produce a visible coverage limitation and cannot pass required acceptance.
+Native desktop, console, VR, hardware input, load testing, exhaustive security certification, subjective “fun” scoring, deployment, and a graphical dashboard remain out of scope. Optional development gating remains a roadmap item; existing adversarial review and developer tests remain separate signals.
 
-Out of scope: fixing product source from QA, automatic deployment, production test execution by default, load testing, exhaustive security certification, subjective “fun” scoring, and a new graphical dashboard. Existing adversarial QA and developer tests remain useful inputs.
+SDK tests use synthetic, origin-neutral data and injected drivers. They do not call external HTTP services or inspect a product workspace. A deliberate `hrns qa` runtime run may target a supplied environment and stores its evidence under that environment's `.harness-kit/qa/` directory.
 
-## 4. Independent workflow
+## 4. INDEPENDENT WORKFLOW
 
 ```mermaid
 flowchart TD
     A[Scope, acceptance criteria, target] --> B[QA_PLANNING]
     B --> C[Versioned plan]
-    C --> D[PREFLIGHT]
+    C --> D[PLAN_VALIDATION]
     D -->|Ready| E[QA_EXECUTION]
-    D -->|Unavailable environment or capability| H[BLOCKED]
+    D -->|Invalid plan or unavailable capability| H[BLOCKED]
     E --> F[Evidence validation and report]
     F --> G[PASS / FAIL / BLOCKED / INCONCLUSIVE]
     G -->|New build supplied| C
 ```
 
-### Planning
+### PLANNING
 
-Inputs: requirements or scope file, acceptance criteria, target URLs or launch configuration, optional OpenAPI document, test accounts, platform constraints, and optional feature/build identifiers. Standalone operation must not require `TDD-OUTPUT.json`, development sessions, or Harness product files.
+Inputs: open scope, optional scenario text, target URL/path, and profile hint. The persisted plan contains criteria, typed scenarios, and a schema version; it does not require `TDD-OUTPUT.json`, development sessions, or Harness product files.
 
 Planner responsibilities:
 
 1. Identify all applicable surfaces. A feature can require both API and browser testing.
 2. Map every acceptance criterion to observable scenarios, including negative cases and relevant regression journeys.
-3. Define prerequisites, test data, user actions, expected observations, evidence requirements, and cleanup per scenario.
-4. Record required capabilities: HTTP execution, browser interaction, image interpretation, or native input.
-5. Set action, time, and cost budgets. Add a bounded exploratory charter alongside scripted scenarios.
-6. Identify missing requirements or unsupported surfaces. Do not silently invent business rules or remove difficult criteria.
-7. Persist a versioned plan before any product test action. Plan-only mode performs no application startup or interaction.
+3. Define typed requests or browser actions and assertions per scenario.
+4. Keep each criterion mapped to one required executable scenario.
+5. Respect validator limits for scenarios, actions, waits, key presses, arguments, and viewport size.
+6. Identify unsupported surfaces. Do not silently invent business rules or remove supplied criteria.
+7. Persist a versioned plan before any product test action. Planning performs no target probe or driver execution.
 
 The developer handoff may locate the application, but cannot define whether it passes. A different QA session derives expected behavior from requirements. Changed requirements create a new plan version; executor cannot weaken expected outcomes to match observed failures.
 
-### Preflight and execution
+### PREFLIGHT AND EXECUTION
 
-Validate plan schema, capabilities, target identity, credentials, tool/browser availability, workspace permissions, environment isolation, and evidence directory. Attach to a supplied test environment or start the explicitly configured local application. Record readiness checks and owned process identifiers.
+Validate plan schema, target protocol, typed payloads, driver/browser availability, workspace paths, and evidence directory. Honor a supplied target; when no target is supplied, `QaRuntimeManager` serves an existing `index.html` through a temporary loopback static server. It does not start framework, API, or native processes. Record readiness and stop only runtimes owned by the SDK.
 
 Execute an observation/action loop: observe current state, choose an allowed action, execute it, collect the actual tool result, compare with expected behavior, and persist the checkpoint. Keep a browser context alive for each journey; isolate accounts and data between independent journeys.
 
 The SDK owns action execution and evidence collection. The agent proposes typed actions and interprets observations. Free-form agent text cannot create an execution receipt. Capture assertions separately from tool success: a successful click or HTTP response does not necessarily satisfy a business requirement.
 
-On a reproducible defect, save reproduction steps and continue independent scenarios where possible. On timeout, cancellation, unavailable tools, or exhausted budgets, preserve partial results. Stop owned processes and close browser contexts in all terminal paths. Never terminate an externally supplied server.
+On a reproducible defect, save driver evidence and continue independent scenarios where possible. On timeout, cancellation, or unavailable tools, preserve partial results. Stop owned static runtimes and close browser contexts in all terminal paths. Never terminate an externally supplied server.
 
-## 5. Interaction profiles
+## 5. INTERACTION PROFILES
 
 | Surface | Required behavior | Required evidence |
 | --- | --- | --- |
-| API | Execute actual `curl` requests against a running endpoint. Check applicable methods, authentication, permissions, validation, errors, and public readback of mutations. | Sanitized request, response status/headers/body, process exit code, timestamps, assertions, target/build identity. |
-| Web UI | Navigate, click, type, submit, scroll, use keyboard, and revisit relevant routes. Check visible outcomes, persistence after reload where applicable, console exceptions, and failed requests. | Ordered action log, observed UI states, assertions, screenshots at relevant checkpoints, browser trace. |
-| Browser game | Launch, enter gameplay, exercise controls, observe progress, reach an applicable success/failure state, restart, and test pause/resume when specified. | Input sequence with timing, screenshots or video, visible game-state observations, console/runtime errors, outcome assertions. |
-| Native game | Launch a native build, focus its window, capture frames, inject permitted OS input, and verify gameplay outcomes. | Same gameplay evidence plus platform, window, input driver, build, and process identity. Delivered through a later adapter. |
+| API | Execute actual `curl` requests against a running endpoint. Check applicable methods, authentication, permissions, validation, errors, and public readback of mutations. | Sanitized request, response status/headers/body, process exit code, timestamps, and assertions. |
+| Web UI | Navigate, click, fill, submit, use keyboard, and revisit relevant routes. Check visible outcomes, persistence after reload where applicable, and page exceptions. | Screenshots, observed assertions, and browser error messages. |
+| Browser game | Launch, enter gameplay, exercise supported keyboard controls, observe progress, reach an applicable success/failure state, restart, and test pause/resume when specified. | Input actions, final screenshot, observations, page errors, and outcome assertions. |
+| Mobile web | Use a mobile viewport and touch-capable Playwright context for responsive journeys. | Viewport, touch actions, screenshots, assertions, and browser errors. |
+| Accessibility | Run deterministic document checks for required labels, names, roles, and keyboard reachability. | Rule results, affected selectors, and captured page state. |
+| MCP | Send JSON-RPC or Streamable HTTP requests, parse JSON/SSE responses, and verify structured tool outcomes. | Sanitized request/response, parsed result, state/reason code, and transport errors. |
+| CLI | Spawn a validated executable without a shell and check exit code and output. | Sanitized command arguments, stdout/stderr, exit code, and timestamps. |
+| WebSocket | Connect to a `ws://` or `wss://` target and exchange bounded messages. | Message transcript, close/error details, and assertions. |
+| Native game | Not implemented. Do not advertise desktop, console, VR, or hardware input coverage. | Report the unsupported capability as `BLOCKED` or `INCONCLUSIVE`. |
 
 Use the actual curl executable (`curl.exe` on Windows) through structured arguments. Capture both transport failure and HTTP outcome; neither process exit zero nor HTTP 200 alone establishes success. Keep fixture credentials out of persisted commands and reports.
 
 For web acceptance, use visible controls. Calling page functions, editing storage, injecting scores, or invoking hidden game methods must not count as user interaction. Explicit setup hooks may prepare fixtures but remain separate from acceptance actions.
 
-Canvas/WebGL may provide little semantic UI information. Use screenshots, a model capable of interpreting images, coordinate input, and bounded input timing. If the game requires unsupported reaction speed or the visible outcome cannot be established, report INCONCLUSIVE or BLOCKED with the exact missing capability. Do not infer “playable” from a loaded canvas.
+Canvas/WebGL may provide little semantic UI information. Use captured screenshots and supported keyboard actions. If the visible outcome cannot be established or the game requires unsupported reaction speed, report `INCONCLUSIVE` or `BLOCKED` with the exact missing capability. Do not infer “playable” from a loaded canvas.
 
-## 6. Architecture and Playwright enablement
+## 6. ARCHITECTURE AND DRIVER BOUNDARY
 
-Create a QA application service under `src/qa/` with ports and injected adapters:
+The implementation keeps orchestration, execution, persistence, and presentation separate:
 
-| Proposed component | Responsibility |
+| Implemented component | Responsibility |
 | --- | --- |
-| `QaService` | `plan`, `execute`, `run`, `resume`, and `report` use cases; independent lifecycle. |
-| `QaAgentAdapter` | Separate planner/executor sessions through `IAgentRunner`; typed planning and action requests. |
-| `IQaInteractionDriver` | Capability discovery, observations, allowed actions, execution receipts, cancellation, cleanup. |
-| `CurlDriver` | Real HTTP requests through a bounded subprocess. |
-| `PlaywrightDriver` | Persistent browser sessions, semantic controls, screenshots, traces, keyboard/mouse/touch actions. |
-| `IQaEnvironment` | Attach/start, readiness, build identity, isolated data, and owned process cleanup. |
-| `IQaRunStore` | Plans, run state, checkpoints, reports, evidence metadata, and exclusive run leases through atomic persistence. |
-| `QaVerdictPolicy` | Pure acceptance decision from validated results and coverage. |
+| `QaAgenticOrchestrator` | Runs planning, validation, execution, adaptive analysis, and reporting phases. |
+| `QaService` | Executes typed scenarios, probes targets once, persists runs, and applies the verdict policy. |
+| `QaPlanValidator` | Validates identifiers, protocol, same-origin paths, payloads, budgets, and driver availability. |
+| `QaRunStore` | Atomically persists immutable plan versions, run `state.json`, reports, and numbered evidence directories. |
+| `QaRuntimeManager` | Serves supported static assets on a collision-free loopback port and stops only owned processes. |
+| `QaDriver` implementations | Provide `doctor()` and deterministic execution for curl, Playwright, mobile web, accessibility, MCP, CLI, and WebSocket profiles. |
+| `QaTerminalView` | Renders typed progress and the final summary frame at the CLI boundary. |
 
-Prefer SDK-managed Playwright actions for the initial implementation: the SDK can enforce permitted actions and collect evidence regardless of whether a provider exposes native tools. Reuse `IAgentRunner` for reasoning, not as proof that an agent performed an action. Keep driver selection at composition boundaries.
+`IAgentRunner` supplies planning, analysis, and reporting text. It never substitutes for a driver receipt or runtime evidence. Extend QA through injected `QaDriver` instances and keep driver selection at composition boundaries. Propagate `AbortSignal` through probes and actions.
 
-Playwright also provides a coding-agent CLI and an MCP interface. MCP supports structured browser observations and optional coordinate interactions. A runner-specific CLI/MCP bridge can be added when its capabilities and receipts are verified; simply mentioning Playwright in a prompt is insufficient. This choice is an architectural recommendation, not an existing repository capability. See [Playwright coding-agent CLI](https://playwright.dev/docs/getting-started-cli) and [official Playwright MCP repository](https://github.com/microsoft/playwright-mcp).
+Playwright 1.63.0 is declared in `package.json`. Install Chromium explicitly and use `hrns qa doctor` to check availability. Browser screenshots and observations support diagnosis; assertions and driver results decide acceptance. Native desktop, console, VR, and arbitrary OS input need a separate verified adapter before they can be claimed.
 
-Provision a pinned, tested Playwright package and compatible browser binary. Make browser installation an explicit setup action, with an installation-free capability check during QA runs. Start with Chromium; add other engines through explicit configuration. Provide a container recipe with required OS/browser dependencies. Avoid changing personal browser profiles or global agent configuration.
+Runtime acceptance may target a supplied environment. SDK unit tests remain synthetic and injected: they must not call external HTTP services or read project-specific application data.
 
-Record traces for inspection alongside explicit acceptance assertions. Playwright Trace Viewer exposes recorded actions and browser state; traces support diagnosis but do not themselves decide acceptance. See [Trace Viewer](https://playwright.dev/docs/trace-viewer).
+## 7. CONTRACTS, STATE, AND EVIDENCE
 
-The common runner output currently has no image-observation contract. Add an optional capability interface and a transport for structured observations plus image references/content. Prove image delivery with at least one supported runner before claiming canvas/game support. Unsupported runners remain usable for planning or text-based API execution. Preserve existing prompt transport behavior and propagate `AbortSignal` throughout.
-
-QA agents receive read access to requirements and product snapshots plus write access to QA artifacts and isolated fixtures. Enforce this through execution boundaries; prompts alone do not provide isolation. Several existing CLI runners use broad approval flags, so they cannot be assumed to satisfy this boundary automatically.
-
-## 7. Contracts, state, and evidence
-
-Proposed artifact layout:
+Implemented artifact layout:
 
 ```text
 .harness-kit/qa/
   plans/<plan-id>/<version>.json
   runs/<run-id>/
     state.json
-    target.json
-    events.jsonl
-    results.json
-    report.md
-    evidence/<nnn>-<scenario-id>/...
+    report.json
+    evidence/
+      001-<scenario-id>/...
+      002-<scenario-id>/...
 ```
 
-Persist through a dedicated QA store port implemented with existing atomic state conventions. Do not place runtime acceptance results in the adversarial review's `QA.json`.
+Persist through `QaRunStore` using atomic file replacement. Evidence folders use a zero-padded three-digit execution sequence followed by the scenario ID. Do not place runtime acceptance results in the adversarial review's `QA.json`.
 
-Minimum contracts:
+Implemented contracts in [`src/qa/types.ts`](../src/qa/types.ts):
 
-- `QaPlan`: schema version, plan identity/version, source references and hashes, requirement coverage, profiles, scenarios, prerequisites, required capabilities, exploratory charter, and budgets.
-- `QaScenario`: stable ID, criterion IDs, required/optional classification, setup, actions, expected observations, evidence policy, and cleanup.
-- `QaRun`: run ID, plan version/hash, optional feature ID, target fingerprint, environment identity, runner/model/tool versions, session IDs, state, budgets consumed, and timestamps.
-- `QaScenarioResult`: execution status, observed result, assertions, evidence IDs, defect IDs, attempts, and reason for any incomplete check.
-- `QaEvidence`: immutable ID, run/scenario/action identity, capture time, artifact path, hash, and capturing adapter.
-- `QaDefect`: severity, affected criterion, reproducible steps, expected versus actual result, environment, evidence, and reproduction attempts.
+- `QaPlan`: schema version, ID/version, target, profile, criteria, and executable scenarios.
+- `QaScenario`: stable ID, criterion IDs, required flag, profile, category, and one typed request/action payload.
+- `QaRun`: run ID, plan ID/version, target, timestamps, scenario results, and verdict.
+- `QaScenarioResult`: scenario ID, required flag, `PASSED`/`FAILED`/`BLOCKED`/`INCONCLUSIVE`, optional status/reason, and evidence references.
+- `QaEvidence`: ID, artifact path, capture time, and driver name.
+- `QaFinalReport`: verdict, summary, criterion statuses, deduplicated bugs, errors, and coverage matrix.
 
-Fingerprint the tested artifact, not only Git HEAD. Include relevant uncommitted/untracked source or build hashes for local work; use a deployment/build identifier for remote targets. If identity is unverifiable, state that limitation and do not reuse the result as an integrated gate for another build.
+Plan versions are immutable. Agentic resume selects one saved plan; low-level `resume --run` executes only unfinished scenario IDs. Current runs do not fingerprint builds, acquire target leases, or append event logs. Treat those controls as integration roadmap items, not existing guarantees.
 
-Resume retains completed evidence only when plan, build, and environment identity match. An interrupted mutation is not replayed blindly: inspect its public effect or reset isolated fixtures first. A changed build creates a new run. Concurrent runs require independent environments or a target lease. Atomic state replacement and append-only execution events prevent one run from overwriting another.
+Drivers redact common secrets and write evidence below the run directory. Keep credentials synthetic, avoid external data in SDK tests, and inspect evidence before sharing it. Add retention limits, artifact hashes, and stronger path/symlink policy before using QA artifacts as a cross-build gate.
 
-Persist evidence references only within the run directory, reject traversal and symlink escapes, redact secrets, and configure retention and maximum artifact sizes. Browser traces and screenshots may contain credentials or user data; use synthetic accounts and do not upload them automatically.
-
-## 8. Verdict rules
+## 8. VERDICT RULES
 
 | Verdict | Rule |
 | --- | --- |
-| PASS | Every required criterion has executed, current, sufficient evidence; all required assertions pass; no unresolved blocking defect. |
-| FAIL | At least one required acceptance assertion demonstrably fails, or an executed journey reveals a blocking functional defect. Report incomplete coverage separately. |
-| BLOCKED | A prerequisite, permission, environment, or required capability prevents execution and no definitive failure already determines FAIL. |
-| INCONCLUSIVE | Execution occurs but observations, identity, evidence integrity, instability, or exhausted budgets prevent a defensible PASS/FAIL. |
+| PASS | Every required result is `PASSED` and includes evidence. |
+| FAIL | Any required result is `FAILED`. |
+| BLOCKED | No required result failed, and at least one required result is `BLOCKED`. |
+| INCONCLUSIVE | No required result failed or blocked, but a required result is inconclusive, has no evidence, or no required scenarios exist. |
 
-Cancellation is a run lifecycle state, not PASS. Per-scenario SKIPPED is visible and cannot satisfy required coverage. A zero-scenario plan, missing evidence, malformed agent result, or “tests passed” prose cannot produce PASS. A retry records a new attempt; it never erases a previous failure. A later passing attempt alone cannot resolve unexplained flakiness.
+Cancellations abort the current operation and preserve any saved run state. A zero-scenario plan, missing evidence, or malformed plan cannot produce `PASS`. Retry with `renew` to create a new immutable plan version; do not overwrite prior evidence.
 
-Suggested CLI exit codes: `0` PASS, `1` FAIL, `2` BLOCKED/INCONCLUSIVE, `130` cancellation. Plan-only completion returns `0` for a valid persisted plan, explicitly labeled as planning success rather than product acceptance. Invalid commands/configuration use `2` with a structured reason.
+## 9. IMPLEMENTED CLI AND CONFIGURATION
 
-## 9. Proposed CLI and configuration
-
-The following commands are proposed interfaces; they do not exist yet.
+`hrns qa` supports an agentic flow plus deterministic subcommands:
 
 ```text
-hrns qa plan --scope <path> --target <url> --profile api,web
-hrns qa execute --plan <path>
-hrns qa run --scope <path> --target <url> --profile web-game
+hrns qa --scope <text> --target <url> --profile <profile>
+hrns qa plan --plan <id> --target <url> --criterion <text> [--method <method> --path <path>]
+hrns qa execute --plan <id>@<version>
+hrns qa renew --plan <id>@<version>
 hrns qa resume --run <id>
-hrns qa report --run <id> --format markdown|json
-hrns qa doctor --profile api,web,web-game
+hrns qa run --plan <id> --target <url> --criterion <text>
+hrns qa report --run <id>
+hrns qa doctor --profile <profile>
 ```
 
-Support multiple named targets for features spanning API and frontend services. Allow optional `--feature` linkage without requiring the development backlog. Provide non-interactive execution for CI. Store target configuration separately from runner model settings: launch executable/argument array, cwd, readiness probe, allowed origins, account references, browser/viewport, evidence policy, and budgets.
+When no action, scope, or scenarios are supplied, the CLI offers `resume` or `renew` if saved plans exist. `resume` then selects exactly one plan under `.harness-kit/qa/plans` and runs only that plan. Deterministic `resume --run` skips completed scenario IDs in an existing run.
 
-Use existing phase settings resolution for `qa_plan` and `qa_execute`. Credentials come from references resolved at runtime. Keep standalone commands free from development, deployment, commit, or backlog mutations.
+Resolve model and effort from `qa_planning`, `qa_analysis`, and `qa_reporting` settings. Keep target configuration in the plan; keep agent settings in `settings.json`. The command does not mutate development backlog, deployment, or product source.
 
-## 10. Optional development integration
+## 10. ROADMAP: OPTIONAL DEVELOPMENT INTEGRATION
 
-After standalone acceptance works, add a `QA_ACCEPTANCE` phase after successful `REVIEW` and before `TRANSITION`. This handler calls `QaService`; it does not duplicate QA logic. Within the service, planning and execution remain distinct persisted stages.
+The current workflow is standalone. If a future release adds a `QA_ACCEPTANCE` phase after `REVIEW` and before `TRANSITION`, that handler must call `QaService` without duplicating QA logic. Planning and execution must remain distinct persisted stages.
 
 For QA-enabled runs, refactor `ReviewHandler` so review PASS records review approval but leaves the feature pending acceptance. Only acceptance PASS for the current artifact can mark it completed. Confirm deploy selection cannot consume a pending acceptance feature.
 
@@ -195,37 +201,37 @@ Add an explicit acceptance policy, initially disabled for compatibility. If enab
 
 Integration touches `Phase`, `ChainBuilder`, review completion, `ReentryResolver`, persisted state parsing, steering rollback rules, CLI resume choices, progress formatting, session cleanup, and reports. Add resume tests for interruption before acceptance, during execution, and after report persistence but before feature completion.
 
-## 11. Development backlog
+## 11. REMAINING BACKLOG
 
-| ID | Deliverable | Dependencies | Acceptance proof |
-| --- | --- | --- | --- |
-| QA-01 | Contracts, pure verdict policy, atomic run store, fingerprints, leases | None | Reject missing/stale evidence; preserve independent runs; interrupted writes do not corrupt state. |
-| QA-02 | Planner, plan validation, requirement mapping, separate sessions, plan command | QA-01 | Persist API/web/game plans without development artifacts or product interaction. |
-| QA-03 | Environment manager, typed action loop, curl driver, execute/run/report commands | QA-02 | Real local API: create/read succeeds; invalid input and unauthorized access are checked; seeded defect produces FAIL with replayable evidence. |
-| QA-04 | Playwright provisioning, browser driver, observations, tracing, doctor command | QA-03 | Navigate and submit a local UI; detect a seeded broken journey; produce action-linked screenshot and trace evidence. |
-| QA-05 | Visual observation transport and browser-game interaction | QA-04 | Play a local canvas game through controls, observe progress and terminal state, restart; a controls regression produces FAIL. |
-| QA-06 | Resume, partial execution, budgets, redaction, cleanup, telemetry, packaging | QA-03 through QA-05 | Cancel/resume without blind mutation replay; no process leak; missing tools cannot PASS; report cost and coverage. |
-| QA-07 | Optional development acceptance gate and rework handoff | QA-06 | Review PASS cannot complete an enabled feature before current-build acceptance; standalone QA still works independently. |
-| QA-08 | Native-game capability spike and first desktop driver | QA-06 | Choose a supported OS/input approach; play a deterministic native fixture; document platform and latency limits. |
+| ID | Status | Scope |
+| --- | --- | --- |
+| QA-01 | Implemented | Typed plans/results, pure verdict policy, atomic plan/run/report store, and numbered evidence paths. Build fingerprints and leases remain absent. |
+| QA-02 | Implemented | Agentic planning, criterion mapping, plan validation, driver checks, and separate planning/analysis/reporting sessions. |
+| QA-03 | Implemented | Runtime preparation, one target probe, curl driver, CLI actions, report persistence, and deterministic resume. |
+| QA-04 | Implemented | Playwright browser driver, Chromium doctor check, browser assertions, screenshots, and mobile-web/accessibility variants. |
+| QA-05 | Implemented | MCP JSON/SSE parsing, CLI subprocess, and WebSocket drivers with typed evidence. |
+| QA-06 | Partial | Redaction, cancellation, cleanup, adaptive follow-ups, and coverage matrix exist; budgets, telemetry, artifact hashes, and leases need design. |
+| QA-07 | Roadmap | Optional development acceptance gate and structured rework handoff. |
+| QA-08 | Roadmap | Native desktop/game driver; never infer support from Playwright. |
 
-QA-01 through QA-06 constitute the initial standalone release. QA-07 is the integration milestone. QA-08 is required before claiming native-game coverage; its implementation scope depends on a demonstrated driver, not an assumption that browser automation can control desktop games.
+Keep future HTTP APIs, build identity, retention, and cross-run gates behind explicit design and tests. Current source ownership is `src/qa/`, CLI wiring is `src/cli/services/qa-service.ts`, and defaults are `src/settings/DefaultSettings.ts`.
 
-Existing files likely to change: `src/cli/run.ts`, CLI help/services, `src/settings/SettingsSchema.ts`, settings defaults/resolution where needed, `src/index.ts`, package configuration, and documentation indexes. Most initial code belongs under `src/qa/`. Adapt runner capability/image transport at the agent port boundary without importing concrete providers into QA decisions.
+## 12. VERIFICATION AND COMPLETION CRITERIA
 
-HTTP endpoints are a later optional delivery surface, not required for initial independence. If added, reuse server use-case/port patterns and job infrastructure after verifying compatibility. Update DTO validation, routes, authorization tests, and `src/server/adapters/inbound/http/docs/OpenApiSpecGenerator.ts` together.
+Use unit tests for schemas, validation, verdict policy, path boundaries, evidence numbering, driver payloads, and resume decisions. Inject fetch, subprocess, Playwright loaders, WebSocket exchanges, agent runners, target probes, and runtime managers. Use synthetic responses and origin-neutral sample data; deterministic SDK tests must not make HTTP calls or inspect a product workspace.
 
-## 12. Verification and completion criteria
+Required regression cases: zero scenarios; malformed target; invalid same-origin path; unavailable driver; fabricated receipt; missing evidence; SSE and JSON MCP responses; unexpected MCP errors; CLI argument injection; unsupported WebSocket protocol; cancellation; duplicate resume; and final summary counts. A manual `hrns qa` run against an explicitly supplied environment is operational validation, not part of this deterministic suite.
 
-Use unit tests for state transitions, schemas, verdict policy, identity checks, path boundaries, budgets, and resume decisions. Mock paid/external agent calls according to repository rules. Use actual curl and browser processes against disposable local fixtures to verify interaction adapters; keep these fixtures in a dedicated runtime acceptance suite with suitable timeouts.
+Follow repository verification order: `rtk npm install`, `rtk npm run lint`, `rtk npm run build`, `rtk npm run typecheck`, then `rtk npm run test`. Run E2E only when a test explicitly opts into a disposable fixture. Keep external APIs and project-specific data out of default tests.
 
-Fixture suite must include a small HTTP service, a navigable web form, and a deterministic canvas game. Each fixture has a working variant and seeded functional defects. A controlled planner/executor test double can issue actions, but action execution and evidence must come from real tools. Separately record a bounded live-agent qualification run before advertising autonomous gameplay; fixture automation alone does not prove agent judgment.
+Standalone implementation is complete for supported profiles when plans validate before execution, evidence remains inspectable, verdicts follow `QaVerdictPolicy`, and numbered artifacts persist across resume. Native-game support and development gating require roadmap work.
 
-Required regression cases: zero scenarios; required scenario skipped; fabricated receipt; missing artifact; source changed mid-run; unavailable browser; no image capability; application startup failure; bad credentials; partial mutation before cancellation; duplicate resume; concurrent target access; timeout; flaky rerun; false-positive developer handoff; unsupported native target; quick-mode gate bypass; stale PASS reused after rework.
+## 13. ANALYSIS VALIDATION
 
-For implementation, follow repository verification order: `rtk npm install`, `rtk npm run lint`, `rtk npm run build`, `rtk npm run typecheck`, then `rtk npm run test`. Run existing E2E and new runtime acceptance suites for their affected boundaries. Document optional browser setup and keep external APIs out of deterministic tests.
+This scope was checked against current orchestration, runner, settings, CLI, validation, driver, persistence, and terminal-view code. It documents implemented standalone QA behavior, synthetic test boundaries, and explicit roadmap items; it does not claim a product runtime verdict.
 
-The initial release is complete when standalone planning and execution demonstrably validate API, UI, and browser-game fixtures, detect seeded defects, retain inspectable evidence, resume safely, and never convert missing coverage into PASS. Report limitations by target and runner. No native-game claim precedes QA-08 evidence.
+## REFERENCES
 
-## 13. Analysis validation
-
-This scope was checked against current orchestration, runner, settings, CLI, validation, and testing code, plus official Playwright documentation. No application code, dependencies, browser installation, or server endpoints were changed. Implementation checks and product execution are future acceptance work, not results claimed by this analysis.
+- [**QA_TESTER.md**](./feature/QA_TESTER.md): Implemented QA feature contract, drivers, phases, and evidence paths.
+- [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md): Ports-and-adapters boundaries used by QA services and drivers.
+- [**TESTS.md**](./adr/TESTS.md): Deterministic test commands, isolation rules, and verification order.
