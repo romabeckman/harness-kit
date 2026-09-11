@@ -37,7 +37,7 @@ Run agentic acceptance with LLM-planned scenarios, terminal progress, runtime ev
 
 ## OVERVIEW
 
-Use `QaAgenticOrchestrator` independently of development orchestration. Accept scope and scenarios, emit typed progress, persist plans/runs under `.harness-kit/qa/` atomically, and preserve the original user scope.
+Use `QaAgenticOrchestrator` independently of development orchestration. Accept scope and scenarios, emit typed progress, persist plans/runs under `.harness-kit/qa/` atomically, preserve original user scope, and number scenario IDs by execution order.
 
 ## FOLDER STRUCTURE
 
@@ -57,14 +57,15 @@ src/cli/services/            # `hrns qa` command adapter
 
 1. **Supply scope** with `--scope`, or choose short input/editor form. Add scenarios with `--scenario`.
 2. **Prepare the runtime**: honor an explicit target or serve static web assets on a collision-free loopback port.
-3. **Plan agentically**: map criteria and select the required QA profile.
+3. **Plan agentically**: map criteria and select the required QA profile. Keep `criterionIds` within the criteria array; retry once with corrective feedback when the planner emits an out-of-range reference.
 4. **Validate the plan**: check schema, identifiers, criteria mapping, target protocol, same-origin requests, engine payloads, safety bounds, workspace paths, and driver availability. Print every error and stop before probing or execution.
 5. **Probe once** before scenario execution and block the run without invoking drivers when the target is unavailable.
 6. **Execute deterministically**: use selected drivers with target-origin checks, redaction, and cancellation.
 7. **Analyze and adapt**: add bounded scenarios for coverage gaps; validate each revised plan before execution.
 8. **Report agentically**: reconcile bugs/errors with evidence and compute coverage matrices.
-9. **Stop managed runtimes** and persist plans, runs, numbered evidence folders (`001-<scenario-id>`, `002-<scenario-id>`, ...), and `report.json`.
+9. **Stop managed runtimes** and persist plans, runs, numbered evidence folders (`001-<scenario-id>`, `002-<scenario-id>`, ...). Normalize existing three-digit scenario prefixes before constructing evidence paths.
 10. **Preserve the original scope** byte-for-byte in `.harness-kit/qa/plans/<plan-id>/SCOPE.md`; write it once and keep it unchanged across plan versions and adaptive revisions.
+11. **Number each scenario ID** with a three-digit execution prefix: `001-<scenario>`, `002-<scenario>`, and so on. Keep prefixes stable when adaptive analysis adds scenarios.
 
 When **resume** is selected, choose exactly one saved plan from `.harness-kit/qa/plans`; only that plan executes. Choose **renew** to create a new plan.
 

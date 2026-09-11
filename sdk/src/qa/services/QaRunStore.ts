@@ -45,7 +45,7 @@ export class QaRunStore {
     const evidenceRoot = join(this.#root, 'runs', runId, 'evidence')
     const existing = sequence === undefined ? this.findEvidenceSequence(evidenceRoot, scenarioId) : undefined
     const resolvedSequence = sequence ?? existing ?? this.nextEvidenceSequence(evidenceRoot)
-    return join(evidenceRoot, `${String(resolvedSequence).padStart(3, '0')}-${scenarioId}`)
+    return join(evidenceRoot, `${String(resolvedSequence).padStart(3, '0')}-${evidenceScenarioName(scenarioId)}`)
   }
 
   reportPath(runId: string): string {
@@ -126,11 +126,12 @@ export class QaRunStore {
 
   private findEvidenceSequence(root: string, scenarioId: string): number | undefined {
     if (!existsSync(root)) return undefined
+    const name = evidenceScenarioName(scenarioId)
     try {
       return readdirSync(root)
-        .flatMap((name) => {
-          const match = /^(\d+)-(.+)$/.exec(name)
-          return match && match[2] === scenarioId ? [Number.parseInt(match[1], 10)] : []
+        .flatMap((entry) => {
+          const match = /^(\d+)-(.+)$/.exec(entry)
+          return match && match[2] === name ? [Number.parseInt(match[1], 10)] : []
         })
         .sort((left, right) => left - right)[0]
     } catch {
@@ -184,4 +185,8 @@ export class QaRunStore {
       throw new Error(`${label} is not valid JSON: ${path}`)
     }
   }
+}
+
+function evidenceScenarioName(scenarioId: string): string {
+  return scenarioId.replace(/^(?:\d{3}-)+/, '')
 }

@@ -1,6 +1,7 @@
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../../json-extraction/types'
-import type { QaBrowserAction, QaBrowserAssertion, QaCliRequest, QaHttpRequest, QaMcpRequest, QaPlan, QaProfile, QaScenario, QaScenarioCategory, QaWebSocketRequest } from '../types'
+import type { AgentSession } from '../../agent-runner/types'
+import { formatQaScenarioId, type QaBrowserAction, type QaBrowserAssertion, type QaCliRequest, type QaHttpRequest, type QaMcpRequest, type QaPlan, type QaProfile, type QaScenario, type QaScenarioCategory, type QaWebSocketRequest } from '../types'
 import { QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
 
 const PROFILES: QaProfile[] = ['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full']
@@ -16,8 +17,22 @@ export class QaPlanningPhase implements QaPhaseHandler {
   readonly phase = QaPhase.PLANNING
 
   async execute(context: QaPhaseContext, signal?: AbortSignal): Promise<QaPhase> {
+    const output = await this.runPlanner(context, this.buildPrompt(context), signal)
+    context.session = output.session
+    try {
+      context.plan = this.parseOutput(output.raw, context)
+    } catch (error) {
+      if (!isCriterionReferenceError(error)) throw error
+      const repaired = await this.runPlanner(context, this.buildRepairPrompt(context, output.raw, error), signal, context.session)
+      context.session = repaired.session ?? context.session
+      context.plan = this.parseOutput(repaired.raw, context)
+    }
+    return QaPhase.VALIDATION
+  }
+
+  private runPlanner(context: QaPhaseContext, prompt: string, signal?: AbortSignal, session?: AgentSession) {
     const agentSettings = resolveQaPhaseSettings(context, 'qa_planning')
-    const output = await context.runner.run({
+    return context.runner.run({
       agent: 'harness-kit:harness-qa',
       mode: 'autonomous',
       phaseKey: 'qa_planning',
@@ -25,18 +40,34 @@ export class QaPlanningPhase implements QaPhaseHandler {
       model: agentSettings.model,
       effort: agentSettings.effort,
       timeoutMs: agentSettings.timeoutMs,
-      prompt: this.buildPrompt(context),
+      ...(session !== undefined ? { session } : {}),
+      prompt,
     }, { signal })
-    context.session = output.session
-    const planId = stringPlanId(output.raw)
+  }
+
+  private parseOutput(raw: string, context: QaPhaseContext): QaPlan {
+    const planId = stringPlanId(raw)
     let version = 1
     try {
       version = context.store.nextPlanVersion(planId)
     } catch {
       // Let validation report unsafe plan identifiers instead of failing before the validation phase.
     }
-    context.plan = this.parse(output.raw, context.request, version)
-    return QaPhase.VALIDATION
+    return this.parse(raw, context.request, version)
+  }
+
+  private buildRepairPrompt(context: QaPhaseContext, raw: string, error: unknown): string {
+    return [
+      this.buildPrompt(context),
+      '',
+      'The previous plan was rejected before execution.',
+      `Exact planner error: ${error instanceof Error ? error.message : String(error)}`,
+      'Repair the JSON plan and return it again.',
+      'criterionIds reference the criteria array, not scenario numbers. If criteria has N entries, valid references are only criterion-1 through criterion-N; reuse an existing criterion ID when multiple scenarios cover the same criterion.',
+      '<previous_plan>',
+      raw,
+      '</previous_plan>',
+    ].join('\n')
   }
 
   private buildPrompt(context: QaPhaseContext): string {
@@ -63,10 +94,12 @@ export class QaPlanningPhase implements QaPhaseHandler {
       `Limits: at most ${MAX_SCENARIOS} scenarios, ${MAX_ACTIONS} actions per scenario, ${MAX_KEY_PRESSES} repeated key presses, and ${MAX_WAIT_MS} milliseconds per wait.`,
       'Every criterion must map to one required executable scenario.',
       'Use criterionIds exactly as criterion-1, criterion-2, and so on without zero padding.',
+      'criterionIds reference criteria, not scenario numbers: if criteria has N entries, use only criterion-1 through criterion-N and reuse them across scenarios as needed.',
+      'Prefix every scenario id by execution order with three digits: 001-<scenario>, 002-<scenario>, and so on.',
       'Treat user-supplied scenarios as a required baseline. Analyze coverage gaps and add new scenarios when needed.',
       'When no scenario is supplied, derive complete scenarios from the open scope and inspected project.',
       'Return one raw JSON object without Markdown:',
-      '{"id":"safe-plan-id","target":"http://127.0.0.1:3000","profile":"api|web|web-game|mobile-web|accessibility|mcp|cli|websocket","criteria":["observable success condition"],"scenarios":[{"id":"safe-scenario-id","criterionIds":["criterion-1"],"required":true,"profile":"api","category":"functional","description":"human action and expected result","request":{"method":"GET","path":"/health","expectedStatus":200}}]}',
+      '{"id":"safe-plan-id","target":"http://127.0.0.1:3000","profile":"api|web|web-game|mobile-web|accessibility|mcp|cli|websocket","criteria":["observable success condition"],"scenarios":[{"id":"001-safe-scenario-id","criterionIds":["criterion-1"],"required":true,"profile":"api","category":"functional","description":"human action and expected result","request":{"method":"GET","path":"/health","expectedStatus":200}}]}',
       'Include only the request shape owned by the selected profile.',
     ].join('\n')
   }
@@ -86,7 +119,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
     if (scenarioData.length < (request.scenarios?.length ?? 0)) {
       throw new Error('Invalid agentic QA plan: supplied scenarios were not covered')
     }
-    const scenarios = scenarioData.map((value, index) => this.parseScenario(value, profile as QaProfile, target, index))
+    const scenarios = scenarioData.map((value, index) => this.parseScenario(value, profile as QaProfile, target, index, criteria.length))
     if (new Set(scenarios.map((scenario) => scenario.id)).size !== scenarios.length) throw new Error('Invalid agentic QA plan: scenario IDs must be unique')
     for (let index = 0; index < criteria.length; index++) {
       if (!scenarios.some((scenario) => scenario.criterionIds.includes(`criterion-${index + 1}`))) {
@@ -96,11 +129,19 @@ export class QaPlanningPhase implements QaPhaseHandler {
     return { schemaVersion: 1, id, version, target, profile: profile as QaProfile, createdAt: new Date().toISOString(), criteria, scenarios }
   }
 
-  private parseScenario(value: unknown, planProfile: QaProfile, target: string, index: number): QaScenario {
+  private parseScenario(value: unknown, planProfile: QaProfile, target: string, index: number, criteriaCount: number): QaScenario {
     if (!isRecord(value)) throw new Error(`Invalid agentic QA plan: scenario ${index + 1} must be an object`)
-    const id = stringValue(value.id)
+    const sourceId = stringValue(value.id)
+    const id = sourceId ? formatQaScenarioId(index, sourceId) : undefined
     const profile = value.profile
     const criterionIds = stringArray(value.criterionIds).map(normalizeCriterionId)
+    for (const criterionId of criterionIds) {
+      const match = /^criterion-(\d+)$/.exec(criterionId)
+      const criterionNumber = match ? Number.parseInt(match[1], 10) : Number.NaN
+      if (!match || criterionNumber < 1 || criterionNumber > criteriaCount) {
+        throw new Error(`Invalid agentic QA plan: scenario ${id ?? index + 1} references unknown criterion ${criterionId}`)
+      }
+    }
     const allowedProfile = planProfile === 'full'
       ? PROFILES.includes(profile as QaProfile) && profile !== 'full'
       : planProfile === 'security'
@@ -253,6 +294,10 @@ function isStringRecord(value: unknown): value is Record<string, string> {
 function normalizeCriterionId(value: string): string {
   const match = /^criterion-0*(\d+)$/.exec(value)
   return match ? `criterion-${Number.parseInt(match[1], 10)}` : value
+}
+
+function isCriterionReferenceError(error: unknown): boolean {
+  return error instanceof Error && error.message.startsWith('Invalid agentic QA plan: scenario ') && error.message.includes(' references unknown criterion ')
 }
 
 function positiveInteger(value: unknown): number | undefined {

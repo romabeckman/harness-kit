@@ -36,6 +36,7 @@ export class QaReportingPhase implements QaPhaseHandler {
     return [
       'Act as an independent QA reporter.',
       'Use only supplied plan, runtime results, and evidence paths. Never invent a bug or successful check.',
+      'Use exact scenarioId values from the plan and runtime results, including their three-digit execution prefixes.',
       'Return one raw JSON object without Markdown:',
       '{"summary":"concise outcome","bugs":[{"scenarioId":"id","title":"bug","severity":"LOW|MEDIUM|HIGH|CRITICAL","expected":"expected behavior","actual":"observed behavior","evidence":["path"]}],"errors":[{"scenarioId":"id","message":"execution or environment error"}]}',
       '<qa_plan>',

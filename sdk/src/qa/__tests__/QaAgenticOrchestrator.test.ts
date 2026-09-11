@@ -105,10 +105,10 @@ describe('QaAgenticOrchestrator', () => {
       'phase_started:VALIDATION',
       'phase_completed:VALIDATION',
       'phase_started:EXECUTION',
-      'scenario_started:start-session',
-      'scenario_completed:start-session',
-      'scenario_started:play-session',
-      'scenario_completed:play-session',
+      'scenario_started:001-start-session',
+      'scenario_completed:001-start-session',
+      'scenario_started:002-play-session',
+      'scenario_completed:002-play-session',
       'phase_completed:EXECUTION',
       'phase_started:ANALYSIS',
       'phase_completed:ANALYSIS',
@@ -134,6 +134,7 @@ describe('QaAgenticOrchestrator', () => {
       bugs: [],
       errors: [],
     })
+    expect(store.loadPlan('tetris-human-flow', 1).scenarios.map((scenario) => scenario.id)).toEqual(['001-start-session', '002-play-session'])
     expect(readFileSync(join(workspace, '.harness-kit', 'qa', 'plans', 'tetris-human-flow', 'SCOPE.md'), 'utf8')).toBe(originalScope)
     expect(store.loadReport(report.runId)).toEqual(report)
   })
@@ -303,6 +304,57 @@ describe('QaAgenticOrchestrator', () => {
     }), 'http://127.0.0.1:3000', expect.any(String), undefined)
   })
 
+  it('repairs an out-of-range criterion reference before validating and executing the plan', async () => {
+    const execute = vi.fn(async (scenario) => ({
+      scenarioId: scenario.id,
+      required: true,
+      status: 'PASSED' as const,
+      evidence: [{ id: 'response', path: 'response.body', capturedAt: '2026-09-11T00:00:00.000Z', adapter: 'test' }],
+    }))
+    const invalidPlan = {
+      id: 'api-crud-security-plan',
+      target: 'http://127.0.0.1:8000',
+      profile: 'api',
+      criteria: ['Create author with valid data'],
+      scenarios: [{
+        id: 'unknown-author-field',
+        criterionIds: ['criterion-40'],
+        required: true,
+        profile: 'api',
+        request: { method: 'POST', path: '/authors', expectedStatus: 201 },
+      }],
+    }
+    const validPlan = {
+      ...invalidPlan,
+      scenarios: [{ ...invalidPlan.scenarios[0], criterionIds: ['criterion-1'] }],
+    }
+    const runner: IAgentRunner = {
+      run: vi.fn()
+        .mockResolvedValueOnce({ raw: JSON.stringify(invalidPlan), session: { id: 'planning-session' } })
+        .mockResolvedValueOnce({ raw: JSON.stringify(validPlan), session: { id: 'planning-session' } })
+        .mockResolvedValueOnce({ raw: '{"complete":true}', session: { id: 'analysis-session' } })
+        .mockResolvedValueOnce({ raw: JSON.stringify({ summary: 'Passed.', bugs: [], errors: [] }) }),
+    }
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace,
+      runner,
+      drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
+      targetProbe: async () => ({ available: true }),
+    })
+
+    await expect(orchestrator.run({ scope: 'Validate author creation' })).resolves.toMatchObject({ verdict: 'PASS' })
+    expect(runner.run).toHaveBeenCalledTimes(4)
+    expect(runner.run).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      phaseKey: 'qa_planning',
+      session: { id: 'planning-session' },
+      prompt: expect.stringContaining('criterion-40'),
+    }), expect.anything())
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({
+      id: '001-unknown-author-field',
+      criterionIds: ['criterion-1'],
+    }), 'http://127.0.0.1:8000', expect.any(String), undefined)
+  })
+
   it('serves a static project on an OS-assigned port and keeps that target authoritative', async () => {
     writeFileSync(join(workspace, 'index.html'), '<h1>Tetris runtime</h1>')
     writeFileSync(join(workspace, '.env'), 'SECRET=value')
@@ -382,6 +434,7 @@ describe('QaAgenticOrchestrator', () => {
 
     expect(phases).toEqual(['qa_planning', 'qa_analysis', 'qa_reporting'])
     expect(execute).toHaveBeenCalledTimes(2)
+    expect(execute.mock.calls.map(([scenario]) => scenario.id)).toEqual(['001-load', '002-invalid-form'])
     expect(report.successCriteria).toHaveLength(2)
   })
 

@@ -2,7 +2,7 @@ import { CurlDriver } from '../engine/CurlDriver'
 import { PlaywrightDriver } from '../engine/PlaywrightDriver'
 import { AccessibilityDriver, CliDriver, McpClientDriver, MobileWebDriver, WebSocketDriver } from '../engine'
 import { QaVerdictPolicy } from './QaVerdictPolicy'
-import type { QaDriver, QaPlan, QaPlanInput, QaRun } from '../types'
+import { formatQaScenarioId, type QaDriver, type QaPlan, type QaPlanInput, type QaRun } from '../types'
 import { QaRunStore } from './QaRunStore'
 import type { QaProgressListener } from '../progress'
 import { probeQaTarget, type QaTargetProbe } from './QaTargetProbe'
@@ -30,7 +30,7 @@ export class QaService {
       createdAt: new Date().toISOString(),
       criteria: input.criteria,
       scenarios: input.criteria.map((criterion, index) => ({
-        id: `scenario-${index + 1}`,
+        id: formatQaScenarioId(index, `scenario-${index + 1}`),
         criterionIds: [`criterion-${index + 1}`],
         required: true,
         profile: input.profile,

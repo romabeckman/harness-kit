@@ -208,7 +208,7 @@ Runs independent, agentic runtime acceptance after development. The agentic work
 4. **Adaptive Analysis**: An evidence analysis loop evaluates observations and state transitions, discovering untested edge cases and generating bounded follow-up scenarios within explicit iteration budgets.
 5. **Verified Reporting**: Reconciles findings against actual runtime evidence, deduplicates shared root causes, calculates the deterministic risk coverage matrix (explicitly reporting tested vs untested areas), and guarantees fallback reports if LLM synthesis fails.
 
-Plans are immutably versioned under `.harness-kit/qa/plans/<planId>/<version>.json`; supplied user scope is preserved byte-for-byte in `.harness-kit/qa/plans/<planId>/SCOPE.md`. Run state and `report.json` persist under `.harness-kit/qa/runs/<runId>/`; each evidence directory is prefixed by execution order (`001-<scenarioId>`, `002-<scenarioId>`, ...).
+Plans are immutably versioned under `.harness-kit/qa/plans/<planId>/<version>.json`; supplied user scope is preserved byte-for-byte in `.harness-kit/qa/plans/<planId>/SCOPE.md`, and scenario IDs use execution prefixes such as `001-health` and `002-create-order`. Run state and `report.json` persist under `.harness-kit/qa/runs/<runId>/`; each evidence directory is prefixed by execution order (`001-<scenarioId>`, `002-<scenarioId>`, ...).
 
 ```bash
 # Open scope: LLM discovers and creates required scenarios

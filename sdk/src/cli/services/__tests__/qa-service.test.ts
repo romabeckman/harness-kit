@@ -284,7 +284,7 @@ describe('QA CLI', () => {
 
     expect(view.start).toHaveBeenCalledWith(expect.objectContaining({ scope: 'Validate runtime behavior' }), workspace)
     expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'phase_started', phase: 'PLANNING' }))
-    expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'scenario_completed', scenarioId: 'health', status: 'PASSED' }))
+    expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'scenario_completed', scenarioId: '001-health', status: 'PASSED' }))
     expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({
       verdict: 'PASS', summary: 'Health check passed.', bugs: [], errors: [],
     }))

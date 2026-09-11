@@ -175,6 +175,11 @@ export interface QaPlanInput {
   requests?: QaHttpRequest[]
 }
 
+export function formatQaScenarioId(index: number, id: string): string {
+  const suffix = id.replace(/^\d+-/, '')
+  return `${String(index + 1).padStart(3, '0')}-${suffix}`
+}
+
 export interface QaDriver {
   readonly profile: QaProfile
   execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal): Promise<QaScenarioResult>

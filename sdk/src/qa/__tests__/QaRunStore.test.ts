@@ -62,4 +62,12 @@ describe('QaRunStore', () => {
     expect(store.evidenceDir('run-1', 'first-scenario')).toBe(first)
     expect(store.evidenceDir('run-1', 'third-scenario')).toMatch(/evidence[\\/]003-third-scenario$/)
   })
+
+  it('does not duplicate the execution prefix when the scenario ID is already numbered', () => {
+    const store = new QaRunStore(workspace)
+
+    const evidence = store.evidenceDir('run-1', '001-openapi-metadata', 1)
+
+    expect(evidence).toMatch(/evidence[\\/]001-openapi-metadata$/)
+  })
 })
