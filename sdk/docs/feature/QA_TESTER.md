@@ -93,7 +93,7 @@ hrns run --skip-validation
 | `validation_failed` | Every plan error, printed before execution starts. |
 | `scenario_started` | Scenario position and human-readable action. |
 | `scenario_completed` | Deterministic runtime status for the scenario. |
-| `phase_completed` | Planned count, runtime verdict, adaptive cycles, or report readiness with coverage matrix. |
+| `phase_completed` | Planned count, runtime verdict, adaptive cycles, report readiness, and final summary frame. |
 
 REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and drivers independent from ANSI output. REQUIRED: Inject `QaTerminalPresenter` at the CLI boundary. REQUIRED: Disable ANSI styles automatically when stdout is not a TTY.
 

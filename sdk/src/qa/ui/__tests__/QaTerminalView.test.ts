@@ -71,6 +71,32 @@ describe('QaTerminalView', () => {
     expect(text).toContain('Untested areas: accessibility, resilience')
   })
 
+  it('renders a bordered final summary with verdict and outcome counts', () => {
+    const output: string[] = []
+    const view = new QaTerminalView((line) => output.push(line), false)
+    const reportWithSummary = report()
+    reportWithSummary.verdict = 'BLOCKED'
+    reportWithSummary.successCriteria = [
+      { criterion: 'Passed criterion', status: 'PASSED', evidence: [] },
+      { criterion: 'Failed criterion', status: 'FAILED', evidence: [] },
+      { criterion: 'Blocked criterion', status: 'BLOCKED', evidence: [] },
+      { criterion: 'Inconclusive criterion', status: 'INCONCLUSIVE', evidence: [] },
+    ]
+    reportWithSummary.bugs = [{ scenarioId: 'blocked', title: 'Target unavailable', severity: 'HIGH', expected: 'Reachable target', actual: 'No response', evidence: [] }]
+    reportWithSummary.errors = [{ message: 'Probe failed' }]
+
+    view.renderReport(reportWithSummary)
+
+    const text = output.join('\n')
+    expect(text).toContain('╔')
+    expect(text).toContain('QA FINAL SUMMARY')
+    expect(text).toContain('Verdict: BLOCKED')
+    expect(text).toContain('Criteria: 4 total | 1 passed | 1 failed | 1 blocked | 1 inconclusive')
+    expect(text).toContain('Bugs: 1')
+    expect(text).toContain('Errors: 1')
+    expect(text).toContain('FINAL REPORT: BLOCKED')
+  })
+
   it('prints every plan validation error immediately', () => {
     const output: string[] = []
     const view = new QaTerminalView((line) => output.push(line), false)

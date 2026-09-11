@@ -59,6 +59,8 @@ export class QaTerminalView implements QaTerminalPresenter {
 
   renderReport(report: QaFinalReport): void {
     this.line('')
+    this.renderSummaryFrame(report)
+    this.line('')
     this.line(`${this.paint('cyan', 'FINAL REPORT')}: ${this.verdict(report.verdict)}`)
     this.line(report.summary)
     this.line('')
@@ -105,6 +107,46 @@ export class QaTerminalView implements QaTerminalPresenter {
     this.line(this.paint('dim', `Run: ${report.runId}`))
   }
 
+  private renderSummaryFrame(report: QaFinalReport): void {
+    const counts: Record<QaScenarioStatus, number> = {
+      PASSED: 0,
+      FAILED: 0,
+      BLOCKED: 0,
+      INCONCLUSIVE: 0,
+    }
+    for (const criterion of report.successCriteria) counts[criterion.status] += 1
+
+    const title = 'QA FINAL SUMMARY'
+    const rows = [
+      `Verdict: ${this.verdict(report.verdict)}`,
+      [
+        `Criteria: ${report.successCriteria.length} total`,
+        `${counts.PASSED} passed`,
+        `${counts.FAILED} failed`,
+        `${counts.BLOCKED} blocked`,
+        `${counts.INCONCLUSIVE} inconclusive`,
+      ].join(' | '),
+      `Bugs: ${report.bugs.length}`,
+      `Errors: ${report.errors.length}`,
+    ]
+    const contentWidth = Math.max(
+      this.visibleLength(title),
+      ...rows.map((row) => this.visibleLength(row)),
+    )
+    const border = '═'.repeat(contentWidth + 4)
+    const frameLine = (left: string, right: string): string => this.paint('cyan', `${left}${border}${right}`)
+    const contentLine = (content: string): string => {
+      const padding = ' '.repeat(contentWidth - this.visibleLength(content))
+      return `║  ${content}${padding}  ║`
+    }
+
+    this.line(frameLine('╔', '╗'))
+    this.line(contentLine(this.paint('cyan', title)))
+    this.line(frameLine('╠', '╣'))
+    for (const row of rows) this.line(contentLine(row))
+    this.line(frameLine('╚', '╝'))
+  }
+
   private phaseLabel(phase: NonNullable<QaProgressEvent['phase']>): string {
     const labels = {
       PLANNING: '[1/3] Planning test scenarios',
@@ -128,6 +170,10 @@ export class QaTerminalView implements QaTerminalPresenter {
 
   private paint(color: 'blue' | 'cyan' | 'dim' | 'green' | 'red' | 'yellow', text: string): string {
     return this.#colors ? AnsiHelpers[color](text) : text
+  }
+
+  private visibleLength(text: string): number {
+    return text.replace(/\x1b\[[0-9;]*m/g, '').length
   }
 
   private line(text: string): void {
