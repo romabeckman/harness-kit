@@ -11,6 +11,7 @@ import type { QaProgressListener } from '../progress'
 export enum QaPhase {
   PLANNING = 'PLANNING',
   EXECUTION = 'EXECUTION',
+  ANALYSIS = 'ANALYSIS',
   REPORTING = 'REPORTING',
   COMPLETED = 'COMPLETED',
 }
@@ -29,6 +30,7 @@ export interface QaPhaseContext {
   plan?: QaPlan
   run?: QaRun
   report?: QaFinalReport
+  analysisCycles?: number
 }
 
 export interface QaPhaseHandler {

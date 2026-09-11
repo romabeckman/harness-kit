@@ -6,6 +6,6 @@ export class QaExecutionPhase implements QaPhaseHandler {
   async execute(context: QaPhaseContext, signal?: AbortSignal): Promise<QaPhase> {
     if (!context.plan) throw new Error('Agentic QA execution requires a plan')
     context.run = await context.service.execute(context.plan, signal, context.onProgress)
-    return QaPhase.REPORTING
+    return context.run.verdict === 'BLOCKED' ? QaPhase.REPORTING : QaPhase.ANALYSIS
   }
 }

@@ -1,10 +1,16 @@
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../../json-extraction/types'
-import type { QaBrowserAction, QaHttpRequest, QaPlan, QaProfile, QaScenario } from '../types'
+import type { QaBrowserAction, QaBrowserAssertion, QaHttpRequest, QaPlan, QaProfile, QaScenario, QaScenarioCategory } from '../types'
 import { QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
 
-const PROFILES: QaProfile[] = ['api', 'web', 'web-game']
+const PROFILES: QaProfile[] = ['api', 'web', 'web-game', 'security', 'full']
 const ACTIONS = ['navigate', 'click', 'fill', 'press', 'wait', 'resize'] as const
+const ASSERTIONS = ['visible', 'hidden', 'text', 'url', 'count', 'attribute'] as const
+const CATEGORIES: QaScenarioCategory[] = ['functional', 'negative', 'boundary', 'security', 'accessibility', 'resilience']
+const MAX_SCENARIOS = 50
+const MAX_ACTIONS = 100
+const MAX_KEY_PRESSES = 500
+const MAX_WAIT_MS = 30_000
 
 export class QaPlanningPhase implements QaPhaseHandler {
   readonly phase = QaPhase.PLANNING
@@ -22,7 +28,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
       prompt: this.buildPrompt(context),
     }, { signal })
     context.session = output.session
-    context.plan = this.parsePlan(output.raw, context.request)
+    context.plan = this.parse(output.raw, context.request, context.store.nextPlanVersion(stringPlanId(output.raw)))
     context.store.savePlan(context.plan)
     return QaPhase.EXECUTION
   }
@@ -40,19 +46,23 @@ export class QaPlanningPhase implements QaPhaseHandler {
       'Plan only. Do not change product code. Do not execute tests yet.',
       'For APIs, define real HTTP requests. For interfaces, define human navigation, click, fill, press, and wait actions.',
       'For web games, start a session and include meaningful player controls.',
+      'Cover functional, negative, boundary, security, accessibility, and resilience risks when relevant. Try malformed input, unauthorized access, unsafe navigation, repeated actions, and recoverable failures without leaving the configured target.',
       'Use only these browser action JSON shapes: {"type":"navigate","url":"http://..."}, {"type":"click","selector":"..."}, {"type":"fill","selector":"...","value":"..."}, {"type":"press","key":"ArrowLeft","count":1}, {"type":"wait","milliseconds":500}, {"type":"resize","width":320,"height":800}.',
       'Do not invent browser action types or property names. Omit count only when one key press is enough.',
+      'Every web scenario needs executable assertions. Use: {"type":"visible|hidden","selector":"..."}, {"type":"text","selector":"...","value":"expected text"}, {"type":"url","value":"http://..."}, {"type":"count","selector":"...","count":1}, {"type":"attribute","selector":"...","attribute":"name","value":"expected"}.',
+      'API scenarios may assert expectedHeaders, expectedBodyContains, and a partial expectedJson object in request. API request paths must be relative to target origin.',
+      `Limits: at most ${MAX_SCENARIOS} scenarios, ${MAX_ACTIONS} actions per scenario, ${MAX_KEY_PRESSES} repeated key presses, and ${MAX_WAIT_MS} milliseconds per wait.`,
       'Every criterion must map to one required executable scenario.',
       'Use criterionIds exactly as criterion-1, criterion-2, and so on without zero padding.',
       'Treat user-supplied scenarios as a required baseline. Analyze coverage gaps and add new scenarios when needed.',
       'When no scenario is supplied, derive complete scenarios from the open scope and inspected project.',
       'Return one raw JSON object without Markdown:',
-      '{"id":"safe-plan-id","target":"http://127.0.0.1:3000","profile":"api|web|web-game","criteria":["observable success condition"],"scenarios":[{"id":"safe-scenario-id","criterionIds":["criterion-1"],"required":true,"profile":"api|web|web-game","description":"human action and expected result","request":{"method":"GET","path":"/health","expectedStatus":200},"actions":[{"type":"click","selector":"button"},{"type":"press","key":"Enter"},{"type":"wait","milliseconds":500}]}]}',
+      '{"id":"safe-plan-id","target":"http://127.0.0.1:3000","profile":"api|web|web-game","criteria":["observable success condition"],"scenarios":[{"id":"safe-scenario-id","criterionIds":["criterion-1"],"required":true,"profile":"api|web|web-game","category":"functional|negative|boundary|security|accessibility|resilience","description":"human action and expected result","request":{"method":"GET","path":"/health","expectedStatus":200,"expectedHeaders":{"content-type":"application/json"},"expectedJson":{"ok":true}},"actions":[{"type":"click","selector":"button"}],"assertions":[{"type":"visible","selector":"[data-result]"}]}]}',
       'Include request only for api. Include actions only for web or web-game.',
     ].join('\n')
   }
 
-  private parsePlan(raw: string, request: QaPhaseContext['request']): QaPlan {
+  parse(raw: string, request: QaPhaseContext['request'], version: number): QaPlan {
     const extraction = JsonExtractionProtocol.extract(raw)
     if (!isExtractionResult(extraction) || !isRecord(extraction.data)) throw new Error('Invalid agentic QA plan: expected JSON object')
     const data = extraction.data
@@ -61,7 +71,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
     const profile = data.profile
     const criteria = stringArray(data.criteria)
     const scenarioData = Array.isArray(data.scenarios) ? data.scenarios : []
-    if (!id || !target || !PROFILES.includes(profile as QaProfile) || criteria.length === 0 || scenarioData.length === 0) {
+    if (!id || !target || !PROFILES.includes(profile as QaProfile) || criteria.length === 0 || scenarioData.length === 0 || scenarioData.length > MAX_SCENARIOS) {
       throw new Error('Invalid agentic QA plan: id, target, profile, criteria, and scenarios are required')
     }
     if (scenarioData.length < (request.scenarios?.length ?? 0)) {
@@ -69,12 +79,13 @@ export class QaPlanningPhase implements QaPhaseHandler {
     }
     try { new URL(target) } catch { throw new Error('Invalid agentic QA plan: target must be a URL') }
     const scenarios = scenarioData.map((value, index) => this.parseScenario(value, profile as QaProfile, target, index))
+    if (new Set(scenarios.map((scenario) => scenario.id)).size !== scenarios.length) throw new Error('Invalid agentic QA plan: scenario IDs must be unique')
     for (let index = 0; index < criteria.length; index++) {
       if (!scenarios.some((scenario) => scenario.criterionIds.includes(`criterion-${index + 1}`))) {
         throw new Error(`Invalid agentic QA plan: criterion ${index + 1} has no executable scenario`)
       }
     }
-    return { schemaVersion: 1, id, version: 1, target, profile: profile as QaProfile, createdAt: new Date().toISOString(), criteria, scenarios }
+    return { schemaVersion: 1, id, version, target, profile: profile as QaProfile, createdAt: new Date().toISOString(), criteria, scenarios }
   }
 
   private parseScenario(value: unknown, planProfile: QaProfile, target: string, index: number): QaScenario {
@@ -82,7 +93,12 @@ export class QaPlanningPhase implements QaPhaseHandler {
     const id = stringValue(value.id)
     const profile = value.profile
     const criterionIds = stringArray(value.criterionIds).map(normalizeCriterionId)
-    if (!id || !PROFILES.includes(profile as QaProfile) || profile !== planProfile || criterionIds.length === 0 || value.required !== true) {
+    const allowedProfile = planProfile === 'full'
+      ? (profile === 'api' || profile === 'web' || profile === 'web-game' || profile === 'security')
+      : planProfile === 'security'
+        ? (profile === 'security' || profile === 'api' || profile === 'web')
+        : profile === planProfile
+    if (!id || !PROFILES.includes(profile as QaProfile) || !allowedProfile || criterionIds.length === 0 || value.required !== true) {
       throw new Error(`Invalid agentic QA plan: scenario ${index + 1} is not executable`)
     }
     const scenario: QaScenario = {
@@ -91,9 +107,13 @@ export class QaPlanningPhase implements QaPhaseHandler {
       required: true,
       profile: profile as QaProfile,
       description: stringValue(value.description),
+      category: CATEGORIES.includes(value.category as QaScenarioCategory) ? value.category as QaScenarioCategory : undefined,
     }
-    if (profile === 'api') scenario.request = this.parseRequest(value.request, index)
-    else scenario.actions = this.parseActions(value.actions, target, index)
+    if (profile === 'api' || (profile === 'security' && isRecord(value.request))) scenario.request = this.parseRequest(value.request, index)
+    else {
+      scenario.actions = this.parseActions(value.actions, target, index)
+      scenario.assertions = this.parseAssertions(value.assertions, index)
+    }
     return scenario
   }
 
@@ -107,11 +127,14 @@ export class QaPlanningPhase implements QaPhaseHandler {
       expectedStatus: value.expectedStatus as number,
       headers: isStringRecord(value.headers) ? value.headers : undefined,
       body: stringValue(value.body),
+      expectedHeaders: isStringRecord(value.expectedHeaders) ? value.expectedHeaders : undefined,
+      expectedBodyContains: stringValue(value.expectedBodyContains),
+      expectedJson: value.expectedJson,
     }
   }
 
   private parseActions(value: unknown, target: string, index: number): QaBrowserAction[] {
-    if (!Array.isArray(value) || value.length === 0) throw new Error(`Invalid agentic QA plan: browser scenario ${index + 1} needs actions`)
+    if (!Array.isArray(value) || value.length === 0 || value.length > MAX_ACTIONS) throw new Error(`Invalid agentic QA plan: browser scenario ${index + 1} needs bounded actions`)
     return value.map((action, actionIndex) => {
       if (!isRecord(action) || !ACTIONS.includes(action.type as typeof ACTIONS[number])) {
         throw new Error(`Invalid agentic QA plan: scenario ${index + 1} action ${actionIndex + 1} is invalid`)
@@ -135,18 +158,39 @@ export class QaPlanningPhase implements QaPhaseHandler {
       if (action.type === 'press') {
         const key = stringValue(action.key) ?? stringValue(action.value)
         const count = action.count === undefined ? undefined : positiveInteger(action.count)
-        if (!key || (action.count !== undefined && count === undefined)) throw invalid()
+        if (!key || (action.count !== undefined && (count === undefined || count > MAX_KEY_PRESSES))) throw invalid()
         return { type: 'press', value: key, count }
       }
       if (action.type === 'wait') {
         const milliseconds = nonNegativeNumber(action.milliseconds ?? action.value)
-        if (milliseconds === undefined) throw invalid()
+        if (milliseconds === undefined || milliseconds > MAX_WAIT_MS) throw invalid()
         return { type: 'wait', value: String(milliseconds) }
       }
       const width = positiveInteger(action.width)
       const height = positiveInteger(action.height)
       if (!width || !height) throw invalid()
       return { type: 'resize', width, height }
+    })
+  }
+
+  private parseAssertions(value: unknown, index: number): QaBrowserAssertion[] {
+    if (!Array.isArray(value) || value.length === 0 || value.length > MAX_ACTIONS) throw new Error(`Invalid agentic QA plan: browser scenario ${index + 1} needs executable assertions`)
+    return value.map((item) => {
+      if (!isRecord(item) || !ASSERTIONS.includes(item.type as typeof ASSERTIONS[number])) throw new Error(`Invalid agentic QA plan: browser scenario ${index + 1} has invalid assertion`)
+      const type = item.type as QaBrowserAssertion['type']
+      const selector = stringValue(item.selector)
+      const assertion: QaBrowserAssertion = { type, selector, value: typeof item.value === 'string' ? item.value : undefined }
+      if (type !== 'url' && !selector) throw new Error(`Invalid agentic QA plan: browser scenario ${index + 1} assertion needs selector`)
+      if ((type === 'text' || type === 'url') && assertion.value === undefined) throw new Error(`Invalid agentic QA plan: browser scenario ${index + 1} assertion needs value`)
+      if (type === 'count') {
+        assertion.count = nonNegativeInteger(item.count)
+        if (assertion.count === undefined) throw new Error(`Invalid agentic QA plan: browser scenario ${index + 1} count assertion is invalid`)
+      }
+      if (type === 'attribute') {
+        assertion.attribute = stringValue(item.attribute)
+        if (!assertion.attribute || assertion.value === undefined) throw new Error(`Invalid agentic QA plan: browser scenario ${index + 1} attribute assertion is invalid`)
+      }
+      return assertion
     })
   }
 }
@@ -179,6 +223,16 @@ function positiveInteger(value: unknown): number | undefined {
 function nonNegativeNumber(value: unknown): number | undefined {
   const parsed = typeof value === 'number' ? value : typeof value === 'string' && value.trim() ? Number(value) : Number.NaN
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined
+}
+
+function nonNegativeInteger(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined
+}
+
+function stringPlanId(raw: string): string {
+  const extraction = JsonExtractionProtocol.extract(raw)
+  if (!isExtractionResult(extraction) || !isRecord(extraction.data) || !stringValue(extraction.data.id)) throw new Error('Invalid agentic QA plan: id is required')
+  return stringValue(extraction.data.id)!
 }
 
 function normalizeNavigationUrl(value: string, target: string): string {

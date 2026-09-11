@@ -54,12 +54,13 @@ src/cli/services/            # `hrns qa` command adapter
 ## EXECUTION
 
 1. **Supply scope or scenarios** with `hrns qa`.
-2. **Prepare the runtime**: honor an explicit target or serve a root `index.html` on an OS-assigned loopback port.
-3. **Plan agentically**: inspect the project, preserve supplied scenario intent, add missing coverage, and use the prepared target.
+2. **Prepare the runtime**: honor an explicit target or serve static web assets on an OS-assigned loopback port (strictly restricting public file extensions).
+3. **Plan agentically**: inspect the project, preserve supplied scenario intent, map acceptance criteria, enforce the risk coverage matrix, and select appropriate profiles (`api`, `web`, `web-game`, `security`, or `full`).
 4. **Probe once** before scenario execution and block the run without invoking drivers when the target is unavailable.
-5. **Execute deterministically**: use real `curl` or Playwright actions selected by the plan.
-6. **Report agentically**: synthesize bugs and errors while deriving verdict and criterion status from runtime results.
-7. **Stop managed runtimes** after success or failure, then persist the final report and audit artifacts.
+5. **Execute deterministically**: use real `curl` or Playwright actions selected by the plan with target origin checks, secret redaction, and cancellation signal handling.
+6. **Analyze and adapt**: evaluate observations and evidence to uncover untested states, adding bounded scenarios through an adaptive replanning loop within explicit iteration budgets.
+7. **Report agentically**: synthesize verified bugs and errors, reconcile claims against runtime evidence, compute deterministic risk coverage matrices, and provide fallback reporting on LLM failures.
+8. **Stop managed runtimes** after success or failure, then persist immutable plan versions, run state, evidence, and `report.json`.
 
 ```text
 # CORRECT: provide open scope; let LLM generate executable scenarios
@@ -67,6 +68,9 @@ hrns qa --scope "Test order creation endpoint" --target http://127.0.0.1:3000
 
 # CORRECT: provide optional baseline scenarios; let LLM add gaps
 hrns qa --scope "Validate checkout" --scenario "Valid payment succeeds" --profile web
+
+# CORRECT: run integrated end-to-end acceptance across API and browser
+hrns qa --scope "Validate order workflow" --profile full
 
 # WRONG: use development validation as runtime acceptance
 hrns run --skip-validation
@@ -76,28 +80,28 @@ hrns run --skip-validation
 
 | Verdict | Condition |
 | --- | --- |
-| PASS | Every required scenario passed with evidence. |
+| PASS | Every required scenario passed with verified assertions and evidence. |
 | FAIL | A required assertion demonstrably failed. |
-| BLOCKED | A required scenario cannot execute. |
-| INCONCLUSIVE | Required coverage, evidence, or results are insufficient. |
+| BLOCKED | A required scenario cannot execute or target is unavailable. |
+| INCONCLUSIVE | Required coverage, evidence, or observations are missing or unverified. |
 
 ## TERMINAL PROGRESS
 
 | Event | Terminal output |
 | --- | --- |
 | `runtime_ready` | Resolved target and whether the CLI started a temporary static server. |
-| `phase_started` | Current planning, execution, or reporting phase. |
+| `phase_started` | Current planning, execution, analysis, or reporting phase. |
 | `scenario_started` | Scenario position and human-readable action. |
 | `scenario_completed` | Deterministic runtime status for the scenario. |
-| `phase_completed` | Planned count, runtime verdict, or report readiness. |
+| `phase_completed` | Planned count, runtime verdict, adaptive cycles, or report readiness with coverage matrix. |
 
 REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and drivers independent from ANSI output. REQUIRED: Inject `QaTerminalPresenter` at the CLI boundary. REQUIRED: Disable ANSI styles automatically when stdout is not a TTY.
 
 ## DRIVERS
 
-`QaRuntimeManager` owns temporary static servers and cleanup. It binds `127.0.0.1` to port `0`, allowing the operating system to select a collision-free port, and makes that URL authoritative over guessed planner origins. `QaService` probes the target once before dispatching any driver; one unavailable target produces blocked scenarios and one deduplicated report error.
+`QaRuntimeManager` owns temporary static servers and cleanup. It binds `127.0.0.1` to port `0`, allowing the operating system to select a collision-free port, and makes that URL authoritative over guessed planner origins. Static serving is strictly whitelisted to public web assets (`.html`, `.css`, `.js`, `.mjs`, `.json`, images, fonts, wasm) and forbids source code or hidden configurations. `QaService` probes the target once before dispatching any driver; one unavailable target produces blocked scenarios and one deduplicated report error.
 
-`QaPlanningPhase` invokes the configured agent runner and validates its plan before execution. `CurlDriver` invokes real `curl`/`curl.exe`; `PlaywrightDriver` launches Chromium and performs declared human actions. `QaReportingPhase` invokes the LLM again, then reconciles its narrative with deterministic scenario results so failed or blocked checks cannot become `PASS`.
+`QaPlanningPhase` invokes the configured agent runner and validates its plan before execution. `CurlDriver` invokes real `curl`/`curl.exe` with origin isolation, timeout bounds, redirect limits, and secret redaction for requests and responses; `PlaywrightDriver` launches Chromium, performs human actions with cancellation support, and validates observable assertions. `QaAnalysisPhase` inspects runtime evidence and adaptively generates bounded follow-up scenarios. `QaReportingPhase` reconciles findings with runtime evidence, deduplicates shared root causes, calculates the risk coverage matrix, and guarantees a final report even when LLM generation fails.
 
 Run this once after dependency changes:
 
@@ -108,7 +112,7 @@ rtk npx playwright install chromium
 
 ## LIMITS
 
-REQUIRED: Supply `--scope` or at least one `--scenario`. ALLOWED: Omit scenarios; the planning LLM derives them from scope and project inspection. ALLOWED: Supply scenarios; the LLM preserves their intent and adds coverage gaps. PROHIBITED: Treat LLM prose as verdict truth; runtime results own verdict and criterion status. Runtime acceptance starts root static sites automatically, but does not yet start arbitrary framework or API processes, gate development `REVIEW`/`TRANSITION`, retain traces/video, or support native games.
+REQUIRED: Supply `--scope` or at least one `--scenario`. ALLOWED: Omit scenarios; the planning LLM derives them from scope and project inspection. ALLOWED: Supply scenarios; the LLM preserves their intent and adds coverage gaps. PROHIBITED: Treat LLM prose as verdict truth; runtime results own verdict, evidence, and criterion status. Runtime acceptance starts root static sites automatically, but does not yet start arbitrary framework or API processes, gate development `REVIEW`/`TRANSITION`, retain video, or support native desktop binaries.
 
 ## DOCUMENT MAP
 

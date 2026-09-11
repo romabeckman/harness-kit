@@ -21,4 +21,13 @@ describe('QaRunStore', () => {
     expect(() => store.planPath('../outside', 1)).toThrow('Invalid QA identifier')
     expect(() => store.runPath('run/child')).toThrow('Invalid QA identifier')
   })
+
+  it('allocates a new immutable plan version instead of overwriting version one', () => {
+    const store = new QaRunStore(workspace)
+
+    expect(store.nextPlanVersion('orders')).toBe(1)
+    store.savePlan({ schemaVersion: 1, id: 'orders', version: 1, target: 'http://127.0.0.1:3000', profile: 'api', createdAt: '', criteria: ['works'], scenarios: [] })
+
+    expect(store.nextPlanVersion('orders')).toBe(2)
+  })
 })

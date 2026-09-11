@@ -23,7 +23,7 @@ export class QaService {
     const plan: QaPlan = {
       schemaVersion: 1,
       id: input.planId,
-      version: 1,
+      version: this.#store.nextPlanVersion(input.planId),
       target: input.target,
       profile: input.profile,
       createdAt: new Date().toISOString(),
@@ -53,13 +53,26 @@ export class QaService {
     }
     this.#store.saveRun(run)
     const availability = await this.#targetProbe(plan.target, signal)
-    for (const [index, scenario] of plan.scenarios.entries()) {
+    await this.executeInto(run, plan, plan.scenarios, availability, signal, onProgress)
+    return this.finalize(run)
+  }
+
+  async continue(run: QaRun, plan: QaPlan, scenarios: QaPlan['scenarios'], signal?: AbortSignal, onProgress?: QaProgressListener): Promise<QaRun> {
+    run.planVersion = plan.version
+    const availability = await this.#targetProbe(plan.target, signal)
+    await this.executeInto(run, plan, scenarios, availability, signal, onProgress)
+    return this.finalize(run)
+  }
+
+  private async executeInto(run: QaRun, plan: QaPlan, scenarios: QaPlan['scenarios'], availability: { available: boolean; reason?: string }, signal?: AbortSignal, onProgress?: QaProgressListener): Promise<void> {
+    for (const [index, scenario] of scenarios.entries()) {
+      if (signal?.aborted) throw signal.reason ?? new Error('QA execution aborted')
       onProgress?.({
         type: 'scenario_started',
         scenarioId: scenario.id,
         description: scenario.description,
         index: index + 1,
-        total: plan.scenarios.length,
+        total: scenarios.length,
       })
       const driver = this.#drivers.get(scenario.profile)
       const result = !availability.available
@@ -74,9 +87,12 @@ export class QaService {
         scenarioId: scenario.id,
         status: result.status,
         index: index + 1,
-        total: plan.scenarios.length,
+        total: scenarios.length,
       })
     }
+  }
+
+  private finalize(run: QaRun): QaRun {
     run.verdict = QaVerdictPolicy.evaluate(run.results)
     run.completedAt = new Date().toISOString()
     this.#store.saveRun(run)

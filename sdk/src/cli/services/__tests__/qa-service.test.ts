@@ -65,6 +65,7 @@ describe('QA CLI', () => {
             request: { method: 'GET', path: '/health', expectedStatus: 200 },
           }],
         }) })
+        .mockResolvedValueOnce({ raw: JSON.stringify({ complete: true }) })
         .mockResolvedValueOnce({ raw: JSON.stringify({ summary: 'Health check passed.', bugs: [], errors: [] }) }),
     }
     const driver: QaDriver = {

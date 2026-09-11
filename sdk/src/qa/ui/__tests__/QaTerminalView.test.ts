@@ -45,6 +45,31 @@ describe('QaTerminalView', () => {
     expect(text).toContain('Actual: 500')
     expect(text).toContain('Browser disconnected (health)')
   })
+
+  it('renders coverage matrix with tested and untested categories', () => {
+    const output: string[] = []
+    const view = new QaTerminalView((line) => output.push(line), false)
+    const reportWithCoverage = report()
+    reportWithCoverage.coverageMatrix = {
+      testedCategories: ['functional', 'security'],
+      untestedCategories: ['accessibility', 'resilience'],
+      areas: {
+        functional: { category: 'functional', total: 2, passed: 2, failed: 0, blocked: 0, untested: 0 },
+        security: { category: 'security', total: 1, passed: 1, failed: 0, blocked: 0, untested: 0 },
+        boundary: { category: 'boundary', total: 0, passed: 0, failed: 0, blocked: 0, untested: 1 },
+        negative: { category: 'negative', total: 0, passed: 0, failed: 0, blocked: 0, untested: 1 },
+        accessibility: { category: 'accessibility', total: 0, passed: 0, failed: 0, blocked: 0, untested: 1 },
+        resilience: { category: 'resilience', total: 0, passed: 0, failed: 0, blocked: 0, untested: 1 },
+      },
+    }
+
+    view.renderReport(reportWithCoverage)
+
+    const text = output.join('\n')
+    expect(text).toContain('Coverage matrix')
+    expect(text).toContain('functional: 2 passed')
+    expect(text).toContain('Untested areas: accessibility, resilience')
+  })
 })
 
 function report(): QaFinalReport {

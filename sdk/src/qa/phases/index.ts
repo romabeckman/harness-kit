@@ -1,5 +1,6 @@
 export { QaPlanningPhase } from './QaPlanningPhase'
 export { QaExecutionPhase } from './QaExecutionPhase'
+export { QaAnalysisPhase } from './QaAnalysisPhase'
 export { QaReportingPhase } from './QaReportingPhase'
 export { QaPhase } from './types'
 export type { QaPhaseContext, QaPhaseHandler } from './types'

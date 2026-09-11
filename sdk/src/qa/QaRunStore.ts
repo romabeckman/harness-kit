@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { QaFinalReport, QaPlan, QaRun } from './types'
 
@@ -15,6 +15,17 @@ export class QaRunStore {
     this.assertIdentifier(planId)
     if (!Number.isSafeInteger(version) || version < 1) throw new Error('Invalid QA plan version')
     return join(this.#root, 'plans', planId, `${version}.json`)
+  }
+
+  nextPlanVersion(planId: string): number {
+    this.assertIdentifier(planId)
+    const directory = join(this.#root, 'plans', planId)
+    if (!existsSync(directory)) return 1
+    const versions = readdirSync(directory).flatMap((name) => {
+      const match = /^(\d+)\.json$/.exec(name)
+      return match ? [Number.parseInt(match[1], 10)] : []
+    })
+    return (versions.length ? Math.max(...versions) : 0) + 1
   }
 
   runPath(runId: string): string {
@@ -34,7 +45,9 @@ export class QaRunStore {
   }
 
   savePlan(plan: QaPlan): void {
-    this.writeJson(this.planPath(plan.id, plan.version), plan)
+    const path = this.planPath(plan.id, plan.version)
+    if (existsSync(path)) throw new Error(`QA plan version already exists: ${plan.id}/${plan.version}`)
+    this.writeJson(path, plan)
   }
 
   loadPlan(planId: string, version: number): QaPlan {

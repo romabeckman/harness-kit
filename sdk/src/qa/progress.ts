@@ -1,7 +1,7 @@
 import type { QaAgenticRequest, QaScenarioStatus, QaVerdict } from './types'
 
 export type QaProgressEventType = 'runtime_ready' | 'phase_started' | 'phase_completed' | 'scenario_started' | 'scenario_completed'
-export type QaProgressPhase = 'PLANNING' | 'EXECUTION' | 'REPORTING'
+export type QaProgressPhase = 'PLANNING' | 'EXECUTION' | 'ANALYSIS' | 'REPORTING'
 
 export interface QaProgressEvent {
   type: QaProgressEventType

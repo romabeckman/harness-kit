@@ -1,4 +1,4 @@
-export type QaProfile = 'api' | 'web' | 'web-game'
+export type QaProfile = 'api' | 'web' | 'web-game' | 'security' | 'full'
 export type QaVerdict = 'PASS' | 'FAIL' | 'BLOCKED' | 'INCONCLUSIVE'
 export type QaScenarioStatus = 'PASSED' | 'FAILED' | 'BLOCKED' | 'INCONCLUSIVE'
 
@@ -8,6 +8,19 @@ export interface QaHttpRequest {
   expectedStatus: number
   headers?: Record<string, string>
   body?: string
+  expectedHeaders?: Record<string, string>
+  expectedBodyContains?: string
+  expectedJson?: unknown
+}
+
+export type QaScenarioCategory = 'functional' | 'negative' | 'boundary' | 'security' | 'accessibility' | 'resilience'
+
+export interface QaBrowserAssertion {
+  type: 'visible' | 'hidden' | 'text' | 'url' | 'count' | 'attribute'
+  selector?: string
+  value?: string
+  count?: number
+  attribute?: string
 }
 
 export interface QaBrowserAction {
@@ -25,8 +38,10 @@ export interface QaScenario {
   required: boolean
   profile: QaProfile
   description?: string
+  category?: QaScenarioCategory
   request?: QaHttpRequest
   actions?: QaBrowserAction[]
+  assertions?: QaBrowserAssertion[]
 }
 
 export interface QaPlan {
@@ -91,6 +106,21 @@ export interface QaErrorReport {
   message: string
 }
 
+export interface QaCoverageArea {
+  category: QaScenarioCategory
+  total: number
+  passed: number
+  failed: number
+  blocked: number
+  untested: number
+}
+
+export interface QaCoverageMatrix {
+  areas: Record<QaScenarioCategory, QaCoverageArea>
+  testedCategories: QaScenarioCategory[]
+  untestedCategories: QaScenarioCategory[]
+}
+
 export interface QaFinalReport {
   schemaVersion: 1
   runId: string
@@ -101,6 +131,7 @@ export interface QaFinalReport {
   bugs: QaBugReport[]
   errors: QaErrorReport[]
   completedAt: string
+  coverageMatrix?: QaCoverageMatrix
 }
 
 export interface QaAgenticRequest {

@@ -1,4 +1,4 @@
-import { createReadStream, existsSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, realpathSync, statSync } from 'node:fs'
 import { createServer, type ServerResponse } from 'node:http'
 import { extname, isAbsolute, relative, resolve } from 'node:path'
 import type { QaAgenticRequest } from './types'
@@ -17,8 +17,19 @@ const CONTENT_TYPES: Record<string, string> = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
+  '.webp': 'image/webp',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.wasm': 'application/wasm',
 }
 
 export class QaRuntimeManager implements QaRuntimePreparer {
@@ -56,13 +67,20 @@ export class QaRuntimeManager implements QaRuntimePreparer {
   private serve(url: string, method: string | undefined, response: ServerResponse): void {
     try {
       const pathname = decodeURIComponent(new URL(url, 'http://127.0.0.1').pathname)
+      if (pathname.split('/').some((segment) => segment.startsWith('.'))) return this.end(response, 404, 'Not found')
       let filePath = resolve(this.#workspace, `.${pathname}`)
       const routed = relative(this.#workspace, filePath)
       if (routed.startsWith('..') || isAbsolute(routed)) return this.end(response, 403, 'Forbidden')
       if (existsSync(filePath) && statSync(filePath).isDirectory()) filePath = resolve(filePath, 'index.html')
       if (!existsSync(filePath) || !statSync(filePath).isFile()) return this.end(response, 404, 'Not found')
+      filePath = realpathSync(filePath)
+      const physicalRoute = relative(realpathSync(this.#workspace), filePath)
+      if (physicalRoute.startsWith('..') || isAbsolute(physicalRoute)) return this.end(response, 404, 'Not found')
+      const ext = extname(filePath).toLowerCase()
+      const contentType = CONTENT_TYPES[ext]
+      if (!contentType) return this.end(response, 403, 'Forbidden')
       response.statusCode = 200
-      response.setHeader('content-type', CONTENT_TYPES[extname(filePath).toLowerCase()] ?? 'application/octet-stream')
+      response.setHeader('content-type', contentType)
       if (method === 'HEAD') {
         response.end()
         return

@@ -80,6 +80,22 @@ export class QaTerminalView implements QaTerminalPresenter {
       this.line(`Errors (${report.errors.length})`)
       for (const error of report.errors) this.line(`  ${error.message}${error.scenarioId ? ` (${error.scenarioId})` : ''}`)
     }
+    if (report.coverageMatrix) {
+      this.line('')
+      this.line('Coverage matrix')
+      for (const [category, area] of Object.entries(report.coverageMatrix.areas)) {
+        if (area.total > 0) {
+          const parts: string[] = []
+          if (area.passed > 0) parts.push(`${area.passed} passed`)
+          if (area.failed > 0) parts.push(`${area.failed} failed`)
+          if (area.blocked > 0) parts.push(`${area.blocked} blocked`)
+          this.line(`  ${category}: ${parts.join(', ')}`)
+        }
+      }
+      if (report.coverageMatrix.untestedCategories.length > 0) {
+        this.line(`  Untested areas: ${report.coverageMatrix.untestedCategories.join(', ')}`)
+      }
+    }
     this.line('')
     this.line(this.paint('dim', `Run: ${report.runId}`))
   }
@@ -88,6 +104,7 @@ export class QaTerminalView implements QaTerminalPresenter {
     const labels = {
       PLANNING: '[1/3] Planning test scenarios',
       EXECUTION: '[2/3] Executing as a human tester',
+      ANALYSIS: '[2.5] Evaluating adaptive coverage',
       REPORTING: '[3/3] Analyzing evidence and bugs',
     }
     return this.paint('blue', labels[phase])

@@ -42,6 +42,7 @@ describe('QaAgenticOrchestrator', () => {
                   profile: 'web-game',
                   description: 'Start game',
                   actions: [{ type: 'click', selector: '[data-start]' }],
+                  assertions: [{ type: 'hidden', selector: '[data-start]' }],
                 },
                 {
                   id: 'play-session',
@@ -50,11 +51,13 @@ describe('QaAgenticOrchestrator', () => {
                   profile: 'web-game',
                   description: 'Use player controls',
                   actions: [{ type: 'press', value: 'ArrowLeft' }, { type: 'wait', value: '500' }],
+                  assertions: [{ type: 'visible', selector: '[data-board]' }],
                 },
               ],
             }),
           }
         }
+        if (invocation.phaseKey === 'qa_analysis') return { raw: '{"complete":true}' }
         return {
           raw: JSON.stringify({
             summary: 'Game flow passed.',
@@ -94,7 +97,7 @@ describe('QaAgenticOrchestrator', () => {
       scenarios: ['Start a game', 'Move and rotate the active piece'],
     })
 
-    expect(events).toEqual(['qa_planning', 'qa_execution', 'qa_execution', 'qa_reporting'])
+    expect(events).toEqual(['qa_planning', 'qa_execution', 'qa_execution', 'qa_analysis', 'qa_reporting'])
     expect(progress).toEqual([
       'phase_started:PLANNING',
       'phase_completed:PLANNING',
@@ -104,6 +107,8 @@ describe('QaAgenticOrchestrator', () => {
       'scenario_started:play-session',
       'scenario_completed:play-session',
       'phase_completed:EXECUTION',
+      'phase_started:ANALYSIS',
+      'phase_completed:ANALYSIS',
       'phase_started:REPORTING',
       'phase_completed:REPORTING',
     ])
@@ -112,7 +117,7 @@ describe('QaAgenticOrchestrator', () => {
       effort: 'medium',
       prompt: expect.stringContaining('Move and rotate the active piece'),
     }), expect.anything())
-    expect(runner.run).toHaveBeenNthCalledWith(2, expect.objectContaining({
+    expect(runner.run).toHaveBeenNthCalledWith(3, expect.objectContaining({
       model: 'gpt-5.6-sol',
       effort: 'low',
     }), expect.anything())
@@ -134,6 +139,49 @@ describe('QaAgenticOrchestrator', () => {
     const orchestrator = new QaAgenticOrchestrator({ workspace, runner, store: new QaRunStore(workspace), drivers: [] })
 
     await expect(orchestrator.run({ scope: 'Test it' })).rejects.toThrow('Invalid agentic QA plan')
+  })
+
+  it('rejects browser plans without executable assertions and unsafe action budgets', async () => {
+    const runner: IAgentRunner = { run: vi.fn().mockResolvedValue({ raw: JSON.stringify({
+      id: 'unsafe-plan', target: 'http://127.0.0.1:3000', profile: 'web', criteria: ['Form works'],
+      scenarios: [{ id: 'form', criterionIds: ['criterion-1'], required: true, profile: 'web',
+        actions: [{ type: 'press', key: 'Enter', count: 1001 }] }],
+    }) }) }
+    const orchestrator = new QaAgenticOrchestrator({ workspace, runner, store: new QaRunStore(workspace), drivers: [] })
+
+    await expect(orchestrator.run({ scope: 'Test form' })).rejects.toThrow('Invalid agentic QA plan')
+  })
+
+  it('deduplicates one product root cause and excludes it from execution errors', async () => {
+    const runner: IAgentRunner = {
+      run: vi.fn()
+        .mockResolvedValueOnce({ raw: JSON.stringify({
+          id: 'broken-game', target: 'http://127.0.0.1:3000', profile: 'web-game', criteria: ['Starts', 'Moves'],
+          scenarios: [
+            { id: 'start', criterionIds: ['criterion-1'], required: true, profile: 'web-game', actions: [{ type: 'click', selector: 'button' }], assertions: [{ type: 'hidden', selector: 'button' }] },
+            { id: 'move', criterionIds: ['criterion-2'], required: true, profile: 'web-game', actions: [{ type: 'press', key: 'ArrowDown' }], assertions: [{ type: 'visible', selector: '[data-board]' }] },
+          ],
+        }) })
+        .mockResolvedValueOnce({ raw: '{"complete":true}' })
+        .mockResolvedValueOnce({ raw: JSON.stringify({
+          summary: 'Two scenarios failed.',
+          bugs: [
+            { scenarioId: 'start', title: 'Timer failed', severity: 'HIGH', expected: 'Starts', actual: 'Browser page error: Illegal invocation', evidence: [] },
+            { scenarioId: 'move', title: 'Timer failed again', severity: 'HIGH', expected: 'Moves', actual: 'Browser page error: Illegal invocation', evidence: [] },
+          ],
+          errors: [{ scenarioId: 'start', message: 'Browser page error: Illegal invocation' }],
+        }) }),
+    }
+    const driver: QaDriver = { profile: 'web-game', doctor: async () => ({ available: true }), execute: async (scenario) => ({
+      scenarioId: scenario.id, required: true, status: 'FAILED', reason: 'Browser page error: Illegal invocation',
+      evidence: [{ id: `${scenario.id}-screen`, path: `${scenario.id}.png`, capturedAt: '', adapter: 'playwright' }],
+    }) }
+    const orchestrator = new QaAgenticOrchestrator({ workspace, runner, drivers: [driver], targetProbe: async () => ({ available: true }) })
+
+    const report = await orchestrator.run({ scope: 'Test game' })
+
+    expect(report.bugs).toHaveLength(1)
+    expect(report.errors).toEqual([])
   })
 
   it('normalizes browser actions and zero-padded criterion IDs produced by the planner', async () => {
@@ -162,8 +210,10 @@ describe('QaAgenticOrchestrator', () => {
               { type: 'wait', milliseconds: 300 },
               { type: 'press', key: 'ArrowDown', count: 250 },
             ],
+            assertions: [{ type: 'visible', selector: '[data-board]' }],
           }],
         }) })
+        .mockResolvedValueOnce({ raw: '{"complete":true}' })
         .mockResolvedValueOnce({ raw: JSON.stringify({ summary: 'Responsive flow passed.', bugs: [], errors: [] }) }),
     }
     const driver: QaDriver = { profile: 'web-game', doctor: async () => ({ available: true }), execute }
@@ -186,11 +236,15 @@ describe('QaAgenticOrchestrator', () => {
 
   it('serves a static project on an OS-assigned port and keeps that target authoritative', async () => {
     writeFileSync(join(workspace, 'index.html'), '<h1>Tetris runtime</h1>')
+    writeFileSync(join(workspace, '.env'), 'SECRET=value')
+    writeFileSync(join(workspace, 'secret.ts'), 'export const SECRET = 123')
     let runtimeTarget = ''
     const execute = vi.fn(async (scenario, target) => {
       runtimeTarget = target
       const response = await fetch(target)
       expect(await response.text()).toContain('Tetris runtime')
+      expect((await fetch(`${target}/.env`)).status).toBe(404)
+      expect((await fetch(`${target}/secret.ts`)).status).toBe(403)
       expect(scenario.actions[0].value).toBe(target)
       return {
         scenarioId: scenario.id,
@@ -213,9 +267,11 @@ describe('QaAgenticOrchestrator', () => {
             scenarios: [{
               id: 'load', criterionIds: ['criterion-1'], required: true, profile: 'web-game',
               actions: [{ type: 'navigate', url: 'http://127.0.0.1:3000' }],
+              assertions: [{ type: 'visible', selector: 'h1' }],
             }],
           }) }
         }
+        if (invocation.phaseKey === 'qa_analysis') return { raw: '{"complete":true}' }
         return { raw: JSON.stringify({ summary: 'Static game loaded.', bugs: [], errors: [] }) }
       }),
     }
@@ -227,6 +283,39 @@ describe('QaAgenticOrchestrator', () => {
     await expect(fetch(runtimeTarget)).rejects.toThrow()
   })
 
+  it('lets the LLM inspect evidence and add a bounded scenario before reporting', async () => {
+    const phases: string[] = []
+    const execute = vi.fn(async (scenario) => ({
+      scenarioId: scenario.id, required: true, status: 'PASSED' as const,
+      evidence: [{ id: `${scenario.id}-evidence`, path: `${scenario.id}.json`, capturedAt: '', adapter: 'playwright' }],
+    }))
+    const initialPlan = {
+      id: 'adaptive-web', target: 'http://127.0.0.1:3000', profile: 'web', criteria: ['Page loads'],
+      scenarios: [{ id: 'load', criterionIds: ['criterion-1'], required: true, profile: 'web', category: 'functional',
+        actions: [{ type: 'navigate', url: 'http://127.0.0.1:3000' }], assertions: [{ type: 'visible', selector: 'body' }] }],
+    }
+    const runner: IAgentRunner = { type: Runner.CODEX_CLI, run: vi.fn(async (invocation) => {
+      phases.push(invocation.phaseKey ?? '')
+      if (invocation.phaseKey === 'qa_planning') return { raw: JSON.stringify(initialPlan) }
+      if (invocation.phaseKey === 'qa_analysis') return { raw: JSON.stringify({ complete: false, plan: {
+        ...initialPlan,
+        criteria: ['Page loads', 'Invalid submission is rejected'],
+        scenarios: [...initialPlan.scenarios, {
+          id: 'invalid-form', criterionIds: ['criterion-2'], required: true, profile: 'web', category: 'negative',
+          actions: [{ type: 'click', selector: '[data-submit]' }], assertions: [{ type: 'visible', selector: '[role=alert]' }],
+        }],
+      } }) }
+      return { raw: JSON.stringify({ summary: 'Coverage complete.', bugs: [], errors: [] }) }
+    }) }
+    const orchestrator = new QaAgenticOrchestrator({ workspace, runner, drivers: [{ profile: 'web', doctor: async () => ({ available: true }), execute }], targetProbe: async () => ({ available: true }) })
+
+    const report = await orchestrator.run({ scope: 'Test form' })
+
+    expect(phases).toEqual(['qa_planning', 'qa_analysis', 'qa_reporting'])
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(report.successCriteria).toHaveLength(2)
+  })
+
   it('reports one infrastructure error when every scenario shares an unavailable target', async () => {
     const runner: IAgentRunner = {
       run: vi.fn()
@@ -234,8 +323,8 @@ describe('QaAgenticOrchestrator', () => {
           id: 'offline-app', target: 'http://127.0.0.1:3000', profile: 'web',
           criteria: ['Page loads', 'Form opens'],
           scenarios: [
-            { id: 'load', criterionIds: ['criterion-1'], required: true, profile: 'web', actions: [{ type: 'wait', milliseconds: 1 }] },
-            { id: 'form', criterionIds: ['criterion-2'], required: true, profile: 'web', actions: [{ type: 'click', selector: 'button' }] },
+            { id: 'load', criterionIds: ['criterion-1'], required: true, profile: 'web', actions: [{ type: 'wait', milliseconds: 1 }], assertions: [{ type: 'visible', selector: 'body' }] },
+            { id: 'form', criterionIds: ['criterion-2'], required: true, profile: 'web', actions: [{ type: 'click', selector: 'button' }], assertions: [{ type: 'visible', selector: 'form' }] },
           ],
         }) })
         .mockResolvedValueOnce({ raw: JSON.stringify({
@@ -261,5 +350,140 @@ describe('QaAgenticOrchestrator', () => {
     expect(execute).not.toHaveBeenCalled()
     expect(report.verdict).toBe('BLOCKED')
     expect(report.errors).toEqual([{ message: 'Target unavailable: connection refused' }])
+  })
+
+  it('validates bug evidence paths and reconciles summary contradicting verdict', async () => {
+    const runner: IAgentRunner = {
+      run: vi.fn()
+        .mockResolvedValueOnce({ raw: JSON.stringify({
+          id: 'test-contradiction', target: 'http://127.0.0.1:3000', profile: 'web',
+          criteria: ['Login button is visible'],
+          scenarios: [
+            { id: 'check-login', criterionIds: ['criterion-1'], required: true, profile: 'web', category: 'functional',
+              actions: [{ type: 'click', selector: '#login' }], assertions: [{ type: 'visible', selector: '#login' }] },
+          ],
+        }) })
+        .mockResolvedValueOnce({ raw: JSON.stringify({ complete: true }) })
+        .mockResolvedValueOnce({ raw: JSON.stringify({
+          summary: 'All checks passed completely and successfully without any issue.',
+          bugs: [{
+            scenarioId: 'check-login',
+            title: 'Button missing',
+            severity: 'HIGH',
+            expected: 'visible',
+            actual: 'hidden',
+            evidence: ['non-existent-file.png'],
+          }],
+          errors: [],
+        }) }),
+    }
+    const driver: QaDriver = {
+      profile: 'web',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id,
+        required: scenario.required,
+        status: 'FAILED',
+        reason: 'Button is hidden',
+        evidence: [{ id: 'obs', path: 'actual-obs.json', capturedAt: '2026-09-11T00:00:00.000Z', adapter: 'playwright' }],
+      }),
+    }
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace,
+      runner,
+      drivers: [driver],
+      targetProbe: async () => ({ available: true }),
+    })
+
+    const report = await orchestrator.run({ scope: 'Check login' })
+
+    expect(report.verdict).toBe('FAIL')
+    expect(report.bugs).toHaveLength(1)
+    expect(report.bugs[0].evidence).toEqual(['actual-obs.json'])
+    expect(report.summary).not.toContain('passed completely and successfully')
+    expect(report.summary).toContain('FAIL')
+  })
+
+  it('computes deterministic coverage matrix reporting tested and untested categories', async () => {
+    const runner: IAgentRunner = {
+      run: vi.fn()
+        .mockResolvedValueOnce({ raw: JSON.stringify({
+          id: 'coverage-matrix-test', target: 'http://127.0.0.1:3000', profile: 'web',
+          criteria: ['App loads', 'Sql injection blocked'],
+          scenarios: [
+            { id: 'app-load', criterionIds: ['criterion-1'], required: true, profile: 'web', category: 'functional',
+              actions: [{ type: 'wait', milliseconds: 1 }], assertions: [{ type: 'visible', selector: 'body' }] },
+            { id: 'sec-check', criterionIds: ['criterion-2'], required: true, profile: 'web', category: 'security',
+              actions: [{ type: 'click', selector: 'button' }], assertions: [{ type: 'visible', selector: 'body' }] },
+          ],
+        }) })
+        .mockResolvedValueOnce({ raw: JSON.stringify({ complete: true }) })
+        .mockResolvedValueOnce({ raw: JSON.stringify({ summary: 'Run done.', bugs: [], errors: [] }) }),
+    }
+    const driver: QaDriver = {
+      profile: 'web',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id,
+        required: scenario.required,
+        status: 'PASSED',
+        evidence: [{ id: 'ev', path: 'ev.json', capturedAt: '2026-09-11T00:00:00.000Z', adapter: 'playwright' }],
+      }),
+    }
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace,
+      runner,
+      drivers: [driver],
+      targetProbe: async () => ({ available: true }),
+    })
+
+    const report = await orchestrator.run({ scope: 'Test app' })
+
+    expect(report.coverageMatrix).toBeDefined()
+    expect(report.coverageMatrix!.testedCategories).toContain('functional')
+    expect(report.coverageMatrix!.testedCategories).toContain('security')
+    expect(report.coverageMatrix!.untestedCategories).toContain('accessibility')
+    expect(report.coverageMatrix!.untestedCategories).toContain('resilience')
+    expect(report.coverageMatrix!.areas.functional.passed).toBe(1)
+    expect(report.coverageMatrix!.areas.security.passed).toBe(1)
+  })
+
+  it('recovers with deterministic report when LLM reporting phase fails', async () => {
+    const runner: IAgentRunner = {
+      run: vi.fn()
+        .mockResolvedValueOnce({ raw: JSON.stringify({
+          id: 'reporting-failure-recovery', target: 'http://127.0.0.1:3000', profile: 'web',
+          criteria: ['App loads'],
+          scenarios: [
+            { id: 'app-load', criterionIds: ['criterion-1'], required: true, profile: 'web', category: 'functional',
+              actions: [{ type: 'wait', milliseconds: 1 }], assertions: [{ type: 'visible', selector: 'body' }] },
+          ],
+        }) })
+        .mockResolvedValueOnce({ raw: JSON.stringify({ complete: true }) })
+        .mockRejectedValueOnce(new Error('LLM rate limit or connection error')),
+    }
+    const driver: QaDriver = {
+      profile: 'web',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id,
+        required: scenario.required,
+        status: 'PASSED',
+        evidence: [{ id: 'ev', path: 'ev.json', capturedAt: '2026-09-11T00:00:00.000Z', adapter: 'playwright' }],
+      }),
+    }
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace,
+      runner,
+      drivers: [driver],
+      targetProbe: async () => ({ available: true }),
+    })
+
+    const report = await orchestrator.run({ scope: 'Test app' })
+
+    expect(report).toBeDefined()
+    expect(report.verdict).toBe('PASS')
+    expect(report.successCriteria).toHaveLength(1)
+    expect(report.successCriteria[0].status).toBe('PASSED')
   })
 })
