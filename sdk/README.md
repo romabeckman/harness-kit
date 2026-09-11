@@ -425,6 +425,7 @@ The global file is created automatically on first run. You can also set `HARNESS
       "memory":         { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
       "diagnose":       { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
       "qa_planning":    { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
+      "qa_analysis":    { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
       "qa_reporting":   { "model": "anthropic.claude-5-sonnet", "effort": "low"    }
     }
   },
@@ -439,6 +440,7 @@ The global file is created automatically on first run. You can also set `HARNESS
       "memory":         { "model": "gemini-3.8-flash", "effort": "low"    },
       "diagnose":       { "model": "gemini-3.8-flash", "effort": "low"    },
       "qa_planning":    { "model": "gemini-3.8-flash", "effort": "high"   },
+      "qa_analysis":    { "model": "gemini-3.8-flash", "effort": "high"   },
       "qa_reporting":   { "model": "gemini-3.8-flash", "effort": "low"    }
     }
   },
@@ -453,6 +455,7 @@ The global file is created automatically on first run. You can also set `HARNESS
       "memory":         { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "qa_planning":    { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "qa_analysis":    { "model": "gpt-5.6-sol",  "effort": "medium" },
       "qa_reporting":   { "model": "gpt-5.6-sol",  "effort": "low"    }
     }
   },
@@ -467,6 +470,7 @@ The global file is created automatically on first run. You can also set `HARNESS
       "memory":         { "model": "gpt-5.6-sol",  "effort": "low"    },
       "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "qa_planning":    { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "qa_analysis":    { "model": "gpt-5.6-sol",  "effort": "medium" },
       "qa_reporting":   { "model": "gpt-5.6-sol",  "effort": "low"    }
     }
   },
@@ -481,6 +485,7 @@ The global file is created automatically on first run. You can also set `HARNESS
       "memory":         { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "qa_planning":    { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "qa_analysis":    { "model": "gpt-5.6-sol",  "effort": "medium" },
       "qa_reporting":   { "model": "gpt-5.6-sol",  "effort": "low"    }
     }
   }
