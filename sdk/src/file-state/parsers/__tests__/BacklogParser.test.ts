@@ -10,6 +10,14 @@ describe('BacklogParser', () => {
     expect(f.layer).toBe('backend')
   })
 
+  it('treats the bootstrap `None` dependency marker as no dependencies', () => {
+    const md = HEADER + '| F001 | Core | core | frontend | CRITICAL | None | 0 | - | - | NOT_STARTED |\n'
+
+    const [feature] = BacklogParser.parse(md)
+
+    expect(feature.dependencies).toEqual([])
+  })
+
   it('parses frontend layer', () => {
     const md = HEADER + '| **F002** | **Dashboard** | dashboard | frontend | MEDIUM | None | 0 | - | - | NOT_STARTED |\n'
     const [f] = BacklogParser.parse(md)

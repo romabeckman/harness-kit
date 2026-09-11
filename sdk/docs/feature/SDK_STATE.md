@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-15"
+updated: "2026-09-10"
 ---
 
 ```graph
@@ -21,6 +21,8 @@ Extends `FileStateManager` with high-level state mutation and query methods requ
 
 ## OVERVIEW
 The `sdk_state` module provides state mutations for tracking features, tasks, decisions, and reworks on disk. All methods operate on markdown files and follow strict idempotency and atomicity rules.
+
+The backlog parser treats `-`, empty cells, and `None` as no dependencies. This keeps root features executable when bootstrap follows its documented dependency marker.
 
 ## FOLDER STRUCTURE
 <folder_structure>

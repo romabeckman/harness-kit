@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseRunArgs } from '../run-args-parser'
-import { resolveMode } from '../../services/run-service'
+import { hasCompletedAllFeatures, resolveMode } from '../../services/run-service'
 import { RunMode, Complexity } from '../../../orchestrator/types'
 
 // ─── parseRunArgs ────────────────────────────────────────────────────────────
@@ -146,5 +146,21 @@ describe('resolveMode', () => {
     expect(r.complexity).toBe(Complexity.HIGH)
     expect(r.skipValidation).toBe(false)
     expect(r.skipMemory).toBe(false)
+  })
+})
+
+describe('hasCompletedAllFeatures', () => {
+  it('returns false when orchestration halts with unfinished features', () => {
+    expect(hasCompletedAllFeatures([
+      { status: 'NOT_STARTED' },
+      { status: 'COMPLETED' },
+    ])).toBe(false)
+  })
+
+  it('returns true only when every feature completed', () => {
+    expect(hasCompletedAllFeatures([
+      { status: 'COMPLETED' },
+      { status: 'COMPLETED' },
+    ])).toBe(true)
   })
 })

@@ -21,7 +21,7 @@ function parseScore(cell: string): number | null {
 
 function parseDependencies(cell: string): string[] {
   const v = cell.trim()
-  if (v === '-' || v === '') return []
+  if (v === '-' || v === '' || v.toLowerCase() === 'none') return []
   return v.split(',').map(s => s.trim()).filter(Boolean)
 }
 
