@@ -4,14 +4,17 @@ import { QaVerdictPolicy } from './QaVerdictPolicy'
 import type { QaDriver, QaPlan, QaPlanInput, QaRun } from './types'
 import { QaRunStore } from './QaRunStore'
 import type { QaProgressListener } from './progress'
+import { probeQaTarget, type QaTargetProbe } from './QaTargetProbe'
 
 export class QaService {
   readonly #store: QaRunStore
   readonly #drivers: Map<string, QaDriver>
+  readonly #targetProbe: QaTargetProbe
 
-  constructor(store: QaRunStore, drivers: QaDriver[] = [new CurlDriver(), new PlaywrightDriver('web'), new PlaywrightDriver('web-game')]) {
+  constructor(store: QaRunStore, drivers: QaDriver[] = [new CurlDriver(), new PlaywrightDriver('web'), new PlaywrightDriver('web-game')], targetProbe: QaTargetProbe = probeQaTarget) {
     this.#store = store
     this.#drivers = new Map(drivers.map((driver) => [driver.profile, driver]))
+    this.#targetProbe = targetProbe
   }
 
   plan(input: QaPlanInput): QaPlan {
@@ -49,6 +52,7 @@ export class QaService {
       results: [],
     }
     this.#store.saveRun(run)
+    const availability = await this.#targetProbe(plan.target, signal)
     for (const [index, scenario] of plan.scenarios.entries()) {
       onProgress?.({
         type: 'scenario_started',
@@ -58,9 +62,11 @@ export class QaService {
         total: plan.scenarios.length,
       })
       const driver = this.#drivers.get(scenario.profile)
-      const result = driver
-        ? await driver.execute(scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id), signal)
-        : { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: `No QA driver for ${scenario.profile}`, evidence: [] }
+      const result = !availability.available
+        ? { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: availability.reason ?? `Target unavailable at ${plan.target}`, evidence: [] }
+        : driver
+          ? await driver.execute(scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id), signal)
+          : { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: `No QA driver for ${scenario.profile}`, evidence: [] }
       run.results.push(result)
       this.#store.saveRun(run)
       onProgress?.({

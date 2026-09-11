@@ -11,9 +11,12 @@ export interface QaHttpRequest {
 }
 
 export interface QaBrowserAction {
-  type: 'navigate' | 'click' | 'fill' | 'press' | 'wait'
+  type: 'navigate' | 'click' | 'fill' | 'press' | 'wait' | 'resize'
   selector?: string
   value?: string
+  count?: number
+  width?: number
+  height?: number
 }
 
 export interface QaScenario {

@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import type { QaDriver, QaScenario, QaScenarioResult } from './types'
+import type { QaBrowserAction, QaDriver, QaScenario, QaScenarioResult } from './types'
 
 type PlaywrightModule = { chromium: { launch(options: { headless: boolean }): Promise<any> } }
 type PlaywrightLoader = () => Promise<PlaywrightModule>
@@ -54,12 +54,16 @@ export class PlaywrightDriver implements QaDriver {
     }
   }
 
-  private async perform(page: any, action: { type: string; selector?: string; value?: string }): Promise<void> {
+  private async perform(page: any, action: QaBrowserAction): Promise<void> {
     if (action.type === 'navigate') return page.goto(action.value, { waitUntil: 'networkidle' })
     if (action.type === 'click' && action.selector) return page.locator(action.selector).click()
     if (action.type === 'fill' && action.selector && action.value !== undefined) return page.locator(action.selector).fill(action.value)
-    if (action.type === 'press' && action.value) return page.keyboard.press(action.value)
+    if (action.type === 'press' && action.value) {
+      for (let index = 0; index < (action.count ?? 1); index++) await page.keyboard.press(action.value)
+      return
+    }
     if (action.type === 'wait') return page.waitForTimeout(Number(action.value ?? 0))
+    if (action.type === 'resize' && action.width && action.height) return page.setViewportSize({ width: action.width, height: action.height })
     throw new Error(`Invalid browser action: ${action.type}`)
   }
 

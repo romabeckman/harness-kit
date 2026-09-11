@@ -80,7 +80,9 @@ describe('QA CLI', () => {
       renderReport: vi.fn(),
     } as unknown as QaTerminalView
 
-    await cmdQa(workspace, ['--debug', '--scope', 'Validate runtime behavior'], { runner, drivers: [driver], view })
+    await cmdQa(workspace, ['--debug', '--scope', 'Validate runtime behavior'], {
+      runner, drivers: [driver], view, targetProbe: async () => ({ available: true }),
+    })
 
     expect(view.start).toHaveBeenCalledWith(expect.objectContaining({ scope: 'Validate runtime behavior' }), workspace)
     expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'phase_started', phase: 'PLANNING' }))

@@ -11,6 +11,8 @@ import { HarnessSettings } from '../../settings/HarnessSettings'
 import { QaTerminalView } from '../../qa/ui/QaTerminalView'
 import type { QaTerminalPresenter } from '../../qa/progress'
 import { DebugContext } from '../DebugContext'
+import type { QaTargetProbe } from '../../qa/QaTargetProbe'
+import type { QaRuntimePreparer } from '../../qa/QaRuntimeManager'
 
 export type QaAction = 'agentic' | 'plan' | 'execute' | 'run' | 'report' | 'doctor'
 
@@ -37,6 +39,8 @@ export interface QaCommandDependencies {
   drivers?: QaDriver[]
   settings?: HarnessSettings
   view?: QaTerminalPresenter
+  targetProbe?: QaTargetProbe
+  runtime?: QaRuntimePreparer
 }
 
 export function parseQaArgs(args: string[]): QaCliOptions {
@@ -123,6 +127,8 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
       model: options.model,
       effort: options.effort,
       onProgress: (event) => view.onProgress(event),
+      targetProbe: dependencies.targetProbe,
+      runtime: dependencies.runtime,
     }).run(request)
     view.renderReport(report)
     return

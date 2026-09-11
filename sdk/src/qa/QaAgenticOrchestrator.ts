@@ -5,6 +5,8 @@ import { QaExecutionPhase, QaPhase, QaPlanningPhase, QaReportingPhase, type QaPh
 import type { QaAgenticRequest, QaDriver, QaFinalReport } from './types'
 import type { HarnessSettings } from '../settings/HarnessSettings'
 import type { QaProgressEvent, QaProgressListener } from './progress'
+import { QaRuntimeManager, type QaRuntimePreparer } from './QaRuntimeManager'
+import type { QaTargetProbe } from './QaTargetProbe'
 
 export interface QaAgenticOrchestratorOptions {
   workspace: string
@@ -16,11 +18,14 @@ export interface QaAgenticOrchestratorOptions {
   model?: string
   effort?: string
   onProgress?: QaProgressListener
+  runtime?: QaRuntimePreparer
+  targetProbe?: QaTargetProbe
 }
 
 export class QaAgenticOrchestrator {
   readonly #context: Omit<QaPhaseContext, 'request'>
   readonly #phases: Map<QaPhase, QaPhaseHandler>
+  readonly #runtime: QaRuntimePreparer
 
   constructor(options: QaAgenticOrchestratorOptions) {
     const store = options.store ?? new QaRunStore(options.workspace)
@@ -28,7 +33,7 @@ export class QaAgenticOrchestrator {
       workspace: options.workspace,
       runner: options.runner,
       store,
-      service: new QaService(store, options.drivers),
+      service: new QaService(store, options.drivers, options.targetProbe),
       settings: options.settings,
       model: options.model,
       effort: options.effort,
@@ -36,21 +41,29 @@ export class QaAgenticOrchestrator {
     }
     const phases = options.phases ?? [new QaPlanningPhase(), new QaExecutionPhase(), new QaReportingPhase()]
     this.#phases = new Map(phases.map((phase) => [phase.phase, phase]))
+    this.#runtime = options.runtime ?? new QaRuntimeManager(options.workspace)
   }
 
   async run(request: QaAgenticRequest = {}, signal?: AbortSignal): Promise<QaFinalReport> {
-    const context: QaPhaseContext = { ...this.#context, request }
-    let current = QaPhase.PLANNING
-    while (current !== QaPhase.COMPLETED) {
-      const handler = this.#phases.get(current)
-      if (!handler) throw new Error(`No agentic QA handler for phase ${current}`)
-      context.onProgress?.({ type: 'phase_started', phase: current })
-      const completed = current
-      current = await handler.execute(context, signal)
-      context.onProgress?.(this.phaseCompleted(completed, context))
+    const runtime = await this.#runtime.prepare(request, signal)
+    const resolvedRequest = runtime ? { ...request, target: runtime.target } : request
+    if (runtime) this.#context.onProgress?.({ type: 'runtime_ready', target: runtime.target, managed: runtime.managed })
+    try {
+      const context: QaPhaseContext = { ...this.#context, request: resolvedRequest }
+      let current = QaPhase.PLANNING
+      while (current !== QaPhase.COMPLETED) {
+        const handler = this.#phases.get(current)
+        if (!handler) throw new Error(`No agentic QA handler for phase ${current}`)
+        context.onProgress?.({ type: 'phase_started', phase: current })
+        const completed = current
+        current = await handler.execute(context, signal)
+        context.onProgress?.(this.phaseCompleted(completed, context))
+      }
+      if (!context.report) throw new Error('Agentic QA completed without a final report')
+      return context.report
+    } finally {
+      await runtime?.stop()
     }
-    if (!context.report) throw new Error('Agentic QA completed without a final report')
-    return context.report
   }
 
   private phaseCompleted(phase: Exclude<QaPhase, QaPhase.COMPLETED>, context: QaPhaseContext): QaProgressEvent {

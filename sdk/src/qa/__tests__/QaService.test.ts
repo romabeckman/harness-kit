@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createServer, type RequestListener, type Server } from 'node:http'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -72,6 +72,39 @@ describe('QaService', () => {
       await stopServer(server)
     }
   })
+
+  it('probes an unavailable target once and blocks every scenario without invoking drivers', async () => {
+    const execute = vi.fn()
+    const probe = vi.fn(async () => ({ available: false, reason: 'Target unavailable: connection refused' }))
+    const service = new QaService(new QaRunStore(workspace), [{
+      profile: 'web-game',
+      doctor: async () => ({ available: true }),
+      execute,
+    }], probe)
+    const plan: QaPlan = {
+      schemaVersion: 1,
+      id: 'offline-game',
+      version: 1,
+      target: 'http://127.0.0.1:3000',
+      profile: 'web-game',
+      createdAt: '2026-09-11T00:00:00.000Z',
+      criteria: ['Game loads', 'Game starts'],
+      scenarios: [
+        { id: 'load', criterionIds: ['criterion-1'], required: true, profile: 'web-game', actions: [{ type: 'wait', value: '1' }] },
+        { id: 'start', criterionIds: ['criterion-2'], required: true, profile: 'web-game', actions: [{ type: 'click', selector: '[data-start]' }] },
+      ],
+    }
+
+    const run = await service.execute(plan)
+
+    expect(probe).toHaveBeenCalledTimes(1)
+    expect(execute).not.toHaveBeenCalled()
+    expect(run.verdict).toBe('BLOCKED')
+    expect(run.results).toEqual([
+      expect.objectContaining({ scenarioId: 'load', status: 'BLOCKED', reason: 'Target unavailable: connection refused' }),
+      expect.objectContaining({ scenarioId: 'start', status: 'BLOCKED', reason: 'Target unavailable: connection refused' }),
+    ])
+  })
 })
 
 describe('QaVerdictPolicy', () => {
@@ -105,6 +138,31 @@ describe('PlaywrightDriver', () => {
 
     expect(result).toMatchObject({ status: 'FAILED', reason: 'Browser page error: Illegal invocation' })
     expect(result.evidence).toHaveLength(1)
+  })
+
+  it('resizes viewport and repeats keyboard input from a normalized plan', async () => {
+    const setViewportSize = vi.fn(async () => undefined)
+    const press = vi.fn(async () => undefined)
+    const page = {
+      on: () => undefined,
+      goto: async () => undefined,
+      setViewportSize,
+      keyboard: { press },
+      screenshot: async () => undefined,
+    }
+    const driver = new PlaywrightDriver('web-game', async () => ({
+      chromium: { launch: async () => ({ newPage: async () => page, close: async () => undefined }) },
+    }))
+
+    const result = await driver.execute({
+      id: 'responsive-game', criterionIds: ['criterion-1'], required: true, profile: 'web-game',
+      actions: [{ type: 'resize', width: 320, height: 800 }, { type: 'press', value: 'ArrowDown', count: 3 }],
+    }, 'http://127.0.0.1:3000', join(tmpdir(), `hrns-qa-browser-${Date.now()}`))
+
+    expect(result.status).toBe('PASSED')
+    expect(setViewportSize).toHaveBeenCalledWith({ width: 320, height: 800 })
+    expect(press).toHaveBeenCalledTimes(3)
+    expect(press).toHaveBeenCalledWith('ArrowDown')
   })
 })
 

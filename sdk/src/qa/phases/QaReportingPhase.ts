@@ -51,11 +51,14 @@ export class QaReportingPhase implements QaPhaseHandler {
     const summary = typeof data.summary === 'string' && data.summary.trim() ? data.summary : `QA completed with verdict ${run.verdict}.`
     const scenarioIds = new Set(plan.scenarios.map((scenario) => scenario.id))
     const bugs = this.parseBugs(data.bugs, scenarioIds)
-    const errors = this.parseErrors(data.errors, scenarioIds)
+    const sharedInfrastructureError = commonBlockedReason(run.results)
+    const errors = sharedInfrastructureError
+      ? [{ message: sharedInfrastructureError }]
+      : this.parseErrors(data.errors, scenarioIds)
 
     for (const result of run.results) {
       if (result.status === 'FAILED' && !bugs.some((bug) => bug.scenarioId === result.scenarioId)) bugs.push(this.fallbackBug(result))
-      if ((result.status === 'BLOCKED' || result.status === 'INCONCLUSIVE') && !errors.some((error) => error.scenarioId === result.scenarioId)) {
+      if (!sharedInfrastructureError && (result.status === 'BLOCKED' || result.status === 'INCONCLUSIVE') && !errors.some((error) => error.scenarioId === result.scenarioId)) {
         errors.push({ scenarioId: result.scenarioId, message: result.reason ?? result.status })
       }
     }
@@ -122,4 +125,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+
+function commonBlockedReason(results: QaScenarioResult[]): string | undefined {
+  const reason = results[0]?.reason
+  return reason && results.length > 1 && results.every((result) => result.status === 'BLOCKED' && result.reason === reason) ? reason : undefined
 }

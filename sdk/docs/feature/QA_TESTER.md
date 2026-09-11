@@ -3,7 +3,7 @@ doc_type: feature
 domain: qa
 stack: [TypeScript, Node.js, LLM agent runners, curl, Playwright]
 node_id: "feature:qa_tester"
-tags: [qa, acceptance, curl, playwright]
+tags: [qa, acceptance, curl, playwright, runtime]
 edges:
   - relation: implements
     target: "adr:architecture"
@@ -30,7 +30,7 @@ Run agentic acceptance outside development orchestration, with LLM-planned scena
   "entrypoints": ["src/qa/QaAgenticOrchestrator.ts", "src/cli/services/qa-service.ts"],
   "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/index.ts", "src/qa/index.ts"],
   "reference_files": ["src/qa/CurlDriver.ts"],
-  "code_files": ["src/qa/QaService.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/QaRunStore.ts", "src/qa/QaVerdictPolicy.ts", "src/qa/PlaywrightDriver.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
+  "code_files": ["src/qa/QaService.ts", "src/qa/QaRuntimeManager.ts", "src/qa/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/QaRunStore.ts", "src/qa/QaVerdictPolicy.ts", "src/qa/PlaywrightDriver.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
   "test_files": ["src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
 }
 ```
@@ -54,11 +54,12 @@ src/cli/services/            # `hrns qa` command adapter
 ## EXECUTION
 
 1. **Supply scope or scenarios** with `hrns qa`.
-2. **Plan agentically**: inspect the project, preserve supplied scenario intent, and add missing coverage.
-3. **Execute deterministically**: use real `curl` or Playwright actions selected by the plan.
-4. **Report agentically**: synthesize bugs and errors while deriving verdict and criterion status from runtime results.
-5. **Render live progress** for phases and scenarios through `QaTerminalPresenter`.
-6. **Render the final report** with criterion status, bugs, and execution errors; persist all artifacts for audit.
+2. **Prepare the runtime**: honor an explicit target or serve a root `index.html` on an OS-assigned loopback port.
+3. **Plan agentically**: inspect the project, preserve supplied scenario intent, add missing coverage, and use the prepared target.
+4. **Probe once** before scenario execution and block the run without invoking drivers when the target is unavailable.
+5. **Execute deterministically**: use real `curl` or Playwright actions selected by the plan.
+6. **Report agentically**: synthesize bugs and errors while deriving verdict and criterion status from runtime results.
+7. **Stop managed runtimes** after success or failure, then persist the final report and audit artifacts.
 
 ```text
 # CORRECT: provide open scope; let LLM generate executable scenarios
@@ -84,6 +85,7 @@ hrns run --skip-validation
 
 | Event | Terminal output |
 | --- | --- |
+| `runtime_ready` | Resolved target and whether the CLI started a temporary static server. |
 | `phase_started` | Current planning, execution, or reporting phase. |
 | `scenario_started` | Scenario position and human-readable action. |
 | `scenario_completed` | Deterministic runtime status for the scenario. |
@@ -92,6 +94,8 @@ hrns run --skip-validation
 REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and drivers independent from ANSI output. REQUIRED: Inject `QaTerminalPresenter` at the CLI boundary. REQUIRED: Disable ANSI styles automatically when stdout is not a TTY.
 
 ## DRIVERS
+
+`QaRuntimeManager` owns temporary static servers and cleanup. It binds `127.0.0.1` to port `0`, allowing the operating system to select a collision-free port, and makes that URL authoritative over guessed planner origins. `QaService` probes the target once before dispatching any driver; one unavailable target produces blocked scenarios and one deduplicated report error.
 
 `QaPlanningPhase` invokes the configured agent runner and validates its plan before execution. `CurlDriver` invokes real `curl`/`curl.exe`; `PlaywrightDriver` launches Chromium and performs declared human actions. `QaReportingPhase` invokes the LLM again, then reconciles its narrative with deterministic scenario results so failed or blocked checks cannot become `PASS`.
 
@@ -104,7 +108,7 @@ rtk npx playwright install chromium
 
 ## LIMITS
 
-REQUIRED: Supply `--scope` or at least one `--scenario`. ALLOWED: Omit scenarios; the planning LLM derives them from scope and project inspection. ALLOWED: Supply scenarios; the LLM preserves their intent and adds coverage gaps. PROHIBITED: Treat LLM prose as verdict truth; runtime results own verdict and criterion status. Runtime acceptance does not yet gate development `REVIEW`/`TRANSITION`, start target applications, retain traces/video, or support native games.
+REQUIRED: Supply `--scope` or at least one `--scenario`. ALLOWED: Omit scenarios; the planning LLM derives them from scope and project inspection. ALLOWED: Supply scenarios; the LLM preserves their intent and adds coverage gaps. PROHIBITED: Treat LLM prose as verdict truth; runtime results own verdict and criterion status. Runtime acceptance starts root static sites automatically, but does not yet start arbitrary framework or API processes, gate development `REVIEW`/`TRANSITION`, retain traces/video, or support native games.
 
 ## DOCUMENT MAP
 

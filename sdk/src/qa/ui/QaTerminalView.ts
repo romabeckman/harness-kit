@@ -22,6 +22,10 @@ export class QaTerminalView implements QaTerminalPresenter {
   }
 
   onProgress(event: QaProgressEvent): void {
+    if (event.type === 'runtime_ready' && event.target) {
+      this.line(this.paint('green', `Runtime ready: ${event.target}${event.managed ? ' (temporary static server)' : ''}`))
+      return
+    }
     if (event.type === 'phase_started' && event.phase) {
       this.line(this.phaseLabel(event.phase))
       return
