@@ -70,4 +70,10 @@ describe('QaRunStore', () => {
 
     expect(evidence).toMatch(/evidence[\\/]001-openapi-metadata$/)
   })
+
+  it('resolves the Markdown report path inside the run directory', () => {
+    const store = new QaRunStore(workspace)
+
+    expect(store.reportMarkdownPath('run-1')).toMatch(/[\\/]runs[\\/]run-1[\\/]REPORT\.md$/)
+  })
 })

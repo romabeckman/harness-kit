@@ -63,7 +63,7 @@ src/cli/services/            # `hrns qa` command adapter
 6. **Execute deterministically**: use selected drivers with target-origin checks, redaction, and cancellation.
 7. **Analyze and adapt**: add bounded scenarios for coverage gaps; validate each revised plan before execution.
 8. **Report agentically**: reconcile bugs/errors with evidence and compute coverage matrices.
-9. **Stop managed runtimes** and persist plans, runs, numbered evidence folders (`001-<scenario-id>`, `002-<scenario-id>`, ...). Normalize existing three-digit scenario prefixes before constructing evidence paths.
+9. **Stop managed runtimes** and persist plans, runs, numbered evidence folders (`001-<scenario-id>`, `002-<scenario-id>`, ...), `report.json`, and the LLM-generated `REPORT.md`. Normalize existing three-digit scenario prefixes before constructing evidence paths.
 10. **Preserve the original scope** byte-for-byte in `.harness-kit/qa/plans/<plan-id>/SCOPE.md`; write it once and keep it unchanged across plan versions and adaptive revisions.
 11. **Number each scenario ID** with a three-digit execution prefix: `001-<scenario>`, `002-<scenario>`, and so on. Keep prefixes stable when adaptive analysis adds scenarios.
 
@@ -103,7 +103,7 @@ REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and driv
 
 `QaRuntimeManager` owns temporary static servers and cleanup, binds `127.0.0.1` to port `0`, and serves only public web assets. `QaService` probes once; path 4xx/5xx block, root 404 stays valid for relative API routes, and `405` means reachable but `HEAD` unsupported.
 
-`QaPlanningPhase` parses plans. `QaValidationPhase` checks plan invariants and driver availability before execution. `CurlDriver` runs bounded, origin-isolated `curl` with redacted evidence. `PlaywrightDriver` performs actions and assertions. `QaAnalysisPhase` adds bounded follow-ups. `QaReportingPhase` reconciles evidence and always emits a report.
+`QaPlanningPhase` parses plans. `QaValidationPhase` checks plan invariants and driver availability before execution. `CurlDriver` runs bounded, origin-isolated `curl` with redacted evidence. `PlaywrightDriver` performs actions and assertions. `QaAnalysisPhase` adds bounded follow-ups. `QaReportingPhase` reconciles evidence, persists structured `report.json`, and writes the LLM-generated Markdown report to `REPORT.md`.
 
 `McpClientDriver` executes MCP JSON-RPC over Streamable HTTP, parses JSON/SSE, preserves error evidence, and matches result content case-insensitively without counting envelope metadata. MCP plans may assert `expectedState`, `expectedReasonCode`, and `expectedIsError`; expected tool errors pass only when explicitly declared. `CliDriver` spawns commands without a shell. `MobileWebDriver` adds touch and mobile viewport defaults. `AccessibilityDriver` audits deterministic document rules. `WebSocketDriver` validates bounded message exchanges.
 

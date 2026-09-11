@@ -61,6 +61,7 @@ describe('QaAgenticOrchestrator', () => {
         return {
           raw: JSON.stringify({
             summary: 'Game flow passed.',
+            markdown: '# QA Report\n\n## Verdict\n\nPASS\n',
             bugs: [],
             errors: [],
           }),
@@ -137,6 +138,7 @@ describe('QaAgenticOrchestrator', () => {
     expect(store.loadPlan('tetris-human-flow', 1).scenarios.map((scenario) => scenario.id)).toEqual(['001-start-session', '002-play-session'])
     expect(readFileSync(join(workspace, '.harness-kit', 'qa', 'plans', 'tetris-human-flow', 'SCOPE.md'), 'utf8')).toBe(originalScope)
     expect(store.loadReport(report.runId)).toEqual(report)
+    expect(readFileSync(store.reportMarkdownPath(report.runId), 'utf8')).toBe('# QA Report\n\n## Verdict\n\nPASS\n')
   })
 
   it('rejects a planning response that cannot drive executable QA', async () => {

@@ -12,6 +12,7 @@ export class QaReportingPhase implements QaPhaseHandler {
   async execute(context: QaPhaseContext, signal?: AbortSignal): Promise<QaPhase> {
     if (!context.plan || !context.run?.verdict) throw new Error('Agentic QA reporting requires a completed run')
     const agentSettings = resolveQaPhaseSettings(context, 'qa_reporting')
+    let raw = '{}'
     try {
       const output = await context.runner.run({
         agent: 'harness-kit:harness-qa',
@@ -24,11 +25,13 @@ export class QaReportingPhase implements QaPhaseHandler {
         session: context.session,
         prompt: this.buildPrompt(context),
       }, { signal })
-      context.report = this.buildReport(context, output.raw)
+      raw = output.raw
+      context.report = this.buildReport(context, raw)
     } catch {
-      context.report = this.buildReport(context, '{}')
+      context.report = this.buildReport(context, raw)
     }
     context.store.saveReport(context.report)
+    context.store.saveReportMarkdown(context.report.runId, this.buildMarkdown(raw, context.report))
     return QaPhase.COMPLETED
   }
 
@@ -37,8 +40,8 @@ export class QaReportingPhase implements QaPhaseHandler {
       'Act as an independent QA reporter.',
       'Use only supplied plan, runtime results, and evidence paths. Never invent a bug or successful check.',
       'Use exact scenarioId values from the plan and runtime results, including their three-digit execution prefixes.',
-      'Return one raw JSON object without Markdown:',
-      '{"summary":"concise outcome","bugs":[{"scenarioId":"id","title":"bug","severity":"LOW|MEDIUM|HIGH|CRITICAL","expected":"expected behavior","actual":"observed behavior","evidence":["path"]}],"errors":[{"scenarioId":"id","message":"execution or environment error"}]}',
+      'Return one raw JSON object without an outer Markdown fence. Include a markdown field containing the complete human-readable report for REPORT.md. Use only verified evidence paths and exact scenario IDs.',
+      '{"summary":"concise outcome","markdown":"# QA Report\\n\\n## Verdict\\n\\nPASS","bugs":[{"scenarioId":"id","title":"bug","severity":"LOW|MEDIUM|HIGH|CRITICAL","expected":"expected behavior","actual":"observed behavior","evidence":["path"]}],"errors":[{"scenarioId":"id","message":"execution or environment error"}]}',
       '<qa_plan>',
       JSON.stringify(context.plan),
       '</qa_plan>',
@@ -104,6 +107,15 @@ export class QaReportingPhase implements QaPhaseHandler {
       completedAt: run.completedAt ?? new Date().toISOString(),
       coverageMatrix,
     }
+  }
+
+  private buildMarkdown(raw: string, report: QaFinalReport): string {
+    const extraction = JsonExtractionProtocol.extract(raw)
+    if (isExtractionResult(extraction) && isRecord(extraction.data) && typeof extraction.data.markdown === 'string' && extraction.data.markdown.trim()) {
+      return ensureTrailingNewline(extraction.data.markdown)
+    }
+    if (!isExtractionResult(extraction) && raw.trim().startsWith('#')) return ensureTrailingNewline(raw)
+    return renderMarkdown(report)
   }
 
   private buildCoverageMatrix(plan: QaPhaseContext['plan'] & {}, run: QaPhaseContext['run'] & {}): QaCoverageMatrix {
@@ -192,4 +204,51 @@ function stringArray(value: unknown): string[] {
 function commonBlockedReason(results: QaScenarioResult[]): string | undefined {
   const reason = results[0]?.reason
   return reason && results.length > 1 && results.every((result) => result.status === 'BLOCKED' && result.reason === reason) ? reason : undefined
+}
+
+function ensureTrailingNewline(value: string): string {
+  return `${value.trimEnd()}\n`
+}
+
+function renderMarkdown(report: QaFinalReport): string {
+  const lines = [
+    '# QA Report',
+    '',
+    `- **Verdict:** ${report.verdict}`,
+    `- **Plan:** \`${report.planId}\``,
+    `- **Run:** \`${report.runId}\``,
+    '',
+    '## Summary',
+    '',
+    report.summary,
+    '',
+    '## Success Criteria',
+    '',
+  ]
+
+  if (report.successCriteria.length === 0) lines.push('- No criteria recorded.')
+  for (const criterion of report.successCriteria) {
+    lines.push(`- **${criterion.status}** — ${criterion.criterion}`)
+    if (criterion.reason) lines.push(`  - ${criterion.reason}`)
+    for (const evidence of criterion.evidence) lines.push(`  - Evidence: \`${evidence}\``)
+  }
+
+  lines.push('', '## Bugs', '')
+  if (report.bugs.length === 0) lines.push('- None identified.')
+  for (const bug of report.bugs) {
+    lines.push(`- **${bug.severity}** — ${bug.title} (${bug.scenarioId})`)
+    lines.push(`  - Expected: ${bug.expected}`)
+    lines.push(`  - Actual: ${bug.actual}`)
+    for (const evidence of bug.evidence) lines.push(`  - Evidence: \`${evidence}\``)
+  }
+
+  lines.push('', '## Errors', '')
+  if (report.errors.length === 0) lines.push('- None.')
+  for (const error of report.errors) lines.push(`- ${error.scenarioId ? `**${error.scenarioId}**: ` : ''}${error.message}`)
+
+  lines.push('', '## Coverage', '')
+  for (const area of Object.values(report.coverageMatrix?.areas ?? {})) {
+    lines.push(`- **${area.category}**: ${area.passed}/${area.total} passed; ${area.failed} failed; ${area.blocked} blocked.`)
+  }
+  return `${lines.join('\n').trimEnd()}\n`
 }

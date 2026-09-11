@@ -53,6 +53,11 @@ export class QaRunStore {
     return join(this.#root, 'runs', runId, 'report.json')
   }
 
+  reportMarkdownPath(runId: string): string {
+    this.assertIdentifier(runId)
+    return join(this.#root, 'runs', runId, 'REPORT.md')
+  }
+
   savePlan(plan: QaPlan): void {
     const path = this.planPath(plan.id, plan.version)
     if (existsSync(path)) throw new Error(`QA plan version already exists: ${plan.id}/${plan.version}`)
@@ -114,6 +119,11 @@ export class QaRunStore {
 
   saveReport(report: QaFinalReport): void {
     this.writeJson(this.reportPath(report.runId), report)
+  }
+
+  saveReportMarkdown(runId: string, markdown: string): void {
+    if (markdown.trim().length === 0) throw new Error('QA Markdown report cannot be empty')
+    this.writeText(this.reportMarkdownPath(runId), markdown)
   }
 
   loadReport(runId: string): QaFinalReport {
