@@ -201,11 +201,23 @@ hrns report --export csv -o ./reports/my-report.csv
 
 ### `hrns qa`
 
-Runs independent, agentic runtime acceptance after development. An LLM inspects the project, creates or expands test scenarios, real `curl` or Playwright drivers execute them, then the LLM produces one final bug and success-criteria report. QA artifacts persist below `.harness-kit/qa/` in the tested project.
+Runs independent, agentic runtime acceptance after development. The agentic workflow operates in four stages:
+1. **Planning**: LLM inspects the project, preserves supplied scenario intent, maps acceptance criteria to executable scenarios, enforces risk coverage across categories (`functional`, `negative`, `boundary`, `security`, `accessibility`, `resilience`), and selects the appropriate profile (`api`, `web`, `web-game`, `security`, or `full`).
+2. **Deterministic Execution**: Real `curl` or Playwright drivers execute actions and verify concrete assertions with origin boundary isolation, request/response secret redaction, and cancellation signal handling.
+3. **Adaptive Analysis**: An evidence analysis loop evaluates observations and state transitions, discovering untested edge cases and generating bounded follow-up scenarios within explicit iteration budgets.
+4. **Verified Reporting**: Reconciles findings against actual runtime evidence, deduplicates shared root causes, calculates the deterministic risk coverage matrix (explicitly reporting tested vs untested areas), and guarantees fallback reports if LLM synthesis fails.
+
+Plans are immutably versioned under `.harness-kit/qa/plans/<planId>/<version>.json`, while run state, evidence, and `report.json` persist under `.harness-kit/qa/runs/<runId>/`.
 
 ```bash
 # Open scope: LLM discovers and creates required scenarios
 hrns qa --scope "Test endpoint X" --target http://127.0.0.1:3000
+
+# Integrated full-stack acceptance (API + Browser)
+hrns qa --scope "Validate checkout workflow" --profile full
+
+# Targeted security auditing
+hrns qa --scope "Audit auth and injection boundaries" --profile security
 
 # Optional detailed scenarios: LLM analyzes them and adds missing coverage
 hrns qa --project ../web-game --scope "Validate gameplay" --scenario "Player starts a game" --scenario "Player moves and rotates a piece" --profile web-game
@@ -214,7 +226,7 @@ hrns qa --project ../web-game --scope "Validate gameplay" --scenario "Player sta
 hrns qa doctor --profile web-game
 ```
 
-Supply either `--scope` or one or more `--scenario` values. Use `--profile api`, `web`, or `web-game` as an optional hint; the planning phase can infer it. Browser checks require Chromium installed once with `npx playwright install chromium`. Low-level `plan`, `execute`, `run`, and `report` subcommands remain available for deterministic workflows. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md).
+Supply either `--scope` or one or more `--scenario` values. Use `--profile api`, `web`, `web-game`, `security`, or `full` as an optional hint; the planning phase can infer it. Browser checks require Chromium installed once with `npx playwright install chromium`. Low-level `plan`, `execute`, `run`, and `report` subcommands remain available for deterministic workflows. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md).
 
 ### `hrns erase`
 
