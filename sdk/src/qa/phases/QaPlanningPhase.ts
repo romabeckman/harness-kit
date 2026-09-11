@@ -1,9 +1,9 @@
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../../json-extraction/types'
-import type { QaBrowserAction, QaBrowserAssertion, QaHttpRequest, QaPlan, QaProfile, QaScenario, QaScenarioCategory } from '../types'
+import type { QaBrowserAction, QaBrowserAssertion, QaCliRequest, QaHttpRequest, QaMcpRequest, QaPlan, QaProfile, QaScenario, QaScenarioCategory, QaWebSocketRequest } from '../types'
 import { QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
 
-const PROFILES: QaProfile[] = ['api', 'web', 'web-game', 'security', 'full']
+const PROFILES: QaProfile[] = ['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full']
 const ACTIONS = ['navigate', 'click', 'fill', 'press', 'wait', 'resize'] as const
 const ASSERTIONS = ['visible', 'hidden', 'text', 'url', 'count', 'attribute'] as const
 const CATEGORIES: QaScenarioCategory[] = ['functional', 'negative', 'boundary', 'security', 'accessibility', 'resilience']
@@ -41,7 +41,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
       'User-supplied scenarios:',
       ...(context.request.scenarios?.length ? context.request.scenarios.map((scenario, index) => `${index + 1}. ${scenario}`) : ['None. Derive scenarios from the open scope and project behavior.']),
       `Target URL hint: ${context.request.target ?? 'Infer the local runtime URL from the project.'}`,
-      `Profile hint: ${context.request.profile ?? 'Infer api, web, or web-game.'}`,
+      `Profile hint: ${context.request.profile ?? 'Infer api, web, web-game, mobile-web, accessibility, mcp, cli, or websocket.'}`,
       '',
       'Plan only. Do not change product code. Do not execute tests yet.',
       'For APIs, define real HTTP requests. For interfaces, define human navigation, click, fill, press, and wait actions.',
@@ -51,14 +51,17 @@ export class QaPlanningPhase implements QaPhaseHandler {
       'Do not invent browser action types or property names. Omit count only when one key press is enough.',
       'Every web scenario needs executable assertions. Use: {"type":"visible|hidden","selector":"..."}, {"type":"text","selector":"...","value":"expected text"}, {"type":"url","value":"http://..."}, {"type":"count","selector":"...","count":1}, {"type":"attribute","selector":"...","attribute":"name","value":"expected"}.',
       'API scenarios may assert expectedHeaders, expectedBodyContains, and a partial expectedJson object in request. API request paths must be relative to target origin.',
+      'MCP scenarios use mcp: {"method":"tools/call","params":{"name":"tool","arguments":{}},"expectedResultContains":"text"}.',
+      'CLI scenarios use cli: {"command":"hrns","args":["--version"],"expectedExitCode":0,"expectedStdoutContains":"text"}. Never use shell commands or executable paths.',
+      'WebSocket scenarios use websocket: {"messages":["ping"],"expectedMessages":["pong"]}.',
       `Limits: at most ${MAX_SCENARIOS} scenarios, ${MAX_ACTIONS} actions per scenario, ${MAX_KEY_PRESSES} repeated key presses, and ${MAX_WAIT_MS} milliseconds per wait.`,
       'Every criterion must map to one required executable scenario.',
       'Use criterionIds exactly as criterion-1, criterion-2, and so on without zero padding.',
       'Treat user-supplied scenarios as a required baseline. Analyze coverage gaps and add new scenarios when needed.',
       'When no scenario is supplied, derive complete scenarios from the open scope and inspected project.',
       'Return one raw JSON object without Markdown:',
-      '{"id":"safe-plan-id","target":"http://127.0.0.1:3000","profile":"api|web|web-game","criteria":["observable success condition"],"scenarios":[{"id":"safe-scenario-id","criterionIds":["criterion-1"],"required":true,"profile":"api|web|web-game","category":"functional|negative|boundary|security|accessibility|resilience","description":"human action and expected result","request":{"method":"GET","path":"/health","expectedStatus":200,"expectedHeaders":{"content-type":"application/json"},"expectedJson":{"ok":true}},"actions":[{"type":"click","selector":"button"}],"assertions":[{"type":"visible","selector":"[data-result]"}]}]}',
-      'Include request only for api. Include actions only for web or web-game.',
+      '{"id":"safe-plan-id","target":"http://127.0.0.1:3000","profile":"api|web|web-game|mobile-web|accessibility|mcp|cli|websocket","criteria":["observable success condition"],"scenarios":[{"id":"safe-scenario-id","criterionIds":["criterion-1"],"required":true,"profile":"api","category":"functional","description":"human action and expected result","request":{"method":"GET","path":"/health","expectedStatus":200}}]}',
+      'Include only the request shape owned by the selected profile.',
     ].join('\n')
   }
 
@@ -77,7 +80,9 @@ export class QaPlanningPhase implements QaPhaseHandler {
     if (scenarioData.length < (request.scenarios?.length ?? 0)) {
       throw new Error('Invalid agentic QA plan: supplied scenarios were not covered')
     }
-    try { new URL(target) } catch { throw new Error('Invalid agentic QA plan: target must be a URL') }
+    if (profile !== 'cli') {
+      try { new URL(target) } catch { throw new Error('Invalid agentic QA plan: target must be a URL') }
+    }
     const scenarios = scenarioData.map((value, index) => this.parseScenario(value, profile as QaProfile, target, index))
     if (new Set(scenarios.map((scenario) => scenario.id)).size !== scenarios.length) throw new Error('Invalid agentic QA plan: scenario IDs must be unique')
     for (let index = 0; index < criteria.length; index++) {
@@ -94,7 +99,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
     const profile = value.profile
     const criterionIds = stringArray(value.criterionIds).map(normalizeCriterionId)
     const allowedProfile = planProfile === 'full'
-      ? (profile === 'api' || profile === 'web' || profile === 'web-game' || profile === 'security')
+      ? PROFILES.includes(profile as QaProfile) && profile !== 'full'
       : planProfile === 'security'
         ? (profile === 'security' || profile === 'api' || profile === 'web')
         : profile === planProfile
@@ -110,11 +115,31 @@ export class QaPlanningPhase implements QaPhaseHandler {
       category: CATEGORIES.includes(value.category as QaScenarioCategory) ? value.category as QaScenarioCategory : undefined,
     }
     if (profile === 'api' || (profile === 'security' && isRecord(value.request))) scenario.request = this.parseRequest(value.request, index)
-    else {
+    else if (profile === 'mcp') scenario.mcp = this.parseMcp(value.mcp, index)
+    else if (profile === 'cli') scenario.cli = this.parseCli(value.cli, index)
+    else if (profile === 'websocket') scenario.websocket = this.parseWebSocket(value.websocket, index)
+    else if (profile === 'accessibility') {
+      scenario.actions = Array.isArray(value.actions) && value.actions.length > 0 ? this.parseActions(value.actions, target, index) : []
+    } else {
       scenario.actions = this.parseActions(value.actions, target, index)
       scenario.assertions = this.parseAssertions(value.assertions, index)
     }
     return scenario
+  }
+
+  private parseMcp(value: unknown, index: number): QaMcpRequest {
+    if (!isRecord(value) || !stringValue(value.method) || (value.params !== undefined && !isRecord(value.params))) throw new Error(`Invalid agentic QA plan: MCP scenario ${index + 1} needs method and object params`)
+    return { method: stringValue(value.method)!, params: value.params as Record<string, unknown> | undefined, expectedResultContains: stringValue(value.expectedResultContains) }
+  }
+
+  private parseCli(value: unknown, index: number): QaCliRequest {
+    if (!isRecord(value) || !stringValue(value.command) || !Number.isInteger(value.expectedExitCode) || (value.args !== undefined && !isStringArray(value.args))) throw new Error(`Invalid agentic QA plan: CLI scenario ${index + 1} needs command, args, and expectedExitCode`)
+    return { command: stringValue(value.command)!, args: value.args as string[] | undefined, expectedExitCode: value.expectedExitCode as number, expectedStdoutContains: stringValue(value.expectedStdoutContains), expectedStderrContains: stringValue(value.expectedStderrContains) }
+  }
+
+  private parseWebSocket(value: unknown, index: number): QaWebSocketRequest {
+    if (!isRecord(value) || !isStringArray(value.messages) || !isStringArray(value.expectedMessages) || value.expectedMessages.length === 0) throw new Error(`Invalid agentic QA plan: WebSocket scenario ${index + 1} needs messages and expectedMessages`)
+    return { messages: value.messages, expectedMessages: value.expectedMessages }
   }
 
   private parseRequest(value: unknown, index: number): QaHttpRequest {
@@ -205,6 +230,10 @@ function stringValue(value: unknown): string | undefined {
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : []
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 
 function isStringRecord(value: unknown): value is Record<string, string> {

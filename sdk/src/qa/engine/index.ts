@@ -1,2 +1,7 @@
 export { CurlDriver } from './CurlDriver'
 export { PlaywrightDriver } from './PlaywrightDriver'
+export { AccessibilityDriver } from './AccessibilityDriver'
+export { CliDriver } from './CliDriver'
+export { McpClientDriver } from './McpClientDriver'
+export { MobileWebDriver } from './MobileWebDriver'
+export { WebSocketDriver } from './WebSocketDriver'

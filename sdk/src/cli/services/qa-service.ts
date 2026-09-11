@@ -67,8 +67,8 @@ export function parseQaArgs(args: string[]): QaCliOptions {
     } else if (flag === '--target') {
       options.target = value
     } else if (flag === '--profile') {
-      if (value !== 'api' && value !== 'web' && value !== 'web-game') throw new Error(`Invalid QA profile: ${value}`)
-      options.profile = value
+      if (!['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full'].includes(value)) throw new Error(`Invalid QA profile: ${value}`)
+      options.profile = value as QaProfile
     } else if (flag === '--criterion') {
       options.criteria.push(value)
     } else if (flag === '--scope' || flag === '--objective') {

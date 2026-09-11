@@ -30,8 +30,8 @@ Run agentic acceptance with LLM-planned scenarios, terminal progress, runtime ev
   "entrypoints": ["src/qa/QaAgenticOrchestrator.ts", "src/cli/services/qa-service.ts"],
   "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/index.ts", "src/qa/index.ts"],
   "reference_files": ["src/qa/engine/CurlDriver.ts"],
-  "code_files": ["src/qa/services/QaService.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
-  "test_files": ["src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
+  "code_files": ["src/qa/services/QaService.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/MobileWebDriver.ts", "src/qa/engine/AccessibilityDriver.ts", "src/qa/engine/McpClientDriver.ts", "src/qa/engine/CliDriver.ts", "src/qa/engine/WebSocketDriver.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
+  "test_files": ["src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaExtendedEngines.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
 }
 ```
 
@@ -57,21 +57,18 @@ src/cli/services/            # `hrns qa` command adapter
 
 1. **Supply scope** with `--scope`, or omit the flag and choose short input or a long editor form. Add optional scenarios with `--scenario`.
 2. **Prepare the runtime**: honor an explicit target or serve static web assets on an OS-assigned loopback port (strictly restricting public file extensions).
-3. **Plan agentically**: inspect the project, preserve supplied scenario intent, map acceptance criteria, enforce the risk coverage matrix, and select appropriate profiles (`api`, `web`, `web-game`, `security`, or `full`).
+3. **Plan agentically**: map acceptance criteria and select `api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, or `websocket`.
 4. **Probe once** before scenario execution and block the run without invoking drivers when the target is unavailable.
 5. **Execute deterministically**: use real `curl` or Playwright actions selected by the plan with target origin checks, secret redaction, and cancellation signal handling.
 6. **Analyze and adapt**: evaluate observations and evidence to uncover untested states, adding bounded scenarios through an adaptive replanning loop within explicit iteration budgets.
 7. **Report agentically**: synthesize verified bugs and errors, reconcile claims against runtime evidence, compute deterministic risk coverage matrices, and provide fallback reporting on LLM failures.
 8. **Stop managed runtimes** after success or failure, then persist immutable plan versions, run state, evidence, and `report.json`.
 
-When `hrns qa` finds a valid plan, select **resume** for agentic execution, analysis, and reporting without replanning. The selected `--model`, `--effort`, and `--debug` apply. Select **renew** to create a new plan.
+For a saved plan, select **resume** to continue without replanning or **renew** to create a new plan.
 
 ```text
 # CORRECT: provide open scope; let LLM generate executable scenarios
 hrns qa --scope "Test order creation endpoint" --target http://127.0.0.1:3000
-
-# CORRECT: provide optional baseline scenarios; let LLM add gaps
-hrns qa --scope "Validate checkout" --scenario "Valid payment succeeds" --profile web
 
 # WRONG: use development validation as runtime acceptance
 hrns run --skip-validation
@@ -103,6 +100,8 @@ REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and driv
 `QaRuntimeManager` owns temporary static servers and cleanup. It binds `127.0.0.1` to port `0` and uses the assigned URL. Static serving allows only public web assets and forbids source or hidden configuration. `QaService` probes once before driver dispatch.
 
 `QaPlanningPhase` validates the agent plan before execution. `CurlDriver` uses real `curl`/`curl.exe` with origin isolation, bounds, and secret redaction. `PlaywrightDriver` performs human actions and observable assertions. `QaAnalysisPhase` generates bounded follow-up scenarios from evidence. `QaReportingPhase` reconciles findings with evidence and guarantees a final report on LLM failure.
+
+`McpClientDriver` executes MCP JSON-RPC over Streamable HTTP. `CliDriver` spawns commands without a shell. `MobileWebDriver` adds touch and mobile viewport defaults. `AccessibilityDriver` audits deterministic document rules. `WebSocketDriver` validates bounded message exchanges.
 
 Run this once after dependency changes:
 

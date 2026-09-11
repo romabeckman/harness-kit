@@ -231,7 +231,7 @@ OPTIONS
   --plan <id[@version]>     QA plan identifier
   --run <id>                QA run identifier for resume or reports
   --target <url>            Target application URL
-  --profile <api|web|web-game>
+  --profile <api|web|web-game|mobile-web|accessibility|mcp|cli|websocket>
   --criterion <text>        Required acceptance criterion; repeatable
   --method <HTTP method>    API request method
   --path <path>             API request path

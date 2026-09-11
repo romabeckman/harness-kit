@@ -1,5 +1,6 @@
 import { CurlDriver } from '../engine/CurlDriver'
 import { PlaywrightDriver } from '../engine/PlaywrightDriver'
+import { AccessibilityDriver, CliDriver, McpClientDriver, MobileWebDriver, WebSocketDriver } from '../engine'
 import { QaVerdictPolicy } from './QaVerdictPolicy'
 import type { QaDriver, QaPlan, QaPlanInput, QaRun } from '../types'
 import { QaRunStore } from './QaRunStore'
@@ -11,7 +12,7 @@ export class QaService {
   readonly #drivers: Map<string, QaDriver>
   readonly #targetProbe: QaTargetProbe
 
-  constructor(store: QaRunStore, drivers: QaDriver[] = [new CurlDriver(), new PlaywrightDriver('web'), new PlaywrightDriver('web-game')], targetProbe: QaTargetProbe = probeQaTarget) {
+  constructor(store: QaRunStore, drivers: QaDriver[] = defaultDrivers(), targetProbe: QaTargetProbe = probeQaTarget) {
     this.#store = store
     this.#drivers = new Map(drivers.map((driver) => [driver.profile, driver]))
     this.#targetProbe = targetProbe
@@ -19,7 +20,7 @@ export class QaService {
 
   plan(input: QaPlanInput): QaPlan {
     if (input.criteria.length === 0) throw new Error('QA plan requires at least one acceptance criterion')
-    new URL(input.target)
+    if (input.profile !== 'cli') new URL(input.target)
     const plan: QaPlan = {
       schemaVersion: 1,
       id: input.planId,
@@ -52,14 +53,14 @@ export class QaService {
       results: [],
     }
     this.#store.saveRun(run)
-    const availability = await this.#targetProbe(plan.target, signal)
+    const availability = needsHttpProbe(plan.profile) ? await this.#targetProbe(plan.target, signal) : { available: true }
     await this.executeInto(run, plan, plan.scenarios, availability, signal, onProgress)
     return this.finalize(run)
   }
 
   async continue(run: QaRun, plan: QaPlan, scenarios: QaPlan['scenarios'], signal?: AbortSignal, onProgress?: QaProgressListener): Promise<QaRun> {
     run.planVersion = plan.version
-    const availability = await this.#targetProbe(plan.target, signal)
+    const availability = needsHttpProbe(plan.profile) ? await this.#targetProbe(plan.target, signal) : { available: true }
     await this.executeInto(run, plan, scenarios, availability, signal, onProgress)
     return this.finalize(run)
   }
@@ -108,4 +109,21 @@ export class QaService {
     const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, '')
     return `${planId}-${timestamp}-${Math.random().toString(36).slice(2, 8)}`
   }
+}
+
+function defaultDrivers(): QaDriver[] {
+  return [
+    new CurlDriver(),
+    new PlaywrightDriver('web'),
+    new PlaywrightDriver('web-game'),
+    new MobileWebDriver(),
+    new AccessibilityDriver(),
+    new McpClientDriver(),
+    new CliDriver(),
+    new WebSocketDriver(),
+  ]
+}
+
+function needsHttpProbe(profile: QaPlan['profile']): boolean {
+  return profile !== 'cli' && profile !== 'websocket'
 }

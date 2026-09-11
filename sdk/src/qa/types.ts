@@ -1,4 +1,4 @@
-export type QaProfile = 'api' | 'web' | 'web-game' | 'security' | 'full'
+export type QaProfile = 'api' | 'web' | 'web-game' | 'mobile-web' | 'accessibility' | 'mcp' | 'cli' | 'websocket' | 'security' | 'full'
 export type QaVerdict = 'PASS' | 'FAIL' | 'BLOCKED' | 'INCONCLUSIVE'
 export type QaScenarioStatus = 'PASSED' | 'FAILED' | 'BLOCKED' | 'INCONCLUSIVE'
 
@@ -32,6 +32,25 @@ export interface QaBrowserAction {
   height?: number
 }
 
+export interface QaMcpRequest {
+  method: string
+  params?: Record<string, unknown>
+  expectedResultContains?: string
+}
+
+export interface QaCliRequest {
+  command: string
+  args?: string[]
+  expectedExitCode: number
+  expectedStdoutContains?: string
+  expectedStderrContains?: string
+}
+
+export interface QaWebSocketRequest {
+  messages: string[]
+  expectedMessages: string[]
+}
+
 export interface QaScenario {
   id: string
   criterionIds: string[]
@@ -42,6 +61,9 @@ export interface QaScenario {
   request?: QaHttpRequest
   actions?: QaBrowserAction[]
   assertions?: QaBrowserAssertion[]
+  mcp?: QaMcpRequest
+  cli?: QaCliRequest
+  websocket?: QaWebSocketRequest
 }
 
 export interface QaPlan {

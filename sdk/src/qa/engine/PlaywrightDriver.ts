@@ -1,15 +1,15 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { QaBrowserAction, QaDriver, QaScenario, QaScenarioResult } from '../types'
+import type { QaBrowserAction, QaDriver, QaProfile, QaScenario, QaScenarioResult } from '../types'
 
-type PlaywrightModule = { chromium: { launch(options: { headless: boolean }): Promise<any> } }
-type PlaywrightLoader = () => Promise<PlaywrightModule>
+export type PlaywrightModule = { chromium: { launch(options: { headless: boolean }): Promise<any> } }
+export type PlaywrightLoader = () => Promise<PlaywrightModule>
 
 export class PlaywrightDriver implements QaDriver {
-  readonly profile: 'web' | 'web-game'
+  readonly profile: QaProfile
   readonly #loader: PlaywrightLoader
 
-  constructor(profile: 'web' | 'web-game', loader: PlaywrightLoader = loadPlaywrightModule) {
+  constructor(profile: QaProfile, loader: PlaywrightLoader = loadPlaywrightModule) {
     this.profile = profile
     this.#loader = loader
   }
@@ -33,7 +33,7 @@ export class PlaywrightDriver implements QaDriver {
       const browser = await playwright.chromium.launch({ headless: true })
       try {
         if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
-        const page = await browser.newPage()
+        const page = await browser.newPage(this.pageOptions())
         const pageErrors: string[] = []
         page.on?.('pageerror', (error: Error) => pageErrors.push(error.message))
         await page.goto(target, { waitUntil: 'networkidle', signal })
@@ -41,7 +41,7 @@ export class PlaywrightDriver implements QaDriver {
           if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
           await this.perform(page, action, signal)
         }
-        const observations = await this.assert(page, scenario)
+        const observations = await this.inspect(page, scenario)
         const observationsPath = join(evidenceDir, 'observations.json')
         writeFileSync(observationsPath, JSON.stringify(observations, null, 2), 'utf8')
         const screenshotPath = join(evidenceDir, 'final.png')
@@ -73,7 +73,11 @@ export class PlaywrightDriver implements QaDriver {
     }
   }
 
-  private async assert(page: any, scenario: QaScenario): Promise<Array<{ type: string; passed: boolean; message: string }>> {
+  protected pageOptions(): Record<string, unknown> {
+    return {}
+  }
+
+  protected async inspect(page: any, scenario: QaScenario): Promise<Array<{ type: string; passed: boolean; message: string }>> {
     if (!scenario.assertions?.length) return [{ type: 'coverage', passed: false, message: 'Browser scenario has no executable assertions' }]
     const results: Array<{ type: string; passed: boolean; message: string }> = []
     for (const assertion of scenario.assertions) {
@@ -135,7 +139,7 @@ export class PlaywrightDriver implements QaDriver {
     throw new Error(`Invalid browser action: ${action.type}`)
   }
 
-  private async loadPlaywright(): Promise<PlaywrightModule> {
+  protected async loadPlaywright(): Promise<PlaywrightModule> {
     return this.#loader()
   }
 }
