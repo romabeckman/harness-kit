@@ -103,7 +103,7 @@ REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and driv
 
 `QaPlanningPhase` parses plans. `QaValidationPhase` checks plan invariants and driver availability before execution. `CurlDriver` runs bounded, origin-isolated `curl` with redacted evidence. `PlaywrightDriver` performs actions and assertions. `QaAnalysisPhase` adds bounded follow-ups. `QaReportingPhase` reconciles evidence and always emits a report.
 
-`McpClientDriver` executes MCP JSON-RPC over Streamable HTTP, parses JSON/SSE, preserves error evidence, and fails `result.isError`. `CliDriver` spawns commands without a shell. `MobileWebDriver` adds touch and mobile viewport defaults. `AccessibilityDriver` audits deterministic document rules. `WebSocketDriver` validates bounded message exchanges.
+`McpClientDriver` executes MCP JSON-RPC over Streamable HTTP, parses JSON/SSE, preserves error evidence, fails `result.isError`, and matches `expectedResultContains` case-insensitively. `CliDriver` spawns commands without a shell. `MobileWebDriver` adds touch and mobile viewport defaults. `AccessibilityDriver` audits deterministic document rules. `WebSocketDriver` validates bounded message exchanges.
 
 ## LIMITS
 

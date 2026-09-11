@@ -29,11 +29,24 @@ describe('extended QA engines', () => {
 
     const result = await driver.execute(scenario('mcp', {
       mcp: { method: 'tools/call', params: { name: 'health', arguments: {} }, expectedResultContains: 'healthy' },
-    }), 'http://127.0.0.1:3000/mcp', evidenceDir)
+    }), MCP_TARGET, evidenceDir)
 
     expect(result.status).toBe('PASSED')
-    expect(request).toHaveBeenCalledWith('http://127.0.0.1:3000/mcp', expect.objectContaining({ method: 'POST' }))
+    expect(request).toHaveBeenCalledWith(MCP_TARGET, expect.objectContaining({ method: 'POST' }))
     expect(readFileSync(result.evidence[0].path, 'utf8')).toContain('tools/call')
+  })
+
+  it('matches MCP textual result assertions without case sensitivity', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      jsonrpc: '2.0', id: 1, result: { structuredContent: { matches: [{ label: 'ALPHA MODEL' }] } },
+    }), { status: 200 }))
+    const driver = new McpClientDriver(request)
+
+    const result = await driver.execute(scenario('mcp', {
+      mcp: { method: 'tools/call', params: { name: 'catalog_search', arguments: { query: 'Alpha' } }, expectedResultContains: 'Alpha' },
+    }), MCP_TARGET, evidenceDir)
+
+    expect(result.status).toBe('PASSED')
   })
 
   it('parses MCP Streamable HTTP SSE frames with an event prefix', async () => {
@@ -45,7 +58,7 @@ describe('extended QA engines', () => {
 
     const result = await new McpClientDriver(request).execute(scenario('mcp', {
       mcp: { method: 'tools/call', params: { name: 'health', arguments: {} }, expectedResultContains: 'healthy' },
-    }), 'http://127.0.0.1:3000/mcp', evidenceDir)
+    }), MCP_TARGET, evidenceDir)
 
     expect(result.status).toBe('PASSED')
     expect(result.evidence).toHaveLength(2)
@@ -58,7 +71,7 @@ describe('extended QA engines', () => {
 
     const result = await new McpClientDriver(request).execute(scenario('mcp', {
       mcp: { method: 'tools/call', params: { name: 'missing' } },
-    }), 'http://127.0.0.1:3000/mcp', evidenceDir)
+    }), MCP_TARGET, evidenceDir)
 
     expect(result).toMatchObject({ status: 'FAILED', reason: expect.stringContaining('Unknown tool') })
   })
@@ -73,7 +86,7 @@ describe('extended QA engines', () => {
 
     const result = await new McpClientDriver(request).execute(scenario('mcp', {
       mcp: { method: 'tools/call', params: { name: 'missing' } },
-    }), 'http://127.0.0.1:3000/mcp', evidenceDir)
+    }), MCP_TARGET, evidenceDir)
 
     expect(result).toMatchObject({ status: 'FAILED', reason: 'Unknown tool', evidence: expect.any(Array) })
     expect(result.evidence).toHaveLength(2)
@@ -84,7 +97,7 @@ describe('extended QA engines', () => {
 
     const result = await new McpClientDriver(request).execute(scenario('mcp', {
       mcp: { method: 'tools/call', params: { name: 'health' } },
-    }), 'http://127.0.0.1:3000/mcp', evidenceDir)
+    }), MCP_TARGET, evidenceDir)
 
     expect(result).toMatchObject({ status: 'BLOCKED', reason: expect.stringContaining('Unexpected token') })
     expect(result.evidence).toHaveLength(2)
@@ -165,6 +178,8 @@ describe('extended QA engines', () => {
     expect(mcpPlan.scenarios[0].mcp?.method).toBe('tools/call')
   })
 })
+
+const MCP_TARGET = 'https://qa.test/mcp'
 
 function scenario(profile: QaScenario['profile'], values: Partial<QaScenario> = {}): QaScenario {
   return { id: `${profile}-scenario`, criterionIds: ['criterion-1'], required: true, profile, ...values }

@@ -43,7 +43,7 @@ export class McpClientDriver implements QaDriver {
       if (isRecord(result) && result.isError === true) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: mcpErrorMessage(result), evidence }
       const expected = scenario.mcp.expectedResultContains
       const serializedResult = JSON.stringify(result) ?? ''
-      if (expected && !serializedResult.includes(expected)) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result does not contain ${JSON.stringify(expected)}`, evidence }
+      if (expected && !serializedResult.toLowerCase().includes(expected.toLowerCase())) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result does not contain ${JSON.stringify(expected)}`, evidence }
       return { scenarioId: scenario.id, required: scenario.required, status: 'PASSED', evidence }
     } catch (error) {
       return blocked(scenario, error instanceof Error ? error.message : 'MCP request failed', evidence)
