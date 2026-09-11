@@ -6,6 +6,7 @@ import type { QaService } from '../QaService'
 import type { HarnessSettings } from '../../settings/HarnessSettings'
 import type { PhaseSettings } from '../../settings/SettingsSchema'
 import { DEFAULT_SETTINGS } from '../../settings/DefaultSettings'
+import type { QaProgressListener } from '../progress'
 
 export enum QaPhase {
   PLANNING = 'PLANNING',
@@ -23,6 +24,7 @@ export interface QaPhaseContext {
   settings?: HarnessSettings
   model?: string
   effort?: string
+  onProgress?: QaProgressListener
   session?: AgentSession
   plan?: QaPlan
   run?: QaRun

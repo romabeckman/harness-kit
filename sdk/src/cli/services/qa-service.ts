@@ -8,6 +8,9 @@ import type { QaDriver, QaHttpRequest, QaPlan, QaProfile } from '../../qa/types'
 import { HELP_QA } from '../utils/constants'
 import { resolve } from 'node:path'
 import { HarnessSettings } from '../../settings/HarnessSettings'
+import { QaTerminalView } from '../../qa/ui/QaTerminalView'
+import type { QaTerminalPresenter } from '../../qa/progress'
+import { DebugContext } from '../DebugContext'
 
 export type QaAction = 'agentic' | 'plan' | 'execute' | 'run' | 'report' | 'doctor'
 
@@ -25,6 +28,7 @@ export interface QaCliOptions {
   agentType?: string
   model?: string
   effort?: string
+  debug?: boolean
   request?: QaHttpRequest
 }
 
@@ -32,6 +36,7 @@ export interface QaCommandDependencies {
   runner?: IAgentRunner
   drivers?: QaDriver[]
   settings?: HarnessSettings
+  view?: QaTerminalPresenter
 }
 
 export function parseQaArgs(args: string[]): QaCliOptions {
@@ -42,6 +47,10 @@ export function parseQaArgs(args: string[]): QaCliOptions {
   const options: QaCliOptions = { action: hasAction ? first as QaAction : 'agentic', criteria: [], scenarios: [] }
   for (let index = hasAction ? 1 : 0; index < args.length; index++) {
     const argument = args[index]
+    if (argument === '--debug') {
+      options.debug = true
+      continue
+    }
     const [flag, inlineValue] = argument.split('=', 2)
     const value = inlineValue ?? args[++index]
     if (flag === '--plan') {
@@ -88,6 +97,7 @@ export function parseQaArgs(args: string[]): QaCliOptions {
 
 export async function cmdQa(cwd: string, args: string[], dependencies: QaCommandDependencies = {}): Promise<void> {
   const options = parseQaArgs(args)
+  if (options.debug) DebugContext.enable()
   if (options.action === 'agentic') {
     if (!options.scope && options.scenarios.length === 0) throw new Error('Agentic QA requires --scope <text> or one or more --scenario <text> values')
     const workspace = resolve(cwd, options.projectPath ?? '.')
@@ -97,6 +107,14 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
       effort: options.effort,
     })
     const settings = dependencies.settings ?? HarnessSettings.load(workspace)
+    const view = dependencies.view ?? new QaTerminalView()
+    const request = {
+      scope: options.scope,
+      scenarios: options.scenarios,
+      target: options.target,
+      profile: options.profile,
+    }
+    view.start(request, workspace)
     const report = await new QaAgenticOrchestrator({
       workspace,
       runner,
@@ -104,13 +122,9 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
       settings,
       model: options.model,
       effort: options.effort,
-    }).run({
-      scope: options.scope,
-      scenarios: options.scenarios,
-      target: options.target,
-      profile: options.profile,
-    })
-    console.log(JSON.stringify(report, null, 2))
+      onProgress: (event) => view.onProgress(event),
+    }).run(request)
+    view.renderReport(report)
     return
   }
   const store = new QaRunStore(cwd)

@@ -22,6 +22,7 @@ describe('QaAgenticOrchestrator', () => {
 
   it('runs LLM planning, deterministic human-style execution, then LLM reporting', async () => {
     const events: string[] = []
+    const progress: string[] = []
     const runner: IAgentRunner = {
       type: Runner.CODEX_CLI,
       run: vi.fn(async (invocation) => {
@@ -78,7 +79,14 @@ describe('QaAgenticOrchestrator', () => {
     }
     const store = new QaRunStore(workspace)
     const settings = new (HarnessSettings as any)({ codex: { phases: {} } }) as HarnessSettings
-    const orchestrator = new QaAgenticOrchestrator({ workspace, runner, store, drivers: [driver], settings })
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace,
+      runner,
+      store,
+      drivers: [driver],
+      settings,
+      onProgress: (event) => progress.push(`${event.type}:${event.phase ?? event.scenarioId ?? ''}`),
+    })
 
     const report = await orchestrator.run({
       scope: 'Validate the game as a player',
@@ -86,6 +94,18 @@ describe('QaAgenticOrchestrator', () => {
     })
 
     expect(events).toEqual(['qa_planning', 'qa_execution', 'qa_execution', 'qa_reporting'])
+    expect(progress).toEqual([
+      'phase_started:PLANNING',
+      'phase_completed:PLANNING',
+      'phase_started:EXECUTION',
+      'scenario_started:start-session',
+      'scenario_completed:start-session',
+      'scenario_started:play-session',
+      'scenario_completed:play-session',
+      'phase_completed:EXECUTION',
+      'phase_started:REPORTING',
+      'phase_completed:REPORTING',
+    ])
     expect(runner.run).toHaveBeenNthCalledWith(1, expect.objectContaining({
       model: 'gpt-5.6-sol',
       effort: 'medium',

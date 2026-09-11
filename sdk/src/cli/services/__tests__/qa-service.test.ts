@@ -6,17 +6,21 @@ import { cmdQa, parseQaArgs } from '../qa-service'
 import { QaRunStore } from '../../../qa/QaRunStore'
 import type { IAgentRunner } from '../../../agent-runner/IAgentRunner'
 import type { QaDriver } from '../../../qa/types'
+import type { QaTerminalView } from '../../../qa/ui/QaTerminalView'
+import { DebugContext } from '../../DebugContext'
 
 describe('QA CLI', () => {
   let workspace: string
   let log: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
+    DebugContext.reset()
     workspace = mkdtempSync(join(tmpdir(), 'hrns-qa-cli-'))
     log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
   })
 
   afterEach(() => {
+    DebugContext.reset()
     log.mockRestore()
     rmSync(workspace, { recursive: true, force: true })
   })
@@ -35,6 +39,14 @@ describe('QA CLI', () => {
     })
   })
 
+  it('parses --debug without consuming the next option', () => {
+    expect(parseQaArgs(['--debug', '--scope', 'Test endpoint X'])).toMatchObject({
+      action: 'agentic',
+      debug: true,
+      scope: 'Test endpoint X',
+    })
+  })
+
   it('writes a standalone plan', async () => {
     await cmdQa(workspace, ['plan', '--plan', 'orders', '--target', 'http://localhost:3000', '--criterion', 'Order saves', '--method', 'POST', '--path', '/orders', '--expect-status', '201'])
 
@@ -42,7 +54,7 @@ describe('QA CLI', () => {
     expect(new QaRunStore(workspace).loadPlan('orders', 1).scenarios[0].request).toEqual({ method: 'POST', path: '/orders', expectedStatus: 201 })
   })
 
-  it('defaults to agentic phases and prints only the final QA report', async () => {
+  it('defaults to agentic phases, streams progress, and renders only the final QA report', async () => {
     const runner: IAgentRunner = {
       run: vi.fn()
         .mockResolvedValueOnce({ raw: JSON.stringify({
@@ -62,12 +74,21 @@ describe('QA CLI', () => {
         evidence: [{ id: 'response', path: 'response.body', capturedAt: '2026-09-11T00:00:00.000Z', adapter: 'curl' }],
       }),
     }
+    const view = {
+      start: vi.fn(),
+      onProgress: vi.fn(),
+      renderReport: vi.fn(),
+    } as unknown as QaTerminalView
 
-    await cmdQa(workspace, ['--scope', 'Validate runtime behavior'], { runner, drivers: [driver] })
+    await cmdQa(workspace, ['--debug', '--scope', 'Validate runtime behavior'], { runner, drivers: [driver], view })
 
-    expect(log).toHaveBeenCalledTimes(1)
-    expect(JSON.parse(String(log.mock.calls[0][0]))).toMatchObject({
+    expect(view.start).toHaveBeenCalledWith(expect.objectContaining({ scope: 'Validate runtime behavior' }), workspace)
+    expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'phase_started', phase: 'PLANNING' }))
+    expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'scenario_completed', scenarioId: 'health', status: 'PASSED' }))
+    expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({
       verdict: 'PASS', summary: 'Health check passed.', bugs: [], errors: [],
-    })
+    }))
+    expect(log).not.toHaveBeenCalled()
+    expect(DebugContext.enabled).toBe(true)
   })
 })

@@ -13,11 +13,13 @@ edges:
     target: "feature:sdk_cli"
   - relation: depends_on
     target: "feature:sdk_settings"
+  - relation: depends_on
+    target: "feature:sdk_terminal_ui"
 updated: "2026-09-11"
 ---
 # INDEPENDENT QA TESTER
 
-Run agentic acceptance outside development orchestration, with LLM-planned scenarios, real runtime evidence, and one final report.
+Run agentic acceptance outside development orchestration, with LLM-planned scenarios, visible terminal progress, real runtime evidence, and one final report.
 
 ```graph
 {
@@ -28,14 +30,14 @@ Run agentic acceptance outside development orchestration, with LLM-planned scena
   "entrypoints": ["src/qa/QaAgenticOrchestrator.ts", "src/cli/services/qa-service.ts"],
   "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/index.ts", "src/qa/index.ts"],
   "reference_files": ["src/qa/CurlDriver.ts"],
-  "code_files": ["src/qa/QaService.ts", "src/qa/types.ts", "src/qa/QaRunStore.ts", "src/qa/QaVerdictPolicy.ts", "src/qa/PlaywrightDriver.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
-  "test_files": ["src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
+  "code_files": ["src/qa/QaService.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/QaRunStore.ts", "src/qa/QaVerdictPolicy.ts", "src/qa/PlaywrightDriver.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
+  "test_files": ["src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
 }
 ```
 
 ## OVERVIEW
 
-Use `QaAgenticOrchestrator` independently of backlog, development session, and review score. Accept an open scope or optional detailed scenarios. Persist plans under `.harness-kit/qa/plans/`; persist run state, evidence, and `report.json` under `.harness-kit/qa/runs/` through atomic replacement.
+Use `QaAgenticOrchestrator` independently of backlog, development session, and review score. Accept an open scope or optional detailed scenarios, and emit typed progress events without coupling orchestration to terminal output. Persist plans under `.harness-kit/qa/plans/`; persist run state, evidence, and `report.json` under `.harness-kit/qa/runs/` through atomic replacement.
 
 ## FOLDER STRUCTURE
 
@@ -43,6 +45,7 @@ Use `QaAgenticOrchestrator` independently of backlog, development session, and r
 ```text
 src/qa/                     # agentic orchestration, plans, reports, and drivers
 |-- phases/                 # planning, execution, and reporting handlers
+|-- ui/                     # QA-specific terminal presenter
 `-- QaAgenticOrchestrator.ts
 src/cli/services/            # `hrns qa` command adapter
 ```
@@ -54,7 +57,8 @@ src/cli/services/            # `hrns qa` command adapter
 2. **Plan agentically**: inspect the project, preserve supplied scenario intent, and add missing coverage.
 3. **Execute deterministically**: use real `curl` or Playwright actions selected by the plan.
 4. **Report agentically**: synthesize bugs and errors while deriving verdict and criterion status from runtime results.
-5. **Return only final report** to the CLI user; persist plan, evidence, run state, and report for audit.
+5. **Render live progress** for phases and scenarios through `QaTerminalPresenter`.
+6. **Render the final report** with criterion status, bugs, and execution errors; persist all artifacts for audit.
 
 ```text
 # CORRECT: provide open scope; let LLM generate executable scenarios
@@ -75,6 +79,17 @@ hrns run --skip-validation
 | FAIL | A required assertion demonstrably failed. |
 | BLOCKED | A required scenario cannot execute. |
 | INCONCLUSIVE | Required coverage, evidence, or results are insufficient. |
+
+## TERMINAL PROGRESS
+
+| Event | Terminal output |
+| --- | --- |
+| `phase_started` | Current planning, execution, or reporting phase. |
+| `scenario_started` | Scenario position and human-readable action. |
+| `scenario_completed` | Deterministic runtime status for the scenario. |
+| `phase_completed` | Planned count, runtime verdict, or report readiness. |
+
+REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and drivers independent from ANSI output. REQUIRED: Inject `QaTerminalPresenter` at the CLI boundary. REQUIRED: Disable ANSI styles automatically when stdout is not a TTY.
 
 ## DRIVERS
 
@@ -99,6 +114,7 @@ graph TD
     QA -->|tested_by| TESTS["Testing Protocol"]
     QA -->|depends_on| CLI["SDK CLI"]
     QA -->|depends_on| SETTINGS["SDK Settings"]
+    QA -->|depends_on| TERMINAL["SDK Terminal UI"]
 ```
 
 ## REFERENCES
@@ -107,3 +123,4 @@ graph TD
 - [**TESTS.md**](../adr/TESTS.md): Test commands and isolation rules.
 - [**SDK_CLI.md**](./SDK_CLI.md): CLI registration and command conventions.
 - [**SDK_SETTINGS.md**](./SDK_SETTINGS.md): Default model and effort for QA planning and reporting phases.
+- [**SDK_TERMINAL_UI.md**](./SDK_TERMINAL_UI.md): Shared ANSI helpers used by the QA terminal presenter.

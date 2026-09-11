@@ -135,7 +135,7 @@ describe('DiagnoseService', () => {
       2,
       expect.objectContaining({ sessionId: 'session-2026-08-15-002' }),
       'session-2026-08-15-002',
-      { model: 'gemini-3.7-flash', effort: 'low' }
+      { model: 'gemini-3.8-flash', effort: 'low' }
     )
   })
 

@@ -235,10 +235,12 @@ OPTIONS
   --method <HTTP method>    API request method
   --path <path>             API request path
   --expect-status <code>    Expected API response status (default: 200)
+  --debug                   Expose runner arguments, prompts, sessions, and full errors
 
 EXAMPLES
   hrns qa --scope "Test endpoint X" --target http://localhost:3000
   hrns qa --scope "Validate checkout" --scenario "A valid card completes payment" --profile web
+  hrns qa --debug --scope "Test endpoint X" --target http://localhost:3000
   hrns qa plan --plan orders --target http://localhost:3000 --criterion "Order saves" --method POST --path /orders --expect-status 201
   hrns qa execute --plan orders@1
   hrns qa run --plan orders --target http://localhost:3000 --criterion "Order saves"

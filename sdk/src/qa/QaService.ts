@@ -3,6 +3,7 @@ import { PlaywrightDriver } from './PlaywrightDriver'
 import { QaVerdictPolicy } from './QaVerdictPolicy'
 import type { QaDriver, QaPlan, QaPlanInput, QaRun } from './types'
 import { QaRunStore } from './QaRunStore'
+import type { QaProgressListener } from './progress'
 
 export class QaService {
   readonly #store: QaRunStore
@@ -37,7 +38,7 @@ export class QaService {
     return plan
   }
 
-  async execute(plan: QaPlan, signal?: AbortSignal): Promise<QaRun> {
+  async execute(plan: QaPlan, signal?: AbortSignal, onProgress?: QaProgressListener): Promise<QaRun> {
     const run: QaRun = {
       schemaVersion: 1,
       id: this.createRunId(plan.id),
@@ -48,13 +49,27 @@ export class QaService {
       results: [],
     }
     this.#store.saveRun(run)
-    for (const scenario of plan.scenarios) {
+    for (const [index, scenario] of plan.scenarios.entries()) {
+      onProgress?.({
+        type: 'scenario_started',
+        scenarioId: scenario.id,
+        description: scenario.description,
+        index: index + 1,
+        total: plan.scenarios.length,
+      })
       const driver = this.#drivers.get(scenario.profile)
       const result = driver
         ? await driver.execute(scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id), signal)
         : { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: `No QA driver for ${scenario.profile}`, evidence: [] }
       run.results.push(result)
       this.#store.saveRun(run)
+      onProgress?.({
+        type: 'scenario_completed',
+        scenarioId: scenario.id,
+        status: result.status,
+        index: index + 1,
+        total: plan.scenarios.length,
+      })
     }
     run.verdict = QaVerdictPolicy.evaluate(run.results)
     run.completedAt = new Date().toISOString()
