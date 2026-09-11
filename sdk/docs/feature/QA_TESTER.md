@@ -29,9 +29,9 @@ Run agentic acceptance with LLM-planned scenarios, terminal progress, runtime ev
   "tested_by": ["adr:tests"],
   "entrypoints": ["src/qa/QaAgenticOrchestrator.ts", "src/cli/services/qa-service.ts"],
   "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/index.ts", "src/qa/index.ts"],
-  "reference_files": ["src/qa/CurlDriver.ts"],
-  "code_files": ["src/qa/QaService.ts", "src/qa/QaRuntimeManager.ts", "src/qa/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/QaRunStore.ts", "src/qa/QaVerdictPolicy.ts", "src/qa/PlaywrightDriver.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
-  "test_files": ["src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
+  "reference_files": ["src/qa/engine/CurlDriver.ts"],
+  "code_files": ["src/qa/services/QaService.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
+  "test_files": ["src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
 }
 ```
 
@@ -43,10 +43,12 @@ Use `QaAgenticOrchestrator` independently of development orchestration. Accept a
 
 <folder_structure>
 ```text
-src/qa/                     # agentic orchestration, plans, reports, and drivers
-|-- phases/                 # planning, execution, and reporting handlers
+src/qa/                     # independent QA module
+|-- services/               # planning, persistence, runtime, probe, and verdict services
+|-- engine/                 # curl and Playwright execution adapters
+|-- phases/                 # planning, execution, analysis, and reporting handlers
 |-- ui/                     # QA-specific terminal presenter
-`-- QaAgenticOrchestrator.ts
+`-- QaAgenticOrchestrator.ts # phase-chain entrypoint
 src/cli/services/            # `hrns qa` command adapter
 ```
 </folder_structure>
@@ -62,18 +64,14 @@ src/cli/services/            # `hrns qa` command adapter
 7. **Report agentically**: synthesize verified bugs and errors, reconcile claims against runtime evidence, compute deterministic risk coverage matrices, and provide fallback reporting on LLM failures.
 8. **Stop managed runtimes** after success or failure, then persist immutable plan versions, run state, evidence, and `report.json`.
 
+When `hrns qa` finds a valid plan, select **resume** for agentic execution, analysis, and reporting without replanning. The selected `--model`, `--effort`, and `--debug` apply. Select **renew** to create a new plan.
+
 ```text
 # CORRECT: provide open scope; let LLM generate executable scenarios
 hrns qa --scope "Test order creation endpoint" --target http://127.0.0.1:3000
 
-# CORRECT: omit --scope and select short input or editor in the interactive form
-hrns qa --target http://127.0.0.1:3000
-
 # CORRECT: provide optional baseline scenarios; let LLM add gaps
 hrns qa --scope "Validate checkout" --scenario "Valid payment succeeds" --profile web
-
-# CORRECT: run integrated end-to-end acceptance across API and browser
-hrns qa --scope "Validate order workflow" --profile full
 
 # WRONG: use development validation as runtime acceptance
 hrns run --skip-validation
@@ -102,7 +100,7 @@ REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and driv
 
 ## DRIVERS
 
-`QaRuntimeManager` owns temporary static servers and cleanup. It binds `127.0.0.1` to port `0`, allowing the operating system to select a collision-free port, and makes that URL authoritative over guessed planner origins. Static serving is strictly whitelisted to public web assets (`.html`, `.css`, `.js`, `.mjs`, `.json`, images, fonts, wasm) and forbids source code or hidden configurations. `QaService` probes the target once before dispatching any driver; one unavailable target produces blocked scenarios and one deduplicated report error.
+`QaRuntimeManager` owns temporary static servers and cleanup. It binds `127.0.0.1` to port `0` and uses the assigned URL. Static serving allows only public web assets and forbids source or hidden configuration. `QaService` probes once before driver dispatch.
 
 `QaPlanningPhase` validates the agent plan before execution. `CurlDriver` uses real `curl`/`curl.exe` with origin isolation, bounds, and secret redaction. `PlaywrightDriver` performs human actions and observable assertions. `QaAnalysisPhase` generates bounded follow-up scenarios from evidence. `QaReportingPhase` reconciles findings with evidence and guarantees a final report on LLM failure.
 
@@ -115,7 +113,7 @@ rtk npx playwright install chromium
 
 ## LIMITS
 
-REQUIRED: Resolve a non-empty scope before agentic QA starts. ALLOWED: Supply `--scope` to skip the form. ALLOWED: Omit `--scope` and choose short input or a long editor form. ALLOWED: Omit scenarios; the planning LLM derives them from scope and project inspection. ALLOWED: Supply scenarios; the LLM preserves their intent and adds coverage gaps. PROHIBITED: Treat LLM prose as verdict truth; runtime results own verdict, evidence, and criterion status. Runtime acceptance starts root static sites automatically, but does not yet start arbitrary framework or API processes, gate development `REVIEW`/`TRANSITION`, retain video, or support native desktop binaries.
+REQUIRED: Resolve a non-empty scope before agentic QA starts. ALLOWED: Supply `--scope` or use the interactive form. ALLOWED: Omit scenarios or supply baselines for the LLM to expand. PROHIBITED: Treat LLM prose as verdict truth; runtime evidence owns verdicts. Runtime acceptance starts root static sites, but not framework/API processes or native binaries. It does not gate development, retain video, or support desktop apps.
 
 ## DOCUMENT MAP
 

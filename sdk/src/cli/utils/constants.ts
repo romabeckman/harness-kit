@@ -215,11 +215,11 @@ export const HELP_QA = `
 @romabeckman/harness-kit — hrns qa
 
 USAGE
-  hrns qa [agentic options]
+  hrns qa [agentic options] # offers resume/renew when a valid plan exists
   hrns qa --scope <text> [agentic options]
   hrns qa --scenario <text> [--scenario <text> ...] [agentic options]
   hrns qa agentic --scope <text> [agentic options]
-  hrns qa <plan|execute|run|report|doctor> [options]
+  hrns qa <plan|execute|renew|resume|run|report|doctor> [options]
 
 OPTIONS
   --scope <text>           Open QA scope; omit to choose short input or editor form
@@ -229,7 +229,7 @@ OPTIONS
   --model <model>          Model override for agentic phases
   --effort <level>         Reasoning effort override for agentic phases
   --plan <id[@version]>     QA plan identifier
-  --run <id>                QA run identifier for reports
+  --run <id>                QA run identifier for resume or reports
   --target <url>            Target application URL
   --profile <api|web|web-game>
   --criterion <text>        Required acceptance criterion; repeatable
@@ -244,6 +244,8 @@ EXAMPLES
   hrns qa --debug --scope "Test endpoint X" --target http://localhost:3000
   hrns qa plan --plan orders --target http://localhost:3000 --criterion "Order saves" --method POST --path /orders --expect-status 201
   hrns qa execute --plan orders@1
+  hrns qa renew --plan orders@1
+  hrns qa resume --run orders-20260911
   hrns qa run --plan orders --target http://localhost:3000 --criterion "Order saves"
   hrns qa report --run orders-20260911
   hrns qa doctor --profile web

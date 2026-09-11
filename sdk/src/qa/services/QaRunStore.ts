@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { QaFinalReport, QaPlan, QaRun } from './types'
+import type { QaFinalReport, QaPlan, QaRun } from '../types'
 
 const SAFE_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
 
@@ -54,6 +54,37 @@ export class QaRunStore {
     return this.readJson<QaPlan>(this.planPath(planId, version), 'QA plan')
   }
 
+  findLatestPlan(): QaPlan | undefined {
+    const plansDirectory = join(this.#root, 'plans')
+    if (!existsSync(plansDirectory)) return undefined
+
+    const plans: QaPlan[] = []
+    for (const planId of readdirSync(plansDirectory)) {
+      const directory = join(plansDirectory, planId)
+      let files: string[]
+      try {
+        files = readdirSync(directory)
+      } catch {
+        continue
+      }
+      for (const file of files) {
+        const match = /^(\d+)\.json$/.exec(file)
+        if (!match) continue
+        try {
+          const plan = this.loadPlan(planId, Number.parseInt(match[1], 10))
+          if (this.isValidPlan(plan, planId)) plans.push(plan)
+        } catch {
+          // Ignore incomplete or invalid artifacts when building interactive choices.
+        }
+      }
+    }
+
+    return plans.sort((left, right) => {
+      const byCreation = right.createdAt.localeCompare(left.createdAt)
+      return byCreation || right.version - left.version || right.id.localeCompare(left.id)
+    })[0]
+  }
+
   saveRun(run: QaRun): void {
     this.writeJson(this.runPath(run.id), run)
   }
@@ -72,6 +103,23 @@ export class QaRunStore {
 
   private assertIdentifier(value: string): void {
     if (!SAFE_IDENTIFIER.test(value)) throw new Error('Invalid QA identifier')
+  }
+
+  private isValidPlan(value: unknown, expectedId: string): value is QaPlan {
+    if (!value || typeof value !== 'object') return false
+    const plan = value as Partial<QaPlan>
+    if (plan.schemaVersion !== 1 || plan.id !== expectedId || !SAFE_IDENTIFIER.test(plan.id)) return false
+    if (!Number.isSafeInteger(plan.version) || (plan.version ?? 0) < 1) return false
+    if (plan.profile !== 'api' && plan.profile !== 'web' && plan.profile !== 'web-game') return false
+    if (typeof plan.target !== 'string' || typeof plan.createdAt !== 'string') return false
+    if (!Array.isArray(plan.criteria) || !plan.criteria.every((criterion) => typeof criterion === 'string')) return false
+    if (!Array.isArray(plan.scenarios)) return false
+    try {
+      new URL(plan.target)
+      return true
+    } catch {
+      return false
+    }
   }
 
   private writeJson(path: string, value: unknown): void {

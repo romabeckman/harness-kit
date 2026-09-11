@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import spawn from 'cross-spawn'
-import type { QaDriver, QaScenario, QaScenarioResult } from './types'
+import type { QaDriver, QaScenario, QaScenarioResult } from '../types'
 
 export class CurlDriver implements QaDriver {
   readonly profile = 'api' as const

@@ -1,4 +1,4 @@
-import type { QaScenarioResult, QaVerdict } from './types'
+import type { QaScenarioResult, QaVerdict } from '../types'
 
 export class QaVerdictPolicy {
   static evaluate(results: Pick<QaScenarioResult, 'required' | 'status' | 'evidence'>[]): QaVerdict {

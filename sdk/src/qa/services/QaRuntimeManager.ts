@@ -1,7 +1,7 @@
 import { createReadStream, existsSync, realpathSync, statSync } from 'node:fs'
 import { createServer, type ServerResponse } from 'node:http'
 import { extname, isAbsolute, relative, resolve } from 'node:path'
-import type { QaAgenticRequest } from './types'
+import type { QaAgenticRequest } from '../types'
 
 export interface QaRuntimeHandle {
   target: string

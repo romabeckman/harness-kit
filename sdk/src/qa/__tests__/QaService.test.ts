@@ -3,11 +3,8 @@ import { createServer, type RequestListener, type Server } from 'node:http'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { QaService } from '../QaService'
-import { QaRunStore } from '../QaRunStore'
-import { QaVerdictPolicy } from '../QaVerdictPolicy'
-import { CurlDriver } from '../CurlDriver'
-import { PlaywrightDriver } from '../PlaywrightDriver'
+import { QaService, QaRunStore, QaVerdictPolicy } from '../services'
+import { CurlDriver, PlaywrightDriver } from '../engine'
 import type { QaPlan } from '../types'
 
 describe('QaService', () => {

@@ -1,5 +1,5 @@
-import { QaRunStore } from '../../qa/QaRunStore'
-import { QaService } from '../../qa/QaService'
+import { QaRunStore } from '../../qa/services/QaRunStore'
+import { QaService } from '../../qa/services/QaService'
 import { QaAgenticOrchestrator } from '../../qa/QaAgenticOrchestrator'
 import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 import { Runner } from '../../agent-runner/types'
@@ -11,11 +11,11 @@ import { HarnessSettings } from '../../settings/HarnessSettings'
 import { QaTerminalView } from '../../qa/ui/QaTerminalView'
 import type { QaTerminalPresenter } from '../../qa/progress'
 import { DebugContext } from '../DebugContext'
-import type { QaTargetProbe } from '../../qa/QaTargetProbe'
-import type { QaRuntimePreparer } from '../../qa/QaRuntimeManager'
+import type { QaTargetProbe } from '../../qa/services/QaTargetProbe'
+import type { QaRuntimePreparer } from '../../qa/services/QaRuntimeManager'
 import { validateScope } from '../utils/cli-utils'
 
-export type QaAction = 'agentic' | 'plan' | 'execute' | 'run' | 'report' | 'doctor'
+export type QaAction = 'agentic' | 'plan' | 'execute' | 'renew' | 'resume' | 'run' | 'report' | 'doctor'
 
 export interface QaCliOptions {
   action: QaAction
@@ -45,7 +45,7 @@ export interface QaCommandDependencies {
 }
 
 export function parseQaArgs(args: string[]): QaCliOptions {
-  const actions: QaAction[] = ['agentic', 'plan', 'execute', 'run', 'report', 'doctor']
+  const actions: QaAction[] = ['agentic', 'plan', 'execute', 'renew', 'resume', 'run', 'report', 'doctor']
   const first = args[0]
   const hasAction = actions.includes(first as QaAction)
   if (first && !hasAction && !first.startsWith('-')) throw new Error(`Unknown QA action: ${first}\n${HELP_QA}`)
@@ -120,12 +120,50 @@ async function resolveAgenticScope(scope?: string): Promise<string> {
     })
 }
 
+async function selectSavedPlanAction(): Promise<'resume' | 'renew'> {
+  const { select } = await import('@inquirer/prompts')
+  return select({
+    message: 'A saved QA plan exists. What would you like to do?',
+    choices: [
+      { name: 'resume — execute the saved QA plan', value: 'resume' },
+      { name: 'renew  — create a new agentic QA plan', value: 'renew' },
+    ],
+  })
+}
+
 export async function cmdQa(cwd: string, args: string[], dependencies: QaCommandDependencies = {}): Promise<void> {
+  const explicitAction = args[0] && !args[0].startsWith('-')
   const options = parseQaArgs(args)
   if (options.debug) DebugContext.enable()
+  const workspace = resolve(cwd, options.projectPath ?? '.')
+  if (!explicitAction && options.action === 'agentic' && options.scope === undefined && options.scenarios.length === 0) {
+    const savedPlan = new QaRunStore(workspace).findLatestPlan()
+    if (savedPlan && await selectSavedPlanAction() === 'resume') {
+      const runner = dependencies.runner ?? AgentRunnerFactory.create({
+        type: options.agentType ?? Runner.CLAUDE_CLI,
+        model: options.model,
+        effort: options.effort,
+      })
+      const settings = dependencies.settings ?? HarnessSettings.load(workspace)
+      const view = dependencies.view ?? new QaTerminalView()
+      view.start({ target: savedPlan.target, profile: savedPlan.profile }, workspace)
+      const report = await new QaAgenticOrchestrator({
+        workspace,
+        runner,
+        drivers: dependencies.drivers,
+        settings,
+        model: options.model,
+        effort: options.effort,
+        onProgress: (event) => view.onProgress(event),
+        targetProbe: dependencies.targetProbe,
+        runtime: dependencies.runtime,
+      }).resume(savedPlan)
+      view.renderReport(report)
+      return
+    }
+  }
   if (options.action === 'agentic') {
     options.scope = await resolveAgenticScope(options.scope)
-    const workspace = resolve(cwd, options.projectPath ?? '.')
     const runner = dependencies.runner ?? AgentRunnerFactory.create({
       type: options.agentType ?? Runner.CLAUDE_CLI,
       model: options.model,
@@ -154,8 +192,8 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
     view.renderReport(report)
     return
   }
-  const store = new QaRunStore(cwd)
-  const service = new QaService(store)
+  const store = new QaRunStore(workspace)
+  const service = new QaService(store, dependencies.drivers, dependencies.targetProbe)
   if (options.action === 'plan') {
     const plan = service.plan(planInput(options))
     console.log(`QA plan saved: ${plan.id}@${plan.version}`)
@@ -164,6 +202,25 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
   if (options.action === 'execute') {
     const run = await service.execute(loadPlan(store, options))
     console.log(`QA run completed: ${run.id} (${run.verdict})`)
+    return
+  }
+  if (options.action === 'renew') {
+    const plan = loadPlan(store, options, 'renew')
+    const run = await service.execute(plan)
+    console.log(`QA plan renewed: ${plan.id}@${plan.version} as ${run.id} (${run.verdict})`)
+    return
+  }
+  if (options.action === 'resume') {
+    if (!options.runId) throw new Error('QA resume requires --run <id>')
+    const run = store.loadRun(options.runId)
+    const plan = store.loadPlan(run.planId, run.planVersion)
+    const completedScenarioIds = new Set(run.results.map((result) => result.scenarioId))
+    const pendingScenarios = plan.scenarios.filter((scenario) => !completedScenarioIds.has(scenario.id))
+    if (pendingScenarios.length === 0) {
+      throw new Error(`QA run has no unfinished scenarios. Use renew --plan ${plan.id}@${plan.version}`)
+    }
+    const resumed = await service.continue(run, plan, pendingScenarios)
+    console.log(`QA run resumed: ${resumed.id} (${resumed.verdict})`)
     return
   }
   if (options.action === 'run') {
@@ -190,7 +247,7 @@ function planInput(options: QaCliOptions): { planId: string; target: string; cri
   return { planId: options.planId, target: options.target, criteria: options.criteria, profile: options.profile ?? 'api', requests: options.request ? [options.request] : undefined }
 }
 
-function loadPlan(store: QaRunStore, options: QaCliOptions): QaPlan {
-  if (!options.planId) throw new Error('QA execute requires --plan <id>@<version>')
+function loadPlan(store: QaRunStore, options: QaCliOptions, action: 'execute' | 'renew' = 'execute'): QaPlan {
+  if (!options.planId) throw new Error(`QA ${action} requires --plan <id>@<version>`)
   return store.loadPlan(options.planId, options.version ?? 1)
 }

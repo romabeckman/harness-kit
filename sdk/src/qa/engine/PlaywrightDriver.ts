@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { QaBrowserAction, QaDriver, QaScenario, QaScenarioResult } from './types'
+import type { QaBrowserAction, QaDriver, QaScenario, QaScenarioResult } from '../types'
 
 type PlaywrightModule = { chromium: { launch(options: { headless: boolean }): Promise<any> } }
 type PlaywrightLoader = () => Promise<PlaywrightModule>

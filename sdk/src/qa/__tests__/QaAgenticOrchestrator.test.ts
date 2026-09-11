@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
 import type { QaDriver } from '../types'
 import { QaAgenticOrchestrator } from '../QaAgenticOrchestrator'
-import { QaRunStore } from '../QaRunStore'
+import { QaRunStore } from '../services/QaRunStore'
 import { HarnessSettings } from '../../settings/HarnessSettings'
 import { Runner } from '../../agent-runner/types'
 
@@ -139,6 +139,33 @@ describe('QaAgenticOrchestrator', () => {
     const orchestrator = new QaAgenticOrchestrator({ workspace, runner, store: new QaRunStore(workspace), drivers: [] })
 
     await expect(orchestrator.run({ scope: 'Test it' })).rejects.toThrow('Invalid agentic QA plan')
+  })
+
+  it('resumes a stored plan through execution, analysis, and reporting without replanning', async () => {
+    const phases: string[] = []
+    const runner: IAgentRunner = { run: vi.fn(async (invocation) => {
+      phases.push(invocation.phaseKey ?? '')
+      return invocation.phaseKey === 'qa_analysis'
+        ? { raw: '{"complete":true}' }
+        : { raw: '{"summary":"Stored plan resumed.","bugs":[],"errors":[]}' }
+    }) }
+    const driver: QaDriver = { profile: 'api', doctor: async () => ({ available: true }), execute: async (scenario) => ({
+      scenarioId: scenario.id, required: true, status: 'PASSED',
+      evidence: [{ id: 'response', path: 'response.body', capturedAt: '', adapter: 'test' }],
+    }) }
+    const plan = {
+      schemaVersion: 1 as const, id: 'saved-plan', version: 1, target: 'http://127.0.0.1:3000', profile: 'api' as const,
+      createdAt: '', criteria: ['Health works'], scenarios: [{ id: 'health', criterionIds: ['criterion-1'], required: true, profile: 'api' as const }],
+    }
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace, runner, drivers: [driver], model: 'gemini-3.7-flash', targetProbe: async () => ({ available: true }),
+    })
+
+    const report = await orchestrator.resume(plan)
+
+    expect(phases).toEqual(['qa_analysis', 'qa_reporting'])
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ model: 'gemini-3.7-flash' }), expect.anything())
+    expect(report).toMatchObject({ verdict: 'PASS', summary: 'Stored plan resumed.' })
   })
 
   it('rejects browser plans without executable assertions and unsafe action budgets', async () => {
