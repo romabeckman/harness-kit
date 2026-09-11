@@ -69,7 +69,7 @@ EXAMPLES
   hrns run --reset --scope "My app" --path ./api --complexity LOW
   hrns run --reset --scope "My app" --path ./api --skip-deploy
   hrns diagnose
-  hrns qa plan --plan orders --target http://localhost:3000 --criterion "Order saves"
+  hrns qa --scope "Test the orders endpoint" --target http://localhost:3000
   hrns candidate list
   hrns candidate review v001
   hrns report
@@ -215,9 +215,18 @@ export const HELP_QA = `
 @romabeckman/harness-kit — hrns qa
 
 USAGE
+  hrns qa --scope <text> [agentic options]
+  hrns qa --scenario <text> [--scenario <text> ...] [agentic options]
+  hrns qa agentic --scope <text> [agentic options]
   hrns qa <plan|execute|run|report|doctor> [options]
 
 OPTIONS
+  --scope <text>           Open QA scope; the LLM generates test scenarios
+  --scenario <text>        Optional detailed scenario; repeatable
+  --project <path>         Project to inspect and test (default: current directory)
+  --agent <runner>         Agent runner (default: claude-cli)
+  --model <model>          Model override for agentic phases
+  --effort <level>         Reasoning effort override for agentic phases
   --plan <id[@version]>     QA plan identifier
   --run <id>                QA run identifier for reports
   --target <url>            Target application URL
@@ -228,6 +237,8 @@ OPTIONS
   --expect-status <code>    Expected API response status (default: 200)
 
 EXAMPLES
+  hrns qa --scope "Test endpoint X" --target http://localhost:3000
+  hrns qa --scope "Validate checkout" --scenario "A valid card completes payment" --profile web
   hrns qa plan --plan orders --target http://localhost:3000 --criterion "Order saves" --method POST --path /orders --expect-status 201
   hrns qa execute --plan orders@1
   hrns qa run --plan orders --target http://localhost:3000 --criterion "Order saves"

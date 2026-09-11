@@ -1,9 +1,15 @@
 import { QaRunStore } from '../../qa/QaRunStore'
 import { QaService } from '../../qa/QaService'
-import type { QaHttpRequest, QaPlan, QaProfile } from '../../qa/types'
+import { QaAgenticOrchestrator } from '../../qa/QaAgenticOrchestrator'
+import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
+import { Runner } from '../../agent-runner/types'
+import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
+import type { QaDriver, QaHttpRequest, QaPlan, QaProfile } from '../../qa/types'
 import { HELP_QA } from '../utils/constants'
+import { resolve } from 'node:path'
+import { HarnessSettings } from '../../settings/HarnessSettings'
 
-export type QaAction = 'plan' | 'execute' | 'run' | 'report' | 'doctor'
+export type QaAction = 'agentic' | 'plan' | 'execute' | 'run' | 'report' | 'doctor'
 
 export interface QaCliOptions {
   action: QaAction
@@ -11,18 +17,30 @@ export interface QaCliOptions {
   version?: number
   runId?: string
   target?: string
-  profile: QaProfile
+  profile?: QaProfile
   criteria: string[]
+  scope?: string
+  scenarios: string[]
+  projectPath?: string
+  agentType?: string
+  model?: string
+  effort?: string
   request?: QaHttpRequest
 }
 
+export interface QaCommandDependencies {
+  runner?: IAgentRunner
+  drivers?: QaDriver[]
+  settings?: HarnessSettings
+}
+
 export function parseQaArgs(args: string[]): QaCliOptions {
-  const action = args[0] as QaAction | undefined
-  if (!action || !['plan', 'execute', 'run', 'report', 'doctor'].includes(action)) {
-    throw new Error(`QA action required.\n${HELP_QA}`)
-  }
-  const options: QaCliOptions = { action, profile: 'api', criteria: [] }
-  for (let index = 1; index < args.length; index++) {
+  const actions: QaAction[] = ['agentic', 'plan', 'execute', 'run', 'report', 'doctor']
+  const first = args[0]
+  const hasAction = actions.includes(first as QaAction)
+  if (first && !hasAction && !first.startsWith('-')) throw new Error(`Unknown QA action: ${first}\n${HELP_QA}`)
+  const options: QaCliOptions = { action: hasAction ? first as QaAction : 'agentic', criteria: [], scenarios: [] }
+  for (let index = hasAction ? 1 : 0; index < args.length; index++) {
     const argument = args[index]
     const [flag, inlineValue] = argument.split('=', 2)
     const value = inlineValue ?? args[++index]
@@ -39,6 +57,18 @@ export function parseQaArgs(args: string[]): QaCliOptions {
       options.profile = value
     } else if (flag === '--criterion') {
       options.criteria.push(value)
+    } else if (flag === '--scope' || flag === '--objective') {
+      options.scope = value
+    } else if (flag === '--scenario') {
+      options.scenarios.push(value)
+    } else if (flag === '--project') {
+      options.projectPath = value
+    } else if (flag === '--agent') {
+      options.agentType = value
+    } else if (flag === '--model') {
+      options.model = value
+    } else if (flag === '--effort') {
+      options.effort = value
     } else if (flag === '--method') {
       options.request = { method: value, path: options.request?.path ?? '', expectedStatus: options.request?.expectedStatus ?? 200 }
     } else if (flag === '--path') {
@@ -56,8 +86,33 @@ export function parseQaArgs(args: string[]): QaCliOptions {
   return options
 }
 
-export async function cmdQa(cwd: string, args: string[]): Promise<void> {
+export async function cmdQa(cwd: string, args: string[], dependencies: QaCommandDependencies = {}): Promise<void> {
   const options = parseQaArgs(args)
+  if (options.action === 'agentic') {
+    if (!options.scope && options.scenarios.length === 0) throw new Error('Agentic QA requires --scope <text> or one or more --scenario <text> values')
+    const workspace = resolve(cwd, options.projectPath ?? '.')
+    const runner = dependencies.runner ?? AgentRunnerFactory.create({
+      type: options.agentType ?? Runner.CLAUDE_CLI,
+      model: options.model,
+      effort: options.effort,
+    })
+    const settings = dependencies.settings ?? HarnessSettings.load(workspace)
+    const report = await new QaAgenticOrchestrator({
+      workspace,
+      runner,
+      drivers: dependencies.drivers,
+      settings,
+      model: options.model,
+      effort: options.effort,
+    }).run({
+      scope: options.scope,
+      scenarios: options.scenarios,
+      target: options.target,
+      profile: options.profile,
+    })
+    console.log(JSON.stringify(report, null, 2))
+    return
+  }
   const store = new QaRunStore(cwd)
   const service = new QaService(store)
   if (options.action === 'plan') {
@@ -81,8 +136,9 @@ export async function cmdQa(cwd: string, args: string[]): Promise<void> {
     console.log(JSON.stringify(store.loadRun(options.runId), null, 2))
     return
   }
-  const availability = await service.doctor(options.profile)
-  console.log(JSON.stringify({ profile: options.profile, ...availability }, null, 2))
+  const profile = options.profile ?? 'api'
+  const availability = await service.doctor(profile)
+  console.log(JSON.stringify({ profile, ...availability }, null, 2))
 }
 
 function planInput(options: QaCliOptions): { planId: string; target: string; criteria: string[]; profile: QaProfile; requests?: QaHttpRequest[] } {
@@ -90,7 +146,7 @@ function planInput(options: QaCliOptions): { planId: string; target: string; cri
     throw new Error('QA plan requires --plan <id>, --target <url>, and one or more --criterion values')
   }
   if (options.request && !options.request.path) throw new Error('QA API request requires --path <path>')
-  return { planId: options.planId, target: options.target, criteria: options.criteria, profile: options.profile, requests: options.request ? [options.request] : undefined }
+  return { planId: options.planId, target: options.target, criteria: options.criteria, profile: options.profile ?? 'api', requests: options.request ? [options.request] : undefined }
 }
 
 function loadPlan(store: QaRunStore, options: QaCliOptions): QaPlan {

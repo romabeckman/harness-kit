@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { QaPlan, QaRun } from './types'
+import type { QaFinalReport, QaPlan, QaRun } from './types'
 
 const SAFE_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
 
@@ -28,6 +28,11 @@ export class QaRunStore {
     return join(this.#root, 'runs', runId, 'evidence', scenarioId)
   }
 
+  reportPath(runId: string): string {
+    this.assertIdentifier(runId)
+    return join(this.#root, 'runs', runId, 'report.json')
+  }
+
   savePlan(plan: QaPlan): void {
     this.writeJson(this.planPath(plan.id, plan.version), plan)
   }
@@ -42,6 +47,14 @@ export class QaRunStore {
 
   loadRun(runId: string): QaRun {
     return this.readJson<QaRun>(this.runPath(runId), 'QA run')
+  }
+
+  saveReport(report: QaFinalReport): void {
+    this.writeJson(this.reportPath(report.runId), report)
+  }
+
+  loadReport(runId: string): QaFinalReport {
+    return this.readJson<QaFinalReport>(this.reportPath(runId), 'QA report')
   }
 
   private assertIdentifier(value: string): void {

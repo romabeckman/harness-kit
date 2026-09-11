@@ -7,10 +7,31 @@ Use this playbook to validate a completed change as a human would, independently
 Plan the acceptance condition first, run it against the application a user would reach, inspect its evidence, and record the QA verdict. A passing build, unit test, or development-agent report is not a substitute for this flow.
 
 ```text
-plan -> execute -> inspect evidence -> report verdict
+LLM planning -> curl/Playwright execution -> LLM reporting -> final report
 ```
 
-`hrns qa` does not start the target application. Start it in the target project, use an isolated test environment where appropriate, and point QA at its reachable URL.
+`hrns qa` accepts an open scope or optional detailed scenarios. The LLM inspects the project, generates missing scenarios, and selects executable API or browser actions. It does not start the target application; start it first and provide its reachable URL.
+
+## Agentic daily flow
+
+Use open scope when QA should discover coverage:
+
+```bash
+# CORRECT: LLM inspects project and generates endpoint scenarios
+hrns qa --scope "Test endpoint X" --target http://127.0.0.1:3000
+```
+
+Add detailed scenarios when known. The LLM treats them as baseline, analyzes gaps, and may add scenarios:
+
+```bash
+# CORRECT: supplied scenarios plus agent-discovered coverage
+hrns qa --project ../checkout --scope "Validate checkout" --scenario "Valid card completes payment" --scenario "Declined card shows a recoverable error" --profile web
+
+# WRONG: omit both scope and scenarios
+hrns qa --target http://127.0.0.1:3000
+```
+
+CLI output contains only final JSON report: verdict, summary, success criteria, bugs, and execution errors. Audit artifacts remain under `.harness-kit/qa/`.
 
 ## One-time browser setup
 
@@ -26,9 +47,9 @@ hrns qa doctor --profile web
 
 Run `doctor` before every new machine, dependency refresh, or browser-profile failure. Do not use production credentials or production data in a QA plan.
 
-## API endpoint check
+## Manual API endpoint check
 
-Use one QA plan for one endpoint acceptance condition. The request is performed through real `curl`, and its request metadata and response body become evidence.
+Use low-level subcommands only when deterministic, non-agentic control is required. The request runs through real `curl`; request metadata and response body become evidence.
 
 ```bash
 # The target app must already be listening on port 3000.
@@ -50,7 +71,7 @@ hrns qa report --run <qa-run-id>
 
 At present, the CLI request flags define one HTTP request for the generated plan. Create a separate plan for each endpoint or use the SDK to construct a multi-scenario plan deliberately.
 
-## Interface check
+## Manual interface check
 
 For a browser interface, validate the visible user path: navigate, click the controls, fill a form, submit it, and make sure the page remains operational. Browser flows save a final screenshot and fail if the page emits a JavaScript runtime error.
 
@@ -72,7 +93,7 @@ click [type="submit"]
 wait for the confirmation to settle
 ```
 
-## Web-game check
+## Manual web-game check
 
 Treat a web game as a player would: start a session, perform meaningful controls, wait for state to advance, and inspect the final screen and browser errors.
 

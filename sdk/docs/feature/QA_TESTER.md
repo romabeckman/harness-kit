@@ -1,7 +1,7 @@
 ---
 doc_type: feature
 domain: qa
-stack: [TypeScript, Node.js, curl, Playwright]
+stack: [TypeScript, Node.js, LLM agent runners, curl, Playwright]
 node_id: "feature:qa_tester"
 tags: [qa, acceptance, curl, playwright]
 edges:
@@ -11,11 +11,13 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_cli"
+  - relation: depends_on
+    target: "feature:sdk_settings"
 updated: "2026-09-11"
 ---
 # INDEPENDENT QA TESTER
 
-Run acceptance testing outside development orchestration, with persisted plans, execution evidence, and a strict verdict.
+Run agentic acceptance outside development orchestration, with LLM-planned scenarios, real runtime evidence, and one final report.
 
 ```graph
 {
@@ -23,40 +25,45 @@ Run acceptance testing outside development orchestration, with persisted plans, 
   "domain": "qa",
   "implements": ["adr:architecture"],
   "tested_by": ["adr:tests"],
-  "entrypoints": ["src/qa/QaService.ts", "src/cli/services/qa-service.ts"],
-  "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/index.ts"],
+  "entrypoints": ["src/qa/QaAgenticOrchestrator.ts", "src/cli/services/qa-service.ts"],
+  "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/index.ts", "src/qa/index.ts"],
   "reference_files": ["src/qa/CurlDriver.ts"],
-  "code_files": ["src/qa/types.ts", "src/qa/QaRunStore.ts", "src/qa/QaVerdictPolicy.ts", "src/qa/PlaywrightDriver.ts", "src/qa/index.ts"],
-  "test_files": ["src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
+  "code_files": ["src/qa/QaService.ts", "src/qa/types.ts", "src/qa/QaRunStore.ts", "src/qa/QaVerdictPolicy.ts", "src/qa/PlaywrightDriver.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
+  "test_files": ["src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
 }
 ```
 
 ## OVERVIEW
 
-Use `QaService` independently of backlog, feature, development session, and review score. Persist plans under `.harness-kit/qa/plans/` and run state/evidence under `.harness-kit/qa/runs/` through atomic replacement.
+Use `QaAgenticOrchestrator` independently of backlog, development session, and review score. Accept an open scope or optional detailed scenarios. Persist plans under `.harness-kit/qa/plans/`; persist run state, evidence, and `report.json` under `.harness-kit/qa/runs/` through atomic replacement.
 
 ## FOLDER STRUCTURE
 
 <folder_structure>
 ```text
-src/qa/                     # plans, verdicts, storage, HTTP/browser drivers
+src/qa/                     # agentic orchestration, plans, reports, and drivers
+|-- phases/                 # planning, execution, and reporting handlers
+`-- QaAgenticOrchestrator.ts
 src/cli/services/            # `hrns qa` command adapter
 ```
 </folder_structure>
 
 ## EXECUTION
 
-1. Create one required scenario per supplied criterion with `hrns qa plan`.
-2. Execute a saved plan or create and execute with `hrns qa run`.
-3. Inspect the persisted report with `hrns qa report`.
-4. Run `hrns qa doctor` before browser validation.
+1. **Supply scope or scenarios** with `hrns qa`.
+2. **Plan agentically**: inspect the project, preserve supplied scenario intent, and add missing coverage.
+3. **Execute deterministically**: use real `curl` or Playwright actions selected by the plan.
+4. **Report agentically**: synthesize bugs and errors while deriving verdict and criterion status from runtime results.
+5. **Return only final report** to the CLI user; persist plan, evidence, run state, and report for audit.
 
 ```text
-# CORRECT: plan acceptance before product execution
-hrns qa plan --plan orders --target http://127.0.0.1:3000 --criterion "Order saves" --method POST --path /orders --expect-status 201
-hrns qa execute --plan orders@1
+# CORRECT: provide open scope; let LLM generate executable scenarios
+hrns qa --scope "Test order creation endpoint" --target http://127.0.0.1:3000
 
-# WRONG: treat a development result as QA acceptance
+# CORRECT: provide optional baseline scenarios; let LLM add gaps
+hrns qa --scope "Validate checkout" --scenario "Valid payment succeeds" --profile web
+
+# WRONG: use development validation as runtime acceptance
 hrns run --skip-validation
 ```
 
@@ -71,7 +78,7 @@ hrns run --skip-validation
 
 ## DRIVERS
 
-`CurlDriver` invokes real `curl`/`curl.exe`, saving request metadata and response bodies. `PlaywrightDriver` launches Chromium, executes declared navigation/control actions, records a final screenshot, and fails scenarios when the page raises a runtime error. Browser execution needs local Playwright and Chromium.
+`QaPlanningPhase` invokes the configured agent runner and validates its plan before execution. `CurlDriver` invokes real `curl`/`curl.exe`; `PlaywrightDriver` launches Chromium and performs declared human actions. `QaReportingPhase` invokes the LLM again, then reconciles its narrative with deterministic scenario results so failed or blocked checks cannot become `PASS`.
 
 Run this once after dependency changes:
 
@@ -82,7 +89,7 @@ rtk npx playwright install chromium
 
 ## LIMITS
 
-Current planning is deterministic: it persists criteria as scenarios and does not infer API paths or browser controls. Provide one API request through CLI flags or add browser actions programmatically before execution. Runtime acceptance does not yet gate `REVIEW`/`TRANSITION`, provide agent-generated plans, retain traces/video, or support native games.
+REQUIRED: Supply `--scope` or at least one `--scenario`. ALLOWED: Omit scenarios; the planning LLM derives them from scope and project inspection. ALLOWED: Supply scenarios; the LLM preserves their intent and adds coverage gaps. PROHIBITED: Treat LLM prose as verdict truth; runtime results own verdict and criterion status. Runtime acceptance does not yet gate development `REVIEW`/`TRANSITION`, start target applications, retain traces/video, or support native games.
 
 ## DOCUMENT MAP
 
@@ -91,6 +98,7 @@ graph TD
     QA["Independent QA Tester"] -->|implements| ARCH["Project Architecture"]
     QA -->|tested_by| TESTS["Testing Protocol"]
     QA -->|depends_on| CLI["SDK CLI"]
+    QA -->|depends_on| SETTINGS["SDK Settings"]
 ```
 
 ## REFERENCES
@@ -98,3 +106,4 @@ graph TD
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Ports and adapter boundaries.
 - [**TESTS.md**](../adr/TESTS.md): Test commands and isolation rules.
 - [**SDK_CLI.md**](./SDK_CLI.md): CLI registration and command conventions.
+- [**SDK_SETTINGS.md**](./SDK_SETTINGS.md): Default model and effort for QA planning and reporting phases.

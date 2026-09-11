@@ -65,6 +65,48 @@ export interface QaRun {
   results: QaScenarioResult[]
 }
 
+export type QaBugSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+
+export interface QaSuccessCriterionReport {
+  criterion: string
+  status: QaScenarioStatus
+  reason?: string
+  evidence: string[]
+}
+
+export interface QaBugReport {
+  scenarioId: string
+  title: string
+  severity: QaBugSeverity
+  expected: string
+  actual: string
+  evidence: string[]
+}
+
+export interface QaErrorReport {
+  scenarioId?: string
+  message: string
+}
+
+export interface QaFinalReport {
+  schemaVersion: 1
+  runId: string
+  planId: string
+  verdict: QaVerdict
+  summary: string
+  successCriteria: QaSuccessCriterionReport[]
+  bugs: QaBugReport[]
+  errors: QaErrorReport[]
+  completedAt: string
+}
+
+export interface QaAgenticRequest {
+  scope?: string
+  scenarios?: string[]
+  target?: string
+  profile?: QaProfile
+}
+
 export interface QaPlanInput {
   planId: string
   target: string

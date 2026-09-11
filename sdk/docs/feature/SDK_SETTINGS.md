@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-15"
+updated: "2026-09-11"
 ---
 
 ```graph
@@ -61,8 +61,9 @@ sdk/src/settings/
 </code_example>
 
 ## BEST PRACTICES
-REQUIRED: Use valid phase keys (`bootstrap`, `PLANNING`, `implementation`, `review_tl`, `review_adv`, `memory`).
+REQUIRED: Use valid phase keys (`bootstrap`, `planning`, `implementation`, `review_tl`, `review_adv`, `memory`, `diagnose`, `qa_planning`, `qa_reporting`).
 REQUIRED: Resolve settings using the precedence order: Project > Global > Internal Defaults.
+REQUIRED: Use `qa_planning` for QA plan generation and `qa_reporting` for final report synthesis. CLI `--model` and `--effort` values override both keys.
 
 ## DOCUMENT MAP
 

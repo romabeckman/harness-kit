@@ -201,22 +201,20 @@ hrns report --export csv -o ./reports/my-report.csv
 
 ### `hrns qa`
 
-Runs independent runtime acceptance checks after development. QA plans, execution state, and evidence are persisted below `.harness-kit/qa/` in the target project; a development or unit-test result is not a QA verdict.
+Runs independent, agentic runtime acceptance after development. An LLM inspects the project, creates or expands test scenarios, real `curl` or Playwright drivers execute them, then the LLM produces one final bug and success-criteria report. QA artifacts persist below `.harness-kit/qa/` in the tested project.
 
 ```bash
-# Plan and execute a real HTTP acceptance check against a running application
-hrns qa plan --plan create-order --target http://127.0.0.1:3000 --profile api --criterion "Order is created" --method POST --path /orders --expect-status 201
-hrns qa execute --plan create-order@1
+# Open scope: LLM discovers and creates required scenarios
+hrns qa --scope "Test endpoint X" --target http://127.0.0.1:3000
 
-# Create and execute a plan in one command, then inspect its evidence
-hrns qa run --plan health-check --target http://127.0.0.1:3000 --profile api --criterion "Health endpoint responds" --method GET --path /health --expect-status 200
-hrns qa report --run <qa-run-id>
+# Optional detailed scenarios: LLM analyzes them and adds missing coverage
+hrns qa --project ../web-game --scope "Validate gameplay" --scenario "Player starts a game" --scenario "Player moves and rotates a piece" --profile web-game
 
-# Verify browser prerequisites before UI or web-game validation
+# Check deterministic driver prerequisites
 hrns qa doctor --profile web-game
 ```
 
-Use `--profile api` for real `curl` requests and `--profile web` or `web-game` for Playwright browser flows. Browser checks require Chromium to be installed once with `npx playwright install chromium`. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md) for repeatable API, interface, and game workflows.
+Supply either `--scope` or one or more `--scenario` values. Use `--profile api`, `web`, or `web-game` as an optional hint; the planning phase can infer it. Browser checks require Chromium installed once with `npx playwright install chromium`. Low-level `plan`, `execute`, `run`, and `report` subcommands remain available for deterministic workflows. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md).
 
 ### `hrns erase`
 
@@ -308,7 +306,7 @@ Each runner is a self-contained strategy for invoking a specific AI backend. The
 |---|---|---|
 | `claude-cli` | `claude` CLI | _(from settings)_ |
 | `claude-sdk` | `@anthropic-ai/sdk` | `anthropic.claude-5-sonnet` |
-| `antigravity-cli` | `agy` CLI | `gemini-3.7-flash` |
+| `antigravity-cli` | `agy` CLI | `gemini-3.8-flash` |
 | `codex-cli` | `codex` CLI | `gpt-5.6-sol` / `gpt-5.6-luna` |
 | `copilot-cli` | `copilot` CLI | _(from settings)_ |
 | `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.6-sol` / `gpt-5.6-luna` |
@@ -396,6 +394,8 @@ The global file is created automatically on first run. You can also set `HARNESS
 | `review_adv` | Phase C — adversarial-qa review |
 | `memory` | Phase E — project-memory |
 | `diagnose` | Harness diagnosis — meta-harness-agent |
+| `qa_planning` | Agentic QA scenario planning |
+| `qa_reporting` | Agentic QA final report synthesis |
 
 ### Default settings
 
@@ -410,19 +410,23 @@ The global file is created automatically on first run. You can also set `HARNESS
       "review_tl":      { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
       "review_adv":     { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
       "memory":         { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
-      "diagnose":       { "model": "anthropic.claude-5-sonnet", "effort": "low"    }
+      "diagnose":       { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
+      "qa_planning":    { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
+      "qa_reporting":   { "model": "anthropic.claude-5-sonnet", "effort": "low"    }
     }
   },
   "antigravity": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":      { "model": "gemini-3.7-flash", "effort": "medium" },
-      "planning":       { "model": "gemini-3.7-flash", "effort": "high"   },
-      "implementation": { "model": "gemini-3.7-flash", "effort": "medium" },
-      "review_tl":      { "model": "gemini-3.7-flash", "effort": "low"    },
-      "review_adv":     { "model": "gemini-3.7-flash", "effort": "low"    },
-      "memory":         { "model": "gemini-3.7-flash", "effort": "low"    },
-      "diagnose":       { "model": "gemini-3.7-flash", "effort": "low"    }
+      "bootstrap":      { "model": "gemini-3.8-flash", "effort": "medium" },
+      "planning":       { "model": "gemini-3.8-flash", "effort": "high"   },
+      "implementation": { "model": "gemini-3.8-flash", "effort": "medium" },
+      "review_tl":      { "model": "gemini-3.8-flash", "effort": "low"    },
+      "review_adv":     { "model": "gemini-3.8-flash", "effort": "low"    },
+      "memory":         { "model": "gemini-3.8-flash", "effort": "low"    },
+      "diagnose":       { "model": "gemini-3.8-flash", "effort": "low"    },
+      "qa_planning":    { "model": "gemini-3.8-flash", "effort": "high"   },
+      "qa_reporting":   { "model": "gemini-3.8-flash", "effort": "low"    }
     }
   },
   "copilot": {
@@ -434,7 +438,9 @@ The global file is created automatically on first run. You can also set `HARNESS
       "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "memory":         { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  }
+      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "qa_planning":    { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "qa_reporting":   { "model": "gpt-5.6-sol",  "effort": "low"    }
     }
   },
   "cursor": {
@@ -446,7 +452,9 @@ The global file is created automatically on first run. You can also set `HARNESS
       "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "memory":         { "model": "gpt-5.6-sol",  "effort": "low"    },
-      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  }
+      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "qa_planning":    { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "qa_reporting":   { "model": "gpt-5.6-sol",  "effort": "low"    }
     }
   },
   "codex": {
@@ -458,7 +466,9 @@ The global file is created automatically on first run. You can also set `HARNESS
       "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
       "memory":         { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  }
+      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  },
+      "qa_planning":    { "model": "gpt-5.6-sol",  "effort": "medium" },
+      "qa_reporting":   { "model": "gpt-5.6-sol",  "effort": "low"    }
     }
   }
 }
