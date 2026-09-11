@@ -131,14 +131,30 @@ async function selectSavedPlanAction(): Promise<'resume' | 'renew'> {
   })
 }
 
+async function selectSavedPlan(plans: QaPlan[]): Promise<QaPlan> {
+  const { select } = await import('@inquirer/prompts')
+  const selected = await select({
+    message: 'Select the QA plan to resume:',
+    choices: plans.map((plan) => ({
+      name: `${plan.id}@${plan.version} — ${plan.criteria[0] ?? plan.profile}`,
+      value: `${plan.id}@${plan.version}`,
+    })),
+  })
+  const plan = plans.find((candidate) => `${candidate.id}@${candidate.version}` === selected)
+  if (!plan) throw new Error('Selected QA plan is no longer available')
+  return plan
+}
+
 export async function cmdQa(cwd: string, args: string[], dependencies: QaCommandDependencies = {}): Promise<void> {
   const explicitAction = args[0] && !args[0].startsWith('-')
   const options = parseQaArgs(args)
   if (options.debug) DebugContext.enable()
   const workspace = resolve(cwd, options.projectPath ?? '.')
   if (!explicitAction && options.action === 'agentic' && options.scope === undefined && options.scenarios.length === 0) {
-    const savedPlan = new QaRunStore(workspace).findLatestPlan()
-    if (savedPlan && await selectSavedPlanAction() === 'resume') {
+    const store = new QaRunStore(workspace)
+    const savedPlans = store.listPlans()
+    if (savedPlans.length > 0 && await selectSavedPlanAction() === 'resume') {
+      const savedPlan = await selectSavedPlan(savedPlans)
       const runner = dependencies.runner ?? AgentRunnerFactory.create({
         type: options.agentType ?? Runner.CLAUDE_CLI,
         model: options.model,

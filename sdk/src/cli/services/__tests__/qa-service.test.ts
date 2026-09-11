@@ -100,7 +100,7 @@ describe('QA CLI', () => {
 
   it('offers resume and renew when a valid stored plan exists', async () => {
     new QaRunStore(workspace).savePlan(storedPlan())
-    prompts.select.mockResolvedValue('resume')
+    prompts.select.mockResolvedValueOnce('resume').mockResolvedValueOnce('stored-plan@1')
     const execute = vi.fn(async (scenario) => ({
       scenarioId: scenario.id, required: true, status: 'PASSED' as const,
       evidence: [{ id: scenario.id, path: scenario.id, capturedAt: '', adapter: 'test' }],
@@ -125,6 +125,10 @@ describe('QA CLI', () => {
         expect.objectContaining({ value: 'renew' }),
       ]),
     }))
+    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Select the QA plan to resume:',
+      choices: [expect.objectContaining({ value: 'stored-plan@1' })],
+    }))
     expect(execute).toHaveBeenCalledTimes(2)
     expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
       phaseKey: 'qa_analysis', model: 'gemini-3.7-flash',
@@ -133,6 +137,41 @@ describe('QA CLI', () => {
     expect(log).not.toHaveBeenCalled()
     expect(prompts.input).not.toHaveBeenCalled()
     expect(prompts.editor).not.toHaveBeenCalled()
+  })
+
+  it('selects exactly one saved plan before resuming when multiple plans exist', async () => {
+    const first = { ...storedPlan(), id: 'first-plan' }
+    const second = { ...storedPlan(), id: 'second-plan', target: 'http://127.0.0.1:4000', scenarios: [{ ...storedPlan().scenarios[0], id: 'only-second' }] }
+    new QaRunStore(workspace).savePlan(first)
+    new QaRunStore(workspace).savePlan(second)
+    prompts.select.mockResolvedValueOnce('resume').mockResolvedValueOnce('second-plan@1')
+    const runner: IAgentRunner = { run: vi.fn()
+      .mockResolvedValueOnce({ raw: '{"complete":true}' })
+      .mockResolvedValueOnce({ raw: '{"summary":"Second plan resumed.","bugs":[],"errors":[]}' }) }
+    const execute = vi.fn(async (scenario) => ({
+      scenarioId: scenario.id, required: true, status: 'PASSED' as const,
+      evidence: [{ id: scenario.id, path: scenario.id, capturedAt: '', adapter: 'test' }],
+    }))
+    const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
+
+    await cmdQa(workspace, [], {
+      runner,
+      drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
+      targetProbe: async () => ({ available: true }),
+      view,
+    })
+
+    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Select the QA plan to resume:',
+      choices: expect.arrayContaining([
+        expect.objectContaining({ value: 'first-plan@1' }),
+        expect.objectContaining({ value: 'second-plan@1' }),
+      ]),
+    }))
+    expect(view.start).toHaveBeenCalledWith(expect.objectContaining({ target: second.target }), workspace)
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ prompt: expect.stringContaining('second-plan') }), expect.anything())
+    expect(execute).toHaveBeenCalledTimes(1)
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ id: 'only-second' }), expect.any(String), expect.any(String), undefined)
   })
 
   it('starts a new agentic plan when renew is selected in the form', async () => {

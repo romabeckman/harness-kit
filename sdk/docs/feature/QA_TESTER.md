@@ -62,9 +62,9 @@ src/cli/services/            # `hrns qa` command adapter
 5. **Execute deterministically**: use real `curl` or Playwright actions selected by the plan with target origin checks, secret redaction, and cancellation signal handling.
 6. **Analyze and adapt**: evaluate observations and evidence to uncover untested states, adding bounded scenarios through an adaptive replanning loop within explicit iteration budgets.
 7. **Report agentically**: synthesize verified bugs and errors, reconcile claims against runtime evidence, compute deterministic risk coverage matrices, and provide fallback reporting on LLM failures.
-8. **Stop managed runtimes** after success or failure, then persist immutable plan versions, run state, evidence, and `report.json`.
+8. **Stop managed runtimes** after success or failure, then persist plan versions, run state, evidence, and `report.json`.
 
-For a saved plan, select **resume** to continue without replanning or **renew** to create a new plan.
+When **resume** is selected, choose exactly one saved plan from `.harness-kit/qa/plans`; only that plan executes. Choose **renew** to create a new plan.
 
 ```text
 # CORRECT: provide open scope; let LLM generate executable scenarios

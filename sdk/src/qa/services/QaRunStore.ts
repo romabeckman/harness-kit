@@ -55,8 +55,12 @@ export class QaRunStore {
   }
 
   findLatestPlan(): QaPlan | undefined {
+    return this.listPlans()[0]
+  }
+
+  listPlans(): QaPlan[] {
     const plansDirectory = join(this.#root, 'plans')
-    if (!existsSync(plansDirectory)) return undefined
+    if (!existsSync(plansDirectory)) return []
 
     const plans: QaPlan[] = []
     for (const planId of readdirSync(plansDirectory)) {
@@ -82,7 +86,7 @@ export class QaRunStore {
     return plans.sort((left, right) => {
       const byCreation = right.createdAt.localeCompare(left.createdAt)
       return byCreation || right.version - left.version || right.id.localeCompare(left.id)
-    })[0]
+    })
   }
 
   saveRun(run: QaRun): void {
@@ -110,16 +114,12 @@ export class QaRunStore {
     const plan = value as Partial<QaPlan>
     if (plan.schemaVersion !== 1 || plan.id !== expectedId || !SAFE_IDENTIFIER.test(plan.id)) return false
     if (!Number.isSafeInteger(plan.version) || (plan.version ?? 0) < 1) return false
-    if (plan.profile !== 'api' && plan.profile !== 'web' && plan.profile !== 'web-game') return false
+    if (!['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full'].includes(plan.profile as string)) return false
     if (typeof plan.target !== 'string' || typeof plan.createdAt !== 'string') return false
     if (!Array.isArray(plan.criteria) || !plan.criteria.every((criterion) => typeof criterion === 'string')) return false
     if (!Array.isArray(plan.scenarios)) return false
-    try {
-      new URL(plan.target)
-      return true
-    } catch {
-      return false
-    }
+    if (plan.profile === 'cli') return plan.target.trim().length > 0
+    try { new URL(plan.target); return true } catch { return false }
   }
 
   private writeJson(path: string, value: unknown): void {
