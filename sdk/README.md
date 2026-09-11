@@ -407,6 +407,7 @@ The global file is created automatically on first run. You can also set `HARNESS
 | `memory` | Phase E — project-memory |
 | `diagnose` | Harness diagnosis — meta-harness-agent |
 | `qa_planning` | Agentic QA scenario planning |
+| `qa_analysis` | Agentic QA adaptive coverage analysis & replanning |
 | `qa_reporting` | Agentic QA final report synthesis |
 
 ### Default settings
