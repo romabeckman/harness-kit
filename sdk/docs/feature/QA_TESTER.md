@@ -37,7 +37,7 @@ Run agentic acceptance with LLM-planned scenarios, terminal progress, runtime ev
 
 ## OVERVIEW
 
-Use `QaAgenticOrchestrator` independently of development orchestration. Accept scope and scenarios, emit typed progress, and persist plans/runs under `.harness-kit/qa/` atomically.
+Use `QaAgenticOrchestrator` independently of development orchestration. Accept scope and scenarios, emit typed progress, persist plans/runs under `.harness-kit/qa/` atomically, and preserve the original user scope.
 
 ## FOLDER STRUCTURE
 
@@ -64,6 +64,7 @@ src/cli/services/            # `hrns qa` command adapter
 7. **Analyze and adapt**: add bounded scenarios for coverage gaps; validate each revised plan before execution.
 8. **Report agentically**: reconcile bugs/errors with evidence and compute coverage matrices.
 9. **Stop managed runtimes** and persist plans, runs, numbered evidence folders (`001-<scenario-id>`, `002-<scenario-id>`, ...), and `report.json`.
+10. **Preserve the original scope** byte-for-byte in `.harness-kit/qa/plans/<plan-id>/SCOPE.md`; write it once and keep it unchanged across plan versions and adaptive revisions.
 
 When **resume** is selected, choose exactly one saved plan from `.harness-kit/qa/plans`; only that plan executes. Choose **renew** to create a new plan.
 

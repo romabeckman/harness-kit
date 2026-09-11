@@ -4,7 +4,7 @@ import { QaAgenticOrchestrator } from '../../qa/QaAgenticOrchestrator'
 import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 import { Runner } from '../../agent-runner/types'
 import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
-import type { QaDriver, QaHttpRequest, QaPlan, QaProfile } from '../../qa/types'
+import type { QaDriver, QaHttpRequest, QaPlan, QaPlanInput, QaProfile } from '../../qa/types'
 import { HELP_QA } from '../utils/constants'
 import { resolve } from 'node:path'
 import { HarnessSettings } from '../../settings/HarnessSettings'
@@ -255,12 +255,12 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
   console.log(JSON.stringify({ profile, ...availability }, null, 2))
 }
 
-function planInput(options: QaCliOptions): { planId: string; target: string; criteria: string[]; profile: QaProfile; requests?: QaHttpRequest[] } {
+function planInput(options: QaCliOptions): QaPlanInput {
   if (!options.planId || !options.target || options.criteria.length === 0) {
     throw new Error('QA plan requires --plan <id>, --target <url>, and one or more --criterion values')
   }
   if (options.request && !options.request.path) throw new Error('QA API request requires --path <path>')
-  return { planId: options.planId, target: options.target, criteria: options.criteria, profile: options.profile ?? 'api', requests: options.request ? [options.request] : undefined }
+  return { planId: options.planId, target: options.target, criteria: options.criteria, profile: options.profile ?? 'api', scope: options.scope, requests: options.request ? [options.request] : undefined }
 }
 
 function loadPlan(store: QaRunStore, options: QaCliOptions, action: 'execute' | 'renew' = 'execute'): QaPlan {

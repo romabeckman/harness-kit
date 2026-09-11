@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
@@ -92,8 +92,9 @@ describe('QaAgenticOrchestrator', () => {
       targetProbe: async () => ({ available: true }),
     })
 
+    const originalScope = '# QA scope\r\nValidate the game as a player.\r\nPreserve this exact text.'
     const report = await orchestrator.run({
-      scope: 'Validate the game as a player',
+      scope: originalScope,
       scenarios: ['Start a game', 'Move and rotate the active piece'],
     })
 
@@ -133,6 +134,7 @@ describe('QaAgenticOrchestrator', () => {
       bugs: [],
       errors: [],
     })
+    expect(readFileSync(join(workspace, '.harness-kit', 'qa', 'plans', 'tetris-human-flow', 'SCOPE.md'), 'utf8')).toBe(originalScope)
     expect(store.loadReport(report.runId)).toEqual(report)
   })
 

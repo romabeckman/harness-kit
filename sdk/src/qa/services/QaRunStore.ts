@@ -17,6 +17,11 @@ export class QaRunStore {
     return join(this.#root, 'plans', planId, `${version}.json`)
   }
 
+  scopePath(planId: string): string {
+    this.assertIdentifier(planId)
+    return join(this.#root, 'plans', planId, 'SCOPE.md')
+  }
+
   nextPlanVersion(planId: string): number {
     this.assertIdentifier(planId)
     const directory = join(this.#root, 'plans', planId)
@@ -52,6 +57,12 @@ export class QaRunStore {
     const path = this.planPath(plan.id, plan.version)
     if (existsSync(path)) throw new Error(`QA plan version already exists: ${plan.id}/${plan.version}`)
     this.writeJson(path, plan)
+  }
+
+  saveScope(planId: string, scope: string): void {
+    const path = this.scopePath(planId)
+    if (existsSync(path)) return
+    this.writeText(path, scope)
   }
 
   loadPlan(planId: string, version: number): QaPlan {
@@ -154,10 +165,14 @@ export class QaRunStore {
   }
 
   private writeJson(path: string, value: unknown): void {
+    this.writeText(path, JSON.stringify(value, null, 2))
+  }
+
+  private writeText(path: string, value: string): void {
     const directory = dirname(path)
     mkdirSync(directory, { recursive: true })
     const temporaryPath = join(directory, `.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
-    writeFileSync(temporaryPath, JSON.stringify(value, null, 2), 'utf8')
+    writeFileSync(temporaryPath, value, 'utf8')
     renameSync(temporaryPath, path)
   }
 

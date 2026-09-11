@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { QaRunStore } from '../services/QaRunStore'
@@ -29,6 +29,16 @@ describe('QaRunStore', () => {
     store.savePlan({ schemaVersion: 1, id: 'orders', version: 1, target: 'http://127.0.0.1:3000', profile: 'api', createdAt: '', criteria: ['works'], scenarios: [] })
 
     expect(store.nextPlanVersion('orders')).toBe(2)
+  })
+
+  it('preserves the first original scope for a plan', () => {
+    const store = new QaRunStore(workspace)
+    const originalScope = '# Scope\r\nKeep this exact text.'
+
+    store.saveScope('orders', originalScope)
+    store.saveScope('orders', 'A later scope must not replace the original.')
+
+    expect(readFileSync(store.scopePath('orders'), 'utf8')).toBe(originalScope)
   })
 
   it('finds the latest valid stored plan', () => {

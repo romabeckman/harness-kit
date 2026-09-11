@@ -13,6 +13,7 @@ export class QaValidationPhase implements QaPhaseHandler {
     }
     if (context.persistPlan) {
       context.store.savePlan(context.plan)
+      if (context.request.scope !== undefined) context.store.saveScope(context.plan.id, context.request.scope)
       context.persistPlan = false
     }
     return QaPhase.EXECUTION

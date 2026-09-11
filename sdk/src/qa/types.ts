@@ -171,6 +171,7 @@ export interface QaPlanInput {
   target: string
   criteria: string[]
   profile: QaProfile
+  scope?: string
   requests?: QaHttpRequest[]
 }
 

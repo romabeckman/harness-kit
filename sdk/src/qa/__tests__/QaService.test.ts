@@ -19,18 +19,22 @@ describe('QaService', () => {
   })
 
   it('persists a standalone plan with one required API scenario per criterion', () => {
-    const service = new QaService(new QaRunStore(workspace))
+    const store = new QaRunStore(workspace)
+    const service = new QaService(store)
+    const originalScope = 'Validate order creation without changing this scope.'
 
     const plan = service.plan({
       planId: 'orders-api',
       target: 'http://127.0.0.1:3000',
       criteria: ['Create an order', 'Reject invalid quantity'],
       profile: 'api',
+      scope: originalScope,
     })
 
     expect(plan.scenarios).toHaveLength(2)
     expect(plan.scenarios.every((scenario) => scenario.required)).toBe(true)
     expect(new QaRunStore(workspace).loadPlan('orders-api', 1)).toEqual(plan)
+    expect(readFileSync(join(workspace, '.harness-kit', 'qa', 'plans', 'orders-api', 'SCOPE.md'), 'utf8')).toBe(originalScope)
   })
 
   it('numbers evidence directories in scenario execution order', async () => {

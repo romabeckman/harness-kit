@@ -39,6 +39,7 @@ export class QaService {
       })),
     }
     this.#store.savePlan(plan)
+    if (input.scope !== undefined) this.#store.saveScope(plan.id, input.scope)
     return plan
   }
 
