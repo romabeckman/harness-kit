@@ -1,7 +1,7 @@
 import type { IAgentRunner } from '../agent-runner/IAgentRunner'
 import { QaService } from './services/QaService'
 import { QaRunStore } from './services/QaRunStore'
-import { QaAnalysisPhase, QaExecutionPhase, QaPhase, QaPlanningPhase, QaReportingPhase, type QaPhaseContext, type QaPhaseHandler } from './phases'
+import { QaAnalysisPhase, QaExecutionPhase, QaPhase, QaPlanningPhase, QaReportingPhase, QaValidationPhase, type QaPhaseContext, type QaPhaseHandler } from './phases'
 import type { QaAgenticRequest, QaDriver, QaFinalReport, QaPlan } from './types'
 import type { HarnessSettings } from '../settings/HarnessSettings'
 import type { QaProgressEvent, QaProgressListener } from './progress'
@@ -39,7 +39,7 @@ export class QaAgenticOrchestrator {
       effort: options.effort,
       onProgress: options.onProgress,
     }
-    const phases = options.phases ?? [new QaPlanningPhase(), new QaExecutionPhase(), new QaAnalysisPhase(), new QaReportingPhase()]
+    const phases = options.phases ?? [new QaPlanningPhase(), new QaValidationPhase(), new QaExecutionPhase(), new QaAnalysisPhase(), new QaReportingPhase()]
     this.#phases = new Map(phases.map((phase) => [phase.phase, phase]))
     this.#runtime = options.runtime ?? new QaRuntimeManager(options.workspace)
   }
@@ -49,7 +49,7 @@ export class QaAgenticOrchestrator {
   }
 
   async resume(plan: QaPlan, signal?: AbortSignal): Promise<QaFinalReport> {
-    return this.runFrom(QaPhase.EXECUTION, {
+    return this.runFrom(QaPhase.VALIDATION, {
       scope: `Resume stored QA plan ${plan.id}@${plan.version}`,
       scenarios: plan.scenarios.flatMap((scenario) => scenario.description ? [scenario.description] : []),
       target: plan.target,
@@ -62,7 +62,7 @@ export class QaAgenticOrchestrator {
     const resolvedRequest = runtime ? { ...request, target: runtime.target } : request
     if (runtime) this.#context.onProgress?.({ type: 'runtime_ready', target: runtime.target, managed: runtime.managed })
     try {
-      const context: QaPhaseContext = { ...this.#context, request: resolvedRequest, plan }
+      const context: QaPhaseContext = { ...this.#context, request: resolvedRequest, plan, persistPlan: start === QaPhase.PLANNING }
       let current = start
       while (current !== QaPhase.COMPLETED) {
         const handler = this.#phases.get(current)
@@ -81,6 +81,7 @@ export class QaAgenticOrchestrator {
 
   private phaseCompleted(phase: Exclude<QaPhase, QaPhase.COMPLETED>, context: QaPhaseContext): QaProgressEvent {
     if (phase === QaPhase.PLANNING) return { type: 'phase_completed', phase, totalScenarios: context.plan?.scenarios.length }
+    if (phase === QaPhase.VALIDATION) return { type: 'phase_completed', phase }
     if (phase === QaPhase.EXECUTION) return { type: 'phase_completed', phase, verdict: context.run?.verdict }
     if (phase === QaPhase.ANALYSIS) return { type: 'phase_completed', phase, totalScenarios: context.plan?.scenarios.length, verdict: context.run?.verdict }
     return { type: 'phase_completed', phase }

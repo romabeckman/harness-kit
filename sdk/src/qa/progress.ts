@@ -1,7 +1,7 @@
 import type { QaAgenticRequest, QaScenarioStatus, QaVerdict } from './types'
 
-export type QaProgressEventType = 'runtime_ready' | 'phase_started' | 'phase_completed' | 'scenario_started' | 'scenario_completed'
-export type QaProgressPhase = 'PLANNING' | 'EXECUTION' | 'ANALYSIS' | 'REPORTING'
+export type QaProgressEventType = 'runtime_ready' | 'phase_started' | 'phase_completed' | 'scenario_started' | 'scenario_completed' | 'validation_failed'
+export type QaProgressPhase = 'PLANNING' | 'VALIDATION' | 'EXECUTION' | 'ANALYSIS' | 'REPORTING'
 
 export interface QaProgressEvent {
   type: QaProgressEventType
@@ -15,6 +15,7 @@ export interface QaProgressEvent {
   verdict?: QaVerdict
   target?: string
   managed?: boolean
+  errors?: string[]
 }
 
 export type QaProgressListener = (event: QaProgressEvent) => void

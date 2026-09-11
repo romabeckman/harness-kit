@@ -70,6 +70,18 @@ describe('QaTerminalView', () => {
     expect(text).toContain('functional: 2 passed')
     expect(text).toContain('Untested areas: accessibility, resilience')
   })
+
+  it('prints every plan validation error immediately', () => {
+    const output: string[] = []
+    const view = new QaTerminalView((line) => output.push(line), false)
+
+    view.onProgress({ type: 'validation_failed', errors: ['target must be a valid HTTP or HTTPS URL', 'scenario-1 has no executable request'] })
+
+    const text = output.join('\n')
+    expect(text).toContain('QA plan validation failed')
+    expect(text).toContain('- target must be a valid HTTP or HTTPS URL')
+    expect(text).toContain('- scenario-1 has no executable request')
+  })
 })
 
 function report(): QaFinalReport {

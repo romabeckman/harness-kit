@@ -101,6 +101,8 @@ describe('QaAgenticOrchestrator', () => {
     expect(progress).toEqual([
       'phase_started:PLANNING',
       'phase_completed:PLANNING',
+      'phase_started:VALIDATION',
+      'phase_completed:VALIDATION',
       'phase_started:EXECUTION',
       'scenario_started:start-session',
       'scenario_completed:start-session',
@@ -155,7 +157,8 @@ describe('QaAgenticOrchestrator', () => {
     }) }
     const plan = {
       schemaVersion: 1 as const, id: 'saved-plan', version: 1, target: 'http://127.0.0.1:3000', profile: 'api' as const,
-      createdAt: '', criteria: ['Health works'], scenarios: [{ id: 'health', criterionIds: ['criterion-1'], required: true, profile: 'api' as const }],
+      createdAt: '', criteria: ['Health works'], scenarios: [{ id: 'health', criterionIds: ['criterion-1'], required: true, profile: 'api' as const,
+        request: { method: 'GET', path: '/health', expectedStatus: 200 } }],
     }
     const orchestrator = new QaAgenticOrchestrator({
       workspace, runner, drivers: [driver], model: 'gemini-3.7-flash', targetProbe: async () => ({ available: true }),
@@ -177,6 +180,43 @@ describe('QaAgenticOrchestrator', () => {
     const orchestrator = new QaAgenticOrchestrator({ workspace, runner, store: new QaRunStore(workspace), drivers: [] })
 
     await expect(orchestrator.run({ scope: 'Test form' })).rejects.toThrow('Invalid agentic QA plan')
+  })
+
+  it('validates the generated plan before invoking any QA driver', async () => {
+    const execute = vi.fn()
+    const progress: string[] = []
+    const runner: IAgentRunner = { run: vi.fn().mockResolvedValue({ raw: JSON.stringify({
+      id: 'invalid-target', target: 'not a url', profile: 'api', criteria: ['Health works'],
+      scenarios: [{ id: 'health', criterionIds: ['criterion-1'], required: true, profile: 'api', request: { method: 'GET', path: '/health', expectedStatus: 200 } }],
+    }) }) }
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace, runner, drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
+      onProgress: (event) => progress.push(`${event.type}:${event.phase ?? ''}`),
+    })
+
+    await expect(orchestrator.run({ scope: 'Validate target' })).rejects.toThrow('QA plan validation failed')
+
+    expect(execute).not.toHaveBeenCalled()
+    expect(progress).toContain('phase_started:VALIDATION')
+    expect(progress).toContain('validation_failed:VALIDATION')
+    expect(progress).not.toContain('phase_started:EXECUTION')
+  })
+
+  it('validates a saved plan before resuming execution', async () => {
+    const execute = vi.fn()
+    const runner: IAgentRunner = { run: vi.fn() }
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace, runner, drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
+    })
+    const invalidPlan = {
+      schemaVersion: 1 as const, id: 'saved-invalid', version: 1, target: 'http://127.0.0.1:3000', profile: 'api' as const,
+      createdAt: '2026-09-11T00:00:00.000Z', criteria: ['Health works'],
+      scenarios: [{ id: 'health', criterionIds: ['criterion-1'], required: true, profile: 'api' as const }],
+    }
+
+    await expect(orchestrator.resume(invalidPlan)).rejects.toThrow('QA plan validation failed')
+    expect(runner.run).not.toHaveBeenCalled()
+    expect(execute).not.toHaveBeenCalled()
   })
 
   it('deduplicates one product root cause and excludes it from execution errors', async () => {

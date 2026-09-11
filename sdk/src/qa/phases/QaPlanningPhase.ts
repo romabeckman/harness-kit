@@ -28,9 +28,15 @@ export class QaPlanningPhase implements QaPhaseHandler {
       prompt: this.buildPrompt(context),
     }, { signal })
     context.session = output.session
-    context.plan = this.parse(output.raw, context.request, context.store.nextPlanVersion(stringPlanId(output.raw)))
-    context.store.savePlan(context.plan)
-    return QaPhase.EXECUTION
+    const planId = stringPlanId(output.raw)
+    let version = 1
+    try {
+      version = context.store.nextPlanVersion(planId)
+    } catch {
+      // Let validation report unsafe plan identifiers instead of failing before the validation phase.
+    }
+    context.plan = this.parse(output.raw, context.request, version)
+    return QaPhase.VALIDATION
   }
 
   private buildPrompt(context: QaPhaseContext): string {
@@ -79,9 +85,6 @@ export class QaPlanningPhase implements QaPhaseHandler {
     }
     if (scenarioData.length < (request.scenarios?.length ?? 0)) {
       throw new Error('Invalid agentic QA plan: supplied scenarios were not covered')
-    }
-    if (profile !== 'cli') {
-      try { new URL(target) } catch { throw new Error('Invalid agentic QA plan: target must be a URL') }
     }
     const scenarios = scenarioData.map((value, index) => this.parseScenario(value, profile as QaProfile, target, index))
     if (new Set(scenarios.map((scenario) => scenario.id)).size !== scenarios.length) throw new Error('Invalid agentic QA plan: scenario IDs must be unique')

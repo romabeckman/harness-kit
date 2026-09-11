@@ -141,7 +141,7 @@ describe('QA CLI', () => {
 
   it('selects exactly one saved plan before resuming when multiple plans exist', async () => {
     const first = { ...storedPlan(), id: 'first-plan' }
-    const second = { ...storedPlan(), id: 'second-plan', target: 'http://127.0.0.1:4000', scenarios: [{ ...storedPlan().scenarios[0], id: 'only-second' }] }
+    const second = { ...storedPlan(), id: 'second-plan', target: 'http://127.0.0.1:4000', criteria: ['First works'], scenarios: [{ ...storedPlan().scenarios[0], id: 'only-second' }] }
     new QaRunStore(workspace).savePlan(first)
     new QaRunStore(workspace).savePlan(second)
     prompts.select.mockResolvedValueOnce('resume').mockResolvedValueOnce('second-plan@1')

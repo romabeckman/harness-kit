@@ -10,6 +10,7 @@ import type { QaProgressListener } from '../progress'
 
 export enum QaPhase {
   PLANNING = 'PLANNING',
+  VALIDATION = 'VALIDATION',
   EXECUTION = 'EXECUTION',
   ANALYSIS = 'ANALYSIS',
   REPORTING = 'REPORTING',
@@ -28,6 +29,7 @@ export interface QaPhaseContext {
   onProgress?: QaProgressListener
   session?: AgentSession
   plan?: QaPlan
+  persistPlan?: boolean
   run?: QaRun
   report?: QaFinalReport
   analysisCycles?: number

@@ -1,4 +1,5 @@
 export { QaPlanningPhase } from './QaPlanningPhase'
+export { QaValidationPhase } from './QaValidationPhase'
 export { QaExecutionPhase } from './QaExecutionPhase'
 export { QaAnalysisPhase } from './QaAnalysisPhase'
 export { QaReportingPhase } from './QaReportingPhase'

@@ -1,6 +1,7 @@
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../../json-extraction/types'
 import { QaPlanningPhase } from './QaPlanningPhase'
+import { QaPlanValidator } from '../services/QaPlanValidator'
 import { QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
 
 const MAX_ANALYSIS_CYCLES = 3
@@ -31,6 +32,11 @@ export class QaAnalysisPhase implements QaPhaseHandler {
     if (!previous.scenarios.every((scenario) => revised.scenarios.some((candidate) => candidate.id === scenario.id))) throw new Error('Invalid agentic QA analysis: existing scenarios cannot be removed')
     const additional = revised.scenarios.filter((scenario) => !previousIds.has(scenario.id))
     if (additional.length === 0) return QaPhase.REPORTING
+    const validation = await new QaPlanValidator(context.service).validate(revised, context.workspace, signal)
+    if (!validation.valid) {
+      context.onProgress?.({ type: 'validation_failed', phase: QaPhase.VALIDATION, errors: validation.errors })
+      throw new Error(['QA plan validation failed:', ...validation.errors.map((error) => `- ${error}`)].join('\n'))
+    }
     context.store.savePlan(revised)
     context.plan = revised
     context.run = await context.service.continue(context.run, revised, additional, signal, context.onProgress)

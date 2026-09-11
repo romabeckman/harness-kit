@@ -30,6 +30,11 @@ export class QaTerminalView implements QaTerminalPresenter {
       this.line(this.phaseLabel(event.phase))
       return
     }
+    if (event.type === 'validation_failed') {
+      this.line(this.paint('red', 'QA plan validation failed'))
+      for (const error of event.errors ?? []) this.line(this.paint('red', `- ${error}`))
+      return
+    }
     if (event.type === 'phase_completed' && event.phase === 'PLANNING') {
       const count = event.totalScenarios ?? 0
       this.line(this.paint('green', `  ${count} ${count === 1 ? 'scenario' : 'scenarios'} ready`))
@@ -103,6 +108,7 @@ export class QaTerminalView implements QaTerminalPresenter {
   private phaseLabel(phase: NonNullable<QaProgressEvent['phase']>): string {
     const labels = {
       PLANNING: '[1/3] Planning test scenarios',
+      VALIDATION: '[1.5/3] Validating QA plan',
       EXECUTION: '[2/3] Executing as a human tester',
       ANALYSIS: '[2.5] Evaluating adaptive coverage',
       REPORTING: '[3/3] Analyzing evidence and bugs',
