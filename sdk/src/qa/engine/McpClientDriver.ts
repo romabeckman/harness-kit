@@ -38,12 +38,31 @@ export class McpClientDriver implements QaDriver {
       evidence = capturedEvidence
       if (!response.ok) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', observedStatus: response.status, reason: `MCP HTTP ${response.status}`, evidence }
       const parsed = parseMcpResponse(raw)
-      if (isRecord(parsed) && isRecord(parsed.error)) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: typeof parsed.error.message === 'string' ? parsed.error.message : 'MCP protocol error', evidence }
+      const expected = scenario.mcp
+      if (isRecord(parsed) && isRecord(parsed.error)) {
+        if (expected.expectedIsError !== true) {
+          return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: typeof parsed.error.message === 'string' ? parsed.error.message : 'MCP protocol error', evidence }
+        }
+        if (expected.expectedResultContains && !containsMcpText({ error: parsed.error }, expected.expectedResultContains)) {
+          return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result does not contain ${JSON.stringify(expected.expectedResultContains)}`, evidence }
+        }
+        return { scenarioId: scenario.id, required: scenario.required, status: 'PASSED', evidence }
+      }
       const result = isRecord(parsed) ? parsed.result : undefined
-      if (isRecord(result) && result.isError === true) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: mcpErrorMessage(result), evidence }
-      const expected = scenario.mcp.expectedResultContains
-      const serializedResult = JSON.stringify(result) ?? ''
-      if (expected && !serializedResult.toLowerCase().includes(expected.toLowerCase())) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result does not contain ${JSON.stringify(expected)}`, evidence }
+      if (!isRecord(result)) return blocked(scenario, 'MCP response contained neither result nor protocol error', evidence)
+      const actualIsError = result.isError === true
+      if (expected.expectedIsError !== undefined && actualIsError !== expected.expectedIsError) {
+        return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result isError was ${actualIsError}, expected ${expected.expectedIsError}`, evidence }
+      }
+      const structuredContent = isRecord(result.structuredContent) ? result.structuredContent : undefined
+      if (expected.expectedState !== undefined && structuredContent?.state !== expected.expectedState) {
+        return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result state was ${JSON.stringify(structuredContent?.state)}, expected ${JSON.stringify(expected.expectedState)}`, evidence }
+      }
+      if (expected.expectedReasonCode !== undefined && structuredContent?.reason_code !== expected.expectedReasonCode) {
+        return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result reason_code was ${JSON.stringify(structuredContent?.reason_code)}, expected ${JSON.stringify(expected.expectedReasonCode)}`, evidence }
+      }
+      if (actualIsError && expected.expectedIsError !== true) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: mcpErrorMessage(result), evidence }
+      if (expected.expectedResultContains && !containsMcpText(result, expected.expectedResultContains)) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result does not contain ${JSON.stringify(expected.expectedResultContains)}`, evidence }
       return { scenarioId: scenario.id, required: scenario.required, status: 'PASSED', evidence }
     } catch (error) {
       return blocked(scenario, error instanceof Error ? error.message : 'MCP request failed', evidence)
@@ -85,6 +104,15 @@ function mcpErrorMessage(result: Record<string, unknown>): string {
     if (messages.length > 0) return messages.join('\n')
   }
   return 'MCP tool returned an error'
+}
+
+function containsMcpText(result: Record<string, unknown>, expected: string): boolean {
+  const searchable = JSON.stringify({
+    structuredContent: result.structuredContent,
+    content: result.content,
+    error: result.error,
+  }) ?? ''
+  return searchable.toLowerCase().includes(expected.toLowerCase())
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

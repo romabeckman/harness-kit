@@ -204,6 +204,9 @@ export class QaPlanValidator {
     }
     if (request.params !== undefined && !isRecord(request.params)) errors.push(`scenario ${id} MCP params must be an object`)
     if (request.expectedResultContains !== undefined && typeof request.expectedResultContains !== 'string') errors.push(`scenario ${id} MCP expectedResultContains must be a string`)
+    if (request.expectedState !== undefined && (typeof request.expectedState !== 'string' || request.expectedState.trim().length === 0)) errors.push(`scenario ${id} MCP expectedState must be a non-empty string`)
+    if (request.expectedReasonCode !== undefined && (typeof request.expectedReasonCode !== 'string' || request.expectedReasonCode.trim().length === 0)) errors.push(`scenario ${id} MCP expectedReasonCode must be a non-empty string`)
+    if (request.expectedIsError !== undefined && typeof request.expectedIsError !== 'boolean') errors.push(`scenario ${id} MCP expectedIsError must be a boolean`)
   }
 
   private validateCli(scenario: Record<string, unknown>, id: string, errors: string[]): void {

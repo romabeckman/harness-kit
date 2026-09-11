@@ -92,6 +92,66 @@ describe('extended QA engines', () => {
     expect(result.evidence).toHaveLength(2)
   })
 
+  it('accepts an expected MCP tool error when the plan declares it', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      jsonrpc: '2.0', id: 1, result: {
+        isError: true,
+        content: [{ type: 'text', text: 'Unknown tool' }],
+        structuredContent: { state: 'integration-error', reason_code: 'unknown_tool' },
+      },
+    }), { status: 200 }))
+
+    const result = await new McpClientDriver(request).execute(scenario('mcp', {
+      mcp: {
+        method: 'tools/call',
+        params: { name: 'missing' },
+        expectedResultContains: 'Unknown tool',
+        expectedState: 'integration-error',
+        expectedReasonCode: 'unknown_tool',
+        expectedIsError: true,
+      },
+    }), MCP_TARGET, evidenceDir)
+
+    expect(result.status).toBe('PASSED')
+  })
+
+  it('does not match MCP envelope metadata as result content', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      jsonrpc: '2.0', id: 1, result: {
+        isError: false,
+        content: [{ type: 'text', text: 'No matching record' }],
+        structuredContent: { state: 'empty', reason_code: 'no_match' },
+      },
+    }), { status: 200 }))
+
+    const result = await new McpClientDriver(request).execute(scenario('mcp', {
+      mcp: { method: 'tools/call', params: { name: 'lookup' }, expectedResultContains: 'error' },
+    }), MCP_TARGET, evidenceDir)
+
+    expect(result).toMatchObject({ status: 'FAILED', reason: 'MCP result does not contain "error"' })
+  })
+
+  it('checks structured MCP state and reason without requiring an error envelope', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      jsonrpc: '2.0', id: 1, result: {
+        isError: false,
+        content: [{ type: 'text', text: 'No matching record' }],
+        structuredContent: { state: 'empty', reason_code: 'no_match' },
+      },
+    }), { status: 200 }))
+
+    const result = await new McpClientDriver(request).execute(scenario('mcp', {
+      mcp: {
+        method: 'tools/call',
+        params: { name: 'lookup' },
+        expectedState: 'empty',
+        expectedReasonCode: 'no_match',
+      },
+    }), MCP_TARGET, evidenceDir)
+
+    expect(result.status).toBe('PASSED')
+  })
+
   it('retains captured evidence when MCP response parsing fails', async () => {
     const request = vi.fn().mockResolvedValue(new Response('event: message\ndata: not-json\n\n', { status: 200 }))
 
@@ -171,11 +231,14 @@ describe('extended QA engines', () => {
     }), {}, 1)
     const mcpPlan = phase.parse(JSON.stringify({
       id: 'mcp-plan', target: 'http://127.0.0.1:3000/mcp', profile: 'mcp', criteria: ['Tool works'],
-      scenarios: [{ id: 'tool', criterionIds: ['criterion-1'], required: true, profile: 'mcp', mcp: { method: 'tools/call', params: { name: 'health' } } }],
+      scenarios: [{ id: 'tool', criterionIds: ['criterion-1'], required: true, profile: 'mcp', mcp: { method: 'tools/call', params: { name: 'health' }, expectedState: 'success', expectedReasonCode: 'ready', expectedIsError: false } }],
     }), {}, 1)
 
     expect(cliPlan.scenarios[0].cli?.command).toBe('hrns')
     expect(mcpPlan.scenarios[0].mcp?.method).toBe('tools/call')
+    expect(mcpPlan.scenarios[0].mcp?.expectedState).toBe('success')
+    expect(mcpPlan.scenarios[0].mcp?.expectedReasonCode).toBe('ready')
+    expect(mcpPlan.scenarios[0].mcp?.expectedIsError).toBe(false)
   })
 })
 

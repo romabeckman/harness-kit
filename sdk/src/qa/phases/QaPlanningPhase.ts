@@ -57,7 +57,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
       'Do not invent browser action types or property names. Omit count only when one key press is enough.',
       'Every web scenario needs executable assertions. Use: {"type":"visible|hidden","selector":"..."}, {"type":"text","selector":"...","value":"expected text"}, {"type":"url","value":"http://..."}, {"type":"count","selector":"...","count":1}, {"type":"attribute","selector":"...","attribute":"name","value":"expected"}.',
       'API scenarios may assert expectedHeaders, expectedBodyContains, and a partial expectedJson object in request. API request paths must be relative to target origin.',
-      'MCP scenarios use mcp: {"method":"tools/call","params":{"name":"tool","arguments":{}},"expectedResultContains":"text"}. Discover MCP tool names and inputSchema through tools/list or inspected server source before writing arguments. Use exact schema keys; never invent aliases or public names for internal identifiers. Treat result.isError as a failed tool execution.',
+      'MCP scenarios use mcp: {"method":"tools/call","params":{"name":"tool","arguments":{}},"expectedResultContains":"text","expectedState":"success","expectedReasonCode":"ready","expectedIsError":false}. Discover MCP tool names, inputSchema, and outputSchema through tools/list or inspected server source before writing arguments. Use exact schema keys; never invent aliases or public names for internal identifiers. Use expectedState and expectedReasonCode for structured outcomes. Set expectedIsError true when a negative scenario intentionally expects a tool error. Do not use the literal "error" as a substring assertion; it matches envelope metadata. Treat an unexpected result.isError as a failed tool execution.',
       'CLI scenarios use cli: {"command":"hrns","args":["--version"],"expectedExitCode":0,"expectedStdoutContains":"text"}. Never use shell commands or executable paths.',
       'WebSocket scenarios use websocket: {"messages":["ping"],"expectedMessages":["pong"]}.',
       `Limits: at most ${MAX_SCENARIOS} scenarios, ${MAX_ACTIONS} actions per scenario, ${MAX_KEY_PRESSES} repeated key presses, and ${MAX_WAIT_MS} milliseconds per wait.`,
@@ -132,7 +132,14 @@ export class QaPlanningPhase implements QaPhaseHandler {
 
   private parseMcp(value: unknown, index: number): QaMcpRequest {
     if (!isRecord(value) || !stringValue(value.method) || (value.params !== undefined && !isRecord(value.params))) throw new Error(`Invalid agentic QA plan: MCP scenario ${index + 1} needs method and object params`)
-    return { method: stringValue(value.method)!, params: value.params as Record<string, unknown> | undefined, expectedResultContains: stringValue(value.expectedResultContains) }
+    return {
+      method: stringValue(value.method)!,
+      params: value.params as Record<string, unknown> | undefined,
+      expectedResultContains: stringValue(value.expectedResultContains),
+      expectedState: stringValue(value.expectedState),
+      expectedReasonCode: stringValue(value.expectedReasonCode),
+      expectedIsError: typeof value.expectedIsError === 'boolean' ? value.expectedIsError : undefined,
+    }
   }
 
   private parseCli(value: unknown, index: number): QaCliRequest {

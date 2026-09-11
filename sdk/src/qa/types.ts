@@ -36,6 +36,9 @@ export interface QaMcpRequest {
   method: string
   params?: Record<string, unknown>
   expectedResultContains?: string
+  expectedState?: string
+  expectedReasonCode?: string
+  expectedIsError?: boolean
 }
 
 export interface QaCliRequest {

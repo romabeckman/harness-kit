@@ -77,6 +77,65 @@ describe('QaPlanValidator', () => {
       'scenario command CLI command must be a safe executable name without a path',
     ]))
   })
+
+  it('validates structured MCP expectations', async () => {
+    const validator = new QaPlanValidator({ doctor: vi.fn().mockResolvedValue({ available: true }) })
+    const result = await validator.validate({
+      schemaVersion: 1,
+      id: 'mcp-plan',
+      version: 1,
+      target: 'https://qa.test/mcp',
+      profile: 'mcp',
+      createdAt: '2026-09-11T00:00:00.000Z',
+      criteria: ['Tool reports a known empty state'],
+      scenarios: [{
+        id: 'empty',
+        criterionIds: ['criterion-1'],
+        required: true,
+        profile: 'mcp',
+        mcp: {
+          method: 'tools/call',
+          expectedState: 'empty',
+          expectedReasonCode: 'no_match',
+          expectedIsError: false,
+        },
+      }],
+    }, workspace)
+
+    expect(result).toEqual({ valid: true, errors: [] })
+  })
+
+  it('rejects malformed structured MCP expectations', async () => {
+    const validator = new QaPlanValidator({ doctor: vi.fn().mockResolvedValue({ available: true }) })
+    const result = await validator.validate({
+      schemaVersion: 1,
+      id: 'mcp-plan',
+      version: 1,
+      target: 'https://qa.test/mcp',
+      profile: 'mcp',
+      createdAt: '2026-09-11T00:00:00.000Z',
+      criteria: ['Tool works'],
+      scenarios: [{
+        id: 'tool',
+        criterionIds: ['criterion-1'],
+        required: true,
+        profile: 'mcp',
+        mcp: {
+          method: 'tools/call',
+          expectedState: 42,
+          expectedReasonCode: '',
+          expectedIsError: 'false',
+        },
+      }],
+    }, workspace)
+
+    expect(result.valid).toBe(false)
+    expect(result.errors).toEqual(expect.arrayContaining([
+      'scenario tool MCP expectedState must be a non-empty string',
+      'scenario tool MCP expectedReasonCode must be a non-empty string',
+      'scenario tool MCP expectedIsError must be a boolean',
+    ]))
+  })
 })
 
 function plan(): QaPlan {
