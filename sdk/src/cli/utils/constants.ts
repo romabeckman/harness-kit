@@ -13,6 +13,7 @@ COMMANDS
   init      Initialize docs/product files and configure steering rules
   settings  Manage settings (edit|renew|delete)
   diagnose  Run post-orchestration harness diagnosis on pending sessions
+  qa        Plan and execute independent runtime acceptance testing
   candidate Review and apply meta-harness optimization candidates
   report    Print development status and token usage report for the current session
   erase     Preview and erase selected agent CLI project history
@@ -68,6 +69,7 @@ EXAMPLES
   hrns run --reset --scope "My app" --path ./api --complexity LOW
   hrns run --reset --scope "My app" --path ./api --skip-deploy
   hrns diagnose
+  hrns qa plan --plan orders --target http://localhost:3000 --criterion "Order saves"
   hrns candidate list
   hrns candidate review v001
   hrns report
@@ -209,6 +211,30 @@ EXAMPLES
   hrns diagnose --batch-size 5
 `
 
+export const HELP_QA = `
+@romabeckman/harness-kit — hrns qa
+
+USAGE
+  hrns qa <plan|execute|run|report|doctor> [options]
+
+OPTIONS
+  --plan <id[@version]>     QA plan identifier
+  --run <id>                QA run identifier for reports
+  --target <url>            Target application URL
+  --profile <api|web|web-game>
+  --criterion <text>        Required acceptance criterion; repeatable
+  --method <HTTP method>    API request method
+  --path <path>             API request path
+  --expect-status <code>    Expected API response status (default: 200)
+
+EXAMPLES
+  hrns qa plan --plan orders --target http://localhost:3000 --criterion "Order saves" --method POST --path /orders --expect-status 201
+  hrns qa execute --plan orders@1
+  hrns qa run --plan orders --target http://localhost:3000 --criterion "Order saves"
+  hrns qa report --run orders-20260911
+  hrns qa doctor --profile web
+`
+
 export const HELP_CANDIDATE = `
 @romabeckman/harness-kit — hrns candidate
 
@@ -296,6 +322,7 @@ export const COMMAND_HELP: Record<string, string> = {
   init: HELP_INIT,
   settings: HELP_SETTINGS,
   diagnose: HELP_DIAGNOSE,
+  qa: HELP_QA,
   candidate: HELP_CANDIDATE,
   report: HELP_REPORT,
   erase: HELP_ERASE,

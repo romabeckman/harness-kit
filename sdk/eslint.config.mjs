@@ -2,7 +2,7 @@ import js from "@eslint/js";
 
 export default [
   {
-    ignores: ["node_modules/**", "dist/**", "coverage/**", "build/**"]
+    ignores: ["node_modules/**", "dist/**", "coverage/**", "build/**", ".vscode/**"]
   },
   js.configs.recommended,
   {

@@ -127,4 +127,8 @@ export type {
   IMetaHarnessAgentAdapter,
 } from './diagnose/types'
 
+// Independent runtime QA
+export { QaService, QaRunStore, QaVerdictPolicy, CurlDriver, PlaywrightDriver } from './qa'
+export type { QaBrowserAction, QaDriver, QaEvidence, QaHttpRequest, QaPlan, QaPlanInput, QaProfile, QaRun, QaScenario, QaScenarioResult, QaScenarioStatus, QaVerdict } from './qa'
+
 
