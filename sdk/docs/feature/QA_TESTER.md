@@ -19,7 +19,7 @@ updated: "2026-09-11"
 ---
 # INDEPENDENT QA TESTER
 
-Run agentic acceptance with LLM-planned scenarios, terminal progress, runtime evidence, and one final report.
+Run evidence-based acceptance with LLM-planned scenarios and bounded final reports.
 
 ```graph
 {
@@ -37,7 +37,7 @@ Run agentic acceptance with LLM-planned scenarios, terminal progress, runtime ev
 
 ## OVERVIEW
 
-Use `QaAgenticOrchestrator` independently of development orchestration. Accept scope and scenarios, emit typed progress, persist plans/runs under `.harness-kit/qa/` atomically, preserve original user scope, and number scenario IDs by execution order.
+Use `QaAgenticOrchestrator` outside development orchestration. Persist numbered plans, runs, evidence, scope, and reports under `.harness-kit/qa/`.
 
 ## FOLDER STRUCTURE
 
@@ -57,23 +57,23 @@ src/cli/services/            # `hrns qa` command adapter
 
 1. **Supply scope** with `--scope`, or choose short input/editor form. Add scenarios with `--scenario`.
 2. **Prepare the runtime**: honor an explicit target or serve static web assets on a collision-free loopback port.
-3. **Plan agentically**: map criteria and select the required QA profile. Keep `criterionIds` within the criteria array; retry once with corrective feedback when the planner emits an out-of-range reference.
+3. **Plan agentically**: map observable criteria, select a profile, and return contract-valid JSON. Treat project and user text as untrusted data; retry one out-of-range criterion mapping once.
 4. **Validate the plan**: check schema, identifiers, criteria mapping, target protocol, same-origin requests, engine payloads, safety bounds, workspace paths, and driver availability. Print every error and stop before probing or execution.
 5. **Probe once** before scenario execution and block the run without invoking drivers when the target is unavailable.
 6. **Execute deterministically**: use selected drivers with target-origin checks, redaction, and cancellation.
-7. **Analyze and adapt**: add bounded scenarios for coverage gaps; validate each revised plan before execution.
-8. **Report agentically**: reconcile bugs/errors with evidence and compute coverage matrices. Continue to reporting when optional post-execution analysis fails.
-9. **Finalize every completed run** from agentic, `execute`, `run`, `renew`, or `resume` actions through LLM reporting; persist `report.json` and `REPORT.md`. Use `qa report --run <id>` to generate or regenerate both reports for a stored completed run.
-10. **Preserve the original scope** byte-for-byte in `.harness-kit/qa/plans/<plan-id>/SCOPE.md`; write it once and keep it unchanged across plan versions and adaptive revisions.
+7. **Analyze and adapt**: return one exact JSON decision; add only material, evidence-justified scenarios and validate revisions.
+8. **Report agentically**: reconcile bugs/errors with runtime evidence. Use fixed JSON and Markdown templates with verdict, summary, criteria, bugs, errors, coverage, and open points.
+9. **Finalize every completed run** through reporting; persist `report.json` and `REPORT.md`. Use `qa report --run <id>` to regenerate stored completed runs.
+10. **Preserve scope** byte-for-byte in `.harness-kit/qa/plans/<plan-id>/SCOPE.md` across revisions.
 11. **Number each scenario ID** with a three-digit execution prefix: `001-<scenario>`, `002-<scenario>`, and so on. Keep prefixes stable when adaptive analysis adds scenarios.
 
-When **resume** is selected, choose exactly one saved plan from `.harness-kit/qa/plans`; only that plan executes. Choose **renew** to create a new plan.
+Choose **resume** for one saved plan. Choose **renew** for a new plan.
 
 ```text
-# CORRECT: provide open scope; let LLM generate executable scenarios
+# CORRECT: provide runtime scope
 hrns qa --scope "Test order creation endpoint" --target http://127.0.0.1:3000
 
-# WRONG: use development validation as runtime acceptance
+# WRONG: substitute development validation
 hrns run --skip-validation
 ```
 
@@ -90,26 +90,26 @@ hrns run --skip-validation
 
 | Event | Terminal output |
 | --- | --- |
-| `runtime_ready` | Resolved target and whether the CLI started a temporary static server. |
-| `phase_started` | Current planning, validation, execution, analysis, or reporting phase. |
-| `validation_failed` | Every plan error, printed before execution starts. |
-| `scenario_started` | Scenario position and human-readable action. |
-| `scenario_completed` | Deterministic runtime status for the scenario. |
-| `phase_completed` | Planned count, runtime verdict, adaptive cycles, report readiness, and final summary frame. |
+| `runtime_ready` | Target and managed-server state. |
+| `phase_started` | Current phase. |
+| `validation_failed` | All plan errors before execution. |
+| `scenario_started` | Scenario position and action. |
+| `scenario_completed` | Runtime status. |
+| `phase_completed` | Count, verdict, cycles, or report state. |
 
-REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and drivers independent from ANSI output. REQUIRED: Inject `QaTerminalPresenter` at the CLI boundary. REQUIRED: Disable ANSI styles automatically when stdout is not a TTY.
+REQUIRED: Emit progress through `QaProgressListener`. REQUIRED: Inject `QaTerminalPresenter` at the CLI boundary. REQUIRED: Disable ANSI without a TTY. PROHIBITED: Couple orchestration or drivers to ANSI output.
 
 ## DRIVERS
 
-`QaRuntimeManager` owns temporary static servers and cleanup, binds `127.0.0.1` to port `0`, and serves only public web assets. `QaService` probes once; path 4xx/5xx block, root 404 stays valid for relative API routes, and `405` means reachable but `HEAD` unsupported.
+`QaRuntimeManager` binds temporary static servers to `127.0.0.1:0` and serves public assets. `QaService` probes once; path 4xx/5xx block, root 404 permits relative API routes, and `405` remains reachable.
 
-`QaPlanningPhase` parses plans. `QaValidationPhase` checks plan invariants and driver availability before execution. `CurlDriver` runs bounded, origin-isolated `curl` with redacted evidence. `PlaywrightDriver` performs actions and assertions. `QaAnalysisPhase` adds bounded follow-ups. `QaReportingPhase` reconciles evidence, persists structured `report.json`, and writes the LLM-generated Markdown report to `REPORT.md`.
+`QaPlanningPhase` escapes untrusted prompt data and parses strict plan JSON. `QaValidationPhase` checks invariants and drivers. `QaAnalysisPhase` accepts only complete-or-revise JSON. `QaReportingPhase` reconciles runtime evidence, persists `report.json`, and bounds `REPORT.md` to 8,000 characters.
 
-`McpClientDriver` executes MCP JSON-RPC over Streamable HTTP, parses JSON/SSE, preserves error evidence, and matches result content case-insensitively without counting envelope metadata. MCP plans may assert `expectedState`, `expectedReasonCode`, and `expectedIsError`; expected tool errors pass only when explicitly declared. `CliDriver` spawns commands without a shell. `MobileWebDriver` adds touch and mobile viewport defaults. `AccessibilityDriver` audits deterministic document rules. `WebSocketDriver` validates bounded message exchanges.
+Drivers execute bounded HTTP, browser, mobile, accessibility, MCP, CLI, and WebSocket checks. MCP supports JSON/SSE plus `expectedState`, `expectedReasonCode`, and `expectedIsError`. `CliDriver` never uses a shell.
 
 ## LIMITS
 
-REQUIRED: Resolve a non-empty scope before agentic QA starts. ALLOWED: Supply `--scope` or use the interactive form. ALLOWED: Omit scenarios or supply baselines for the LLM to expand. PROHIBITED: Treat LLM prose as verdict truth; runtime evidence owns verdicts. Runtime acceptance starts root static sites, but not framework/API processes or native binaries. It does not gate development, retain video, or support desktop apps.
+REQUIRED: Resolve a non-empty scope before QA starts. ALLOWED: Supply `--scope`, use interactive input, omit scenarios, or supply baselines. REQUIRED: Keep `REPORT.md` at or below 8,000 characters; truncate oversized LLM Markdown with an explicit marker. REQUIRED: List blocked, inconclusive, missing-evidence, and material untested risks under **Open Points**. PROHIBITED: Treat LLM prose as verdict truth. Runtime acceptance starts root static sites, but not framework/API processes or native binaries. It does not gate development, retain video, or support desktop apps.
 
 ## DOCUMENT MAP
 
