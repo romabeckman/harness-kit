@@ -17,6 +17,7 @@ import { parseRunArgs } from "../utils/run-args-parser";
 import { DebugContext } from "../DebugContext";
 import { Runner } from "../../agent-runner/types";
 import { FileStateManager } from "../../file-state/FileStateManager";
+import type { Feature } from "../../file-state/types";
 
 export interface RunOptions {
   agentType?: string;
@@ -25,6 +26,10 @@ export interface RunOptions {
 }
 
 export type RunAction = "reset" | "resume"
+
+export function hasCompletedAllFeatures(features: ReadonlyArray<Pick<Feature, "status">>): boolean {
+  return features.length > 0 && features.every(feature => feature.status === "COMPLETED")
+}
 
 interface ResolvedMode {
   complexity: Complexity
@@ -331,6 +336,8 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
   }
 
   await orchestrator.run();
-  console.log("\n✓ All features completed.");
+  console.log(hasCompletedAllFeatures(fsm.loadBacklog())
+    ? "\n✓ All features completed."
+    : "\n⚠ Pipeline halted before all features completed.");
   orchestrator.tokenReport();
 }
