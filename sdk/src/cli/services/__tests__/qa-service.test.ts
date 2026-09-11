@@ -9,12 +9,23 @@ import type { QaDriver } from '../../../qa/types'
 import type { QaTerminalView } from '../../../qa/ui/QaTerminalView'
 import { DebugContext } from '../../DebugContext'
 
+const prompts = vi.hoisted(() => ({
+  editor: vi.fn(),
+  input: vi.fn(),
+  select: vi.fn(),
+}))
+
+vi.mock('@inquirer/prompts', () => prompts)
+
 describe('QA CLI', () => {
   let workspace: string
   let log: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
     DebugContext.reset()
+    prompts.editor.mockReset()
+    prompts.input.mockReset()
+    prompts.select.mockReset()
     workspace = mkdtempSync(join(tmpdir(), 'hrns-qa-cli-'))
     log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
   })
@@ -45,6 +56,45 @@ describe('QA CLI', () => {
       debug: true,
       scope: 'Test endpoint X',
     })
+  })
+
+  it('prompts for a short scope when agentic QA omits --scope', async () => {
+    prompts.select.mockResolvedValue('type')
+    prompts.input.mockResolvedValue('Validate the complete checkout flow')
+
+    const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after prompt')) }
+
+    await expect(cmdQa(workspace, [], { runner })).rejects.toThrow('stop after prompt')
+
+    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.stringContaining('QA scope'),
+    }))
+    expect(prompts.input).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'QA scope:',
+      validate: expect.any(Function),
+    }))
+    expect(prompts.editor).not.toHaveBeenCalled()
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
+      prompt: expect.stringContaining('Validate the complete checkout flow'),
+    }), expect.any(Object))
+  })
+
+  it('prompts with an editor for a long scope when agentic QA omits --scope', async () => {
+    prompts.select.mockResolvedValue('editor')
+    prompts.editor.mockResolvedValue('Validate checkout, payment, inventory, and confirmation behavior')
+
+    const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after prompt')) }
+
+    await expect(cmdQa(workspace, [], { runner })).rejects.toThrow('stop after prompt')
+
+    expect(prompts.editor).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.stringContaining('QA scope'),
+      validate: expect.any(Function),
+    }))
+    expect(prompts.input).not.toHaveBeenCalled()
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
+      prompt: expect.stringContaining('Validate checkout, payment, inventory, and confirmation behavior'),
+    }), expect.any(Object))
   })
 
   it('writes a standalone plan', async () => {

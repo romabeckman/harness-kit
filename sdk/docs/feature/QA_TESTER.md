@@ -19,7 +19,7 @@ updated: "2026-09-11"
 ---
 # INDEPENDENT QA TESTER
 
-Run agentic acceptance outside development orchestration, with LLM-planned scenarios, visible terminal progress, real runtime evidence, and one final report.
+Run agentic acceptance with LLM-planned scenarios, terminal progress, runtime evidence, and one final report.
 
 ```graph
 {
@@ -37,7 +37,7 @@ Run agentic acceptance outside development orchestration, with LLM-planned scena
 
 ## OVERVIEW
 
-Use `QaAgenticOrchestrator` independently of backlog, development session, and review score. Accept an open scope or optional detailed scenarios, and emit typed progress events without coupling orchestration to terminal output. Persist plans under `.harness-kit/qa/plans/`; persist run state, evidence, and `report.json` under `.harness-kit/qa/runs/` through atomic replacement.
+Use `QaAgenticOrchestrator` independently of development orchestration. Accept a scope and optional scenarios. Emit typed progress without coupling orchestration to terminal output. Persist plans under `.harness-kit/qa/plans/`; persist runs under `.harness-kit/qa/runs/` through atomic replacement.
 
 ## FOLDER STRUCTURE
 
@@ -53,7 +53,7 @@ src/cli/services/            # `hrns qa` command adapter
 
 ## EXECUTION
 
-1. **Supply scope or scenarios** with `hrns qa`.
+1. **Supply scope** with `--scope`, or omit the flag and choose short input or a long editor form. Add optional scenarios with `--scenario`.
 2. **Prepare the runtime**: honor an explicit target or serve static web assets on an OS-assigned loopback port (strictly restricting public file extensions).
 3. **Plan agentically**: inspect the project, preserve supplied scenario intent, map acceptance criteria, enforce the risk coverage matrix, and select appropriate profiles (`api`, `web`, `web-game`, `security`, or `full`).
 4. **Probe once** before scenario execution and block the run without invoking drivers when the target is unavailable.
@@ -65,6 +65,9 @@ src/cli/services/            # `hrns qa` command adapter
 ```text
 # CORRECT: provide open scope; let LLM generate executable scenarios
 hrns qa --scope "Test order creation endpoint" --target http://127.0.0.1:3000
+
+# CORRECT: omit --scope and select short input or editor in the interactive form
+hrns qa --target http://127.0.0.1:3000
 
 # CORRECT: provide optional baseline scenarios; let LLM add gaps
 hrns qa --scope "Validate checkout" --scenario "Valid payment succeeds" --profile web
@@ -101,7 +104,7 @@ REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and driv
 
 `QaRuntimeManager` owns temporary static servers and cleanup. It binds `127.0.0.1` to port `0`, allowing the operating system to select a collision-free port, and makes that URL authoritative over guessed planner origins. Static serving is strictly whitelisted to public web assets (`.html`, `.css`, `.js`, `.mjs`, `.json`, images, fonts, wasm) and forbids source code or hidden configurations. `QaService` probes the target once before dispatching any driver; one unavailable target produces blocked scenarios and one deduplicated report error.
 
-`QaPlanningPhase` invokes the configured agent runner and validates its plan before execution. `CurlDriver` invokes real `curl`/`curl.exe` with origin isolation, timeout bounds, redirect limits, and secret redaction for requests and responses; `PlaywrightDriver` launches Chromium, performs human actions with cancellation support, and validates observable assertions. `QaAnalysisPhase` inspects runtime evidence and adaptively generates bounded follow-up scenarios. `QaReportingPhase` reconciles findings with runtime evidence, deduplicates shared root causes, calculates the risk coverage matrix, and guarantees a final report even when LLM generation fails.
+`QaPlanningPhase` validates the agent plan before execution. `CurlDriver` uses real `curl`/`curl.exe` with origin isolation, bounds, and secret redaction. `PlaywrightDriver` performs human actions and observable assertions. `QaAnalysisPhase` generates bounded follow-up scenarios from evidence. `QaReportingPhase` reconciles findings with evidence and guarantees a final report on LLM failure.
 
 Run this once after dependency changes:
 
@@ -112,7 +115,7 @@ rtk npx playwright install chromium
 
 ## LIMITS
 
-REQUIRED: Supply `--scope` or at least one `--scenario`. ALLOWED: Omit scenarios; the planning LLM derives them from scope and project inspection. ALLOWED: Supply scenarios; the LLM preserves their intent and adds coverage gaps. PROHIBITED: Treat LLM prose as verdict truth; runtime results own verdict, evidence, and criterion status. Runtime acceptance starts root static sites automatically, but does not yet start arbitrary framework or API processes, gate development `REVIEW`/`TRANSITION`, retain video, or support native desktop binaries.
+REQUIRED: Resolve a non-empty scope before agentic QA starts. ALLOWED: Supply `--scope` to skip the form. ALLOWED: Omit `--scope` and choose short input or a long editor form. ALLOWED: Omit scenarios; the planning LLM derives them from scope and project inspection. ALLOWED: Supply scenarios; the LLM preserves their intent and adds coverage gaps. PROHIBITED: Treat LLM prose as verdict truth; runtime results own verdict, evidence, and criterion status. Runtime acceptance starts root static sites automatically, but does not yet start arbitrary framework or API processes, gate development `REVIEW`/`TRANSITION`, retain video, or support native desktop binaries.
 
 ## DOCUMENT MAP
 

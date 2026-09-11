@@ -13,6 +13,7 @@ import type { QaTerminalPresenter } from '../../qa/progress'
 import { DebugContext } from '../DebugContext'
 import type { QaTargetProbe } from '../../qa/QaTargetProbe'
 import type { QaRuntimePreparer } from '../../qa/QaRuntimeManager'
+import { validateScope } from '../utils/cli-utils'
 
 export type QaAction = 'agentic' | 'plan' | 'execute' | 'run' | 'report' | 'doctor'
 
@@ -99,11 +100,31 @@ export function parseQaArgs(args: string[]): QaCliOptions {
   return options
 }
 
+async function resolveAgenticScope(scope?: string): Promise<string> {
+  if (scope !== undefined) return scope
+
+  const { editor, input, select } = await import('@inquirer/prompts')
+  const inputMethod = await select({
+    message: 'How would you like to provide the QA scope?',
+    choices: [
+      { name: 'type   — enter a short description', value: 'type' },
+      { name: 'editor — open editor for a longer description', value: 'editor' },
+    ],
+  })
+
+  return inputMethod === 'type'
+    ? input({ message: 'QA scope:', validate: validateScope })
+    : editor({
+      message: 'Paste or write your QA scope (save and close to continue):',
+      validate: validateScope,
+    })
+}
+
 export async function cmdQa(cwd: string, args: string[], dependencies: QaCommandDependencies = {}): Promise<void> {
   const options = parseQaArgs(args)
   if (options.debug) DebugContext.enable()
   if (options.action === 'agentic') {
-    if (!options.scope && options.scenarios.length === 0) throw new Error('Agentic QA requires --scope <text> or one or more --scenario <text> values')
+    options.scope = await resolveAgenticScope(options.scope)
     const workspace = resolve(cwd, options.projectPath ?? '.')
     const runner = dependencies.runner ?? AgentRunnerFactory.create({
       type: options.agentType ?? Runner.CLAUDE_CLI,

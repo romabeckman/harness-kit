@@ -215,13 +215,14 @@ export const HELP_QA = `
 @romabeckman/harness-kit — hrns qa
 
 USAGE
+  hrns qa [agentic options]
   hrns qa --scope <text> [agentic options]
   hrns qa --scenario <text> [--scenario <text> ...] [agentic options]
   hrns qa agentic --scope <text> [agentic options]
   hrns qa <plan|execute|run|report|doctor> [options]
 
 OPTIONS
-  --scope <text>           Open QA scope; the LLM generates test scenarios
+  --scope <text>           Open QA scope; omit to choose short input or editor form
   --scenario <text>        Optional detailed scenario; repeatable
   --project <path>         Project to inspect and test (default: current directory)
   --agent <runner>         Agent runner (default: claude-cli)
