@@ -51,7 +51,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
       'Do not invent browser action types or property names. Omit count only when one key press is enough.',
       'Every web scenario needs executable assertions. Use: {"type":"visible|hidden","selector":"..."}, {"type":"text","selector":"...","value":"expected text"}, {"type":"url","value":"http://..."}, {"type":"count","selector":"...","count":1}, {"type":"attribute","selector":"...","attribute":"name","value":"expected"}.',
       'API scenarios may assert expectedHeaders, expectedBodyContains, and a partial expectedJson object in request. API request paths must be relative to target origin.',
-      'MCP scenarios use mcp: {"method":"tools/call","params":{"name":"tool","arguments":{}},"expectedResultContains":"text"}.',
+      'MCP scenarios use mcp: {"method":"tools/call","params":{"name":"tool","arguments":{}},"expectedResultContains":"text"}. Discover MCP tool names and inputSchema through tools/list or inspected server source before writing arguments. Use exact schema keys; never invent aliases or public names for internal identifiers. Treat result.isError as a failed tool execution.',
       'CLI scenarios use cli: {"command":"hrns","args":["--version"],"expectedExitCode":0,"expectedStdoutContains":"text"}. Never use shell commands or executable paths.',
       'WebSocket scenarios use websocket: {"messages":["ping"],"expectedMessages":["pong"]}.',
       `Limits: at most ${MAX_SCENARIOS} scenarios, ${MAX_ACTIONS} actions per scenario, ${MAX_KEY_PRESSES} repeated key presses, and ${MAX_WAIT_MS} milliseconds per wait.`,

@@ -31,7 +31,7 @@ Run agentic acceptance with LLM-planned scenarios, terminal progress, runtime ev
   "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/index.ts", "src/qa/index.ts"],
   "reference_files": ["src/qa/engine/CurlDriver.ts"],
   "code_files": ["src/qa/services/QaService.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/MobileWebDriver.ts", "src/qa/engine/AccessibilityDriver.ts", "src/qa/engine/McpClientDriver.ts", "src/qa/engine/CliDriver.ts", "src/qa/engine/WebSocketDriver.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
-  "test_files": ["src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaExtendedEngines.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
+  "test_files": ["src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaExtendedEngines.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/services/__tests__/QaTargetProbe.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
 }
 ```
 
@@ -97,13 +97,13 @@ REQUIRED: Emit progress through `QaProgressListener`; keep orchestrator and driv
 
 ## DRIVERS
 
-`QaRuntimeManager` owns temporary static servers and cleanup. It binds `127.0.0.1` to port `0` and uses the assigned URL. Static serving allows only public web assets and forbids source or hidden configuration. `QaService` probes once before driver dispatch.
+`QaRuntimeManager` owns temporary static servers and cleanup, binds `127.0.0.1` to port `0`, and serves only public web assets. `QaService` probes once; path 4xx/5xx block, root 404 stays valid for relative API routes, and `405` means reachable but `HEAD` unsupported.
 
-`QaPlanningPhase` validates the agent plan before execution. `CurlDriver` uses real `curl`/`curl.exe` with origin isolation, bounds, and secret redaction. `PlaywrightDriver` performs human actions and observable assertions. `QaAnalysisPhase` generates bounded follow-up scenarios from evidence. `QaReportingPhase` reconciles findings with evidence and guarantees a final report on LLM failure.
+`QaPlanningPhase` validates plans. `CurlDriver` runs bounded, origin-isolated `curl` with redacted evidence. `PlaywrightDriver` performs actions and assertions. `QaAnalysisPhase` adds bounded follow-ups. `QaReportingPhase` reconciles evidence and always emits a report.
 
-`McpClientDriver` executes MCP JSON-RPC over Streamable HTTP. `CliDriver` spawns commands without a shell. `MobileWebDriver` adds touch and mobile viewport defaults. `AccessibilityDriver` audits deterministic document rules. `WebSocketDriver` validates bounded message exchanges.
+`McpClientDriver` executes MCP JSON-RPC over Streamable HTTP, parses JSON/SSE, preserves error evidence, and fails `result.isError`. `CliDriver` spawns commands without a shell. `MobileWebDriver` adds touch and mobile viewport defaults. `AccessibilityDriver` audits deterministic document rules. `WebSocketDriver` validates bounded message exchanges.
 
-Run this once after dependency changes:
+After dependency changes, run:
 
 ```text
 rtk npm install

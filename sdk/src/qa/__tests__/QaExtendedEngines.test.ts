@@ -36,6 +36,21 @@ describe('extended QA engines', () => {
     expect(readFileSync(result.evidence[0].path, 'utf8')).toContain('tools/call')
   })
 
+  it('parses MCP Streamable HTTP SSE frames with an event prefix', async () => {
+    const request = vi.fn().mockResolvedValue(new Response([
+      'event: message',
+      'data: {"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"healthy"}]}}',
+      '',
+    ].join('\n'), { status: 200, headers: { 'content-type': 'text/event-stream' } }))
+
+    const result = await new McpClientDriver(request).execute(scenario('mcp', {
+      mcp: { method: 'tools/call', params: { name: 'health', arguments: {} }, expectedResultContains: 'healthy' },
+    }), 'http://127.0.0.1:3000/mcp', evidenceDir)
+
+    expect(result.status).toBe('PASSED')
+    expect(result.evidence).toHaveLength(2)
+  })
+
   it('fails MCP protocol errors without treating them as infrastructure errors', async () => {
     const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       jsonrpc: '2.0', id: 1, error: { code: -32601, message: 'Unknown tool' },
@@ -46,6 +61,33 @@ describe('extended QA engines', () => {
     }), 'http://127.0.0.1:3000/mcp', evidenceDir)
 
     expect(result).toMatchObject({ status: 'FAILED', reason: expect.stringContaining('Unknown tool') })
+  })
+
+  it('fails MCP tool errors returned inside the result envelope', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      jsonrpc: '2.0', id: 1, result: {
+        isError: true,
+        content: [{ type: 'text', text: 'Unknown tool' }],
+      },
+    }), { status: 200 }))
+
+    const result = await new McpClientDriver(request).execute(scenario('mcp', {
+      mcp: { method: 'tools/call', params: { name: 'missing' } },
+    }), 'http://127.0.0.1:3000/mcp', evidenceDir)
+
+    expect(result).toMatchObject({ status: 'FAILED', reason: 'Unknown tool', evidence: expect.any(Array) })
+    expect(result.evidence).toHaveLength(2)
+  })
+
+  it('retains captured evidence when MCP response parsing fails', async () => {
+    const request = vi.fn().mockResolvedValue(new Response('event: message\ndata: not-json\n\n', { status: 200 }))
+
+    const result = await new McpClientDriver(request).execute(scenario('mcp', {
+      mcp: { method: 'tools/call', params: { name: 'health' } },
+    }), 'http://127.0.0.1:3000/mcp', evidenceDir)
+
+    expect(result).toMatchObject({ status: 'BLOCKED', reason: expect.stringContaining('Unexpected token') })
+    expect(result.evidence).toHaveLength(2)
   })
 
   it('executes a bounded CLI command and validates output', async () => {
