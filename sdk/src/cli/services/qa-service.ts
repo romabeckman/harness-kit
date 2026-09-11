@@ -4,7 +4,7 @@ import { QaAgenticOrchestrator } from '../../qa/QaAgenticOrchestrator'
 import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 import { Runner } from '../../agent-runner/types'
 import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
-import type { QaDriver, QaHttpRequest, QaPlan, QaPlanInput, QaProfile } from '../../qa/types'
+import type { QaDriver, QaFinalReport, QaHttpRequest, QaPlan, QaPlanInput, QaProfile, QaRun } from '../../qa/types'
 import { HELP_QA } from '../utils/constants'
 import { resolve } from 'node:path'
 import { HarnessSettings } from '../../settings/HarnessSettings'
@@ -216,13 +216,16 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
     return
   }
   if (options.action === 'execute') {
-    const run = await service.execute(loadPlan(store, options))
+    const plan = loadPlan(store, options)
+    const run = await service.execute(plan)
+    await generateRunReport(workspace, options, dependencies, store, plan, run)
     console.log(`QA run completed: ${run.id} (${run.verdict})`)
     return
   }
   if (options.action === 'renew') {
     const plan = loadPlan(store, options, 'renew')
     const run = await service.execute(plan)
+    await generateRunReport(workspace, options, dependencies, store, plan, run)
     console.log(`QA plan renewed: ${plan.id}@${plan.version} as ${run.id} (${run.verdict})`)
     return
   }
@@ -236,23 +239,55 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
       throw new Error(`QA run has no unfinished scenarios. Use renew --plan ${plan.id}@${plan.version}`)
     }
     const resumed = await service.continue(run, plan, pendingScenarios)
+    await generateRunReport(workspace, options, dependencies, store, plan, resumed)
     console.log(`QA run resumed: ${resumed.id} (${resumed.verdict})`)
     return
   }
   if (options.action === 'run') {
     const plan = service.plan(planInput(options))
     const run = await service.execute(plan)
+    await generateRunReport(workspace, options, dependencies, store, plan, run)
     console.log(`QA run completed: ${run.id} (${run.verdict})`)
     return
   }
   if (options.action === 'report') {
     if (!options.runId) throw new Error('QA report requires --run <id>')
-    console.log(JSON.stringify(store.loadRun(options.runId), null, 2))
+    const run = store.loadRun(options.runId)
+    const plan = store.loadPlan(run.planId, run.planVersion)
+    const report = await generateRunReport(workspace, options, dependencies, store, plan, run)
+    console.log(JSON.stringify(report, null, 2))
     return
   }
   const profile = options.profile ?? 'api'
   const availability = await service.doctor(profile)
   console.log(JSON.stringify({ profile, ...availability }, null, 2))
+}
+
+async function generateRunReport(
+  workspace: string,
+  options: QaCliOptions,
+  dependencies: QaCommandDependencies,
+  store: QaRunStore,
+  plan: QaPlan,
+  run: QaRun,
+): Promise<QaFinalReport> {
+  const runner = dependencies.runner ?? AgentRunnerFactory.create({
+    type: options.agentType ?? Runner.CLAUDE_CLI,
+    model: options.model,
+    effort: options.effort,
+  })
+  const settings = dependencies.settings ?? HarnessSettings.load(workspace)
+  return new QaAgenticOrchestrator({
+    workspace,
+    runner,
+    store,
+    drivers: dependencies.drivers,
+    settings,
+    model: options.model,
+    effort: options.effort,
+    targetProbe: dependencies.targetProbe,
+    runtime: dependencies.runtime,
+  }).report(plan, run)
 }
 
 function planInput(options: QaCliOptions): QaPlanInput {

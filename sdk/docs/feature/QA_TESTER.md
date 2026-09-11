@@ -62,8 +62,8 @@ src/cli/services/            # `hrns qa` command adapter
 5. **Probe once** before scenario execution and block the run without invoking drivers when the target is unavailable.
 6. **Execute deterministically**: use selected drivers with target-origin checks, redaction, and cancellation.
 7. **Analyze and adapt**: add bounded scenarios for coverage gaps; validate each revised plan before execution.
-8. **Report agentically**: reconcile bugs/errors with evidence and compute coverage matrices.
-9. **Stop managed runtimes** and persist plans, runs, numbered evidence folders (`001-<scenario-id>`, `002-<scenario-id>`, ...), `report.json`, and the LLM-generated `REPORT.md`. Normalize existing three-digit scenario prefixes before constructing evidence paths.
+8. **Report agentically**: reconcile bugs/errors with evidence and compute coverage matrices. Continue to reporting when optional post-execution analysis fails.
+9. **Finalize every completed run** from agentic, `execute`, `run`, `renew`, or `resume` actions through LLM reporting; persist `report.json` and `REPORT.md`. Use `qa report --run <id>` to generate or regenerate both reports for a stored completed run.
 10. **Preserve the original scope** byte-for-byte in `.harness-kit/qa/plans/<plan-id>/SCOPE.md`; write it once and keep it unchanged across plan versions and adaptive revisions.
 11. **Number each scenario ID** with a three-digit execution prefix: `001-<scenario>`, `002-<scenario>`, and so on. Keep prefixes stable when adaptive analysis adds scenarios.
 

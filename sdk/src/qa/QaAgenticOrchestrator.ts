@@ -2,7 +2,7 @@ import type { IAgentRunner } from '../agent-runner/IAgentRunner'
 import { QaService } from './services/QaService'
 import { QaRunStore } from './services/QaRunStore'
 import { QaAnalysisPhase, QaExecutionPhase, QaPhase, QaPlanningPhase, QaReportingPhase, QaValidationPhase, type QaPhaseContext, type QaPhaseHandler } from './phases'
-import type { QaAgenticRequest, QaDriver, QaFinalReport, QaPlan } from './types'
+import type { QaAgenticRequest, QaDriver, QaFinalReport, QaPlan, QaRun } from './types'
 import type { HarnessSettings } from '../settings/HarnessSettings'
 import type { QaProgressEvent, QaProgressListener } from './progress'
 import { QaRuntimeManager, type QaRuntimePreparer } from './services/QaRuntimeManager'
@@ -57,6 +57,23 @@ export class QaAgenticOrchestrator {
     }, plan, signal)
   }
 
+  async report(plan: QaPlan, run: QaRun, signal?: AbortSignal): Promise<QaFinalReport> {
+    const handler = this.#phases.get(QaPhase.REPORTING)
+    if (!handler) throw new Error(`No agentic QA handler for phase ${QaPhase.REPORTING}`)
+    const context: QaPhaseContext = {
+      ...this.#context,
+      request: { target: plan.target, profile: plan.profile },
+      plan,
+      run,
+      persistPlan: false,
+    }
+    context.onProgress?.({ type: 'phase_started', phase: QaPhase.REPORTING })
+    const next = await handler.execute(context, signal)
+    context.onProgress?.(this.phaseCompleted(QaPhase.REPORTING, context))
+    if (next !== QaPhase.COMPLETED || !context.report) throw new Error('Agentic QA reporting completed without a final report')
+    return context.report
+  }
+
   private async runFrom(start: QaPhase, request: QaAgenticRequest, plan?: QaPlan, signal?: AbortSignal): Promise<QaFinalReport> {
     const runtime = await this.#runtime.prepare(request, signal)
     const resolvedRequest = runtime ? { ...request, target: runtime.target } : request
@@ -69,7 +86,12 @@ export class QaAgenticOrchestrator {
         if (!handler) throw new Error(`No agentic QA handler for phase ${current}`)
         context.onProgress?.({ type: 'phase_started', phase: current })
         const completed = current
-        current = await handler.execute(context, signal)
+        try {
+          current = await handler.execute(context, signal)
+        } catch (error) {
+          if (current !== QaPhase.ANALYSIS || !context.run?.verdict || signal?.aborted) throw error
+          current = QaPhase.REPORTING
+        }
         context.onProgress?.(this.phaseCompleted(completed, context))
       }
       if (!context.report) throw new Error('Agentic QA completed without a final report')

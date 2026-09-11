@@ -176,6 +176,31 @@ describe('QaAgenticOrchestrator', () => {
     expect(report).toMatchObject({ verdict: 'PASS', summary: 'Stored plan resumed.' })
   })
 
+  it('still reports a resumed run when post-execution analysis fails', async () => {
+    const runner: IAgentRunner = { run: vi.fn(async (invocation) => {
+      if (invocation.phaseKey === 'qa_analysis') throw new Error('analysis unavailable')
+      return { raw: '{"summary":"Resumed run reported.","bugs":[],"errors":[]}' }
+    }) }
+    const driver: QaDriver = { profile: 'api', doctor: async () => ({ available: true }), execute: async (scenario) => ({
+      scenarioId: scenario.id, required: true, status: 'PASSED',
+      evidence: [{ id: 'response', path: 'response.body', capturedAt: '', adapter: 'test' }],
+    }) }
+    const plan = {
+      schemaVersion: 1 as const, id: 'saved-plan', version: 1, target: 'http://127.0.0.1:3000', profile: 'api' as const,
+      createdAt: '', criteria: ['Health works'], scenarios: [{ id: 'health', criterionIds: ['criterion-1'], required: true, profile: 'api' as const,
+        request: { method: 'GET', path: '/health', expectedStatus: 200 } }],
+    }
+    const store = new QaRunStore(workspace)
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace, runner, store, drivers: [driver], targetProbe: async () => ({ available: true }),
+    })
+
+    const report = await orchestrator.resume(plan)
+
+    expect(report.summary).toBe('Resumed run reported.')
+    expect(readFileSync(store.reportMarkdownPath(report.runId), 'utf8')).toContain('# QA Report')
+  })
+
   it('rejects browser plans without executable assertions and unsafe action budgets', async () => {
     const runner: IAgentRunner = { run: vi.fn().mockResolvedValue({ raw: JSON.stringify({
       id: 'unsafe-plan', target: 'http://127.0.0.1:3000', profile: 'web', criteria: ['Form works'],

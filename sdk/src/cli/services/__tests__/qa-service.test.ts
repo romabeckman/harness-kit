@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { cmdQa, parseQaArgs } from '../qa-service'
@@ -196,20 +196,70 @@ describe('QA CLI', () => {
     expect(new QaRunStore(workspace).loadPlan('orders', 1).scenarios[0].request).toEqual({ method: 'POST', path: '/orders', expectedStatus: 201 })
   })
 
+  it('generates JSON and Markdown reports after direct plan execution', async () => {
+    const store = new QaRunStore(workspace)
+    store.savePlan(storedPlan())
+    const runner: IAgentRunner = { run: vi.fn().mockResolvedValue({ raw: JSON.stringify({
+      summary: 'Direct execution reported.', markdown: '# QA Report\n\nDirect execution reported.\n', bugs: [], errors: [],
+    }) }) }
+    const execute = vi.fn(async (scenario) => ({
+      scenarioId: scenario.id, required: true, status: 'PASSED' as const,
+      evidence: [{ id: scenario.id, path: scenario.id, capturedAt: '', adapter: 'test' }],
+    }))
+
+    await cmdQa(workspace, ['execute', '--plan', 'stored-plan@1'], {
+      runner,
+      drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
+      targetProbe: async () => ({ available: true }),
+    })
+
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'qa_reporting' }), expect.anything())
+    const runId = String(log.mock.calls[0][0]).match(/^QA run completed: (.+) \(PASS\)$/)?.[1]
+    expect(runId).toBeTruthy()
+    expect(store.loadReport(runId!)).toMatchObject({ summary: 'Direct execution reported.', verdict: 'PASS' })
+    expect(readFileSync(store.reportMarkdownPath(runId!), 'utf8')).toBe('# QA Report\n\nDirect execution reported.\n')
+  })
+
+  it('generates missing reports from a completed run through the report action', async () => {
+    const store = new QaRunStore(workspace)
+    store.savePlan(storedPlan())
+    store.saveRun({
+      schemaVersion: 1, id: 'completed-run', planId: 'stored-plan', planVersion: 1,
+      target: 'http://127.0.0.1:3000', createdAt: '', completedAt: '', verdict: 'PASS',
+      results: storedPlan().scenarios.map((scenario) => ({
+        scenarioId: scenario.id, required: true, status: 'PASSED' as const,
+        evidence: [{ id: scenario.id, path: scenario.id, capturedAt: '', adapter: 'test' }],
+      })),
+    })
+    const runner: IAgentRunner = { run: vi.fn().mockResolvedValue({ raw: JSON.stringify({
+      summary: 'Stored run reported.', markdown: '# QA Report\n\nStored run reported.\n', bugs: [], errors: [],
+    }) }) }
+
+    await cmdQa(workspace, ['report', '--run', 'completed-run'], { runner })
+
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'qa_reporting' }), expect.anything())
+    expect(store.loadReport('completed-run')).toMatchObject({ summary: 'Stored run reported.', verdict: 'PASS' })
+    expect(readFileSync(store.reportMarkdownPath('completed-run'), 'utf8')).toBe('# QA Report\n\nStored run reported.\n')
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('Stored run reported.'))
+  })
+
   it('renews a stored plan as a new complete run', async () => {
     const store = new QaRunStore(workspace)
     store.savePlan(storedPlan())
+    const runner = reportingRunner('Renewed run reported.')
     const execute = vi.fn(async (scenario) => ({
       scenarioId: scenario.id, required: true, status: 'PASSED' as const,
       evidence: [{ id: 'renewed', path: 'response.body', capturedAt: '', adapter: 'test' }],
     }))
 
     await cmdQa(workspace, ['renew', '--plan', 'stored-plan@1'], {
+      runner,
       drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
       targetProbe: async () => ({ available: true }),
     })
 
     expect(execute).toHaveBeenCalledTimes(2)
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'qa_reporting' }), expect.anything())
     expect(log).toHaveBeenCalledWith(expect.stringMatching(/^QA plan renewed: stored-plan@1 as .+ \(PASS\)$/))
   })
 
@@ -221,17 +271,20 @@ describe('QA CLI', () => {
       target: 'http://127.0.0.1:3000', createdAt: '',
       results: [{ scenarioId: 'first', required: true, status: 'PASSED', evidence: [{ id: 'old', path: 'old', capturedAt: '', adapter: 'test' }] }],
     })
+    const runner = reportingRunner('Resumed run reported.')
     const execute = vi.fn(async (scenario) => ({
       scenarioId: scenario.id, required: true, status: 'PASSED' as const,
       evidence: [{ id: 'resumed', path: 'response.body', capturedAt: '', adapter: 'test' }],
     }))
 
     await cmdQa(workspace, ['resume', '--run', 'partial-run'], {
+      runner,
       drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
       targetProbe: async () => ({ available: true }),
     })
 
     expect(execute).toHaveBeenCalledOnce()
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'qa_reporting' }), expect.anything())
     expect(execute).toHaveBeenCalledWith(expect.objectContaining({ id: 'second' }), expect.any(String), expect.any(String), undefined)
     expect(store.loadRun('partial-run').results.map((result) => result.scenarioId)).toEqual(['first', 'second'])
   })
@@ -306,5 +359,13 @@ function storedPlan(): QaPlan {
       { id: 'first', criterionIds: ['criterion-1'], required: true, profile: 'api', request: { method: 'GET', path: '/first', expectedStatus: 200 } },
       { id: 'second', criterionIds: ['criterion-2'], required: true, profile: 'api', request: { method: 'GET', path: '/second', expectedStatus: 200 } },
     ],
+  }
+}
+
+function reportingRunner(summary: string): IAgentRunner {
+  return {
+    run: vi.fn().mockResolvedValue({
+      raw: JSON.stringify({ summary, markdown: `# QA Report\n\n${summary}\n`, bugs: [], errors: [] }),
+    }),
   }
 }
