@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { QaRunStore } from '../services/QaRunStore'
@@ -37,5 +37,19 @@ describe('QaRunStore', () => {
     store.savePlan({ schemaVersion: 1, id: 'orders', version: 2, target: 'http://127.0.0.1:3000', profile: 'api', createdAt: '2026-09-11T00:00:00.000Z', criteria: ['works'], scenarios: [] })
 
     expect(store.findLatestPlan()).toMatchObject({ id: 'orders', version: 2 })
+  })
+
+  it('formats evidence directories with a padded sequence and resolves existing scenarios', () => {
+    const store = new QaRunStore(workspace)
+
+    const first = store.evidenceDir('run-1', 'first-scenario', 1)
+    const second = store.evidenceDir('run-1', 'second-scenario', 2)
+    mkdirSync(first, { recursive: true })
+    mkdirSync(second, { recursive: true })
+
+    expect(first).toMatch(/evidence[\\/]001-first-scenario$/)
+    expect(second).toMatch(/evidence[\\/]002-second-scenario$/)
+    expect(store.evidenceDir('run-1', 'first-scenario')).toBe(first)
+    expect(store.evidenceDir('run-1', 'third-scenario')).toMatch(/evidence[\\/]003-third-scenario$/)
   })
 })

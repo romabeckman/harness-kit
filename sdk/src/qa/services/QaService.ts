@@ -66,6 +66,7 @@ export class QaService {
   }
 
   private async executeInto(run: QaRun, plan: QaPlan, scenarios: QaPlan['scenarios'], availability: { available: boolean; reason?: string }, signal?: AbortSignal, onProgress?: QaProgressListener): Promise<void> {
+    const evidenceOffset = run.results.length
     for (const [index, scenario] of scenarios.entries()) {
       if (signal?.aborted) throw signal.reason ?? new Error('QA execution aborted')
       onProgress?.({
@@ -76,10 +77,11 @@ export class QaService {
         total: scenarios.length,
       })
       const driver = this.#drivers.get(scenario.profile)
+      const evidenceSequence = evidenceOffset + index + 1
       const result = !availability.available
         ? { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: availability.reason ?? `Target unavailable at ${plan.target}`, evidence: [] }
         : driver
-          ? await driver.execute(scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id), signal)
+          ? await driver.execute(scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id, evidenceSequence), signal)
           : { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: `No QA driver for ${scenario.profile}`, evidence: [] }
       run.results.push(result)
       this.#store.saveRun(run)

@@ -133,7 +133,7 @@ Proposed artifact layout:
     events.jsonl
     results.json
     report.md
-    evidence/<scenario-id>/...
+    evidence/<nnn>-<scenario-id>/...
 ```
 
 Persist through a dedicated QA store port implemented with existing atomic state conventions. Do not place runtime acceptance results in the adversarial review's `QA.json`.

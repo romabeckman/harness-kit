@@ -33,10 +33,14 @@ export class QaRunStore {
     return join(this.#root, 'runs', runId, 'state.json')
   }
 
-  evidenceDir(runId: string, scenarioId: string): string {
+  evidenceDir(runId: string, scenarioId: string, sequence?: number): string {
     this.assertIdentifier(runId)
     this.assertIdentifier(scenarioId)
-    return join(this.#root, 'runs', runId, 'evidence', scenarioId)
+    if (sequence !== undefined && (!Number.isSafeInteger(sequence) || sequence < 1)) throw new Error('Invalid QA evidence sequence')
+    const evidenceRoot = join(this.#root, 'runs', runId, 'evidence')
+    const existing = sequence === undefined ? this.findEvidenceSequence(evidenceRoot, scenarioId) : undefined
+    const resolvedSequence = sequence ?? existing ?? this.nextEvidenceSequence(evidenceRoot)
+    return join(evidenceRoot, `${String(resolvedSequence).padStart(3, '0')}-${scenarioId}`)
   }
 
   reportPath(runId: string): string {
@@ -107,6 +111,33 @@ export class QaRunStore {
 
   private assertIdentifier(value: string): void {
     if (!SAFE_IDENTIFIER.test(value)) throw new Error('Invalid QA identifier')
+  }
+
+  private findEvidenceSequence(root: string, scenarioId: string): number | undefined {
+    if (!existsSync(root)) return undefined
+    try {
+      return readdirSync(root)
+        .flatMap((name) => {
+          const match = /^(\d+)-(.+)$/.exec(name)
+          return match && match[2] === scenarioId ? [Number.parseInt(match[1], 10)] : []
+        })
+        .sort((left, right) => left - right)[0]
+    } catch {
+      return undefined
+    }
+  }
+
+  private nextEvidenceSequence(root: string): number {
+    if (!existsSync(root)) return 1
+    try {
+      const highest = readdirSync(root).reduce((current, name) => {
+        const match = /^(\d+)-/.exec(name)
+        return match ? Math.max(current, Number.parseInt(match[1], 10)) : current
+      }, 0)
+      return highest + 1
+    } catch {
+      return 1
+    }
   }
 
   private isValidPlan(value: unknown, expectedId: string): value is QaPlan {

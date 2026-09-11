@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createServer, type RequestListener, type Server } from 'node:http'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { QaService, QaRunStore, QaVerdictPolicy } from '../services'
 import { CurlDriver, PlaywrightDriver } from '../engine'
-import type { QaPlan } from '../types'
+import type { QaDriver, QaPlan } from '../types'
 
 describe('QaService', () => {
   let workspace: string
@@ -31,6 +31,45 @@ describe('QaService', () => {
     expect(plan.scenarios).toHaveLength(2)
     expect(plan.scenarios.every((scenario) => scenario.required)).toBe(true)
     expect(new QaRunStore(workspace).loadPlan('orders-api', 1)).toEqual(plan)
+  })
+
+  it('numbers evidence directories in scenario execution order', async () => {
+    const evidenceDirectories: string[] = []
+    const driver: QaDriver = {
+      profile: 'mcp',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario, _target, evidenceDir) => {
+        evidenceDirectories.push(evidenceDir)
+        return {
+          scenarioId: scenario.id,
+          required: scenario.required,
+          status: 'PASSED',
+          evidence: [{ id: `${scenario.id}-evidence`, path: `${evidenceDir}/result.json`, capturedAt: '', adapter: 'test' }],
+        }
+      },
+    }
+    const service = new QaService(new QaRunStore(workspace), [driver], async () => ({ available: true }))
+    const plan: QaPlan = {
+      schemaVersion: 1,
+      id: 'ordered-evidence',
+      version: 1,
+      target: 'http://qa.test/mcp',
+      profile: 'mcp',
+      createdAt: '2026-09-11T00:00:00.000Z',
+      criteria: ['First tool call', 'Second tool call'],
+      scenarios: [
+        { id: 'first-tool-call', criterionIds: ['criterion-1'], required: true, profile: 'mcp', mcp: { method: 'tools/call' } },
+        { id: 'second-tool-call', criterionIds: ['criterion-2'], required: true, profile: 'mcp', mcp: { method: 'tools/call' } },
+      ],
+    }
+
+    const run = await service.execute(plan)
+
+    expect(run.verdict).toBe('PASS')
+    expect(evidenceDirectories.map((directory) => basename(directory))).toEqual([
+      '001-first-tool-call',
+      '002-second-tool-call',
+    ])
   })
 
   it('fails when an executed required API assertion does not match', async () => {

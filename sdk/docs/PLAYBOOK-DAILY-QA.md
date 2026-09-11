@@ -114,8 +114,8 @@ Every run is stored under the target project's `.harness-kit/qa/runs/<qa-run-id>
 | Item | Location | What to review |
 | --- | --- | --- |
 | Run state | `state.json` | Final verdict, scenario status, reason, and timestamps. |
-| API evidence | `evidence/<scenario>/` | The `curl` request metadata and response body. |
-| Browser evidence | `evidence/<scenario>/final.png` | Final browser screenshot after the planned user flow. |
+| API evidence | `evidence/<nnn>-<scenario>/` | The `curl` request metadata and response body. Evidence folders use a zero-padded execution number, such as `001-create-order`. |
+| Browser evidence | `evidence/<nnn>-<scenario>/final.png` | Final browser screenshot after the planned user flow. |
 
 | Verdict | Meaning | Daily action |
 | --- | --- | --- |

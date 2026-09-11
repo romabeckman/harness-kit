@@ -63,7 +63,7 @@ src/cli/services/            # `hrns qa` command adapter
 6. **Execute deterministically**: use selected drivers with target-origin checks, redaction, and cancellation.
 7. **Analyze and adapt**: add bounded scenarios for coverage gaps; validate each revised plan before execution.
 8. **Report agentically**: reconcile bugs/errors with evidence and compute coverage matrices.
-9. **Stop managed runtimes** and persist plans, runs, evidence, and `report.json`.
+9. **Stop managed runtimes** and persist plans, runs, numbered evidence folders (`001-<scenario-id>`, `002-<scenario-id>`, ...), and `report.json`.
 
 When **resume** is selected, choose exactly one saved plan from `.harness-kit/qa/plans`; only that plan executes. Choose **renew** to create a new plan.
 
