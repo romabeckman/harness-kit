@@ -240,6 +240,11 @@ EXPLORATORY
   Plans run sequentially. A global JSON report is always saved under
   docs/qa/exploratory/<id>/report.json and printed to stdout.
 
+AUTH
+  Adds one profile through a form. Choose env storage for a reference-only
+  profile or insecure storage to persist entered credentials in auth.json.
+  Insecure storage always shows a warning and requires confirmation.
+
 EXAMPLES
   hrns qa run --scope "Test endpoint X" --target http://localhost:3000
   hrns qa run --report --scope "Test endpoint X" --target http://localhost:3000

@@ -57,11 +57,11 @@ hrns qa auth
 hrns qa auth --project ../checkout
 ```
 
-Select the mode and profile name, then provide the username and environment-variable name for Basic auth, the JWT/token environment-variable name for Bearer auth, or the header/cookie fields for other modes. Each invocation adds one profile and refuses to overwrite an existing profile.
+Select the authentication mode and profile name, then choose `env` or `insecure`. Provide the username and password for Basic auth, the JWT/token for Bearer auth, or the header/cookie fields for other modes. Each invocation adds one profile and refuses to overwrite an existing profile.
 
 ## Run against protected targets
 
-Add optional `.harness-kit/auth.json` with named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. Reference secrets through environment variables only; the file is ignored by Git.
+Add optional `.harness-kit/auth.json` with named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. The form defaults to `env` storage (reference only). Selecting `insecure` shows a warning, requires confirmation, and stores the entered credential directly in `auth.json`. The file is ignored by Git but contains sensitive data and must be protected.
 
 ```json
 { "schemaVersion": 1, "defaultProfile": "qa-user", "profiles": { "qa-user": { "mode": "bearer", "token": { "source": "env", "name": "QA_USER_TOKEN" } } } }

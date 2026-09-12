@@ -7,24 +7,29 @@ import { QaRunStore } from '../../../qa/services/QaRunStore'
 import type { IAgentRunner } from '../../../agent-runner/IAgentRunner'
 import type { QaDriver, QaPlan, QaRun } from '../../../qa/types'
 
-const prompts = vi.hoisted(() => ({ editor: vi.fn(), input: vi.fn(), select: vi.fn() }))
+const prompts = vi.hoisted(() => ({ confirm: vi.fn(), editor: vi.fn(), input: vi.fn(), password: vi.fn(), select: vi.fn() }))
 
 vi.mock('@inquirer/prompts', () => prompts)
 
 describe('QA CLI', () => {
   let workspace: string
   let log: ReturnType<typeof vi.spyOn>
+  let warning: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
     prompts.editor.mockReset()
     prompts.input.mockReset()
+    prompts.password.mockReset()
     prompts.select.mockReset()
+    prompts.confirm.mockReset()
     workspace = mkdtempSync(join(tmpdir(), 'hrns-qa-cli-'))
     log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
   })
 
   afterEach(() => {
     log.mockRestore()
+    warning.mockRestore()
     rmSync(workspace, { recursive: true, force: true })
   })
 
@@ -47,11 +52,10 @@ describe('QA CLI', () => {
     }
   })
 
-  it('creates an environment-backed bearer profile through the auth form', async () => {
-    prompts.select.mockResolvedValueOnce('bearer')
-    prompts.input
-      .mockResolvedValueOnce('qa-user')
-      .mockResolvedValueOnce('QA_USER_TOKEN')
+  it('creates a bearer profile through the auth form and preserves the token', async () => {
+    prompts.select.mockResolvedValueOnce('bearer').mockResolvedValueOnce('env')
+    prompts.input.mockResolvedValueOnce('qa-user')
+    prompts.input.mockResolvedValueOnce('QA_USER_TOKEN')
 
     await cmdQa(workspace, ['auth'])
 
@@ -60,18 +64,37 @@ describe('QA CLI', () => {
     expect(log).toHaveBeenCalledWith(expect.stringContaining('qa-user'))
   })
 
-  it('adds basic credentials without writing a plaintext password', async () => {
-    prompts.select.mockResolvedValueOnce('basic')
-    prompts.input
-      .mockResolvedValueOnce('admin')
-      .mockResolvedValueOnce('qa-admin')
-      .mockResolvedValueOnce('QA_ADMIN_PASSWORD')
+  it('adds basic credentials and preserves the entered password', async () => {
+    prompts.select.mockResolvedValueOnce('basic').mockResolvedValueOnce('env')
+    prompts.input.mockResolvedValueOnce('admin').mockResolvedValueOnce('qa-admin')
+    prompts.input.mockResolvedValueOnce('QA_ADMIN_PASSWORD')
 
     await cmdQa(workspace, ['auth'])
 
     const saved = JSON.parse(readFileSync(join(workspace, '.harness-kit', 'auth.json'), 'utf8'))
     expect(saved.profiles.admin).toEqual({ mode: 'basic', username: 'qa-admin', password: { source: 'env', name: 'QA_ADMIN_PASSWORD' } })
-    expect(JSON.stringify(saved)).not.toContain('plaintext')
+  })
+
+  it('preserves a password entered by the auth form for later execution', async () => {
+    prompts.select.mockResolvedValueOnce('basic').mockResolvedValueOnce('insecure')
+    prompts.confirm.mockResolvedValueOnce(true)
+    prompts.input.mockResolvedValueOnce('roma').mockResolvedValueOnce('roma')
+    prompts.password.mockResolvedValueOnce('password-entered-in-form')
+
+    await cmdQa(workspace, ['auth'])
+
+    const saved = JSON.parse(readFileSync(join(workspace, '.harness-kit', 'auth.json'), 'utf8'))
+    expect(saved.profiles.roma).toEqual({ mode: 'basic', storage: 'insecure', username: 'roma', password: { source: 'literal', value: 'password-entered-in-form' } })
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining('WARNING'))
+  })
+
+  it('does not create a profile when insecure storage is declined', async () => {
+    prompts.select.mockResolvedValueOnce('basic').mockResolvedValueOnce('insecure')
+    prompts.confirm.mockResolvedValueOnce(false)
+
+    await expect(cmdQa(workspace, ['auth'])).rejects.toThrow('Insecure credential storage cancelled')
+    expect(existsSync(join(workspace, '.harness-kit', 'auth.json'))).toBe(false)
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining('WARNING'))
   })
 
   it('appends a second profile without replacing the existing configuration', async () => {
@@ -79,8 +102,9 @@ describe('QA CLI', () => {
     prompts.input.mockResolvedValueOnce('anonymous')
     await cmdQa(workspace, ['auth'])
 
-    prompts.select.mockResolvedValueOnce('api-key')
-    prompts.input.mockResolvedValueOnce('service').mockResolvedValueOnce('X-Service-Key').mockResolvedValueOnce('QA_SERVICE_KEY')
+    prompts.select.mockResolvedValueOnce('api-key').mockResolvedValueOnce('env')
+    prompts.input.mockResolvedValueOnce('service').mockResolvedValueOnce('X-Service-Key')
+    prompts.input.mockResolvedValueOnce('QA_SERVICE_KEY')
     await cmdQa(workspace, ['auth'])
 
     const saved = JSON.parse(readFileSync(join(workspace, '.harness-kit', 'auth.json'), 'utf8'))

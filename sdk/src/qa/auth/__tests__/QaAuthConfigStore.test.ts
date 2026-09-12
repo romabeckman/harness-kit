@@ -44,8 +44,8 @@ describe('QaAuthConfigStore', () => {
 
   it('rejects inline secrets, unsafe headers, unknown profiles, and missing environment variables', () => {
     const workspace = temporaryWorkspace()
-    save(workspace, { schemaVersion: 1, profiles: { unsafe: { mode: 'bearer', token: 'raw-secret' } } })
-    expect(() => new QaAuthConfigStore(workspace).resolve('unsafe')).toThrow('environment reference')
+    save(workspace, { schemaVersion: 1, profiles: { unsafe: { mode: 'bearer', token: { source: 'unsupported', value: 'raw-secret' } } } })
+    expect(() => new QaAuthConfigStore(workspace).resolve('unsafe')).toThrow('environment reference or literal')
 
     save(workspace, { schemaVersion: 1, profiles: { unsafe: { mode: 'api-key', header: 'X-Key\r\nInjected', value: { source: 'env', name: 'QA_KEY' } } } })
     expect(() => new QaAuthConfigStore(workspace, { QA_KEY: 'value' }).resolve('unsafe')).toThrow('header')
@@ -53,6 +53,12 @@ describe('QaAuthConfigStore', () => {
 
     save(workspace, { schemaVersion: 1, profiles: { user: { mode: 'bearer', token: { source: 'env', name: 'MISSING_TOKEN' } } } })
     expect(() => new QaAuthConfigStore(workspace).resolve('user')).toThrow('MISSING_TOKEN')
+  })
+
+  it('resolves literal secrets persisted by the auth form', () => {
+    const workspace = temporaryWorkspace()
+    save(workspace, { schemaVersion: 1, profiles: { user: { mode: 'basic', username: 'roma', password: { source: 'literal', value: 'persisted-password' } } } })
+    expect(new QaAuthConfigStore(workspace).resolve('user')).toMatchObject({ mode: 'basic', basic: { username: 'roma', password: 'persisted-password' } })
   })
 
   function temporaryWorkspace(): string {

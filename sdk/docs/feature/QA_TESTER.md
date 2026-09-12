@@ -64,7 +64,7 @@ src/cli/services/qa/         # parsing, command handlers, factories, and CLI typ
 8. **Reuse one session** per QA execution, never across executions.
 9. **Run saved suites** with `hrns qa exploratory`. Execute each latest plan version sequentially without adaptive additions. Continue after plan errors. Save `docs/qa/exploratory/<id>/report.json`.
 10. **Authenticate** with `--auth <profile>` from optional `.harness-kit/auth.json`. Resolve environment references only at execution time.
-11. **Create profiles** with `hrns qa auth`. The form adds one profile atomically and accepts only environment-variable names for secret fields.
+11. **Create profiles** with `hrns qa auth`. The form adds one profile atomically and lets the user choose environment references or insecure direct storage.
 
 ```text
 # CORRECT: run QA and generate the report during execution
@@ -112,13 +112,13 @@ Use temporary static servers for browser profiles. Route security HTTP through A
 
 ## AUTHENTICATION
 
-REQUIRED: Define named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles in optional `.harness-kit/auth.json`. Reference all secrets through environment variables. Use `--auth <profile>` to override `defaultProfile`; allow `authProfile: "none"` per scenario.
+REQUIRED: Define named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles in optional `.harness-kit/auth.json`. ALLOWED: choose environment references for shared/CI projects or `storage: "insecure"` with literal references for local projects. Protect the file in either case. Use `--auth <profile>` to override `defaultProfile`; allow `authProfile: "none"` per scenario.
 
-REQUIRED: Keep `hrns qa auth` form-only: select one mode, enter one profile name, collect only that mode's fields, and reject duplicate names. ALLOWED: pass `--project` to target another project. PROHIBITED: combine the helper with run, report, exploratory, target, profile, scope, scenario, or auth-selection options.
+REQUIRED: Keep `hrns qa auth` form-only: select one mode, choose credential storage, enter one profile name, collect only that mode's fields, warn and confirm insecure storage, and reject duplicate names. ALLOWED: pass `--project` to target another project. PROHIBITED: combine the helper with run, report, exploratory, target, profile, scope, scenario, or auth-selection options.
 
 REQUIRED: Apply HTTP credentials to same-origin API, MCP, and browser traffic. Apply Basic browser credentials and cookies through Playwright context APIs. Inject only explicitly mapped `environment` values into CLI child processes.
 
-PROHIBITED: Persist resolved secrets in plans, prompts, reports, execution memory, or evidence. PROHIBITED: Apply header authentication to cross-origin browser requests. WebSocket header authentication, OAuth2 acquisition, HMAC signing, and mTLS remain outside the current boundary.
+PROHIBITED: Persist resolved secrets in plans, prompts, reports, execution memory, or evidence. PROHIBITED: commit `.harness-kit/auth.json` or expose insecure literal values in logs. PROHIBITED: Apply header authentication to cross-origin browser requests. WebSocket header authentication, OAuth2 acquisition, HMAC signing, and mTLS remain outside the current boundary.
 
 ## EXECUTION MEMORY
 

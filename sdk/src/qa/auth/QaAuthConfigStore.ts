@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { QaAuthMode, QaAuthProfileDescription, QaResolvedAuth } from './types'
-type SecretReference = { source: 'env'; name: string }
+type SecretReference = { source: 'env'; name: string } | { source: 'literal'; value: string }
 type Profile = Record<string, unknown> & { mode: QaAuthMode; environment?: Record<string, SecretReference> }
 interface AuthFile { schemaVersion: 1; defaultProfile?: string; profiles: Record<string, Profile> }
 
@@ -42,7 +42,13 @@ export class QaAuthConfigStore {
     if (value.defaultProfile !== undefined && typeof value.defaultProfile !== 'string') throw new Error('defaultProfile must be a string')
     return { schemaVersion: 1, defaultProfile: value.defaultProfile as string | undefined, profiles }
   }
-  private secret(value: unknown, field: string): string { if (!record(value) || value.source !== 'env' || typeof value.name !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(value.name)) throw new Error(`${field} must be an environment reference`); const secret = this.environment[value.name]; if (!secret) throw new Error(`Environment variable ${value.name} required by QA authentication profile is missing`); return secret }
+  private secret(value: unknown, field: string): string {
+    if (record(value) && value.source === 'literal' && typeof value.value === 'string' && value.value.length > 0) return safeValue(value.value)
+    if (!record(value) || value.source !== 'env' || typeof value.name !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(value.name)) throw new Error(`${field} must be an environment reference or literal secret`)
+    const secret = this.environment[value.name]
+    if (!secret) throw new Error(`Environment variable ${value.name} required by QA authentication profile is missing`)
+    return secret
+  }
 }
 function record(value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) }
 function requiredString(value: unknown, field: string): string { if (typeof value !== 'string' || value.length === 0) throw new Error(`${field} must be a non-empty string`); return safeValue(value) }
