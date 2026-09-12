@@ -76,8 +76,9 @@ describe('QA focused regressions', () => {
   it('remembers verified execution targets for later planning without storing results', async () => {
     const { orchestrator, runner } = setup()
     await orchestrator.run({ scope: 'Check health endpoint' })
-    const path = join(workspace, '.harness-kit', 'qa', 'execution-memory.json')
+    const path = join(workspace, 'docs', 'qa', 'execution-memory.json')
     expect(existsSync(path)).toBe(true)
+    expect(existsSync(join(workspace, '.harness-kit', 'qa', 'execution-memory.json'))).toBe(false)
     const memory = readFileSync(path, 'utf8')
     expect(memory).toContain('http://127.0.0.1:8080')
     expect(memory).not.toMatch(/PASSED|verdict|response.json|Health responds/)
@@ -91,7 +92,7 @@ describe('QA focused regressions', () => {
   it('does not learn blocked targets', async () => {
     const { orchestrator } = setup('BLOCKED')
     await orchestrator.run({ scope: 'Check health endpoint' })
-    expect(existsSync(join(workspace, '.harness-kit', 'qa', 'execution-memory.json'))).toBe(false)
+    expect(existsSync(join(workspace, 'docs', 'qa', 'execution-memory.json'))).toBe(false)
   })
 
   it('keeps an explicit target authoritative over remembered ports', async () => {
@@ -100,7 +101,7 @@ describe('QA focused regressions', () => {
     await orchestrator.run({ scope: 'Check another environment', target: 'http://127.0.0.1:8081' })
     const planningCalls = vi.mocked(runner.run).mock.calls.filter(([invocation]) => invocation.phaseKey === 'qa_planning')
     expect(planningCalls[1][0].prompt).toContain('Target URL hint: http://127.0.0.1:8081')
-    const hints = readFileSync(join(workspace, '.harness-kit', 'qa', 'execution-memory.json'), 'utf8')
+    const hints = readFileSync(join(workspace, 'docs', 'qa', 'execution-memory.json'), 'utf8')
     expect(hints).toContain('8081')
     expect(hints).not.toContain('8080')
   })
@@ -137,7 +138,7 @@ describe('QA focused regressions', () => {
   })
 
   it('ignores corrupt and expired execution memory', async () => {
-    const directory = join(workspace, '.harness-kit', 'qa')
+    const directory = join(workspace, 'docs', 'qa')
     mkdirSync(directory, { recursive: true })
     for (const raw of ['broken json', JSON.stringify({ schemaVersion: 1, targets: [{ profile: 'api', target: 'http://127.0.0.1:9999', verifiedAt: '2000-01-01T00:00:00.000Z' }] })]) {
       writeFileSync(join(directory, 'execution-memory.json'), raw)
@@ -154,7 +155,7 @@ describe('QA focused regressions', () => {
         runtime: { prepare: async () => ({ target, managed: !target.includes('?'), stop: async () => undefined }) },
         targetProbe: async () => ({ available: true }) })
       await orchestrator.run({ scope: 'Check health endpoint' })
-      expect(existsSync(join(workspace, '.harness-kit', 'qa', 'execution-memory.json'))).toBe(false)
+      expect(existsSync(join(workspace, 'docs', 'qa', 'execution-memory.json'))).toBe(false)
     }
   })
 

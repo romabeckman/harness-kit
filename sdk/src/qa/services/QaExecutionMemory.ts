@@ -17,7 +17,7 @@ export class QaExecutionMemory {
   readonly #path: string
 
   constructor(workspace: string) {
-    this.#path = join(workspace, '.harness-kit', 'qa', 'execution-memory.json')
+    this.#path = join(workspace, 'docs', 'qa', 'execution-memory.json')
   }
 
   read(profile?: QaProfile, target?: string): QaExecutionHint[] {

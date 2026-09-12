@@ -192,7 +192,7 @@ Harness Kit removes common credential fields from persisted evidence. Review art
 
 ## Execution memory
 
-QA maintains a small operational memory in `.harness-kit/qa/execution-memory.json`. It records only:
+QA maintains a small operational memory in `docs/qa/execution-memory.json`. It records only:
 
 - the profile used;
 - a verified target;
@@ -209,7 +209,7 @@ Project documentation and execution memory have separate roles:
 | Source | Role |
 | --- | --- |
 | `docs/.digest.md` and `docs/.graph.json` | Explain architecture, commands, constraints, and relevant source locations. |
-| `.harness-kit/qa/execution-memory.json` | Preserve small verified facts about how the application was reached. |
+| `docs/qa/execution-memory.json` | Preserve small verified facts about how the application was reached. |
 
 ## Examples
 

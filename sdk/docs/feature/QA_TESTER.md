@@ -100,7 +100,7 @@ Route security HTTP through the API driver unless a custom security driver exist
 
 ## EXECUTION MEMORY
 
-Use project-memory's digest, graph, and routed contracts during planning. `.harness-kit/qa/execution-memory.json` stores target, profile, and verification timestamp; retain the latest per profile for 30 days, up to ten entries. Learn from PASSED/FAILED scenarios with evidence; ignore blocked runs, temporary ports, credentials, queries, fragments, and CLI directories.
+Use project-memory's digest, graph, and routed contracts during planning. `docs/qa/execution-memory.json` stores target, profile, and verification timestamp; retain the latest per profile for 30 days, up to ten entries. Learn from PASSED/FAILED scenarios with evidence; ignore blocked runs, temporary ports, credentials, queries, fragments, and CLI directories.
 
 REQUIRED: Treat memory as advisory; revalidate each run; explicit inputs win. PROHIBITED: Store outcomes or agent instructions. Ignore corrupt/expired entries; expose write failures without losing reports. Remove file to reset targets.
 
