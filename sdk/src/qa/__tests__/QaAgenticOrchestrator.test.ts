@@ -117,13 +117,13 @@ describe('QaAgenticOrchestrator', () => {
       'phase_completed:REPORTING',
     ])
     expect(runner.run).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      model: 'gpt-5.6-sol',
-      effort: 'medium',
+      model: 'gpt-5.6-luna',
+      effort: 'xhigh',
       prompt: expect.stringContaining('Move and rotate the active piece'),
     }), expect.anything())
     expect(runner.run).toHaveBeenNthCalledWith(3, expect.objectContaining({
-      model: 'gpt-5.6-sol',
-      effort: 'low',
+      model: 'gpt-5.6-luna',
+      effort: 'xhigh',
     }), expect.anything())
     const planningPrompt = vi.mocked(runner.run).mock.calls[0][0].prompt ?? ''
     const analysisPrompt = vi.mocked(runner.run).mock.calls[1][0].prompt ?? ''

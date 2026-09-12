@@ -18,7 +18,7 @@ describe('QaTerminalView', () => {
 
     const text = output.join('\n')
     expect(text).toContain('QA TEST RUN')
-    expect(text).toContain('[1/3] Planning test scenarios')
+    expect(text).toContain('[1/5] Planning test scenarios')
     expect(text).toContain('1 scenario ready')
     expect(text).toContain('[1/1] Call health endpoint')
     expect(text).toContain('PASSED health')

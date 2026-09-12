@@ -15,8 +15,8 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       review_adv: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
       memory: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
       diagnose: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
-      qa_planning: { model: 'anthropic.claude-5-sonnet', effort: 'high' },
-      qa_analysis: { model: 'anthropic.claude-5-sonnet', effort: 'high' },
+      qa_planning: { model: 'anthropic.claude-5-sonnet', effort: 'medium' },
+      qa_analysis: { model: 'anthropic.claude-5-sonnet', effort: 'medium' },
       qa_reporting: { model: 'anthropic.claude-5-sonnet', effort: 'low' },
     }
   },
@@ -30,8 +30,8 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       review_adv: { model: 'gemini-3.8-flash', effort: 'low' },
       memory: { model: 'gemini-3.8-flash', effort: 'low' },
       diagnose: { model: 'gemini-3.8-flash', effort: 'low' },
-      qa_planning: { model: 'gemini-3.8-flash', effort: 'high' },
-      qa_analysis: { model: 'gemini-3.8-flash', effort: 'high' },
+      qa_planning: { model: 'gemini-3.8-flash', effort: 'medium' },
+      qa_analysis: { model: 'gemini-3.8-flash', effort: 'medium' },
       qa_reporting: { model: 'gemini-3.8-flash', effort: 'low' },
     }
   },
@@ -45,9 +45,9 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       review_adv: { model: 'gpt-5.6-sol', effort: 'low' },
       memory: { model: 'gpt-5.6-luna', effort: 'xhigh' },
       diagnose: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      qa_planning: { model: 'gpt-5.6-sol', effort: 'medium' },
-      qa_analysis: { model: 'gpt-5.6-sol', effort: 'medium' },
-      qa_reporting: { model: 'gpt-5.6-sol', effort: 'low' },
+      qa_planning: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      qa_analysis: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      qa_reporting: { model: 'gpt-5.6-luna', effort: 'xhigh' },
     }
   },
   'cursor': {
@@ -60,9 +60,9 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       review_adv: { model: 'gpt-5.6-sol', effort: 'low' },
       memory: { model: 'gpt-5.6-luna', effort: 'xhigh' },
       diagnose: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      qa_planning: { model: 'gpt-5.6-sol', effort: 'medium' },
-      qa_analysis: { model: 'gpt-5.6-sol', effort: 'medium' },
-      qa_reporting: { model: 'gpt-5.6-sol', effort: 'low' },
+      qa_planning: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      qa_analysis: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      qa_reporting: { model: 'gpt-5.6-luna', effort: 'xhigh' },
     }
   },
   'codex': {
@@ -75,9 +75,9 @@ export const DEFAULT_SETTINGS: HarnessSettingsMap = {
       review_adv: { model: 'gpt-5.6-sol', effort: 'low' },
       memory: { model: 'gpt-5.6-luna', effort: 'xhigh' },
       diagnose: { model: 'gpt-5.6-luna', effort: 'xhigh' },
-      qa_planning: { model: 'gpt-5.6-sol', effort: 'medium' },
-      qa_analysis: { model: 'gpt-5.6-sol', effort: 'medium' },
-      qa_reporting: { model: 'gpt-5.6-sol', effort: 'low' },
+      qa_planning: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      qa_analysis: { model: 'gpt-5.6-luna', effort: 'xhigh' },
+      qa_reporting: { model: 'gpt-5.6-luna', effort: 'xhigh' },
     }
   }
 }
