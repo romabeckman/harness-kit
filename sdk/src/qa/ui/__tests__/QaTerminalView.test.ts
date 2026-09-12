@@ -3,6 +3,25 @@ import { QaTerminalView } from '../QaTerminalView'
 import type { QaFinalReport } from '../../types'
 
 describe('QaTerminalView', () => {
+  it('highlights completed, active, and pending phases during transitions', () => {
+    const output: string[] = []
+    const view = new QaTerminalView((line) => output.push(line), false)
+
+    view.start({ scope: 'Test transitions' }, 'C:\\project')
+    view.onProgress({ type: 'phase_started', phase: 'PLANNING' })
+    view.onProgress({ type: 'phase_completed', phase: 'PLANNING', totalScenarios: 2 })
+    view.onProgress({ type: 'phase_started', phase: 'VALIDATION' })
+    view.onProgress({ type: 'phase_completed', phase: 'VALIDATION' })
+    view.onProgress({ type: 'phase_started', phase: 'EXECUTION' })
+
+    const pipelineStates = output.filter((line) => line.includes('QA Pipeline State:'))
+    expect(pipelineStates).toEqual([
+      '── QA Pipeline State: [● PLANNING →   VALIDATION →   EXECUTION →   ANALYSIS →   REPORTING] ──',
+      '── QA Pipeline State: [✔ PLANNING → ● VALIDATION →   EXECUTION →   ANALYSIS →   REPORTING] ──',
+      '── QA Pipeline State: [✔ PLANNING → ✔ VALIDATION → ● EXECUTION →   ANALYSIS →   REPORTING] ──',
+    ])
+  })
+
   it('shows phase and scenario progress followed by the final human-readable report', () => {
     const output: string[] = []
     const view = new QaTerminalView((line) => output.push(line), false)

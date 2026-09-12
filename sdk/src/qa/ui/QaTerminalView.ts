@@ -1,12 +1,13 @@
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
 import type { QaAgenticRequest, QaFinalReport, QaScenarioStatus, QaVerdict } from '../types'
-import type { QaProgressEvent, QaTerminalPresenter } from '../progress'
+import type { QaProgressEvent, QaProgressPhase, QaTerminalPresenter } from '../progress'
 
 type Writer = (line: string) => void
 
 export class QaTerminalView implements QaTerminalPresenter {
   readonly #write: Writer
   readonly #colors: boolean
+  readonly #completedPhases = new Set<QaProgressPhase>()
 
   constructor(write: Writer = (line) => process.stdout.write(`${line}\n`), colors = process.stdout.isTTY) {
     this.#write = write
@@ -14,6 +15,7 @@ export class QaTerminalView implements QaTerminalPresenter {
   }
 
   start(request: QaAgenticRequest, workspace: string): void {
+    this.#completedPhases.clear()
     this.line('')
     this.line(this.paint('cyan', 'QA TEST RUN'))
     this.line(`Scope: ${request.scope ?? 'Derived from supplied scenarios'}`)
@@ -22,6 +24,7 @@ export class QaTerminalView implements QaTerminalPresenter {
   }
 
   onProgress(event: QaProgressEvent): void {
+    if (event.type === 'phase_completed' && event.phase) this.#completedPhases.add(event.phase)
     if (event.type === 'phase_warning') {
       this.line(this.paint('yellow', `  ${event.phase ?? 'QA'} warning: ${event.reason ?? 'Phase could not complete'}`))
       return
@@ -31,6 +34,8 @@ export class QaTerminalView implements QaTerminalPresenter {
       return
     }
     if (event.type === 'phase_started' && event.phase) {
+      this.line('')
+      this.line(this.pipelineState(event.phase))
       this.line(this.phaseLabel(event.phase))
       return
     }
@@ -161,6 +166,16 @@ export class QaTerminalView implements QaTerminalPresenter {
       REPORTING: '[5/5] Analyzing evidence and bugs',
     }
     return this.paint('blue', labels[phase])
+  }
+
+  private pipelineState(active: QaProgressPhase): string {
+    const phases: QaProgressPhase[] = ['PLANNING', 'VALIDATION', 'EXECUTION', 'ANALYSIS', 'REPORTING']
+    const state = phases.map((phase) => {
+      if (phase === active) return this.paint('cyan', `● ${phase}`)
+      if (this.#completedPhases.has(phase)) return this.paint('green', `✔ ${phase}`)
+      return this.paint('dim', `  ${phase}`)
+    }).join(this.paint('dim', ' → '))
+    return `${this.paint('blue', '──')} ${this.paint('dim', 'QA Pipeline State:')} [${state}] ${this.paint('blue', '──')}`
   }
 
   private status(status: QaScenarioStatus): string {
