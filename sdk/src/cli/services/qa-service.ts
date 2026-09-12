@@ -3,7 +3,7 @@ import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
 import { Runner } from '../../agent-runner/types'
 import { QaAgenticOrchestrator } from '../../qa/QaAgenticOrchestrator'
-import type { QaDriver, QaFinalReport, QaProfile, QaRun } from '../../qa/types'
+import type { QaDriver, QaFinalReport, QaPlan, QaProfile, QaRun } from '../../qa/types'
 import type { QaProgressListener, QaTerminalPresenter } from '../../qa/progress'
 import type { QaRuntimePreparer } from '../../qa/services/QaRuntimeManager'
 import { QaRunStore } from '../../qa/services/QaRunStore'
@@ -125,6 +125,31 @@ async function resolveTarget(target?: string, profile?: QaProfile): Promise<stri
   return value.trim() || undefined
 }
 
+async function selectSavedPlanAction(): Promise<'resume' | 'new'> {
+  const { select } = await import('@inquirer/prompts')
+  return select({
+    message: 'A saved QA plan exists. What would you like to do?',
+    choices: [
+      { name: 'resume — execute the saved QA plan', value: 'resume' },
+      { name: 'new — create a new QA plan', value: 'new' },
+    ],
+  })
+}
+
+async function selectSavedPlan(plans: QaPlan[]): Promise<QaPlan> {
+  const { select } = await import('@inquirer/prompts')
+  const selected = await select({
+    message: 'Select the QA plan to resume:',
+    choices: plans.map((plan) => ({
+      name: `${plan.id}@${plan.version} — ${plan.criteria[0] ?? plan.profile}`,
+      value: `${plan.id}@${plan.version}`,
+    })),
+  })
+  const plan = plans.find((candidate) => `${candidate.id}@${candidate.version}` === selected)
+  if (!plan) throw new Error('Selected QA plan is no longer available')
+  return plan
+}
+
 async function selectCompletedRun(store: QaRunStore): Promise<QaRun> {
   const runs = store.listCompletedRuns()
   if (runs.length === 0) throw new Error('No completed QA runs available. Run "hrns qa run" first.')
@@ -142,9 +167,23 @@ async function selectCompletedRun(store: QaRunStore): Promise<QaRun> {
 }
 
 export async function cmdQa(cwd: string, args: string[], dependencies: QaCommandDependencies = {}): Promise<void> {
+  const explicitAction = args[0] && !args[0].startsWith('-')
   const options = parseQaArgs(args)
   if (options.debug) DebugContext.enable()
   const workspace = resolve(cwd, options.projectPath ?? '.')
+
+  if (!explicitAction && options.action === 'run' && options.scope === undefined && options.scenarios.length === 0) {
+    const store = new QaRunStore(workspace)
+    const savedPlans = store.listPlans()
+    if (savedPlans.length > 0 && await selectSavedPlanAction() === 'resume') {
+      const savedPlan = await selectSavedPlan(savedPlans)
+      const view = dependencies.view ?? new QaTerminalView()
+      view.start({ target: savedPlan.target, profile: savedPlan.profile }, workspace)
+      const report = await createOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event), store).resume(savedPlan)
+      view.renderReport(report)
+      return
+    }
+  }
 
   if (options.action === 'run') {
     const scope = await resolveScope(options.scope)

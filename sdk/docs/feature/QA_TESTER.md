@@ -53,7 +53,7 @@ src/cli/services/            # `hrns qa` command adapter
 
 ## EXECUTION
 
-1. **Run QA** with `hrns qa run`; omit the action to use the same flow.
+1. **Run QA** with `hrns qa run`; omit the action to use the same flow. When saved plans exist and no scope or scenarios are supplied, choose `resume` to select and execute a stored plan or `new` to enter a fresh scope.
 2. **Supply scope** with `--scope`, or use the scope/editor, profile, and target form. Add baselines with `--scenario`. Reject blank scope and invalid target URLs; preserve inline `=` values. Resolve CLI directories against the workspace.
 3. **Plan and validate** with strict JSON and one parse-repair retry. Honor the requested profile. Probe the target before execution.
 4. **Execute**, then append evidence-justified scenarios. Reject adaptive changes to executed scenarios or their order; show analysis failures as warnings.

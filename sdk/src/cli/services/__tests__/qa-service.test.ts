@@ -75,6 +75,68 @@ describe('QA CLI', () => {
     }), expect.any(Object))
   })
 
+  it('offers saved-plan resume and selects a plan without replanning', async () => {
+    const store = new QaRunStore(workspace)
+    const plan = storedPlan()
+    store.savePlan(plan)
+    prompts.select.mockResolvedValueOnce('resume').mockResolvedValueOnce('stored-plan@1')
+    const run = vi.fn(async (invocation) => {
+      if (invocation.phaseKey === 'qa_analysis') return { raw: '{"complete":true}' }
+      return { raw: JSON.stringify({ summary: 'Stored plan resumed.', bugs: [], errors: [] }) }
+    })
+    const runner: IAgentRunner = { run }
+    const driver: QaDriver = {
+      profile: 'api',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id, required: true, status: 'PASSED',
+        evidence: [{ id: 'response', path: 'response.body', capturedAt: '', adapter: 'test' }],
+      }),
+    }
+    const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
+
+    await cmdQa(workspace, [], { runner, drivers: [driver], view, targetProbe: async () => ({ available: true }) })
+
+    expect(prompts.select).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      message: 'A saved QA plan exists. What would you like to do?',
+      choices: [expect.objectContaining({ value: 'resume' }), expect.objectContaining({ value: 'new' })],
+    }))
+    expect(prompts.select).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      message: 'Select the QA plan to resume:',
+      choices: [expect.objectContaining({ value: 'stored-plan@1' })],
+    }))
+    expect(run.mock.calls.map(([invocation]) => invocation.phaseKey)).toEqual(['qa_analysis', 'qa_reporting'])
+    expect(view.start).toHaveBeenCalledWith({ target: plan.target, profile: plan.profile }, workspace)
+    expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({ summary: 'Stored plan resumed.' }))
+  })
+
+  it('uses new flow after selecting new for a saved plan', async () => {
+    const store = new QaRunStore(workspace)
+    store.savePlan(storedPlan())
+    prompts.select.mockResolvedValueOnce('new').mockResolvedValueOnce('type').mockResolvedValueOnce(undefined)
+    prompts.input.mockResolvedValueOnce('Validate new runtime behavior').mockResolvedValueOnce('http://127.0.0.1:3000')
+    const runner = agenticRunner()
+    const driver: QaDriver = {
+      profile: 'api',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id, required: true, status: 'PASSED',
+        evidence: [{ id: 'response', path: 'response.body', capturedAt: '', adapter: 'test' }],
+      }),
+    }
+    const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
+
+    await cmdQa(workspace, [], { runner, drivers: [driver], view, targetProbe: async () => ({ available: true }) })
+
+    expect(prompts.select).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      message: 'A saved QA plan exists. What would you like to do?',
+    }))
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
+      phaseKey: 'qa_planning', prompt: expect.stringContaining('Validate new runtime behavior'),
+    }), expect.any(Object))
+    expect(view.start).toHaveBeenCalledWith(expect.objectContaining({ scope: 'Validate new runtime behavior' }), workspace)
+  })
+
   it('passes an interactive target entered after the QA scope to planning', async () => {
     prompts.select.mockResolvedValueOnce('type').mockResolvedValueOnce(undefined)
     prompts.input.mockResolvedValueOnce('Validate the checkout flow').mockResolvedValueOnce('http://127.0.0.1:3000')
