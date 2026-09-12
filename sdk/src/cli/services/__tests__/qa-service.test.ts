@@ -220,23 +220,44 @@ describe('QA CLI', () => {
       }),
     }
     const confirmSendToFix = vi.fn().mockResolvedValue(true)
+    const confirmDevelopmentOption = vi.fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+    const selectDevelopmentMode = vi.fn().mockResolvedValue('deep_thinking')
     const runCommand = vi.fn().mockResolvedValue(undefined)
 
     await cmdQa(workspace, ['run', '--scope', 'Validate runtime', '--agent', 'codex-cli', '--model', 'gpt-5', '--effort', 'high', '--debug'], {
-      runner, drivers: [driver], targetProbe: async () => ({ available: true }), confirmSendToFix, runCommand,
+      runner, drivers: [driver], targetProbe: async () => ({ available: true }), confirmSendToFix,
+      confirmDevelopmentOption, selectDevelopmentMode, runCommand,
       view: { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() },
     })
 
     expect(confirmSendToFix).toHaveBeenCalledWith({
       message: 'Send failed and blocked scenarios to fix?', default: false,
     })
+    expect(confirmDevelopmentOption.mock.calls).toEqual([
+      [{ message: 'Keep model "gpt-5"?', default: true }],
+      [{ message: 'Keep effort "high"?', default: true }],
+      [{ message: 'Run deploy?', default: true }],
+    ])
+    expect(selectDevelopmentMode).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Select development mode:', default: 'quick',
+      choices: expect.arrayContaining([
+        expect.objectContaining({ value: 'quick' }),
+        expect.objectContaining({ value: 'fast' }),
+        expect.objectContaining({ value: 'thinking' }),
+        expect.objectContaining({ value: 'deep_thinking' }),
+      ]),
+    }))
     expect(runCommand).toHaveBeenCalledTimes(1)
     const [runCwd, runArgs] = runCommand.mock.calls[0]
     expect(runCwd).toBe(workspace)
     expect(runArgs).toEqual(expect.arrayContaining([
-      '--reset', '--mode', 'quick', '--path', workspace,
-      '--agent', 'codex-cli', '--model', 'gpt-5', '--effort', 'high', '--debug',
+      '--reset', '--mode', 'deep_thinking', '--path', workspace, '--skip-deploy',
+      '--agent', 'codex-cli', '--effort', 'high', '--debug',
     ]))
+    expect(runArgs).not.toContain('--model')
     const scope = runArgs[runArgs.indexOf('--scope') + 1]
     expect(scope).toContain('002-fails')
     expect(scope).toContain('FAILED')
@@ -244,6 +265,37 @@ describe('QA CLI', () => {
     expect(scope).toContain('BLOCKED')
     expect(scope).not.toContain('001-passes')
     expect(scope).not.toContain('Healthy endpoint works')
+  })
+
+  it('asks only for mode and deploy when QA did not receive model or effort flags', async () => {
+    const runner: IAgentRunner = { run: vi.fn(async (invocation) => invocation.phaseKey === 'qa_planning'
+      ? { raw: JSON.stringify({
+          id: 'flagless-renewal', target: 'http://127.0.0.1:3000', profile: 'api', criteria: ['Health works'],
+          scenarios: [{ id: 'health', criterionIds: ['criterion-1'], required: true, profile: 'api', category: 'functional', request: { method: 'GET', path: '/health', expectedStatus: 200 } }],
+        }) }
+      : { raw: '{"complete":true}' }) }
+    const confirmDevelopmentOption = vi.fn().mockResolvedValue(true)
+    const selectDevelopmentMode = vi.fn().mockResolvedValue('fast')
+    const runCommand = vi.fn().mockResolvedValue(undefined)
+
+    await cmdQa(workspace, ['run', '--scope', 'Validate health'], {
+      runner,
+      drivers: [{
+        profile: 'api', doctor: async () => ({ available: true }),
+        execute: async (scenario) => ({ scenarioId: scenario.id, required: true, status: 'FAILED', reason: 'Expected 200, received 500', evidence: [] }),
+      }],
+      targetProbe: async () => ({ available: true }), confirmSendToFix: async () => true,
+      confirmDevelopmentOption, selectDevelopmentMode, runCommand,
+      view: { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() },
+    })
+
+    expect(confirmDevelopmentOption).toHaveBeenCalledOnce()
+    expect(confirmDevelopmentOption).toHaveBeenCalledWith({ message: 'Run deploy?', default: true })
+    const runArgs = runCommand.mock.calls[0][1]
+    expect(runArgs).toEqual(expect.arrayContaining(['--mode', 'fast']))
+    expect(runArgs).not.toContain('--model')
+    expect(runArgs).not.toContain('--effort')
+    expect(runArgs).not.toContain('--skip-deploy')
   })
 
   it('does not offer development renewal when QA has no failed or blocked scenarios', async () => {

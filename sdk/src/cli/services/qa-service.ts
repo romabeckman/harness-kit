@@ -15,6 +15,13 @@ import { validateScope } from '../utils/cli-utils'
 import { HELP_QA } from '../utils/constants'
 
 export type QaAction = 'run' | 'report'
+type DevelopmentMode = 'quick' | 'fast' | 'thinking' | 'deep_thinking'
+type ConfirmOptions = { message: string; default: boolean }
+type SelectModeOptions = {
+  message: string
+  choices: Array<{ name: string; value: DevelopmentMode; description: string }>
+  default: DevelopmentMode
+}
 
 export interface QaCliOptions {
   action: QaAction
@@ -38,7 +45,9 @@ export interface QaCommandDependencies {
   view?: QaTerminalPresenter
   targetProbe?: QaTargetProbe
   runtime?: QaRuntimePreparer
-  confirmSendToFix?: (options: { message: string; default: boolean }) => Promise<boolean>
+  confirmSendToFix?: (options: ConfirmOptions) => Promise<boolean>
+  confirmDevelopmentOption?: (options: ConfirmOptions) => Promise<boolean>
+  selectDevelopmentMode?: (options: SelectModeOptions) => Promise<DevelopmentMode>
   runCommand?: (cwd: string, args: string[]) => Promise<void>
 }
 
@@ -234,15 +243,35 @@ async function offerDevelopmentRenewal(
   if (!shouldSend) return
 
   const plan = store.loadPlan(run.planId, run.planVersion)
+  const confirmOption = dependencies.confirmDevelopmentOption ?? confirmPrompt
+  const selectMode = dependencies.selectDevelopmentMode ?? selectModePrompt
+  const keepModel = options.model
+    ? await confirmOption({ message: `Keep model "${options.model}"?`, default: true })
+    : false
+  const keepEffort = options.effort
+    ? await confirmOption({ message: `Keep effort "${options.effort}"?`, default: true })
+    : false
+  const runDeploy = await confirmOption({ message: 'Run deploy?', default: true })
+  const mode = await selectMode({
+    message: 'Select development mode:',
+    choices: [
+      { name: 'quick', value: 'quick', description: 'Low complexity; skip Review and Memory' },
+      { name: 'fast', value: 'fast', description: 'Low complexity; run Review and Memory' },
+      { name: 'thinking', value: 'thinking', description: 'Automatic complexity; full pipeline' },
+      { name: 'deep thinking', value: 'deep_thinking', description: 'High complexity; refinement and full pipeline' },
+    ],
+    default: 'quick',
+  })
   const runArgs = [
     '--reset',
-    '--mode', 'quick',
+    '--mode', mode,
     '--scope', buildDevelopmentScope(plan, run, actionableResults),
     '--path', workspace,
   ]
   if (options.agentType) runArgs.push('--agent', options.agentType)
-  if (options.model) runArgs.push('--model', options.model)
-  if (options.effort) runArgs.push('--effort', options.effort)
+  if (keepModel && options.model) runArgs.push('--model', options.model)
+  if (keepEffort && options.effort) runArgs.push('--effort', options.effort)
+  if (!runDeploy) runArgs.push('--skip-deploy')
   if (options.debug) runArgs.push('--debug')
 
   const runCommand = dependencies.runCommand ?? (await import('./run-service.js')).cmdRun
@@ -258,6 +287,16 @@ async function confirmDevelopmentRenewal(): Promise<boolean> {
   if (!isInteractive) return false
   const { confirm } = await import('@inquirer/prompts')
   return confirm({ message: 'Send failed and blocked scenarios to fix?', default: false })
+}
+
+async function confirmPrompt(options: ConfirmOptions): Promise<boolean> {
+  const { confirm } = await import('@inquirer/prompts')
+  return confirm(options)
+}
+
+async function selectModePrompt(options: SelectModeOptions): Promise<DevelopmentMode> {
+  const { select } = await import('@inquirer/prompts')
+  return select(options)
 }
 
 function buildDevelopmentScope(plan: QaPlan, run: QaRun, results: QaScenarioResult[]): string {

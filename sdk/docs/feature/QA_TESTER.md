@@ -72,11 +72,11 @@ hrns qa execute --plan orders@1
 
 ## DEVELOPMENT RENEWAL
 
-After QA completes, ask **Send failed and blocked scenarios to fix?** with default `false`. Skip this prompt without actionable results, during reporting, or outside an interactive terminal.
+Ask **Send failed and blocked scenarios to fix?** with default `false`. Skip without actionable results, for reports, or outside an interactive terminal.
 
-When accepted, start `hrns run --reset --mode quick` in the QA workspace. Build its scope only from matching persisted plan scenarios and results.
+When accepted, ask about supplied model/effort flags, select mode, and confirm deploy. Default to retaining overrides, `quick`, and deploy.
 
-REQUIRED: Preserve explicit `--agent`, `--model`, `--effort`, and `--debug` options. PROHIBITED: Include `PASSED` or `INCONCLUSIVE` scenarios in the development scope.
+Run `hrns run --reset` in the QA workspace. REQUIRED: Preserve `--agent` and `--debug`. PROHIBITED: Send declined options or non-actionable scenarios.
 
 ## VERDICTS
 
