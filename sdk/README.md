@@ -201,33 +201,38 @@ hrns report --export csv -o ./reports/my-report.csv
 
 ### `hrns qa`
 
-Runs independent, agentic runtime acceptance after development. The agentic workflow operates in five stages:
+Runs independent, agentic runtime acceptance after development. The CLI exposes `run` and `report`; omitting the action is an alias for `hrns qa run`.
+
+The `run` workflow operates in four execution stages plus optional reporting:
 1. **Planning**: LLM inspects the project, preserves supplied scenario intent, maps acceptance criteria to executable scenarios, enforces risk coverage across categories (`functional`, `negative`, `boundary`, `security`, `accessibility`, `resilience`), and selects the appropriate profile (`api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, `websocket`, `security`, or `full`).
 2. **Plan validation and preflight**: Validates target URL/protocol, scenario payloads, driver availability, safety limits, and target reachability before execution.
 3. **Deterministic Execution**: Drivers execute actions and verify concrete assertions with origin boundary isolation, request/response secret redaction, and cancellation signal handling.
 4. **Adaptive Analysis**: An evidence analysis loop evaluates observations and state transitions, discovering untested edge cases and generating bounded follow-up scenarios within explicit iteration budgets.
-5. **Verified Reporting**: Reconciles findings against actual runtime evidence, deduplicates shared root causes, calculates the deterministic risk coverage matrix (explicitly reporting tested vs untested areas), and guarantees fallback reports if LLM synthesis fails.
+5. **Optional Verified Reporting**: Enabled by `--report`; reconciles findings against actual runtime evidence, deduplicates shared root causes, calculates the deterministic risk coverage matrix (explicitly reporting tested vs untested areas), and guarantees fallback reports if LLM synthesis fails.
 
-Plans are immutably versioned under `.harness-kit/qa/plans/<planId>/<version>.json`; supplied user scope is preserved byte-for-byte in `.harness-kit/qa/plans/<planId>/SCOPE.md`, and scenario IDs use execution prefixes such as `001-health` and `002-create-order`. Run state and `report.json` persist under `.harness-kit/qa/runs/<runId>/`; each evidence directory is prefixed by execution order (`001-<scenarioId>`, `002-<scenarioId>`, ...).
+Plans are immutably versioned under `docs/qa/plans/<planId>/<version>.json`; supplied user scope is preserved byte-for-byte in `docs/qa/plans/<planId>/SCOPE.md`, and scenario IDs use execution prefixes such as `001-health` and `002-create-order`. Run state and evidence persist under `docs/qa/runs/<runId>/`; `report.json` and `REPORT.md` are created there when reporting is enabled. Each evidence directory is prefixed by execution order (`001-<scenarioId>`, `002-<scenarioId>`, ...).
 
 ```bash
 # Open scope: LLM discovers and creates required scenarios
-hrns qa --scope "Test endpoint X" --target http://127.0.0.1:3000
+hrns qa run --scope "Test endpoint X" --target http://127.0.0.1:3000
+
+# Run and generate/render the report during execution
+hrns qa run --report --scope "Test endpoint X" --target http://127.0.0.1:3000
 
 # Integrated full-stack acceptance (API + Browser)
-hrns qa --scope "Validate checkout workflow" --profile full
+hrns qa run --report --scope "Validate checkout workflow" --profile full
 
 # Targeted security auditing
-hrns qa --scope "Audit auth and injection boundaries" --profile security
+hrns qa run --scope "Audit auth and injection boundaries" --profile security
 
 # Optional detailed scenarios: LLM analyzes them and adds missing coverage
-hrns qa --project ../web-game --scope "Validate gameplay" --scenario "Player starts a game" --scenario "Player moves and rotates a piece" --profile web-game
+hrns qa run --project ../web-game --scope "Validate gameplay" --scenario "Player starts a game" --scenario "Player moves and rotates a piece" --profile web-game
 
-# Check deterministic driver prerequisites
-hrns qa doctor --profile web-game
+# Regenerate a report for a completed run with explicit LLM controls
+hrns qa report --run <qa-run-id> --model <model> --effort high
 ```
 
-Supply either `--scope` or one or more `--scenario` values. Use `--profile api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, `websocket`, `security`, or `full` as an optional hint; the planning phase can infer it. When no action, scope, or scenario is supplied and saved plans exist, choose one plan to resume; only the selected plan executes. Browser checks require Chromium installed once with `npx playwright install chromium`. Low-level `plan`, `execute`, `renew`, `resume`, `run`, and `report` subcommands remain available for deterministic workflows. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md).
+For automation, supply `--scope` or one or more `--scenario` values. If scope and scenarios are omitted, `hrns qa run` opens the interactive scope flow; the actionless `hrns qa` alias can also offer saved-plan resume or a new run. Use `--profile api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, `websocket`, `security`, or `full` as an optional hint; the planning phase can infer it. Without `--report`, the run persists state and evidence but skips LLM report generation. Use `hrns qa report --run <qa-run-id>` to generate it later; `--model` and `--effort` override the LLM used for that report. Browser checks require Chromium installed once with `npx playwright install chromium`. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md).
 
 ### `hrns erase`
 

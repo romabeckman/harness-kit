@@ -7,10 +7,10 @@ Use this playbook to validate a completed change as a human would, independently
 Plan the acceptance condition first, run it against the application a user would reach, inspect its evidence, and record the QA verdict. A passing build, unit test, or development-agent report is not a substitute for this flow.
 
 ```text
-LLM planning -> curl/Playwright execution -> LLM reporting -> final report
+LLM planning -> plan validation/preflight -> curl/Playwright execution -> adaptive analysis -> optional LLM reporting
 ```
 
-`hrns qa` accepts an open scope or optional detailed scenarios. The LLM inspects the project, generates missing scenarios, and selects executable API or browser actions. It does not start the target application; start it first and provide its reachable URL.
+`hrns qa run` accepts an open scope or optional detailed scenarios. The LLM inspects the project, generates missing scenarios, and selects executable API or browser actions. It does not start the target application; start it first and provide its reachable URL. `hrns qa` is an alias for `hrns qa run`.
 
 ## Agentic daily flow
 
@@ -18,20 +18,23 @@ Use open scope when QA should discover coverage:
 
 ```bash
 # CORRECT: LLM inspects project and generates endpoint scenarios
-hrns qa --scope "Test endpoint X" --target http://127.0.0.1:3000
+hrns qa run --scope "Test endpoint X" --target http://127.0.0.1:3000
+
+# CORRECT: execute and generate/render the report during the same run
+hrns qa run --report --scope "Test endpoint X" --target http://127.0.0.1:3000
 ```
 
 Add detailed scenarios when known. The LLM treats them as baseline, analyzes gaps, and may add scenarios:
 
 ```bash
 # CORRECT: supplied scenarios plus agent-discovered coverage
-hrns qa --project ../checkout --scope "Validate checkout" --scenario "Valid card completes payment" --scenario "Declined card shows a recoverable error" --profile web
+hrns qa run --project ../checkout --scope "Validate checkout" --scenario "Valid card completes payment" --scenario "Declined card shows a recoverable error" --profile web --target http://127.0.0.1:3000
 
-# WRONG: omit both scope and scenarios
-hrns qa --target http://127.0.0.1:3000
+# Interactive: omit scope and scenarios to enter them through prompts
+hrns qa run --target http://127.0.0.1:3000
 ```
 
-CLI output contains only final JSON report: verdict, summary, success criteria, bugs, and execution errors. Audit artifacts remain under `docs/qa/`.
+Without `--report`, the run executes and saves state/evidence but skips LLM report generation. Add `--report` to generate and render the report during execution. Audit artifacts remain under `docs/qa/`. The separate `hrns qa report` command emits the final JSON report and can regenerate `report.json` and `REPORT.md` for a completed run.
 
 ## One-time browser setup
 
@@ -41,47 +44,37 @@ API validation uses a system `curl` executable. Interface and web-game validatio
 rtk npm install
 rtk npx playwright install chromium
 
-# Check that the selected browser profile is ready
-hrns qa doctor --profile web
+# Browser readiness is checked during the QA run; there is no separate QA doctor command.
 ```
 
-Run `doctor` before every new machine, dependency refresh, or browser-profile failure. Do not use production credentials or production data in a QA plan.
+Run the browser setup after every new machine or dependency refresh. Do not use production credentials or production data in a QA run.
 
-## Manual API endpoint check
+## API endpoint check
 
-Use low-level subcommands only when deterministic, non-agentic control is required. The request runs through real `curl`; request metadata and response body become evidence.
+The API profile executes generated HTTP scenarios through real `curl`; request metadata and response bodies become evidence. Describe expected behavior in the scope or scenarios.
 
 ```bash
 # The target app must already be listening on port 3000.
-hrns qa plan --plan create-order --target http://127.0.0.1:3000 --profile api --criterion "A valid order is accepted" --method POST --path /orders --expect-status 201
-hrns qa execute --plan create-order@1
+hrns qa run --report --scope "A health check returns HTTP 200" --target http://127.0.0.1:3000 --profile api
 ```
 
-The same short flow can be run in one command:
+To regenerate the report later, optionally selecting the LLM model and reasoning effort:
 
 ```bash
-hrns qa run --plan health-check --target http://127.0.0.1:3000 --profile api --criterion "Health is available" --method GET --path /health --expect-status 200
+hrns qa report --run <qa-run-id> --model <model> --effort high
 ```
 
-Inspect the result with:
-
-```bash
-hrns qa report --run <qa-run-id>
-```
-
-At present, the CLI request flags define one HTTP request for the generated plan. Create a separate plan for each endpoint or use the SDK to construct a multi-scenario plan deliberately.
+Repeat `--scenario` for mandatory cases, such as valid, invalid, boundary, and authorization behavior.
 
 ## Manual interface check
 
 For a browser interface, validate the visible user path: navigate, click the controls, fill a form, submit it, and make sure the page remains operational. Browser flows save a final screenshot and fail if the page emits a JavaScript runtime error.
 
 ```bash
-hrns qa doctor --profile web
-hrns qa execute --plan checkout-human-flow@1
-hrns qa report --run <qa-run-id>
+hrns qa run --report --scope "A guest can complete checkout" --scenario "A valid card completes payment" --target http://127.0.0.1:3000 --profile web
 ```
 
-The current CLI creates deterministic scenarios from criteria but does not infer browser controls. Create the browser actions through the SDK or a persisted plan before executing it. Supported actions are `navigate`, `click`, `fill`, `press`, and `wait`; each action should map to an observable human step. Do not claim UI coverage merely because the page opened.
+The planner maps the scope and scenarios to browser actions. Provide selectors or observable outcomes in scenarios when the path needs precision. Supported actions are `navigate`, `click`, `fill`, `press`, and `wait`; each action should map to an observable human step. Do not claim UI coverage merely because the page opened.
 
 Example action sequence for a checkout:
 
@@ -98,9 +91,7 @@ wait for the confirmation to settle
 Treat a web game as a player would: start a session, perform meaningful controls, wait for state to advance, and inspect the final screen and browser errors.
 
 ```bash
-hrns qa doctor --profile web-game
-hrns qa execute --plan tetris-human-flow@1
-hrns qa report --run <qa-run-id>
+hrns qa run --report --scope "A player can start and control a game" --scenario "The game accepts movement input and advances state" --target http://127.0.0.1:3000 --profile web-game
 ```
 
 A useful minimal game plan includes a start control, at least two player inputs, and a wait long enough for gameplay to update. For example: click Start, press `ArrowLeft`, press `ArrowUp`, press `ArrowDown`, then wait. This proves only the planned flow; add scenarios for pause, restart, scoring, game over, and failure recovery when those behaviors matter.
@@ -114,6 +105,7 @@ Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` direc
 | Item | Location | What to review |
 | --- | --- | --- |
 | Run state | `state.json` | Final verdict, scenario status, reason, and timestamps. |
+| Generated report | `report.json`, `REPORT.md` | Created by `--report` or `hrns qa report`; review synthesized findings and open points. |
 | API evidence | `evidence/<nnn>-<scenario>/` | The `curl` request metadata and response body. Evidence folders use a zero-padded execution number, such as `001-create-order`. |
 | Browser evidence | `evidence/<nnn>-<scenario>/final.png` | Final browser screenshot after the planned user flow. |
 
@@ -129,7 +121,7 @@ Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` direc
 1. Run `hrns qa report --run <qa-run-id>` and identify the first failed or blocked scenario.
 2. For API failures, inspect the saved response body and verify the local test target is the intended version.
 3. For browser failures, open `final.png` and treat a `Browser page error` as a product defect until proven otherwise.
-4. For `BLOCKED`, confirm the target server is running, the URL is reachable, and `hrns qa doctor --profile web` succeeds when browser testing.
+4. For `BLOCKED`, confirm the target server is running, the URL is reachable, and Chromium is installed when browser testing.
 5. Preserve the run directory. Create a new run after a fix; do not overwrite evidence from the failed attempt.
 
 ## End-of-day handoff
