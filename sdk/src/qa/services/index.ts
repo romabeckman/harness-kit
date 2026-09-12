@@ -1,4 +1,6 @@
 export { QaRunStore } from './QaRunStore'
+export { QaExploratoryService } from './QaExploratoryService'
+export type { QaExploratoryOptions } from './QaExploratoryService'
 export { QaRuntimeManager } from './QaRuntimeManager'
 export type { QaRuntimeHandle, QaRuntimePreparer } from './QaRuntimeManager'
 export { QaService } from './QaService'

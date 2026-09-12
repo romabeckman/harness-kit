@@ -36,6 +36,20 @@ hrns qa run --target http://127.0.0.1:3000
 
 Without `--report`, the run executes and saves state/evidence but skips LLM report generation. Add `--report` to generate and render the report during execution. Audit artifacts remain under `docs/qa/`. The separate `hrns qa report` command emits the final JSON report and can regenerate `report.json` and `REPORT.md` for a completed run.
 
+## Exploratory saved-plan sweep
+
+Run every latest saved QA plan before a release or end-of-day handoff:
+
+```bash
+# CORRECT: replay all current saved plans against one reachable target
+hrns qa exploratory --target http://127.0.0.1:3000
+
+# CORRECT: replay plans stored in another project
+hrns qa exploratory --project ../checkout --target http://127.0.0.1:3000
+```
+
+The command validates and executes plans sequentially without planning or adaptive additions. One invalid or blocked plan does not stop later plans. Review `docs/qa/exploratory/<exploratory-run-id>/report.json` for global totals, per-plan verdicts, run IDs, results, and errors. Evidence remains under each `docs/qa/runs/<qa-run-id>/` directory.
+
 ## One-time browser setup
 
 API validation uses a system `curl` executable. Interface and web-game validation use Playwright with Chromium.

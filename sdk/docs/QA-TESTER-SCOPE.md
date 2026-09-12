@@ -124,6 +124,14 @@ This regenerates the report for a completed run using its stored plan and eviden
 hrns qa report
 ```
 
+### Run every saved plan
+
+```text
+hrns qa exploratory [--project <path>] [--target <url>]
+```
+
+This command selects the latest version of every saved plan, validates and executes each plan sequentially, then writes one global JSON report. It does not create plans or append adaptive scenarios. Plan failures are recorded without stopping later plans.
+
 ## Options
 
 | Option | Purpose |
@@ -138,6 +146,8 @@ hrns qa report
 | `--effort <level>` | Override reasoning effort used by QA phases. |
 | `--debug` | Show runner arguments, prompts, sessions, and complete errors. |
 | `--run <id>` | Select a completed run for `hrns qa report`. |
+
+For `hrns qa exploratory`, use `--project` to select the plan repository and `--target` to override non-CLI plan targets without modifying stored plans. Run and report-specific options are rejected.
 
 Quote values containing spaces. Both `--scope "x=y"` and `--scope="x=y"` preserve equals signs.
 
@@ -194,9 +204,11 @@ docs/qa/
     evidence/
       001-<scenario>/...
       002-<scenario>/...
+  exploratory/<exploratory-run-id>/
+    report.json
 ```
 
-`REPORT.md` is the readable report. `report.json` is the structured equivalent. Evidence can include sanitized HTTP traffic, browser screenshots and observations, command output, MCP responses, and WebSocket transcripts.
+`REPORT.md` is the readable per-run report. Its `report.json` is the structured equivalent. Exploratory `report.json` aggregates plan versions, run IDs, effective targets, scenario results, totals, validation errors, and the global verdict. Evidence remains in each referenced run directory.
 
 Harness Kit removes common credential fields from persisted evidence. Review artifacts before sharing because application-specific secrets may use names the generic redaction rules do not recognize.
 
@@ -251,6 +263,12 @@ Regenerate a stored report:
 
 ```text
 hrns qa report --run checkout-20260912011530-a1b2c3
+```
+
+Execute all latest saved plans:
+
+```text
+hrns qa exploratory --target http://localhost:3000
 ```
 
 ## Current boundaries

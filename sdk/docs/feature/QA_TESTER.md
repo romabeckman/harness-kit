@@ -24,9 +24,9 @@ updated: "2026-09-12"
   "implements": ["adr:architecture"],
   "tested_by": ["adr:tests"],
   "entrypoints": ["src/qa/QaAgenticOrchestrator.ts", "src/cli/services/qa-service.ts"],
-  "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/index.ts", "src/qa/index.ts"],
+  "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/cli/services/qa/QaOrchestratorFactory.ts", "src/index.ts", "src/qa/index.ts"],
   "reference_files": ["src/qa/engine/CurlDriver.ts"],
-  "code_files": ["src/qa/services/QaService.ts", "src/qa/services/QaExecutionMemory.ts", "src/qa/services/QaPlanValidator.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/MobileWebDriver.ts", "src/qa/engine/AccessibilityDriver.ts", "src/qa/engine/McpClientDriver.ts", "src/qa/engine/CliDriver.ts", "src/qa/engine/WebSocketDriver.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaValidationPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
+  "code_files": ["src/cli/services/qa/types.ts", "src/cli/services/qa/QaArgsParser.ts", "src/cli/services/qa/QaDevelopmentRenewal.ts", "src/cli/services/qa/QaExploratoryCommand.ts", "src/qa/services/QaService.ts", "src/qa/services/QaExploratoryService.ts", "src/qa/services/QaExecutionMemory.ts", "src/qa/services/QaPlanValidator.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/MobileWebDriver.ts", "src/qa/engine/AccessibilityDriver.ts", "src/qa/engine/McpClientDriver.ts", "src/qa/engine/CliDriver.ts", "src/qa/engine/WebSocketDriver.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaValidationPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
   "test_files": ["src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaExtendedEngines.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaImprovements.test.ts", "src/qa/__tests__/QaCurlRegressions.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/services/__tests__/QaPlanValidator.test.ts", "src/qa/services/__tests__/QaTargetProbe.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
 }
 ```
@@ -47,25 +47,29 @@ src/qa/                     # independent QA module
 |-- phases/                 # planning, validation, execution, analysis, reporting
 |-- ui/                     # QA-specific terminal presenter
 `-- QaAgenticOrchestrator.ts # phase-chain entrypoint
-src/cli/services/            # `hrns qa` command adapter
+src/cli/services/            # `hrns qa` command facade
+src/cli/services/qa/         # parsing, command handlers, factories, and CLI types
 ```
 </folder_structure>
 
 ## EXECUTION
 
-1. **Run QA** with `hrns qa run`; omit the action for the same flow. With saved plans and no scope or scenarios, choose `resume` or `new`.
-2. **Supply scope** with `--scope` or prompts. Add baselines with `--scenario`. Reject blank scope and invalid targets. Resolve CLI directories from workspace.
-3. **Plan and validate** with strict JSON, one repair, profile enforcement, and target probe.
-4. **Execute**, then append evidence-backed scenarios. Preserve executed scenarios and order. Show analysis failures as warnings.
-5. **Report optionally** with `--report`; generate JSON, bounded Markdown, and terminal output. Otherwise persist run state only. Propagate cancellation.
-6. **Regenerate** with `hrns qa report --run <id>` or select a completed run.
-7. **Offer development renewal** after new or resumed QA execution when at least one scenario is `FAILED` or `BLOCKED`.
-8. **Preserve scope** byte-for-byte; number scenarios as `001-<scenario>`, `002-<scenario>`.
-9. **Reuse one agent session** per QA execution. Start a new session after completion or cancellation.
+1. **Run** with `hrns qa run`; saved plans offer `resume` or `new`.
+2. **Supply scope** with `--scope` or prompts and baselines with repeated `--scenario`.
+3. **Validate** strict JSON, profiles, targets, and executable scenarios.
+4. **Execute** scenarios, preserve order, then analyze evidence for material gaps.
+5. **Report** with `--report`, or regenerate through `hrns qa report --run <id>`.
+6. **Renew development** only for `FAILED` or `BLOCKED` scenarios.
+7. **Preserve scope** byte-for-byte and number scenario IDs with three digits.
+8. **Reuse one session** per QA execution, never across executions.
+9. **Run saved suites** with `hrns qa exploratory`. Execute each latest plan version sequentially without adaptive additions. Continue after plan errors. Save `docs/qa/exploratory/<id>/report.json`.
 
 ```text
 # CORRECT: run QA and generate the report during execution
 hrns qa run --report --scope "Test order creation endpoint" --target http://127.0.0.1:3000
+
+# CORRECT: execute all scenarios from every latest saved plan version
+hrns qa exploratory --target http://127.0.0.1:3000
 
 # WRONG: use a removed QA action
 hrns qa execute --plan orders@1
@@ -73,11 +77,7 @@ hrns qa execute --plan orders@1
 
 ## DEVELOPMENT RENEWAL
 
-Ask **Send failed and blocked scenarios to fix?** with default `false`. Skip without actionable results, for reports, or outside an interactive terminal.
-
-When accepted, ask about supplied model/effort flags, select mode, and confirm deploy. Default to retaining overrides, `quick`, and deploy.
-
-Run `hrns run --reset` in the QA workspace. REQUIRED: Preserve `--agent` and `--debug`. PROHIBITED: Send declined options or non-actionable scenarios.
+Ask **Send failed and blocked scenarios to fix?** with default `false`. Skip reports, noninteractive terminals, and runs without actionable results. Run `hrns run --reset` after confirmation. REQUIRED: Preserve accepted overrides, `--agent`, and `--debug`. PROHIBITED: Send other results.
 
 ## VERDICTS
 
@@ -100,21 +100,17 @@ Run `hrns run --reset` in the QA workspace. REQUIRED: Preserve `--agent` and `--
 | `phase_warning` | Skipped analysis or unavailable optional memory. |
 | `phase_completed` | Count, verdict, cycles, or report state. |
 
-REQUIRED: Emit `QaProgressListener` events; inject `QaTerminalPresenter` at the CLI boundary. Disable ANSI without a TTY. PROHIBITED: ANSI in drivers or orchestration.
+REQUIRED: Emit progress through injected `QaTerminalPresenter`. Disable ANSI without a TTY. Reuse the first session only within one execution.
 
-REQUIRED: Pass the first returned `session.id` through later `invocation.session.id` calls. PROHIBITED: Reuse it across QA executions.
+REQUIRED: Aggregate exploratory verdicts as `FAIL`, `BLOCKED`, `INCONCLUSIVE`, then `PASS`. Include plan/run IDs, effective targets, results, totals, and validation errors. Apply target overrides in memory only.
 
 ## DRIVERS
 
-Use temporary static servers for inferred/browser/full profiles. Explicit API, CLI, MCP, security, and WebSocket profiles skip hosting. 4xx/5xx paths block probes; root 404/405 remain reachable.
-
-Route security HTTP through the API driver unless a custom security driver exists. Curl observes redirects without following and compares JSON arrays by order/length, with partial nested objects. Browser evidence requires a nonempty screenshot. MCP supports JSON/SSE and structured expectations; CLI uses no shell.
+Use temporary static servers for browser profiles. Route security HTTP through API unless overridden. Curl does not follow redirects. Browser evidence requires screenshots. CLI uses no shell.
 
 ## EXECUTION MEMORY
 
-Use project-memory's digest, graph, and routed contracts during planning. `docs/qa/execution-memory.json` stores target, profile, and verification timestamp; retain the latest per profile for 30 days, up to ten entries. Learn from PASSED/FAILED scenarios with evidence; ignore blocked runs, temporary ports, credentials, queries, fragments, and CLI directories.
-
-REQUIRED: Treat memory as advisory; revalidate each run; explicit inputs win. PROHIBITED: Store outcomes or agent instructions. Ignore corrupt/expired entries; expose write failures without losing reports. Remove file to reset targets.
+`docs/qa/execution-memory.json` retains up to ten verified target hints for 30 days. REQUIRED: Revalidate hints; explicit input wins. PROHIBITED: Store outcomes, credentials, temporary ports, or agent instructions.
 
 ## LIMITS
 

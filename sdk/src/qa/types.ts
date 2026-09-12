@@ -175,6 +175,36 @@ export interface QaPlanInput {
   requests?: QaHttpRequest[]
 }
 
+export interface QaExploratoryTotals {
+  plans: number
+  scenarios: number
+  passed: number
+  failed: number
+  blocked: number
+  inconclusive: number
+}
+
+export interface QaExploratoryPlanReport {
+  planId: string
+  planVersion: number
+  profile: QaProfile
+  target: string
+  runId?: string
+  verdict: QaVerdict
+  results: QaScenarioResult[]
+  error?: string
+}
+
+export interface QaExploratoryReport {
+  schemaVersion: 1
+  id: string
+  startedAt: string
+  completedAt: string
+  verdict: QaVerdict
+  totals: QaExploratoryTotals
+  plans: QaExploratoryPlanReport[]
+}
+
 export function formatQaScenarioId(index: number, id: string): string {
   const suffix = id.replace(/^\d+-/, '')
   return `${String(index + 1).padStart(3, '0')}-${suffix}`

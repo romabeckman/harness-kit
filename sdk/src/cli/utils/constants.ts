@@ -217,6 +217,7 @@ export const HELP_QA = `
 USAGE
   hrns qa run [options]
   hrns qa report [--run <id>] [options]
+  hrns qa exploratory [--target <url>] [--project <path>]
   hrns qa [options]          Alias for hrns qa run
 
 OPTIONS
@@ -232,6 +233,11 @@ OPTIONS
   --profile <api|web|web-game|mobile-web|accessibility|mcp|cli|websocket|security|full>
   --debug                   Expose runner arguments, prompts, sessions, and full errors
 
+EXPLORATORY
+  Executes every scenario from the latest version of every saved QA plan.
+  Plans run sequentially. A global JSON report is always saved under
+  docs/qa/exploratory/<id>/report.json and printed to stdout.
+
 EXAMPLES
   hrns qa run --scope "Test endpoint X" --target http://localhost:3000
   hrns qa run --report --scope "Test endpoint X" --target http://localhost:3000
@@ -239,6 +245,7 @@ EXAMPLES
   hrns qa run --debug --scope "Test endpoint X" --target http://localhost:3000
   hrns qa report --run orders-20260911
   hrns qa report
+  hrns qa exploratory --target http://localhost:3000
 `
 
 export const HELP_CANDIDATE = `

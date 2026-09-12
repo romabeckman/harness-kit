@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { QaFinalReport, QaPlan, QaRun } from '../types'
+import type { QaExploratoryReport, QaFinalReport, QaPlan, QaRun } from '../types'
 
 const SAFE_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
 
@@ -56,6 +56,11 @@ export class QaRunStore {
   reportMarkdownPath(runId: string): string {
     this.assertIdentifier(runId)
     return join(this.#root, 'runs', runId, 'REPORT.md')
+  }
+
+  exploratoryReportPath(exploratoryRunId: string): string {
+    this.assertIdentifier(exploratoryRunId)
+    return join(this.#root, 'exploratory', exploratoryRunId, 'report.json')
   }
 
   savePlan(plan: QaPlan): void {
@@ -195,6 +200,14 @@ export class QaRunStore {
 
   private writeJson(path: string, value: unknown): void {
     this.writeText(path, JSON.stringify(value, null, 2))
+  }
+
+  saveExploratoryReport(report: QaExploratoryReport): void {
+    this.writeJson(this.exploratoryReportPath(report.id), report)
+  }
+
+  loadExploratoryReport(exploratoryRunId: string): QaExploratoryReport {
+    return this.readJson<QaExploratoryReport>(this.exploratoryReportPath(exploratoryRunId), 'QA exploratory report')
   }
 
   private isValidCompletedRun(value: unknown, expectedId: string): value is QaRun {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { cmdQa, parseQaArgs } from '../qa-service'
@@ -28,13 +28,16 @@ describe('QA CLI', () => {
     rmSync(workspace, { recursive: true, force: true })
   })
 
-  it('supports only run and report actions and defaults to run', () => {
+  it('supports run, report, and exploratory actions and defaults to run', () => {
     expect(parseQaArgs([])).toMatchObject({ action: 'run' })
     expect(parseQaArgs(['run'])).toMatchObject({ action: 'run', report: false })
     expect(parseQaArgs(['run', '--report'])).toMatchObject({ action: 'run', report: true })
     expect(parseQaArgs(['run', '--scope', 'Test endpoint X'])).toMatchObject({ action: 'run', scope: 'Test endpoint X' })
     expect(parseQaArgs(['report', '--run', 'orders-20260911'])).toMatchObject({ action: 'report', runId: 'orders-20260911' })
+    expect(parseQaArgs(['exploratory', '--target', 'http://qa.test'])).toMatchObject({ action: 'exploratory', target: 'http://qa.test' })
     expect(() => parseQaArgs(['report', '--report'])).toThrow('--report is only valid with hrns qa run')
+    expect(() => parseQaArgs(['exploratory', '--scope', 'new scope'])).toThrow('--scope is only valid with hrns qa run')
+    expect(() => parseQaArgs(['exploratory', '--run', 'stored-run'])).toThrow('--run is only valid with hrns qa report')
     for (const legacy of ['agentic', 'plan', 'execute', 'renew', 'resume', 'doctor']) {
       expect(() => parseQaArgs([legacy])).toThrow(`Unknown QA action: ${legacy}`)
     }
@@ -348,6 +351,76 @@ describe('QA CLI', () => {
     await expect(cmdQa(workspace, ['report'], { runner: reportingRunner('unused') }))
       .rejects.toThrow('No completed QA runs available. Run "hrns qa run" first.')
     expect(prompts.select).not.toHaveBeenCalled()
+  })
+
+  it('executes every scenario from the latest version of every saved plan and persists a global report', async () => {
+    const store = new QaRunStore(workspace)
+    store.savePlan({ ...storedPlan(), version: 1, createdAt: '2026-09-10T00:00:00.000Z' })
+    store.savePlan({
+      ...storedPlan(), version: 2, createdAt: '2026-09-11T00:00:00.000Z',
+      scenarios: [
+        { ...storedPlan().scenarios[0], id: '001-health-v2' },
+        { ...storedPlan().scenarios[0], id: '002-orders' },
+      ],
+    })
+    store.savePlan({
+      ...storedPlan(), id: 'security-plan', version: 1, createdAt: '2026-09-12T00:00:00.000Z',
+      scenarios: [{ ...storedPlan().scenarios[0], id: '001-security' }],
+    })
+    const executed: string[] = []
+    const driver: QaDriver = {
+      profile: 'api', doctor: async () => ({ available: true }),
+      execute: async (scenario) => {
+        executed.push(scenario.id)
+        return {
+          scenarioId: scenario.id, required: true,
+          status: scenario.id === '002-orders' ? 'FAILED' : 'PASSED',
+          reason: scenario.id === '002-orders' ? 'Expected 201, received 500' : undefined,
+          evidence: [{ id: scenario.id, path: `evidence/${scenario.id}.json`, capturedAt: '', adapter: 'test' }],
+        }
+      },
+    }
+
+    await cmdQa(workspace, ['exploratory', '--target', 'http://qa.test'], {
+      drivers: [driver], targetProbe: async () => ({ available: true }),
+    })
+
+    expect(executed).toEqual(['001-security', '001-health-v2', '002-orders'])
+    const report = JSON.parse(log.mock.calls.at(-1)?.[0] as string)
+    expect(report).toMatchObject({
+      schemaVersion: 1, verdict: 'FAIL',
+      totals: { plans: 2, scenarios: 3, passed: 2, failed: 1, blocked: 0, inconclusive: 0 },
+    })
+    expect(report.plans).toEqual(expect.arrayContaining([
+      expect.objectContaining({ planId: 'stored-plan', planVersion: 2, target: 'http://qa.test', verdict: 'FAIL' }),
+      expect.objectContaining({ planId: 'security-plan', planVersion: 1, target: 'http://qa.test', verdict: 'PASS' }),
+    ]))
+    expect(existsSync(store.exploratoryReportPath(report.id))).toBe(true)
+    expect(store.loadExploratoryReport(report.id)).toEqual(report)
+  })
+
+  it('records an invalid plan and continues exploratory execution', async () => {
+    const store = new QaRunStore(workspace)
+    store.savePlan(storedPlan())
+    store.savePlan({ ...storedPlan(), id: 'broken-plan', profile: 'web', scenarios: [] })
+    const driver: QaDriver = {
+      profile: 'api', doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id, required: true, status: 'PASSED',
+        evidence: [{ id: scenario.id, path: scenario.id, capturedAt: '', adapter: 'test' }],
+      }),
+    }
+
+    await cmdQa(workspace, ['exploratory'], {
+      drivers: [driver], targetProbe: async () => ({ available: true }),
+    })
+
+    const report = JSON.parse(log.mock.calls.at(-1)?.[0] as string)
+    expect(report.verdict).toBe('BLOCKED')
+    expect(report.plans).toEqual(expect.arrayContaining([
+      expect.objectContaining({ planId: 'stored-plan', verdict: 'PASS' }),
+      expect.objectContaining({ planId: 'broken-plan', verdict: 'BLOCKED', error: expect.stringContaining('validation failed') }),
+    ]))
   })
 })
 
