@@ -8,6 +8,7 @@ import { QaAgenticOrchestrator } from '../QaAgenticOrchestrator'
 import { QaRunStore } from '../services/QaRunStore'
 import { HarnessSettings } from '../../settings/HarnessSettings'
 import { Runner } from '../../agent-runner/types'
+import { QaPhase, type QaPhaseHandler } from '../phases'
 
 describe('QaAgenticOrchestrator', () => {
   let workspace: string
@@ -18,6 +19,41 @@ describe('QaAgenticOrchestrator', () => {
 
   afterEach(() => {
     rmSync(workspace, { recursive: true, force: true })
+  })
+
+  it('keeps every agent invocation in one runner session per orchestrator execution', async () => {
+    const invocations: Array<string | undefined> = []
+    const runner: IAgentRunner = {
+      run: vi.fn(async (invocation) => {
+        invocations.push(invocation.session?.id)
+        return { raw: '{}', session: { id: 'qa-cli-session' } }
+      }),
+    }
+    const phases: QaPhaseHandler[] = [
+      {
+        phase: QaPhase.PLANNING,
+        execute: async (context) => {
+          await context.runner.run({ agent: 'qa', mode: 'autonomous', phaseKey: 'first', prompt: 'first' })
+          return QaPhase.VALIDATION
+        },
+      },
+      {
+        phase: QaPhase.VALIDATION,
+        execute: async (context) => {
+          await context.runner.run({ agent: 'qa', mode: 'autonomous', phaseKey: 'second', prompt: 'second' })
+          context.report = {
+            schemaVersion: 1, runId: 'run', planId: 'plan', verdict: 'PASS', summary: 'done',
+            successCriteria: [], bugs: [], errors: [], completedAt: '2026-09-12T00:00:00.000Z',
+          }
+          return QaPhase.COMPLETED
+        },
+      },
+    ]
+
+    await new QaAgenticOrchestrator({ workspace, runner, phases }).run()
+    await new QaAgenticOrchestrator({ workspace, runner, phases }).run()
+
+    expect(invocations).toEqual([undefined, 'qa-cli-session', undefined, 'qa-cli-session'])
   })
 
   it('runs LLM planning, deterministic human-style execution, then LLM reporting', async () => {

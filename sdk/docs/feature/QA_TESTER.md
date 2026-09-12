@@ -54,13 +54,14 @@ src/cli/services/            # `hrns qa` command adapter
 ## EXECUTION
 
 1. **Run QA** with `hrns qa run`; omit the action for the same flow. With saved plans and no scope or scenarios, choose `resume` or `new`.
-2. **Supply scope** with `--scope`, or use the scope/editor, profile, and target prompts. Add baselines with `--scenario`. Reject blank scope and invalid target URLs; preserve inline `=` values. Resolve CLI directories against the workspace.
-3. **Plan and validate** with strict JSON and one parse-repair retry. Honor the requested profile. Probe the target before execution.
-4. **Execute**, then append evidence-justified scenarios. Reject adaptive changes to executed scenarios or their order; show analysis failures as warnings.
-5. **Report optionally** with `hrns qa run --report`; generate `report.json`, bounded `REPORT.md`, and terminal output during the run. Without `--report`, persist only run state; propagate cancellation.
-6. **Regenerate** with `hrns qa report --run <id>`; omit the ID for completed-run selection.
+2. **Supply scope** with `--scope` or prompts. Add baselines with `--scenario`. Reject blank scope and invalid targets. Resolve CLI directories from workspace.
+3. **Plan and validate** with strict JSON, one repair, profile enforcement, and target probe.
+4. **Execute**, then append evidence-backed scenarios. Preserve executed scenarios and order. Show analysis failures as warnings.
+5. **Report optionally** with `--report`; generate JSON, bounded Markdown, and terminal output. Otherwise persist run state only. Propagate cancellation.
+6. **Regenerate** with `hrns qa report --run <id>` or select a completed run.
 7. **Offer development renewal** after new or resumed QA execution when at least one scenario is `FAILED` or `BLOCKED`.
 8. **Preserve scope** byte-for-byte; number scenarios as `001-<scenario>`, `002-<scenario>`.
+9. **Reuse one agent session** per QA execution. Start a new session after completion or cancellation.
 
 ```text
 # CORRECT: run QA and generate the report during execution
@@ -100,6 +101,8 @@ Run `hrns run --reset` in the QA workspace. REQUIRED: Preserve `--agent` and `--
 | `phase_completed` | Count, verdict, cycles, or report state. |
 
 REQUIRED: Emit `QaProgressListener` events; inject `QaTerminalPresenter` at the CLI boundary. Disable ANSI without a TTY. PROHIBITED: ANSI in drivers or orchestration.
+
+REQUIRED: Pass the first returned `session.id` through later `invocation.session.id` calls. PROHIBITED: Reuse it across QA executions.
 
 ## DRIVERS
 

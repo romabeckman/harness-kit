@@ -1,4 +1,5 @@
 import type { IAgentRunner } from '../agent-runner/IAgentRunner'
+import type { AgentSession } from '../agent-runner/types'
 import { QaService } from './services/QaService'
 import { QaRunStore } from './services/QaRunStore'
 import { QaAnalysisPhase, QaExecutionPhase, QaPhase, QaPlanningPhase, QaReportingPhase, QaValidationPhase, type QaPhaseContext, type QaPhaseHandler } from './phases'
@@ -35,7 +36,7 @@ export class QaAgenticOrchestrator {
     const store = options.store ?? new QaRunStore(options.workspace)
     this.#context = {
       workspace: options.workspace,
-      runner: options.runner,
+      runner: sessionScopedRunner(options.runner),
       store,
       service: new QaService(store, options.drivers, options.targetProbe),
       settings: options.settings,
@@ -155,5 +156,22 @@ export class QaAgenticOrchestrator {
         .map((result) => ({ scenarioId: result.scenarioId, message: result.reason ?? result.status })),
       completedAt: run.completedAt ?? new Date().toISOString(),
     }
+  }
+}
+
+function sessionScopedRunner(runner: IAgentRunner): IAgentRunner {
+  let session: AgentSession | undefined
+  return {
+    type: runner.type,
+    writePromptToStdin: runner.writePromptToStdin,
+    async run(invocation, options) {
+      const activeSession = session ?? invocation.session
+      const output = await runner.run({
+        ...invocation,
+        ...(activeSession ? { session: activeSession } : {}),
+      }, options)
+      session = output.session ?? activeSession
+      return output
+    },
   }
 }
