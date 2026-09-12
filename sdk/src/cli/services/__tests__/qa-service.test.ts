@@ -37,12 +37,54 @@ describe('QA CLI', () => {
     expect(parseQaArgs(['exploratory', '--target', 'http://qa.test'])).toMatchObject({ action: 'exploratory', target: 'http://qa.test' })
     expect(parseQaArgs(['run', '--auth', 'admin'])).toMatchObject({ action: 'run', authProfile: 'admin' })
     expect(parseQaArgs(['exploratory', '--auth=qa-user'])).toMatchObject({ action: 'exploratory', authProfile: 'qa-user' })
+    expect(parseQaArgs(['auth'])).toMatchObject({ action: 'auth' })
+    expect(() => parseQaArgs(['auth', '--target', 'http://qa.test'])).toThrow('--target is only valid')
     expect(() => parseQaArgs(['report', '--report'])).toThrow('--report is only valid with hrns qa run')
     expect(() => parseQaArgs(['exploratory', '--scope', 'new scope'])).toThrow('--scope is only valid with hrns qa run')
     expect(() => parseQaArgs(['exploratory', '--run', 'stored-run'])).toThrow('--run is only valid with hrns qa report')
     for (const legacy of ['agentic', 'plan', 'execute', 'renew', 'resume', 'doctor']) {
       expect(() => parseQaArgs([legacy])).toThrow(`Unknown QA action: ${legacy}`)
     }
+  })
+
+  it('creates an environment-backed bearer profile through the auth form', async () => {
+    prompts.select.mockResolvedValueOnce('bearer')
+    prompts.input
+      .mockResolvedValueOnce('qa-user')
+      .mockResolvedValueOnce('QA_USER_TOKEN')
+
+    await cmdQa(workspace, ['auth'])
+
+    const saved = JSON.parse(readFileSync(join(workspace, '.harness-kit', 'auth.json'), 'utf8'))
+    expect(saved).toEqual({ schemaVersion: 1, profiles: { 'qa-user': { mode: 'bearer', token: { source: 'env', name: 'QA_USER_TOKEN' } } } })
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('qa-user'))
+  })
+
+  it('adds basic credentials without writing a plaintext password', async () => {
+    prompts.select.mockResolvedValueOnce('basic')
+    prompts.input
+      .mockResolvedValueOnce('admin')
+      .mockResolvedValueOnce('qa-admin')
+      .mockResolvedValueOnce('QA_ADMIN_PASSWORD')
+
+    await cmdQa(workspace, ['auth'])
+
+    const saved = JSON.parse(readFileSync(join(workspace, '.harness-kit', 'auth.json'), 'utf8'))
+    expect(saved.profiles.admin).toEqual({ mode: 'basic', username: 'qa-admin', password: { source: 'env', name: 'QA_ADMIN_PASSWORD' } })
+    expect(JSON.stringify(saved)).not.toContain('plaintext')
+  })
+
+  it('appends a second profile without replacing the existing configuration', async () => {
+    prompts.select.mockResolvedValueOnce('none')
+    prompts.input.mockResolvedValueOnce('anonymous')
+    await cmdQa(workspace, ['auth'])
+
+    prompts.select.mockResolvedValueOnce('api-key')
+    prompts.input.mockResolvedValueOnce('service').mockResolvedValueOnce('X-Service-Key').mockResolvedValueOnce('QA_SERVICE_KEY')
+    await cmdQa(workspace, ['auth'])
+
+    const saved = JSON.parse(readFileSync(join(workspace, '.harness-kit', 'auth.json'), 'utf8'))
+    expect(Object.keys(saved.profiles)).toEqual(['anonymous', 'service'])
   })
 
   it('preserves equals signs in inline options', () => {

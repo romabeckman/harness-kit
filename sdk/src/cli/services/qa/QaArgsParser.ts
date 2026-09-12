@@ -2,7 +2,7 @@ import type { QaAction, QaCliOptions } from './types'
 import type { QaProfile } from '../../../qa/types'
 import { HELP_QA } from '../../utils/constants'
 
-const ACTIONS: QaAction[] = ['run', 'report', 'exploratory']
+const ACTIONS: QaAction[] = ['run', 'report', 'exploratory', 'auth']
 const PROFILES: QaProfile[] = ['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full']
 
 export function parseQaArgs(args: string[]): QaCliOptions {
@@ -48,5 +48,6 @@ export function parseQaArgs(args: string[]): QaCliOptions {
   if (options.action !== 'run' && options.scope !== undefined) throw new Error('--scope is only valid with hrns qa run')
   if (options.action !== 'run' && options.scenarios.length > 0) throw new Error('--scenario is only valid with hrns qa run')
   if (options.action === 'exploratory' && options.profile !== undefined) throw new Error('--profile is only valid with hrns qa run')
+  if (options.action === 'auth' && (options.target !== undefined || options.profile !== undefined || options.scope !== undefined || options.scenarios.length > 0 || options.report || options.runId !== undefined || options.authProfile !== undefined)) throw new Error('--target is only valid with hrns qa run or hrns qa exploratory; only --project is valid with hrns qa auth')
   return options
 }

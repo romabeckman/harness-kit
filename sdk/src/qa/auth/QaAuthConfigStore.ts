@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import type { QaAuthMode, QaAuthProfileDescription, QaResolvedAuth } from './types'
 type SecretReference = { source: 'env'; name: string }
 type Profile = Record<string, unknown> & { mode: QaAuthMode; environment?: Record<string, SecretReference> }
@@ -9,6 +9,17 @@ export class QaAuthConfigStore {
   readonly #path: string
   constructor(workspace: string, private readonly environment: Readonly<Record<string, string | undefined>> = process.env) { this.#path = join(workspace, '.harness-kit', 'auth.json') }
   describe(): QaAuthProfileDescription[] { const config = this.load(); return config ? Object.entries(config.profiles).map(([name, profile]) => ({ name, mode: profile.mode })) : [] }
+  addProfile(name: string, profile: Record<string, unknown>): void {
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) throw new Error('QA authentication profile name must start with a letter or number and contain only letters, numbers, dots, underscores, or hyphens')
+    const config = this.load() ?? { schemaVersion: 1 as const, profiles: {} }
+    if (config.profiles[name]) throw new Error(`QA authentication profile already exists: ${name}`)
+    if (!record(profile) || !['none', 'basic', 'bearer', 'api-key', 'cookie'].includes(String(profile.mode))) throw new Error(`Invalid QA authentication mode for profile ${name}`)
+    const next = { ...config, profiles: { ...config.profiles, [name]: profile } }
+    mkdirSync(dirname(this.#path), { recursive: true })
+    const temporaryPath = `${this.#path}.${process.pid}.${Date.now()}.tmp`
+    writeFileSync(temporaryPath, JSON.stringify(next, null, 2) + '\n', 'utf8')
+    renameSync(temporaryPath, this.#path)
+  }
   resolve(requestedProfile?: string): QaResolvedAuth {
     const config = this.load(); const profileName = requestedProfile ?? config?.defaultProfile
     if (!config || !profileName || profileName === 'none') return { mode: 'none', profile: 'none', headers: {}, environment: {} }

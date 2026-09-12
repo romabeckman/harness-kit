@@ -5,7 +5,7 @@ import type { QaRuntimePreparer } from '../../../qa/services/QaRuntimeManager'
 import type { QaTargetProbe } from '../../../qa/services/QaTargetProbe'
 import type { HarnessSettings } from '../../../settings/HarnessSettings'
 
-export type QaAction = 'run' | 'report' | 'exploratory'
+export type QaAction = 'run' | 'report' | 'exploratory' | 'auth'
 export type DevelopmentMode = 'quick' | 'fast' | 'thinking' | 'deep_thinking'
 export type ConfirmOptions = { message: string; default: boolean }
 export type SelectModeOptions = {

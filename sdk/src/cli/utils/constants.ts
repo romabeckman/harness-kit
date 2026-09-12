@@ -218,6 +218,7 @@ USAGE
   hrns qa run [options]
   hrns qa report [--run <id>] [options]
   hrns qa exploratory [--target <url>] [--project <path>]
+  hrns qa auth [--project <path>]   Add one authentication profile interactively
   hrns qa [options]          Alias for hrns qa run
 
 OPTIONS
@@ -248,6 +249,7 @@ EXAMPLES
   hrns qa report
   hrns qa exploratory --target http://localhost:3000
   hrns qa exploratory --auth qa-user --target http://localhost:3000
+  hrns qa auth
 `
 
 export const HELP_CANDIDATE = `

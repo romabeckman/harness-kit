@@ -50,6 +50,15 @@ hrns qa exploratory --project ../checkout --target http://127.0.0.1:3000
 
 The command validates and executes plans sequentially without planning or adaptive additions. One invalid or blocked plan does not stop later plans. Review `docs/qa/exploratory/<exploratory-run-id>/report.json` for global totals, per-plan verdicts, run IDs, results, and errors. Evidence remains under each `docs/qa/runs/<qa-run-id>/` directory.
 
+Create profiles with the form helper when the JSON file does not exist or needs another mode:
+
+```bash
+hrns qa auth
+hrns qa auth --project ../checkout
+```
+
+Select the mode and profile name, then provide the username and environment-variable name for Basic auth, the JWT/token environment-variable name for Bearer auth, or the header/cookie fields for other modes. Each invocation adds one profile and refuses to overwrite an existing profile.
+
 ## Run against protected targets
 
 Add optional `.harness-kit/auth.json` with named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. Reference secrets through environment variables only; the file is ignored by Git.

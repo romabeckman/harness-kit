@@ -10,6 +10,7 @@ import { createQaOrchestrator } from './qa/QaOrchestratorFactory'
 import { offerDevelopmentRenewal } from './qa/QaDevelopmentRenewal'
 import type { QaCliOptions, QaCommandDependencies } from './qa/types'
 import { QaAuthConfigStore } from '../../qa/auth/QaAuthConfigStore'
+import { runQaAuthCommand } from './qa/QaAuthCommand'
 
 export { parseQaArgs }
 export type { QaAction, QaCliOptions, QaCommandDependencies } from './qa/types'
@@ -122,6 +123,10 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
   const options = parseQaArgs(args)
   if (options.debug) DebugContext.enable()
   const workspace = resolve(cwd, options.projectPath ?? '.')
+  if (options.action === 'auth') {
+    await runQaAuthCommand(workspace)
+    return
+  }
   options.authProfile = await resolveAuthProfile(workspace, options.authProfile)
 
   if (options.action === 'exploratory') {

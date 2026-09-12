@@ -150,6 +150,8 @@ This command selects the latest version of every saved plan, validates and execu
 
 For `hrns qa exploratory`, use `--project` to select the plan repository and `--target` to override non-CLI plan targets without modifying stored plans. Run and report-specific options are rejected.
 
+`hrns qa auth` is a form-only helper. It adds one profile per invocation, asks for the mode and profile name, then collects mode-specific fields. Use environment-variable names for passwords, JWTs, API keys, and cookies; the helper never persists plaintext secret values. Use `--project` to write the profile into another project. The command rejects `--target`, `--profile`, `--scope`, `--scenario`, `--run`, `--report`, and `--auth`.
+
 ## Authentication
 
 Create `.harness-kit/auth.json` only when the target requires authentication. The file is ignored by Git and must contain environment-variable references, never secret values:
