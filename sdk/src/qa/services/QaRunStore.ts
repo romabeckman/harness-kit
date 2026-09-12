@@ -8,7 +8,7 @@ export class QaRunStore {
   readonly #root: string
 
   constructor(workspace: string) {
-    this.#root = join(workspace, '.harness-kit', 'qa')
+    this.#root = join(workspace, 'docs', 'qa')
   }
 
   planPath(planId: string, version: number): string {

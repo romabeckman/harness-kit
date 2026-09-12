@@ -31,7 +31,7 @@ hrns qa --project ../checkout --scope "Validate checkout" --scenario "Valid card
 hrns qa --target http://127.0.0.1:3000
 ```
 
-CLI output contains only final JSON report: verdict, summary, success criteria, bugs, and execution errors. Audit artifacts remain under `.harness-kit/qa/`.
+CLI output contains only final JSON report: verdict, summary, success criteria, bugs, and execution errors. Audit artifacts remain under `docs/qa/`.
 
 ## One-time browser setup
 
@@ -109,7 +109,7 @@ Native-game automation is outside the current driver boundary. Use the `web-game
 
 ## Evidence and verdicts
 
-Every run is stored under the target project's `.harness-kit/qa/runs/<qa-run-id>/` directory:
+Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` directory:
 
 | Item | Location | What to review |
 | --- | --- | --- |
@@ -141,7 +141,7 @@ QA: checkout-human-flow@1
 Run: checkout-human-flow-<timestamp>
 Target: http://127.0.0.1:4173
 Verdict: PASS
-Evidence: .harness-kit/qa/runs/checkout-human-flow-<timestamp>/
+Evidence: docs/qa/runs/checkout-human-flow-<timestamp>/
 ```
 
 If the verdict is not `PASS`, describe the user action that failed and link the matching evidence instead of summarizing it as a generic test failure.

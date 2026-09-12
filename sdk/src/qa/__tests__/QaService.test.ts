@@ -35,7 +35,7 @@ describe('QaService', () => {
     expect(plan.scenarios.every((scenario) => scenario.required)).toBe(true)
     expect(plan.scenarios.map((scenario) => scenario.id)).toEqual(['001-scenario-1', '002-scenario-2'])
     expect(new QaRunStore(workspace).loadPlan('orders-api', 1)).toEqual(plan)
-    expect(readFileSync(join(workspace, '.harness-kit', 'qa', 'plans', 'orders-api', 'SCOPE.md'), 'utf8')).toBe(originalScope)
+    expect(readFileSync(join(workspace, 'docs', 'qa', 'plans', 'orders-api', 'SCOPE.md'), 'utf8')).toBe(originalScope)
   })
 
   it('numbers evidence directories in scenario execution order', async () => {

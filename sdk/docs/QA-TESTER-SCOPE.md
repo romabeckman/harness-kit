@@ -173,8 +173,7 @@ An adaptive-analysis warning does not discard completed execution. Harness Kit r
 Harness Kit stores artifacts inside the tested project:
 
 ```text
-.harness-kit/qa/
-  execution-memory.json
+docs/qa/
   plans/<plan-id>/
     SCOPE.md
     <version>.json

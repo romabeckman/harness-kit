@@ -147,7 +147,7 @@ describe('QaAgenticOrchestrator', () => {
       errors: [],
     })
     expect(store.loadPlan('tetris-human-flow', 1).scenarios.map((scenario) => scenario.id)).toEqual(['001-start-session', '002-play-session'])
-    expect(readFileSync(join(workspace, '.harness-kit', 'qa', 'plans', 'tetris-human-flow', 'SCOPE.md'), 'utf8')).toBe(originalScope)
+    expect(readFileSync(join(workspace, 'docs', 'qa', 'plans', 'tetris-human-flow', 'SCOPE.md'), 'utf8')).toBe(originalScope)
     expect(store.loadReport(report.runId)).toEqual(report)
     expect(readFileSync(store.reportMarkdownPath(report.runId), 'utf8')).toBe('# QA Report\n\n## Verdict\n\nPASS\n')
   })

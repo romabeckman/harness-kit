@@ -22,6 +22,13 @@ describe('QaRunStore', () => {
     expect(() => store.runPath('run/child')).toThrow('Invalid QA identifier')
   })
 
+  it('stores plans and runs under docs/qa', () => {
+    const store = new QaRunStore(workspace)
+
+    expect(store.planPath('orders', 1)).toBe(join(workspace, 'docs', 'qa', 'plans', 'orders', '1.json'))
+    expect(store.runPath('run-1')).toBe(join(workspace, 'docs', 'qa', 'runs', 'run-1', 'state.json'))
+  })
+
   it('allocates a new immutable plan version instead of overwriting version one', () => {
     const store = new QaRunStore(workspace)
 

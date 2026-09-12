@@ -35,7 +35,7 @@ updated: "2026-09-12"
 
 ## OVERVIEW
 
-Run QA independently. Persist plans, runs, evidence, scope, and reports under `.harness-kit/qa/`.
+Run QA independently. Persist plans, runs, evidence, scope, and reports under `docs/qa/`.
 
 ## FOLDER STRUCTURE
 
