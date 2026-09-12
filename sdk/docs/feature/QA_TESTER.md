@@ -59,7 +59,8 @@ src/cli/services/            # `hrns qa` command adapter
 4. **Execute**, then append evidence-justified scenarios. Reject adaptive changes to executed scenarios or their order; show analysis failures as warnings.
 5. **Report optionally** with `hrns qa run --report`; generate `report.json`, bounded `REPORT.md`, and terminal output during the run. Without `--report`, persist only run state; propagate cancellation.
 6. **Regenerate** with `hrns qa report --run <id>`; omit the ID for completed-run selection.
-7. **Preserve scope** byte-for-byte; number scenarios as `001-<scenario>`, `002-<scenario>`.
+7. **Offer development renewal** after new or resumed QA execution when at least one scenario is `FAILED` or `BLOCKED`.
+8. **Preserve scope** byte-for-byte; number scenarios as `001-<scenario>`, `002-<scenario>`.
 
 ```text
 # CORRECT: run QA and generate the report during execution
@@ -68,6 +69,14 @@ hrns qa run --report --scope "Test order creation endpoint" --target http://127.
 # WRONG: use a removed QA action
 hrns qa execute --plan orders@1
 ```
+
+## DEVELOPMENT RENEWAL
+
+After QA completes, ask **Send failed and blocked scenarios to fix?** with default `false`. Skip this prompt without actionable results, during reporting, or outside an interactive terminal.
+
+When accepted, start `hrns run --reset --mode quick` in the QA workspace. Build its scope only from matching persisted plan scenarios and results.
+
+REQUIRED: Preserve explicit `--agent`, `--model`, `--effort`, and `--debug` options. PROHIBITED: Include `PASSED` or `INCONCLUSIVE` scenarios in the development scope.
 
 ## VERDICTS
 
@@ -107,16 +116,6 @@ REQUIRED: Treat memory as advisory; revalidate each run; explicit inputs win. PR
 ## LIMITS
 
 REQUIRED: Cap `REPORT.md` at 8,000 characters; mark truncation and unresolved **Open Points**. PROHIBITED: LLM prose as verdict truth. Start framework/API processes separately.
-
-## REVIEW FOLLOW-UPS
-
-| Priority | Remaining gap | Improvement |
-| --- | --- | --- |
-| High | CLI/MCP have no internal deadline; MCP reads complete SSE bodies. | Bound subprocess/request duration and streaming reads. |
-| High | LLM Markdown can contradict structured verdicts. | Reconcile Markdown with runtime results. |
-| High | Browser clicks/redirects can leave target origin. | Enforce runtime navigation boundaries. |
-| Medium | Browser network-idle waits and immediate assertions can be flaky. | Use bounded observable readiness checks. |
-| Medium | Full plans share one HTTP target. | Use separate CLI/WebSocket runs; consider per-engine targets later. |
 
 ## DOCUMENT MAP
 

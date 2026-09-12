@@ -3,7 +3,7 @@ import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
 import { Runner } from '../../agent-runner/types'
 import { QaAgenticOrchestrator } from '../../qa/QaAgenticOrchestrator'
-import type { QaDriver, QaFinalReport, QaPlan, QaProfile, QaRun } from '../../qa/types'
+import type { QaDriver, QaFinalReport, QaPlan, QaProfile, QaRun, QaScenarioResult } from '../../qa/types'
 import type { QaProgressListener, QaTerminalPresenter } from '../../qa/progress'
 import type { QaRuntimePreparer } from '../../qa/services/QaRuntimeManager'
 import { QaRunStore } from '../../qa/services/QaRunStore'
@@ -38,6 +38,8 @@ export interface QaCommandDependencies {
   view?: QaTerminalPresenter
   targetProbe?: QaTargetProbe
   runtime?: QaRuntimePreparer
+  confirmSendToFix?: (options: { message: string; default: boolean }) => Promise<boolean>
+  runCommand?: (cwd: string, args: string[]) => Promise<void>
 }
 
 export function parseQaArgs(args: string[]): QaCliOptions {
@@ -187,6 +189,7 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
       view.start({ target: savedPlan.target, profile: savedPlan.profile }, workspace)
       const report = await createOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event), store).resume(savedPlan)
       if (options.report) view.renderReport(report)
+      await offerDevelopmentRenewal(workspace, options, dependencies, report)
       return
     }
   }
@@ -203,6 +206,7 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
     view.start(request, workspace)
     const report = await createOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event)).run(request)
     if (options.report) view.renderReport(report)
+    await offerDevelopmentRenewal(workspace, options, dependencies, report)
     return
   }
 
@@ -211,6 +215,68 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
   if (!run.completedAt || !run.verdict) throw new Error(`QA run is not completed: ${run.id}`)
   const report = await generateRunReport(workspace, options, dependencies, store, run)
   console.log(JSON.stringify(report, null, 2))
+}
+
+async function offerDevelopmentRenewal(
+  workspace: string,
+  options: QaCliOptions,
+  dependencies: QaCommandDependencies,
+  report: QaFinalReport,
+): Promise<void> {
+  const store = new QaRunStore(workspace)
+  const run = store.loadRun(report.runId)
+  const actionableResults = run.results.filter(isActionableResult)
+  if (actionableResults.length === 0) return
+
+  const shouldSend = dependencies.confirmSendToFix
+    ? await dependencies.confirmSendToFix({ message: 'Send failed and blocked scenarios to fix?', default: false })
+    : await confirmDevelopmentRenewal()
+  if (!shouldSend) return
+
+  const plan = store.loadPlan(run.planId, run.planVersion)
+  const runArgs = [
+    '--reset',
+    '--mode', 'quick',
+    '--scope', buildDevelopmentScope(plan, run, actionableResults),
+    '--path', workspace,
+  ]
+  if (options.agentType) runArgs.push('--agent', options.agentType)
+  if (options.model) runArgs.push('--model', options.model)
+  if (options.effort) runArgs.push('--effort', options.effort)
+  if (options.debug) runArgs.push('--debug')
+
+  const runCommand = dependencies.runCommand ?? (await import('./run-service.js')).cmdRun
+  await runCommand(workspace, runArgs)
+}
+
+function isActionableResult(result: QaScenarioResult): boolean {
+  return result.status === 'FAILED' || result.status === 'BLOCKED'
+}
+
+async function confirmDevelopmentRenewal(): Promise<boolean> {
+  const isInteractive = process.stdin.isTTY && process.stdout.isTTY && process.env.NODE_ENV !== 'test'
+  if (!isInteractive) return false
+  const { confirm } = await import('@inquirer/prompts')
+  return confirm({ message: 'Send failed and blocked scenarios to fix?', default: false })
+}
+
+function buildDevelopmentScope(plan: QaPlan, run: QaRun, results: QaScenarioResult[]): string {
+  const scenarios = new Map(plan.scenarios.map((scenario) => [scenario.id, scenario]))
+  return [
+    `Renew development from QA run ${run.id}.`,
+    'Fix only the FAILED and BLOCKED scenarios listed below. Preserve unrelated behavior.',
+    ...results.flatMap((result) => {
+      const scenario = scenarios.get(result.scenarioId)
+      return [
+        '',
+        `## ${result.status}: ${result.scenarioId}`,
+        `Scenario: ${scenario?.description ?? result.scenarioId}`,
+        `Definition: ${scenario ? JSON.stringify(scenario) : 'Unavailable'}`,
+        `Observed: ${result.reason ?? result.status}`,
+        `Evidence: ${result.evidence.length > 0 ? result.evidence.map((evidence) => evidence.path).join(', ') : 'None'}`,
+      ]
+    }),
+  ].join('\n')
 }
 
 function createOrchestrator(

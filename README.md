@@ -179,6 +179,8 @@ codex plugin add harness-kit@harness-kit
 
 ## 💻 SDK & CLI — `@romabeckman/hrns`
 
+Discover `@romabeckman/hrns`, HarnessKit’s SDK and CLI for repeatable AI-assisted engineering workflows. Use `hrns run` to start the sovereign development loop, or `hrns qa` to plan, execute, and report user-facing acceptance tests with runtime evidence.
+
 For CI/CD pipelines or running sovereign tasks without an open IDE chat session:
 
 ```bash
@@ -195,6 +197,8 @@ hrns run
 ```
 
 > 📄 Full SDK documentation: [`sdk/README.md`](sdk/README.md)
+
+> 📘 QA command scope and usage: [`sdk/docs/QA-TESTER-SCOPE.md`](sdk/docs/QA-TESTER-SCOPE.md) — profiles, prerequisites, commands, reports, evidence, and current boundaries.
 
 ---
 

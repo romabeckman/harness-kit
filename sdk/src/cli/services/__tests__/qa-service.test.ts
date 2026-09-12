@@ -198,6 +198,71 @@ describe('QA CLI', () => {
     expect(() => new QaRunStore(workspace).loadReport(run!.id)).toThrow()
   })
 
+  it('sends only failed and blocked scenarios to a quick development renewal', async () => {
+    const runner: IAgentRunner = { run: vi.fn(async (invocation) => {
+      if (invocation.phaseKey === 'qa_planning') return { raw: JSON.stringify({
+        id: 'renewal-flow', target: 'http://127.0.0.1:3000', profile: 'api', criteria: ['Runtime works'],
+        scenarios: [
+          { id: 'passes', description: 'Healthy endpoint works', criterionIds: ['criterion-1'], required: true, profile: 'api', category: 'functional', request: { method: 'GET', path: '/health', expectedStatus: 200 } },
+          { id: 'fails', description: 'Order endpoint creates an order', criterionIds: ['criterion-1'], required: true, profile: 'api', category: 'functional', request: { method: 'POST', path: '/orders', expectedStatus: 201 } },
+          { id: 'blocks', description: 'Admin endpoint is reachable', criterionIds: ['criterion-1'], required: true, profile: 'api', category: 'functional', request: { method: 'GET', path: '/admin', expectedStatus: 200 } },
+        ],
+      }) }
+      return { raw: '{"complete":true}' }
+    }) }
+    const driver: QaDriver = {
+      profile: 'api', doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id, required: true,
+        status: scenario.id.includes('fails') ? 'FAILED' : scenario.id.includes('blocks') ? 'BLOCKED' : 'PASSED',
+        reason: scenario.id.includes('fails') ? 'Expected 201, received 500' : scenario.id.includes('blocks') ? 'Connection refused' : undefined,
+        evidence: scenario.id.includes('blocks') ? [] : [{ id: scenario.id, path: `evidence/${scenario.id}.json`, capturedAt: '', adapter: 'test' }],
+      }),
+    }
+    const confirmSendToFix = vi.fn().mockResolvedValue(true)
+    const runCommand = vi.fn().mockResolvedValue(undefined)
+
+    await cmdQa(workspace, ['run', '--scope', 'Validate runtime', '--agent', 'codex-cli', '--model', 'gpt-5', '--effort', 'high', '--debug'], {
+      runner, drivers: [driver], targetProbe: async () => ({ available: true }), confirmSendToFix, runCommand,
+      view: { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() },
+    })
+
+    expect(confirmSendToFix).toHaveBeenCalledWith({
+      message: 'Send failed and blocked scenarios to fix?', default: false,
+    })
+    expect(runCommand).toHaveBeenCalledTimes(1)
+    const [runCwd, runArgs] = runCommand.mock.calls[0]
+    expect(runCwd).toBe(workspace)
+    expect(runArgs).toEqual(expect.arrayContaining([
+      '--reset', '--mode', 'quick', '--path', workspace,
+      '--agent', 'codex-cli', '--model', 'gpt-5', '--effort', 'high', '--debug',
+    ]))
+    const scope = runArgs[runArgs.indexOf('--scope') + 1]
+    expect(scope).toContain('002-fails')
+    expect(scope).toContain('FAILED')
+    expect(scope).toContain('003-blocks')
+    expect(scope).toContain('BLOCKED')
+    expect(scope).not.toContain('001-passes')
+    expect(scope).not.toContain('Healthy endpoint works')
+  })
+
+  it('does not offer development renewal when QA has no failed or blocked scenarios', async () => {
+    const confirmSendToFix = vi.fn().mockResolvedValue(true)
+    const runCommand = vi.fn().mockResolvedValue(undefined)
+    const driver: QaDriver = {
+      profile: 'api', doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({ scenarioId: scenario.id, required: true, status: 'PASSED', evidence: [] }),
+    }
+
+    await cmdQa(workspace, ['run', '--scope', 'Validate runtime'], {
+      runner: agenticRunner(), drivers: [driver], targetProbe: async () => ({ available: true }),
+      confirmSendToFix, runCommand, view: { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() },
+    })
+
+    expect(confirmSendToFix).not.toHaveBeenCalled()
+    expect(runCommand).not.toHaveBeenCalled()
+  })
+
   it('regenerates a report for an explicit completed run', async () => {
     const store = seedCompletedRun(workspace, 'completed-run', '2026-09-11T12:00:00.000Z')
     const runner = reportingRunner('Stored run reported.')
