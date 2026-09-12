@@ -12,6 +12,8 @@ import { QaExecutionMemory } from './services/QaExecutionMemory'
 export interface QaAgenticOrchestratorOptions {
   workspace: string
   runner: IAgentRunner
+  /** Generate and persist the final report as part of run/resume. SDK default stays enabled. */
+  report?: boolean
   store?: QaRunStore
   drivers?: QaDriver[]
   phases?: QaPhaseHandler[]
@@ -39,6 +41,7 @@ export class QaAgenticOrchestrator {
       settings: options.settings,
       model: options.model,
       effort: options.effort,
+      reportEnabled: options.report ?? true,
       onProgress: options.onProgress,
     }
     const phases = options.phases ?? [new QaPlanningPhase(), new QaValidationPhase(), new QaExecutionPhase(), new QaAnalysisPhase(), new QaReportingPhase()]
@@ -98,17 +101,20 @@ export class QaAgenticOrchestrator {
           if (current !== QaPhase.ANALYSIS || !context.run?.verdict || signal?.aborted) throw error
           context.onProgress?.({ type: 'phase_warning', phase: QaPhase.ANALYSIS,
             reason: `Adaptive analysis skipped: ${error instanceof Error ? error.message : String(error)}. Reporting executed results.` })
-          current = QaPhase.REPORTING
+          current = context.reportEnabled === false ? QaPhase.COMPLETED : QaPhase.REPORTING
         }
         context.onProgress?.(this.phaseCompleted(completed, context))
       }
-      if (!context.report) throw new Error('Agentic QA completed without a final report')
+      const finalReport = context.report ?? (() => {
+        if (context.reportEnabled !== false || !context.plan || !context.run) throw new Error('Agentic QA completed without a final report')
+        return this.executionSummary(context.plan, context.run)
+      })()
       if (context.plan && context.run) {
         try { this.#memory.remember(context.plan, context.run, runtime?.managed) } catch {
-          context.onProgress?.({ type: 'phase_warning', reason: 'Execution memory could not be saved; the QA report is available.' })
+          context.onProgress?.({ type: 'phase_warning', reason: 'Execution memory could not be saved; the QA result is available.' })
         }
       }
-      return context.report
+      return finalReport
     } finally {
       await runtime?.stop()
     }
@@ -120,5 +126,34 @@ export class QaAgenticOrchestrator {
     if (phase === QaPhase.EXECUTION) return { type: 'phase_completed', phase, verdict: context.run?.verdict }
     if (phase === QaPhase.ANALYSIS) return { type: 'phase_completed', phase, totalScenarios: context.plan?.scenarios.length, verdict: context.run?.verdict }
     return { type: 'phase_completed', phase }
+  }
+
+  private executionSummary(plan: QaPlan, run: QaRun): QaFinalReport {
+    return {
+      schemaVersion: 1,
+      runId: run.id,
+      planId: plan.id,
+      verdict: run.verdict ?? 'INCONCLUSIVE',
+      summary: `QA execution completed with verdict ${run.verdict ?? 'INCONCLUSIVE'}.`,
+      successCriteria: plan.criteria.map((criterion, index) => {
+        const criterionId = `criterion-${index + 1}`
+        const related = plan.scenarios
+          .filter((scenario) => scenario.criterionIds.includes(criterionId))
+          .map((scenario) => run.results.find((result) => result.scenarioId === scenario.id))
+          .filter((result): result is QaRun['results'][number] => result !== undefined)
+        const result = related.find((item) => item.status !== 'PASSED') ?? related[0]
+        return {
+          criterion,
+          status: result?.status ?? 'INCONCLUSIVE',
+          reason: result?.reason,
+          evidence: related.flatMap((item) => item.evidence.map((evidence) => evidence.path)),
+        }
+      }),
+      bugs: [],
+      errors: run.results
+        .filter((result) => result.status === 'BLOCKED' || result.status === 'INCONCLUSIVE')
+        .map((result) => ({ scenarioId: result.scenarioId, message: result.reason ?? result.status })),
+      completedAt: run.completedAt ?? new Date().toISOString(),
+    }
   }
 }

@@ -226,6 +226,7 @@ OPTIONS
   --agent <runner>         Agent runner (default: claude-cli)
   --model <model>          Model override for QA phases
   --effort <level>         Reasoning effort override for QA phases
+  --report                 Generate and render the report during QA run
   --run <id>               Completed run to report; omit for interactive selection
   --target <url>            Target application URL
   --profile <api|web|web-game|mobile-web|accessibility|mcp|cli|websocket|security|full>
@@ -233,6 +234,7 @@ OPTIONS
 
 EXAMPLES
   hrns qa run --scope "Test endpoint X" --target http://localhost:3000
+  hrns qa run --report --scope "Test endpoint X" --target http://localhost:3000
   hrns qa run --scope "Validate checkout" --scenario "A valid card completes payment" --profile web
   hrns qa run --debug --scope "Test endpoint X" --target http://localhost:3000
   hrns qa report --run orders-20260911

@@ -33,6 +33,7 @@ export interface QaPhaseContext {
   persistPlan?: boolean
   run?: QaRun
   report?: QaFinalReport
+  reportEnabled?: boolean
   analysisCycles?: number
   executionMemory?: QaExecutionHint[]
 }
@@ -53,4 +54,8 @@ export function resolveQaPhaseSettings(context: QaPhaseContext, phaseKey: string
     effort: context.effort ?? configured.effort ?? defaults.effort,
     timeoutMs: configured.timeoutMs ?? defaults.timeoutMs,
   }
+}
+
+export function nextQaReportPhase(context: QaPhaseContext): QaPhase {
+  return context.reportEnabled === false ? QaPhase.COMPLETED : QaPhase.REPORTING
 }

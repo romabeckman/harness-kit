@@ -3,7 +3,7 @@ import { isExtractionResult } from '../../json-extraction/types'
 import { isDeepStrictEqual } from 'node:util'
 import { QaPlanningPhase } from './QaPlanningPhase'
 import { QaPlanValidator } from '../services/QaPlanValidator'
-import { QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
+import { nextQaReportPhase, QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
 
 const MAX_ANALYSIS_CYCLES = 3
 
@@ -13,7 +13,7 @@ export class QaAnalysisPhase implements QaPhaseHandler {
   async execute(context: QaPhaseContext, signal?: AbortSignal): Promise<QaPhase> {
     if (!context.plan || !context.run) throw new Error('Agentic QA analysis requires a completed execution')
     context.analysisCycles = (context.analysisCycles ?? 0) + 1
-    if (context.analysisCycles > MAX_ANALYSIS_CYCLES) return QaPhase.REPORTING
+    if (context.analysisCycles > MAX_ANALYSIS_CYCLES) return nextQaReportPhase(context)
     const agentSettings = resolveQaPhaseSettings(context, 'qa_analysis')
     const output = await context.runner.run({
       agent: 'harness-kit:harness-qa', mode: 'autonomous', phaseKey: 'qa_analysis', workspacePath: context.workspace,
@@ -23,7 +23,7 @@ export class QaAnalysisPhase implements QaPhaseHandler {
     context.session = output.session ?? context.session
     const extraction = JsonExtractionProtocol.extract(output.raw)
     if (!isExtractionResult(extraction) || !isRecord(extraction.data)) throw new Error('Invalid agentic QA analysis: expected JSON object')
-    if (extraction.data.complete === true && Object.keys(extraction.data).length === 1) return QaPhase.REPORTING
+    if (extraction.data.complete === true && Object.keys(extraction.data).length === 1) return nextQaReportPhase(context)
     if (extraction.data.complete !== false || !isRecord(extraction.data.plan) || Object.keys(extraction.data).some((key) => key !== 'complete' && key !== 'plan')) {
       throw new Error('Invalid agentic QA analysis: expected complete or a complete revised plan')
     }
@@ -38,7 +38,7 @@ export class QaAnalysisPhase implements QaPhaseHandler {
       throw new Error('Invalid agentic QA analysis: executed scenarios must remain unchanged and in order')
     }
     const additional = revised.scenarios.filter((scenario) => !previousIds.has(scenario.id))
-    if (additional.length === 0) return QaPhase.REPORTING
+    if (additional.length === 0) return nextQaReportPhase(context)
     const validation = await new QaPlanValidator(context.service).validate(revised, context.workspace, signal)
     if (!validation.valid) {
       context.onProgress?.({ type: 'validation_failed', phase: QaPhase.VALIDATION, errors: validation.errors })
@@ -47,7 +47,7 @@ export class QaAnalysisPhase implements QaPhaseHandler {
     context.store.savePlan(revised)
     context.plan = revised
     context.run = await context.service.continue(context.run, revised, additional, signal, context.onProgress)
-    return QaPhase.REPORTING
+    return nextQaReportPhase(context)
   }
 
   private buildPrompt(context: QaPhaseContext): string {

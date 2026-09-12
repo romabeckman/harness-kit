@@ -53,17 +53,17 @@ src/cli/services/            # `hrns qa` command adapter
 
 ## EXECUTION
 
-1. **Run QA** with `hrns qa run`; omit the action to use the same flow. When saved plans exist and no scope or scenarios are supplied, choose `resume` to select and execute a stored plan or `new` to enter a fresh scope.
-2. **Supply scope** with `--scope`, or use the scope/editor, profile, and target form. Add baselines with `--scenario`. Reject blank scope and invalid target URLs; preserve inline `=` values. Resolve CLI directories against the workspace.
+1. **Run QA** with `hrns qa run`; omit the action for the same flow. With saved plans and no scope or scenarios, choose `resume` or `new`.
+2. **Supply scope** with `--scope`, or use the scope/editor, profile, and target prompts. Add baselines with `--scenario`. Reject blank scope and invalid target URLs; preserve inline `=` values. Resolve CLI directories against the workspace.
 3. **Plan and validate** with strict JSON and one parse-repair retry. Honor the requested profile. Probe the target before execution.
 4. **Execute**, then append evidence-justified scenarios. Reject adaptive changes to executed scenarios or their order; show analysis failures as warnings.
-5. **Report** to `report.json` and bounded `REPORT.md`; propagate cancellation.
+5. **Report optionally** with `hrns qa run --report`; generate `report.json`, bounded `REPORT.md`, and terminal output during the run. Without `--report`, persist only run state; propagate cancellation.
 6. **Regenerate** with `hrns qa report --run <id>`; omit the ID for completed-run selection.
 7. **Preserve scope** byte-for-byte; number scenarios as `001-<scenario>`, `002-<scenario>`.
 
 ```text
-# CORRECT: run full QA flow
-hrns qa run --scope "Test order creation endpoint" --target http://127.0.0.1:3000
+# CORRECT: run QA and generate the report during execution
+hrns qa run --report --scope "Test order creation endpoint" --target http://127.0.0.1:3000
 
 # WRONG: use a removed QA action
 hrns qa execute --plan orders@1
@@ -94,15 +94,15 @@ REQUIRED: Emit `QaProgressListener` events; inject `QaTerminalPresenter` at the 
 
 ## DRIVERS
 
-Use temporary static servers only for inferred/browser/full profiles. Explicit API, CLI, MCP, security, and WebSocket profiles skip static hosting. Path 4xx/5xx block the probe; root 404 and 405 remain reachable.
+Use temporary static servers for inferred/browser/full profiles. Explicit API, CLI, MCP, security, and WebSocket profiles skip hosting. 4xx/5xx paths block probes; root 404/405 remain reachable.
 
-Route security HTTP scenarios through the API driver unless a custom security driver exists. Curl observes redirects without following them and compares JSON arrays by order and length, with partial nested objects. Browser evidence requires a nonempty screenshot file. MCP supports JSON/SSE and structured expectations; CLI uses no shell.
+Route security HTTP through the API driver unless a custom security driver exists. Curl observes redirects without following and compares JSON arrays by order/length, with partial nested objects. Browser evidence requires a nonempty screenshot. MCP supports JSON/SSE and structured expectations; CLI uses no shell.
 
 ## EXECUTION MEMORY
 
-Use project-memory's digest, graph, and routed contracts during planning. Keep operational hints in `.harness-kit/qa/execution-memory.json`: target, profile, and verification timestamp only. Retain the latest target per profile for 30 days, up to ten entries. Learn from executed PASSED/FAILED scenarios with nonempty evidence; ignore blocked runs, temporary ports, credentials, query strings, and fragments. CLI directories are not remembered.
+Use project-memory's digest, graph, and routed contracts during planning. `.harness-kit/qa/execution-memory.json` stores target, profile, and verification timestamp; retain the latest per profile for 30 days, up to ten entries. Learn from PASSED/FAILED scenarios with evidence; ignore blocked runs, temporary ports, credentials, queries, fragments, and CLI directories.
 
-REQUIRED: Treat memory as advisory and revalidate each run; explicit targets/profiles win. PROHIBITED: Store test outcomes or agent-authored instructions in execution memory. Ignore corrupt/expired entries; expose write failures without losing reports. Remove this single file to reset learned targets.
+REQUIRED: Treat memory as advisory; revalidate each run; explicit inputs win. PROHIBITED: Store outcomes or agent instructions. Ignore corrupt/expired entries; expose write failures without losing reports. Remove file to reset targets.
 
 ## LIMITS
 

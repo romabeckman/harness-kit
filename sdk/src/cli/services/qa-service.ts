@@ -28,6 +28,7 @@ export interface QaCliOptions {
   model?: string
   effort?: string
   debug?: boolean
+  report: boolean
 }
 
 export interface QaCommandDependencies {
@@ -44,12 +45,16 @@ export function parseQaArgs(args: string[]): QaCliOptions {
   const first = args[0]
   const hasAction = actions.includes(first as QaAction)
   if (first && !hasAction && !first.startsWith('-')) throw new Error(`Unknown QA action: ${first}\n${HELP_QA}`)
-  const options: QaCliOptions = { action: hasAction ? first as QaAction : 'run', scenarios: [] }
+  const options: QaCliOptions = { action: hasAction ? first as QaAction : 'run', scenarios: [], report: false }
 
   for (let index = hasAction ? 1 : 0; index < args.length; index++) {
     const argument = args[index]
     if (argument === '--debug') {
       options.debug = true
+      continue
+    }
+    if (argument === '--report') {
+      options.report = true
       continue
     }
     if (argument === '--help' || argument === '-h') throw new Error(HELP_QA)
@@ -74,6 +79,7 @@ export function parseQaArgs(args: string[]): QaCliOptions {
   }
 
   if (options.action === 'run' && options.runId) throw new Error('--run is only valid with hrns qa report')
+  if (options.action === 'report' && options.report) throw new Error('--report is only valid with hrns qa run')
   return options
 }
 
@@ -180,7 +186,7 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
       const view = dependencies.view ?? new QaTerminalView()
       view.start({ target: savedPlan.target, profile: savedPlan.profile }, workspace)
       const report = await createOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event), store).resume(savedPlan)
-      view.renderReport(report)
+      if (options.report) view.renderReport(report)
       return
     }
   }
@@ -196,7 +202,7 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
     const request = { scope, scenarios: options.scenarios, target: profile === 'cli' ? resolve(workspace, target || '.') : target, profile }
     view.start(request, workspace)
     const report = await createOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event)).run(request)
-    view.renderReport(report)
+    if (options.report) view.renderReport(report)
     return
   }
 
@@ -228,6 +234,7 @@ function createOrchestrator(
     settings,
     model: options.model,
     effort: options.effort,
+    report: options.report,
     onProgress,
     targetProbe: dependencies.targetProbe,
     runtime: dependencies.runtime,

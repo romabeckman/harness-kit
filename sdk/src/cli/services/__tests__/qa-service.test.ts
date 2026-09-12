@@ -30,8 +30,11 @@ describe('QA CLI', () => {
 
   it('supports only run and report actions and defaults to run', () => {
     expect(parseQaArgs([])).toMatchObject({ action: 'run' })
+    expect(parseQaArgs(['run'])).toMatchObject({ action: 'run', report: false })
+    expect(parseQaArgs(['run', '--report'])).toMatchObject({ action: 'run', report: true })
     expect(parseQaArgs(['run', '--scope', 'Test endpoint X'])).toMatchObject({ action: 'run', scope: 'Test endpoint X' })
     expect(parseQaArgs(['report', '--run', 'orders-20260911'])).toMatchObject({ action: 'report', runId: 'orders-20260911' })
+    expect(() => parseQaArgs(['report', '--report'])).toThrow('--report is only valid with hrns qa run')
     for (const legacy of ['agentic', 'plan', 'execute', 'renew', 'resume', 'doctor']) {
       expect(() => parseQaArgs([legacy])).toThrow(`Unknown QA action: ${legacy}`)
     }
@@ -95,7 +98,7 @@ describe('QA CLI', () => {
     }
     const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
 
-    await cmdQa(workspace, [], { runner, drivers: [driver], view, targetProbe: async () => ({ available: true }) })
+    await cmdQa(workspace, ['--report'], { runner, drivers: [driver], view, targetProbe: async () => ({ available: true }) })
 
     expect(prompts.select).toHaveBeenNthCalledWith(1, expect.objectContaining({
       message: 'A saved QA plan exists. What would you like to do?',
@@ -161,7 +164,7 @@ describe('QA CLI', () => {
     }
     const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
 
-    await cmdQa(workspace, ['run', '--scope', 'Validate runtime behavior'], {
+    await cmdQa(workspace, ['run', '--report', '--scope', 'Validate runtime behavior'], {
       runner, drivers: [driver], view, targetProbe: async () => ({ available: true }),
     })
 
@@ -170,6 +173,29 @@ describe('QA CLI', () => {
     expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'scenario_completed', status: 'PASSED' }))
     expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({ verdict: 'PASS', summary: 'Health check passed.' }))
     expect(log).not.toHaveBeenCalled()
+  })
+
+  it('skips report generation during a run unless --report is provided', async () => {
+    const runner = agenticRunner()
+    const driver: QaDriver = {
+      profile: 'api',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id, required: true, status: 'PASSED',
+        evidence: [{ id: 'response', path: 'response.body', capturedAt: '', adapter: 'curl' }],
+      }),
+    }
+    const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
+
+    await cmdQa(workspace, ['run', '--scope', 'Validate runtime behavior'], {
+      runner, drivers: [driver], view, targetProbe: async () => ({ available: true }),
+    })
+
+    expect(vi.mocked(runner.run).mock.calls.map(([invocation]) => invocation.phaseKey)).toEqual(['qa_planning', 'qa_analysis'])
+    expect(view.renderReport).not.toHaveBeenCalled()
+    const run = new QaRunStore(workspace).listCompletedRuns()[0]
+    expect(run).toBeDefined()
+    expect(() => new QaRunStore(workspace).loadReport(run!.id)).toThrow()
   })
 
   it('regenerates a report for an explicit completed run', async () => {
