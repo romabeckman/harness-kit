@@ -117,6 +117,24 @@ export class QaRunStore {
     return this.readJson<QaRun>(this.runPath(runId), 'QA run')
   }
 
+  listCompletedRuns(): QaRun[] {
+    const runsDirectory = join(this.#root, 'runs')
+    if (!existsSync(runsDirectory)) return []
+    const runs: QaRun[] = []
+    for (const runId of readdirSync(runsDirectory)) {
+      try {
+        const run = this.loadRun(runId)
+        if (this.isValidCompletedRun(run, runId)) runs.push(run)
+      } catch {
+        // Ignore incomplete or invalid artifacts when building interactive choices.
+      }
+    }
+    return runs.sort((left, right) => {
+      const byCompletion = (right.completedAt ?? '').localeCompare(left.completedAt ?? '')
+      return byCompletion || right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id)
+    })
+  }
+
   saveReport(report: QaFinalReport): void {
     this.writeJson(this.reportPath(report.runId), report)
   }
@@ -177,6 +195,16 @@ export class QaRunStore {
 
   private writeJson(path: string, value: unknown): void {
     this.writeText(path, JSON.stringify(value, null, 2))
+  }
+
+  private isValidCompletedRun(value: unknown, expectedId: string): value is QaRun {
+    if (!value || typeof value !== 'object') return false
+    const run = value as Partial<QaRun>
+    if (run.schemaVersion !== 1 || run.id !== expectedId || !SAFE_IDENTIFIER.test(run.id)) return false
+    if (!run.planId || !SAFE_IDENTIFIER.test(run.planId) || !Number.isSafeInteger(run.planVersion) || (run.planVersion ?? 0) < 1) return false
+    if (typeof run.target !== 'string' || typeof run.createdAt !== 'string' || typeof run.completedAt !== 'string') return false
+    if (!['PASS', 'FAIL', 'BLOCKED', 'INCONCLUSIVE'].includes(run.verdict as string)) return false
+    return Array.isArray(run.results)
   }
 
   private writeText(path: string, value: string): void {

@@ -1,30 +1,26 @@
-import { QaRunStore } from '../../qa/services/QaRunStore'
-import { QaService } from '../../qa/services/QaService'
-import { QaAgenticOrchestrator } from '../../qa/QaAgenticOrchestrator'
-import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
-import { Runner } from '../../agent-runner/types'
-import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
-import type { QaDriver, QaFinalReport, QaHttpRequest, QaPlan, QaPlanInput, QaProfile, QaRun } from '../../qa/types'
-import { HELP_QA } from '../utils/constants'
 import { resolve } from 'node:path'
-import { HarnessSettings } from '../../settings/HarnessSettings'
-import { QaTerminalView } from '../../qa/ui/QaTerminalView'
-import type { QaTerminalPresenter } from '../../qa/progress'
-import { DebugContext } from '../DebugContext'
-import type { QaTargetProbe } from '../../qa/services/QaTargetProbe'
+import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
+import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
+import { Runner } from '../../agent-runner/types'
+import { QaAgenticOrchestrator } from '../../qa/QaAgenticOrchestrator'
+import type { QaDriver, QaFinalReport, QaProfile, QaRun } from '../../qa/types'
+import type { QaProgressListener, QaTerminalPresenter } from '../../qa/progress'
 import type { QaRuntimePreparer } from '../../qa/services/QaRuntimeManager'
+import { QaRunStore } from '../../qa/services/QaRunStore'
+import type { QaTargetProbe } from '../../qa/services/QaTargetProbe'
+import { QaTerminalView } from '../../qa/ui/QaTerminalView'
+import { HarnessSettings } from '../../settings/HarnessSettings'
+import { DebugContext } from '../DebugContext'
 import { validateScope } from '../utils/cli-utils'
+import { HELP_QA } from '../utils/constants'
 
-export type QaAction = 'agentic' | 'plan' | 'execute' | 'renew' | 'resume' | 'run' | 'report' | 'doctor'
+export type QaAction = 'run' | 'report'
 
 export interface QaCliOptions {
   action: QaAction
-  planId?: string
-  version?: number
   runId?: string
   target?: string
   profile?: QaProfile
-  criteria: string[]
   scope?: string
   scenarios: string[]
   projectPath?: string
@@ -32,7 +28,6 @@ export interface QaCliOptions {
   model?: string
   effort?: string
   debug?: boolean
-  request?: QaHttpRequest
 }
 
 export interface QaCommandDependencies {
@@ -45,64 +40,43 @@ export interface QaCommandDependencies {
 }
 
 export function parseQaArgs(args: string[]): QaCliOptions {
-  const actions: QaAction[] = ['agentic', 'plan', 'execute', 'renew', 'resume', 'run', 'report', 'doctor']
+  const actions: QaAction[] = ['run', 'report']
   const first = args[0]
   const hasAction = actions.includes(first as QaAction)
   if (first && !hasAction && !first.startsWith('-')) throw new Error(`Unknown QA action: ${first}\n${HELP_QA}`)
-  const options: QaCliOptions = { action: hasAction ? first as QaAction : 'agentic', criteria: [], scenarios: [] }
+  const options: QaCliOptions = { action: hasAction ? first as QaAction : 'run', scenarios: [] }
+
   for (let index = hasAction ? 1 : 0; index < args.length; index++) {
     const argument = args[index]
     if (argument === '--debug') {
       options.debug = true
       continue
     }
+    if (argument === '--help' || argument === '-h') throw new Error(HELP_QA)
+
     const [flag, inlineValue] = argument.split('=', 2)
     const value = inlineValue ?? args[++index]
-    if (flag === '--plan') {
-      const [planId, version] = value.split('@', 2)
-      options.planId = planId
-      if (version !== undefined) options.version = Number.parseInt(version, 10)
-    } else if (flag === '--run') {
-      options.runId = value
-    } else if (flag === '--target') {
-      options.target = value
-    } else if (flag === '--profile') {
+    if (value === undefined || value.startsWith('--')) throw new Error(`QA option requires a value: ${flag}`)
+    if (flag === '--run') options.runId = value
+    else if (flag === '--target') options.target = value
+    else if (flag === '--profile') {
       if (!['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full'].includes(value)) throw new Error(`Invalid QA profile: ${value}`)
       options.profile = value as QaProfile
-    } else if (flag === '--criterion') {
-      options.criteria.push(value)
-    } else if (flag === '--scope' || flag === '--objective') {
-      options.scope = value
-    } else if (flag === '--scenario') {
-      options.scenarios.push(value)
-    } else if (flag === '--project') {
-      options.projectPath = value
-    } else if (flag === '--agent') {
-      options.agentType = value
-    } else if (flag === '--model') {
-      options.model = value
-    } else if (flag === '--effort') {
-      options.effort = value
-    } else if (flag === '--method') {
-      options.request = { method: value, path: options.request?.path ?? '', expectedStatus: options.request?.expectedStatus ?? 200 }
-    } else if (flag === '--path') {
-      options.request = { method: options.request?.method ?? 'GET', path: value, expectedStatus: options.request?.expectedStatus ?? 200 }
-    } else if (flag === '--expect-status') {
-      const expectedStatus = Number.parseInt(value, 10)
-      if (!Number.isInteger(expectedStatus) || expectedStatus < 100 || expectedStatus > 599) throw new Error(`Invalid expected HTTP status: ${value}`)
-      options.request = { method: options.request?.method ?? 'GET', path: options.request?.path ?? '', expectedStatus }
-    } else if (flag === '--help' || flag === '-h') {
-      throw new Error(HELP_QA)
-    } else {
-      throw new Error(`Unknown QA option: ${flag}`)
-    }
+    } else if (flag === '--scope' || flag === '--objective') options.scope = value
+    else if (flag === '--scenario') options.scenarios.push(value)
+    else if (flag === '--project') options.projectPath = value
+    else if (flag === '--agent') options.agentType = value
+    else if (flag === '--model') options.model = value
+    else if (flag === '--effort') options.effort = value
+    else throw new Error(`Unknown QA option: ${flag}`)
   }
+
+  if (options.action === 'run' && options.runId) throw new Error('--run is only valid with hrns qa report')
   return options
 }
 
-async function resolveAgenticScope(scope?: string): Promise<string> {
+async function resolveScope(scope?: string): Promise<string> {
   if (scope !== undefined) return scope
-
   const { editor, input, select } = await import('@inquirer/prompts')
   const inputMethod = await select({
     message: 'How would you like to provide the QA scope?',
@@ -111,166 +85,56 @@ async function resolveAgenticScope(scope?: string): Promise<string> {
       { name: 'editor — open editor for a longer description', value: 'editor' },
     ],
   })
-
   return inputMethod === 'type'
     ? input({ message: 'QA scope:', validate: validateScope })
-    : editor({
-      message: 'Paste or write your QA scope (save and close to continue):',
-      validate: validateScope,
-    })
+    : editor({ message: 'Paste or write your QA scope (save and close to continue):', validate: validateScope })
 }
 
-async function selectSavedPlanAction(): Promise<'resume' | 'renew'> {
+async function selectCompletedRun(store: QaRunStore): Promise<QaRun> {
+  const runs = store.listCompletedRuns()
+  if (runs.length === 0) throw new Error('No completed QA runs available. Run "hrns qa run" first.')
   const { select } = await import('@inquirer/prompts')
-  return select({
-    message: 'A saved QA plan exists. What would you like to do?',
-    choices: [
-      { name: 'resume — execute the saved QA plan', value: 'resume' },
-      { name: 'renew  — create a new agentic QA plan', value: 'renew' },
-    ],
-  })
-}
-
-async function selectSavedPlan(plans: QaPlan[]): Promise<QaPlan> {
-  const { select } = await import('@inquirer/prompts')
-  const selected = await select({
-    message: 'Select the QA plan to resume:',
-    choices: plans.map((plan) => ({
-      name: `${plan.id}@${plan.version} — ${plan.criteria[0] ?? plan.profile}`,
-      value: `${plan.id}@${plan.version}`,
+  const runId = await select({
+    message: 'Select the QA run to report:',
+    choices: runs.map((run) => ({
+      name: `${run.id} — ${run.verdict} — ${run.completedAt}`,
+      value: run.id,
     })),
   })
-  const plan = plans.find((candidate) => `${candidate.id}@${candidate.version}` === selected)
-  if (!plan) throw new Error('Selected QA plan is no longer available')
-  return plan
+  const run = runs.find((candidate) => candidate.id === runId)
+  if (!run) throw new Error('Selected QA run is no longer available')
+  return run
 }
 
 export async function cmdQa(cwd: string, args: string[], dependencies: QaCommandDependencies = {}): Promise<void> {
-  const explicitAction = args[0] && !args[0].startsWith('-')
   const options = parseQaArgs(args)
   if (options.debug) DebugContext.enable()
   const workspace = resolve(cwd, options.projectPath ?? '.')
-  if (!explicitAction && options.action === 'agentic' && options.scope === undefined && options.scenarios.length === 0) {
-    const store = new QaRunStore(workspace)
-    const savedPlans = store.listPlans()
-    if (savedPlans.length > 0 && await selectSavedPlanAction() === 'resume') {
-      const savedPlan = await selectSavedPlan(savedPlans)
-      const runner = dependencies.runner ?? AgentRunnerFactory.create({
-        type: options.agentType ?? Runner.CLAUDE_CLI,
-        model: options.model,
-        effort: options.effort,
-      })
-      const settings = dependencies.settings ?? HarnessSettings.load(workspace)
-      const view = dependencies.view ?? new QaTerminalView()
-      view.start({ target: savedPlan.target, profile: savedPlan.profile }, workspace)
-      const report = await new QaAgenticOrchestrator({
-        workspace,
-        runner,
-        drivers: dependencies.drivers,
-        settings,
-        model: options.model,
-        effort: options.effort,
-        onProgress: (event) => view.onProgress(event),
-        targetProbe: dependencies.targetProbe,
-        runtime: dependencies.runtime,
-      }).resume(savedPlan)
-      view.renderReport(report)
-      return
-    }
-  }
-  if (options.action === 'agentic') {
-    options.scope = await resolveAgenticScope(options.scope)
-    const runner = dependencies.runner ?? AgentRunnerFactory.create({
-      type: options.agentType ?? Runner.CLAUDE_CLI,
-      model: options.model,
-      effort: options.effort,
-    })
-    const settings = dependencies.settings ?? HarnessSettings.load(workspace)
+
+  if (options.action === 'run') {
+    const scope = await resolveScope(options.scope)
     const view = dependencies.view ?? new QaTerminalView()
-    const request = {
-      scope: options.scope,
-      scenarios: options.scenarios,
-      target: options.target,
-      profile: options.profile,
-    }
+    const request = { scope, scenarios: options.scenarios, target: options.target, profile: options.profile }
     view.start(request, workspace)
-    const report = await new QaAgenticOrchestrator({
-      workspace,
-      runner,
-      drivers: dependencies.drivers,
-      settings,
-      model: options.model,
-      effort: options.effort,
-      onProgress: (event) => view.onProgress(event),
-      targetProbe: dependencies.targetProbe,
-      runtime: dependencies.runtime,
-    }).run(request)
+    const report = await createOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event)).run(request)
     view.renderReport(report)
     return
   }
+
   const store = new QaRunStore(workspace)
-  const service = new QaService(store, dependencies.drivers, dependencies.targetProbe)
-  if (options.action === 'plan') {
-    const plan = service.plan(planInput(options))
-    console.log(`QA plan saved: ${plan.id}@${plan.version}`)
-    return
-  }
-  if (options.action === 'execute') {
-    const plan = loadPlan(store, options)
-    const run = await service.execute(plan)
-    await generateRunReport(workspace, options, dependencies, store, plan, run)
-    console.log(`QA run completed: ${run.id} (${run.verdict})`)
-    return
-  }
-  if (options.action === 'renew') {
-    const plan = loadPlan(store, options, 'renew')
-    const run = await service.execute(plan)
-    await generateRunReport(workspace, options, dependencies, store, plan, run)
-    console.log(`QA plan renewed: ${plan.id}@${plan.version} as ${run.id} (${run.verdict})`)
-    return
-  }
-  if (options.action === 'resume') {
-    if (!options.runId) throw new Error('QA resume requires --run <id>')
-    const run = store.loadRun(options.runId)
-    const plan = store.loadPlan(run.planId, run.planVersion)
-    const completedScenarioIds = new Set(run.results.map((result) => result.scenarioId))
-    const pendingScenarios = plan.scenarios.filter((scenario) => !completedScenarioIds.has(scenario.id))
-    if (pendingScenarios.length === 0) {
-      throw new Error(`QA run has no unfinished scenarios. Use renew --plan ${plan.id}@${plan.version}`)
-    }
-    const resumed = await service.continue(run, plan, pendingScenarios)
-    await generateRunReport(workspace, options, dependencies, store, plan, resumed)
-    console.log(`QA run resumed: ${resumed.id} (${resumed.verdict})`)
-    return
-  }
-  if (options.action === 'run') {
-    const plan = service.plan(planInput(options))
-    const run = await service.execute(plan)
-    await generateRunReport(workspace, options, dependencies, store, plan, run)
-    console.log(`QA run completed: ${run.id} (${run.verdict})`)
-    return
-  }
-  if (options.action === 'report') {
-    if (!options.runId) throw new Error('QA report requires --run <id>')
-    const run = store.loadRun(options.runId)
-    const plan = store.loadPlan(run.planId, run.planVersion)
-    const report = await generateRunReport(workspace, options, dependencies, store, plan, run)
-    console.log(JSON.stringify(report, null, 2))
-    return
-  }
-  const profile = options.profile ?? 'api'
-  const availability = await service.doctor(profile)
-  console.log(JSON.stringify({ profile, ...availability }, null, 2))
+  const run = options.runId ? store.loadRun(options.runId) : await selectCompletedRun(store)
+  if (!run.completedAt || !run.verdict) throw new Error(`QA run is not completed: ${run.id}`)
+  const report = await generateRunReport(workspace, options, dependencies, store, run)
+  console.log(JSON.stringify(report, null, 2))
 }
 
-async function generateRunReport(
+function createOrchestrator(
   workspace: string,
   options: QaCliOptions,
   dependencies: QaCommandDependencies,
-  store: QaRunStore,
-  plan: QaPlan,
-  run: QaRun,
-): Promise<QaFinalReport> {
+  onProgress?: QaProgressListener,
+  store?: QaRunStore,
+): QaAgenticOrchestrator {
   const runner = dependencies.runner ?? AgentRunnerFactory.create({
     type: options.agentType ?? Runner.CLAUDE_CLI,
     model: options.model,
@@ -285,20 +149,19 @@ async function generateRunReport(
     settings,
     model: options.model,
     effort: options.effort,
+    onProgress,
     targetProbe: dependencies.targetProbe,
     runtime: dependencies.runtime,
-  }).report(plan, run)
+  })
 }
 
-function planInput(options: QaCliOptions): QaPlanInput {
-  if (!options.planId || !options.target || options.criteria.length === 0) {
-    throw new Error('QA plan requires --plan <id>, --target <url>, and one or more --criterion values')
-  }
-  if (options.request && !options.request.path) throw new Error('QA API request requires --path <path>')
-  return { planId: options.planId, target: options.target, criteria: options.criteria, profile: options.profile ?? 'api', scope: options.scope, requests: options.request ? [options.request] : undefined }
-}
-
-function loadPlan(store: QaRunStore, options: QaCliOptions, action: 'execute' | 'renew' = 'execute'): QaPlan {
-  if (!options.planId) throw new Error(`QA ${action} requires --plan <id>@<version>`)
-  return store.loadPlan(options.planId, options.version ?? 1)
+async function generateRunReport(
+  workspace: string,
+  options: QaCliOptions,
+  dependencies: QaCommandDependencies,
+  store: QaRunStore,
+  run: QaRun,
+): Promise<QaFinalReport> {
+  const plan = store.loadPlan(run.planId, run.planVersion)
+  return createOrchestrator(workspace, options, dependencies, undefined, store).report(plan, run)
 }

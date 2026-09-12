@@ -13,7 +13,7 @@ COMMANDS
   init      Initialize docs/product files and configure steering rules
   settings  Manage settings (edit|renew|delete)
   diagnose  Run post-orchestration harness diagnosis on pending sessions
-  qa        Plan and execute independent runtime acceptance testing
+  qa        Run independent runtime acceptance tests or regenerate a report
   candidate Review and apply meta-harness optimization candidates
   report    Print development status and token usage report for the current session
   erase     Preview and erase selected agent CLI project history
@@ -69,7 +69,7 @@ EXAMPLES
   hrns run --reset --scope "My app" --path ./api --complexity LOW
   hrns run --reset --scope "My app" --path ./api --skip-deploy
   hrns diagnose
-  hrns qa --scope "Test the orders endpoint" --target http://localhost:3000
+  hrns qa run --scope "Test the orders endpoint" --target http://localhost:3000
   hrns candidate list
   hrns candidate review v001
   hrns report
@@ -215,40 +215,28 @@ export const HELP_QA = `
 @romabeckman/harness-kit — hrns qa
 
 USAGE
-  hrns qa [agentic options] # offers resume/renew when a valid plan exists
-  hrns qa --scope <text> [agentic options]
-  hrns qa --scenario <text> [--scenario <text> ...] [agentic options]
-  hrns qa agentic --scope <text> [agentic options]
-  hrns qa <plan|execute|renew|resume|run|report|doctor> [options]
+  hrns qa run [options]
+  hrns qa report [--run <id>] [options]
+  hrns qa [options]          Alias for hrns qa run
 
 OPTIONS
   --scope <text>           Open QA scope; omit to choose short input or editor form
   --scenario <text>        Optional detailed scenario; repeatable
   --project <path>         Project to inspect and test (default: current directory)
   --agent <runner>         Agent runner (default: claude-cli)
-  --model <model>          Model override for agentic phases
-  --effort <level>         Reasoning effort override for agentic phases
-  --plan <id[@version]>     QA plan identifier
-  --run <id>                QA run identifier for resume or reports
+  --model <model>          Model override for QA phases
+  --effort <level>         Reasoning effort override for QA phases
+  --run <id>               Completed run to report; omit for interactive selection
   --target <url>            Target application URL
-  --profile <api|web|web-game|mobile-web|accessibility|mcp|cli|websocket>
-  --criterion <text>        Required acceptance criterion; repeatable
-  --method <HTTP method>    API request method
-  --path <path>             API request path
-  --expect-status <code>    Expected API response status (default: 200)
+  --profile <api|web|web-game|mobile-web|accessibility|mcp|cli|websocket|security|full>
   --debug                   Expose runner arguments, prompts, sessions, and full errors
 
 EXAMPLES
-  hrns qa --scope "Test endpoint X" --target http://localhost:3000
-  hrns qa --scope "Validate checkout" --scenario "A valid card completes payment" --profile web
-  hrns qa --debug --scope "Test endpoint X" --target http://localhost:3000
-  hrns qa plan --plan orders --target http://localhost:3000 --criterion "Order saves" --method POST --path /orders --expect-status 201
-  hrns qa execute --plan orders@1
-  hrns qa renew --plan orders@1
-  hrns qa resume --run orders-20260911
-  hrns qa run --plan orders --target http://localhost:3000 --criterion "Order saves"
+  hrns qa run --scope "Test endpoint X" --target http://localhost:3000
+  hrns qa run --scope "Validate checkout" --scenario "A valid card completes payment" --profile web
+  hrns qa run --debug --scope "Test endpoint X" --target http://localhost:3000
   hrns qa report --run orders-20260911
-  hrns qa doctor --profile web
+  hrns qa report
 `
 
 export const HELP_CANDIDATE = `

@@ -5,16 +5,9 @@ import { join } from 'node:path'
 import { cmdQa, parseQaArgs } from '../qa-service'
 import { QaRunStore } from '../../../qa/services/QaRunStore'
 import type { IAgentRunner } from '../../../agent-runner/IAgentRunner'
-import type { QaDriver } from '../../../qa/types'
-import type { QaTerminalView } from '../../../qa/ui/QaTerminalView'
-import { DebugContext } from '../../DebugContext'
-import type { QaPlan } from '../../../qa/types'
+import type { QaDriver, QaPlan, QaRun } from '../../../qa/types'
 
-const prompts = vi.hoisted(() => ({
-  editor: vi.fn(),
-  input: vi.fn(),
-  select: vi.fn(),
-}))
+const prompts = vi.hoisted(() => ({ editor: vi.fn(), input: vi.fn(), select: vi.fn() }))
 
 vi.mock('@inquirer/prompts', () => prompts)
 
@@ -23,7 +16,6 @@ describe('QA CLI', () => {
   let log: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    DebugContext.reset()
     prompts.editor.mockReset()
     prompts.input.mockReset()
     prompts.select.mockReset()
@@ -32,340 +24,135 @@ describe('QA CLI', () => {
   })
 
   afterEach(() => {
-    DebugContext.reset()
     log.mockRestore()
     rmSync(workspace, { recursive: true, force: true })
   })
 
-  it('parses plan options without an agent runner', () => {
-    expect(parseQaArgs(['plan', '--plan', 'orders', '--target', 'http://localhost:3000', '--criterion', 'Order saves'])).toMatchObject({
-      action: 'plan', planId: 'orders', target: 'http://localhost:3000', criteria: ['Order saves'],
-    })
+  it('supports only run and report actions and defaults to run', () => {
+    expect(parseQaArgs([])).toMatchObject({ action: 'run' })
+    expect(parseQaArgs(['run', '--scope', 'Test endpoint X'])).toMatchObject({ action: 'run', scope: 'Test endpoint X' })
+    expect(parseQaArgs(['report', '--run', 'orders-20260911'])).toMatchObject({ action: 'report', runId: 'orders-20260911' })
+    for (const legacy of ['agentic', 'plan', 'execute', 'renew', 'resume', 'doctor']) {
+      expect(() => parseQaArgs([legacy])).toThrow(`Unknown QA action: ${legacy}`)
+    }
   })
 
-  it('accepts an open QA scope or repeated detailed scenarios', () => {
-    expect(parseQaArgs(['--scope', 'Test endpoint X', '--scenario', 'Valid request returns 200', '--scenario', 'Invalid token returns 401'])).toMatchObject({
-      action: 'agentic',
-      scope: 'Test endpoint X',
-      scenarios: ['Valid request returns 200', 'Invalid token returns 401'],
-    })
-  })
-
-  it('parses --debug without consuming the next option', () => {
-    expect(parseQaArgs(['--debug', '--scope', 'Test endpoint X'])).toMatchObject({
-      action: 'agentic',
-      debug: true,
-      scope: 'Test endpoint X',
-    })
-  })
-
-  it('prompts for a short scope when agentic QA omits --scope', async () => {
+  it('prompts for scope when run omits --scope', async () => {
     prompts.select.mockResolvedValue('type')
     prompts.input.mockResolvedValue('Validate the complete checkout flow')
-
     const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after prompt')) }
 
-    await expect(cmdQa(workspace, [], { runner })).rejects.toThrow('stop after prompt')
+    await expect(cmdQa(workspace, ['run'], { runner })).rejects.toThrow('stop after prompt')
 
-    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
-      message: expect.stringContaining('QA scope'),
-    }))
-    expect(prompts.input).toHaveBeenCalledWith(expect.objectContaining({
-      message: 'QA scope:',
-      validate: expect.any(Function),
-    }))
-    expect(prompts.editor).not.toHaveBeenCalled()
+    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('QA scope') }))
+    expect(prompts.input).toHaveBeenCalledWith(expect.objectContaining({ message: 'QA scope:', validate: expect.any(Function) }))
     expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
-      prompt: expect.stringContaining('Validate the complete checkout flow'),
+      phaseKey: 'qa_planning', prompt: expect.stringContaining('Validate the complete checkout flow'),
     }), expect.any(Object))
   })
 
-  it('prompts with an editor for a long scope when agentic QA omits --scope', async () => {
-    prompts.select.mockResolvedValue('editor')
-    prompts.editor.mockResolvedValue('Validate checkout, payment, inventory, and confirmation behavior')
-
-    const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after prompt')) }
-
-    await expect(cmdQa(workspace, [], { runner })).rejects.toThrow('stop after prompt')
-
-    expect(prompts.editor).toHaveBeenCalledWith(expect.objectContaining({
-      message: expect.stringContaining('QA scope'),
-      validate: expect.any(Function),
-    }))
-    expect(prompts.input).not.toHaveBeenCalled()
-    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
-      prompt: expect.stringContaining('Validate checkout, payment, inventory, and confirmation behavior'),
-    }), expect.any(Object))
-  })
-
-  it('offers resume and renew when a valid stored plan exists', async () => {
-    new QaRunStore(workspace).savePlan(storedPlan())
-    prompts.select.mockResolvedValueOnce('resume').mockResolvedValueOnce('stored-plan@1')
-    const execute = vi.fn(async (scenario) => ({
-      scenarioId: scenario.id, required: true, status: 'PASSED' as const,
-      evidence: [{ id: scenario.id, path: scenario.id, capturedAt: '', adapter: 'test' }],
-    }))
-
-    const runner: IAgentRunner = { run: vi.fn()
-      .mockResolvedValueOnce({ raw: '{"complete":true}' })
-      .mockResolvedValueOnce({ raw: '{"summary":"Saved plan resumed.","bugs":[],"errors":[]}' }) }
-    const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
-
-    await cmdQa(workspace, ['--model', 'gemini-3.7-flash'], {
-      runner,
-      drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
-      targetProbe: async () => ({ available: true }),
-      view,
-    })
-
-    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
-      message: 'A saved QA plan exists. What would you like to do?',
-      choices: expect.arrayContaining([
-        expect.objectContaining({ value: 'resume' }),
-        expect.objectContaining({ value: 'renew' }),
-      ]),
-    }))
-    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
-      message: 'Select the QA plan to resume:',
-      choices: [expect.objectContaining({ value: 'stored-plan@1' })],
-    }))
-    expect(execute).toHaveBeenCalledTimes(2)
-    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
-      phaseKey: 'qa_analysis', model: 'gemini-3.7-flash',
-    }), expect.anything())
-    expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({ summary: 'Saved plan resumed.' }))
-    expect(log).not.toHaveBeenCalled()
-    expect(prompts.input).not.toHaveBeenCalled()
-    expect(prompts.editor).not.toHaveBeenCalled()
-  })
-
-  it('selects exactly one saved plan before resuming when multiple plans exist', async () => {
-    const first = { ...storedPlan(), id: 'first-plan' }
-    const second = { ...storedPlan(), id: 'second-plan', target: 'http://127.0.0.1:4000', criteria: ['First works'], scenarios: [{ ...storedPlan().scenarios[0], id: 'only-second' }] }
-    new QaRunStore(workspace).savePlan(first)
-    new QaRunStore(workspace).savePlan(second)
-    prompts.select.mockResolvedValueOnce('resume').mockResolvedValueOnce('second-plan@1')
-    const runner: IAgentRunner = { run: vi.fn()
-      .mockResolvedValueOnce({ raw: '{"complete":true}' })
-      .mockResolvedValueOnce({ raw: '{"summary":"Second plan resumed.","bugs":[],"errors":[]}' }) }
-    const execute = vi.fn(async (scenario) => ({
-      scenarioId: scenario.id, required: true, status: 'PASSED' as const,
-      evidence: [{ id: scenario.id, path: scenario.id, capturedAt: '', adapter: 'test' }],
-    }))
-    const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
-
-    await cmdQa(workspace, [], {
-      runner,
-      drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
-      targetProbe: async () => ({ available: true }),
-      view,
-    })
-
-    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
-      message: 'Select the QA plan to resume:',
-      choices: expect.arrayContaining([
-        expect.objectContaining({ value: 'first-plan@1' }),
-        expect.objectContaining({ value: 'second-plan@1' }),
-      ]),
-    }))
-    expect(view.start).toHaveBeenCalledWith(expect.objectContaining({ target: second.target }), workspace)
-    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ prompt: expect.stringContaining('second-plan') }), expect.anything())
-    expect(execute).toHaveBeenCalledTimes(1)
-    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ id: 'only-second' }), expect.any(String), expect.any(String), undefined)
-  })
-
-  it('starts a new agentic plan when renew is selected in the form', async () => {
-    new QaRunStore(workspace).savePlan(storedPlan())
-    prompts.select.mockResolvedValueOnce('renew').mockResolvedValueOnce('type')
-    prompts.input.mockResolvedValue('Create a fresh QA plan for checkout')
-    const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after renew form')) }
-
-    await expect(cmdQa(workspace, [], { runner })).rejects.toThrow('stop after renew form')
-
-    expect(prompts.select).toHaveBeenCalledTimes(2)
-    expect(prompts.input).toHaveBeenCalledWith(expect.objectContaining({ message: 'QA scope:' }))
-    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
-      prompt: expect.stringContaining('Create a fresh QA plan for checkout'),
-    }), expect.any(Object))
-  })
-
-  it('writes a standalone plan', async () => {
-    await cmdQa(workspace, ['plan', '--plan', 'orders', '--target', 'http://localhost:3000', '--criterion', 'Order saves', '--method', 'POST', '--path', '/orders', '--expect-status', '201'])
-
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('QA plan saved: orders@1'))
-    expect(new QaRunStore(workspace).loadPlan('orders', 1).scenarios[0].request).toEqual({ method: 'POST', path: '/orders', expectedStatus: 201 })
-  })
-
-  it('generates JSON and Markdown reports after direct plan execution', async () => {
-    const store = new QaRunStore(workspace)
-    store.savePlan(storedPlan())
-    const runner: IAgentRunner = { run: vi.fn().mockResolvedValue({ raw: JSON.stringify({
-      summary: 'Direct execution reported.', markdown: '# QA Report\n\nDirect execution reported.\n', bugs: [], errors: [],
-    }) }) }
-    const execute = vi.fn(async (scenario) => ({
-      scenarioId: scenario.id, required: true, status: 'PASSED' as const,
-      evidence: [{ id: scenario.id, path: scenario.id, capturedAt: '', adapter: 'test' }],
-    }))
-
-    await cmdQa(workspace, ['execute', '--plan', 'stored-plan@1'], {
-      runner,
-      drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
-      targetProbe: async () => ({ available: true }),
-    })
-
-    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'qa_reporting' }), expect.anything())
-    const runId = String(log.mock.calls[0][0]).match(/^QA run completed: (.+) \(PASS\)$/)?.[1]
-    expect(runId).toBeTruthy()
-    expect(store.loadReport(runId!)).toMatchObject({ summary: 'Direct execution reported.', verdict: 'PASS' })
-    expect(readFileSync(store.reportMarkdownPath(runId!), 'utf8')).toBe('# QA Report\n\nDirect execution reported.\n')
-  })
-
-  it('generates missing reports from a completed run through the report action', async () => {
-    const store = new QaRunStore(workspace)
-    store.savePlan(storedPlan())
-    store.saveRun({
-      schemaVersion: 1, id: 'completed-run', planId: 'stored-plan', planVersion: 1,
-      target: 'http://127.0.0.1:3000', createdAt: '', completedAt: '', verdict: 'PASS',
-      results: storedPlan().scenarios.map((scenario) => ({
-        scenarioId: scenario.id, required: true, status: 'PASSED' as const,
-        evidence: [{ id: scenario.id, path: scenario.id, capturedAt: '', adapter: 'test' }],
-      })),
-    })
-    const runner: IAgentRunner = { run: vi.fn().mockResolvedValue({ raw: JSON.stringify({
-      summary: 'Stored run reported.', markdown: '# QA Report\n\nStored run reported.\n', bugs: [], errors: [],
-    }) }) }
-
-    await cmdQa(workspace, ['report', '--run', 'completed-run'], { runner })
-
-    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'qa_reporting' }), expect.anything())
-    expect(store.loadReport('completed-run')).toMatchObject({ summary: 'Stored run reported.', verdict: 'PASS' })
-    expect(readFileSync(store.reportMarkdownPath('completed-run'), 'utf8')).toBe('# QA Report\n\nStored run reported.\n')
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('Stored run reported.'))
-  })
-
-  it('renews a stored plan as a new complete run', async () => {
-    const store = new QaRunStore(workspace)
-    store.savePlan(storedPlan())
-    const runner = reportingRunner('Renewed run reported.')
-    const execute = vi.fn(async (scenario) => ({
-      scenarioId: scenario.id, required: true, status: 'PASSED' as const,
-      evidence: [{ id: 'renewed', path: 'response.body', capturedAt: '', adapter: 'test' }],
-    }))
-
-    await cmdQa(workspace, ['renew', '--plan', 'stored-plan@1'], {
-      runner,
-      drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
-      targetProbe: async () => ({ available: true }),
-    })
-
-    expect(execute).toHaveBeenCalledTimes(2)
-    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'qa_reporting' }), expect.anything())
-    expect(log).toHaveBeenCalledWith(expect.stringMatching(/^QA plan renewed: stored-plan@1 as .+ \(PASS\)$/))
-  })
-
-  it('resumes only unfinished scenarios from a stored run', async () => {
-    const store = new QaRunStore(workspace)
-    store.savePlan(storedPlan())
-    store.saveRun({
-      schemaVersion: 1, id: 'partial-run', planId: 'stored-plan', planVersion: 1,
-      target: 'http://127.0.0.1:3000', createdAt: '',
-      results: [{ scenarioId: 'first', required: true, status: 'PASSED', evidence: [{ id: 'old', path: 'old', capturedAt: '', adapter: 'test' }] }],
-    })
-    const runner = reportingRunner('Resumed run reported.')
-    const execute = vi.fn(async (scenario) => ({
-      scenarioId: scenario.id, required: true, status: 'PASSED' as const,
-      evidence: [{ id: 'resumed', path: 'response.body', capturedAt: '', adapter: 'test' }],
-    }))
-
-    await cmdQa(workspace, ['resume', '--run', 'partial-run'], {
-      runner,
-      drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
-      targetProbe: async () => ({ available: true }),
-    })
-
-    expect(execute).toHaveBeenCalledOnce()
-    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'qa_reporting' }), expect.anything())
-    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ id: 'second' }), expect.any(String), expect.any(String), undefined)
-    expect(store.loadRun('partial-run').results.map((result) => result.scenarioId)).toEqual(['first', 'second'])
-  })
-
-  it('directs completed runs to renew instead of resuming them', async () => {
-    const store = new QaRunStore(workspace)
-    store.savePlan(storedPlan())
-    store.saveRun({
-      schemaVersion: 1, id: 'completed-run', planId: 'stored-plan', planVersion: 1,
-      target: 'http://127.0.0.1:3000', createdAt: '', completedAt: '', verdict: 'PASS',
-      results: storedPlan().scenarios.map((scenario) => ({
-        scenarioId: scenario.id, required: true, status: 'PASSED' as const,
-        evidence: [{ id: scenario.id, path: scenario.id, capturedAt: '', adapter: 'test' }],
-      })),
-    })
-
-    await expect(cmdQa(workspace, ['resume', '--run', 'completed-run'])).rejects.toThrow('Use renew --plan stored-plan@1')
-  })
-
-  it('defaults to agentic phases, streams progress, and renders only the final QA report', async () => {
-    const runner: IAgentRunner = {
-      run: vi.fn()
-        .mockResolvedValueOnce({ raw: JSON.stringify({
-          id: 'health-human-flow', target: 'http://127.0.0.1:3000', profile: 'api',
-          criteria: ['Health endpoint responds'],
-          scenarios: [{
-            id: 'health', criterionIds: ['criterion-1'], required: true, profile: 'api',
-            request: { method: 'GET', path: '/health', expectedStatus: 200 },
-          }],
-        }) })
-        .mockResolvedValueOnce({ raw: JSON.stringify({ complete: true }) })
-        .mockResolvedValueOnce({ raw: JSON.stringify({ summary: 'Health check passed.', bugs: [], errors: [] }) }),
-    }
+  it('runs the complete agentic QA flow and renders its report', async () => {
+    const runner = agenticRunner()
     const driver: QaDriver = {
-      profile: 'api', doctor: async () => ({ available: true }),
+      profile: 'api',
+      doctor: async () => ({ available: true }),
       execute: async (scenario) => ({
         scenarioId: scenario.id, required: true, status: 'PASSED',
-        evidence: [{ id: 'response', path: 'response.body', capturedAt: '2026-09-11T00:00:00.000Z', adapter: 'curl' }],
+        evidence: [{ id: 'response', path: 'response.body', capturedAt: '', adapter: 'curl' }],
       }),
     }
-    const view = {
-      start: vi.fn(),
-      onProgress: vi.fn(),
-      renderReport: vi.fn(),
-    } as unknown as QaTerminalView
+    const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
 
-    await cmdQa(workspace, ['--debug', '--scope', 'Validate runtime behavior'], {
+    await cmdQa(workspace, ['run', '--scope', 'Validate runtime behavior'], {
       runner, drivers: [driver], view, targetProbe: async () => ({ available: true }),
     })
 
+    expect(runner.run).toHaveBeenCalledTimes(3)
     expect(view.start).toHaveBeenCalledWith(expect.objectContaining({ scope: 'Validate runtime behavior' }), workspace)
-    expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'phase_started', phase: 'PLANNING' }))
-    expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'scenario_completed', scenarioId: '001-health', status: 'PASSED' }))
-    expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({
-      verdict: 'PASS', summary: 'Health check passed.', bugs: [], errors: [],
-    }))
+    expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'scenario_completed', status: 'PASSED' }))
+    expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({ verdict: 'PASS', summary: 'Health check passed.' }))
     expect(log).not.toHaveBeenCalled()
-    expect(DebugContext.enabled).toBe(true)
+  })
+
+  it('regenerates a report for an explicit completed run', async () => {
+    const store = seedCompletedRun(workspace, 'completed-run', '2026-09-11T12:00:00.000Z')
+    const runner = reportingRunner('Stored run reported.')
+
+    await cmdQa(workspace, ['report', '--run', 'completed-run'], { runner })
+
+    expect(prompts.select).not.toHaveBeenCalled()
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'qa_reporting' }), expect.anything())
+    expect(store.loadReport('completed-run')).toMatchObject({ summary: 'Stored run reported.', verdict: 'PASS' })
+    expect(readFileSync(store.reportMarkdownPath('completed-run'), 'utf8')).toContain('Stored run reported.')
+  })
+
+  it('selects a completed run when report omits --run', async () => {
+    seedCompletedRun(workspace, 'older-run', '2026-09-10T12:00:00.000Z')
+    const store = seedCompletedRun(workspace, 'orders-20260911', '2026-09-11T12:00:00.000Z')
+    prompts.select.mockResolvedValue('orders-20260911')
+
+    await cmdQa(workspace, ['report'], { runner: reportingRunner('Selected run reported.') })
+
+    expect(prompts.select).toHaveBeenCalledWith({
+      message: 'Select the QA run to report:',
+      choices: [
+        expect.objectContaining({ value: 'orders-20260911' }),
+        expect.objectContaining({ value: 'older-run' }),
+      ],
+    })
+    expect(store.loadReport('orders-20260911')).toMatchObject({ summary: 'Selected run reported.' })
+  })
+
+  it('explains how to create a run when report has nothing to select', async () => {
+    await expect(cmdQa(workspace, ['report'], { runner: reportingRunner('unused') }))
+      .rejects.toThrow('No completed QA runs available. Run "hrns qa run" first.')
+    expect(prompts.select).not.toHaveBeenCalled()
   })
 })
 
+function seedCompletedRun(workspace: string, runId: string, completedAt: string): QaRunStore {
+  const store = new QaRunStore(workspace)
+  const plan = storedPlan()
+  try { store.savePlan(plan) } catch { /* shared plan already exists */ }
+  const run: QaRun = {
+    schemaVersion: 1, id: runId, planId: plan.id, planVersion: plan.version,
+    target: plan.target, createdAt: completedAt, completedAt, verdict: 'PASS',
+    results: plan.scenarios.map((scenario) => ({
+      scenarioId: scenario.id, required: true, status: 'PASSED',
+      evidence: [{ id: scenario.id, path: scenario.id, capturedAt: completedAt, adapter: 'test' }],
+    })),
+  }
+  store.saveRun(run)
+  return store
+}
+
 function storedPlan(): QaPlan {
   return {
-    schemaVersion: 1,
-    id: 'stored-plan',
-    version: 1,
-    target: 'http://127.0.0.1:3000',
-    profile: 'api',
-    createdAt: '',
-    criteria: ['First works', 'Second works'],
-    scenarios: [
-      { id: 'first', criterionIds: ['criterion-1'], required: true, profile: 'api', request: { method: 'GET', path: '/first', expectedStatus: 200 } },
-      { id: 'second', criterionIds: ['criterion-2'], required: true, profile: 'api', request: { method: 'GET', path: '/second', expectedStatus: 200 } },
-    ],
+    schemaVersion: 1, id: 'stored-plan', version: 1, target: 'http://127.0.0.1:3000',
+    profile: 'api', createdAt: '2026-09-11T00:00:00.000Z', criteria: ['Health works'],
+    scenarios: [{
+      id: '001-health', criterionIds: ['criterion-1'], required: true, profile: 'api', category: 'functional',
+      request: { method: 'GET', path: '/health', expectedStatus: 200 },
+    }],
   }
 }
 
 function reportingRunner(summary: string): IAgentRunner {
-  return {
-    run: vi.fn().mockResolvedValue({
-      raw: JSON.stringify({ summary, markdown: `# QA Report\n\n${summary}\n`, bugs: [], errors: [] }),
-    }),
-  }
+  return { run: vi.fn().mockResolvedValue({
+    raw: JSON.stringify({ summary, markdown: `# QA Report\n\n${summary}\n`, bugs: [], errors: [] }),
+  }) }
+}
+
+function agenticRunner(): IAgentRunner {
+  return { run: vi.fn(async (invocation) => {
+    if (invocation.phaseKey === 'qa_planning') return { raw: JSON.stringify({
+      id: 'health-flow', target: 'http://127.0.0.1:3000', profile: 'api', criteria: ['Health works'],
+      scenarios: [{
+        id: 'health', criterionIds: ['criterion-1'], required: true, profile: 'api', category: 'functional',
+        request: { method: 'GET', path: '/health', expectedStatus: 200 },
+      }],
+    }) }
+    if (invocation.phaseKey === 'qa_analysis') return { raw: '{"complete":true}' }
+    return { raw: JSON.stringify({ summary: 'Health check passed.', bugs: [], errors: [] }) }
+  }) }
 }

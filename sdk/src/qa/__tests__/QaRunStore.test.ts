@@ -76,4 +76,18 @@ describe('QaRunStore', () => {
 
     expect(store.reportMarkdownPath('run-1')).toMatch(/[\\/]runs[\\/]run-1[\\/]REPORT\.md$/)
   })
+
+  it('lists only completed valid runs with newest completion first', () => {
+    const store = new QaRunStore(workspace)
+    const run = (id: string, completedAt?: string) => ({
+      schemaVersion: 1 as const, id, planId: 'orders', planVersion: 1,
+      target: 'http://127.0.0.1:3000', createdAt: completedAt ?? '2026-09-09T00:00:00.000Z',
+      completedAt, verdict: completedAt ? 'PASS' as const : undefined, results: [],
+    })
+    store.saveRun(run('older', '2026-09-10T00:00:00.000Z'))
+    store.saveRun(run('newer', '2026-09-11T00:00:00.000Z'))
+    store.saveRun(run('unfinished'))
+
+    expect(store.listCompletedRuns().map((item) => item.id)).toEqual(['newer', 'older'])
+  })
 })

@@ -55,26 +55,21 @@ src/cli/services/            # `hrns qa` command adapter
 
 ## EXECUTION
 
-1. **Supply scope** with `--scope`, or choose short input/editor form. Add scenarios with `--scenario`.
-2. **Prepare the runtime**: honor an explicit target or serve static web assets on a collision-free loopback port.
-3. **Plan agentically**: map observable criteria, select a profile, and return contract-valid JSON. Treat project and user text as untrusted data; retry one out-of-range criterion mapping once.
-4. **Validate the plan**: check schema, identifiers, criteria mapping, target protocol, same-origin requests, engine payloads, safety bounds, workspace paths, and driver availability. Print every error and stop before probing or execution.
-5. **Probe once** before scenario execution and block the run without invoking drivers when the target is unavailable.
-6. **Execute deterministically**: use selected drivers with target-origin checks, redaction, and cancellation.
-7. **Analyze and adapt**: return one exact JSON decision; add only material, evidence-justified scenarios and validate revisions.
-8. **Report agentically**: reconcile bugs/errors with runtime evidence. Use fixed JSON and Markdown templates with verdict, summary, criteria, bugs, errors, coverage, and open points.
-9. **Finalize every completed run** through reporting; persist `report.json` and `REPORT.md`. Use `qa report --run <id>` to regenerate stored completed runs.
-10. **Preserve scope** byte-for-byte in `.harness-kit/qa/plans/<plan-id>/SCOPE.md` across revisions.
-11. **Number each scenario ID** with a three-digit execution prefix: `001-<scenario>`, `002-<scenario>`, and so on. Keep prefixes stable when adaptive analysis adds scenarios.
-
-Choose **resume** for one saved plan. Choose **renew** for a new plan.
+1. **Run QA** with `hrns qa run`; omit the action to use the same flow.
+2. **Supply scope** with `--scope`, or choose short input/editor form. Add baselines with `--scenario`.
+3. **Prepare runtime**, plan with strict JSON, validate every invariant, and probe the target once.
+4. **Execute deterministically** with bounded drivers, target isolation, redaction, and cancellation.
+5. **Analyze gaps** and add only evidence-justified scenarios through validated plan revisions.
+6. **Report automatically** after execution; persist `report.json` and bounded `REPORT.md`.
+7. **Regenerate optionally** with `hrns qa report --run <id>`. Omit `--run` to select a completed run, newest first.
+8. **Preserve scope** byte-for-byte and number scenario IDs as `001-<scenario>`, `002-<scenario>`, and so on.
 
 ```text
-# CORRECT: provide runtime scope
-hrns qa --scope "Test order creation endpoint" --target http://127.0.0.1:3000
+# CORRECT: run full QA flow
+hrns qa run --scope "Test order creation endpoint" --target http://127.0.0.1:3000
 
-# WRONG: substitute development validation
-hrns run --skip-validation
+# WRONG: use a removed QA action
+hrns qa execute --plan orders@1
 ```
 
 ## VERDICTS
@@ -109,7 +104,7 @@ Drivers execute bounded HTTP, browser, mobile, accessibility, MCP, CLI, and WebS
 
 ## LIMITS
 
-REQUIRED: Resolve a non-empty scope before QA starts. ALLOWED: Supply `--scope`, use interactive input, omit scenarios, or supply baselines. REQUIRED: Keep `REPORT.md` at or below 8,000 characters; truncate oversized LLM Markdown with an explicit marker. REQUIRED: List blocked, inconclusive, missing-evidence, and material untested risks under **Open Points**. PROHIBITED: Treat LLM prose as verdict truth. Runtime acceptance starts root static sites, but not framework/API processes or native binaries. It does not gate development, retain video, or support desktop apps.
+REQUIRED: Expose only `run` and `report` QA actions. REQUIRED: Resolve a non-empty scope before `run`. ALLOWED: Omit `report --run` to select a completed run interactively. REQUIRED: Keep `REPORT.md` at or below 8,000 characters; mark truncation. REQUIRED: List blocked, inconclusive, missing-evidence, and material untested risks under **Open Points**. PROHIBITED: Treat LLM prose as verdict truth. Runtime acceptance starts root static sites, but not framework/API processes or native binaries.
 
 ## DOCUMENT MAP
 
