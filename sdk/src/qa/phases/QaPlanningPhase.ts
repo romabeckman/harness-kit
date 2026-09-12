@@ -22,7 +22,6 @@ export class QaPlanningPhase implements QaPhaseHandler {
     try {
       context.plan = this.parseOutput(output.raw, context)
     } catch (error) {
-      if (!isCriterionReferenceError(error)) throw error
       const repaired = await this.runPlanner(context, this.buildRepairPrompt(context, output.raw, error), signal, context.session)
       context.session = repaired.session ?? context.session
       context.plan = this.parseOutput(repaired.raw, context)
@@ -60,9 +59,10 @@ export class QaPlanningPhase implements QaPhaseHandler {
     return [
       this.buildPrompt(context),
       '',
-      'The previous plan was rejected before execution.',
+      'The previous plan was rejected before validation and execution.',
       `Exact planner error: ${error instanceof Error ? error.message : String(error)}`,
       'Repair the JSON plan and return it again.',
+      'Preserve valid content. Fix every issue described by the exact planner error. Use only the JSON contract in this prompt.',
       'criterionIds reference the criteria array, not scenario numbers. If criteria has N entries, valid references are only criterion-1 through criterion-N; reuse an existing criterion ID when multiple scenarios cover the same criterion.',
       '<previous_plan>',
       raw,
@@ -300,10 +300,6 @@ function isStringRecord(value: unknown): value is Record<string, string> {
 function normalizeCriterionId(value: string): string {
   const match = /^criterion-0*(\d+)$/.exec(value)
   return match ? `criterion-${Number.parseInt(match[1], 10)}` : value
-}
-
-function isCriterionReferenceError(error: unknown): boolean {
-  return error instanceof Error && error.message.startsWith('Invalid agentic QA plan: scenario ') && error.message.includes(' references unknown criterion ')
 }
 
 function positiveInteger(value: unknown): number | undefined {

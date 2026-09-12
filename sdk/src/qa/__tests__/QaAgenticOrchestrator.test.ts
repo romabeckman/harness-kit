@@ -272,6 +272,40 @@ describe('QaAgenticOrchestrator', () => {
     await expect(orchestrator.run({ scope: 'Test form' })).rejects.toThrow('Invalid agentic QA plan')
   })
 
+  it('repairs an invalid browser action before persisting the QA plan', async () => {
+    const invalidPlan = {
+      id: 'recoverable-browser-plan', target: 'http://127.0.0.1:3000', profile: 'web', criteria: ['Page loads'],
+      scenarios: [{ id: 'page-load', criterionIds: ['criterion-1'], required: true, profile: 'web',
+        actions: [{ type: 'press', key: 'ArrowLeft', count: 501 }], assertions: [{ type: 'visible', selector: 'body' }] }],
+    }
+    const validPlan = {
+      ...invalidPlan,
+      scenarios: [{ ...invalidPlan.scenarios[0], actions: [{ type: 'navigate', url: 'http://127.0.0.1:3000' }] }],
+    }
+    const runner: IAgentRunner = { run: vi.fn()
+      .mockResolvedValueOnce({ raw: JSON.stringify(invalidPlan) })
+      .mockResolvedValueOnce({ raw: JSON.stringify(validPlan) })
+      .mockResolvedValueOnce({ raw: '{"complete":true}' })
+      .mockResolvedValueOnce({ raw: '{"summary":"Repaired plan executed.","bugs":[],"errors":[]}' }) }
+    const driver: QaDriver = { profile: 'web', doctor: async () => ({ available: true }), execute: async (scenario) => ({
+      scenarioId: scenario.id, required: true, status: 'PASSED',
+      evidence: [{ id: 'page', path: 'page.png', capturedAt: '', adapter: 'test' }],
+    }) }
+    const store = new QaRunStore(workspace)
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace, runner, store, drivers: [driver], targetProbe: async () => ({ available: true }),
+    })
+
+    await expect(orchestrator.run({ scope: 'Test page load' })).resolves.toMatchObject({ verdict: 'PASS' })
+
+    expect(runner.run).toHaveBeenCalledTimes(4)
+    expect(runner.run).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      phaseKey: 'qa_planning',
+      prompt: expect.stringContaining('scenario 1 action 1 is invalid'),
+    }), expect.anything())
+    expect(store.loadPlan('recoverable-browser-plan', 1).scenarios[0]?.actions).toEqual([{ type: 'navigate', value: 'http://127.0.0.1:3000' }])
+  })
+
   it('validates the generated plan before invoking any QA driver', async () => {
     const execute = vi.fn()
     const progress: string[] = []

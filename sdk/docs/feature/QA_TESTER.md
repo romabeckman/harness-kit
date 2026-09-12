@@ -57,7 +57,7 @@ src/cli/services/            # `hrns qa` command adapter
 
 1. **Run QA** with `hrns qa run`; omit the action to use the same flow.
 2. **Supply scope** with `--scope`, or choose short input/editor form. Add baselines with `--scenario`.
-3. **Prepare runtime**, plan with strict JSON, validate every invariant, and probe the target once.
+3. **Prepare runtime**, plan with strict JSON, validate every invariant, and probe the target once. If planner parsing fails, retry once with the exact parser error and previous plan before stopping.
 4. **Execute deterministically** with bounded drivers, target isolation, redaction, and cancellation.
 5. **Analyze gaps** and add only evidence-justified scenarios through validated plan revisions.
 6. **Report automatically** after execution; persist `report.json` and bounded `REPORT.md`.
@@ -98,7 +98,7 @@ REQUIRED: Emit progress through `QaProgressListener`. REQUIRED: Inject `QaTermin
 
 `QaRuntimeManager` binds temporary static servers to `127.0.0.1:0` and serves public assets. `QaService` probes once; path 4xx/5xx block, root 404 permits relative API routes, and `405` remains reachable.
 
-`QaPlanningPhase` escapes untrusted prompt data and parses strict plan JSON. `QaValidationPhase` checks invariants and drivers. `QaAnalysisPhase` accepts only complete-or-revise JSON. `QaReportingPhase` reconciles runtime evidence, persists `report.json`, and bounds `REPORT.md` to 8,000 characters.
+`QaPlanningPhase` escapes untrusted prompt data, parses strict plan JSON, and performs one bounded repair retry for parse errors such as invalid browser actions. `QaValidationPhase` checks invariants and drivers. `QaAnalysisPhase` accepts only complete-or-revise JSON. `QaReportingPhase` reconciles runtime evidence, persists `report.json`, and bounds `REPORT.md` to 8,000 characters.
 
 Drivers execute bounded HTTP, browser, mobile, accessibility, MCP, CLI, and WebSocket checks. MCP supports JSON/SSE plus `expectedState`, `expectedReasonCode`, and `expectedIsError`. `CliDriver` never uses a shell.
 
