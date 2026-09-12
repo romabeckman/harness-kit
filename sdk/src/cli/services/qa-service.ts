@@ -54,7 +54,9 @@ export function parseQaArgs(args: string[]): QaCliOptions {
     }
     if (argument === '--help' || argument === '-h') throw new Error(HELP_QA)
 
-    const [flag, inlineValue] = argument.split('=', 2)
+    const separator = argument.indexOf('=')
+    const flag = separator < 0 ? argument : argument.slice(0, separator)
+    const inlineValue = separator < 0 ? undefined : argument.slice(separator + 1)
     const value = inlineValue ?? args[++index]
     if (value === undefined || value.startsWith('--')) throw new Error(`QA option requires a value: ${flag}`)
     if (flag === '--run') options.runId = value
@@ -90,10 +92,36 @@ async function resolveScope(scope?: string): Promise<string> {
     : editor({ message: 'Paste or write your QA scope (save and close to continue):', validate: validateScope })
 }
 
-async function resolveTarget(target?: string): Promise<string | undefined> {
+async function resolveProfile(profile?: QaProfile): Promise<QaProfile | undefined> {
+  if (profile !== undefined) return profile
+  const { select } = await import('@inquirer/prompts')
+  return select({
+    message: 'QA test profile:',
+    choices: [
+      { name: 'Auto — infer from scope and project', value: undefined },
+      ...(['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full'] as QaProfile[])
+        .map((value) => ({ name: value, value })),
+    ],
+  })
+}
+
+function validateTarget(value: string, profile?: QaProfile): true | string {
+  if (!value.trim() || profile === 'cli') return true
+  try {
+    const url = new URL(value)
+    const protocols = profile === 'websocket' ? ['ws:', 'wss:'] : profile ? ['http:', 'https:'] : ['http:', 'https:', 'ws:', 'wss:']
+    if (protocols.includes(url.protocol) && url.hostname && !url.username && !url.password) return true
+  } catch { /* Return the same actionable form error for malformed URLs. */ }
+  return profile === 'websocket' ? 'Enter a ws:// or wss:// URL without credentials.' : 'Enter a valid target URL without embedded credentials.'
+}
+
+async function resolveTarget(target?: string, profile?: QaProfile): Promise<string | undefined> {
   if (target !== undefined) return target
   const { input } = await import('@inquirer/prompts')
-  const value = await input({ message: 'Target application URL (optional):' })
+  const value = await input({
+    message: profile === 'cli' ? 'CLI working directory (optional):' : 'Target application URL (optional):',
+    validate: (value) => validateTarget(value, profile),
+  })
   return value.trim() || undefined
 }
 
@@ -120,9 +148,13 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
 
   if (options.action === 'run') {
     const scope = await resolveScope(options.scope)
-    const target = options.scope === undefined ? await resolveTarget(options.target) : options.target
+    if (!scope.trim()) throw new Error('QA scope must not be empty')
+    const profile = options.scope === undefined ? await resolveProfile(options.profile) : options.profile
+    const target = options.scope === undefined ? await resolveTarget(options.target, profile) : options.target
+    const targetValidation = validateTarget(target ?? '', profile)
+    if (targetValidation !== true) throw new Error(targetValidation)
     const view = dependencies.view ?? new QaTerminalView()
-    const request = { scope, scenarios: options.scenarios, target, profile: options.profile }
+    const request = { scope, scenarios: options.scenarios, target: profile === 'cli' ? resolve(workspace, target || '.') : target, profile }
     view.start(request, workspace)
     const report = await createOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event)).run(request)
     view.renderReport(report)

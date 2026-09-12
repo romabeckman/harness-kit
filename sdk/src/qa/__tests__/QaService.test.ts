@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createServer, type RequestListener, type Server } from 'node:http'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { QaService, QaRunStore, QaVerdictPolicy } from '../services'
@@ -268,7 +268,7 @@ describe('PlaywrightDriver', () => {
       goto: async () => undefined,
       locator: () => ({ click: async () => pageErrorHandler?.(new Error('Illegal invocation')) }),
       keyboard: { press: async () => undefined },
-      screenshot: async () => undefined,
+      screenshot: async ({ path }: { path: string }) => { writeFileSync(path, 'test image') },
     }
     const driver = new PlaywrightDriver('web-game', async () => ({
       chromium: { launch: async () => ({ newPage: async () => page, close: async () => undefined }) },
@@ -293,7 +293,7 @@ describe('PlaywrightDriver', () => {
       }),
       keyboard: { press: async () => undefined },
       waitForTimeout: async () => undefined,
-      screenshot: async () => undefined,
+      screenshot: async ({ path }: { path: string }) => { writeFileSync(path, 'test image') },
     }
     const driver = new PlaywrightDriver('web', async () => ({
       chromium: { launch: async () => ({ newPage: async () => page, close: async () => undefined }) },
@@ -316,7 +316,7 @@ describe('PlaywrightDriver', () => {
       goto: async () => undefined,
       setViewportSize,
       keyboard: { press },
-      screenshot: async () => undefined,
+      screenshot: async ({ path }: { path: string }) => { writeFileSync(path, 'test image') },
       locator: () => ({ isVisible: async () => true }),
     }
     const driver = new PlaywrightDriver('web-game', async () => ({

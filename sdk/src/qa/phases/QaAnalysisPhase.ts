@@ -1,5 +1,6 @@
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../../json-extraction/types'
+import { isDeepStrictEqual } from 'node:util'
 import { QaPlanningPhase } from './QaPlanningPhase'
 import { QaPlanValidator } from '../services/QaPlanValidator'
 import { QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
@@ -22,7 +23,10 @@ export class QaAnalysisPhase implements QaPhaseHandler {
     context.session = output.session ?? context.session
     const extraction = JsonExtractionProtocol.extract(output.raw)
     if (!isExtractionResult(extraction) || !isRecord(extraction.data)) throw new Error('Invalid agentic QA analysis: expected JSON object')
-    if (extraction.data.complete === true || !isRecord(extraction.data.plan)) return QaPhase.REPORTING
+    if (extraction.data.complete === true && Object.keys(extraction.data).length === 1) return QaPhase.REPORTING
+    if (extraction.data.complete !== false || !isRecord(extraction.data.plan) || Object.keys(extraction.data).some((key) => key !== 'complete' && key !== 'plan')) {
+      throw new Error('Invalid agentic QA analysis: expected complete or a complete revised plan')
+    }
 
     const previous = context.plan
     const revised = new QaPlanningPhase().parse(JSON.stringify(extraction.data.plan), context.request, context.store.nextPlanVersion(previous.id))
@@ -30,6 +34,9 @@ export class QaAnalysisPhase implements QaPhaseHandler {
     if (!previous.criteria.every((criterion, index) => revised.criteria[index] === criterion)) throw new Error('Invalid agentic QA analysis: existing criteria cannot change')
     const previousIds = new Set(previous.scenarios.map((scenario) => scenario.id))
     if (!previous.scenarios.every((scenario) => revised.scenarios.some((candidate) => candidate.id === scenario.id))) throw new Error('Invalid agentic QA analysis: existing scenarios cannot be removed')
+    if (!previous.scenarios.every((scenario, index) => isDeepStrictEqual(JSON.parse(JSON.stringify(scenario)), JSON.parse(JSON.stringify(revised.scenarios[index]))))) {
+      throw new Error('Invalid agentic QA analysis: executed scenarios must remain unchanged and in order')
+    }
     const additional = revised.scenarios.filter((scenario) => !previousIds.has(scenario.id))
     if (additional.length === 0) return QaPhase.REPORTING
     const validation = await new QaPlanValidator(context.service).validate(revised, context.workspace, signal)

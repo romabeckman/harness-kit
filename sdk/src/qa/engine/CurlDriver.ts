@@ -16,6 +16,7 @@ export class CurlDriver implements QaDriver {
   }
 
   async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal): Promise<QaScenarioResult> {
+    if (signal?.aborted) return this.blocked(scenario, String(signal.reason ?? 'QA execution cancelled'))
     if (!scenario.request) return this.blocked(scenario, 'API scenario has no HTTP request')
     mkdirSync(evidenceDir, { recursive: true })
     const responsePath = join(evidenceDir, 'response.body')
@@ -25,7 +26,7 @@ export class CurlDriver implements QaDriver {
     const url = new URL(request.path, target)
     if (url.origin !== new URL(target).origin) return this.blocked(scenario, 'API request must stay within the configured target origin')
     writeFileSync(requestPath, JSON.stringify(redactRequest({ method: request.method, url: url.toString(), headers: request.headers ?? {}, body: request.body }), null, 2), 'utf8')
-    const args = ['--silent', '--show-error', '--location', '--max-redirs', '5', '--proto', '=http,https', '--connect-timeout', '5', '--max-time', '30', '--output', responsePath, '--dump-header', responseHeadersPath, '--write-out', '%{http_code}', '--request', request.method]
+    const args = ['--silent', '--show-error', '--proto', '=http,https', '--connect-timeout', '5', '--max-time', '30', '--output', responsePath, '--dump-header', responseHeadersPath, '--write-out', '%{http_code}', '--request', request.method]
     for (const [name, value] of Object.entries(request.headers ?? {})) args.push('--header', `${name}: ${value}`)
     if (request.body !== undefined) args.push('--data-raw', request.body)
     args.push(url.toString())
@@ -71,9 +72,15 @@ export class CurlDriver implements QaDriver {
       let stderr = ''
       child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
       child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
-      child.once('error', (error) => resolve({ code: null, stdout, stderr: error.message }))
-      child.once('close', (code) => resolve({ code, stdout, stderr }))
-      signal?.addEventListener('abort', () => child.kill(), { once: true })
+      const abort = () => { child.kill() }
+      const finish = (code: number | null, error = stderr) => {
+        signal?.removeEventListener('abort', abort)
+        resolve({ code, stdout, stderr: error })
+      }
+      child.once('error', (error) => finish(null, error.message))
+      child.once('close', (code) => finish(code))
+      signal?.addEventListener('abort', abort, { once: true })
+      if (signal?.aborted) abort()
     })
   }
 }
@@ -107,6 +114,14 @@ function parseHeaders(raw: string): Record<string, string> {
 }
 
 function findJsonMismatch(expected: unknown, actual: unknown, path = '$'): string | undefined {
+  if (Array.isArray(expected)) {
+    if (!Array.isArray(actual) || actual.length !== expected.length) return `${path} to be an array of length ${expected.length}`
+    for (let index = 0; index < expected.length; index++) {
+      const mismatch = findJsonMismatch(expected[index], actual[index], `${path}[${index}]`)
+      if (mismatch) return mismatch
+    }
+    return undefined
+  }
   if (expected && typeof expected === 'object' && !Array.isArray(expected)) {
     if (!actual || typeof actual !== 'object' || Array.isArray(actual)) return `${path} to be an object`
     for (const [key, value] of Object.entries(expected)) {

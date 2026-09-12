@@ -7,6 +7,7 @@ import type { HarnessSettings } from '../../settings/HarnessSettings'
 import type { PhaseSettings } from '../../settings/SettingsSchema'
 import { DEFAULT_SETTINGS } from '../../settings/DefaultSettings'
 import type { QaProgressListener } from '../progress'
+import type { QaExecutionHint } from '../services/QaExecutionMemory'
 
 export enum QaPhase {
   PLANNING = 'PLANNING',
@@ -33,6 +34,7 @@ export interface QaPhaseContext {
   run?: QaRun
   report?: QaFinalReport
   analysisCycles?: number
+  executionMemory?: QaExecutionHint[]
 }
 
 export interface QaPhaseHandler {

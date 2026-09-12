@@ -41,6 +41,7 @@ export class QaRuntimeManager implements QaRuntimePreparer {
 
   async prepare(request: QaAgenticRequest, signal?: AbortSignal): Promise<QaRuntimeHandle | undefined> {
     if (request.target) return { target: request.target, managed: false, stop: async () => undefined }
+    if (request.profile && !['web', 'web-game', 'mobile-web', 'accessibility', 'full'].includes(request.profile)) return undefined
     if (!existsSync(resolve(this.#workspace, 'index.html'))) return undefined
     if (signal?.aborted) throw signal.reason ?? new Error('QA runtime preparation aborted')
 

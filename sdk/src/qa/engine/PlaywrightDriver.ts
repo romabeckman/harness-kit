@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { QaBrowserAction, QaDriver, QaProfile, QaScenario, QaScenarioResult } from '../types'
 
@@ -46,8 +46,7 @@ export class PlaywrightDriver implements QaDriver {
         writeFileSync(observationsPath, JSON.stringify(observations, null, 2), 'utf8')
         const screenshotPath = join(evidenceDir, 'final.png')
         await page.screenshot({ path: screenshotPath, fullPage: true })
-        if (!existsSync(screenshotPath)) writeFileSync(screenshotPath, Buffer.from([]))
-        if (!existsSync(observationsPath)) {
+        if (!existsSync(screenshotPath) || statSync(screenshotPath).size === 0 || !existsSync(observationsPath)) {
           return { scenarioId: scenario.id, required: scenario.required, status: 'INCONCLUSIVE', reason: 'Verified browser evidence files are missing', evidence: [] }
         }
         const evidence = [

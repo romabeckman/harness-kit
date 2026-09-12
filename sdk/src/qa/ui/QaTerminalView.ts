@@ -22,6 +22,10 @@ export class QaTerminalView implements QaTerminalPresenter {
   }
 
   onProgress(event: QaProgressEvent): void {
+    if (event.type === 'phase_warning') {
+      this.line(this.paint('yellow', `  ${event.phase ?? 'QA'} warning: ${event.reason ?? 'Phase could not complete'}`))
+      return
+    }
     if (event.type === 'runtime_ready' && event.target) {
       this.line(this.paint('green', `Runtime ready: ${event.target}${event.managed ? ' (temporary static server)' : ''}`))
       return
@@ -46,6 +50,7 @@ export class QaTerminalView implements QaTerminalPresenter {
     }
     if (event.type === 'scenario_completed' && event.status && event.scenarioId) {
       this.line(`    ${this.status(event.status)} ${event.scenarioId}`)
+      if (event.reason) this.line(`      ${event.reason}`)
       return
     }
     if (event.type === 'phase_completed' && event.phase === 'EXECUTION' && event.verdict) {

@@ -15,6 +15,8 @@ export class QaService {
   constructor(store: QaRunStore, drivers: QaDriver[] = defaultDrivers(), targetProbe: QaTargetProbe = probeQaTarget) {
     this.#store = store
     this.#drivers = new Map(drivers.map((driver) => [driver.profile, driver]))
+    const api = this.#drivers.get('api')
+    if (api && !this.#drivers.has('security')) this.#drivers.set('security', api)
     this.#targetProbe = targetProbe
   }
 
@@ -90,6 +92,7 @@ export class QaService {
         type: 'scenario_completed',
         scenarioId: scenario.id,
         status: result.status,
+        reason: result.reason,
         index: index + 1,
         total: scenarios.length,
       })

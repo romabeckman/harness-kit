@@ -37,8 +37,31 @@ describe('QA CLI', () => {
     }
   })
 
+  it('preserves equals signs in inline options', () => {
+    expect(parseQaArgs(['--scope=Check x=1 and y=2', '--target=http://qa.test/?x=1&y=2', '--scenario=Expect a=b']))
+      .toMatchObject({ scope: 'Check x=1 and y=2', target: 'http://qa.test/?x=1&y=2', scenarios: ['Expect a=b'] })
+  })
+
+  it('rejects blank explicit scope before starting the runner', async () => {
+    const runner: IAgentRunner = { run: vi.fn() }
+    await expect(cmdQa(workspace, ['run', '--scope', '   '], { runner })).rejects.toThrow('scope')
+    expect(runner.run).not.toHaveBeenCalled()
+  })
+
+  it('validates interactive target input and offers a profile choice', async () => {
+    prompts.select.mockResolvedValueOnce('type').mockResolvedValueOnce('api')
+    prompts.input.mockResolvedValueOnce('Check endpoint response contract').mockResolvedValueOnce('http://qa.test')
+    const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after prompt')) }
+    await expect(cmdQa(workspace, ['run'], { runner })).rejects.toThrow('stop after prompt')
+    const targetPrompt = prompts.input.mock.calls[1][0]
+    expect(targetPrompt.validate).toBeTypeOf('function')
+    expect(targetPrompt.validate('not a URL')).not.toBe(true)
+    expect(targetPrompt.validate('http://qa.test')).toBe(true)
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ prompt: expect.stringContaining('<profile_hint>\napi') }), expect.anything())
+  })
+
   it('prompts for scope when run omits --scope', async () => {
-    prompts.select.mockResolvedValue('type')
+    prompts.select.mockResolvedValueOnce('type').mockResolvedValueOnce(undefined)
     prompts.input.mockResolvedValueOnce('Validate the complete checkout flow').mockResolvedValueOnce('')
     const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after prompt')) }
 
@@ -46,14 +69,14 @@ describe('QA CLI', () => {
 
     expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('QA scope') }))
     expect(prompts.input).toHaveBeenCalledWith(expect.objectContaining({ message: 'QA scope:', validate: expect.any(Function) }))
-    expect(prompts.input).toHaveBeenNthCalledWith(2, { message: 'Target application URL (optional):' })
+    expect(prompts.input).toHaveBeenNthCalledWith(2, expect.objectContaining({ message: 'Target application URL (optional):', validate: expect.any(Function) }))
     expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
       phaseKey: 'qa_planning', prompt: expect.stringContaining('Validate the complete checkout flow'),
     }), expect.any(Object))
   })
 
   it('passes an interactive target entered after the QA scope to planning', async () => {
-    prompts.select.mockResolvedValue('type')
+    prompts.select.mockResolvedValueOnce('type').mockResolvedValueOnce(undefined)
     prompts.input.mockResolvedValueOnce('Validate the checkout flow').mockResolvedValueOnce('http://127.0.0.1:3000')
     const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after prompt')) }
 

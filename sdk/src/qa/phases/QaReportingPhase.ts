@@ -11,6 +11,7 @@ export class QaReportingPhase implements QaPhaseHandler {
   readonly phase = QaPhase.REPORTING
 
   async execute(context: QaPhaseContext, signal?: AbortSignal): Promise<QaPhase> {
+    signal?.throwIfAborted()
     if (!context.plan || !context.run?.verdict) throw new Error('Agentic QA reporting requires a completed run')
     const agentSettings = resolveQaPhaseSettings(context, 'qa_reporting')
     let raw = '{}'
@@ -29,8 +30,10 @@ export class QaReportingPhase implements QaPhaseHandler {
       raw = output.raw
       context.report = this.buildReport(context, raw)
     } catch {
+      signal?.throwIfAborted()
       context.report = this.buildReport(context, raw)
     }
+    signal?.throwIfAborted()
     context.store.saveReport(context.report)
     context.store.saveReportMarkdown(context.report.runId, this.buildMarkdown(raw, context.report))
     return QaPhase.COMPLETED
