@@ -154,11 +154,11 @@ export class QaTerminalView implements QaTerminalPresenter {
 
   private phaseLabel(phase: NonNullable<QaProgressEvent['phase']>): string {
     const labels = {
-      PLANNING: '[1/3] Planning test scenarios',
-      VALIDATION: '[1.5/3] Validating QA plan',
-      EXECUTION: '[2/3] Executing as a human tester',
-      ANALYSIS: '[2.5] Evaluating adaptive coverage',
-      REPORTING: '[3/3] Analyzing evidence and bugs',
+      PLANNING: '[1/5] Planning test scenarios',
+      VALIDATION: '[2/5] Validating QA plan',
+      EXECUTION: '[3/5] Executing as a human tester',
+      ANALYSIS: '[4/5] Evaluating adaptive coverage',
+      REPORTING: '[5/5] Analyzing evidence and bugs',
     }
     return this.paint('blue', labels[phase])
   }
