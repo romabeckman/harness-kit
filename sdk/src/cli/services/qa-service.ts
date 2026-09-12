@@ -90,6 +90,13 @@ async function resolveScope(scope?: string): Promise<string> {
     : editor({ message: 'Paste or write your QA scope (save and close to continue):', validate: validateScope })
 }
 
+async function resolveTarget(target?: string): Promise<string | undefined> {
+  if (target !== undefined) return target
+  const { input } = await import('@inquirer/prompts')
+  const value = await input({ message: 'Target application URL (optional):' })
+  return value.trim() || undefined
+}
+
 async function selectCompletedRun(store: QaRunStore): Promise<QaRun> {
   const runs = store.listCompletedRuns()
   if (runs.length === 0) throw new Error('No completed QA runs available. Run "hrns qa run" first.')
@@ -113,8 +120,9 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
 
   if (options.action === 'run') {
     const scope = await resolveScope(options.scope)
+    const target = options.scope === undefined ? await resolveTarget(options.target) : options.target
     const view = dependencies.view ?? new QaTerminalView()
-    const request = { scope, scenarios: options.scenarios, target: options.target, profile: options.profile }
+    const request = { scope, scenarios: options.scenarios, target, profile: options.profile }
     view.start(request, workspace)
     const report = await createOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event)).run(request)
     view.renderReport(report)

@@ -39,15 +39,28 @@ describe('QA CLI', () => {
 
   it('prompts for scope when run omits --scope', async () => {
     prompts.select.mockResolvedValue('type')
-    prompts.input.mockResolvedValue('Validate the complete checkout flow')
+    prompts.input.mockResolvedValueOnce('Validate the complete checkout flow').mockResolvedValueOnce('')
     const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after prompt')) }
 
     await expect(cmdQa(workspace, ['run'], { runner })).rejects.toThrow('stop after prompt')
 
     expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('QA scope') }))
     expect(prompts.input).toHaveBeenCalledWith(expect.objectContaining({ message: 'QA scope:', validate: expect.any(Function) }))
+    expect(prompts.input).toHaveBeenNthCalledWith(2, { message: 'Target application URL (optional):' })
     expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
       phaseKey: 'qa_planning', prompt: expect.stringContaining('Validate the complete checkout flow'),
+    }), expect.any(Object))
+  })
+
+  it('passes an interactive target entered after the QA scope to planning', async () => {
+    prompts.select.mockResolvedValue('type')
+    prompts.input.mockResolvedValueOnce('Validate the checkout flow').mockResolvedValueOnce('http://127.0.0.1:3000')
+    const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after prompt')) }
+
+    await expect(cmdQa(workspace, ['run'], { runner })).rejects.toThrow('stop after prompt')
+
+    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({
+      phaseKey: 'qa_planning', prompt: expect.stringContaining('Target URL hint: http://127.0.0.1:3000'),
     }), expect.any(Object))
   })
 
