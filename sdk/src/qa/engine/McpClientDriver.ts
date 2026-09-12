@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { QaDriver, QaDriverExecutionContext, QaEvidence, QaScenario, QaScenarioResult } from '../types'
+import { redactSecrets } from './QaAuthRedaction'
 
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>
 
@@ -29,8 +30,8 @@ export class McpClientDriver implements QaDriver {
       const raw = await response.text()
       const requestPath = join(evidenceDir, 'request.json')
       const responsePath = join(evidenceDir, 'response.json')
-      writeFileSync(requestPath, JSON.stringify(redact(payload), null, 2), 'utf8')
-      writeFileSync(responsePath, redactText(raw), 'utf8')
+      writeFileSync(requestPath, JSON.stringify(redact(payload, context?.auth), null, 2), 'utf8')
+      writeFileSync(responsePath, redactText(raw, context?.auth), 'utf8')
       const capturedEvidence: QaEvidence[] = [
         { id: `${scenario.id}-mcp-request`, path: requestPath, capturedAt: new Date().toISOString(), adapter: 'mcp' },
         { id: `${scenario.id}-mcp-response`, path: responsePath, capturedAt: new Date().toISOString(), adapter: 'mcp' },
@@ -74,14 +75,15 @@ function blocked(scenario: QaScenario, reason: string, evidence: QaEvidence[] = 
   return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason, evidence }
 }
 
-function redact(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(redact)
+function redact(value: unknown, auth?: QaDriverExecutionContext['auth']): unknown {
+  if (Array.isArray(value)) return value.map((item) => redact(item, auth))
+  if (typeof value === 'string') return redactSecrets(value, auth)
   if (!value || typeof value !== 'object') return value
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, /(token|secret|password|authorization|cookie|api[-_]?key)/i.test(key) ? '[REDACTED]' : redact(item)]))
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, /(token|secret|password|authorization|cookie|api[-_]?key)/i.test(key) ? '[REDACTED]' : redact(item, auth)]))
 }
 
-function redactText(value: string): string {
-  try { return JSON.stringify(redact(parseMcpResponse(value)), null, 2) } catch { return value }
+function redactText(value: string, auth?: QaDriverExecutionContext['auth']): string {
+  try { return JSON.stringify(redact(parseMcpResponse(value), auth), null, 2) } catch { return redactSecrets(value, auth) }
 }
 
 function parseMcpResponse(value: string): unknown {

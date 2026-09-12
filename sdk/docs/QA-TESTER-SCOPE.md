@@ -154,7 +154,7 @@ For `hrns qa exploratory`, use `--project` to select the plan repository and `--
 
 ## Authentication
 
-Create `.harness-kit/auth.json` only when the target requires authentication. The file is ignored by Git and must contain environment-variable references, never secret values:
+Create `.harness-kit/auth.json` only when the target requires authentication. Profiles may use environment-variable references (recommended for shared and CI projects) or literal values when the form's `insecure` storage mode is explicitly selected. Git-ignore is not encryption: protect the file and use disposable, least-privilege test credentials.
 
 ```json
 {
@@ -170,7 +170,37 @@ Create `.harness-kit/auth.json` only when the target requires authentication. Th
 }
 ```
 
-Use `--auth qa-user` to override `defaultProfile`. Set a scenario's `authProfile` to another profile name or `none` when a stored plan mixes authenticated and anonymous behavior. HTTP API, MCP, and browser drivers apply headers; Basic browser auth uses browser credentials; cookies use the browser cookie jar; CLI profiles may map secrets to child-process variables with an `environment` object. Authentication values are resolved immediately before execution and are excluded from plans, reports, prompts, and evidence. OAuth2 token acquisition, HMAC signing, mTLS, and WebSocket header authentication are outside the current scope.
+For a local-only profile, the helper writes literal values using the following shape (replace the placeholder with a disposable test credential):
+
+```json
+{
+  "schemaVersion": 1,
+  "profiles": {
+    "local-admin": {
+      "mode": "basic",
+      "storage": "insecure",
+      "username": "qa-admin",
+      "password": { "source": "literal", "value": "<test-password>" }
+    }
+  }
+}
+```
+
+`hrns qa auth` warns and asks for confirmation before writing a literal. Use `--auth qa-user` to override `defaultProfile`. Set a scenario's `authProfile` to another profile name or `none` when a stored plan mixes authenticated and anonymous behavior.
+
+Authentication values are resolved immediately before execution. Resolved values are never copied to plans, prompts, reports, execution memory, or persisted evidence. Curl sends its request configuration through stdin (`--config -`), so credentials do not appear in the curl process arguments. Curl request/response evidence, MCP response evidence, and CLI arguments/stdout/stderr are redacted both by credential field and by the exact resolved value. Review screenshots and application-specific output before sharing because an application can render secrets that are unrelated to the selected profile.
+
+### Engine authentication boundaries
+
+| Engine | Supported authentication behavior | Unsupported or blocked behavior |
+| --- | --- | --- |
+| `api`, `security` | Curl applies `none`, `basic`, `bearer`, `api-key`, and `cookie` credentials to same-origin HTTP requests. | Redirects are not followed to another target origin. |
+| `mcp` | HTTP MCP requests receive the resolved authentication headers. | Non-HTTP MCP targets remain unavailable. |
+| `web`, `web-game`, `mobile-web`, `accessibility`, `full` | Basic credentials are scoped to the configured target origin. Bearer/API-key headers are injected only into same-origin browser requests; cookies are installed through the browser context. | Header credentials are never attached to cross-origin browser requests. |
+| `cli` | Only explicitly mapped `environment` values are injected into the child process. Add mappings deliberately when the command expects a variable: `"environment": { "APP_TOKEN": { "source": "env", "name": "QA_USER_TOKEN" } }`. | An authenticated profile without at least one environment mapping is `BLOCKED` before the command starts; HTTP headers are not inferred for arbitrary CLIs. |
+| `websocket` | Unauthenticated (`none`) exchanges are supported. | Any non-`none` authentication profile is `BLOCKED`; WebSocket header authentication is outside the current boundary. |
+
+The `hrns qa auth` form does not infer CLI variable names. Add an `environment` map manually when a CLI needs authentication, and prefer environment references over literal mappings. OAuth2 token acquisition, HMAC signing, and mTLS are also outside the current scope.
 
 Quote values containing spaces. Both `--scope "x=y"` and `--scope="x=y"` preserve equals signs.
 
@@ -233,7 +263,7 @@ docs/qa/
 
 `REPORT.md` is the readable per-run report. Its `report.json` is the structured equivalent. Exploratory `report.json` aggregates plan versions, run IDs, effective targets, scenario results, totals, validation errors, and the global verdict. Evidence remains in each referenced run directory.
 
-Harness Kit removes common credential fields from persisted evidence. Review artifacts before sharing because application-specific secrets may use names the generic redaction rules do not recognize.
+Harness Kit removes common credential fields and exact resolved authentication values from persisted Curl/MCP/CLI evidence. Curl's request configuration is transient stdin, not a command-line argument. Browser screenshots and application-generated fields can still contain unrelated secrets; review artifacts before sharing.
 
 ## Execution memory
 

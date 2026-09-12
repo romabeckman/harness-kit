@@ -33,7 +33,7 @@ export class PlaywrightDriver implements QaDriver {
       const browser = await playwright.chromium.launch({ headless: true })
       try {
         if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
-        const page = await browser.newPage({ ...this.pageOptions(), ...(context?.auth.basic ? { httpCredentials: context.auth.basic } : {}) })
+        const page = await browser.newPage({ ...this.pageOptions(), ...(context?.auth.basic ? { httpCredentials: { ...context.auth.basic, origin: new URL(target).origin } } : {}) })
         await applyBrowserAuth(page, target, context)
         const pageErrors: string[] = []
         page.on?.('pageerror', (error: Error) => pageErrors.push(error.message))

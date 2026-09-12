@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { QaDriver, QaScenario, QaScenarioResult } from '../types'
+import type { QaDriver, QaDriverExecutionContext, QaScenario, QaScenarioResult } from '../types'
 
 export type WebSocketExchange = (target: string, messages: string[], signal?: AbortSignal) => Promise<string[]>
 
@@ -13,7 +13,8 @@ export class WebSocketDriver implements QaDriver {
     return typeof WebSocket === 'function' ? { available: true } : { available: false, reason: 'WebSocket is unavailable in this Node.js runtime' }
   }
 
-  async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal): Promise<QaScenarioResult> {
+  async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal, context?: QaDriverExecutionContext): Promise<QaScenarioResult> {
+    if (context?.auth.mode !== undefined && context.auth.mode !== 'none') return blocked(scenario, `WebSocket authentication profile "${context.auth.profile}" is unsupported by this driver`)
     const request = scenario.websocket
     if (!request) return blocked(scenario, 'WebSocket scenario has no message exchange')
     let url: URL

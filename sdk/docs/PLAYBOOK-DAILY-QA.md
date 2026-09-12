@@ -61,7 +61,7 @@ Select the authentication mode and profile name, then choose `env` or `insecure`
 
 ## Run against protected targets
 
-Add optional `.harness-kit/auth.json` with named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. The form defaults to `env` storage (reference only). Selecting `insecure` shows a warning, requires confirmation, and stores the entered credential directly in `auth.json`. The file is ignored by Git but contains sensitive data and must be protected.
+Add optional `.harness-kit/auth.json` with named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. The form defaults to `env` storage (reference only). Selecting `insecure` shows a warning, requires confirmation, and stores the entered credential directly in `auth.json`. The file is ignored by Git but is not encrypted; protect it, use disposable least-privilege credentials, and never use production credentials.
 
 ```json
 { "schemaVersion": 1, "defaultProfile": "qa-user", "profiles": { "qa-user": { "mode": "bearer", "token": { "source": "env", "name": "QA_USER_TOKEN" } } } }
@@ -74,7 +74,29 @@ hrns qa run --auth qa-user --scope "Validate protected orders" --target http://1
 hrns qa exploratory --auth qa-user --target http://127.0.0.1:3000
 ```
 
-Omit `--auth` to use `defaultProfile`; interactive execution offers configured profiles. Use test-only credentials with minimum privileges. Never place raw tokens or production credentials in configuration, plans, scenarios, reports, or evidence.
+Omit `--auth` to use `defaultProfile`; interactive execution offers configured profiles. Resolved credentials are used only at execution time and are not copied into plans, prompts, reports, execution memory, or persisted evidence. `insecure` literals are the intentional exception in `auth.json` itself; do not copy them elsewhere.
+
+### Authentication boundaries by engine
+
+- API and security requests use Curl with the selected Basic, Bearer, API-key, or Cookie credentials. Curl passes its transient request configuration through stdin, so credentials do not appear in process arguments. Request/response evidence is redacted by credential field and exact resolved value.
+- MCP HTTP requests receive the selected authentication headers. MCP response evidence is redacted by field and exact resolved value.
+- Browser, mobile, and accessibility profiles scope Basic credentials to the configured target origin. Bearer/API-key headers are added only to same-origin requests, and cookies are installed through the browser context. Cross-origin requests never receive header credentials.
+- CLI profiles do not have a generic HTTP-header mapping. Add an explicit `environment` map for the variables expected by the command; otherwise an authenticated CLI scenario is `BLOCKED` before spawning. CLI arguments, stdout, and stderr are redacted before evidence is written.
+- WebSocket scenarios with any non-`none` profile are `BLOCKED`; WebSocket header authentication is not supported. Do not move a token into a query string as a workaround.
+
+For example, map a shared environment-backed token to the variable expected by a CLI:
+
+```json
+{
+  "mode": "bearer",
+  "token": { "source": "env", "name": "QA_USER_TOKEN" },
+  "environment": {
+    "APP_TOKEN": { "source": "env", "name": "QA_USER_TOKEN" }
+  }
+}
+```
+
+The `hrns qa auth` form does not infer arbitrary CLI variable names. Add mappings deliberately and prefer `env` references; literal mappings are passed to the child process at runtime and should be restricted to disposable local testing.
 
 ## One-time browser setup
 
@@ -91,7 +113,7 @@ Run the browser setup after every new machine or dependency refresh. Do not use 
 
 ## API endpoint check
 
-The API profile executes generated HTTP scenarios through real `curl`; request metadata and response bodies become evidence. Describe expected behavior in the scope or scenarios.
+The API profile executes generated HTTP scenarios through real `curl`; request metadata and response bodies become evidence after credential redaction. Describe expected behavior in the scope or scenarios.
 
 ```bash
 # The target app must already be listening on port 3000.
@@ -161,7 +183,7 @@ Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` direc
 1. Run `hrns qa report --run <qa-run-id>` and identify the first failed or blocked scenario.
 2. For API failures, inspect the saved response body and verify the local test target is the intended version.
 3. For browser failures, open `final.png` and treat a `Browser page error` as a product defect until proven otherwise.
-4. For `BLOCKED`, confirm the target server is running, the URL is reachable, and Chromium is installed when browser testing.
+4. For `BLOCKED`, confirm the target server is running, the URL is reachable, and Chromium is installed when browser testing. If the reason names unsupported authentication, add an explicit CLI environment mapping or run the scenario unauthenticated; authenticated WebSocket scenarios are not currently executable.
 5. Preserve the run directory. Create a new run after a fix; do not overwrite evidence from the failed attempt.
 
 ## End-of-day handoff

@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import spawn from 'cross-spawn'
 import type { QaDriver, QaDriverExecutionContext, QaScenario, QaScenarioResult } from '../types'
+import type { QaResolvedAuth } from '../auth/types'
+import { redactSecrets } from './QaAuthRedaction'
 
 export class CurlDriver implements QaDriver {
   readonly profile = 'api' as const
@@ -26,22 +28,26 @@ export class CurlDriver implements QaDriver {
     const url = new URL(request.path, target)
     if (url.origin !== new URL(target).origin) return this.blocked(scenario, 'API request must stay within the configured target origin')
     const headers = { ...(request.headers ?? {}), ...(context?.auth.headers ?? {}) }
-    writeFileSync(requestPath, JSON.stringify(redactRequest({ method: request.method, url: url.toString(), headers, body: request.body }), null, 2), 'utf8')
-    const args = ['--silent', '--show-error', '--proto', '=http,https', '--connect-timeout', '5', '--max-time', '30', '--output', responsePath, '--dump-header', responseHeadersPath, '--write-out', '%{http_code}', '--request', request.method]
-    for (const [name, value] of Object.entries(headers)) args.push('--header', `${name}: ${value}`)
-    if (request.body !== undefined) args.push('--data-raw', request.body)
-    args.push(url.toString())
-    const result = await this.runCurl(args, signal)
+    const auth = context?.auth
+    writeFileSync(requestPath, JSON.stringify(redactRequest({ method: request.method, url: url.toString(), headers, body: request.body }, auth), null, 2), 'utf8')
+    const args = ['--silent', '--show-error', '--proto', '=http,https', '--connect-timeout', '5', '--max-time', '30', '--output', responsePath, '--dump-header', responseHeadersPath, '--write-out', '%{http_code}', '--request', request.method, '--config', '-']
+    const config = [
+      ...Object.entries(headers).map(([name, value]) => `header = ${quoteConfig(`${name}: ${value}`)}`),
+      ...(request.body === undefined ? [] : [`data-raw = ${quoteConfig(request.body)}`]),
+      `url = ${quoteConfig(url.toString())}`,
+      '',
+    ].join('\n')
+    const result = await this.runCurl(args, signal, config)
     const status = Number.parseInt(result.stdout.trim(), 10)
     const rawBody = existsSync(responsePath) ? readFileSync(responsePath, 'utf8') : ''
     const rawHeaders = existsSync(responseHeadersPath) ? readFileSync(responseHeadersPath, 'utf8') : ''
     const failures = evaluateResponse(request, rawBody, rawHeaders)
-    if (rawHeaders) writeFileSync(responseHeadersPath, redactHeaders(rawHeaders), 'utf8')
+    if (rawHeaders) writeFileSync(responseHeadersPath, redactHeaders(rawHeaders, auth), 'utf8')
     if (rawBody) {
       try {
         const parsed = JSON.parse(rawBody)
-        writeFileSync(responsePath, JSON.stringify(redactRequest(parsed), null, 2), 'utf8')
-      } catch {}
+        writeFileSync(responsePath, JSON.stringify(redactRequest(parsed, auth), null, 2), 'utf8')
+      } catch { writeFileSync(responsePath, redactSecrets(rawBody, auth), 'utf8') }
     }
     const evidence = [
       { id: `${scenario.id}-request`, path: requestPath, capturedAt: new Date().toISOString(), adapter: 'curl' },
@@ -65,10 +71,10 @@ export class CurlDriver implements QaDriver {
     return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason, evidence: [] }
   }
 
-  private runCurl(args: string[], signal?: AbortSignal): Promise<{ code: number | null; stdout: string; stderr: string }> {
+  private runCurl(args: string[], signal?: AbortSignal, config?: string): Promise<{ code: number | null; stdout: string; stderr: string }> {
     return new Promise((resolve) => {
       const command = process.platform === 'win32' ? 'curl.exe' : 'curl'
-      const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+      const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'] })
       let stdout = ''
       let stderr = ''
       child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
@@ -82,6 +88,7 @@ export class CurlDriver implements QaDriver {
       child.once('close', (code) => finish(code))
       signal?.addEventListener('abort', abort, { once: true })
       if (signal?.aborted) abort()
+      child.stdin?.end(config)
     })
   }
 }
@@ -134,17 +141,18 @@ function findJsonMismatch(expected: unknown, actual: unknown, path = '$'): strin
   return Object.is(expected, actual) ? undefined : `${path} to equal ${JSON.stringify(expected)}; observed ${JSON.stringify(actual)}`
 }
 
-function redactRequest(value: unknown, key = ''): unknown {
+function redactRequest(value: unknown, auth?: QaResolvedAuth, key = ''): unknown {
   if (/(authorization|cookie|password|token|secret|api[-_]?key)/i.test(key)) return '[REDACTED]'
   if (typeof value === 'string' && key === 'body') {
-    try { return redactRequest(JSON.parse(value)) } catch { return '[REDACTED]' }
+    try { return redactRequest(JSON.parse(value), auth) } catch { return '[REDACTED]' }
   }
-  if (Array.isArray(value)) return value.map((item) => redactRequest(item))
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, redactRequest(item, name)]))
+  if (typeof value === 'string') return redactSecrets(value, auth)
+  if (Array.isArray(value)) return value.map((item) => redactRequest(item, auth))
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, redactRequest(item, auth, name)]))
   return value
 }
 
-function redactHeaders(raw: string): string {
+function redactHeaders(raw: string, auth?: QaResolvedAuth): string {
   return raw.split(/\r?\n/).map((line) => {
     const separator = line.indexOf(':')
     if (separator <= 0) return line
@@ -152,6 +160,10 @@ function redactHeaders(raw: string): string {
     if (/(authorization|cookie|set-cookie|token|secret|api[-_]?key)/i.test(name)) {
       return `${name}: [REDACTED]`
     }
-    return line
+    return `${name}: ${redactSecrets(line.slice(separator + 1).trim(), auth)}`
   }).join('\r\n')
+}
+
+function quoteConfig(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r/g, '\\r').replace(/\n/g, '\\n')}"`
 }

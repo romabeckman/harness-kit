@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import spawn from 'cross-spawn'
 import type { QaDriver, QaDriverExecutionContext, QaScenario, QaScenarioResult } from '../types'
+import { redactSecrets } from './QaAuthRedaction'
 
 export interface CliExecutionResult { code: number | null; stdout: string; stderr: string }
 export type CliExecutor = (command: string, args: string[], cwd: string, signal?: AbortSignal, environment?: Record<string, string>) => Promise<CliExecutionResult>
@@ -26,13 +27,16 @@ export class CliDriver implements QaDriver {
     if (args.length > MAX_ARGS || args.some((arg) => arg.includes('\0'))) return blocked(scenario, 'CLI arguments exceed safety bounds')
     const cwd = resolve(target)
     try {
+      if (context?.auth.mode !== undefined && context.auth.mode !== 'none' && Object.keys(context.auth.environment).length === 0) {
+        return blocked(scenario, `CLI authentication profile "${context.auth.profile}" requires explicit environment mappings`)
+      }
       const environment = context?.auth.environment
       const execution = environment && Object.keys(environment).length > 0
         ? await this.executor(request.command, args, cwd, signal, environment)
         : await this.executor(request.command, args, cwd, signal)
       mkdirSync(evidenceDir, { recursive: true })
       const evidencePath = join(evidenceDir, 'cli.json')
-      writeFileSync(evidencePath, JSON.stringify({ command: request.command, args: redactArgs(args), code: execution.code, stdout: execution.stdout, stderr: execution.stderr }, null, 2), 'utf8')
+      writeFileSync(evidencePath, JSON.stringify({ command: request.command, args: redactArgs(args, context?.auth), code: execution.code, stdout: redactSecrets(execution.stdout, context?.auth), stderr: redactSecrets(execution.stderr, context?.auth) }, null, 2), 'utf8')
       const evidence = [{ id: `${scenario.id}-cli`, path: evidencePath, capturedAt: new Date().toISOString(), adapter: 'cli' }]
       const failure = execution.code !== request.expectedExitCode
         ? `Expected exit code ${request.expectedExitCode}; observed ${execution.code}`
@@ -48,7 +52,7 @@ export class CliDriver implements QaDriver {
   }
 }
 
-function redactArgs(args: string[]): string[] {
+function redactArgs(args: string[], auth?: QaDriverExecutionContext['auth']): string[] {
   let redactNext = false
   return args.map((arg) => {
     if (redactNext) {
@@ -59,7 +63,7 @@ function redactArgs(args: string[]): string[] {
       redactNext = true
       return arg
     }
-    return arg.replace(/^(--?(?:token|secret|password|authorization|cookie|api[-_]?key)=).+$/i, '$1[REDACTED]')
+    return redactSecrets(arg, auth).replace(/^(--?(?:token|secret|password|authorization|cookie|api[-_]?key)=).+$/i, '$1[REDACTED]')
   })
 }
 
