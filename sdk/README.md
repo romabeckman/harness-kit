@@ -220,13 +220,13 @@ hrns qa run --scope "Test endpoint X" --target http://127.0.0.1:3000
 hrns qa run --report --scope "Test endpoint X" --target http://127.0.0.1:3000
 
 # Integrated full-stack acceptance (API + Browser)
-hrns qa run --report --scope "Validate checkout workflow" --profile full
+hrns qa run --report --scope "Validate checkout workflow" --target http://127.0.0.1:3000 --profile full
 
 # Targeted security auditing
-hrns qa run --scope "Audit auth and injection boundaries" --profile security
+hrns qa run --scope "Audit auth and injection boundaries" --target http://127.0.0.1:3000 --profile security
 
 # Optional detailed scenarios: LLM analyzes them and adds missing coverage
-hrns qa run --project ../web-game --scope "Validate gameplay" --scenario "Player starts a game" --scenario "Player moves and rotates a piece" --profile web-game
+hrns qa run --project ../web-game --scope "Validate gameplay" --scenario "Player starts a game" --scenario "Player moves and rotates a piece" --target http://127.0.0.1:3000 --profile web-game
 
 # Regenerate a report for a completed run with explicit LLM controls
 hrns qa report --run <qa-run-id> --model <model> --effort high

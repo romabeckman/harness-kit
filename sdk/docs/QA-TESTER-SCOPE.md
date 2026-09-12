@@ -38,6 +38,22 @@ flowchart TD
 
 The reporting phase still runs when the target is unavailable or adaptive analysis fails. Cancellation propagates immediately, preserves already written run state, and closes only runtimes created by Harness Kit.
 
+## Execution prerequisites
+
+Install the project dependencies before running QA. `playwright` is a local development dependency, so this step installs its CLI into the project's `node_modules`:
+
+```text
+npm install
+```
+
+Browser profiles (`web`, `web-game`, `mobile-web`, `accessibility`, and browser portions of `full`) also require the Chromium browser binary. Install it once on each machine, or after refreshing dependencies:
+
+```text
+npx playwright install chromium
+```
+
+The underlying command is `npx playwright install chromium`; `npx install` is not the Playwright installation command. API profiles use the system `curl` executable. Harness Kit does not start framework servers, APIs, databases, or other external services, so start the target application before executing the QA run.
+
 ## Quick start
 
 Run QA from the project you want to test:
@@ -141,12 +157,6 @@ Quote values containing spaces. Both `--scope "x=y"` and `--scope="x=y"` preserv
 | `full` | Relevant supported HTTP and browser profiles in one plan. | Shared `http://` or `https://` URL |
 
 When no target is supplied, Harness Kit can serve a root `index.html` through a temporary local server for browser profiles. It does not start framework servers, APIs, native applications, databases, or external dependencies. Start those services first and pass their target.
-
-For browser profiles, install Chromium if Playwright reports it unavailable:
-
-```text
-rtk npx playwright install chromium
-```
 
 ## Reading progress and verdicts
 
