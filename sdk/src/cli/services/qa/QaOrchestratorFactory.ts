@@ -31,5 +31,6 @@ export function createQaOrchestrator(
     onProgress,
     targetProbe: dependencies.targetProbe,
     runtime: dependencies.runtime,
+    authProfile: options.authProfile,
   })
 }

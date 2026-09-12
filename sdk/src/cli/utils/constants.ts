@@ -230,6 +230,7 @@ OPTIONS
   --report                 Generate and render the report during QA run
   --run <id>               Completed run to report; omit for interactive selection
   --target <url>            Target application URL
+  --auth <profile>          Authentication profile from .harness-kit/auth.json
   --profile <api|web|web-game|mobile-web|accessibility|mcp|cli|websocket|security|full>
   --debug                   Expose runner arguments, prompts, sessions, and full errors
 
@@ -246,6 +247,7 @@ EXAMPLES
   hrns qa report --run orders-20260911
   hrns qa report
   hrns qa exploratory --target http://localhost:3000
+  hrns qa exploratory --auth qa-user --target http://localhost:3000
 `
 
 export const HELP_CANDIDATE = `

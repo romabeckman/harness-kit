@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { QaDriver, QaEvidence, QaScenario, QaScenarioResult } from '../types'
+import type { QaDriver, QaDriverExecutionContext, QaEvidence, QaScenario, QaScenarioResult } from '../types'
 
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>
 
@@ -13,7 +13,7 @@ export class McpClientDriver implements QaDriver {
     return { available: typeof this.request === 'function' }
   }
 
-  async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal): Promise<QaScenarioResult> {
+  async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal, context?: QaDriverExecutionContext): Promise<QaScenarioResult> {
     if (!scenario.mcp) return blocked(scenario, 'MCP scenario has no JSON-RPC request')
     let evidence: QaEvidence[] = []
     try {
@@ -23,7 +23,7 @@ export class McpClientDriver implements QaDriver {
       const payload = { jsonrpc: '2.0', id: 1, method: scenario.mcp.method, params: scenario.mcp.params ?? {} }
       const response = await this.request(targetUrl.toString(), {
         method: 'POST', signal,
-        headers: { accept: 'application/json, text/event-stream', 'content-type': 'application/json' },
+        headers: { accept: 'application/json, text/event-stream', 'content-type': 'application/json', ...(context?.auth.headers ?? {}) },
         body: JSON.stringify(payload),
       })
       const raw = await response.text()

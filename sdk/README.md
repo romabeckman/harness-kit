@@ -233,9 +233,12 @@ hrns qa report --run <qa-run-id> --model <model> --effort high
 
 # Execute the latest version of every saved QA plan and write one global JSON report
 hrns qa exploratory --target http://127.0.0.1:3000
+
+# Execute protected plans with a named profile from .harness-kit/auth.json
+hrns qa exploratory --auth qa-user --target http://127.0.0.1:3000
 ```
 
-For automation, supply `--scope` or one or more `--scenario` values. If scope and scenarios are omitted, `hrns qa run` opens the interactive scope flow; the actionless `hrns qa` alias can also offer saved-plan resume or a new run. Use `--profile api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, `websocket`, `security`, or `full` as an optional hint; the planning phase can infer it. Without `--report`, the run persists state and evidence but skips LLM report generation. Use `hrns qa report --run <qa-run-id>` to generate it later. Use `hrns qa exploratory` to execute every latest saved plan sequentially without planning or adaptive additions; the command always writes `docs/qa/exploratory/<id>/report.json`. `--target` overrides non-CLI plan targets in memory only. Browser checks require Chromium installed once with `npx playwright install chromium`. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md).
+For automation, supply `--scope` or one or more `--scenario` values. If scope and scenarios are omitted, `hrns qa run` opens the interactive scope flow; the actionless `hrns qa` alias can also offer saved-plan resume or a new run. Use `--profile api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, `websocket`, `security`, or `full` as an optional hint; the planning phase can infer it. Use `--auth <profile>` to select an optional named profile from `.harness-kit/auth.json`; when the file exists and the flag is omitted, interactive runs offer its profiles. Store only environment-variable references in this ignored file—never raw credentials. Supported modes are `none`, `basic`, `bearer`, `api-key`, and `cookie`. Without `--report`, the run persists state and evidence but skips LLM report generation. Use `hrns qa report --run <qa-run-id>` to generate it later. Use `hrns qa exploratory` to execute every latest saved plan sequentially without planning or adaptive additions; the command always writes `docs/qa/exploratory/<id>/report.json`. `--target` overrides non-CLI plan targets in memory only. Browser checks require Chromium installed once with `npx playwright install chromium`. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md).
 
 ### `hrns erase`
 

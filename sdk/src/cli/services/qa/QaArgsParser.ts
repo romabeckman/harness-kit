@@ -39,6 +39,7 @@ export function parseQaArgs(args: string[]): QaCliOptions {
     else if (flag === '--agent') options.agentType = value
     else if (flag === '--model') options.model = value
     else if (flag === '--effort') options.effort = value
+    else if (flag === '--auth') options.authProfile = value
     else throw new Error(`Unknown QA option: ${flag}`)
   }
 

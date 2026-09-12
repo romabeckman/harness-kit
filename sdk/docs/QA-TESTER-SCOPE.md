@@ -144,10 +144,31 @@ This command selects the latest version of every saved plan, validates and execu
 | `--agent <runner>` | Override the agent runner. Defaults to `claude-cli`. |
 | `--model <model>` | Override the model used by QA phases. |
 | `--effort <level>` | Override reasoning effort used by QA phases. |
+| `--auth <profile>` | Select a named profile from optional `.harness-kit/auth.json`; valid for `run` and `exploratory`. |
 | `--debug` | Show runner arguments, prompts, sessions, and complete errors. |
 | `--run <id>` | Select a completed run for `hrns qa report`. |
 
 For `hrns qa exploratory`, use `--project` to select the plan repository and `--target` to override non-CLI plan targets without modifying stored plans. Run and report-specific options are rejected.
+
+## Authentication
+
+Create `.harness-kit/auth.json` only when the target requires authentication. The file is ignored by Git and must contain environment-variable references, never secret values:
+
+```json
+{
+  "schemaVersion": 1,
+  "defaultProfile": "qa-user",
+  "profiles": {
+    "qa-user": { "mode": "bearer", "token": { "source": "env", "name": "QA_USER_TOKEN" } },
+    "admin": { "mode": "basic", "username": "qa-admin", "password": { "source": "env", "name": "QA_ADMIN_PASSWORD" } },
+    "service": { "mode": "api-key", "header": "X-API-Key", "value": { "source": "env", "name": "QA_SERVICE_KEY" } },
+    "browser": { "mode": "cookie", "name": "session", "value": { "source": "env", "name": "QA_SESSION" } },
+    "anonymous": { "mode": "none" }
+  }
+}
+```
+
+Use `--auth qa-user` to override `defaultProfile`. Set a scenario's `authProfile` to another profile name or `none` when a stored plan mixes authenticated and anonymous behavior. HTTP API, MCP, and browser drivers apply headers; Basic browser auth uses browser credentials; cookies use the browser cookie jar; CLI profiles may map secrets to child-process variables with an `environment` object. Authentication values are resolved immediately before execution and are excluded from plans, reports, prompts, and evidence. OAuth2 token acquisition, HMAC signing, mTLS, and WebSocket header authentication are outside the current scope.
 
 Quote values containing spaces. Both `--scope "x=y"` and `--scope="x=y"` preserve equals signs.
 

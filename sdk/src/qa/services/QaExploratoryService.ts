@@ -11,11 +11,13 @@ import { QaPlanValidator } from './QaPlanValidator'
 import { QaRunStore } from './QaRunStore'
 import { QaService } from './QaService'
 import type { QaTargetProbe } from './QaTargetProbe'
+import { QaAuthConfigStore } from '../auth/QaAuthConfigStore'
 
 export interface QaExploratoryOptions {
   target?: string
   signal?: AbortSignal
   onProgress?: QaProgressListener
+  authProfile?: string
 }
 
 export class QaExploratoryService {
@@ -26,7 +28,7 @@ export class QaExploratoryService {
   constructor(workspace: string, store = new QaRunStore(workspace), drivers?: QaDriver[], targetProbe?: QaTargetProbe) {
     this.#workspace = workspace
     this.#store = store
-    this.#service = new QaService(store, drivers, targetProbe)
+    this.#service = new QaService(store, drivers, targetProbe, new QaAuthConfigStore(workspace))
   }
 
   async execute(options: QaExploratoryOptions = {}): Promise<QaExploratoryReport> {
@@ -37,7 +39,7 @@ export class QaExploratoryService {
     const planReports: QaExploratoryPlanReport[] = []
     for (const storedPlan of plans) {
       if (options.signal?.aborted) throw options.signal.reason ?? new Error('QA exploratory execution aborted')
-      const plan = applyTargetOverride(storedPlan, options.target)
+      const plan = applyAuthProfile(applyTargetOverride(storedPlan, options.target), options.authProfile)
       try {
         const validation = await new QaPlanValidator(this.#service).validate(plan, this.#workspace, options.signal)
         if (!validation.valid) throw new Error(`QA plan validation failed: ${validation.errors.join('; ')}`)
@@ -79,6 +81,10 @@ export class QaExploratoryService {
     this.#store.saveExploratoryReport(report)
     return report
   }
+}
+
+function applyAuthProfile(plan: QaPlan, authProfile?: string): QaPlan {
+  return authProfile ? { ...plan, scenarios: plan.scenarios.map((scenario) => ({ ...scenario, authProfile })) } : plan
 }
 
 function latestPlanVersions(plans: QaPlan[]): QaPlan[] {

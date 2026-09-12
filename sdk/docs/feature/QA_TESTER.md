@@ -25,7 +25,7 @@ updated: "2026-09-12"
   "tested_by": ["adr:tests"],
   "entrypoints": ["src/qa/QaAgenticOrchestrator.ts", "src/cli/services/qa-service.ts"],
   "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/cli/services/qa/QaOrchestratorFactory.ts", "src/index.ts", "src/qa/index.ts"],
-  "reference_files": ["src/qa/engine/CurlDriver.ts"],
+  "reference_files": ["src/qa/engine/CurlDriver.ts", "src/qa/auth/QaAuthConfigStore.ts", "src/qa/auth/types.ts"],
   "code_files": ["src/cli/services/qa/types.ts", "src/cli/services/qa/QaArgsParser.ts", "src/cli/services/qa/QaDevelopmentRenewal.ts", "src/cli/services/qa/QaExploratoryCommand.ts", "src/qa/services/QaService.ts", "src/qa/services/QaExploratoryService.ts", "src/qa/services/QaExecutionMemory.ts", "src/qa/services/QaPlanValidator.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/MobileWebDriver.ts", "src/qa/engine/AccessibilityDriver.ts", "src/qa/engine/McpClientDriver.ts", "src/qa/engine/CliDriver.ts", "src/qa/engine/WebSocketDriver.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaValidationPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
   "test_files": ["src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaExtendedEngines.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaImprovements.test.ts", "src/qa/__tests__/QaCurlRegressions.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/services/__tests__/QaPlanValidator.test.ts", "src/qa/services/__tests__/QaTargetProbe.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts"]
 }
@@ -63,6 +63,7 @@ src/cli/services/qa/         # parsing, command handlers, factories, and CLI typ
 7. **Preserve scope** byte-for-byte and number scenario IDs with three digits.
 8. **Reuse one session** per QA execution, never across executions.
 9. **Run saved suites** with `hrns qa exploratory`. Execute each latest plan version sequentially without adaptive additions. Continue after plan errors. Save `docs/qa/exploratory/<id>/report.json`.
+10. **Authenticate** with `--auth <profile>` from optional `.harness-kit/auth.json`. Resolve environment references only at execution time.
 
 ```text
 # CORRECT: run QA and generate the report during execution
@@ -107,6 +108,14 @@ REQUIRED: Aggregate exploratory verdicts as `FAIL`, `BLOCKED`, `INCONCLUSIVE`, t
 ## DRIVERS
 
 Use temporary static servers for browser profiles. Route security HTTP through API unless overridden. Curl does not follow redirects. Browser evidence requires screenshots. CLI uses no shell.
+
+## AUTHENTICATION
+
+REQUIRED: Define named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles in optional `.harness-kit/auth.json`. Reference all secrets through environment variables. Use `--auth <profile>` to override `defaultProfile`; allow `authProfile: "none"` per scenario.
+
+REQUIRED: Apply HTTP credentials to same-origin API, MCP, and browser traffic. Apply Basic browser credentials and cookies through Playwright context APIs. Inject only explicitly mapped `environment` values into CLI child processes.
+
+PROHIBITED: Persist resolved secrets in plans, prompts, reports, execution memory, or evidence. PROHIBITED: Apply header authentication to cross-origin browser requests. WebSocket header authentication, OAuth2 acquisition, HMAC signing, and mTLS remain outside the current boundary.
 
 ## EXECUTION MEMORY
 

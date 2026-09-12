@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { QaBrowserAction, QaDriver, QaProfile, QaScenario, QaScenarioResult } from '../types'
+import type { QaBrowserAction, QaDriver, QaDriverExecutionContext, QaProfile, QaScenario, QaScenarioResult } from '../types'
 
 export type PlaywrightModule = { chromium: { launch(options: { headless: boolean }): Promise<any> } }
 export type PlaywrightLoader = () => Promise<PlaywrightModule>
@@ -23,7 +23,7 @@ export class PlaywrightDriver implements QaDriver {
     }
   }
 
-  async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal): Promise<QaScenarioResult> {
+  async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal, context?: QaDriverExecutionContext): Promise<QaScenarioResult> {
     if (signal?.aborted) {
       return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason: signal.reason instanceof Error ? signal.reason.message : String(signal.reason ?? 'Execution cancelled'), evidence: [] }
     }
@@ -33,7 +33,8 @@ export class PlaywrightDriver implements QaDriver {
       const browser = await playwright.chromium.launch({ headless: true })
       try {
         if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
-        const page = await browser.newPage(this.pageOptions())
+        const page = await browser.newPage({ ...this.pageOptions(), ...(context?.auth.basic ? { httpCredentials: context.auth.basic } : {}) })
+        await applyBrowserAuth(page, target, context)
         const pageErrors: string[] = []
         page.on?.('pageerror', (error: Error) => pageErrors.push(error.message))
         await page.goto(target, { waitUntil: 'networkidle', signal })
@@ -141,6 +142,24 @@ export class PlaywrightDriver implements QaDriver {
   protected async loadPlaywright(): Promise<PlaywrightModule> {
     return this.#loader()
   }
+}
+
+async function applyBrowserAuth(page: any, target: string, context?: QaDriverExecutionContext): Promise<void> {
+  const auth = context?.auth
+  if (!auth || auth.mode === 'none' || auth.mode === 'basic') return
+  if (auth.cookie) {
+    const cookie = auth.cookie.domain
+      ? { ...auth.cookie, path: auth.cookie.path ?? '/' }
+      : { name: auth.cookie.name, value: auth.cookie.value, url: target }
+    await page.context().addCookies([cookie])
+    return
+  }
+  const origin = new URL(target).origin
+  await page.route('**/*', (route: any) => {
+    const request = route.request()
+    if (new URL(request.url()).origin !== origin) return route.continue()
+    return route.continue({ headers: { ...request.headers(), ...auth.headers } })
+  })
 }
 
 function loadPlaywrightModule(): Promise<PlaywrightModule> {

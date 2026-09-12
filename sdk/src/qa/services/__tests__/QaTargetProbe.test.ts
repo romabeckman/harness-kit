@@ -28,6 +28,11 @@ describe('probeQaTarget', () => {
     await expect(probeQaTarget('http://127.0.0.1:8080/mcp')).resolves.toEqual({ available: true })
   })
 
+  it.each([401, 403])('treats protected HTTP %s responses as reachable', async (status) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status })))
+    await expect(probeQaTarget('http://127.0.0.1:8080/protected')).resolves.toEqual({ available: true })
+  })
+
   it('treats a root HTTP 404 as reachable for API targets with relative routes', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('not found', { status: 404 })))
 

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import spawn from 'cross-spawn'
-import type { QaDriver, QaScenario, QaScenarioResult } from '../types'
+import type { QaDriver, QaDriverExecutionContext, QaScenario, QaScenarioResult } from '../types'
 
 export class CurlDriver implements QaDriver {
   readonly profile = 'api' as const
@@ -15,7 +15,7 @@ export class CurlDriver implements QaDriver {
     })
   }
 
-  async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal): Promise<QaScenarioResult> {
+  async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal, context?: QaDriverExecutionContext): Promise<QaScenarioResult> {
     if (signal?.aborted) return this.blocked(scenario, String(signal.reason ?? 'QA execution cancelled'))
     if (!scenario.request) return this.blocked(scenario, 'API scenario has no HTTP request')
     mkdirSync(evidenceDir, { recursive: true })
@@ -25,9 +25,10 @@ export class CurlDriver implements QaDriver {
     const request = scenario.request
     const url = new URL(request.path, target)
     if (url.origin !== new URL(target).origin) return this.blocked(scenario, 'API request must stay within the configured target origin')
-    writeFileSync(requestPath, JSON.stringify(redactRequest({ method: request.method, url: url.toString(), headers: request.headers ?? {}, body: request.body }), null, 2), 'utf8')
+    const headers = { ...(request.headers ?? {}), ...(context?.auth.headers ?? {}) }
+    writeFileSync(requestPath, JSON.stringify(redactRequest({ method: request.method, url: url.toString(), headers, body: request.body }), null, 2), 'utf8')
     const args = ['--silent', '--show-error', '--proto', '=http,https', '--connect-timeout', '5', '--max-time', '30', '--output', responsePath, '--dump-header', responseHeadersPath, '--write-out', '%{http_code}', '--request', request.method]
-    for (const [name, value] of Object.entries(request.headers ?? {})) args.push('--header', `${name}: ${value}`)
+    for (const [name, value] of Object.entries(headers)) args.push('--header', `${name}: ${value}`)
     if (request.body !== undefined) args.push('--data-raw', request.body)
     args.push(url.toString())
     const result = await this.runCurl(args, signal)

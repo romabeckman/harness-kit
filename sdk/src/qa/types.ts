@@ -59,6 +59,7 @@ export interface QaScenario {
   criterionIds: string[]
   required: boolean
   profile: QaProfile
+  authProfile?: string | 'none'
   description?: string
   category?: QaScenarioCategory
   request?: QaHttpRequest
@@ -164,6 +165,7 @@ export interface QaAgenticRequest {
   scenarios?: string[]
   target?: string
   profile?: QaProfile
+  authProfile?: string
 }
 
 export interface QaPlanInput {
@@ -212,6 +214,8 @@ export function formatQaScenarioId(index: number, id: string): string {
 
 export interface QaDriver {
   readonly profile: QaProfile
-  execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal): Promise<QaScenarioResult>
+  execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal, context?: QaDriverExecutionContext): Promise<QaScenarioResult>
   doctor(): Promise<{ available: boolean; reason?: string }>
 }
+
+export interface QaDriverExecutionContext { auth: import('./auth/types').QaResolvedAuth }

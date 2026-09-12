@@ -35,6 +35,8 @@ describe('QA CLI', () => {
     expect(parseQaArgs(['run', '--scope', 'Test endpoint X'])).toMatchObject({ action: 'run', scope: 'Test endpoint X' })
     expect(parseQaArgs(['report', '--run', 'orders-20260911'])).toMatchObject({ action: 'report', runId: 'orders-20260911' })
     expect(parseQaArgs(['exploratory', '--target', 'http://qa.test'])).toMatchObject({ action: 'exploratory', target: 'http://qa.test' })
+    expect(parseQaArgs(['run', '--auth', 'admin'])).toMatchObject({ action: 'run', authProfile: 'admin' })
+    expect(parseQaArgs(['exploratory', '--auth=qa-user'])).toMatchObject({ action: 'exploratory', authProfile: 'qa-user' })
     expect(() => parseQaArgs(['report', '--report'])).toThrow('--report is only valid with hrns qa run')
     expect(() => parseQaArgs(['exploratory', '--scope', 'new scope'])).toThrow('--scope is only valid with hrns qa run')
     expect(() => parseQaArgs(['exploratory', '--run', 'stored-run'])).toThrow('--run is only valid with hrns qa report')

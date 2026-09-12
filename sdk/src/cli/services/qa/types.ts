@@ -25,6 +25,7 @@ export interface QaCliOptions {
   agentType?: string
   model?: string
   effort?: string
+  authProfile?: string
   debug?: boolean
   report: boolean
 }

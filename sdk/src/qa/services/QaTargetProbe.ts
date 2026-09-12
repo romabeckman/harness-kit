@@ -17,7 +17,7 @@ export const probeQaTarget: QaTargetProbe = async (target, signal) => {
     // A root 404 can be valid for API targets whose scenarios use relative paths.
     // A path-specific 404 or any 5xx proves the configured target is unusable.
     const rootNotFound = response.status === 404 && targetUrl.pathname === '/'
-    if (response.status >= 400 && response.status !== 405 && !rootNotFound) {
+    if (response.status >= 400 && ![401, 403, 405].includes(response.status) && !rootNotFound) {
       return { available: false, reason: `Target unavailable at ${target}: HTTP ${response.status}` }
     }
     return { available: true }

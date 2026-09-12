@@ -9,6 +9,7 @@ import { runQaExploratoryCommand } from './qa/QaExploratoryCommand'
 import { createQaOrchestrator } from './qa/QaOrchestratorFactory'
 import { offerDevelopmentRenewal } from './qa/QaDevelopmentRenewal'
 import type { QaCliOptions, QaCommandDependencies } from './qa/types'
+import { QaAuthConfigStore } from '../../qa/auth/QaAuthConfigStore'
 
 export { parseQaArgs }
 export type { QaAction, QaCliOptions, QaCommandDependencies } from './qa/types'
@@ -61,6 +62,20 @@ async function resolveTarget(target?: string, profile?: QaProfile): Promise<stri
   return value.trim() || undefined
 }
 
+async function resolveAuthProfile(workspace: string, authProfile?: string): Promise<string | undefined> {
+  if (authProfile !== undefined) return authProfile
+  const profiles = new QaAuthConfigStore(workspace).describe()
+  if (profiles.length === 0) return undefined
+  const { select } = await import('@inquirer/prompts')
+  return select({
+    message: 'QA authentication profile:',
+    choices: [
+      { name: 'none — run anonymously', value: undefined },
+      ...profiles.map((profile) => ({ name: `${profile.name} — ${profile.mode}`, value: profile.name })),
+    ],
+  })
+}
+
 async function selectSavedPlanAction(): Promise<'resume' | 'new'> {
   const { select } = await import('@inquirer/prompts')
   return select({
@@ -107,6 +122,7 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
   const options = parseQaArgs(args)
   if (options.debug) DebugContext.enable()
   const workspace = resolve(cwd, options.projectPath ?? '.')
+  options.authProfile = await resolveAuthProfile(workspace, options.authProfile)
 
   if (options.action === 'exploratory') {
     await runQaExploratoryCommand(workspace, options, dependencies)
@@ -135,7 +151,7 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
     const targetValidation = validateTarget(target ?? '', profile)
     if (targetValidation !== true) throw new Error(targetValidation)
     const view = dependencies.view ?? new QaTerminalView()
-    const request = { scope, scenarios: options.scenarios, target: profile === 'cli' ? resolve(workspace, target || '.') : target, profile }
+    const request = { scope, scenarios: options.scenarios, target: profile === 'cli' ? resolve(workspace, target || '.') : target, profile, authProfile: options.authProfile }
     view.start(request, workspace)
     const report = await createQaOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event)).run(request)
     if (options.report) view.renderReport(report)

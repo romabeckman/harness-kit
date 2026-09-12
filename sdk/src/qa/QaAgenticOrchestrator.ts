@@ -9,6 +9,7 @@ import type { QaProgressEvent, QaProgressListener } from './progress'
 import { QaRuntimeManager, type QaRuntimePreparer } from './services/QaRuntimeManager'
 import type { QaTargetProbe } from './services/QaTargetProbe'
 import { QaExecutionMemory } from './services/QaExecutionMemory'
+import { QaAuthConfigStore } from './auth/QaAuthConfigStore'
 
 export interface QaAgenticOrchestratorOptions {
   workspace: string
@@ -24,6 +25,7 @@ export interface QaAgenticOrchestratorOptions {
   onProgress?: QaProgressListener
   runtime?: QaRuntimePreparer
   targetProbe?: QaTargetProbe
+  authProfile?: string
 }
 
 export class QaAgenticOrchestrator {
@@ -38,7 +40,7 @@ export class QaAgenticOrchestrator {
       workspace: options.workspace,
       runner: sessionScopedRunner(options.runner),
       store,
-      service: new QaService(store, options.drivers, options.targetProbe),
+      service: new QaService(store, options.drivers, options.targetProbe, new QaAuthConfigStore(options.workspace), options.authProfile),
       settings: options.settings,
       model: options.model,
       effort: options.effort,

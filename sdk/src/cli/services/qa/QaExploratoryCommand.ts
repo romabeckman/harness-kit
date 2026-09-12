@@ -13,6 +13,6 @@ export async function runQaExploratoryCommand(
     store,
     dependencies.drivers,
     dependencies.targetProbe,
-  ).execute({ target: options.target, onProgress: dependencies.view ? (event) => dependencies.view!.onProgress(event) : undefined })
+  ).execute({ target: options.target, authProfile: options.authProfile, onProgress: dependencies.view ? (event) => dependencies.view!.onProgress(event) : undefined })
   console.log(JSON.stringify(report, null, 2))
 }

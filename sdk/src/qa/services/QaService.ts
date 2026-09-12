@@ -6,18 +6,23 @@ import { formatQaScenarioId, type QaDriver, type QaPlan, type QaPlanInput, type 
 import { QaRunStore } from './QaRunStore'
 import type { QaProgressListener } from '../progress'
 import { probeQaTarget, type QaTargetProbe } from './QaTargetProbe'
+import { QaAuthConfigStore } from '../auth/QaAuthConfigStore'
 
 export class QaService {
   readonly #store: QaRunStore
   readonly #drivers: Map<string, QaDriver>
   readonly #targetProbe: QaTargetProbe
+  readonly #auth?: QaAuthConfigStore
+  readonly #authProfile?: string
 
-  constructor(store: QaRunStore, drivers: QaDriver[] = defaultDrivers(), targetProbe: QaTargetProbe = probeQaTarget) {
+  constructor(store: QaRunStore, drivers: QaDriver[] = defaultDrivers(), targetProbe: QaTargetProbe = probeQaTarget, auth?: QaAuthConfigStore, authProfile?: string) {
     this.#store = store
     this.#drivers = new Map(drivers.map((driver) => [driver.profile, driver]))
     const api = this.#drivers.get('api')
     if (api && !this.#drivers.has('security')) this.#drivers.set('security', api)
     this.#targetProbe = targetProbe
+    this.#auth = auth
+    this.#authProfile = authProfile
   }
 
   plan(input: QaPlanInput): QaPlan {
@@ -84,7 +89,7 @@ export class QaService {
       const result = !availability.available
         ? { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: availability.reason ?? `Target unavailable at ${plan.target}`, evidence: [] }
         : driver
-          ? await driver.execute(scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id, evidenceSequence), signal)
+          ? await this.executeDriver(driver, scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id, evidenceSequence), signal)
           : { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: `No QA driver for ${scenario.profile}`, evidence: [] }
       run.results.push(result)
       this.#store.saveRun(run)
@@ -104,6 +109,14 @@ export class QaService {
     run.completedAt = new Date().toISOString()
     this.#store.saveRun(run)
     return run
+  }
+
+  private async executeDriver(driver: QaDriver, scenario: QaPlan['scenarios'][number], target: string, evidenceDir: string, signal?: AbortSignal) {
+    const auth = this.#auth?.resolve(scenario.authProfile ?? this.#authProfile) ?? { mode: 'none' as const, profile: 'none', headers: {}, environment: {} }
+    if (auth.mode === 'none' && Object.keys(auth.environment).length === 0) {
+      return driver.execute(scenario, target, evidenceDir, signal)
+    }
+    return driver.execute(scenario, target, evidenceDir, signal, { auth })
   }
 
   async doctor(profile: QaPlan['profile']): Promise<{ available: boolean; reason?: string }> {

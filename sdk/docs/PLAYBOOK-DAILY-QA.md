@@ -50,6 +50,23 @@ hrns qa exploratory --project ../checkout --target http://127.0.0.1:3000
 
 The command validates and executes plans sequentially without planning or adaptive additions. One invalid or blocked plan does not stop later plans. Review `docs/qa/exploratory/<exploratory-run-id>/report.json` for global totals, per-plan verdicts, run IDs, results, and errors. Evidence remains under each `docs/qa/runs/<qa-run-id>/` directory.
 
+## Run against protected targets
+
+Add optional `.harness-kit/auth.json` with named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. Reference secrets through environment variables only; the file is ignored by Git.
+
+```json
+{ "schemaVersion": 1, "defaultProfile": "qa-user", "profiles": { "qa-user": { "mode": "bearer", "token": { "source": "env", "name": "QA_USER_TOKEN" } } } }
+```
+
+Set the referenced variable in the test environment, then select the profile:
+
+```bash
+hrns qa run --auth qa-user --scope "Validate protected orders" --target http://127.0.0.1:3000 --profile api
+hrns qa exploratory --auth qa-user --target http://127.0.0.1:3000
+```
+
+Omit `--auth` to use `defaultProfile`; interactive execution offers configured profiles. Use test-only credentials with minimum privileges. Never place raw tokens or production credentials in configuration, plans, scenarios, reports, or evidence.
+
 ## One-time browser setup
 
 API validation uses a system `curl` executable. Interface and web-game validation use Playwright with Chromium.

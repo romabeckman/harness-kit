@@ -1,10 +1,10 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import spawn from 'cross-spawn'
-import type { QaDriver, QaScenario, QaScenarioResult } from '../types'
+import type { QaDriver, QaDriverExecutionContext, QaScenario, QaScenarioResult } from '../types'
 
 export interface CliExecutionResult { code: number | null; stdout: string; stderr: string }
-export type CliExecutor = (command: string, args: string[], cwd: string, signal?: AbortSignal) => Promise<CliExecutionResult>
+export type CliExecutor = (command: string, args: string[], cwd: string, signal?: AbortSignal, environment?: Record<string, string>) => Promise<CliExecutionResult>
 
 const SAFE_COMMAND = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
 const MAX_ARGS = 100
@@ -18,7 +18,7 @@ export class CliDriver implements QaDriver {
     return { available: true }
   }
 
-  async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal): Promise<QaScenarioResult> {
+  async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal, context?: QaDriverExecutionContext): Promise<QaScenarioResult> {
     const request = scenario.cli
     if (!request) return blocked(scenario, 'CLI scenario has no command')
     if (!SAFE_COMMAND.test(request.command)) return blocked(scenario, 'CLI command must be a safe executable name without a path')
@@ -26,7 +26,10 @@ export class CliDriver implements QaDriver {
     if (args.length > MAX_ARGS || args.some((arg) => arg.includes('\0'))) return blocked(scenario, 'CLI arguments exceed safety bounds')
     const cwd = resolve(target)
     try {
-      const execution = await this.executor(request.command, args, cwd, signal)
+      const environment = context?.auth.environment
+      const execution = environment && Object.keys(environment).length > 0
+        ? await this.executor(request.command, args, cwd, signal, environment)
+        : await this.executor(request.command, args, cwd, signal)
       mkdirSync(evidenceDir, { recursive: true })
       const evidencePath = join(evidenceDir, 'cli.json')
       writeFileSync(evidencePath, JSON.stringify({ command: request.command, args: redactArgs(args), code: execution.code, stdout: execution.stdout, stderr: execution.stderr }, null, 2), 'utf8')
@@ -60,9 +63,9 @@ function redactArgs(args: string[]): string[] {
   })
 }
 
-function executeCommand(command: string, args: string[], cwd: string, signal?: AbortSignal): Promise<CliExecutionResult> {
+function executeCommand(command: string, args: string[], cwd: string, signal?: AbortSignal, environment?: Record<string, string>): Promise<CliExecutionResult> {
   return new Promise((resolveExecution) => {
-    const child = spawn(command, args, { cwd, shell: false, stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(command, args, { cwd, shell: false, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...environment } })
     let stdout = ''
     let stderr = ''
     child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
