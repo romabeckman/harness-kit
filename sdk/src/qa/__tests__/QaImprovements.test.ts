@@ -5,13 +5,17 @@ import { join } from 'node:path'
 import { QaAgenticOrchestrator } from '../QaAgenticOrchestrator'
 import { PlaywrightDriver } from '../engine/PlaywrightDriver'
 import { QaPlanningPhase } from '../phases/QaPlanningPhase'
+import { QaAnalysisPhase } from '../phases/QaAnalysisPhase'
+import { QaReportingPhase } from '../phases/QaReportingPhase'
 import { QaTerminalView } from '../ui/QaTerminalView'
 import { QaRuntimeManager } from '../services/QaRuntimeManager'
 import { QaService } from '../services/QaService'
 import { QaRunStore } from '../services/QaRunStore'
 import type { QaProgressEvent } from '../progress'
 import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
+import { Runner } from '../../agent-runner/types'
 import type { QaDriver, QaScenarioStatus } from '../types'
+import type { QaPhaseContext } from '../phases/types'
 
 describe('QA focused regressions', () => {
   let workspace: string
@@ -44,6 +48,78 @@ describe('QA focused regressions', () => {
 
   it('rejects a planner profile that contradicts the requested engine', () => {
     expect(() => new QaPlanningPhase().parse(JSON.stringify(plan()), { profile: 'web' }, 1)).toThrow('requested profile')
+  })
+
+  it('reads Antigravity planning output from the file requested by the prompt', async () => {
+    let prompt = ''
+    const runner: IAgentRunner = {
+      type: Runner.ANTIGRAVITY_CLI,
+      run: vi.fn(async (invocation) => {
+        prompt = invocation.prompt ?? ''
+        const outputPath = /<qa_output_file>([^<]+)<\/qa_output_file>/.exec(prompt)?.[1]
+        if (!outputPath) throw new Error('planning output path missing')
+        writeFileSync(join(workspace, outputPath), JSON.stringify(plan()))
+        return { raw: 'Plan written to file.' }
+      }),
+    }
+    const store = new QaRunStore(workspace)
+    const context: QaPhaseContext = {
+      workspace,
+      request: { scope: 'Check health endpoint', target: 'http://127.0.0.1:8080', profile: 'api' },
+      runner,
+      store,
+      service: new QaService(store, []),
+    }
+
+    await expect(new QaPlanningPhase().execute(context)).resolves.toBe('VALIDATION')
+    expect(context.plan?.id).toBe('target-check')
+    expect(prompt).toContain('Do not return the JSON in your response.')
+  })
+
+  it('reads analysis and reporting output from their requested files', async () => {
+    const storedPlan = new QaPlanningPhase().parse(JSON.stringify(plan()), {}, 1)
+    const run = {
+      schemaVersion: 1 as const,
+      id: 'file-output-run',
+      planId: storedPlan.id,
+      planVersion: storedPlan.version,
+      target: storedPlan.target,
+      createdAt: '2026-09-12T00:00:00.000Z',
+      completedAt: '2026-09-12T00:01:00.000Z',
+      verdict: 'PASS' as const,
+      results: [{ scenarioId: '001-health', required: true, status: 'PASSED' as const, evidence: [] }],
+    }
+    const prompts: string[] = []
+    const runner: IAgentRunner = {
+      run: vi.fn(async (invocation) => {
+        const prompt = invocation.prompt ?? ''
+        prompts.push(prompt)
+        const outputPath = /<qa_output_file>([^<]+)<\/qa_output_file>/.exec(prompt)?.[1]
+        if (!outputPath) throw new Error('QA output path missing')
+        const output = invocation.phaseKey === 'qa_analysis'
+          ? { complete: true }
+          : { summary: 'File report.', markdown: '# QA Report\n', bugs: [], errors: [] }
+        writeFileSync(join(workspace, outputPath), JSON.stringify(output))
+        return { raw: 'Confirmation only.' }
+      }),
+    }
+    const store = new QaRunStore(workspace)
+    const context: QaPhaseContext = {
+      workspace,
+      request: { target: storedPlan.target, profile: storedPlan.profile },
+      runner,
+      store,
+      service: new QaService(store, []),
+      plan: storedPlan,
+      run,
+    }
+
+    await expect(new QaAnalysisPhase().execute(context)).resolves.toBe('REPORTING')
+    await expect(new QaReportingPhase().execute(context)).resolves.toBe('COMPLETED')
+    expect(prompts).toHaveLength(2)
+    expect(prompts[0]).toContain('Generate the QA analysis result directly in this file using file tools.')
+    expect(prompts[1]).toContain('Generate the QA report directly in this file using file tools.')
+    expect(context.report?.summary).toBe('File report.')
   })
 
   it('rejects changed executed scenarios during adaptive revision and reports the skipped analysis', async () => {
