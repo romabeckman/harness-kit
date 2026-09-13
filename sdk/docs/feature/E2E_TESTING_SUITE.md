@@ -1,7 +1,7 @@
 ---
 doc_type: feature
 domain: e2e_testing
-stack: [TypeScript, Node.js, Vitest]
+stack: [TypeScript, Node.js, Vitest 5.0.0]
 node_id: "feature:e2e_testing_suite"
 tags: [testing, e2e, sandbox, vitest]
 edges:
@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-14"
+updated: "2026-09-13"
 ---
 
 ```graph
@@ -20,7 +20,7 @@ updated: "2026-08-14"
 Provides an end-to-end integration and CLI test suite validating the complete Harness Kit SDK orchestrator lifecycle.
 
 ## OVERVIEW
-The E2E testing suite executes non-interactive end-to-end test scenarios against compiled CLI binaries (`dist/cli/run.js`). It leverages Vitest with dedicated configuration to verify orchestrator state transitions and safety constraints.
+The E2E testing suite executes non-interactive scenarios against compiled CLI binaries (`dist/cli/run.js`). Use Vitest 5 with dedicated configuration to verify state transitions and safety constraints.
 
 ## FOLDER STRUCTURE
 <folder_structure>

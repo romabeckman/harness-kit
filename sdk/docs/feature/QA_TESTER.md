@@ -1,7 +1,7 @@
 ---
 doc_type: feature
 domain: qa
-stack: [TypeScript, Node.js, LLM agent runners, curl, Playwright]
+stack: [TypeScript, Node.js, Vitest 5.0.0, LLM agent runners, Playwright]
 node_id: "feature:qa_tester"
 tags: [qa, acceptance, curl, playwright, runtime]
 edges:
@@ -35,7 +35,7 @@ updated: "2026-09-13"
 
 ## OVERVIEW
 
-Run QA independently. Persist artifacts under `docs/qa/`.
+Run QA independently. Persist plans, runs, evidence, reports in `docs/qa/`.
 
 ## FOLDER STRUCTURE
 
@@ -49,30 +49,30 @@ src/cli/services/qa/ # QA parsing, handlers, factories, CLI types
 
 ## EXECUTION
 
-1. **Run** with `hrns qa run`; select `resume` or `new` when saved plans exist.
-2. **Define** scope with `--scope` or prompts; add baselines with repeated `--scenario`.
+1. **Run** with `hrns qa run --agent <runner>`; select `resume` or `new` when plans exist.
+2. **Define** scope with `--scope` or prompts; add repeated `--scenario` baselines.
 3. **Validate** planner JSON, profile, target, and executable scenarios.
-4. **Execute** in order, analyze evidence, optionally report with `--report`.
-5. **Regenerate** reports with `hrns qa report --run <id>`.
-6. **Explore** latest saved plan versions with `hrns qa exploratory`; continue after plan errors.
-7. **Authenticate** through `--auth <profile>` and optional `.harness-kit/auth.json`.
+4. **Execute** in order, analyze evidence, report with `--report`; use selected outer runner.
+5. **Regenerate** with `hrns qa report --run <id>`; explore with `hrns qa exploratory`.
+6. **Authenticate** with `--auth <profile>` and `.harness-kit/auth.json`.
 
-REQUIRED: Preserve scope byte-for-byte, number scenario IDs with three digits, and reuse one runner session per QA execution. Planning, analysis, and reporting use temporary JSON handoffs under `docs/qa/`; remove each handoff after parsing.
+REQUIRED: Preserve scope byte-for-byte, use three-digit scenario IDs, and reuse one runner session per execution. Planning, analysis, and reporting use temporary JSON handoffs under `docs/qa/`; remove each after parsing. Use response fallback for runners without file tools.
 
 ```text
 # CORRECT: run QA and generate the report during execution
-hrns qa run --report --scope "Test order creation endpoint" --target http://127.0.0.1:3000
+hrns qa run --report --scope "Test order creation endpoint" --target http://127.0.0.1:3000 --agent codex-cli
+
+# CORRECT: preview and execute through the safety wrapper
+python skills/qa-orchestrator/scripts/safe_hrns_qa.py --execute --cwd . -- qa run --report --target http://127.0.0.1:3000 --agent codex-cli
 
 # CORRECT: fix actionable results from one completed QA run
 hrns run --reset --run orders-20260911 --mode fast
 
-# WRONG: use a removed QA action
-hrns qa execute --plan orders@1
 ```
 
 ## DEVELOPMENT RENEWAL
 
-Ask **Send failed and blocked scenarios to fix?** with default `false`. Skip reports, noninteractive terminals, and runs without actionable results. Run `hrns run --reset` after confirmation. Alternatively, run `hrns run --reset --run <id>` to select a completed QA run directly. The command generates scope from its `FAILED` and `BLOCKED` results. REQUIRED: Preserve accepted overrides, `--agent`, and `--debug`. PROHIBITED: Combine `--run` with `--scope` or send other results.
+Ask **Send failed and blocked scenarios to fix?** with default `false`. Skip reports, noninteractive terminals, and runs without actionable results. After confirmation use `hrns run --reset`, or use `hrns run --reset --run <id>` to generate scope from one completed run. REQUIRED: Preserve accepted overrides, `--agent`, and `--debug`. PROHIBITED: Combine `--run` with `--scope` or include other results.
 
 ## VERDICTS
 
@@ -85,27 +85,21 @@ Ask **Send failed and blocked scenarios to fix?** with default `false`. Skip rep
 
 ## TERMINAL PROGRESS
 
-| Events | Output |
-| --- | --- |
-| Runtime and phase | Target, server state, phase, warnings, validation errors. |
-| Scenario | Position, action, status, and failure reason. |
-| Completion | Counts, verdict, cycles, and report state. |
-
-REQUIRED: Emit through injected `QaTerminalPresenter`; disable ANSI without a TTY. Aggregate exploratory verdicts as `FAIL`, `BLOCKED`, `INCONCLUSIVE`, then `PASS`. Include IDs, targets, results, totals, and errors. Apply target overrides in memory only.
+REQUIRED: Emit runtime, phase, scenario, and completion events through injected `QaTerminalPresenter`; disable ANSI without a TTY. Aggregate exploratory verdicts as `FAIL`, `BLOCKED`, `INCONCLUSIVE`, then `PASS`. Include IDs, results, totals, and errors. Keep target overrides in memory.
 
 ## DRIVERS
 
-Use temporary static servers for browser profiles. Route security HTTP through API unless overridden. Curl does not follow redirects. Browser evidence requires screenshots. CLI uses no shell.
+Use temporary static servers for browser profiles. Route security HTTP through API unless overridden. Curl does not follow redirects; MCP follows same-origin redirects only. Browser evidence requires screenshots. CLI uses no shell.
 
 ## AUTHENTICATION
 
-REQUIRED: Define named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. Prefer environment references; allow confirmed `storage: "insecure"` literals locally. Apply credentials only to same-origin API, MCP, and browser traffic. Send Curl configuration through transient stdin. Redact resolved values from evidence. Inject only explicit CLI environment mappings.
+REQUIRED: Define named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. Prefer environment references; allow confirmed `storage: "insecure"` literals locally. Apply credentials only to same-origin API, MCP, and browser traffic. Send Curl config through transient stdin; redact resolved values and raw bearer tokens from evidence and reasons. Inject only explicit CLI mappings.
 
 REQUIRED: Keep `hrns qa auth` form-only and reject duplicate names. Block authenticated CLI without environment mappings and all authenticated WebSocket scenarios. PROHIBITED: Persist resolved secrets or expose literals in logs. OAuth2, HMAC, mTLS, and WebSocket headers remain outside scope.
 
 ## EXECUTION MEMORY
 
-`docs/qa/execution-memory.json` retains ten verified target hints for 30 days. REQUIRED: Revalidate hints; explicit input wins. PROHIBITED: Store outcomes, credentials, ports, or agent instructions.
+`docs/qa/execution-memory.json` retains ten verified target hints for 30 days. REQUIRED: Revalidate hints; explicit input wins. Actionless resume keeps its stored target; use `qa run` when a new target must win. PROHIBITED: Store outcomes, credentials, ports, or agent instructions.
 
 ## LIMITS
 

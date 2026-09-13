@@ -1,18 +1,18 @@
 ---
 doc_type: adr
 domain: architecture
-stack: [TypeScript, Node.js]
+stack: [TypeScript 7.0.2, Node.js, Vitest 5.0.0, Docker]
 node_id: "adr:architecture"
 tags: [architecture, ports-and-adapters, state-machine, orchestrator]
 edges:
   - relation: references
     target: "adr:tests"
-updated: "2026-08-18"
+updated: "2026-09-13"
 ---
 # Project Architecture
 
 ## OVERVIEW
-Use **Ports and Adapters** around a Chain-of-Responsibility orchestrator. TypeScript entrypoints drive phase handlers, filesystem state, agent runners, telemetry, CLI output, and an HTTP adapter.
+Use **Ports and Adapters** around a Chain-of-Responsibility orchestrator. TypeScript entrypoints drive phase handlers, filesystem state, agent runners, telemetry, CLI output, HTTP jobs, and independent QA.
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -61,6 +61,7 @@ sdk/
 | HTTP server | Expose non-interactive orchestration, settings, telemetry, reports, and health endpoints. | [HTTP_SERVER.md](../feature/HTTP_SERVER.md) |
 | Terminal UI | Render banners, progress, and ANSI output. | [SDK_TERMINAL_UI.md](../feature/SDK_TERMINAL_UI.md) |
 | Package | Define public exports and npm build output. | [SDK_PACKAGE.md](../feature/SDK_PACKAGE.md) |
+| QA tester | Plan, validate, execute, and report runtime acceptance scenarios. | [QA_TESTER.md](../feature/QA_TESTER.md) |
 
 ## PATTERNS
 
@@ -70,6 +71,7 @@ REQUIRED: Propagate `AbortSignal` into child processes and SDK requests.
 REQUIRED: Mutate persistent state through `IFileStateManager` using atomic temporary-file replacement.
 REQUIRED: Validate changes in order: `rtk npm install`, lint, build, typecheck, then tests.
 REQUIRED: Track and isolate agent sessions across phases using `DeveloperSessionState` with mandatory `phase` tag; resume Development and Review sessions on retries and clear all sessions on feature transition.
+REQUIRED: Select the outer agent runner explicitly for QA; keep QA phase decisions independent of provider-specific sub-agents.
 PROHIBITED: Import concrete agent runners into orchestration decisions.
 PROHIBITED: Put HTTP transport logic inside use cases.
 PROHIBITED: Bypass state adapters with direct writes from phase handlers.

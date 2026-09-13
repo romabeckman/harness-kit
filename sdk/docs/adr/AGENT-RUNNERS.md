@@ -1,19 +1,19 @@
 ---
 doc_type: adr
 domain: agent_runner
-stack: [TypeScript, Node.js, cross-spawn]
+stack: [TypeScript, Node.js, cross-spawn, provider SDKs]
 node_id: "adr:agent_runners"
 tags: [agent-runner, strategies, factory, registry, opencode]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-08-24"
+updated: "2026-09-13"
 ---
 # Agent Runners
 Decouples agent execution clients and strategies from the orchestrator engine.
 
 ## OVERVIEW
-Agent runners abstract target LLM client integrations (CLI, API) for development, review, and QA tasks. A registry and factory provide dynamic instantiation while concrete adapters own vendor-specific process and protocol translation.
+Agent runners abstract LLM client integrations (CLI, API) for development, review, and QA. A registry and factory provide dynamic instantiation while concrete adapters own process and protocol translation.
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -54,9 +54,14 @@ src/agent-runner/
 - Executes `kiro-cli chat --no-interactive --trust-all-tools`; parses result events and does not resume sessions.
 ### OpenCodeCLIRunner (`opencode-cli`)
 - Executes the `opencode run` subcommand with prompts on stdin.
-- Maps model, effort (via `--variant`), agent, session, and workspace values to supported CLI flags; ignores additional-directory values because OpenCode 1.18.21 has no equivalent flag.
+- Maps model, effort (via `--variant`), agent, session, and workspace values to supported CLI flags; ignores additional-directory values because the installed OpenCode contract has no equivalent flag.
 - Parses ANSI-clean JSON objects or JSON-lines events for response text, structured artefacts, usage, cost, and session IDs.
 - Emits text/tool progress from assistant and item events; classifies non-zero exits and parsed agent failures as `API_ERROR`.
+
+### QA runner selection
+- Pass `--agent <runner>` to select the outer `IAgentRunner`.
+- QA phase invocations use `agent: ''`; they must not bind orchestration to a provider-specific sub-agent.
+- File-capable runners write phase JSON handoffs under `docs/qa/`; tool-less SDK runners use response fallback.
 
 ## PARAMETERS / CONFIGURATIONS
 | Name | Type | Required | Description | Default |

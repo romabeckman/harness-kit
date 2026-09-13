@@ -1,7 +1,7 @@
 ---
 doc_type: feature
 domain: diagnose
-stack: [TypeScript, Node.js, Vitest]
+stack: [TypeScript, Node.js, Vitest 5.0.0]
 node_id: "feature:sdk_diagnose"
 tags: [diagnose, meta-harness, traces, ledger, session]
 edges:
@@ -13,7 +13,7 @@ edges:
     target: "feature:sdk_agent_runner"
   - relation: depends_on
     target: "feature:sdk_settings"
-updated: "2026-08-18"
+updated: "2026-09-13"
 ---
 
 ```graph

@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-10"
+updated: "2026-09-13"
 ---
 
 ```graph
