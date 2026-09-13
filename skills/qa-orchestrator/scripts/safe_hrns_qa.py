@@ -14,6 +14,18 @@ from typing import Sequence
 
 
 ALLOWED_ACTIONS = {"run", "report", "exploratory", "auth"}
+ALLOWED_RUNNERS = {
+    "antigravity-cli",
+    "claude-cli",
+    "claude-sdk",
+    "codex-cli",
+    "copilot-cli",
+    "copilot-sdk",
+    "cursor-cli",
+    "cursor-sdk",
+    "kiro-cli",
+    "opencode-cli",
+}
 SECRET_FLAGS = {
     "--api-key",
     "--credential",
@@ -70,6 +82,19 @@ def validate(args: argparse.Namespace) -> tuple[Path, list[str]]:
         raise ValueError(f"unsupported qa action: {action}")
     if action == "run" and "--report" not in qa_options:
         raise ValueError("qa run requires --report")
+    if action in {"run", "report", "exploratory"}:
+        agent_indexes = [index for index, value in enumerate(qa_options) if value == "--agent"]
+        inline_agents = [value.split("=", 1)[1] for value in qa_options if value.startswith("--agent=")]
+        separate_agents = [
+            qa_options[index + 1]
+            for index in agent_indexes
+            if index + 1 < len(qa_options) and not qa_options[index + 1].startswith("-")
+        ]
+        runners = [*inline_agents, *separate_agents]
+        if len(runners) != 1:
+            raise ValueError(f"qa {action} requires an explicit --agent runner")
+        if runners[0] not in ALLOWED_RUNNERS:
+            raise ValueError(f"unsupported --agent runner: {runners[0]}")
 
     for value in command[qa_index + 1 :]:
         if "\x00" in value or "\r" in value or "\n" in value:

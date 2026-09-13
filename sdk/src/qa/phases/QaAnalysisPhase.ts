@@ -20,7 +20,7 @@ export class QaAnalysisPhase implements QaPhaseHandler {
     prepareQaAgentFileOutput(outputFile)
     try {
       const output = await context.runner.run({
-        agent: 'harness-kit:harness-qa', mode: 'autonomous', phaseKey: 'qa_analysis', workspacePath: context.workspace,
+        agent: '', mode: 'autonomous', phaseKey: 'qa_analysis', workspacePath: context.workspace,
         model: agentSettings.model, effort: agentSettings.effort, timeoutMs: agentSettings.timeoutMs, session: context.session,
         prompt: this.buildPrompt(context, outputFile),
       }, { signal })

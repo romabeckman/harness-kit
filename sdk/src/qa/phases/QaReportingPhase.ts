@@ -20,7 +20,7 @@ export class QaReportingPhase implements QaPhaseHandler {
     let raw = '{}'
     try {
       const output = await context.runner.run({
-        agent: 'harness-kit:harness-qa',
+        agent: '',
         mode: 'autonomous',
         phaseKey: 'qa_reporting',
         workspacePath: context.workspace,

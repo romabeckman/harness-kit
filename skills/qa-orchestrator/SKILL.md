@@ -43,15 +43,40 @@ shell metacharacters when Windows resolves `hrns` to a batch launcher.
 - Use `hrns qa report --run <run-id>` only to regenerate a report from an existing completed run. Do not execute scenarios again.
 - Use `hrns qa exploratory` only to execute the latest version of every saved plan. It does not create plans or append adaptive scenarios.
 - Use `hrns qa auth` only to create one named authentication profile through the interactive form. Require confirmation before writing it.
+- Resolve the runner before confirmation and always pass `--agent <runner>` to executable QA and report commands. When Codex is controlling the run, use `--agent codex-cli`. Never rely on the CLI's `claude-cli` default.
 
 </command_selection>
+
+<runner_selection>
+
+Always select one compatible runner and pass it through `--agent`. Supported values:
+
+- `codex-cli` — Codex CLI (`codex`);
+- `claude-cli` — Claude Code CLI (`claude`);
+- `copilot-cli` — GitHub Copilot CLI (`copilot`);
+- `cursor-cli` — Cursor CLI (`agent`);
+- `antigravity-cli` — Antigravity CLI (`agy`);
+- `kiro-cli` — Kiro CLI (`kiro-cli`);
+- `opencode-cli` — OpenCode CLI (`opencode`);
+
+Selection order:
+
+1. Honor a user-selected runner after preflight proves it is configured and available.
+2. Otherwise use the runner matching the controlling environment: Codex uses `codex-cli`, Claude Code uses `claude-cli`, Copilot uses `copilot-cli`, Cursor uses `cursor-cli`, Antigravity uses `antigravity-cli`, Kiro uses `kiro-cli`, and OpenCode uses `opencode-cli`.
+3. Never switch to another provider merely because its executable exists. Ask the user before using a non-matching runner because it may change credentials, billing, model behavior, and permissions.
+
+A CLI runner is compatible only when its exact executable resolves, its version probe succeeds, authentication is ready, and the execution context permits descendant processes. An SDK runner is compatible only when its package, required environment authentication, and runtime are available. Do not display secret values. If compatibility cannot be proved, enter `BLOCKED` or request a runner choice; never fall back to `claude-cli`.
+
+QA phase invocations intentionally use `agent: ''`. `--agent` selects the outer runner; it must not select a provider-specific named sub-agent.
+
+</runner_selection>
 
 <command_examples>
 
 New API acceptance run:
 
 ```text
-hrns qa run --report --project . --scope "Validate health and order creation endpoints" --target "http://127.0.0.1:8080" --profile api
+hrns qa run --report --project . --scope "Validate health and order creation endpoints" --target "http://127.0.0.1:8080" --profile api --agent codex-cli
 ```
 
 Use when testing HTTP status, headers, text, or JSON through public API endpoints.
@@ -59,7 +84,7 @@ Use when testing HTTP status, headers, text, or JSON through public API endpoint
 Browser journey with mandatory scenarios:
 
 ```text
-hrns qa run --report --project "../store" --scope "Validate guest checkout" --scenario "A guest adds an available product to the cart" --scenario "A declined card shows a recoverable error without creating an order" --target "http://127.0.0.1:3000" --profile web
+hrns qa run --report --project "../store" --scope "Validate guest checkout" --scenario "A guest adds an available product to the cart" --scenario "A declined card shows a recoverable error without creating an order" --target "http://127.0.0.1:3000" --profile web --agent codex-cli
 ```
 
 Use when clicks, forms, navigation, keyboard input, or visible assertions need a real browser.
@@ -67,7 +92,7 @@ Use when clicks, forms, navigation, keyboard input, or visible assertions need a
 CLI acceptance run:
 
 ```text
-hrns qa run --report --project "../tool" --scope "Validate help, version, and invalid command behavior" --target "../tool" --profile cli
+hrns qa run --report --project "../tool" --scope "Validate help, version, and invalid command behavior" --target "../tool" --profile cli --agent codex-cli
 ```
 
 Use when testing executable exit codes, stdout, and stderr. Target must be the CLI working directory.
@@ -91,7 +116,7 @@ Use when execution already completed but its report is missing or must be regene
 Execute all latest saved plans:
 
 ```text
-hrns qa exploratory --project . --target "http://127.0.0.1:3000"
+hrns qa exploratory --project . --target "http://127.0.0.1:3000" --agent codex-cli
 ```
 
 Use for broad regression across saved plans. Do not add `--profile`, `--scope`, `--scenario`, or `--report`.
@@ -168,7 +193,7 @@ Required:
 Optional:
 
 - profile: `api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, `websocket`, `security`, or `full`; omit for automatic inference;
-- agent runner; omit for CLI default `claude-cli`. Map a Codex request to `codex-cli` and show that mapping before confirmation;
+- agent runner: always resolve it explicitly. Map a Codex-controlled request to `codex-cli` and show that mapping before confirmation. Never omit it and fall back to `claude-cli`;
 - model and reasoning effort; omit either to use project or runner settings;
 - named authentication profile from `.harness-kit/auth.json`;
 - mandatory scenarios and exclusions.
@@ -257,7 +282,7 @@ Enter only after `CONFIRMED`. Execute from the main agent so the confirmed comma
 Run confirmed prerequisites. Then execute:
 
 ```text
-<confirmed-executable> qa run --report --project <project> --scope <scope> [--scenario <scenario>]... [--target <target>] [--profile <profile>] [--agent <runner>] [--model <model>] [--effort <level>] [--auth <profile>]
+<confirmed-executable> qa run --report --project <project> --scope <scope> [--scenario <scenario>]... [--target <target>] [--profile <profile>] --agent <runner> [--model <model>] [--effort <level>] [--auth <profile>]
 ```
 
 Invoke it through the safety script:

@@ -41,7 +41,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
   private runPlanner(context: QaPhaseContext, prompt: string, signal?: AbortSignal, session?: AgentSession) {
     const agentSettings = resolveQaPhaseSettings(context, 'qa_planning')
     return context.runner.run({
-      agent: 'harness-kit:harness-qa',
+      agent: '',
       mode: 'autonomous',
       phaseKey: 'qa_planning',
       workspacePath: context.workspace,
