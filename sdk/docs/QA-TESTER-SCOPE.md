@@ -124,6 +124,14 @@ This regenerates the report for a completed run using its stored plan and eviden
 hrns qa report
 ```
 
+### Start development correction from a QA run
+
+```text
+hrns run --reset --run <qa-run-id>
+```
+
+This loads a completed QA run and its stored plan, then generates the development scope from only `FAILED` and `BLOCKED` scenarios. It preserves scenario definitions, observed reasons, and evidence paths for the developer. The command rejects an incomplete run, a run with no actionable scenarios, or a combination of `--run` and `--scope`.
+
 ### Run every saved plan
 
 ```text
@@ -146,7 +154,7 @@ This command selects the latest version of every saved plan, validates and execu
 | `--effort <level>` | Override reasoning effort used by QA phases. |
 | `--auth <profile>` | Select a named profile from optional `.harness-kit/auth.json`; valid for `run` and `exploratory`. |
 | `--debug` | Show runner arguments, prompts, sessions, and complete errors. |
-| `--run <id>` | Select a completed run for `hrns qa report`. |
+| `--run <id>` | For `hrns qa report`, select a completed run to regenerate. For `hrns run --reset`, generate correction scope from that run's failed and blocked results. |
 
 For `hrns qa exploratory`, use `--project` to select the plan repository and `--target` to override non-CLI plan targets without modifying stored plans. Run and report-specific options are rejected.
 
