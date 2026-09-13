@@ -15,6 +15,7 @@ export interface ParsedRunArgs {
 
   // ResetOptions fields
   scope?: string
+  runId?: string
   projectPaths: string[]
   score?: number
   reworks?: number
@@ -51,6 +52,7 @@ export interface ParsedRunArgs {
  * --reset                  Force reset action (skip interactive prompt)
  * --resume                 Force resume action (skip interactive prompt)
  * --scope <text>           Project scope / PRD
+ * --run <id>               Completed QA run used to generate correction scope
  * --path <dir>             Add a directory to projectPaths (repeatable)
  * --score <0.1-1>          Acceptance score threshold
  * --reworks <1-10>         Max rework cycles before cascade fail
@@ -109,6 +111,10 @@ export function parseRunArgs(args: string[]): ParsedRunArgs {
       // ── ResetOptions ─────────────────────────────────────────────────────
       case '--scope':
         result.scope = nextArg()
+        break
+
+      case '--run':
+        result.runId = nextArg()
         break
 
       case '--path':

@@ -7,7 +7,7 @@ tags: [steering, rules, rollback, overrides]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-08-15"
+updated: "2026-09-13"
 ---
 # Session Steering
 Guides the runtime classification and application of developer steering overrides in the orchestration loop.
@@ -70,7 +70,7 @@ if (action.type === 'rollback') {
 ## BEST PRACTICES
 REQUIRED: Use rollbacks to reset implementation states when refactoring existing tasks.
 REQUIRED: Flatten all phase-specific rules along with user overrides before invoking any agent.
-FORBIDDEN: Modifying steering configurations without persisting the updated bootstrap config to disk.
+PROHIBITED: Modify steering configurations without persisting the updated bootstrap config to disk.
 
 ## REFERENCES
 - [**ARCHITECTURE.md**](./ARCHITECTURE.md): Global patterns and Ports-and-Adapters layer details.

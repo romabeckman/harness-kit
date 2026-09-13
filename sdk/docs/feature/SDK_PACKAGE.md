@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-08-14"
+updated: "2026-09-13"
 ---
 
 ```graph
@@ -20,7 +20,7 @@ updated: "2026-08-14"
 Defines the publication surface of `@romabeckman/hrns` for npm.
 
 ## OVERVIEW
-The `sdk_package` configures `package.json` and `tsconfig.build.json` so that `npm publish` emits a clean, type-safe CJS-only package. The exports map exposes a single entry and restricts the tarball to compiled files.
+The `sdk_package` configures `package.json` and `tsconfig.build.json` so `npm publish` emits a clean, type-safe CJS-only package. Release `1.5.1` publishes SDK version `0.8.2`; the exports map exposes one entry and restricts the tarball to compiled files.
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -69,6 +69,7 @@ sdk/
 | Name | Type | Required | Description | Default |
 |------|------|----------|-------------|---------|
 | `name` | string | Yes | Scoped package name for npm registry | `@romabeckman/hrns` |
+| `version` | string | Yes | Published SDK version | `0.8.2` |
 | `exports["."].require` | string | Yes | CJS entry via `exports` map | `./dist/index.js` |
 | `files` | string[] | Yes | Tarball whitelist | `["dist", "README.md"]` |
 

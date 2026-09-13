@@ -54,6 +54,16 @@ export async function offerDevelopmentRenewal(
   await runCommand(workspace, runArgs)
 }
 
+export function buildDevelopmentScopeFromRun(workspace: string, runId: string): string {
+  const store = new QaRunStore(workspace)
+  const run = store.loadRun(runId)
+  if (!run.completedAt || !run.verdict) throw new Error(`QA run is not completed: ${run.id}`)
+  const actionableResults = run.results.filter(isActionableResult)
+  if (actionableResults.length === 0) throw new Error(`QA run has no failed or blocked scenarios: ${run.id}`)
+  const plan = store.loadPlan(run.planId, run.planVersion)
+  return buildDevelopmentScope(plan, run, actionableResults)
+}
+
 function isActionableResult(result: QaScenarioResult): boolean {
   return result.status === 'FAILED' || result.status === 'BLOCKED'
 }

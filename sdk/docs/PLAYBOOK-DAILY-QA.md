@@ -10,7 +10,7 @@ Plan the acceptance condition first, run it against the application a user would
 LLM planning -> plan validation/preflight -> curl/Playwright execution -> adaptive analysis -> optional LLM reporting
 ```
 
-`hrns qa run` accepts an open scope or optional detailed scenarios. The LLM inspects the project, generates missing scenarios, and selects executable API or browser actions. It does not start the target application; start it first and provide its reachable URL. `hrns qa` is an alias for `hrns qa run`.
+`hrns qa run` accepts an open scope or optional detailed scenarios. The LLM inspects the project, generates missing scenarios, and selects executable actions for the configured profile. It does not start the target application; start it first and provide its reachable URL. `hrns qa` is an alias for `hrns qa run`.
 
 ## Agentic daily flow
 
@@ -35,6 +35,17 @@ hrns qa run --target http://127.0.0.1:3000
 ```
 
 Without `--report`, the run executes and saves state/evidence but skips LLM report generation. Add `--report` to generate and render the report during execution. Audit artifacts remain under `docs/qa/`. The separate `hrns qa report` command emits the final JSON report and can regenerate `report.json` and `REPORT.md` for a completed run.
+
+## Send a failed run to development
+
+Use the completed QA run ID to create a focused development correction scope:
+
+```bash
+# CORRECT: generate scope from only FAILED and BLOCKED scenarios
+hrns run --reset --run <qa-run-id>
+```
+
+The command loads the run and its stored plan. It includes each actionable scenario's definition, observed reason, and evidence paths. It rejects incomplete runs, runs without failed or blocked scenarios, and `--run` combined with `--scope`. Keep the original run directory unchanged; rerun QA after the fix to create new evidence.
 
 ## Exploratory saved-plan sweep
 
@@ -181,10 +192,10 @@ Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` direc
 ## Failure triage
 
 1. Run `hrns qa report --run <qa-run-id>` and identify the first failed or blocked scenario.
-2. For API failures, inspect the saved response body and verify the local test target is the intended version.
-3. For browser failures, open `final.png` and treat a `Browser page error` as a product defect until proven otherwise.
-4. For `BLOCKED`, confirm the target server is running, the URL is reachable, and Chromium is installed when browser testing. If the reason names unsupported authentication, add an explicit CLI environment mapping or run the scenario unauthenticated; authenticated WebSocket scenarios are not currently executable.
-5. Preserve the run directory. Create a new run after a fix; do not overwrite evidence from the failed attempt.
+2. Inspect response or screenshot evidence and verify the target is the intended version.
+3. For `BLOCKED`, confirm the target server, URL, Chromium, and authentication capability. Add an explicit CLI environment mapping when required; authenticated WebSocket scenarios remain unsupported.
+4. Run `hrns run --reset --run <qa-run-id>` to send only actionable results to development. Do not combine it with `--scope`.
+5. Preserve the run directory. Create a new QA run after a fix; do not overwrite failed evidence.
 
 ## End-of-day handoff
 

@@ -22,11 +22,13 @@ export class McpClientDriver implements QaDriver {
       if (targetUrl.protocol !== 'http:' && targetUrl.protocol !== 'https:') return blocked(scenario, 'MCP target must use HTTP or HTTPS')
       mkdirSync(evidenceDir, { recursive: true })
       const payload = { jsonrpc: '2.0', id: 1, method: scenario.mcp.method, params: scenario.mcp.params ?? {} }
-      const response = await this.request(targetUrl.toString(), {
+      const responseResult = await requestWithOriginBoundRedirects(this.request, targetUrl.toString(), {
         method: 'POST', signal,
         headers: { accept: 'application/json, text/event-stream', 'content-type': 'application/json', ...(context?.auth.headers ?? {}) },
         body: JSON.stringify(payload),
-      })
+      }, targetUrl.origin)
+      if ('blockedReason' in responseResult) return blocked(scenario, responseResult.blockedReason, [], context?.auth)
+      const response = responseResult.response
       const raw = await response.text()
       const requestPath = join(evidenceDir, 'request.json')
       const responsePath = join(evidenceDir, 'response.json')
@@ -42,10 +44,10 @@ export class McpClientDriver implements QaDriver {
       const expected = scenario.mcp
       if (isRecord(parsed) && isRecord(parsed.error)) {
         if (expected.expectedIsError !== true) {
-          return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: typeof parsed.error.message === 'string' ? parsed.error.message : 'MCP protocol error', evidence }
+          return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: redactSecrets(typeof parsed.error.message === 'string' ? parsed.error.message : 'MCP protocol error', context?.auth), evidence }
         }
         if (expected.expectedResultContains && !containsMcpText({ error: parsed.error }, expected.expectedResultContains)) {
-          return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result does not contain ${JSON.stringify(expected.expectedResultContains)}`, evidence }
+          return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: redactSecrets(`MCP result does not contain ${JSON.stringify(expected.expectedResultContains)}`, context?.auth), evidence }
         }
         return { scenarioId: scenario.id, required: scenario.required, status: 'PASSED', evidence }
       }
@@ -53,26 +55,50 @@ export class McpClientDriver implements QaDriver {
       if (!isRecord(result)) return blocked(scenario, 'MCP response contained neither result nor protocol error', evidence)
       const actualIsError = result.isError === true
       if (expected.expectedIsError !== undefined && actualIsError !== expected.expectedIsError) {
-        return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result isError was ${actualIsError}, expected ${expected.expectedIsError}`, evidence }
+        return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: redactSecrets(`MCP result isError was ${actualIsError}, expected ${expected.expectedIsError}`, context?.auth), evidence }
       }
       const structuredContent = isRecord(result.structuredContent) ? result.structuredContent : undefined
       if (expected.expectedState !== undefined && structuredContent?.state !== expected.expectedState) {
-        return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result state was ${JSON.stringify(structuredContent?.state)}, expected ${JSON.stringify(expected.expectedState)}`, evidence }
+        return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: redactSecrets(`MCP result state was ${JSON.stringify(structuredContent?.state)}, expected ${JSON.stringify(expected.expectedState)}`, context?.auth), evidence }
       }
       if (expected.expectedReasonCode !== undefined && structuredContent?.reason_code !== expected.expectedReasonCode) {
-        return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result reason_code was ${JSON.stringify(structuredContent?.reason_code)}, expected ${JSON.stringify(expected.expectedReasonCode)}`, evidence }
+        return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: redactSecrets(`MCP result reason_code was ${JSON.stringify(structuredContent?.reason_code)}, expected ${JSON.stringify(expected.expectedReasonCode)}`, context?.auth), evidence }
       }
-      if (actualIsError && expected.expectedIsError !== true) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: mcpErrorMessage(result), evidence }
-      if (expected.expectedResultContains && !containsMcpText(result, expected.expectedResultContains)) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `MCP result does not contain ${JSON.stringify(expected.expectedResultContains)}`, evidence }
+      if (actualIsError && expected.expectedIsError !== true) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: redactSecrets(mcpErrorMessage(result), context?.auth), evidence }
+      if (expected.expectedResultContains && !containsMcpText(result, expected.expectedResultContains)) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: redactSecrets(`MCP result does not contain ${JSON.stringify(expected.expectedResultContains)}`, context?.auth), evidence }
       return { scenarioId: scenario.id, required: scenario.required, status: 'PASSED', evidence }
     } catch (error) {
-      return blocked(scenario, error instanceof Error ? error.message : 'MCP request failed', evidence)
+      return blocked(scenario, error instanceof Error ? error.message : 'MCP request failed', evidence, context?.auth)
     }
   }
 }
 
-function blocked(scenario: QaScenario, reason: string, evidence: QaEvidence[] = []): QaScenarioResult {
-  return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason, evidence }
+type McpRequestResult = { response: Response } | { blockedReason: string }
+
+async function requestWithOriginBoundRedirects(
+  request: Fetcher,
+  target: string,
+  init: RequestInit,
+  origin: string,
+): Promise<McpRequestResult> {
+  let current = target
+  const visited = new Set([current])
+  for (let redirectCount = 0; redirectCount <= 5; redirectCount++) {
+    const response = await request(current, { ...init, redirect: 'manual' })
+    if (response.status < 300 || response.status >= 400) return { response }
+    const location = response.headers.get('location')
+    if (!location) return { response }
+    const next = new URL(location, current)
+    if (next.origin !== origin) return { blockedReason: 'MCP redirect leaves the configured target origin' }
+    current = next.toString()
+    if (visited.has(current)) return { blockedReason: 'MCP redirect loop detected' }
+    visited.add(current)
+  }
+  return { blockedReason: 'MCP redirect limit exceeded' }
+}
+
+function blocked(scenario: QaScenario, reason: string, evidence: QaEvidence[] = [], auth?: QaDriverExecutionContext['auth']): QaScenarioResult {
+  return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason: redactSecrets(reason, auth), evidence }
 }
 
 function redact(value: unknown, auth?: QaDriverExecutionContext['auth']): unknown {

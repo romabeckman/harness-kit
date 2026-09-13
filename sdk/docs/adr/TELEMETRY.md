@@ -7,7 +7,7 @@ tags: [telemetry, ledger, tokens, costs]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-08-15"
+updated: "2026-09-13"
 ---
 # Telemetry and Ledger
 Tracks token consumption, execution costs, and quota limits across agent run cycles.
@@ -62,8 +62,8 @@ REQUIRED: Write token metrics only inside `tokenUsage` in new JSONL records.
 REQUIRED: Normalize legacy flat token metrics when reading existing ledgers.
 REQUIRED: Handle QUOTA_EXCEEDED errors gracefully by persisting the active phase state and halting.
 REQUIRED: Print cumulative token savings reports via `rtk gain` and `ledger.printReport()`.
-FORBIDDEN: Duplicate token metrics at the event root and inside `tokenUsage`.
-FORBIDDEN: Executing orchestrator loops without an active `TokenLedger` tracking backend.
+PROHIBITED: Duplicate token metrics at the event root and inside `tokenUsage`.
+PROHIBITED: Execute orchestrator loops without an active `TokenLedger` tracking backend.
 
 ## REFERENCES
 - [**ARCHITECTURE.md**](./ARCHITECTURE.md): Global patterns and Ports-and-Adapters layer details.

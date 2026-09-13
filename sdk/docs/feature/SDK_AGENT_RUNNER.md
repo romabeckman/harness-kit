@@ -1,7 +1,7 @@
 ---
 doc_type: feature
 domain: agent_runner
-stack: [TypeScript, Node.js, cross-spawn]
+stack: [TypeScript, Node.js, cross-spawn, provider SDKs]
 node_id: "feature:sdk_agent_runner"
 tags: [agent-runner, opencode, cli, registry, sessions]
 edges:
@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-10"
+updated: "2026-09-13"
 ---
 
 ```graph
@@ -29,20 +29,14 @@ Provides vendor adapters behind `IAgentRunner`.
 ## OVERVIEW
 Use `IAgentRunner` to isolate vendor clients. CLI adapters extend `AbstractCliRunner` and normalize output into `AgentOutput`.
 
-## CLI HELP REVIEW (2026-09-10)
-Compare installed help before changing flags. Live model requests were not tested.
+## RUNNER COMPATIBILITY (2026-09-13)
+Verify installed CLI help before changing flags. SDK runners and `NullAgentRunner` have no CLI help contract; Kiro does not discover session IDs from plain text.
 
-| Runner | Evidence | Result |
-|---|---|---|
-| Antigravity | `agy --help`; changelog starts at 1.1.28 | Existing flags supported; retain piped text input. |
-| Claude | 2.1.268 `claude --help` | Existing flags supported. |
-| Codex | 0.154.0 `codex exec --help`, `codex exec resume --help` | Existing flags supported; workspace flags precede `resume`. |
-| Copilot | 1.0.83 `copilot --help` | `--reasoning-effort` remains an alias of `--effort`. |
-| Cursor | 2026.07.23-e383d2b `agent --help` | Existing flags and bracketed model effort supported. |
-| OpenCode | 1.17.8 `opencode run --help` | Existing flags supported; no additional-directory flag. |
-| Kiro | Binary unavailable; [official reference](https://kiro.dev/docs/reference/cli-commands/) | Forward supplied session ID with `--resume-id`; preserve it in output. Local compatibility unverified. |
-
-SDK runners and `NullAgentRunner` have no CLI help contract. Kiro does not discover new session IDs from plain text output.
+| Runner group | Contract |
+|---|---|
+| Claude, Codex, Copilot, Cursor, OpenCode, Antigravity | Use registered CLI adapters with vendor-specific flags and normalized JSON/event output. |
+| Kiro | Forward `--resume-id` when available; local binary compatibility remains unverified. |
+| Anthropic, Copilot, Cursor SDKs | Use provider SDK credentials and return `AgentOutput`. |
 
 ## MAIN CONCEPTS
 - **Strategy**: Each runner implements the same invocation and output contract.
@@ -50,6 +44,8 @@ SDK runners and `NullAgentRunner` have no CLI help contract. Kiro does not disco
 - **Composition boundary**: `AgentRunnerRegistry` stores constructors; `AgentRunnerFactory` imports built-ins and creates validated instances.
 - **OpenCode adapter**: Registers `Runner.OPENCODE_CLI` (`opencode-cli`) and isolates vendor flags and output events from domain types.
 - **Session continuity**: Preserve an incoming session ID and replace it with a native `conversation_id`, `conversationId`, `session_id`, `sessionId`, or `thread_id` when output provides one.
+- **QA routing**: Pass `--agent <runner>` to select the outer adapter; QA phase invocations use `agent: ''` and do not bind to a provider-specific sub-agent.
+- **File handoff**: File-capable runners write planning, analysis, and reporting JSON under `docs/qa/`; tool-less SDK runners use response fallback.
 
 ## HOW TO RUN AGENTS
 Install the vendor CLI and configure credentials. Select its type through `AgentRunnerFactory`; pass an `AgentInvocation` with prompt, workspace, model, and optional session.
@@ -62,7 +58,7 @@ Install the vendor CLI and configure credentials. Select its type through `Agent
 | `agent` | `--agent <name>` | Select an OpenCode agent. |
 | `session.id` | `--session <id>` | Continue an existing session. |
 | `workspacePath` | `--dir <path>` | Set the working directory argument. |
-| `additionalDirs` | not forwarded | OpenCode 1.18.21 has no additional-directory CLI flag; workspacePath remains the process working directory. |
+| `additionalDirs` | not forwarded | Installed OpenCode contract has no additional-directory CLI flag; workspacePath remains the process working directory. |
 | `prompt` | stdin | Avoid positional prompt arguments and preserve prompt length. |
 
 REQUIRED: Expose `writePromptToStdin`; CLI adapters default to `false` and override it for stdin.

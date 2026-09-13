@@ -7,7 +7,7 @@ tags: [state, persistence, atomic, file-state]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-08-15"
+updated: "2026-09-13"
 ---
 # State Persistence
 Governs localized file state mutations and data structures for features and tasks.
@@ -63,7 +63,7 @@ writeFileSync(filePath, content, 'utf-8')
 ## BEST PRACTICES
 REQUIRED: Write files using temporary naming structures before executing renames to prevent partial files.
 REQUIRED: Parse and sanitize all markdown structures defensively to handle formatting variations.
-FORBIDDEN: Mutating development files directly without calling the file state manager adapter.
+PROHIBITED: Mutate development files directly without calling the file state manager adapter.
 
 ## REFERENCES
 - [**ARCHITECTURE.md**](./ARCHITECTURE.md): Ports-and-Adapters structure and dependencies.

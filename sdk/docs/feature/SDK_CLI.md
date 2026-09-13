@@ -11,7 +11,7 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_core"
-updated: "2026-08-18"
+updated: "2026-09-13"
 ---
 
 ```graph
@@ -29,7 +29,7 @@ updated: "2026-08-18"
 Provides the `hrns` command-line interface for launching and managing orchestration sessions.
 
 ## OVERVIEW
-The CLI module delegates execution to `HarnessOrchestrator` after resolving all runtime options. It features commands for initialization, running orchestration sessions, diagnosing performance, reviewing meta-harness candidates, and reporting token usage.
+The CLI module delegates execution to `HarnessOrchestrator` after resolving runtime options. It also exposes independent QA execution, report regeneration, exploratory runs, and correction-scope generation.
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -62,14 +62,7 @@ src/cli/
 ## COMMANDS
 
 ### Available Commands
-- **`hrns init`**: Initialize workspace files and configure steering rules.
-- **`hrns run`**: Start or resume an orchestration session.
-- **`hrns diagnose`**: Run post-orchestration harness diagnosis on pending sessions.
-- **`hrns candidate`**: Review and apply meta-harness optimization candidates (`list`, `review [id]`, `review [id] --auto`).
-- **`hrns report`**: Print token usage report or export machine-readable datasets (`--export json|csv`).
-- **`hrns erase`**: Discover and delete agent-generated runtime history for a selected target; shows exact preview before confirmation.
-- **`hrns version`**: Show version.
-- **`hrns help`**: Show help.
+Use `hrns init`, `run`, `diagnose`, `candidate`, `report`, `erase`, `qa`, `version`, or `help`; each command delegates to its service.
 
 ## HOW TO USE CLI COMMANDS
 
@@ -82,6 +75,8 @@ src/cli/
 2. Run `hrns run` to start the autonomous cycle.
 3. Run `hrns diagnose` to process pending diagnosis sessions and propose improvements.
 4. Run `hrns candidate review <id>` to review and apply improvements with your AI runner.
+5. Run `hrns qa run --report ... --agent <runner>` for independent runtime acceptance tests.
+6. Run `hrns run --reset --run <qa-run-id>` to generate a development scope from failed and blocked scenarios.
 
 <code_example>
 # CORRECT: Non-interactive full reset
@@ -92,6 +87,9 @@ hrns diagnose --agent antigravity-cli
 
 # CORRECT: Review candidate with AI runner
 hrns candidate review v001 --agent antigravity-cli
+
+# CORRECT: Generate correction scope from a completed QA run
+hrns run --reset --run orders-20260911 --mode fast
 
 # WRONG: Running without path or scope on a new project
 hrns run --reset
@@ -109,6 +107,7 @@ hrns run --reset
 | `--reset` | boolean | No | Force a new cycle | false |
 | `--resume` | boolean | No | Resume from last saved session | false |
 | `--scope` | string | No | Project scope / PRD | — |
+| `--run` | string | No | Completed QA run ID used to generate correction scope | — |
 | `--path` | string | No | Add a directory to projectPaths (repeatable) | `cwd` |
 | `--score` | float | No | Minimum acceptance score | `0.7` |
 | `--reworks` | int | No | Max rework cycles | `2` |
@@ -121,6 +120,7 @@ hrns run --reset
 
 ## BEST PRACTICES
 REQUIRED: Skip the interactive wizard by providing at least one of `--scope`, `--path`, `--score`, or `--reworks`.
+REQUIRED: Use either `--scope` or `--run` for reset; never combine them. Pass an explicit QA runner for `hrns qa run`, `hrns qa report`, and `hrns qa exploratory`.
 PROHIBITED: Modifying workspace root source or production configuration manually while the CLI is running.
 
 ## DOCUMENT MAP

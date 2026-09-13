@@ -6,6 +6,17 @@ import { RunMode, Complexity } from '../../../orchestrator/types'
 // ─── parseRunArgs ────────────────────────────────────────────────────────────
 
 describe('parseRunArgs', () => {
+  describe('--run', () => {
+    it('selects a QA run for development correction', () => {
+      expect(parseRunArgs(['--run', 'orders-20260911']).runId).toBe('orders-20260911')
+      expect(parseRunArgs(['--run=checkout-20260912']).runId).toBe('checkout-20260912')
+    })
+
+    it('leaves the QA run undefined when omitted', () => {
+      expect(parseRunArgs([]).runId).toBeUndefined()
+    })
+  })
+
   describe('--mode / -M', () => {
     it('returns undefined mode when flag is absent', () => {
       const result = parseRunArgs([])

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
@@ -271,6 +271,43 @@ describe('QaAgenticOrchestrator', () => {
     expect(phases).toEqual(['qa_analysis', 'qa_reporting'])
     expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ model: 'gemini-3.7-flash' }), expect.anything())
     expect(report).toMatchObject({ verdict: 'PASS', summary: 'Stored plan resumed.' })
+  })
+
+  it('restarts a managed static runtime when resuming a saved browser plan', async () => {
+    writeFileSync(join(workspace, 'index.html'), '<h1>Resumable game</h1>')
+    const runner: IAgentRunner = {
+      run: vi.fn(async (invocation) => invocation.phaseKey === 'qa_analysis'
+        ? { raw: '{"complete":true}' }
+        : { raw: '{"summary":"Resumed managed runtime.","bugs":[],"errors":[]}' }),
+    }
+    const driver: QaDriver = {
+      profile: 'web',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario, target, evidenceDir) => {
+        expect((await fetch(target)).status).toBe(200)
+        expect(scenario.actions?.[0]?.value).toBe(target)
+        mkdirSync(evidenceDir, { recursive: true })
+        writeFileSync(join(evidenceDir, 'page.json'), '{"ready":true}')
+        return { scenarioId: scenario.id, required: true, status: 'PASSED', evidence: [{ id: 'page', path: join(evidenceDir, 'page.json'), capturedAt: '', adapter: 'test' }] }
+      },
+    }
+    const plan = {
+      schemaVersion: 1 as const,
+      id: 'managed-resume',
+      version: 1,
+      target: 'http://127.0.0.1:51344',
+      profile: 'web' as const,
+      createdAt: '',
+      criteria: ['Game is ready'],
+      scenarios: [{
+        id: '001-ready', criterionIds: ['criterion-1'], required: true, profile: 'web' as const,
+        actions: [{ type: 'navigate' as const, value: 'http://127.0.0.1:51344' }],
+        assertions: [{ type: 'visible' as const, selector: 'h1' }],
+      }],
+    } as QaPlan
+    const orchestrator = new QaAgenticOrchestrator({ workspace, runner, drivers: [driver] })
+
+    await expect(orchestrator.resume(plan)).resolves.toMatchObject({ verdict: 'PASS' })
   })
 
   it('still reports a resumed run when post-execution analysis fails', async () => {

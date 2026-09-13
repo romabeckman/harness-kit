@@ -34,6 +34,7 @@ export class QaAnalysisPhase implements QaPhaseHandler {
 
       const previous = context.plan
       const revised = new QaPlanningPhase().parse(JSON.stringify(extraction.data.plan), context.request, context.store.nextPlanVersion(previous.id))
+      revised.managedTarget = previous.managedTarget
       if (revised.id !== previous.id || revised.target !== previous.target || revised.profile !== previous.profile) throw new Error('Invalid agentic QA analysis: plan identity and target cannot change')
       if (!previous.criteria.every((criterion, index) => revised.criteria[index] === criterion)) throw new Error('Invalid agentic QA analysis: existing criteria cannot change')
       const previousIds = new Set(previous.scenarios.map((scenario) => scenario.id))
