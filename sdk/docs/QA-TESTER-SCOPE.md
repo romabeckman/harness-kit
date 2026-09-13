@@ -110,7 +110,7 @@ hrns qa run [options]
 hrns qa [options]
 ```
 
-This command plans, validates, executes, analyzes, and reports in one flow.
+This command plans, validates, executes, and analyzes in one flow. Add `--report` to generate and render the report during execution.
 
 ### Regenerate a report
 

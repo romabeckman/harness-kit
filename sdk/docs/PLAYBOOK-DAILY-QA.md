@@ -10,7 +10,7 @@ Plan the acceptance condition first, run it against the application a user would
 LLM planning -> plan validation/preflight -> curl/Playwright execution -> adaptive analysis -> optional LLM reporting
 ```
 
-`hrns qa run` accepts an open scope or optional detailed scenarios. The LLM inspects the project, generates missing scenarios, and selects executable API or browser actions. It does not start the target application; start it first and provide its reachable URL. `hrns qa` is an alias for `hrns qa run`.
+`hrns qa run` accepts an open scope or optional detailed scenarios. The LLM inspects the project, generates missing scenarios, and selects executable actions for the configured profile. It does not start the target application; start it first and provide its reachable URL. `hrns qa` is an alias for `hrns qa run`.
 
 ## Agentic daily flow
 
