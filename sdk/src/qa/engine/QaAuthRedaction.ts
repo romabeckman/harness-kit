@@ -9,7 +9,13 @@ export function redactSecrets(value: string, auth?: QaResolvedAuth): string {
 export function authSecretValues(auth?: QaResolvedAuth): string[] {
   if (!auth) return []
   const values = new Set<string>()
-  for (const value of Object.values(auth.headers)) add(values, value)
+  for (const [name, value] of Object.entries(auth.headers)) {
+    add(values, value)
+    if (auth.mode === 'bearer' && name.toLowerCase() === 'authorization') {
+      const match = /^Bearer\s+(.+)$/i.exec(value)
+      if (match) add(values, match[1])
+    }
+  }
   for (const value of Object.values(auth.environment)) add(values, value)
   if (auth.basic) {
     add(values, auth.basic.password)

@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import spawn from 'cross-spawn'
 import { CliDriver, CurlDriver, McpClientDriver, PlaywrightDriver, WebSocketDriver } from '../engine'
+import { redactSecrets } from '../engine/QaAuthRedaction'
 import type { QaDriver, QaDriverExecutionContext, QaScenario } from '../types'
 
 vi.mock('cross-spawn', () => ({ default: vi.fn() }))
@@ -64,6 +65,39 @@ describe('QA authentication engine security', () => {
     expect(result.status).toBe('PASSED')
     expect(request).toHaveBeenCalledWith('https://qa.test/mcp', expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer mcp-secret' }) }))
     expect(readFileSync(join(workspace, 'response.json'), 'utf8')).not.toContain('mcp-secret')
+  })
+
+  it('blocks MCP redirects that leave the configured target origin', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(null, {
+      status: 307,
+      headers: { location: 'https://evil.test/collect' },
+    }))
+    const context: QaDriverExecutionContext = { auth: { mode: 'api-key', profile: 'local', headers: { 'X-API-Key': 'redirect-secret' }, environment: {} } }
+
+    const result = await new McpClientDriver(request).execute(mcpScenario(), 'https://qa.test/mcp', workspace, undefined, context)
+
+    expect(result).toMatchObject({ status: 'BLOCKED', reason: expect.stringContaining('origin') })
+    expect(request).toHaveBeenCalledTimes(1)
+  })
+
+  it('redacts authentication values from MCP protocol error reasons', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      error: { code: -32000, message: 'backend echoed redirect-secret' },
+    }), { status: 200 }))
+    const context: QaDriverExecutionContext = { auth: { mode: 'api-key', profile: 'local', headers: { 'X-API-Key': 'redirect-secret' }, environment: {} } }
+
+    const result = await new McpClientDriver(request).execute(mcpScenario(), 'https://qa.test/mcp', workspace, undefined, context)
+
+    expect(result.status).toBe('FAILED')
+    expect(result.reason).not.toContain('redirect-secret')
+  })
+
+  it('redacts raw bearer tokens without requiring the Authorization prefix', () => {
+    const auth: QaDriverExecutionContext['auth'] = { mode: 'bearer', profile: 'local', headers: { Authorization: 'Bearer raw-bearer-secret' }, environment: {} }
+
+    expect(redactSecrets('server echoed raw-bearer-secret', auth)).toBe('server echoed [REDACTED]')
   })
 
   it('redacts literal auth values echoed in curl response evidence', async () => {
