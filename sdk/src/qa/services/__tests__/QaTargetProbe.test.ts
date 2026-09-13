@@ -38,4 +38,14 @@ describe('probeQaTarget', () => {
 
     await expect(probeQaTarget('http://127.0.0.1:8080')).resolves.toEqual({ available: true })
   })
+
+  it('retries transient connection failures before declaring the target unavailable', async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockResolvedValueOnce(new Response('', { status: 405 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(probeQaTarget('http://127.0.0.1:8080')).resolves.toEqual({ available: true })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 })

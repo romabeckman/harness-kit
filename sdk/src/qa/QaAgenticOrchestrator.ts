@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import type { IAgentRunner } from '../agent-runner/IAgentRunner'
 import type { AgentSession } from '../agent-runner/types'
 import { QaService } from './services/QaService'
@@ -7,7 +9,7 @@ import type { QaAgenticRequest, QaDriver, QaFinalReport, QaPlan, QaRun } from '.
 import type { HarnessSettings } from '../settings/HarnessSettings'
 import type { QaProgressEvent, QaProgressListener } from './progress'
 import { QaRuntimeManager, type QaRuntimePreparer } from './services/QaRuntimeManager'
-import type { QaTargetProbe } from './services/QaTargetProbe'
+import { probeQaTarget, type QaTargetProbe } from './services/QaTargetProbe'
 import { QaExecutionMemory } from './services/QaExecutionMemory'
 import { QaAuthConfigStore } from './auth/QaAuthConfigStore'
 
@@ -58,10 +60,11 @@ export class QaAgenticOrchestrator {
   }
 
   async resume(plan: QaPlan, signal?: AbortSignal): Promise<QaFinalReport> {
+    const managedTarget = await shouldRestartManagedTarget(plan, this.#context.workspace, signal)
     return this.runFrom(QaPhase.VALIDATION, {
       scope: `Resume stored QA plan ${plan.id}@${plan.version}`,
       scenarios: plan.scenarios.flatMap((scenario) => scenario.description ? [scenario.description] : []),
-      target: plan.target,
+      target: managedTarget ? undefined : plan.target,
       profile: plan.profile,
     }, plan, signal)
   }
@@ -89,7 +92,10 @@ export class QaAgenticOrchestrator {
     if (runtime) this.#context.onProgress?.({ type: 'runtime_ready', target: runtime.target, managed: runtime.managed })
     try {
       const context: QaPhaseContext = {
-        ...this.#context, request: resolvedRequest, plan, persistPlan: start === QaPhase.PLANNING,
+        ...this.#context,
+        request: resolvedRequest,
+        plan: runtime?.managed && plan ? retargetManagedPlan(plan, runtime.target) : plan,
+        persistPlan: start === QaPhase.PLANNING,
         executionMemory: this.#memory.read(resolvedRequest.profile, resolvedRequest.target),
       }
       let current = start
@@ -100,6 +106,7 @@ export class QaAgenticOrchestrator {
         const completed = current
         try {
           current = await handler.execute(context, signal)
+          if (runtime?.managed && context.plan) context.plan.managedTarget = true
         } catch (error) {
           if (current !== QaPhase.ANALYSIS || !context.run?.verdict || signal?.aborted) throw error
           context.onProgress?.({ type: 'phase_warning', phase: QaPhase.ANALYSIS,
@@ -158,6 +165,56 @@ export class QaAgenticOrchestrator {
         .map((result) => ({ scenarioId: result.scenarioId, message: result.reason ?? result.status })),
       completedAt: run.completedAt ?? new Date().toISOString(),
     }
+  }
+}
+
+function retargetManagedPlan(plan: QaPlan, target: string): QaPlan {
+  const previousTarget = plan.target
+  return {
+    ...plan,
+    target,
+    scenarios: plan.scenarios.map((scenario) => ({
+      ...scenario,
+      actions: scenario.actions?.map((action) => action.type === 'navigate' && action.value
+        ? { ...action, value: retargetManagedUrl(action.value, previousTarget, target) }
+        : action),
+      assertions: scenario.assertions?.map((assertion) => assertion.type === 'url' && assertion.value
+        ? { ...assertion, value: retargetManagedUrl(assertion.value, previousTarget, target) }
+        : assertion),
+    })),
+  }
+}
+
+function retargetManagedUrl(value: string, previousTarget: string, target: string): string {
+  try {
+    const previous = new URL(previousTarget)
+    const requested = new URL(value, previous)
+    if (requested.origin !== previous.origin) return value
+    const next = new URL(target)
+    if (requested.pathname === '/' && !requested.search && !requested.hash) return target
+    return new URL(`${requested.pathname}${requested.search}${requested.hash}`, next).toString()
+  } catch {
+    return value
+  }
+}
+
+async function shouldRestartManagedTarget(plan: QaPlan, workspace: string, signal?: AbortSignal): Promise<boolean> {
+  if (plan.managedTarget) return true
+  if (!isLegacyManagedTarget(plan, workspace)) return false
+  return !(await probeQaTarget(plan.target, signal)).available
+}
+
+function isLegacyManagedTarget(plan: QaPlan, workspace: string): boolean {
+  if (!['web', 'web-game', 'mobile-web', 'accessibility', 'full'].includes(plan.profile)) return false
+  if (!existsSync(join(workspace, 'index.html'))) return false
+  try {
+    const target = new URL(plan.target)
+    const port = Number.parseInt(target.port, 10)
+    const loopback = target.hostname === '127.0.0.1' || target.hostname === 'localhost' || target.hostname === '[::1]'
+    if (!loopback || !Number.isInteger(port) || port < 49_152) return false
+    return plan.scenarios.some((scenario) => scenario.actions?.some((action) => action.type === 'navigate' && action.value && new URL(action.value, target).origin === target.origin) ?? false)
+  } catch {
+    return false
   }
 }
 

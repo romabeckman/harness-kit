@@ -75,6 +75,8 @@ export interface QaPlan {
   id: string
   version: number
   target: string
+  /** True when target was supplied by Harness Kit's temporary static runtime. */
+  managedTarget?: boolean
   profile: QaProfile
   createdAt: string
   criteria: string[]
