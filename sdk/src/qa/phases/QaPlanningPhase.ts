@@ -2,6 +2,7 @@ import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProt
 import { isExtractionResult } from '../../json-extraction/types'
 import type { AgentSession } from '../../agent-runner/types'
 import { formatQaScenarioId, type QaBrowserAction, type QaBrowserAssertion, type QaCliRequest, type QaHttpRequest, type QaMcpRequest, type QaPlan, type QaProfile, type QaScenario, type QaScenarioCategory, type QaWebSocketRequest } from '../types'
+import { buildQaAgentFileOutputInstructions, createQaAgentFileOutput, prepareQaAgentFileOutput, readQaAgentFileOutput, removeQaAgentFileOutput, type QaAgentFileOutput } from '../utils/QaAgentFileOutput'
 import { QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
 
 const PROFILES: QaProfile[] = ['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full']
@@ -17,16 +18,24 @@ export class QaPlanningPhase implements QaPhaseHandler {
   readonly phase = QaPhase.PLANNING
 
   async execute(context: QaPhaseContext, signal?: AbortSignal): Promise<QaPhase> {
-    const output = await this.runPlanner(context, this.buildPrompt(context), signal)
-    context.session = output.session
+    const outputFile = createQaAgentFileOutput(context.workspace, 'planning')
+    prepareQaAgentFileOutput(outputFile)
     try {
-      context.plan = this.parseOutput(output.raw, context)
-    } catch (error) {
-      const repaired = await this.runPlanner(context, this.buildRepairPrompt(context, output.raw, error), signal, context.session)
-      context.session = repaired.session ?? context.session
-      context.plan = this.parseOutput(repaired.raw, context)
+      const output = await this.runPlanner(context, this.buildPrompt(context, outputFile), signal)
+      context.session = output.session
+      const plannerOutput = readQaAgentFileOutput(outputFile, output.raw)
+      try {
+        context.plan = this.parseOutput(plannerOutput, context)
+      } catch (error) {
+        removeQaAgentFileOutput(outputFile)
+        const repaired = await this.runPlanner(context, this.buildRepairPrompt(context, plannerOutput, error, outputFile), signal, context.session)
+        context.session = repaired.session ?? context.session
+        context.plan = this.parseOutput(readQaAgentFileOutput(outputFile, repaired.raw), context)
+      }
+      return QaPhase.VALIDATION
+    } finally {
+      removeQaAgentFileOutput(outputFile)
     }
-    return QaPhase.VALIDATION
   }
 
   private runPlanner(context: QaPhaseContext, prompt: string, signal?: AbortSignal, session?: AgentSession) {
@@ -55,13 +64,13 @@ export class QaPlanningPhase implements QaPhaseHandler {
     return this.parse(raw, context.request, version)
   }
 
-  private buildRepairPrompt(context: QaPhaseContext, raw: string, error: unknown): string {
+  private buildRepairPrompt(context: QaPhaseContext, raw: string, error: unknown, outputFile: QaAgentFileOutput): string {
     return [
-      this.buildPrompt(context),
+      this.buildPrompt(context, outputFile),
       '',
       'The previous plan was rejected before validation and execution.',
       `Exact planner error: ${error instanceof Error ? error.message : String(error)}`,
-      'Repair the JSON plan and return it again.',
+      'Repair the JSON plan by overwriting the plan output file. Return only a short confirmation after the file is written.',
       'Preserve valid content. Fix every issue described by the exact planner error. Use only the JSON contract in this prompt.',
       'criterionIds reference the criteria array, not scenario numbers. If criteria has N entries, valid references are only criterion-1 through criterion-N; reuse an existing criterion ID when multiple scenarios cover the same criterion.',
       '<previous_plan>',
@@ -70,7 +79,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
     ].join('\n')
   }
 
-  private buildPrompt(context: QaPhaseContext): string {
+  private buildPrompt(context: QaPhaseContext, outputFile = createQaAgentFileOutput(context.workspace, 'planning')): string {
     const targetHint = context.request.target ?? 'Infer the local runtime URL from the project.'
     const profileHint = context.request.profile ?? 'Infer api, web, web-game, mobile-web, accessibility, mcp, cli, websocket, security, or full.'
     return [
@@ -109,7 +118,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
       'criterionIds reference criteria, not scenario numbers: if criteria has N entries, use only criterion-1 through criterion-N and reuse them across scenarios as needed.',
       'Prefix every scenario id by execution order with three digits: 001-<scenario>, 002-<scenario>, and so on.',
       'When no scenario is supplied, derive complete scenarios from the open scope and inspected project.',
-      'Output contract: return exactly one raw JSON object. Do not use Markdown, comments, prose, or unknown fields.',
+      ...buildQaAgentFileOutputInstructions(outputFile, 'the QA plan'),
       '{"id":"safe-plan-id","target":"http://127.0.0.1:3000","profile":"api|web|web-game|mobile-web|accessibility|mcp|cli|websocket|security|full","criteria":["observable success condition"],"scenarios":[{"id":"001-safe-scenario-id","criterionIds":["criterion-1"],"required":true,"profile":"api","category":"functional|negative|boundary|security|accessibility|resilience","description":"human action and expected result","request":{"method":"GET","path":"/health","expectedStatus":200}}]}',
       'Include only the request shape owned by the selected profile.',
     ].join('\n')
