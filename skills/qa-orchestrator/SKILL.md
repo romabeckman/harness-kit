@@ -27,6 +27,17 @@ Do not use this skill for unit tests, integration tests without a running public
 
 <command_selection>
 
+Use [`scripts/safe_hrns_qa.py`](scripts/safe_hrns_qa.py) to preview and execute every
+`hrns qa` command. The script passes an argument array with `shell=False`, restricts
+QA actions, rejects credential flags, requires `--report` for `qa run`, and rejects
+shell metacharacters when Windows resolves `hrns` to a batch launcher.
+
+- First run without `--execute` and show its normalized command during `CONFIRMATION`.
+- After explicit confirmation, repeat identical arguments with `--execute`.
+- Pass credential profile names only through `--auth`; never pass credential values.
+- For a source checkout, use `--executable node --prefix-arg dist/cli/run.js`.
+- A successful preview does not prove target readiness or descendant-process access.
+
 - Use `hrns qa run` for a new scope, new scenarios, or a new target execution. Always add `--report` in this skill.
 - Use actionless `hrns qa` only for the CLI's interactive scope and saved-plan flow. Prefer explicit `qa run` after this skill collects inputs.
 - Use `hrns qa report --run <run-id>` only to regenerate a report from an existing completed run. Do not execute scenarios again.
@@ -247,6 +258,12 @@ Run confirmed prerequisites. Then execute:
 
 ```text
 <confirmed-executable> qa run --report --project <project> --scope <scope> [--scenario <scenario>]... [--target <target>] [--profile <profile>] [--agent <runner>] [--model <model>] [--effort <level>] [--auth <profile>]
+```
+
+Invoke it through the safety script:
+
+```text
+python <skill-directory>/scripts/safe_hrns_qa.py --execute --cwd <working-directory> -- qa run --report ...
 ```
 
 Pass options as distinct process arguments when supported. Otherwise use current shell's safe quoting. Omit unspecified flags. Never pass `default`, `auto`, or `none` placeholders.
