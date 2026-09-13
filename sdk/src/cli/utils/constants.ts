@@ -30,6 +30,7 @@ ACTION (skips interactive prompt)
 
 RESET OPTIONS (all optional — omitting any triggers the interactive wizard)
   --scope <text>            Project scope / PRD description
+  --run <id>                Generate correction scope from a completed QA run
   --path <dir>              Add a directory to project paths (repeatable)
   --score <0.1-1>           Acceptance score threshold (default: \${DEFAULT_SCORE})
   --reworks <1-10>          Max rework cycles before cascade fail (default: \${DEFAULT_REWORKS})
@@ -64,6 +65,7 @@ EXAMPLES
   hrns run --resume --steering "focus on security hardening"
   hrns run --debug --reset --scope "My project"
   hrns run --reset --scope "Fix login bug" --path ./api --mode fast
+  hrns run --reset --run orders-20260911 --mode fast
   hrns run --reset --scope "New payment flow" --path ./api --mode slow
   hrns run --reset --scope "My app" --path ./api --mode quick
   hrns run --reset --scope "My app" --path ./api --complexity LOW
@@ -100,6 +102,7 @@ ACTION (skips interactive prompt)
 
 RESET OPTIONS (omitting triggers wizard when reset is chosen)
   --scope <text>            Project scope / PRD description
+  --run <id>                Generate correction scope from a completed QA run
   --path <dir>              Add a directory to project paths (repeatable)
   --score <0.1-1>           Acceptance score threshold (default: ${DEFAULT_SCORE})
   --reworks <1-10>          Max rework cycles before cascade fail (default: ${DEFAULT_REWORKS})
@@ -133,6 +136,7 @@ EXAMPLES
   hrns run --reset --scope "Build a REST API" --path ./api --path ./web --score 0.9
   hrns run --resume --steering "focus on security hardening"
   hrns run --reset --scope "Fix bug" --path ./api --mode fast
+  hrns run --reset --run orders-20260911 --mode fast
 `
 
 export const HELP_INIT = `

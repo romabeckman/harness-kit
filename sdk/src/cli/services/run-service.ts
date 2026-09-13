@@ -18,6 +18,7 @@ import { DebugContext } from "../DebugContext";
 import { Runner } from "../../agent-runner/types";
 import { FileStateManager } from "../../file-state/FileStateManager";
 import type { Feature } from "../../file-state/types";
+import { buildDevelopmentScopeFromRun } from "./qa/QaDevelopmentRenewal";
 
 export interface RunOptions {
   agentType?: string;
@@ -86,19 +87,25 @@ async function determineAction(parsedAction?: RunAction, hasExistingSession?: bo
   });
 }
 
-async function resolveResetOptions(
+export async function resolveResetOptions(
   cwd: string,
   parsed: ReturnType<typeof parseRunArgs>
 ): Promise<{ optionsReset: ResetOptions; steeringMessage: string }> {
+  if (parsed.runId !== undefined && parsed.scope !== undefined) {
+    throw new Error("Use either --scope or --run, not both.");
+  }
   const hasCliResetArgs =
     parsed.scope !== undefined ||
+    parsed.runId !== undefined ||
     parsed.projectPaths.length > 0 ||
     parsed.score !== undefined ||
     parsed.reworks !== undefined;
 
   if (hasCliResetArgs) {
     const optionsReset = {
-      scope: parsed.scope ?? "",
+      scope: parsed.runId !== undefined
+        ? buildDevelopmentScopeFromRun(cwd, parsed.runId)
+        : parsed.scope ?? "",
       projectPaths: parsed.projectPaths.length > 0 ? parsed.projectPaths : [cwd],
       score: parsed.score ?? DEFAULT_SCORE,
       reworks: parsed.reworks ?? DEFAULT_REWORKS,
