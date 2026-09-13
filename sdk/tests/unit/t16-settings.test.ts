@@ -103,6 +103,14 @@ describe('T16 — HarnessSettings', () => {
       model: 'gpt-5.6-terra',
       effort: 'high',
     })
+    expect(settings.resolve('codex', 'qa_planning')).toEqual({
+      model: 'gpt-5.6-luna',
+      effort: 'xhigh',
+    })
+    expect(settings.resolve('codex', 'qa_reporting')).toEqual({
+      model: 'gpt-5.6-luna',
+      effort: 'xhigh',
+    })
   })
 
   it('resolves diagnose settings for runners', () => {
@@ -117,7 +125,7 @@ describe('T16 — HarnessSettings', () => {
       effort: 'low',
     })
     expect(settings.resolve('antigravity', 'diagnose')).toEqual({
-      model: 'gemini-3.7-flash',
+      model: 'gemini-3.8-flash',
       effort: 'low',
     })
     expect(settings.resolve('copilot', 'diagnose')).toEqual({

@@ -1,6 +1,6 @@
 {
   "name": "harness-kit",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Expert skills for TDD, DDD, debugging, code review, orchestration, and project memory.",
   "author": {
     "name": "Romario Beckman",

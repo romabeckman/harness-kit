@@ -65,6 +65,12 @@ async function main(): Promise<void> {
     return
   }
 
+  if (cmd === 'qa') {
+    const { cmdQa } = await import('./services/qa-service.js')
+    await cmdQa(cwd, args.slice(1))
+    return
+  }
+
   if (cmd === 'candidate') {
     const { cmdCandidate } = await import('./services/candidate-service.js')
     const candidateArgs = args.slice(1)

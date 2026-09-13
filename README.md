@@ -179,6 +179,8 @@ codex plugin add harness-kit@harness-kit
 
 ## 💻 SDK & CLI — `@romabeckman/hrns`
 
+Discover `@romabeckman/hrns`, HarnessKit’s SDK and CLI for repeatable AI-assisted engineering workflows. Use `hrns run` to start the sovereign development loop, or `hrns qa` to plan, execute, and report user-facing acceptance tests with runtime evidence.
+
 For CI/CD pipelines or running sovereign tasks without an open IDE chat session:
 
 ```bash
@@ -196,6 +198,8 @@ hrns run
 
 > 📄 Full SDK documentation: [`sdk/README.md`](sdk/README.md)
 
+> 📘 QA command scope and usage: [`sdk/docs/QA-TESTER-SCOPE.md`](sdk/docs/QA-TESTER-SCOPE.md) — profiles, prerequisites, commands, reports, evidence, and current boundaries.
+
 ---
 
 ## 🛠️ What's Inside
@@ -211,6 +215,7 @@ hrns run
 | **Orchestration** | **[Read UI Prototype](skills/read-ui-prototype/SKILL.md)** (`read-ui-prototype`) | Translates interface prototypes into structured frontend specs for UI engineers. |
 | **Quality Gates** | **[The Grumpy Tech Lead](skills/the-grumpy-tech-lead/SKILL.md)** (`the-grumpy-tech-lead`) | Senior technical reviewer. Uses Socratic questioning to expose architectural vulnerabilities and systemic risks. |
 | **Quality Gates** | **[Adversarial QA](skills/adversarial-qa/SKILL.md)** (`adversarial-qa`) | Executes adversarial boundary and security testing, returning structured JSON verdicts. |
+| **Quality Gates** | **[QA Orchestrator](skills/qa-orchestrator/SKILL.md)** (`qa-orchestrator`) | Collects QA inputs, designs executable scenarios, runs `hrns qa`, and summarizes runtime evidence. |
 | **Optimization** | **[Harness Tracer](skills/harness-tracer/SKILL.md)** (`harness-tracer`) | Records structured execution traces to `docs/harness-history/traces/`. |
 | **Optimization** | **[Harness Evaluator](skills/harness-evaluator/SKILL.md)** (`harness-evaluator`) | Computes composite quality scores and identifies Pareto frontier harness configurations. |
 | **Optimization** | **[Meta-Harness](skills/meta-harness/SKILL.md)** (`meta-harness`) | Diagnoses failure patterns across sessions and proposes targeted skill prompt improvements. |

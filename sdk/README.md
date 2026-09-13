@@ -199,6 +199,52 @@ hrns report --export json --output ./reports/my-report.json
 hrns report --export csv -o ./reports/my-report.csv
 ```
 
+### `hrns qa`
+
+Runs independent, agentic runtime acceptance after development. The CLI exposes `run`, `report`, `exploratory`, and the form-only `auth` helper; omitting the action is an alias for `hrns qa run`.
+
+The `run` workflow operates in four execution stages plus optional reporting:
+1. **Planning**: LLM inspects the project, preserves supplied scenario intent, maps acceptance criteria to executable scenarios, enforces risk coverage across categories (`functional`, `negative`, `boundary`, `security`, `accessibility`, `resilience`), and selects the appropriate profile (`api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, `websocket`, `security`, or `full`).
+2. **Plan validation and preflight**: Validates target URL/protocol, scenario payloads, driver availability, safety limits, and target reachability before execution.
+3. **Deterministic Execution**: Drivers execute actions and verify concrete assertions with origin boundary isolation, Curl request configuration sent through stdin (never process arguments), resolved-value request/response/output redaction, and cancellation signal handling.
+4. **Adaptive Analysis**: An evidence analysis loop evaluates observations and state transitions, discovering untested edge cases and generating bounded follow-up scenarios within explicit iteration budgets.
+5. **Optional Verified Reporting**: Enabled by `--report`; reconciles findings against actual runtime evidence, deduplicates shared root causes, calculates the deterministic risk coverage matrix (explicitly reporting tested vs untested areas), and guarantees fallback reports if LLM synthesis fails.
+
+Plans are immutably versioned under `docs/qa/plans/<planId>/<version>.json`; supplied user scope is preserved byte-for-byte in `docs/qa/plans/<planId>/SCOPE.md`, and scenario IDs use execution prefixes such as `001-health` and `002-create-order`. Run state and evidence persist under `docs/qa/runs/<runId>/`; `report.json` and `REPORT.md` are created there when reporting is enabled. Each evidence directory is prefixed by execution order (`001-<scenarioId>`, `002-<scenarioId>`, ...).
+
+```bash
+# Open scope: LLM discovers and creates required scenarios
+hrns qa run --scope "Test endpoint X" --target http://127.0.0.1:3000
+
+# Run and generate/render the report during execution
+hrns qa run --report --scope "Test endpoint X" --target http://127.0.0.1:3000
+
+# Integrated full-stack acceptance (API + Browser)
+hrns qa run --report --scope "Validate checkout workflow" --target http://127.0.0.1:3000 --profile full
+
+# Targeted security auditing
+hrns qa run --scope "Audit auth and injection boundaries" --target http://127.0.0.1:3000 --profile security
+
+# Optional detailed scenarios: LLM analyzes them and adds missing coverage
+hrns qa run --project ../web-game --scope "Validate gameplay" --scenario "Player starts a game" --scenario "Player moves and rotates a piece" --target http://127.0.0.1:3000 --profile web-game
+
+# Regenerate a report for a completed run with explicit LLM controls
+hrns qa report --run <qa-run-id> --model <model> --effort high
+
+# Execute the latest version of every saved QA plan and write one global JSON report
+hrns qa exploratory --target http://127.0.0.1:3000
+
+# Execute protected plans with a named profile from .harness-kit/auth.json
+hrns qa exploratory --auth qa-user --target http://127.0.0.1:3000
+
+# Add one authentication profile interactively
+hrns qa auth
+```
+
+For automation, supply `--scope` or one or more `--scenario` values. If scope and scenarios are omitted, `hrns qa run` opens the interactive scope flow; the actionless `hrns qa` alias can also offer saved-plan resume or a new run. Use `--profile api`, `web`, `web-game`, `mobile-web`, `accessibility`, `mcp`, `cli`, `websocket`, `security`, or `full` as an optional hint; the planning phase can infer it. Use `hrns qa auth` as a form-only helper to add exactly one named profile. Select `none`, `basic`, `bearer`, `api-key`, or `cookie`, then choose `env` (default, stores only a reference) or `insecure` (stores the entered credential directly). Insecure mode displays a warning and requires confirmation. `.harness-kit/auth.json` is Git-ignored but is not encrypted; protect it and use disposable, least-privilege credentials. Prefer environment references for CI or shared repositories. Use `--auth <profile>` to select a profile from `.harness-kit/auth.json`; when the file exists and the flag is omitted, interactive runs offer its profiles. Without `--report`, the run persists state and evidence but skips LLM report generation. Use `hrns qa report --run <qa-run-id>` to generate it later. Use `hrns qa exploratory` to execute every latest saved plan sequentially without planning or adaptive additions; the command always writes `docs/qa/exploratory/<id>/report.json`. `--target` overrides non-CLI plan targets in memory only. Browser checks require Chromium installed once with `npx playwright install chromium`. See the [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md).
+
+Authentication is applied only within each engine's supported boundary. API/security Curl requests and MCP requests receive resolved HTTP credentials; Curl sends its transient request configuration through stdin and redacts resolved values from request and response evidence. Playwright scopes Basic credentials to the configured target origin, applies Bearer/API-key headers only to same-origin requests, and installs cookies in the target browser context. CLI scenarios require explicit `environment` mappings in the selected auth profile and are `BLOCKED` before spawning when an authenticated profile has no mapping; CLI arguments, stdout, and stderr are redacted. WebSocket scenarios with a non-`none` auth profile are `BLOCKED` because WebSocket header authentication is not supported.
+
 ### `hrns erase`
 
 Removes project-specific data generated by AI agent CLIs — cache, memory, session history, projects, and similar files. **Credentials, authentication, configuration, extensions, plugins, skills, and downloaded tools are never touched.**
@@ -227,6 +273,7 @@ hrns help run             # show help for hrns run
 hrns help diagnose        # show help for hrns diagnose
 hrns help candidate       # show help for hrns candidate
 hrns help report          # show help for hrns report
+hrns help qa              # show help for independent runtime QA
 hrns help erase           # show help for hrns erase
 hrns help settings        # show help for hrns settings
 ```
@@ -288,7 +335,7 @@ Each runner is a self-contained strategy for invoking a specific AI backend. The
 |---|---|---|
 | `claude-cli` | `claude` CLI | _(from settings)_ |
 | `claude-sdk` | `@anthropic-ai/sdk` | `anthropic.claude-5-sonnet` |
-| `antigravity-cli` | `agy` CLI | `gemini-3.7-flash` |
+| `antigravity-cli` | `agy` CLI | `gemini-3.8-flash` |
 | `codex-cli` | `codex` CLI | `gpt-5.6-sol` / `gpt-5.6-luna` |
 | `copilot-cli` | `copilot` CLI | _(from settings)_ |
 | `copilot-sdk` | `@github/copilot-sdk` | `gpt-5.6-sol` / `gpt-5.6-luna` |
@@ -376,73 +423,24 @@ The global file is created automatically on first run. You can also set `HARNESS
 | `review_adv` | Phase C — adversarial-qa review |
 | `memory` | Phase E — project-memory |
 | `diagnose` | Harness diagnosis — meta-harness-agent |
+| `qa_planning` | Agentic QA scenario planning |
+| `qa_analysis` | Agentic QA adaptive coverage analysis & replanning |
+| `qa_reporting` | Agentic QA final report synthesis |
 
 ### Default settings
 
 ```json
 {
-  "claude": {
-    "timeoutMs": 1800000,
-    "phases": {
-      "bootstrap":      { "model": "anthropic.claude-5-sonnet", "effort": "medium" },
-      "planning":       { "model": "anthropic.claude-5-sonnet", "effort": "high"   },
-      "implementation": { "model": "anthropic.claude-5-sonnet", "effort": "medium" },
-      "review_tl":      { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
-      "review_adv":     { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
-      "memory":         { "model": "anthropic.claude-5-sonnet", "effort": "low"    },
-      "diagnose":       { "model": "anthropic.claude-5-sonnet", "effort": "low"    }
-    }
-  },
-  "antigravity": {
-    "timeoutMs": 1800000,
-    "phases": {
-      "bootstrap":      { "model": "gemini-3.7-flash", "effort": "medium" },
-      "planning":       { "model": "gemini-3.7-flash", "effort": "high"   },
-      "implementation": { "model": "gemini-3.7-flash", "effort": "medium" },
-      "review_tl":      { "model": "gemini-3.7-flash", "effort": "low"    },
-      "review_adv":     { "model": "gemini-3.7-flash", "effort": "low"    },
-      "memory":         { "model": "gemini-3.7-flash", "effort": "low"    },
-      "diagnose":       { "model": "gemini-3.7-flash", "effort": "low"    }
-    }
-  },
-  "copilot": {
-    "timeoutMs": 1800000,
-    "phases": {
-      "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
-      "implementation": { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "memory":         { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  }
-    }
-  },
-  "cursor": {
-    "timeoutMs": 1800000,
-    "phases": {
-      "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
-      "implementation": { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "memory":         { "model": "gpt-5.6-sol",  "effort": "low"    },
-      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  }
-    }
-  },
   "codex": {
     "timeoutMs": 1800000,
     "phases": {
-      "bootstrap":      { "model": "gpt-5.6-sol",  "effort": "medium" },
-      "planning":       { "model": "gpt-5.6-sol",  "effort": "high"   },
-      "implementation": { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "review_tl":      { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "review_adv":     { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "memory":         { "model": "gpt-5.6-luna", "effort": "xhigh"  },
-      "diagnose":       { "model": "gpt-5.6-luna", "effort": "xhigh"  }
+      "qa_planning": { "model": "gpt-5.6-sol", "effort": "medium" }
     }
   }
 }
 ```
+
+This compact example shows the settings shape. See [src/settings/DefaultSettings.ts](./src/settings/DefaultSettings.ts) for every built-in runner, phase, model, effort, and timeout default.
 
 ### Example — override Phase B for a project
 
@@ -569,7 +567,8 @@ The built-in JWT implementation supports **HS256 only** and validates the `alg` 
 ## Further reading
 
 - [Daily Use Playbook](./docs/PLAYBOOK-DAILY-USE.md) — real-world recipes for multi-project setups, POCs, mid-run corrections, and more
-- [Agent runner architecture](./docs/feature/sdk_agent_runner.md) — runner internals and extension points
+- [Daily QA Playbook](./docs/PLAYBOOK-DAILY-QA.md) — independent API, interface, and web-game acceptance checks
+- [Agent runner architecture](./docs/feature/SDK_AGENT_RUNNER.md) — runner internals and extension points
 
 ---
 

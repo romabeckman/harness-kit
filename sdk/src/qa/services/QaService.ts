@@ -1,0 +1,148 @@
+import { CurlDriver } from '../engine/CurlDriver'
+import { PlaywrightDriver } from '../engine/PlaywrightDriver'
+import { AccessibilityDriver, CliDriver, McpClientDriver, MobileWebDriver, WebSocketDriver } from '../engine'
+import { QaVerdictPolicy } from './QaVerdictPolicy'
+import { formatQaScenarioId, type QaDriver, type QaPlan, type QaPlanInput, type QaRun } from '../types'
+import { QaRunStore } from './QaRunStore'
+import type { QaProgressListener } from '../progress'
+import { probeQaTarget, type QaTargetProbe } from './QaTargetProbe'
+import { QaAuthConfigStore } from '../auth/QaAuthConfigStore'
+
+export class QaService {
+  readonly #store: QaRunStore
+  readonly #drivers: Map<string, QaDriver>
+  readonly #targetProbe: QaTargetProbe
+  readonly #auth?: QaAuthConfigStore
+  readonly #authProfile?: string
+
+  constructor(store: QaRunStore, drivers: QaDriver[] = defaultDrivers(), targetProbe: QaTargetProbe = probeQaTarget, auth?: QaAuthConfigStore, authProfile?: string) {
+    this.#store = store
+    this.#drivers = new Map(drivers.map((driver) => [driver.profile, driver]))
+    const api = this.#drivers.get('api')
+    if (api && !this.#drivers.has('security')) this.#drivers.set('security', api)
+    this.#targetProbe = targetProbe
+    this.#auth = auth
+    this.#authProfile = authProfile
+  }
+
+  plan(input: QaPlanInput): QaPlan {
+    if (input.criteria.length === 0) throw new Error('QA plan requires at least one acceptance criterion')
+    if (input.profile !== 'cli') new URL(input.target)
+    const plan: QaPlan = {
+      schemaVersion: 1,
+      id: input.planId,
+      version: this.#store.nextPlanVersion(input.planId),
+      target: input.target,
+      profile: input.profile,
+      createdAt: new Date().toISOString(),
+      criteria: input.criteria,
+      scenarios: input.criteria.map((criterion, index) => ({
+        id: formatQaScenarioId(index, `scenario-${index + 1}`),
+        criterionIds: [`criterion-${index + 1}`],
+        required: true,
+        profile: input.profile,
+        description: criterion,
+        request: input.requests?.[index],
+      })),
+    }
+    this.#store.savePlan(plan)
+    if (input.scope !== undefined) this.#store.saveScope(plan.id, input.scope)
+    return plan
+  }
+
+  async execute(plan: QaPlan, signal?: AbortSignal, onProgress?: QaProgressListener): Promise<QaRun> {
+    const run: QaRun = {
+      schemaVersion: 1,
+      id: this.createRunId(plan.id),
+      planId: plan.id,
+      planVersion: plan.version,
+      target: plan.target,
+      createdAt: new Date().toISOString(),
+      results: [],
+    }
+    this.#store.saveRun(run)
+    const availability = needsHttpProbe(plan.profile) ? await this.#targetProbe(plan.target, signal) : { available: true }
+    await this.executeInto(run, plan, plan.scenarios, availability, signal, onProgress)
+    return this.finalize(run)
+  }
+
+  async continue(run: QaRun, plan: QaPlan, scenarios: QaPlan['scenarios'], signal?: AbortSignal, onProgress?: QaProgressListener): Promise<QaRun> {
+    run.planVersion = plan.version
+    const availability = needsHttpProbe(plan.profile) ? await this.#targetProbe(plan.target, signal) : { available: true }
+    await this.executeInto(run, plan, scenarios, availability, signal, onProgress)
+    return this.finalize(run)
+  }
+
+  private async executeInto(run: QaRun, plan: QaPlan, scenarios: QaPlan['scenarios'], availability: { available: boolean; reason?: string }, signal?: AbortSignal, onProgress?: QaProgressListener): Promise<void> {
+    const evidenceOffset = run.results.length
+    for (const [index, scenario] of scenarios.entries()) {
+      if (signal?.aborted) throw signal.reason ?? new Error('QA execution aborted')
+      onProgress?.({
+        type: 'scenario_started',
+        scenarioId: scenario.id,
+        description: scenario.description,
+        index: index + 1,
+        total: scenarios.length,
+      })
+      const driver = this.#drivers.get(scenario.profile)
+      const evidenceSequence = evidenceOffset + index + 1
+      const result = !availability.available
+        ? { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: availability.reason ?? `Target unavailable at ${plan.target}`, evidence: [] }
+        : driver
+          ? await this.executeDriver(driver, scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id, evidenceSequence), signal)
+          : { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: `No QA driver for ${scenario.profile}`, evidence: [] }
+      run.results.push(result)
+      this.#store.saveRun(run)
+      onProgress?.({
+        type: 'scenario_completed',
+        scenarioId: scenario.id,
+        status: result.status,
+        reason: result.reason,
+        index: index + 1,
+        total: scenarios.length,
+      })
+    }
+  }
+
+  private finalize(run: QaRun): QaRun {
+    run.verdict = QaVerdictPolicy.evaluate(run.results)
+    run.completedAt = new Date().toISOString()
+    this.#store.saveRun(run)
+    return run
+  }
+
+  private async executeDriver(driver: QaDriver, scenario: QaPlan['scenarios'][number], target: string, evidenceDir: string, signal?: AbortSignal) {
+    const auth = this.#auth?.resolve(scenario.authProfile ?? this.#authProfile) ?? { mode: 'none' as const, profile: 'none', headers: {}, environment: {} }
+    if (auth.mode === 'none' && Object.keys(auth.environment).length === 0) {
+      return driver.execute(scenario, target, evidenceDir, signal)
+    }
+    return driver.execute(scenario, target, evidenceDir, signal, { auth })
+  }
+
+  async doctor(profile: QaPlan['profile']): Promise<{ available: boolean; reason?: string }> {
+    const driver = this.#drivers.get(profile)
+    return driver ? driver.doctor() : { available: false, reason: `No QA driver for ${profile}` }
+  }
+
+  private createRunId(planId: string): string {
+    const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, '')
+    return `${planId}-${timestamp}-${Math.random().toString(36).slice(2, 8)}`
+  }
+}
+
+function defaultDrivers(): QaDriver[] {
+  return [
+    new CurlDriver(),
+    new PlaywrightDriver('web'),
+    new PlaywrightDriver('web-game'),
+    new MobileWebDriver(),
+    new AccessibilityDriver(),
+    new McpClientDriver(),
+    new CliDriver(),
+    new WebSocketDriver(),
+  ]
+}
+
+function needsHttpProbe(profile: QaPlan['profile']): boolean {
+  return profile !== 'cli' && profile !== 'websocket'
+}

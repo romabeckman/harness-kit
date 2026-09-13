@@ -1,0 +1,337 @@
+# Harness Kit QA Command
+
+`hrns qa` runs acceptance tests against a working application. It plans realistic scenarios, exercises public interfaces, collects evidence, and produces a human-readable result.
+
+Use this command to answer: **does the product work from a user or client perspective?** It complements unit tests, integration tests, code review, and adversarial review.
+
+## What QA does
+
+A QA run follows five stages:
+
+1. **Planning** — an agent inspects the project and turns the scope into executable scenarios.
+2. **Validation** — Harness Kit checks the plan, target, action limits, and execution engines.
+3. **Execution** — deterministic drivers perform HTTP calls, browser actions, CLI commands, MCP calls, or WebSocket exchanges.
+4. **Analysis** — the agent checks for material coverage gaps and may append scenarios. It cannot change executed scenarios.
+5. **Reporting** — Harness Kit reconciles the agent's description with runtime evidence and saves the report.
+
+The agent plans and analyzes tests. Drivers perform the actions. Source code or agent prose alone cannot prove that a scenario passed.
+
+## How the QA orchestration works
+
+The QA orchestrator moves one request through a fixed sequence. Validation stops unsafe or non-executable plans. Runtime execution owns scenario results; adaptive analysis may only append new coverage.
+
+```mermaid
+flowchart TD
+    INPUT["Scope, scenarios, target, profile"]
+    MEMORY["Load project docs and QA memory"]
+    PLAN["PLAN<br/>Agent creates typed scenarios"]
+    VALIDATE["VALIDATE<br/>Check plan and engines"]
+    EXECUTE["EXECUTE<br/>Drivers collect evidence"]
+    ANALYZE["ANALYZE<br/>Check results and coverage"]
+    REPORT["REPORT<br/>Persist report and evidence"]
+    VERDICT["VERDICT<br/>PASS · FAIL · BLOCKED · INCONCLUSIVE"]
+    LEARN["UPDATE MEMORY<br/>Save verified setup hints"]
+
+    INPUT --> MEMORY --> PLAN --> VALIDATE --> EXECUTE --> ANALYZE --> REPORT --> VERDICT --> LEARN
+    ANALYZE -. append validated coverage .-> EXECUTE
+```
+
+The reporting phase still runs when the target is unavailable or adaptive analysis fails. Cancellation propagates immediately, preserves already written run state, and closes only runtimes created by Harness Kit.
+
+## Execution prerequisites
+
+Install the project dependencies before running QA. `playwright` is a local development dependency, so this step installs its CLI into the project's `node_modules`:
+
+```text
+npm install
+```
+
+Browser profiles (`web`, `web-game`, `mobile-web`, `accessibility`, and browser portions of `full`) also require the Chromium browser binary. Install it once on each machine, or after refreshing dependencies:
+
+```text
+npx playwright install chromium
+```
+
+The underlying command is `npx playwright install chromium`; `npx install` is not the Playwright installation command. API profiles use the system `curl` executable. Harness Kit does not start framework servers, APIs, databases, or other external services, so start the target application before executing the QA run.
+
+## Quick start
+
+Run QA from the project you want to test:
+
+```text
+hrns qa
+```
+
+The interactive form asks how to enter the scope, which profile to use, and the target URL or CLI working directory. Select **Auto** to let Harness Kit infer the profile.
+
+For automation or repeatable commands, provide values directly:
+
+```text
+hrns qa run --scope "Validate the checkout flow" --target http://localhost:3000 --profile web
+```
+
+`hrns qa` is an alias for `hrns qa run`.
+
+## Writing a useful scope
+
+Describe behavior that matters to a user. Include the entry point, important journey, expected result, and relevant failure cases.
+
+Good scope:
+
+```text
+Validate order creation through the public API. A valid order must return 201 and be readable afterward. Reject missing products, zero quantity, and unauthorized requests without persisting data.
+```
+
+Weak scope:
+
+```text
+Test orders.
+```
+
+Use `--scenario` for mandatory examples. Repeat it to add more than one:
+
+```text
+hrns qa run \
+  --scope "Validate checkout as a customer" \
+  --scenario "A valid card completes payment" \
+  --scenario "A declined card shows a recoverable error" \
+  --target http://localhost:3000 \
+  --profile web
+```
+
+The planner may add scenarios for important functional, negative, boundary, security, accessibility, or resilience gaps.
+
+## Commands
+
+### Run tests
+
+```text
+hrns qa run [options]
+hrns qa [options]
+```
+
+This command plans, validates, executes, analyzes, and reports in one flow.
+
+### Regenerate a report
+
+```text
+hrns qa report --run <run-id>
+```
+
+This regenerates the report for a completed run using its stored plan and evidence. Omit `--run` to select a completed run interactively:
+
+```text
+hrns qa report
+```
+
+### Run every saved plan
+
+```text
+hrns qa exploratory [--project <path>] [--target <url>]
+```
+
+This command selects the latest version of every saved plan, validates and executes each plan sequentially, then writes one global JSON report. It does not create plans or append adaptive scenarios. Plan failures are recorded without stopping later plans.
+
+## Options
+
+| Option | Purpose |
+| --- | --- |
+| `--scope <text>` | Describe what QA must validate. Omit it to use the interactive form. |
+| `--scenario <text>` | Add a mandatory scenario. Repeatable. |
+| `--target <value>` | Set the application URL, WebSocket URL, or CLI working directory. |
+| `--profile <profile>` | Select an execution profile. |
+| `--project <path>` | Select the project to inspect and test. Defaults to the current directory. |
+| `--agent <runner>` | Override the agent runner. Defaults to `claude-cli`. |
+| `--model <model>` | Override the model used by QA phases. |
+| `--effort <level>` | Override reasoning effort used by QA phases. |
+| `--auth <profile>` | Select a named profile from optional `.harness-kit/auth.json`; valid for `run` and `exploratory`. |
+| `--debug` | Show runner arguments, prompts, sessions, and complete errors. |
+| `--run <id>` | Select a completed run for `hrns qa report`. |
+
+For `hrns qa exploratory`, use `--project` to select the plan repository and `--target` to override non-CLI plan targets without modifying stored plans. Run and report-specific options are rejected.
+
+`hrns qa auth` is a form-only helper. It adds one profile per invocation, asks for the authentication mode and profile name, then asks how credentials are stored. `env` (default) stores only an environment-variable reference. `insecure` displays a warning, requires confirmation, and stores the entered password/JWT/API key/cookie directly in `auth.json`. Protect the file and use `env` for CI or shared repositories. Use `--project` to write the profile into another project. The command rejects `--target`, `--profile`, `--scope`, `--scenario`, `--run`, `--report`, and `--auth`.
+
+## Authentication
+
+Create `.harness-kit/auth.json` only when the target requires authentication. Profiles may use environment-variable references (recommended for shared and CI projects) or literal values when the form's `insecure` storage mode is explicitly selected. Git-ignore is not encryption: protect the file and use disposable, least-privilege test credentials.
+
+```json
+{
+  "schemaVersion": 1,
+  "defaultProfile": "qa-user",
+  "profiles": {
+    "qa-user": { "mode": "bearer", "token": { "source": "env", "name": "QA_USER_TOKEN" } },
+    "admin": { "mode": "basic", "username": "qa-admin", "password": { "source": "env", "name": "QA_ADMIN_PASSWORD" } },
+    "service": { "mode": "api-key", "header": "X-API-Key", "value": { "source": "env", "name": "QA_SERVICE_KEY" } },
+    "browser": { "mode": "cookie", "name": "session", "value": { "source": "env", "name": "QA_SESSION" } },
+    "anonymous": { "mode": "none" }
+  }
+}
+```
+
+For a local-only profile, the helper writes literal values using the following shape (replace the placeholder with a disposable test credential):
+
+```json
+{
+  "schemaVersion": 1,
+  "profiles": {
+    "local-admin": {
+      "mode": "basic",
+      "storage": "insecure",
+      "username": "qa-admin",
+      "password": { "source": "literal", "value": "<test-password>" }
+    }
+  }
+}
+```
+
+`hrns qa auth` warns and asks for confirmation before writing a literal. Use `--auth qa-user` to override `defaultProfile`. Set a scenario's `authProfile` to another profile name or `none` when a stored plan mixes authenticated and anonymous behavior.
+
+Authentication values are resolved immediately before execution. Resolved values are never copied to plans, prompts, reports, execution memory, or persisted evidence. Curl sends its request configuration through stdin (`--config -`), so credentials do not appear in the curl process arguments. Curl request/response evidence, MCP response evidence, and CLI arguments/stdout/stderr are redacted both by credential field and by the exact resolved value. Review screenshots and application-specific output before sharing because an application can render secrets that are unrelated to the selected profile.
+
+### Engine authentication boundaries
+
+| Engine | Supported authentication behavior | Unsupported or blocked behavior |
+| --- | --- | --- |
+| `api`, `security` | Curl applies `none`, `basic`, `bearer`, `api-key`, and `cookie` credentials to same-origin HTTP requests. | Redirects are not followed to another target origin. |
+| `mcp` | HTTP MCP requests receive the resolved authentication headers. | Non-HTTP MCP targets remain unavailable. |
+| `web`, `web-game`, `mobile-web`, `accessibility`, `full` | Basic credentials are scoped to the configured target origin. Bearer/API-key headers are injected only into same-origin browser requests; cookies are installed through the browser context. | Header credentials are never attached to cross-origin browser requests. |
+| `cli` | Only explicitly mapped `environment` values are injected into the child process. Add mappings deliberately when the command expects a variable: `"environment": { "APP_TOKEN": { "source": "env", "name": "QA_USER_TOKEN" } }`. | An authenticated profile without at least one environment mapping is `BLOCKED` before the command starts; HTTP headers are not inferred for arbitrary CLIs. |
+| `websocket` | Unauthenticated (`none`) exchanges are supported. | Any non-`none` authentication profile is `BLOCKED`; WebSocket header authentication is outside the current boundary. |
+
+The `hrns qa auth` form does not infer CLI variable names. Add an `environment` map manually when a CLI needs authentication, and prefer environment references over literal mappings. OAuth2 token acquisition, HMAC signing, and mTLS are also outside the current scope.
+
+Quote values containing spaces. Both `--scope "x=y"` and `--scope="x=y"` preserve equals signs.
+
+## Profiles and targets
+
+| Profile | What it exercises | Target |
+| --- | --- | --- |
+| `api` | HTTP requests through curl; status, headers, text, and JSON assertions. | `http://` or `https://` URL |
+| `web` | Browser navigation, clicks, forms, keyboard input, and visible assertions. | `http://` or `https://` URL |
+| `web-game` | Browser gameplay journeys and repeated keyboard controls. | `http://` or `https://` URL |
+| `mobile-web` | Browser journeys with a mobile viewport and touch-capable context. | `http://` or `https://` URL |
+| `accessibility` | Deterministic checks for common document and form accessibility issues. | `http://` or `https://` URL |
+| `mcp` | MCP JSON-RPC over JSON or Server-Sent Events. | `http://` or `https://` URL |
+| `cli` | Executables started without a shell; exit code, stdout, and stderr assertions. | Working directory |
+| `websocket` | Bounded message exchanges. | `ws://` or `wss://` URL |
+| `security` | Security-focused HTTP or web scenarios. | `http://` or `https://` URL |
+| `full` | Relevant supported HTTP and browser profiles in one plan. | Shared `http://` or `https://` URL |
+
+When no target is supplied, Harness Kit can serve a root `index.html` through a temporary local server for browser profiles. It does not start framework servers, APIs, native applications, databases, or external dependencies. Start those services first and pass their target.
+
+## Reading progress and verdicts
+
+The terminal shows runtime preparation, each phase, every scenario, and the final report. Scenario failures include their immediate reason.
+
+| Scenario state | Meaning |
+| --- | --- |
+| `PASSED` | Expected behavior was observed and evidence exists. |
+| `FAILED` | An observable result contradicts the expectation. |
+| `BLOCKED` | The target, engine, environment, or required capability was unavailable. |
+| `INCONCLUSIVE` | Execution did not provide enough reliable evidence to decide. |
+
+| Final verdict | Meaning |
+| --- | --- |
+| `PASS` | Every required scenario passed with evidence. |
+| `FAIL` | At least one required scenario failed. |
+| `BLOCKED` | No required scenario failed, but at least one was blocked. |
+| `INCONCLUSIVE` | No required scenario failed or blocked, but coverage or evidence was insufficient. |
+
+An adaptive-analysis warning does not discard completed execution. Harness Kit reports collected results and explains which analysis step was skipped.
+
+## Reports and evidence
+
+Harness Kit stores artifacts inside the tested project:
+
+```text
+docs/qa/
+  plans/<plan-id>/
+    SCOPE.md
+    <version>.json
+  runs/<run-id>/
+    state.json
+    report.json
+    REPORT.md
+    evidence/
+      001-<scenario>/...
+      002-<scenario>/...
+  exploratory/<exploratory-run-id>/
+    report.json
+```
+
+`REPORT.md` is the readable per-run report. Its `report.json` is the structured equivalent. Exploratory `report.json` aggregates plan versions, run IDs, effective targets, scenario results, totals, validation errors, and the global verdict. Evidence remains in each referenced run directory.
+
+Harness Kit removes common credential fields and exact resolved authentication values from persisted Curl/MCP/CLI evidence. Curl's request configuration is transient stdin, not a command-line argument. Browser screenshots and application-generated fields can still contain unrelated secrets; review artifacts before sharing.
+
+## Execution memory
+
+QA maintains a small operational memory in `docs/qa/execution-memory.json`. It records only:
+
+- the profile used;
+- a verified target;
+- when that target was verified.
+
+This helps later runs avoid repeating setup mistakes. If a project worked on port `8080`, the planner can use that fact as a hint next time.
+
+Memory does not store pass/fail results, response bodies, screenshots, scenarios, or agent instructions. Entries expire after 30 days. Harness Kit ignores corrupt entries, temporary managed ports, blocked executions, URL credentials, query strings, and fragments. CLI working directories are not currently remembered.
+
+An explicit `--target` or `--profile` always takes precedence. QA revalidates remembered targets on every run. Delete `execution-memory.json` to reset these hints.
+
+Project documentation and execution memory have separate roles:
+
+| Source | Role |
+| --- | --- |
+| `docs/.digest.md` and `docs/.graph.json` | Explain architecture, commands, constraints, and relevant source locations. |
+| `docs/qa/execution-memory.json` | Preserve small verified facts about how the application was reached. |
+
+## Examples
+
+Test an API:
+
+```text
+hrns qa run --scope "Validate health and order creation endpoints" --target http://localhost:8080 --profile api
+```
+
+Test a website:
+
+```text
+hrns qa run --scope "A guest can search, open a product, and add it to the cart" --target http://localhost:3000 --profile web
+```
+
+Test a CLI:
+
+```text
+hrns qa run --scope "Validate help, version, and invalid command behavior" --target . --profile cli
+```
+
+Test MCP:
+
+```text
+hrns qa run --scope "Discover tools and validate the public search tool contract" --target http://localhost:3000/mcp --profile mcp
+```
+
+Regenerate a stored report:
+
+```text
+hrns qa report --run checkout-20260912011530-a1b2c3
+```
+
+Execute all latest saved plans:
+
+```text
+hrns qa exploratory --target http://localhost:3000
+```
+
+## Current boundaries
+
+QA supports API, browser, mobile web, accessibility, MCP, CLI, WebSocket, security-focused, and combined HTTP/browser flows. It does not provide native desktop, console, VR, hardware-input, load-testing, or formal security-certification engines.
+
+Known engineering follow-ups include stronger browser navigation boundaries, internal CLI/MCP deadlines, more reliable browser readiness for persistent connections, and stricter Markdown reconciliation with structured verdicts.
+
+## Related documentation
+
+- [`docs/feature/QA_TESTER.md`](./feature/QA_TESTER.md) — implementation contract and engineering boundaries.
+- [`docs/adr/ARCHITECTURE.md`](./adr/ARCHITECTURE.md) — SDK architecture and dependency boundaries.
+- [`docs/adr/TESTS.md`](./adr/TESTS.md) — repository test strategy and validation commands.

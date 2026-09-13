@@ -13,6 +13,7 @@ COMMANDS
   init      Initialize docs/product files and configure steering rules
   settings  Manage settings (edit|renew|delete)
   diagnose  Run post-orchestration harness diagnosis on pending sessions
+  qa        Run independent runtime acceptance tests or regenerate a report
   candidate Review and apply meta-harness optimization candidates
   report    Print development status and token usage report for the current session
   erase     Preview and erase selected agent CLI project history
@@ -68,6 +69,7 @@ EXAMPLES
   hrns run --reset --scope "My app" --path ./api --complexity LOW
   hrns run --reset --scope "My app" --path ./api --skip-deploy
   hrns diagnose
+  hrns qa run --scope "Test the orders endpoint" --target http://localhost:3000
   hrns candidate list
   hrns candidate review v001
   hrns report
@@ -209,6 +211,52 @@ EXAMPLES
   hrns diagnose --batch-size 5
 `
 
+export const HELP_QA = `
+@romabeckman/harness-kit — hrns qa
+
+USAGE
+  hrns qa run [options]
+  hrns qa report [--run <id>] [options]
+  hrns qa exploratory [--target <url>] [--project <path>]
+  hrns qa auth [--project <path>]   Add one authentication profile interactively
+  hrns qa [options]          Alias for hrns qa run
+
+OPTIONS
+  --scope <text>           Open QA scope; omit to choose short input or editor form
+  --scenario <text>        Optional detailed scenario; repeatable
+  --project <path>         Project to inspect and test (default: current directory)
+  --agent <runner>         Agent runner (default: claude-cli)
+  --model <model>          Model override for QA phases
+  --effort <level>         Reasoning effort override for QA phases
+  --report                 Generate and render the report during QA run
+  --run <id>               Completed run to report; omit for interactive selection
+  --target <url>            Target application URL
+  --auth <profile>          Authentication profile from .harness-kit/auth.json
+  --profile <api|web|web-game|mobile-web|accessibility|mcp|cli|websocket|security|full>
+  --debug                   Expose runner arguments, prompts, sessions, and full errors
+
+EXPLORATORY
+  Executes every scenario from the latest version of every saved QA plan.
+  Plans run sequentially. A global JSON report is always saved under
+  docs/qa/exploratory/<id>/report.json and printed to stdout.
+
+AUTH
+  Adds one profile through a form. Choose env storage for a reference-only
+  profile or insecure storage to persist entered credentials in auth.json.
+  Insecure storage always shows a warning and requires confirmation.
+
+EXAMPLES
+  hrns qa run --scope "Test endpoint X" --target http://localhost:3000
+  hrns qa run --report --scope "Test endpoint X" --target http://localhost:3000
+  hrns qa run --scope "Validate checkout" --scenario "A valid card completes payment" --profile web
+  hrns qa run --debug --scope "Test endpoint X" --target http://localhost:3000
+  hrns qa report --run orders-20260911
+  hrns qa report
+  hrns qa exploratory --target http://localhost:3000
+  hrns qa exploratory --auth qa-user --target http://localhost:3000
+  hrns qa auth
+`
+
 export const HELP_CANDIDATE = `
 @romabeckman/harness-kit — hrns candidate
 
@@ -296,6 +344,7 @@ export const COMMAND_HELP: Record<string, string> = {
   init: HELP_INIT,
   settings: HELP_SETTINGS,
   diagnose: HELP_DIAGNOSE,
+  qa: HELP_QA,
   candidate: HELP_CANDIDATE,
   report: HELP_REPORT,
   erase: HELP_ERASE,

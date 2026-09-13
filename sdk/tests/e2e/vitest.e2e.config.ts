@@ -1,8 +1,8 @@
 // @ts-ignore
-import { defineConfig } from 'vitest/config';
-import path from 'path';
+const { defineConfig } = require('vitest/config');
+const path = require('path');
 
-export default defineConfig({
+module.exports = defineConfig({
   test: {
     include: ['tests/e2e/**/*.test.ts'],
     fileParallelism: false,
