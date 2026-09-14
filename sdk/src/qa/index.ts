@@ -20,4 +20,4 @@ export type { QaTargetAvailability, QaTargetProbe } from './services/QaTargetPro
 export { QaTerminalView } from './ui/QaTerminalView'
 export type { QaProgressEvent, QaProgressListener, QaTerminalPresenter } from './progress'
 export { QaPhase } from './phases'
-export type { QaAgenticRequest, QaBrowserAction, QaBugReport, QaCliRequest, QaDriver, QaErrorReport, QaEvidence, QaExploratoryPlanReport, QaExploratoryReport, QaExploratoryTotals, QaFinalReport, QaHttpRequest, QaMcpRequest, QaPlan, QaPlanInput, QaProfile, QaRun, QaScenario, QaScenarioResult, QaScenarioStatus, QaSuccessCriterionReport, QaVerdict, QaWebSocketRequest } from './types'
+export type { QaAgenticRequest, QaBrowserAction, QaBrowserWaitState, QaBugReport, QaCliRequest, QaDriver, QaErrorReport, QaEvidence, QaExploratoryPlanReport, QaExploratoryReport, QaExploratoryTotals, QaFinalReport, QaHttpRequest, QaMcpRequest, QaPlan, QaPlanInput, QaProfile, QaRun, QaScenario, QaScenarioResult, QaScenarioStatus, QaSuccessCriterionReport, QaVerdict, QaWebSocketRequest } from './types'

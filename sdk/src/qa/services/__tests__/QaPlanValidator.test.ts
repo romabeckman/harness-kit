@@ -105,6 +105,65 @@ describe('QaPlanValidator', () => {
     expect(result).toEqual({ valid: true, errors: [] })
   })
 
+  it('accepts deterministic browser waits and environment-backed form values', async () => {
+    const validator = new QaPlanValidator({ doctor: vi.fn().mockResolvedValue({ available: true }) })
+    const result = await validator.validate({
+      ...plan(),
+      profile: 'web',
+      scenarios: [{
+        id: 'login-admin', criterionIds: ['criterion-1'], required: true, profile: 'web',
+        actions: [
+          { type: 'fill', selector: '#username', valueFrom: 'QA_USERNAME' },
+          { type: 'waitForSelector', selector: '[data-admin]', state: 'visible', timeout: 10_000 },
+          { type: 'waitForUrl', value: '/admin', timeout: 10_000 },
+        ],
+        assertions: [{ type: 'visible', selector: '[data-admin]' }],
+      }],
+    }, workspace)
+
+    expect(result).toEqual({ valid: true, errors: [] })
+  })
+
+  it('rejects unsafe browser wait URLs, timeouts, and environment references', async () => {
+    const validator = new QaPlanValidator({ doctor: vi.fn().mockResolvedValue({ available: true }) })
+    const result = await validator.validate({
+      ...plan(),
+      profile: 'web',
+      scenarios: [{
+        id: 'unsafe-browser', criterionIds: ['criterion-1'], required: true, profile: 'web',
+        actions: [
+          { type: 'fill', selector: '#username', valueFrom: 'QA-USERNAME' },
+          { type: 'waitForSelector', selector: '[data-admin]', state: 'unknown', timeout: 30_001 },
+          { type: 'waitForUrl', value: 'https://evil.example/admin', timeout: 1 },
+        ],
+        assertions: [{ type: 'visible', selector: '[data-admin]' }],
+      }],
+    }, workspace)
+
+    expect(result.valid).toBe(false)
+    expect(result.errors).toEqual(expect.arrayContaining([
+      'scenario unsafe-browser browser action 1 needs selector and value',
+      'scenario unsafe-browser browser action 2 waitForSelector state is invalid',
+      'scenario unsafe-browser browser action 2 timeout exceeds safety bounds',
+      'scenario unsafe-browser browser waitForUrl must stay within target origin',
+    ]))
+  })
+
+  it('rejects unsafe per-scenario authentication profile names', async () => {
+    const validator = new QaPlanValidator({ doctor: vi.fn().mockResolvedValue({ available: true }) })
+    const result = await validator.validate({
+      ...plan(),
+      profile: 'web',
+      scenarios: [{
+        id: 'browser-auth', authProfile: '../secrets', criterionIds: ['criterion-1'], required: true, profile: 'web',
+        actions: [{ type: 'wait', value: '1' }],
+        assertions: [{ type: 'visible', selector: 'body' }],
+      }],
+    }, workspace)
+
+    expect(result.errors).toContain('scenario browser-auth authProfile must be a safe identifier')
+  })
+
   it('rejects malformed structured MCP expectations', async () => {
     const validator = new QaPlanValidator({ doctor: vi.fn().mockResolvedValue({ available: true }) })
     const result = await validator.validate({

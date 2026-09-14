@@ -75,33 +75,48 @@ export class QaService {
 
   private async executeInto(run: QaRun, plan: QaPlan, scenarios: QaPlan['scenarios'], availability: { available: boolean; reason?: string }, signal?: AbortSignal, onProgress?: QaProgressListener): Promise<void> {
     const evidenceOffset = run.results.length
-    for (const [index, scenario] of scenarios.entries()) {
-      if (signal?.aborted) throw signal.reason ?? new Error('QA execution aborted')
-      onProgress?.({
-        type: 'scenario_started',
-        scenarioId: scenario.id,
-        description: scenario.description,
-        index: index + 1,
-        total: scenarios.length,
-      })
-      const driver = this.#drivers.get(scenario.profile)
-      const evidenceSequence = evidenceOffset + index + 1
-      const result = !availability.available
-        ? { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: availability.reason ?? `Target unavailable at ${plan.target}`, evidence: [] }
-        : driver
-          ? await this.executeDriver(driver, scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id, evidenceSequence), signal)
-          : { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: `No QA driver for ${scenario.profile}`, evidence: [] }
-      run.results.push(result)
-      this.#store.saveRun(run)
-      onProgress?.({
-        type: 'scenario_completed',
-        scenarioId: scenario.id,
-        status: result.status,
-        reason: result.reason,
-        index: index + 1,
-        total: scenarios.length,
-      })
+    const startedDrivers = new Set<QaDriver>()
+    try {
+      for (const [index, scenario] of scenarios.entries()) {
+        if (signal?.aborted) throw signal.reason ?? new Error('QA execution aborted')
+        onProgress?.({
+          type: 'scenario_started',
+          scenarioId: scenario.id,
+          description: scenario.description,
+          index: index + 1,
+          total: scenarios.length,
+        })
+        const driver = this.#drivers.get(scenario.profile)
+        const evidenceSequence = evidenceOffset + index + 1
+        const result = await this.executeScenario(run, plan, scenario, driver, availability, evidenceSequence, startedDrivers, signal)
+        run.results.push(result)
+        this.#store.saveRun(run)
+        onProgress?.({
+          type: 'scenario_completed',
+          scenarioId: scenario.id,
+          status: result.status,
+          reason: result.reason,
+          index: index + 1,
+          total: scenarios.length,
+        })
+      }
+    } finally {
+      for (const driver of [...startedDrivers].reverse()) await driver.finishRun?.(run.id)
     }
+  }
+
+  private async executeScenario(run: QaRun, plan: QaPlan, scenario: QaPlan['scenarios'][number], driver: QaDriver | undefined, availability: { available: boolean; reason?: string }, evidenceSequence: number, startedDrivers: Set<QaDriver>, signal?: AbortSignal) {
+    if (!availability.available) return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: availability.reason ?? `Target unavailable at ${plan.target}`, evidence: [] }
+    if (!driver) return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: `No QA driver for ${scenario.profile}`, evidence: [] }
+    if (driver.startRun && !startedDrivers.has(driver)) {
+      try {
+        await driver.startRun(run.id, plan.target, signal)
+        startedDrivers.add(driver)
+      } catch (error) {
+        return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const, reason: error instanceof Error ? error.message : 'QA driver could not start', evidence: [] }
+      }
+    }
+    return this.executeDriver(driver, scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id, evidenceSequence), signal, driver.startRun ? run.id : undefined)
   }
 
   private finalize(run: QaRun): QaRun {
@@ -111,12 +126,12 @@ export class QaService {
     return run
   }
 
-  private async executeDriver(driver: QaDriver, scenario: QaPlan['scenarios'][number], target: string, evidenceDir: string, signal?: AbortSignal) {
+  private async executeDriver(driver: QaDriver, scenario: QaPlan['scenarios'][number], target: string, evidenceDir: string, signal?: AbortSignal, runId?: string) {
     const auth = this.#auth?.resolve(scenario.authProfile ?? this.#authProfile) ?? { mode: 'none' as const, profile: 'none', headers: {}, environment: {} }
-    if (auth.mode === 'none' && Object.keys(auth.environment).length === 0) {
+    if (runId === undefined && auth.mode === 'none' && Object.keys(auth.environment).length === 0) {
       return driver.execute(scenario, target, evidenceDir, signal)
     }
-    return driver.execute(scenario, target, evidenceDir, signal, { auth })
+    return driver.execute(scenario, target, evidenceDir, signal, { auth, ...(runId === undefined ? {} : { runId }) })
   }
 
   async doctor(profile: QaPlan['profile']): Promise<{ available: boolean; reason?: string }> {

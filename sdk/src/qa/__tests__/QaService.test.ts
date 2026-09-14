@@ -260,7 +260,143 @@ describe('QaVerdictPolicy', () => {
   })
 })
 
+describe('QaService driver lifecycle', () => {
+  it('starts and finishes a driver run once while propagating its run identifier', async () => {
+    const startRun = vi.fn(async () => undefined)
+    const finishRun = vi.fn(async () => undefined)
+    const execute = vi.fn(async (scenario, _target, _evidenceDir, _signal, context) => ({
+      scenarioId: scenario.id,
+      required: scenario.required,
+      status: 'PASSED' as const,
+      evidence: [],
+      runId: context?.runId,
+    }))
+    const driver: QaDriver = {
+      profile: 'web',
+      doctor: async () => ({ available: true }),
+      startRun,
+      finishRun,
+      execute,
+    }
+    const service = new QaService(new QaRunStore(mkdtempSync(join(tmpdir(), `hrns-qa-lifecycle-${Date.now()}-`))), [driver], async () => ({ available: true }))
+    const plan: QaPlan = {
+      schemaVersion: 1,
+      id: 'browser-lifecycle',
+      version: 1,
+      target: 'http://127.0.0.1:3000',
+      profile: 'web',
+      createdAt: new Date().toISOString(),
+      criteria: ['Login is available'],
+      scenarios: [
+        { id: 'login', criterionIds: ['criterion-1'], required: true, profile: 'web', actions: [], assertions: [] },
+        { id: 'admin', criterionIds: ['criterion-1'], required: true, profile: 'web', actions: [], assertions: [] },
+      ],
+    }
+
+    const run = await service.execute(plan)
+
+    expect(run.verdict).toBe('INCONCLUSIVE')
+    expect(startRun).toHaveBeenCalledTimes(1)
+    expect(finishRun).toHaveBeenCalledTimes(1)
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(execute.mock.calls.map((call) => call[4]?.runId)).toEqual([run.id, run.id])
+  })
+})
+
 describe('PlaywrightDriver', () => {
+  it('reuses the browser while creating and closing an isolated page per scenario', async () => {
+    const root = mkdtempSync(join(tmpdir(), `hrns-qa-browser-session-${Date.now()}-`))
+    const goto = vi.fn(async () => undefined)
+    const page = {
+      on: () => undefined,
+      close: vi.fn(async () => undefined),
+      goto,
+      locator: () => ({ click: async () => undefined, isVisible: async () => true }),
+      screenshot: async ({ path }: { path: string }) => { writeFileSync(path, 'test image') },
+    }
+    const browser = {
+      newPage: vi.fn(async () => page),
+      close: vi.fn(async () => undefined),
+    }
+    const driver = new PlaywrightDriver('web', async () => ({
+      chromium: { launch: async () => browser },
+    }))
+    const context = { auth: { mode: 'none' as const, profile: 'none', headers: {}, environment: {} }, runId: 'run-1' }
+    const scenario = (id: string) => ({
+      id,
+      criterionIds: ['criterion-1'],
+      required: true,
+      profile: 'web' as const,
+      actions: [{ type: 'click' as const, selector: '[data-ready]' }],
+      assertions: [{ type: 'visible' as const, selector: '[data-ready]' }],
+    })
+
+    await driver.startRun!('run-1', 'http://127.0.0.1:3000')
+    const first = await driver.execute(scenario('first'), 'http://127.0.0.1:3000', join(root, 'first'), undefined, context)
+    const second = await driver.execute(scenario('second'), 'http://127.0.0.1:3000', join(root, 'second'), undefined, context)
+    await driver.finishRun!('run-1')
+
+    expect(first.status).toBe('PASSED')
+    expect(second.status).toBe('PASSED')
+    expect(browser.newPage).toHaveBeenCalledTimes(2)
+    expect(page.close).toHaveBeenCalledTimes(2)
+    expect(goto).toHaveBeenCalledTimes(2)
+    expect(browser.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for selectors and URLs instead of relying only on fixed delays', async () => {
+    const waitForSelector = vi.fn(async () => undefined)
+    const waitForURL = vi.fn(async () => undefined)
+    const page = {
+      on: () => undefined,
+      goto: async () => undefined,
+      waitForSelector,
+      waitForURL,
+      locator: () => ({ isVisible: async () => true }),
+      screenshot: async ({ path }: { path: string }) => { writeFileSync(path, 'test image') },
+    }
+    const driver = new PlaywrightDriver('web', async () => ({
+      chromium: { launch: async () => ({ newPage: async () => page, close: async () => undefined }) },
+    }))
+
+    const result = await driver.execute({
+      id: 'ready', criterionIds: ['criterion-1'], required: true, profile: 'web',
+      actions: [
+        { type: 'waitForSelector', selector: '[data-admin]', state: 'visible', timeout: 5_000 },
+        { type: 'waitForUrl', value: '/admin', timeout: 5_000 },
+      ],
+      assertions: [{ type: 'visible', selector: '[data-admin]' }],
+    } as any, 'http://127.0.0.1:3000', join(tmpdir(), `hrns-qa-browser-waits-${Date.now()}`))
+
+    expect(result.status).toBe('PASSED')
+    expect(waitForSelector).toHaveBeenCalledWith('[data-admin]', { state: 'visible', timeout: 5_000, signal: undefined })
+    expect(waitForURL).toHaveBeenCalledWith('http://127.0.0.1:3000/admin', { waitUntil: 'domcontentloaded', timeout: 5_000, signal: undefined })
+  })
+
+  it('resolves form values from authenticated environment references', async () => {
+    const fill = vi.fn(async () => undefined)
+    const page = {
+      on: () => undefined,
+      goto: async () => undefined,
+      locator: () => ({ fill, isVisible: async () => true }),
+      screenshot: async ({ path }: { path: string }) => { writeFileSync(path, 'test image') },
+    }
+    const driver = new PlaywrightDriver('web', async () => ({
+      chromium: { launch: async () => ({ newPage: async () => page, close: async () => undefined }) },
+    }))
+
+    const result = await driver.execute({
+      id: 'login', criterionIds: ['criterion-1'], required: true, profile: 'web',
+      actions: [{ type: 'fill', selector: '#username', valueFrom: 'QA_USERNAME' }],
+      assertions: [{ type: 'visible', selector: '#username' }],
+    } as any, 'http://127.0.0.1:3000', join(tmpdir(), `hrns-qa-browser-secret-${Date.now()}`), undefined, {
+      auth: { mode: 'none', profile: 'test', headers: {}, environment: { QA_USERNAME: 'alice' } },
+    })
+
+    expect(result.status).toBe('PASSED')
+    expect(fill).toHaveBeenCalledWith('alice')
+  })
+
   it('fails a scenario when a browser page error follows a user action', async () => {
     let pageErrorHandler: ((error: Error) => void) | undefined
     const page = {

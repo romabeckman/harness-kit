@@ -1,18 +1,20 @@
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../../json-extraction/types'
 import type { AgentSession } from '../../agent-runner/types'
-import { formatQaScenarioId, type QaBrowserAction, type QaBrowserAssertion, type QaCliRequest, type QaHttpRequest, type QaMcpRequest, type QaPlan, type QaProfile, type QaScenario, type QaScenarioCategory, type QaWebSocketRequest } from '../types'
+import { formatQaScenarioId, type QaBrowserAction, type QaBrowserAssertion, type QaBrowserWaitState, type QaCliRequest, type QaHttpRequest, type QaMcpRequest, type QaPlan, type QaProfile, type QaScenario, type QaScenarioCategory, type QaWebSocketRequest } from '../types'
 import { buildQaAgentFileOutputInstructions, createQaAgentFileOutput, prepareQaAgentFileOutput, readQaAgentFileOutput, removeQaAgentFileOutput, type QaAgentFileOutput } from '../utils/QaAgentFileOutput'
 import { QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
 
 const PROFILES: QaProfile[] = ['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full']
-const ACTIONS = ['navigate', 'click', 'fill', 'press', 'wait', 'resize'] as const
+const ACTIONS = ['navigate', 'click', 'fill', 'press', 'wait', 'waitForSelector', 'waitForUrl', 'resize'] as const
 const ASSERTIONS = ['visible', 'hidden', 'text', 'url', 'count', 'attribute'] as const
 const CATEGORIES: QaScenarioCategory[] = ['functional', 'negative', 'boundary', 'security', 'accessibility', 'resilience']
 const MAX_SCENARIOS = 50
 const MAX_ACTIONS = 100
 const MAX_KEY_PRESSES = 500
 const MAX_WAIT_MS = 30_000
+const BROWSER_WAIT_STATES: QaBrowserWaitState[] = ['attached', 'detached', 'visible', 'hidden']
+const SAFE_ENVIRONMENT_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/
 
 export class QaPlanningPhase implements QaPhaseHandler {
   readonly phase = QaPhase.PLANNING
@@ -102,9 +104,11 @@ export class QaPlanningPhase implements QaPhaseHandler {
       'Prioritize user-visible acceptance behavior and high-risk failures. Each scenario must state one observable outcome and use deterministic assertions.',
       'Cover functional, negative, boundary, security, accessibility, and resilience risks when relevant. Try malformed input, unauthorized access, unsafe navigation, repeated actions, and recoverable failures without leaving the configured target.',
       'Treat user-supplied scenarios as a required baseline. Add only scenarios needed for material coverage gaps. Avoid duplicate scenarios and implementation-detail checks.',
-      'For APIs, define real HTTP requests. For interfaces, define human navigation, click, fill, press, wait, and resize actions. For web games, start a session and include meaningful player controls.',
-      'Use only these browser action JSON shapes: {"type":"navigate","url":"http://..."}, {"type":"click","selector":"..."}, {"type":"fill","selector":"...","value":"..."}, {"type":"press","key":"ArrowLeft","count":1}, {"type":"wait","milliseconds":500}, {"type":"resize","width":320,"height":800}.',
-      'Do not invent browser action types or property names. Omit count only when one key press is enough.',
+      'For APIs, define real HTTP requests. For interfaces, define human navigation, click, fill, press, deterministic readiness waits, and resize actions. For web games, start a session and include meaningful player controls.',
+      'Keep dependent authenticated steps (login, redirect, admin navigation, and verification) in one self-contained scenario. Do not assume page position from another scenario.',
+      'Use only these browser action JSON shapes: {"type":"navigate","url":"http://..."}, {"type":"click","selector":"..."}, {"type":"fill","selector":"...","value":"..."}, {"type":"fill","selector":"...","valueFrom":"QA_USERNAME"}, {"type":"press","key":"ArrowLeft","count":1}, {"type":"wait","milliseconds":500}, {"type":"waitForSelector","selector":"[data-ready]","state":"visible","timeout":10000}, {"type":"waitForUrl","value":"/admin","timeout":10000}, {"type":"resize","width":320,"height":800}.',
+      'Use valueFrom for credentials or other configured environment values. Never place secrets in literal fill values. Use waitForSelector or waitForUrl after asynchronous navigation; use fixed wait only when no observable readiness signal exists.',
+      'Do not invent browser action types or property names. Omit count only when one key press is enough. Omit state to use visible and omit timeout to use the driver default.',
       'Every web scenario needs executable assertions. Use: {"type":"visible|hidden","selector":"..."}, {"type":"text","selector":"...","value":"expected text"}, {"type":"url","value":"http://..."}, {"type":"count","selector":"...","count":1}, {"type":"attribute","selector":"...","attribute":"name","value":"expected"}.',
       'API scenarios may assert expectedHeaders, expectedBodyContains, and a partial expectedJson object in request. API request paths must be relative to target origin.',
       'HTTP redirects are observed, not followed: assert the 3xx status and Location header. Use api or web scenarios for the security profile; security is a coverage category, not a separate engine.',
@@ -155,6 +159,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
     const sourceId = stringValue(value.id)
     const id = sourceId ? formatQaScenarioId(index, sourceId) : undefined
     const profile = value.profile
+    const authProfile = stringValue(value.authProfile)
     const criterionIds = stringArray(value.criterionIds).map(normalizeCriterionId)
     for (const criterionId of criterionIds) {
       const match = /^criterion-(\d+)$/.exec(criterionId)
@@ -178,6 +183,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
       profile: profile as QaProfile,
       description: stringValue(value.description),
       category: CATEGORIES.includes(value.category as QaScenarioCategory) ? value.category as QaScenarioCategory : undefined,
+      ...(authProfile ? { authProfile } : {}),
     }
     if (profile === 'api' || (profile === 'security' && isRecord(value.request))) scenario.request = this.parseRequest(value.request, index)
     else if (profile === 'mcp') scenario.mcp = this.parseMcp(value.mcp, index)
@@ -249,8 +255,9 @@ export class QaPlanningPhase implements QaPhaseHandler {
       }
       if (action.type === 'fill') {
         const selector = stringValue(action.selector)
-        if (!selector || typeof action.value !== 'string') throw invalid()
-        return { type: 'fill', selector, value: action.value }
+        const valueFrom = stringValue(action.valueFrom)
+        if (!selector || (typeof action.value !== 'string' && !valueFrom) || (valueFrom && action.value !== undefined) || (action.valueFrom !== undefined && (!valueFrom || !SAFE_ENVIRONMENT_NAME.test(valueFrom)))) throw invalid()
+        return valueFrom ? { type: 'fill', selector, valueFrom } : { type: 'fill', selector, value: action.value as string }
       }
       if (action.type === 'press') {
         const key = stringValue(action.key) ?? stringValue(action.value)
@@ -262,6 +269,19 @@ export class QaPlanningPhase implements QaPhaseHandler {
         const milliseconds = nonNegativeNumber(action.milliseconds ?? action.value)
         if (milliseconds === undefined || milliseconds > MAX_WAIT_MS) throw invalid()
         return { type: 'wait', value: String(milliseconds) }
+      }
+      if (action.type === 'waitForSelector') {
+        const selector = stringValue(action.selector)
+        const state = action.state === undefined ? 'visible' : action.state as QaBrowserWaitState
+        const timeout = action.timeout === undefined ? undefined : nonNegativeNumber(action.timeout)
+        if (!selector || !BROWSER_WAIT_STATES.includes(state) || (action.timeout !== undefined && (timeout === undefined || timeout > MAX_WAIT_MS))) throw invalid()
+        return { type: 'waitForSelector', selector, state, ...(timeout === undefined ? {} : { timeout }) }
+      }
+      if (action.type === 'waitForUrl') {
+        const url = stringValue(action.url) ?? stringValue(action.value)
+        const timeout = action.timeout === undefined ? undefined : nonNegativeNumber(action.timeout)
+        if (!url || (action.timeout !== undefined && (timeout === undefined || timeout > MAX_WAIT_MS))) throw invalid()
+        return { type: 'waitForUrl', value: new URL(normalizeNavigationUrl(url, target), target).toString(), ...(timeout === undefined ? {} : { timeout }) }
       }
       const width = positiveInteger(action.width)
       const height = positiveInteger(action.height)
