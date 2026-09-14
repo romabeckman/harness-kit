@@ -49,10 +49,10 @@ src/cli/services/qa/ # QA parsing, handlers, factories, CLI types
 
 ## EXECUTION
 
-1. **Run** with `hrns qa run --agent <runner>`; select `resume` or `new` when plans exist.
+1. **Run** with `hrns qa run --agent <runner>`; select `resume`, `resume with analysis`, or `new` when plans exist.
 2. **Define** scope with `--scope` or prompts; add repeated `--scenario` baselines.
 3. **Validate** planner JSON, profile, target, and executable scenarios.
-4. **Execute** in order, analyze evidence, report with `--report`; use selected outer runner.
+4. **Execute** in order and report with `--report`; opt into evidence analysis with `--analysis` or saved-plan `resume with analysis`.
 5. **Regenerate** with `hrns qa report --run <id>`; explore with `hrns qa exploratory`.
 6. **Authenticate** with `--auth <profile>` and `.harness-kit/auth.json`.
 
@@ -62,13 +62,12 @@ REQUIRED: Preserve scope bytes, use three-digit scenario IDs, and reuse one runn
 # CORRECT: run QA and generate the report during execution
 hrns qa run --report --scope "Test order creation endpoint" --target http://127.0.0.1:3000 --agent codex-cli
 
-# CORRECT: preview and execute through the safety wrapper
-python skills/qa-orchestrator/scripts/safe_hrns_qa.py --execute --cwd . -- qa run --report --target http://127.0.0.1:3000 --agent codex-cli
-
 # CORRECT: fix actionable results from one completed QA run
 hrns run --reset --run orders-20260911 --mode fast
 
 ```
+
+Adaptive analysis is opt-in: `--analysis` inspects evidence and appends and executes material gaps. Choose **resume with analysis** for saved plans; plain **resume** runs saved scenarios only.
 
 ## DEVELOPMENT RENEWAL
 

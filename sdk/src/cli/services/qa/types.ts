@@ -28,6 +28,7 @@ export interface QaCliOptions {
   authProfile?: string
   debug?: boolean
   report: boolean
+  analysis?: boolean
 }
 
 export interface QaCommandDependencies {

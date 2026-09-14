@@ -232,6 +232,7 @@ OPTIONS
   --agent <runner>         Agent runner (default: claude-cli)
   --model <model>          Model override for QA phases
   --effort <level>         Reasoning effort override for QA phases
+  --analysis               After execution, inspect evidence and add and execute material missing scenarios before reporting
   --report                 Generate and render the report during QA run
   --run <id>               Completed run to report; omit for interactive selection
   --target <url>            Target application URL

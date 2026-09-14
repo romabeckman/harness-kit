@@ -28,6 +28,7 @@ export function createQaOrchestrator(
     model: options.model,
     effort: options.effort,
     report: options.report,
+    analysis: options.analysis,
     onProgress,
     targetProbe: dependencies.targetProbe,
     runtime: dependencies.runtime,

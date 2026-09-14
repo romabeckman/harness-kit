@@ -7,10 +7,10 @@ Use this playbook to validate a completed change as a human would, independently
 Plan the acceptance condition first, run it against the application a user would reach, inspect its evidence, and record the QA verdict. A passing build, unit test, or development-agent report is not a substitute for this flow.
 
 ```text
-LLM planning -> plan validation/preflight -> curl/Playwright execution -> adaptive analysis -> optional LLM reporting
+LLM planning -> plan validation/preflight -> curl/Playwright execution -> optional adaptive analysis -> optional LLM reporting
 ```
 
-`hrns qa run` accepts an open scope or optional detailed scenarios. The LLM inspects the project, generates missing scenarios, and selects executable actions for the configured profile. It does not start the target application; start it first and provide its reachable URL. `hrns qa` is an alias for `hrns qa run`.
+`hrns qa run` accepts an open scope or optional detailed scenarios. The planner inspects the project, generates initial scenarios, and selects executable actions for the configured profile. Post-execution adaptive analysis is disabled by default. It does not start the target application; start it first and provide its reachable URL. `hrns qa` is an alias for `hrns qa run`.
 
 ## Agentic daily flow
 
@@ -22,9 +22,12 @@ hrns qa run --scope "Test endpoint X" --target http://127.0.0.1:3000
 
 # CORRECT: execute and generate/render the report during the same run
 hrns qa run --report --scope "Test endpoint X" --target http://127.0.0.1:3000
+
+# CORRECT: opt into post-execution analysis and additional executable scenarios
+hrns qa run --analysis --report --scope "Test endpoint X" --target http://127.0.0.1:3000
 ```
 
-Add detailed scenarios when known. The LLM treats them as baseline, analyzes gaps, and may add scenarios:
+Add detailed scenarios when known. The planner treats them as baseline and may add initial scenarios for coverage gaps:
 
 ```bash
 # CORRECT: supplied scenarios plus agent-discovered coverage
@@ -34,7 +37,11 @@ hrns qa run --project ../checkout --scope "Validate checkout" --scenario "Valid 
 hrns qa run --target http://127.0.0.1:3000
 ```
 
-Without `--report`, the run executes and saves state/evidence but skips LLM report generation. Add `--report` to generate and render the report during execution. Audit artifacts remain under `docs/qa/`. The separate `hrns qa report` command emits the final JSON report and can regenerate `report.json` and `REPORT.md` for a completed run.
+Without `--report`, the run executes and saves state/evidence but skips LLM report generation. Add `--report` to generate and render the report during execution. Add `--analysis` when post-execution evidence review may append and execute material missing scenarios. Audit artifacts remain under `docs/qa/`. The separate `hrns qa report` command emits the final JSON report and can regenerate `report.json` and `REPORT.md` for a completed run.
+
+## Opt into adaptive analysis
+
+Adaptive analysis is disabled by default because it may create a new saved plan version and execute additional scenarios. Use `--analysis` on `hrns qa run`, or choose **resume with analysis** in the saved-plan selector. Plain **resume** executes only the saved scenarios. For example, `1.json` can produce `2.json` only when analysis is enabled and a material coverage gap is found.
 
 ## Send a failed run to development
 

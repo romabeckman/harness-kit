@@ -34,6 +34,7 @@ export interface QaPhaseContext {
   run?: QaRun
   report?: QaFinalReport
   reportEnabled?: boolean
+  analysisEnabled?: boolean
   analysisCycles?: number
   executionMemory?: QaExecutionHint[]
 }

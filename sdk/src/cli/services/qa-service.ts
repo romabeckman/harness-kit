@@ -77,14 +77,30 @@ async function resolveAuthProfile(workspace: string, authProfile?: string): Prom
   })
 }
 
-async function selectSavedPlanAction(): Promise<'resume' | 'new'> {
+async function selectSavedPlanAction(analysisEnabled: boolean): Promise<'resume' | 'resume-with-analysis' | 'new'> {
   const { select } = await import('@inquirer/prompts')
+  const choices = [
+    {
+      name: 'resume — execute the saved QA plan',
+      value: 'resume' as const,
+      description: analysisEnabled
+        ? 'Run saved scenarios and inspect evidence because --analysis is enabled.'
+        : 'Run saved scenarios only. Do not inspect evidence for additional scenarios.',
+    },
+    ...(!analysisEnabled ? [{
+      name: 'resume with analysis — extend coverage when needed',
+      value: 'resume-with-analysis' as const,
+      description: 'Run saved scenarios, inspect evidence, then add and execute new scenarios for material gaps before reporting.',
+    }] : []),
+    {
+      name: 'new — create a new QA plan',
+      value: 'new' as const,
+      description: 'Create a new plan from the scope and supplied scenarios.',
+    },
+  ]
   return select({
     message: 'A saved QA plan exists. What would you like to do?',
-    choices: [
-      { name: 'resume — execute the saved QA plan', value: 'resume' },
-      { name: 'new — create a new QA plan', value: 'new' },
-    ],
+    choices,
   })
 }
 
@@ -137,7 +153,9 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
   if (!explicitAction && options.action === 'run' && options.scope === undefined && options.scenarios.length === 0) {
     const store = new QaRunStore(workspace)
     const savedPlans = store.listPlans()
-    if (savedPlans.length > 0 && await selectSavedPlanAction() === 'resume') {
+    const savedPlanAction = savedPlans.length > 0 ? await selectSavedPlanAction(options.analysis === true) : 'new'
+    if (savedPlans.length > 0 && (savedPlanAction === 'resume' || savedPlanAction === 'resume-with-analysis')) {
+      options.analysis = options.analysis || savedPlanAction === 'resume-with-analysis'
       const savedPlan = await selectSavedPlan(savedPlans)
       const view = dependencies.view ?? new QaTerminalView()
       view.start({ target: savedPlan.target, profile: savedPlan.profile }, workspace)

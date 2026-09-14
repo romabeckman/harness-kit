@@ -125,6 +125,7 @@ describe('QaAgenticOrchestrator', () => {
       store,
       drivers: [driver],
       settings,
+      analysis: true,
       onProgress: (event) => progress.push(`${event.type}:${event.phase ?? event.scenarioId ?? ''}`),
       targetProbe: async () => ({ available: true }),
     })
@@ -263,7 +264,7 @@ describe('QaAgenticOrchestrator', () => {
         request: { method: 'GET', path: '/health', expectedStatus: 200 } }],
     }
     const orchestrator = new QaAgenticOrchestrator({
-      workspace, runner, drivers: [driver], model: 'gemini-3.7-flash', targetProbe: async () => ({ available: true }),
+      workspace, runner, drivers: [driver], model: 'gemini-3.7-flash', analysis: true, targetProbe: async () => ({ available: true }),
     })
 
     const report = await orchestrator.resume(plan)
@@ -326,7 +327,7 @@ describe('QaAgenticOrchestrator', () => {
     }
     const store = new QaRunStore(workspace)
     const orchestrator = new QaAgenticOrchestrator({
-      workspace, runner, store, drivers: [driver], targetProbe: async () => ({ available: true }),
+      workspace, runner, store, drivers: [driver], analysis: true, targetProbe: async () => ({ available: true }),
     })
 
     const report = await orchestrator.resume(plan)
@@ -367,7 +368,7 @@ describe('QaAgenticOrchestrator', () => {
     }) }
     const store = new QaRunStore(workspace)
     const orchestrator = new QaAgenticOrchestrator({
-      workspace, runner, store, drivers: [driver], targetProbe: async () => ({ available: true }),
+      workspace, runner, store, drivers: [driver], analysis: true, targetProbe: async () => ({ available: true }),
     })
 
     await expect(orchestrator.run({ scope: 'Test page load' })).resolves.toMatchObject({ verdict: 'PASS' })
@@ -533,6 +534,7 @@ describe('QaAgenticOrchestrator', () => {
     const orchestrator = new QaAgenticOrchestrator({
       workspace,
       runner,
+      analysis: true,
       drivers: [{ profile: 'api', doctor: async () => ({ available: true }), execute }],
       targetProbe: async () => ({ available: true }),
     })
@@ -623,7 +625,7 @@ describe('QaAgenticOrchestrator', () => {
       } }) }
       return { raw: JSON.stringify({ summary: 'Coverage complete.', bugs: [], errors: [] }) }
     }) }
-    const orchestrator = new QaAgenticOrchestrator({ workspace, runner, drivers: [{ profile: 'web', doctor: async () => ({ available: true }), execute }], targetProbe: async () => ({ available: true }) })
+    const orchestrator = new QaAgenticOrchestrator({ workspace, runner, analysis: true, drivers: [{ profile: 'web', doctor: async () => ({ available: true }), execute }], targetProbe: async () => ({ available: true }) })
 
     const report = await orchestrator.run({ scope: 'Test form' })
 

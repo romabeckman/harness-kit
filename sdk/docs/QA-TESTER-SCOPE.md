@@ -11,10 +11,10 @@ A QA run follows five stages:
 1. **Planning** — an agent inspects the project and turns the scope into executable scenarios.
 2. **Validation** — Harness Kit checks the plan, target, action limits, and execution engines.
 3. **Execution** — deterministic drivers perform HTTP calls, browser actions, CLI commands, MCP calls, or WebSocket exchanges.
-4. **Analysis** — the agent checks for material coverage gaps and may append scenarios. It cannot change executed scenarios.
+4. **Optional analysis** — when enabled, the agent checks for material coverage gaps and may append scenarios. It cannot change executed scenarios.
 5. **Reporting** — Harness Kit reconciles the agent's description with runtime evidence and saves the report.
 
-The agent plans and analyzes tests. Drivers perform the actions. Source code or agent prose alone cannot prove that a scenario passed.
+The agent plans tests. Optional analysis checks coverage after execution. Drivers perform the actions. Source code or agent prose alone cannot prove that a scenario passed.
 
 ## How the QA orchestration works
 
@@ -27,13 +27,14 @@ flowchart TD
     PLAN["PLAN<br/>Agent creates typed scenarios"]
     VALIDATE["VALIDATE<br/>Check plan and engines"]
     EXECUTE["EXECUTE<br/>Drivers collect evidence"]
-    ANALYZE["ANALYZE<br/>Check results and coverage"]
+    ANALYZE["OPTIONAL ANALYZE<br/>Check results and coverage"]
     REPORT["REPORT<br/>Persist report and evidence"]
     VERDICT["VERDICT<br/>PASS · FAIL · BLOCKED · INCONCLUSIVE"]
     LEARN["UPDATE MEMORY<br/>Save verified setup hints"]
 
-    INPUT --> MEMORY --> PLAN --> VALIDATE --> EXECUTE --> ANALYZE --> REPORT --> VERDICT --> LEARN
-    ANALYZE -. append validated coverage .-> EXECUTE
+    INPUT --> MEMORY --> PLAN --> VALIDATE --> EXECUTE --> REPORT --> VERDICT --> LEARN
+    EXECUTE -. "--analysis" .-> ANALYZE --> REPORT
+    ANALYZE -. append and execute validated coverage .-> ANALYZE
 ```
 
 The reporting phase still runs when the target is unavailable or adaptive analysis fails. Cancellation propagates immediately, preserves already written run state, and closes only runtimes created by Harness Kit.
@@ -64,13 +65,15 @@ hrns qa
 
 The interactive form asks how to enter the scope, which profile to use, and the target URL or CLI working directory. Select **Auto** to let Harness Kit infer the profile.
 
-For automation or repeatable commands, provide values directly:
+For automation or repeatable commands, provide values directly. Post-execution adaptive analysis stays disabled unless `--analysis` is present:
 
 ```text
 hrns qa run --scope "Validate the checkout flow" --target http://localhost:3000 --profile web
 ```
 
 `hrns qa` is an alias for `hrns qa run`.
+
+When saved plans exist and no analysis flag is present, the interactive selector offers **resume**, **resume with analysis**, or **new**. Choose **resume with analysis** to inspect execution evidence and append and execute material missing scenarios. Plain **resume** executes only saved scenarios.
 
 ## Writing a useful scope
 
@@ -110,7 +113,7 @@ hrns qa run [options]
 hrns qa [options]
 ```
 
-This command plans, validates, executes, and analyzes in one flow. Add `--report` to generate and render the report during execution.
+This command plans, validates, and executes in one flow. Add `--analysis` to inspect post-execution evidence and append and execute material missing scenarios. Add `--report` to generate and render the report during execution.
 
 ### Regenerate a report
 
@@ -152,6 +155,7 @@ This command selects the latest version of every saved plan, validates and execu
 | `--agent <runner>` | Override the agent runner. Defaults to `claude-cli`. |
 | `--model <model>` | Override the model used by QA phases. |
 | `--effort <level>` | Override reasoning effort used by QA phases. |
+| `--analysis` | Enable post-execution evidence analysis; material missing scenarios may be appended and executed before reporting. Disabled by default. |
 | `--auth <profile>` | Select a named profile from optional `.harness-kit/auth.json`; valid for `run` and `exploratory`. |
 | `--debug` | Show runner arguments, prompts, sessions, and complete errors. |
 | `--run <id>` | For `hrns qa report`, select a completed run to regenerate. For `hrns run --reset`, generate correction scope from that run's failed and blocked results. |
