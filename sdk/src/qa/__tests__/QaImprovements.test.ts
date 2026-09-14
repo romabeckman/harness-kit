@@ -76,6 +76,37 @@ describe('QA focused regressions', () => {
     expect(prompt).toContain('Do not return the JSON in your response.')
   })
 
+  it('escapes a raw NUL from invalid planner output before requesting repair', async () => {
+    const prompts: string[] = []
+    const runner: IAgentRunner = {
+      run: vi.fn(async (invocation) => {
+        const prompt = invocation.prompt ?? ''
+        prompts.push(prompt)
+        const outputPath = /<qa_output_file>([^<]+)<\/qa_output_file>/.exec(prompt)?.[1]
+        if (!outputPath) throw new Error('planning output path missing')
+        const output = prompts.length === 1
+          ? JSON.stringify({ ...plan(), probe: 'bad\u0000query' }).replace('\\u0000', '\u0000')
+          : JSON.stringify(plan())
+        writeFileSync(join(workspace, outputPath), output)
+        return { raw: 'Plan written to file.', session: { id: 'qa-planning-session' } }
+      }),
+    }
+    const store = new QaRunStore(workspace)
+    const context: QaPhaseContext = {
+      workspace,
+      request: { scope: 'Check health endpoint', target: 'http://127.0.0.1:8080', profile: 'api' },
+      runner,
+      store,
+      service: new QaService(store, []),
+    }
+
+    await expect(new QaPlanningPhase().execute(context)).resolves.toBe('VALIDATION')
+    expect(prompts).toHaveLength(2)
+    expect(prompts[1]).not.toContain('\u0000')
+    expect(prompts[1]).toContain('bad\\u0000query')
+    expect(context.plan?.id).toBe('target-check')
+  })
+
   it('reads analysis and reporting output from their requested files', async () => {
     const storedPlan = new QaPlanningPhase().parse(JSON.stringify(plan()), {}, 1)
     const run = {
