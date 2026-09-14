@@ -36,6 +36,8 @@ describe('QA CLI', () => {
   it('supports run, report, and exploratory actions and defaults to run', () => {
     expect(parseQaArgs([])).toMatchObject({ action: 'run' })
     expect(parseQaArgs(['run'])).toMatchObject({ action: 'run', report: false })
+    expect(parseQaArgs(['run'])).toMatchObject({ action: 'run', analysis: false })
+    expect(parseQaArgs(['run', '--analysis'])).toMatchObject({ action: 'run', analysis: true })
     expect(parseQaArgs(['run', '--report'])).toMatchObject({ action: 'run', report: true })
     expect(parseQaArgs(['run', '--scope', 'Test endpoint X'])).toMatchObject({ action: 'run', scope: 'Test endpoint X' })
     expect(parseQaArgs(['report', '--run', 'orders-20260911'])).toMatchObject({ action: 'report', runId: 'orders-20260911' })
@@ -45,6 +47,7 @@ describe('QA CLI', () => {
     expect(parseQaArgs(['auth'])).toMatchObject({ action: 'auth' })
     expect(() => parseQaArgs(['auth', '--target', 'http://qa.test'])).toThrow('--target is only valid')
     expect(() => parseQaArgs(['report', '--report'])).toThrow('--report is only valid with hrns qa run')
+    expect(() => parseQaArgs(['report', '--analysis'])).toThrow('--analysis is only valid with hrns qa run')
     expect(() => parseQaArgs(['exploratory', '--scope', 'new scope'])).toThrow('--scope is only valid with hrns qa run')
     expect(() => parseQaArgs(['exploratory', '--run', 'stored-run'])).toThrow('--run is only valid with hrns qa report')
     for (const legacy of ['agentic', 'plan', 'execute', 'renew', 'resume', 'doctor']) {
@@ -173,15 +176,49 @@ describe('QA CLI', () => {
 
     expect(prompts.select).toHaveBeenNthCalledWith(1, expect.objectContaining({
       message: 'A saved QA plan exists. What would you like to do?',
-      choices: [expect.objectContaining({ value: 'resume' }), expect.objectContaining({ value: 'new' })],
+      choices: expect.arrayContaining([expect.objectContaining({ value: 'resume' }), expect.objectContaining({ value: 'new' })]),
     }))
     expect(prompts.select).toHaveBeenNthCalledWith(2, expect.objectContaining({
       message: 'Select the QA plan to resume:',
       choices: [expect.objectContaining({ value: 'stored-plan@1' })],
     }))
-    expect(run.mock.calls.map(([invocation]) => invocation.phaseKey)).toEqual(['qa_analysis', 'qa_reporting'])
+    expect(run.mock.calls.map(([invocation]) => invocation.phaseKey)).toEqual(['qa_reporting'])
     expect(view.start).toHaveBeenCalledWith({ target: plan.target, profile: plan.profile }, workspace)
     expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({ summary: 'Stored plan resumed.' }))
+  })
+
+  it('offers resume with analysis and describes additional scenario generation', async () => {
+    const store = new QaRunStore(workspace)
+    const plan = storedPlan()
+    store.savePlan(plan)
+    prompts.select.mockResolvedValueOnce('resume-with-analysis').mockResolvedValueOnce('stored-plan@1')
+    const runner: IAgentRunner = { run: vi.fn(async (invocation) => {
+      if (invocation.phaseKey === 'qa_analysis') return { raw: '{"complete":true}' }
+      return { raw: JSON.stringify({ summary: 'Stored plan resumed with analysis.', bugs: [], errors: [] }) }
+    }) }
+    const driver: QaDriver = {
+      profile: 'api',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id, required: true, status: 'PASSED',
+        evidence: [{ id: 'response', path: 'response.body', capturedAt: '', adapter: 'test' }],
+      }),
+    }
+
+    await cmdQa(workspace, ['--report'], {
+      runner, drivers: [driver], view: { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() },
+      targetProbe: async () => ({ available: true }),
+    })
+
+    expect(prompts.select).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      choices: expect.arrayContaining([
+        expect.objectContaining({
+          value: 'resume-with-analysis',
+          description: expect.stringContaining('add and execute new scenarios'),
+        }),
+      ]),
+    }))
+    expect(vi.mocked(runner.run).mock.calls.map(([invocation]) => invocation.phaseKey)).toEqual(['qa_analysis', 'qa_reporting'])
   })
 
   it('uses new flow after selecting new for a saved plan', async () => {
@@ -235,7 +272,7 @@ describe('QA CLI', () => {
     }
     const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
 
-    await cmdQa(workspace, ['run', '--report', '--scope', 'Validate runtime behavior'], {
+    await cmdQa(workspace, ['run', '--analysis', '--report', '--scope', 'Validate runtime behavior'], {
       runner, drivers: [driver], view, targetProbe: async () => ({ available: true }),
     })
 
@@ -244,6 +281,44 @@ describe('QA CLI', () => {
     expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'scenario_completed', status: 'PASSED' }))
     expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({ verdict: 'PASS', summary: 'Health check passed.' }))
     expect(log).not.toHaveBeenCalled()
+  })
+
+  it('does not run adaptive analysis unless --analysis is provided', async () => {
+    const runner = agenticRunner()
+    const driver: QaDriver = {
+      profile: 'api',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id, required: true, status: 'PASSED',
+        evidence: [{ id: 'response', path: 'response.body', capturedAt: '', adapter: 'curl' }],
+      }),
+    }
+    const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
+
+    await cmdQa(workspace, ['run', '--report', '--scope', 'Validate runtime behavior'], {
+      runner, drivers: [driver], view, targetProbe: async () => ({ available: true }),
+    })
+
+    expect(vi.mocked(runner.run).mock.calls.map(([invocation]) => invocation.phaseKey)).toEqual(['qa_planning', 'qa_reporting'])
+  })
+
+  it('runs adaptive analysis when --analysis is provided', async () => {
+    const runner = agenticRunner()
+    const driver: QaDriver = {
+      profile: 'api',
+      doctor: async () => ({ available: true }),
+      execute: async (scenario) => ({
+        scenarioId: scenario.id, required: true, status: 'PASSED',
+        evidence: [{ id: 'response', path: 'response.body', capturedAt: '', adapter: 'curl' }],
+      }),
+    }
+    const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
+
+    await cmdQa(workspace, ['run', '--analysis', '--report', '--scope', 'Validate runtime behavior'], {
+      runner, drivers: [driver], view, targetProbe: async () => ({ available: true }),
+    })
+
+    expect(vi.mocked(runner.run).mock.calls.map(([invocation]) => invocation.phaseKey)).toEqual(['qa_planning', 'qa_analysis', 'qa_reporting'])
   })
 
   it('skips report generation during a run unless --report is provided', async () => {
@@ -258,7 +333,7 @@ describe('QA CLI', () => {
     }
     const view = { start: vi.fn(), onProgress: vi.fn(), renderReport: vi.fn() }
 
-    await cmdQa(workspace, ['run', '--scope', 'Validate runtime behavior'], {
+    await cmdQa(workspace, ['run', '--analysis', '--scope', 'Validate runtime behavior'], {
       runner, drivers: [driver], view, targetProbe: async () => ({ available: true }),
     })
 

@@ -18,6 +18,8 @@ export interface QaAgenticOrchestratorOptions {
   runner: IAgentRunner
   /** Generate and persist the final report as part of run/resume. SDK default stays enabled. */
   report?: boolean
+  /** Run adaptive evidence analysis and allow it to append executable scenarios. Disabled by default. */
+  analysis?: boolean
   store?: QaRunStore
   drivers?: QaDriver[]
   phases?: QaPhaseHandler[]
@@ -47,6 +49,7 @@ export class QaAgenticOrchestrator {
       model: options.model,
       effort: options.effort,
       reportEnabled: options.report ?? true,
+      analysisEnabled: options.analysis ?? false,
       onProgress: options.onProgress,
     }
     const phases = options.phases ?? [new QaPlanningPhase(), new QaValidationPhase(), new QaExecutionPhase(), new QaAnalysisPhase(), new QaReportingPhase()]

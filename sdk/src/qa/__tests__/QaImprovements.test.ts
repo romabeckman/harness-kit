@@ -41,7 +41,7 @@ describe('QA focused regressions', () => {
         evidence: status === 'PASSED' || status === 'FAILED' ? [{ id: 'response', path, capturedAt: new Date().toISOString(), adapter: 'test' }] : [] }
     }) }
     const events: QaProgressEvent[] = []
-    const orchestrator = new QaAgenticOrchestrator({ workspace, runner, drivers: [driver],
+    const orchestrator = new QaAgenticOrchestrator({ workspace, runner, analysis: true, drivers: [driver],
       targetProbe: async () => ({ available: true }), onProgress: (event) => events.push(event) })
     return { runner, driver, orchestrator, events }
   }

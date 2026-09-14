@@ -9,7 +9,7 @@ export function parseQaArgs(args: string[]): QaCliOptions {
   const first = args[0]
   const hasAction = ACTIONS.includes(first as QaAction)
   if (first && !hasAction && !first.startsWith('-')) throw new Error(`Unknown QA action: ${first}\n${HELP_QA}`)
-  const options: QaCliOptions = { action: hasAction ? first as QaAction : 'run', scenarios: [], report: false }
+  const options: QaCliOptions = { action: hasAction ? first as QaAction : 'run', scenarios: [], report: false, analysis: false }
 
   for (let index = hasAction ? 1 : 0; index < args.length; index++) {
     const argument = args[index]
@@ -19,6 +19,10 @@ export function parseQaArgs(args: string[]): QaCliOptions {
     }
     if (argument === '--report') {
       options.report = true
+      continue
+    }
+    if (argument === '--analysis') {
+      options.analysis = true
       continue
     }
     if (argument === '--help' || argument === '-h') throw new Error(HELP_QA)
@@ -45,6 +49,7 @@ export function parseQaArgs(args: string[]): QaCliOptions {
 
   if (options.action !== 'report' && options.runId) throw new Error('--run is only valid with hrns qa report')
   if (options.action !== 'run' && options.report) throw new Error('--report is only valid with hrns qa run')
+  if (options.action !== 'run' && options.analysis) throw new Error('--analysis is only valid with hrns qa run')
   if (options.action !== 'run' && options.scope !== undefined) throw new Error('--scope is only valid with hrns qa run')
   if (options.action !== 'run' && options.scenarios.length > 0) throw new Error('--scenario is only valid with hrns qa run')
   if (options.action === 'exploratory' && options.profile !== undefined) throw new Error('--profile is only valid with hrns qa run')
