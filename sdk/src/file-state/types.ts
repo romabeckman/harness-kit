@@ -78,9 +78,7 @@ export function createDefaultSteeringRules(initialRules?: string): SteeringRules
       'CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally. After completing all required work, return only the final output explicitly required by the current prompt. If no final output is required, return exactly {}.',
     ],
     bootstrap: [],
-    planning: [
-      'Create a minimum of 1 and a maximum of 6 tasks for each `003-\${PROJECT_NAME}-tactical-design.md` (maximum of 12 tasks total)',
-    ],
+    planning: [],
     implementation: [],
     review: [],
     state_check: [],
