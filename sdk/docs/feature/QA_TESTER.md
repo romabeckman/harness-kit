@@ -71,7 +71,7 @@ Adaptive analysis is opt-in: `--analysis` inspects evidence and appends and exec
 
 ## DEVELOPMENT RENEWAL
 
-Ask **Send failed and blocked scenarios to fix?** with default `false`. Skip reports, noninteractive terminals, and runs without actionable results. After confirmation use `hrns run --reset`, or use `hrns run --reset --run <id>` to generate scope from one completed run. REQUIRED: Preserve accepted overrides, `--agent`, and `--debug`. PROHIBITED: Combine `--run` with `--scope` or include other results.
+Ask **Send failed and blocked scenarios to fix?** with default `false`. After confirmation, require a checkbox for **FAILED** and **BLOCKED** scenarios; preselect all and scope checked items. Skip reports, noninteractive terminals, and actionless runs. REQUIRED: Preserve overrides, `--agent`, and `--debug`. Use `hrns run --reset --run <id>` to scope every actionable result. PROHIBITED: Combine `--run` with `--scope`.
 
 ## VERDICTS
 

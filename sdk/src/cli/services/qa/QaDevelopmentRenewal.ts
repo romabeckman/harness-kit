@@ -19,6 +19,7 @@ export async function offerDevelopmentRenewal(
   if (!shouldSend) return
 
   const plan = store.loadPlan(run.planId, run.planVersion)
+  const selectedResults = await selectActionableResults(plan, actionableResults)
   const confirmOption = dependencies.confirmDevelopmentOption ?? confirmPrompt
   const selectMode = dependencies.selectDevelopmentMode ?? selectModePrompt
   const keepModel = options.model
@@ -41,7 +42,7 @@ export async function offerDevelopmentRenewal(
   const runArgs = [
     '--reset',
     '--mode', mode,
-    '--scope', buildDevelopmentScope(plan, run, actionableResults),
+    '--scope', buildDevelopmentScope(plan, run, selectedResults),
     '--path', workspace,
   ]
   if (options.agentType) runArgs.push('--agent', options.agentType)
@@ -83,6 +84,25 @@ async function confirmPrompt(options: ConfirmOptions): Promise<boolean> {
 async function selectModePrompt(options: SelectModeOptions): Promise<DevelopmentMode> {
   const { select } = await import('@inquirer/prompts')
   return select(options)
+}
+
+async function selectActionableResults(
+  plan: QaPlan,
+  results: QaScenarioResult[],
+): Promise<QaScenarioResult[]> {
+  const scenarios = new Map(plan.scenarios.map((scenario) => [scenario.id, scenario]))
+  const { checkbox } = await import('@inquirer/prompts')
+  const selectedIds = await checkbox({
+    message: 'Select scenarios to fix:',
+    choices: results.map((result) => ({
+      name: `${result.scenarioId} — ${result.status} — ${scenarios.get(result.scenarioId)?.description ?? result.scenarioId}`,
+      value: result.scenarioId,
+      checked: true,
+    })),
+    required: true,
+  })
+  const selected = new Set(selectedIds)
+  return results.filter((result) => selected.has(result.scenarioId))
 }
 
 function buildDevelopmentScope(plan: QaPlan, run: QaRun, results: QaScenarioResult[]): string {

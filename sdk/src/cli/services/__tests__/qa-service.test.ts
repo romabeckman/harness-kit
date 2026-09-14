@@ -7,7 +7,7 @@ import { QaRunStore } from '../../../qa/services/QaRunStore'
 import type { IAgentRunner } from '../../../agent-runner/IAgentRunner'
 import type { QaDriver, QaPlan, QaRun } from '../../../qa/types'
 
-const prompts = vi.hoisted(() => ({ confirm: vi.fn(), editor: vi.fn(), input: vi.fn(), password: vi.fn(), select: vi.fn() }))
+const prompts = vi.hoisted(() => ({ checkbox: vi.fn(), confirm: vi.fn(), editor: vi.fn(), input: vi.fn(), password: vi.fn(), select: vi.fn() }))
 
 vi.mock('@inquirer/prompts', () => prompts)
 
@@ -17,6 +17,7 @@ describe('QA CLI', () => {
   let warning: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
+    prompts.checkbox.mockReset()
     prompts.editor.mockReset()
     prompts.input.mockReset()
     prompts.password.mockReset()
@@ -372,6 +373,7 @@ describe('QA CLI', () => {
       .mockResolvedValueOnce(false)
     const selectDevelopmentMode = vi.fn().mockResolvedValue('deep_thinking')
     const runCommand = vi.fn().mockResolvedValue(undefined)
+    prompts.checkbox.mockResolvedValue(['002-fails'])
 
     await cmdQa(workspace, ['run', '--scope', 'Validate runtime', '--agent', 'codex-cli', '--model', 'gpt-5', '--effort', 'high', '--debug'], {
       runner, drivers: [driver], targetProbe: async () => ({ available: true }), confirmSendToFix,
@@ -381,6 +383,14 @@ describe('QA CLI', () => {
 
     expect(confirmSendToFix).toHaveBeenCalledWith({
       message: 'Send failed and blocked scenarios to fix?', default: false,
+    })
+    expect(prompts.checkbox).toHaveBeenCalledWith({
+      message: 'Select scenarios to fix:',
+      choices: [
+        { name: '002-fails — FAILED — Order endpoint creates an order', value: '002-fails', checked: true },
+        { name: '003-blocks — BLOCKED — Admin endpoint is reachable', value: '003-blocks', checked: true },
+      ],
+      required: true,
     })
     expect(confirmDevelopmentOption.mock.calls).toEqual([
       [{ message: 'Keep model "gpt-5"?', default: true }],
@@ -407,8 +417,8 @@ describe('QA CLI', () => {
     const scope = runArgs[runArgs.indexOf('--scope') + 1]
     expect(scope).toContain('002-fails')
     expect(scope).toContain('FAILED')
-    expect(scope).toContain('003-blocks')
-    expect(scope).toContain('BLOCKED')
+    expect(scope).not.toContain('003-blocks')
+    expect(scope).not.toContain('## BLOCKED')
     expect(scope).not.toContain('001-passes')
     expect(scope).not.toContain('Healthy endpoint works')
   })
