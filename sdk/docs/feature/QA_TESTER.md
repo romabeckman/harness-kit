@@ -27,7 +27,7 @@ updated: "2026-09-14"
   "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/cli/services/qa/QaOrchestratorFactory.ts", "src/index.ts", "src/qa/index.ts"],
   "reference_files": ["src/qa/engine/CurlDriver.ts", "src/qa/auth/QaAuthConfigStore.ts", "src/qa/auth/types.ts", "src/cli/services/qa/QaAuthCommand.ts"],
   "code_files": ["src/cli/utils/run-args-parser.ts", "src/cli/services/qa/types.ts", "src/cli/services/qa/QaArgsParser.ts", "src/cli/services/qa/QaDevelopmentRenewal.ts", "src/cli/services/qa/QaExploratoryCommand.ts", "src/cli/services/qa/QaReportOutput.ts", "src/qa/services/QaService.ts", "src/qa/services/QaDeveloperReportGenerator.ts", "src/qa/services/QaExploratoryService.ts", "src/qa/services/QaExecutionMemory.ts", "src/qa/services/QaPlanValidator.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/MobileWebDriver.ts", "src/qa/engine/AccessibilityDriver.ts", "src/qa/engine/McpClientDriver.ts", "src/qa/engine/CliDriver.ts", "src/qa/engine/WebSocketDriver.ts", "src/qa/engine/QaAuthRedaction.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/utils/QaAgentFileOutput.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaValidationPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
-  "test_files": ["src/qa/auth/__tests__/QaAuthConfigStore.test.ts", "src/qa/auth/__tests__/QaAuthExecution.test.ts", "src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaExtendedEngines.test.ts", "src/qa/__tests__/QaAuthEngineSecurity.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaImprovements.test.ts", "src/qa/__tests__/QaCurlRegressions.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/services/__tests__/QaPlanValidator.test.ts", "src/qa/services/__tests__/QaTargetProbe.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts", "src/cli/services/__tests__/run-service.test.ts", "src/cli/utils/__tests__/run-args-parser.test.ts"]
+  "test_files": ["src/qa/__tests__/PlaywrightDriverIsolation.test.ts", "src/qa/auth/__tests__/QaAuthConfigStore.test.ts", "src/qa/auth/__tests__/QaAuthExecution.test.ts", "src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaExtendedEngines.test.ts", "src/qa/__tests__/QaAuthEngineSecurity.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaImprovements.test.ts", "src/qa/__tests__/QaCurlRegressions.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/services/__tests__/QaPlanValidator.test.ts", "src/qa/services/__tests__/QaTargetProbe.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts", "src/cli/services/__tests__/run-service.test.ts", "src/cli/utils/__tests__/run-args-parser.test.ts"]
 }
 ```
 
@@ -35,7 +35,7 @@ updated: "2026-09-14"
 
 ## OVERVIEW
 
-Run QA independently. Persist plans, runs, evidence, reports in `docs/qa/`.
+Persist QA plans, runs, evidence, and reports in `docs/qa/`.
 
 ## FOLDER STRUCTURE
 
@@ -58,7 +58,7 @@ src/cli/services/qa/ # QA parsing, handlers, factories, CLI types
 
 ## REPORT OUTPUT
 
-Use `hrns qa report --run <id> --output <format>`. Omit `--output` to select after the run; prompt defaults to `json`.
+Use `hrns qa report --run <id> --output <format>`. Omit `--output` for selection; default: `json`.
 
 | Format | Output |
 | --- | --- |
@@ -97,17 +97,17 @@ Ask **Send failed and blocked scenarios to fix?** with default `false`. After co
 
 ## TERMINAL PROGRESS
 
-REQUIRED: Emit runtime, phase, scenario, and completion events through `QaTerminalPresenter`; disable ANSI without a TTY. Aggregate exploratory verdicts as `FAIL`, `BLOCKED`, `INCONCLUSIVE`, then `PASS`. Include IDs, totals, and errors.
+REQUIRED: Emit runtime, phase, scenario, and completion events via `QaTerminalPresenter`; disable ANSI without a TTY. Include IDs, totals, and errors.
 
 ## DRIVERS
 
-Use temporary static servers for browser profiles. Curl does not follow redirects; MCP follows same-origin redirects only. Browser evidence requires screenshots. CLI uses no shell.
+Reuse browsers with an isolated context per scenario; close contexts even on failure. Keep login and verification together. Use selector/URL waits. Curl never follows redirects; MCP follows same-origin redirects. Require screenshots.
 
 ## AUTHENTICATION
 
-REQUIRED: Define named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. Prefer environment references; allow confirmed insecure literals. Apply credentials only to same-origin traffic. Redact resolved secrets.
+REQUIRED: Define `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. Prefer environment references; browser form actions use `valueFrom`, never literal secrets. Apply credentials only to same-origin traffic. Redact resolved secrets.
 
-REQUIRED: Keep `hrns qa auth` form-only. Block authenticated CLI without mappings and authenticated WebSocket. PROHIBITED: Persist resolved secrets. OAuth2, HMAC, and mTLS remain outside scope.
+REQUIRED: Keep `hrns qa auth` form-only. Block authenticated CLI without mappings and WebSocket. PROHIBITED: Persist resolved secrets. OAuth2, HMAC, and mTLS remain outside scope.
 
 ## EXECUTION MEMORY
 

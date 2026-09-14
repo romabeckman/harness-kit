@@ -5,9 +5,16 @@ import type { QaBrowserAction, QaDriver, QaDriverExecutionContext, QaProfile, Qa
 export type PlaywrightModule = { chromium: { launch(options: { headless: boolean }): Promise<any> } }
 export type PlaywrightLoader = () => Promise<PlaywrightModule>
 
+const MAX_WAIT_MS = 30_000
+
+type PlaywrightRun = {
+  browser: any
+}
+
 export class PlaywrightDriver implements QaDriver {
   readonly profile: QaProfile
   readonly #loader: PlaywrightLoader
+  readonly #runs = new Map<string, PlaywrightRun>()
 
   constructor(profile: QaProfile, loader: PlaywrightLoader = loadPlaywrightModule) {
     this.profile = profile
@@ -23,24 +30,43 @@ export class PlaywrightDriver implements QaDriver {
     }
   }
 
+  async startRun(runId: string, _target: string, signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
+    if (this.#runs.has(runId)) return
+    const playwright = await this.loadPlaywright()
+    const browser = await playwright.chromium.launch({ headless: true })
+    this.#runs.set(runId, { browser })
+  }
+
+  async finishRun(runId: string): Promise<void> {
+    const run = this.#runs.get(runId)
+    if (!run) return
+    this.#runs.delete(runId)
+    await run.browser.close()
+  }
+
   async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal, context?: QaDriverExecutionContext): Promise<QaScenarioResult> {
     if (signal?.aborted) {
       return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason: signal.reason instanceof Error ? signal.reason.message : String(signal.reason ?? 'Execution cancelled'), evidence: [] }
     }
     try {
-      const playwright = await this.loadPlaywright()
+      const sharedRun = context?.runId ? this.#runs.get(context.runId) : undefined
+      const playwright = sharedRun ? undefined : await this.loadPlaywright()
       mkdirSync(evidenceDir, { recursive: true })
-      const browser = await playwright.chromium.launch({ headless: true })
+      const browser = sharedRun?.browser ?? await playwright!.chromium.launch({ headless: true })
+      const ownsBrowser = !sharedRun
+      let page: any
       try {
         if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
-        const page = await browser.newPage({ ...this.pageOptions(), ...(context?.auth.basic ? { httpCredentials: { ...context.auth.basic, origin: new URL(target).origin } } : {}) })
-        await applyBrowserAuth(page, target, context)
         const pageErrors: string[] = []
+        // browser.newPage creates a fresh context; closing the page disposes that context.
+        page = await browser.newPage({ ...this.pageOptions(), ...(context?.auth.basic ? { httpCredentials: { ...context.auth.basic, origin: new URL(target).origin } } : {}) })
         page.on?.('pageerror', (error: Error) => pageErrors.push(error.message))
+        await applyBrowserAuth(page, target, context)
         await page.goto(target, { waitUntil: 'networkidle', signal })
         for (const action of scenario.actions ?? []) {
           if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
-          await this.perform(page, action, signal)
+          await this.perform(page, action, signal, context, target)
         }
         const observations = await this.inspect(page, scenario)
         const observationsPath = join(evidenceDir, 'observations.json')
@@ -66,7 +92,8 @@ export class PlaywrightDriver implements QaDriver {
           evidence,
         }
       } finally {
-        await browser.close()
+        if (ownsBrowser) await browser.close()
+        else await page?.close()
       }
     } catch (error) {
       return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason: error instanceof Error ? error.message : 'Browser execution failed', evidence: [] }
@@ -103,11 +130,15 @@ export class PlaywrightDriver implements QaDriver {
     return results
   }
 
-  private async perform(page: any, action: QaBrowserAction, signal?: AbortSignal): Promise<void> {
+  private async perform(page: any, action: QaBrowserAction, signal: AbortSignal | undefined, context: QaDriverExecutionContext | undefined, target: string): Promise<void> {
     if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
     if (action.type === 'navigate') return page.goto(action.value, { waitUntil: 'networkidle', signal })
     if (action.type === 'click' && action.selector) return page.locator(action.selector).click()
-    if (action.type === 'fill' && action.selector && action.value !== undefined) return page.locator(action.selector).fill(action.value)
+    if (action.type === 'fill' && action.selector) {
+      const value = action.valueFrom ? context?.auth.environment[action.valueFrom] : action.value
+      if (value === undefined) throw new Error(`Configured QA form value ${action.valueFrom ?? '<literal>'} is unavailable`)
+      return page.locator(action.selector).fill(value)
+    }
     if (action.type === 'press' && action.value) {
       const count = Math.min(action.count ?? 1, 500)
       for (let index = 0; index < count; index++) {
@@ -134,6 +165,14 @@ export class PlaywrightDriver implements QaDriver {
         }
         signal?.addEventListener('abort', onAbort, { once: true })
       })
+    }
+    if (action.type === 'waitForSelector' && action.selector) {
+      if (typeof page.waitForSelector !== 'function') throw new Error('Playwright does not support waitForSelector')
+      return page.waitForSelector(action.selector, { state: action.state ?? 'visible', timeout: action.timeout ?? MAX_WAIT_MS, signal })
+    }
+    if (action.type === 'waitForUrl' && action.value) {
+      if (typeof page.waitForURL !== 'function') throw new Error('Playwright does not support waitForURL')
+      return page.waitForURL(new URL(action.value, target).toString(), { waitUntil: 'domcontentloaded', timeout: action.timeout ?? MAX_WAIT_MS, signal })
     }
     if (action.type === 'resize' && action.width && action.height) return page.setViewportSize({ width: action.width, height: action.height })
     throw new Error(`Invalid browser action: ${action.type}`)

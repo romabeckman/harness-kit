@@ -13,12 +13,15 @@ export interface QaPlanValidationResult {
 
 const PROFILES: QaProfile[] = ['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full']
 const SAFE_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
+const SAFE_AUTH_PROFILE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
 const SAFE_COMMAND = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
 const HTTP_PROFILES = new Set<QaProfile>(['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'security', 'full'])
 const BROWSER_PROFILES = new Set<QaProfile>(['web', 'web-game', 'mobile-web', 'accessibility'])
-const BROWSER_ACTIONS = new Set(['navigate', 'click', 'fill', 'press', 'wait', 'resize'])
+const BROWSER_ACTIONS = new Set(['navigate', 'click', 'fill', 'press', 'wait', 'waitForSelector', 'waitForUrl', 'resize'])
 const BROWSER_ASSERTIONS = new Set(['visible', 'hidden', 'text', 'url', 'count', 'attribute'])
+const BROWSER_WAIT_STATES = new Set(['attached', 'detached', 'visible', 'hidden'])
 const CATEGORIES = new Set(['functional', 'negative', 'boundary', 'security', 'accessibility', 'resilience'])
+const SAFE_ENVIRONMENT_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/
 const MAX_SCENARIOS = 50
 const MAX_ACTIONS = 100
 const MAX_KEY_PRESSES = 500
@@ -128,6 +131,7 @@ export class QaPlanValidator {
     if (id && ids.has(id)) errors.push('scenario IDs must be unique')
     if (id) ids.add(id)
     if (scenario.required !== true) errors.push(`scenario ${id || '<unknown>'} must be required`)
+    if (scenario.authProfile !== undefined && (typeof scenario.authProfile !== 'string' || !SAFE_AUTH_PROFILE.test(scenario.authProfile))) errors.push(`scenario ${id || '<unknown>'} authProfile must be a safe identifier`)
 
     const profile = scenario.profile as QaProfile
     const allowed = planProfile === 'full'
@@ -268,7 +272,9 @@ export class QaPlanValidator {
     } else if (value.type === 'click') {
       if (typeof value.selector !== 'string' || value.selector.trim().length === 0) errors.push(`scenario ${id} browser action ${index + 1} needs a selector`)
     } else if (value.type === 'fill') {
-      if (typeof value.selector !== 'string' || typeof value.value !== 'string') errors.push(`scenario ${id} browser action ${index + 1} needs selector and value`)
+      const hasValue = typeof value.value === 'string'
+      const hasValueFrom = typeof value.valueFrom === 'string'
+      if (typeof value.selector !== 'string' || (!hasValue && !hasValueFrom) || (hasValue && hasValueFrom) || (value.valueFrom !== undefined && (!hasValueFrom || !SAFE_ENVIRONMENT_NAME.test(value.valueFrom as string)))) errors.push(`scenario ${id} browser action ${index + 1} needs selector and value`)
     } else if (value.type === 'press') {
       const count = value.count === undefined ? 1 : value.count
       const validCount = typeof count === 'number' && Number.isInteger(count) && count >= 1 && count <= MAX_KEY_PRESSES
@@ -276,9 +282,29 @@ export class QaPlanValidator {
     } else if (value.type === 'wait') {
       const milliseconds = typeof value.value === 'string' ? Number(value.value) : Number.NaN
       if (!Number.isFinite(milliseconds) || milliseconds < 0 || milliseconds > MAX_WAIT_MS) errors.push(`scenario ${id} browser action ${index + 1} wait exceeds safety bounds`)
+    } else if (value.type === 'waitForSelector') {
+      if (typeof value.selector !== 'string' || value.selector.trim().length === 0) errors.push(`scenario ${id} browser action ${index + 1} waitForSelector needs a selector`)
+      if (value.state !== undefined && (typeof value.state !== 'string' || !BROWSER_WAIT_STATES.has(value.state))) errors.push(`scenario ${id} browser action ${index + 1} waitForSelector state is invalid`)
+      this.validateBrowserTimeout(value.timeout, id, index, errors)
+    } else if (value.type === 'waitForUrl') {
+      if (typeof value.value !== 'string' || value.value.trim().length === 0) errors.push(`scenario ${id} browser action ${index + 1} waitForUrl needs a URL`)
+      else {
+        try {
+          const waitUrl = new URL(value.value, target)
+          const targetUrl = new URL(target)
+          if (waitUrl.origin !== targetUrl.origin) errors.push(`scenario ${id} browser waitForUrl must stay within target origin`)
+        } catch {
+          errors.push(`scenario ${id} browser action ${index + 1} waitForUrl needs a valid URL`)
+        }
+      }
+      this.validateBrowserTimeout(value.timeout, id, index, errors)
     } else if (!Number.isInteger(value.width) || !Number.isInteger(value.height) || (value.width as number) < 1 || (value.height as number) < 1 || (value.width as number) > MAX_VIEWPORT || (value.height as number) > MAX_VIEWPORT) {
       errors.push(`scenario ${id} browser action ${index + 1} resize dimensions are invalid`)
     }
+  }
+
+  private validateBrowserTimeout(value: unknown, id: string, index: number, errors: string[]): void {
+    if (value !== undefined && (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > MAX_WAIT_MS)) errors.push(`scenario ${id} browser action ${index + 1} timeout exceeds safety bounds`)
   }
 
   private validateBrowserAssertion(value: unknown, id: string, index: number, target: string, errors: string[]): void {

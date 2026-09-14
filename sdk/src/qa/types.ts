@@ -23,11 +23,16 @@ export interface QaBrowserAssertion {
   attribute?: string
 }
 
+export type QaBrowserWaitState = 'attached' | 'detached' | 'visible' | 'hidden'
+
 export interface QaBrowserAction {
-  type: 'navigate' | 'click' | 'fill' | 'press' | 'wait' | 'resize'
+  type: 'navigate' | 'click' | 'fill' | 'press' | 'wait' | 'waitForSelector' | 'waitForUrl' | 'resize'
   selector?: string
   value?: string
+  valueFrom?: string
   count?: number
+  state?: QaBrowserWaitState
+  timeout?: number
   width?: number
   height?: number
 }
@@ -216,8 +221,10 @@ export function formatQaScenarioId(index: number, id: string): string {
 
 export interface QaDriver {
   readonly profile: QaProfile
+  startRun?(runId: string, target: string, signal?: AbortSignal): Promise<void>
   execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal, context?: QaDriverExecutionContext): Promise<QaScenarioResult>
+  finishRun?(runId: string): Promise<void>
   doctor(): Promise<{ available: boolean; reason?: string }>
 }
 
-export interface QaDriverExecutionContext { auth: import('./auth/types').QaResolvedAuth }
+export interface QaDriverExecutionContext { auth: import('./auth/types').QaResolvedAuth; runId?: string }

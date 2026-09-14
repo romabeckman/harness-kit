@@ -129,5 +129,4 @@ export type {
 
 // Independent runtime QA
 export { AccessibilityDriver, CliDriver, McpClientDriver, MobileWebDriver, QaAgenticOrchestrator, QaExploratoryService, QaPhase, QaService, QaRunStore, QaVerdictPolicy, QaAuthConfigStore, CurlDriver, PlaywrightDriver, WebSocketDriver } from './qa'
-export type { QaAgenticOrchestratorOptions, QaAgenticRequest, QaBrowserAction, QaBugReport, QaCliRequest, QaDriver, QaErrorReport, QaEvidence, QaExploratoryOptions, QaExploratoryPlanReport, QaExploratoryReport, QaExploratoryTotals, QaFinalReport, QaHttpRequest, QaMcpRequest, QaPlan, QaPlanInput, QaProfile, QaRun, QaScenario, QaScenarioResult, QaScenarioStatus, QaSuccessCriterionReport, QaVerdict, QaWebSocketRequest, QaAuthMode, QaAuthProfileDescription, QaResolvedAuth } from './qa'
-
+export type { QaAgenticOrchestratorOptions, QaAgenticRequest, QaBrowserAction, QaBrowserWaitState, QaBugReport, QaCliRequest, QaDriver, QaErrorReport, QaEvidence, QaExploratoryOptions, QaExploratoryPlanReport, QaExploratoryReport, QaExploratoryTotals, QaFinalReport, QaHttpRequest, QaMcpRequest, QaPlan, QaPlanInput, QaProfile, QaRun, QaScenario, QaScenarioResult, QaScenarioStatus, QaSuccessCriterionReport, QaVerdict, QaWebSocketRequest, QaAuthMode, QaAuthProfileDescription, QaResolvedAuth } from './qa'

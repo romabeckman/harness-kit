@@ -9,6 +9,7 @@ import { QaRunStore } from '../services/QaRunStore'
 import { HarnessSettings } from '../../settings/HarnessSettings'
 import { Runner } from '../../agent-runner/types'
 import { QaPhase, type QaPhaseHandler } from '../phases'
+import { QaPlanningPhase } from '../phases/QaPlanningPhase'
 
 describe('QaAgenticOrchestrator', () => {
   let workspace: string
@@ -498,6 +499,31 @@ describe('QaAgenticOrchestrator', () => {
         { type: 'press', value: 'ArrowDown', count: 250 },
       ],
     }), 'http://127.0.0.1:3000', expect.any(String), undefined)
+  })
+
+  it('normalizes deterministic waits and preserves environment-backed form references', () => {
+    const plan = new QaPlanningPhase().parse(JSON.stringify({
+      id: 'authenticated-admin',
+      target: 'http://127.0.0.1:3000',
+      profile: 'web',
+      criteria: ['Admin area opens after login'],
+      scenarios: [{
+        id: 'login-admin', authProfile: 'browser-user', criterionIds: ['criterion-1'], required: true, profile: 'web',
+        actions: [
+          { type: 'fill', selector: '#username', valueFrom: 'QA_USERNAME' },
+          { type: 'waitForSelector', selector: '[data-admin]', state: 'visible', timeout: 10_000 },
+          { type: 'waitForUrl', value: '/admin', timeout: 10_000 },
+        ],
+        assertions: [{ type: 'visible', selector: '[data-admin]' }],
+      }],
+    }), { target: 'http://127.0.0.1:3000', profile: 'web' }, 1)
+
+    expect(plan.scenarios[0].actions).toEqual([
+      { type: 'fill', selector: '#username', valueFrom: 'QA_USERNAME' },
+      { type: 'waitForSelector', selector: '[data-admin]', state: 'visible', timeout: 10_000 },
+      { type: 'waitForUrl', value: 'http://127.0.0.1:3000/admin', timeout: 10_000 },
+    ])
+    expect(plan.scenarios[0].authProfile).toBe('browser-user')
   })
 
   it('repairs an out-of-range criterion reference before validating and executing the plan', async () => {
