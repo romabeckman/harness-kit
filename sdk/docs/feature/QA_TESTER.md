@@ -67,9 +67,9 @@ Use `hrns qa report --run <id> --output <format>`. Omit `--output` to select aft
 | `markdown` | Overwrites `REPORT.md` with every scenario grouped by status |
 | `send-to-developer` | Overwrites `DEVELOPER-SCOPE.md` via LLM |
 
-REQUIRED: Overwrite selected artifact atomically. Escape HTML data. Ground developer scope in supplied results and evidence.
+REQUIRED: Overwrite atomically; escape HTML. Use one evidence link per scenario. Modal shows title, image previews, scrollable documents, and direct links. Scope uses results.
 
-REQUIRED: Preserve scope bytes, use three-digit scenario IDs, and reuse one runner session. Remove temporary JSON handoffs after parsing. Escape raw NUL as `\\u0000` in repair prompts.
+REQUIRED: Preserve scope bytes, three-digit scenario IDs, and one runner session. Remove temporary JSON handoffs. Escape raw NUL as `\\u0000` in repair prompts.
 
 ```text
 # CORRECT: run QA and generate the report during execution

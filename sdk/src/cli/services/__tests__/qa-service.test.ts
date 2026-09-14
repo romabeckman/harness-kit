@@ -504,6 +504,25 @@ describe('QA CLI', () => {
     expect(output).toContain('001-health')
     expect(output).toContain('002-orders')
     expect(output).toContain('003-admin')
+    expect(output).toContain('class="evidence-link"')
+    expect(output.match(/class="evidence-link"/g)?.length).toBe(4)
+    expect(output).toContain('href="#evidence-modal"')
+    expect(output).not.toContain('data-evidence-url')
+    expect(output).not.toContain('href="evidence/screenshot.png"')
+    expect(output).not.toContain('href="evidence/order.txt"')
+    expect(output).not.toContain('href="evidence/admin/"')
+    expect(output).toContain('id="evidence-modal"')
+    expect(output).toContain('id="evidence-title"')
+    expect(output).toContain('id="evidence-items"')
+    expect(output).toContain('data-evidence="')
+    expect(output).toContain('screenshot.png')
+    expect(output).toContain('order.txt')
+    expect(output).toContain('admin/')
+    expect(output).toContain('evidence-direct-link')
+    expect(output).toContain('evidence-preview-image')
+    expect(output).toContain("frame.setAttribute('sandbox', '')")
+    expect(output).toContain('overflow: auto')
+    expect(output).toContain('Open evidence')
     expect(output).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
     expect(output).not.toContain('<old report>')
     expect(log.mock.calls.at(-1)?.[0]).toContain('REPORT.html')
@@ -688,10 +707,13 @@ function seedReportOutputRun(workspace: string): QaRunStore {
     schemaVersion: 1, id: 'output-run', planId: plan.id, planVersion: plan.version,
     target: plan.target, createdAt: '2026-09-11T12:00:00.000Z', completedAt: '2026-09-11T12:01:00.000Z', verdict: 'FAIL',
     results: [
-      { scenarioId: '001-health', required: true, status: 'PASSED', evidence: [] },
-      { scenarioId: '002-orders', required: true, status: 'FAILED', reason: 'Expected 201, received 500', evidence: [] },
-      { scenarioId: '003-admin', required: true, status: 'BLOCKED', reason: 'Connection refused', evidence: [] },
-      { scenarioId: '004-search', required: true, status: 'INCONCLUSIVE', reason: 'Missing evidence', evidence: [] },
+      { scenarioId: '001-health', required: true, status: 'PASSED', evidence: [
+        { id: 'screenshot', path: 'evidence/screenshot.png', capturedAt: '', adapter: 'test' },
+        { id: 'summary', path: 'evidence/summary.txt', capturedAt: '', adapter: 'test' },
+      ] },
+      { scenarioId: '002-orders', required: true, status: 'FAILED', reason: 'Expected 201, received 500', evidence: [{ id: 'order', path: 'evidence/order.txt', capturedAt: '', adapter: 'test' }] },
+      { scenarioId: '003-admin', required: true, status: 'BLOCKED', reason: 'Connection refused', evidence: [{ id: 'admin', path: 'evidence/admin/', capturedAt: '', adapter: 'test' }] },
+      { scenarioId: '004-search', required: true, status: 'INCONCLUSIVE', reason: 'Missing evidence', evidence: [{ id: 'log', path: 'evidence/log.txt', capturedAt: '', adapter: 'test' }] },
     ],
   })
   return store

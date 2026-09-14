@@ -37,7 +37,20 @@ hrns qa run --project ../checkout --scope "Validate checkout" --scenario "Valid 
 hrns qa run --target http://127.0.0.1:3000
 ```
 
-Without `--report`, the run executes and saves state/evidence but skips LLM report generation. Add `--report` to generate and render the report during execution. Add `--analysis` when post-execution evidence review may append and execute material missing scenarios. Audit artifacts remain under `docs/qa/`. The separate `hrns qa report` command emits the final JSON report and can regenerate `report.json` and `REPORT.md` for a completed run.
+Without `--report`, the run executes and saves state/evidence but skips report generation. Add `--report` to generate and render the report during execution. Add `--analysis` when post-execution evidence review may append and execute material missing scenarios. Audit artifacts remain under `docs/qa/`. Use `hrns qa report` to regenerate artifacts for a completed run.
+
+## Report outputs
+
+Select a format explicitly with `hrns qa report --run <qa-run-id> --output <format>`:
+
+| Format | Artifact and behavior |
+| --- | --- |
+| `json` | Overwrites `report.json` with structured results. |
+| `html` | Overwrites `REPORT.html` with every scenario. Each table row has one evidence link; the modal shows its title, image previews, scrollable documents, and direct links. |
+| `markdown` | Overwrites `REPORT.md` with every scenario grouped by status. |
+| `send-to-developer` | Overwrites `DEVELOPER-SCOPE.md` through the LLM using only `FAILED` and `BLOCKED` scenarios. |
+
+Omit `--output` to select the format after the `Select the QA run to report` prompt. Format selection defaults to `json`. During report regeneration, JSON, HTML, and Markdown use stored results directly; only `send-to-developer` invokes the LLM.
 
 ## Opt into adaptive analysis
 
@@ -185,7 +198,7 @@ Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` direc
 | Item | Location | What to review |
 | --- | --- | --- |
 | Run state | `state.json` | Final verdict, scenario status, reason, and timestamps. |
-| Generated report | `report.json`, `REPORT.md` | Created by `--report` or `hrns qa report`; review synthesized findings and open points. |
+| Generated report | `report.json`, `REPORT.html`, `REPORT.md`, `DEVELOPER-SCOPE.md` | `--report` creates JSON/Markdown; `hrns qa report --output` creates the selected artifact. Review results, evidence links, and open points. |
 | API evidence | `evidence/<nnn>-<scenario>/` | The `curl` request metadata and response body. Evidence folders use a zero-padded execution number, such as `001-create-order`. |
 | Browser evidence | `evidence/<nnn>-<scenario>/final.png` | Final browser screenshot after the planned user flow. |
 

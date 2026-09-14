@@ -121,11 +121,22 @@ This command plans, validates, and executes in one flow. Add `--analysis` to ins
 hrns qa report --run <run-id>
 ```
 
-This regenerates the report for a completed run using its stored plan and evidence. Omit `--run` to select a completed run interactively:
+This regenerates artifacts for a completed run using its stored plan, results, and evidence. Omit `--run` to select a completed run interactively:
 
 ```text
 hrns qa report
 ```
+
+Use `--output` to choose the artifact format:
+
+| Format | Artifact and behavior |
+| --- | --- |
+| `json` | Overwrites `report.json` with structured results. |
+| `html` | Overwrites `REPORT.html` with every scenario. Each row has one evidence link; the modal provides a title, image previews, scrollable documents, and direct links. |
+| `markdown` | Overwrites `REPORT.md` with every scenario grouped by status. |
+| `send-to-developer` | Overwrites `DEVELOPER-SCOPE.md` through the LLM using only `FAILED` and `BLOCKED` scenarios. |
+
+Example: `hrns qa report --run <run-id> --output html`. If `--output` is omitted, first select the run, then select the format; the default is `json`. During report regeneration, only `send-to-developer` invokes the LLM.
 
 ### Start development correction from a QA run
 
@@ -157,6 +168,7 @@ This command selects the latest version of every saved plan, validates and execu
 | `--effort <level>` | Override reasoning effort used by QA phases. |
 | `--analysis` | Enable post-execution evidence analysis; material missing scenarios may be appended and executed before reporting. Disabled by default. |
 | `--auth <profile>` | Select a named profile from optional `.harness-kit/auth.json`; valid for `run` and `exploratory`. |
+| `--output <format>` | For `hrns qa report`, write `json`, `html`, `markdown`, or `send-to-developer`. |
 | `--debug` | Show runner arguments, prompts, sessions, and complete errors. |
 | `--run <id>` | For `hrns qa report`, select a completed run to regenerate. For `hrns run --reset`, generate correction scope from that run's failed and blocked results. |
 
@@ -265,7 +277,9 @@ docs/qa/
   runs/<run-id>/
     state.json
     report.json
+    REPORT.html
     REPORT.md
+    DEVELOPER-SCOPE.md
     evidence/
       001-<scenario>/...
       002-<scenario>/...
@@ -273,7 +287,7 @@ docs/qa/
     report.json
 ```
 
-`REPORT.md` is the readable per-run report. Its `report.json` is the structured equivalent. Exploratory `report.json` aggregates plan versions, run IDs, effective targets, scenario results, totals, validation errors, and the global verdict. Evidence remains in each referenced run directory.
+`REPORT.md` is the readable per-run report containing every scenario grouped by status. `REPORT.html` provides a styled table with one evidence link per scenario; its modal previews images, scrolls long documents, and exposes a direct link for every evidence item. `report.json` is the structured equivalent. `DEVELOPER-SCOPE.md` is an LLM-generated scope containing only `FAILED` and `BLOCKED` scenarios. Exploratory `report.json` aggregates plan versions, run IDs, effective targets, scenario results, totals, validation errors, and the global verdict. Evidence remains in each referenced run directory.
 
 Harness Kit removes common credential fields and exact resolved authentication values from persisted Curl/MCP/CLI evidence. Curl's request configuration is transient stdin, not a command-line argument. Browser screenshots and application-generated fields can still contain unrelated secrets; review artifacts before sharing.
 
