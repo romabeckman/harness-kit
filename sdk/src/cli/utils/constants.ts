@@ -220,7 +220,7 @@ export const HELP_QA = `
 
 USAGE
   hrns qa run [options]
-  hrns qa report [--run <id>] [options]
+  hrns qa report [--run <id>] [--output <format>] [options]
   hrns qa exploratory [--target <url>] [--project <path>]
   hrns qa auth [--project <path>]   Add one authentication profile interactively
   hrns qa [options]          Alias for hrns qa run
@@ -235,6 +235,7 @@ OPTIONS
   --analysis               After execution, inspect evidence and add and execute material missing scenarios before reporting
   --report                 Generate and render the report during QA run
   --run <id>               Completed run to report; omit for interactive selection
+  --output <format>         Report output: json, html, markdown, send-to-developer (default: json)
   --target <url>            Target application URL
   --auth <profile>          Authentication profile from .harness-kit/auth.json
   --profile <api|web|web-game|mobile-web|accessibility|mcp|cli|websocket|security|full>
@@ -256,6 +257,7 @@ EXAMPLES
   hrns qa run --scope "Validate checkout" --scenario "A valid card completes payment" --profile web
   hrns qa run --debug --scope "Test endpoint X" --target http://localhost:3000
   hrns qa report --run orders-20260911
+  hrns qa report --run orders-20260911 --output html
   hrns qa report
   hrns qa exploratory --target http://localhost:3000
   hrns qa exploratory --auth qa-user --target http://localhost:3000

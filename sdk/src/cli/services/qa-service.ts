@@ -8,9 +8,10 @@ import { parseQaArgs } from './qa/QaArgsParser'
 import { runQaExploratoryCommand } from './qa/QaExploratoryCommand'
 import { createQaOrchestrator } from './qa/QaOrchestratorFactory'
 import { offerDevelopmentRenewal } from './qa/QaDevelopmentRenewal'
-import type { QaCliOptions, QaCommandDependencies } from './qa/types'
+import type { QaCliOptions, QaCommandDependencies, QaReportOutput } from './qa/types'
 import { QaAuthConfigStore } from '../../qa/auth/QaAuthConfigStore'
 import { runQaAuthCommand } from './qa/QaAuthCommand'
+import { renderQaReportOutput } from './qa/QaReportOutput'
 
 export { parseQaArgs }
 export type { QaAction, QaCliOptions, QaCommandDependencies } from './qa/types'
@@ -134,6 +135,20 @@ async function selectCompletedRun(store: QaRunStore): Promise<QaRun> {
   return run
 }
 
+async function selectReportOutput(): Promise<QaReportOutput> {
+  const { select } = await import('@inquirer/prompts')
+  return select({
+    message: 'Select the report output format:',
+    choices: [
+      { name: 'JSON — structured report', value: 'json' },
+      { name: 'HTML — styled scenario table', value: 'html' },
+      { name: 'Markdown — organized error scenarios', value: 'markdown' },
+      { name: 'Send to developer — LLM-generated fix scope', value: 'send-to-developer' },
+    ],
+    default: 'json',
+  })
+}
+
 export async function cmdQa(cwd: string, args: string[], dependencies: QaCommandDependencies = {}): Promise<void> {
   const explicitAction = args[0] && !args[0].startsWith('-')
   const options = parseQaArgs(args)
@@ -185,17 +200,24 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
   const store = new QaRunStore(workspace)
   const run = options.runId ? store.loadRun(options.runId) : await selectCompletedRun(store)
   if (!run.completedAt || !run.verdict) throw new Error(`QA run is not completed: ${run.id}`)
-  const report = await generateRunReport(workspace, options, dependencies, store, run)
-  console.log(JSON.stringify(report, null, 2))
-}
-
-async function generateRunReport(
-  workspace: string,
-  options: QaCliOptions,
-  dependencies: QaCommandDependencies,
-  store: QaRunStore,
-  run: QaRun,
-): Promise<QaFinalReport> {
+  options.output ??= await selectReportOutput()
   const plan = store.loadPlan(run.planId, run.planVersion)
-  return createQaOrchestrator(workspace, options, dependencies, undefined, store).report(plan, run)
+  const orchestrator = createQaOrchestrator(workspace, options, dependencies, undefined, store)
+  if (options.output === 'send-to-developer') {
+    const markdown = await orchestrator.developerReport(plan, run)
+    store.saveDeveloperReport(run.id, markdown)
+    console.log(`QA developer scope written to ${store.developerReportPath(run.id)}`)
+    return
+  }
+  const report = orchestrator.executionSummary(plan, run)
+  const output = renderQaReportOutput(options.output, plan, run, report)
+  const outputPath = options.output === 'html'
+    ? store.reportHtmlPath(run.id)
+    : options.output === 'markdown'
+      ? store.reportMarkdownPath(run.id)
+      : store.reportPath(run.id)
+  if (options.output === 'html') store.saveReportHtml(run.id, output)
+  else if (options.output === 'markdown') store.saveReportMarkdown(run.id, output)
+  else store.saveReport(report)
+  console.log(`QA ${options.output} report written to ${outputPath}`)
 }

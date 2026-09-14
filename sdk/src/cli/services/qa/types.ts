@@ -6,6 +6,7 @@ import type { QaTargetProbe } from '../../../qa/services/QaTargetProbe'
 import type { HarnessSettings } from '../../../settings/HarnessSettings'
 
 export type QaAction = 'run' | 'report' | 'exploratory' | 'auth'
+export type QaReportOutput = 'json' | 'html' | 'markdown' | 'send-to-developer'
 export type DevelopmentMode = 'quick' | 'fast' | 'thinking' | 'deep_thinking'
 export type ConfirmOptions = { message: string; default: boolean }
 export type SelectModeOptions = {
@@ -26,6 +27,7 @@ export interface QaCliOptions {
   model?: string
   effort?: string
   authProfile?: string
+  output?: QaReportOutput
   debug?: boolean
   report: boolean
   analysis?: boolean

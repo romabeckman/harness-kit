@@ -1,9 +1,10 @@
-import type { QaAction, QaCliOptions } from './types'
+import type { QaAction, QaCliOptions, QaReportOutput } from './types'
 import type { QaProfile } from '../../../qa/types'
 import { HELP_QA } from '../../utils/constants'
 
 const ACTIONS: QaAction[] = ['run', 'report', 'exploratory', 'auth']
 const PROFILES: QaProfile[] = ['api', 'web', 'web-game', 'mobile-web', 'accessibility', 'mcp', 'cli', 'websocket', 'security', 'full']
+const REPORT_OUTPUTS: QaReportOutput[] = ['json', 'html', 'markdown', 'send-to-developer']
 
 export function parseQaArgs(args: string[]): QaCliOptions {
   const first = args[0]
@@ -44,10 +45,15 @@ export function parseQaArgs(args: string[]): QaCliOptions {
     else if (flag === '--model') options.model = value
     else if (flag === '--effort') options.effort = value
     else if (flag === '--auth') options.authProfile = value
+    else if (flag === '--output') {
+      if (!REPORT_OUTPUTS.includes(value as QaReportOutput)) throw new Error(`Invalid QA report output: ${value}`)
+      options.output = value as QaReportOutput
+    }
     else throw new Error(`Unknown QA option: ${flag}`)
   }
 
   if (options.action !== 'report' && options.runId) throw new Error('--run is only valid with hrns qa report')
+  if (options.action !== 'report' && options.output) throw new Error('--output is only valid with hrns qa report')
   if (options.action !== 'run' && options.report) throw new Error('--report is only valid with hrns qa run')
   if (options.action !== 'run' && options.analysis) throw new Error('--analysis is only valid with hrns qa run')
   if (options.action !== 'run' && options.scope !== undefined) throw new Error('--scope is only valid with hrns qa run')

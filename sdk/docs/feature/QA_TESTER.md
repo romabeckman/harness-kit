@@ -26,7 +26,7 @@ updated: "2026-09-14"
   "entrypoints": ["src/qa/QaAgenticOrchestrator.ts", "src/cli/services/qa-service.ts", "src/cli/services/run-service.ts"],
   "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/cli/services/qa/QaOrchestratorFactory.ts", "src/index.ts", "src/qa/index.ts"],
   "reference_files": ["src/qa/engine/CurlDriver.ts", "src/qa/auth/QaAuthConfigStore.ts", "src/qa/auth/types.ts", "src/cli/services/qa/QaAuthCommand.ts"],
-  "code_files": ["src/cli/utils/run-args-parser.ts", "src/cli/services/qa/types.ts", "src/cli/services/qa/QaArgsParser.ts", "src/cli/services/qa/QaDevelopmentRenewal.ts", "src/cli/services/qa/QaExploratoryCommand.ts", "src/qa/services/QaService.ts", "src/qa/services/QaExploratoryService.ts", "src/qa/services/QaExecutionMemory.ts", "src/qa/services/QaPlanValidator.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/MobileWebDriver.ts", "src/qa/engine/AccessibilityDriver.ts", "src/qa/engine/McpClientDriver.ts", "src/qa/engine/CliDriver.ts", "src/qa/engine/WebSocketDriver.ts", "src/qa/engine/QaAuthRedaction.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/utils/QaAgentFileOutput.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaValidationPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
+  "code_files": ["src/cli/utils/run-args-parser.ts", "src/cli/services/qa/types.ts", "src/cli/services/qa/QaArgsParser.ts", "src/cli/services/qa/QaDevelopmentRenewal.ts", "src/cli/services/qa/QaExploratoryCommand.ts", "src/cli/services/qa/QaReportOutput.ts", "src/qa/services/QaService.ts", "src/qa/services/QaDeveloperReportGenerator.ts", "src/qa/services/QaExploratoryService.ts", "src/qa/services/QaExecutionMemory.ts", "src/qa/services/QaPlanValidator.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/MobileWebDriver.ts", "src/qa/engine/AccessibilityDriver.ts", "src/qa/engine/McpClientDriver.ts", "src/qa/engine/CliDriver.ts", "src/qa/engine/WebSocketDriver.ts", "src/qa/engine/QaAuthRedaction.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/utils/QaAgentFileOutput.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaValidationPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
   "test_files": ["src/qa/auth/__tests__/QaAuthConfigStore.test.ts", "src/qa/auth/__tests__/QaAuthExecution.test.ts", "src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaExtendedEngines.test.ts", "src/qa/__tests__/QaAuthEngineSecurity.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaImprovements.test.ts", "src/qa/__tests__/QaCurlRegressions.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/services/__tests__/QaPlanValidator.test.ts", "src/qa/services/__tests__/QaTargetProbe.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts", "src/cli/services/__tests__/run-service.test.ts", "src/cli/utils/__tests__/run-args-parser.test.ts"]
 }
 ```
@@ -49,14 +49,27 @@ src/cli/services/qa/ # QA parsing, handlers, factories, CLI types
 
 ## EXECUTION
 
-1. **Run** with `hrns qa run --agent <runner>`; select `resume`, `resume with analysis`, or `new` when plans exist.
-2. **Define** scope with `--scope` or prompts; add repeated `--scenario` baselines.
-3. **Validate** planner JSON, profile, target, and executable scenarios.
-4. **Execute** in order and report with `--report`; opt into evidence analysis with `--analysis` or saved-plan `resume with analysis`.
-5. **Regenerate** with `hrns qa report --run <id>`; explore with `hrns qa exploratory`.
-6. **Authenticate** with `--auth <profile>` and `.harness-kit/auth.json`.
+1. **Run** `hrns qa run`; choose resume, analysis, or new when plans exist.
+2. **Define** scope with `--scope`; repeat `--scenario` for baselines.
+3. **Validate** planner JSON, profile, target, and scenarios.
+4. **Execute** in order; use `--analysis` for evidence analysis.
+5. **Report** with `hrns qa report --run <id>`; explore with `qa exploratory`.
+6. **Authenticate** with `--auth <profile>`.
 
-REQUIRED: Preserve scope bytes, use three-digit scenario IDs, and reuse one runner session per execution. Use temporary JSON handoffs under `docs/qa/`; remove them after parsing. Escape raw NUL as `\\u0000` before embedding invalid output in repair prompts. Use response fallback without file tools.
+## REPORT OUTPUT
+
+Use `hrns qa report --run <id> --output <format>`. Omit `--output` to select after the run; prompt defaults to `json`.
+
+| Format | Output |
+| --- | --- |
+| `json` | Overwrites `report.json` |
+| `html` | Overwrites `REPORT.html` with every scenario |
+| `markdown` | Overwrites `REPORT.md` with every scenario grouped by status |
+| `send-to-developer` | Overwrites `DEVELOPER-SCOPE.md` via LLM |
+
+REQUIRED: Overwrite selected artifact atomically. Escape HTML data. Ground developer scope in supplied results and evidence.
+
+REQUIRED: Preserve scope bytes, use three-digit scenario IDs, and reuse one runner session. Remove temporary JSON handoffs after parsing. Escape raw NUL as `\\u0000` in repair prompts.
 
 ```text
 # CORRECT: run QA and generate the report during execution
@@ -84,17 +97,17 @@ Ask **Send failed and blocked scenarios to fix?** with default `false`. After co
 
 ## TERMINAL PROGRESS
 
-REQUIRED: Emit runtime, phase, scenario, and completion events through injected `QaTerminalPresenter`; disable ANSI without a TTY. Aggregate exploratory verdicts as `FAIL`, `BLOCKED`, `INCONCLUSIVE`, then `PASS`. Include IDs, results, totals, and errors. Keep target overrides in memory.
+REQUIRED: Emit runtime, phase, scenario, and completion events through `QaTerminalPresenter`; disable ANSI without a TTY. Aggregate exploratory verdicts as `FAIL`, `BLOCKED`, `INCONCLUSIVE`, then `PASS`. Include IDs, totals, and errors.
 
 ## DRIVERS
 
-Use temporary static servers for browser profiles. Route security HTTP through API unless overridden. Curl does not follow redirects; MCP follows same-origin redirects only. Browser evidence requires screenshots. CLI uses no shell.
+Use temporary static servers for browser profiles. Curl does not follow redirects; MCP follows same-origin redirects only. Browser evidence requires screenshots. CLI uses no shell.
 
 ## AUTHENTICATION
 
-REQUIRED: Define named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. Prefer environment references; allow confirmed `storage: "insecure"` literals locally. Apply credentials only to same-origin API, MCP, and browser traffic. Send Curl config through transient stdin; redact resolved values and raw bearer tokens from evidence and reasons. Inject only explicit CLI mappings.
+REQUIRED: Define named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. Prefer environment references; allow confirmed insecure literals. Apply credentials only to same-origin traffic. Redact resolved secrets.
 
-REQUIRED: Keep `hrns qa auth` form-only and reject duplicate names. Block authenticated CLI without environment mappings and all authenticated WebSocket scenarios. PROHIBITED: Persist resolved secrets or expose literals in logs. OAuth2, HMAC, mTLS, and WebSocket headers remain outside scope.
+REQUIRED: Keep `hrns qa auth` form-only. Block authenticated CLI without mappings and authenticated WebSocket. PROHIBITED: Persist resolved secrets. OAuth2, HMAC, and mTLS remain outside scope.
 
 ## EXECUTION MEMORY
 

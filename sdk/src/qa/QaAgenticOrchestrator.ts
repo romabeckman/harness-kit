@@ -12,6 +12,7 @@ import { QaRuntimeManager, type QaRuntimePreparer } from './services/QaRuntimeMa
 import { probeQaTarget, type QaTargetProbe } from './services/QaTargetProbe'
 import { QaExecutionMemory } from './services/QaExecutionMemory'
 import { QaAuthConfigStore } from './auth/QaAuthConfigStore'
+import { generateQaDeveloperReport } from './services/QaDeveloperReportGenerator'
 
 export interface QaAgenticOrchestratorOptions {
   workspace: string
@@ -89,6 +90,10 @@ export class QaAgenticOrchestrator {
     return context.report
   }
 
+  async developerReport(plan: QaPlan, run: QaRun, signal?: AbortSignal): Promise<string> {
+    return generateQaDeveloperReport({ ...this.#context, request: { target: plan.target, profile: plan.profile }, plan, run }, signal)
+  }
+
   private async runFrom(start: QaPhase, request: QaAgenticRequest, plan?: QaPlan, signal?: AbortSignal): Promise<QaFinalReport> {
     const runtime = await this.#runtime.prepare(request, signal)
     const resolvedRequest = runtime ? { ...request, target: runtime.target } : request
@@ -141,7 +146,7 @@ export class QaAgenticOrchestrator {
     return { type: 'phase_completed', phase }
   }
 
-  private executionSummary(plan: QaPlan, run: QaRun): QaFinalReport {
+  executionSummary(plan: QaPlan, run: QaRun): QaFinalReport {
     return {
       schemaVersion: 1,
       runId: run.id,

@@ -58,6 +58,16 @@ export class QaRunStore {
     return join(this.#root, 'runs', runId, 'REPORT.md')
   }
 
+  reportHtmlPath(runId: string): string {
+    this.assertIdentifier(runId)
+    return join(this.#root, 'runs', runId, 'REPORT.html')
+  }
+
+  developerReportPath(runId: string): string {
+    this.assertIdentifier(runId)
+    return join(this.#root, 'runs', runId, 'DEVELOPER-SCOPE.md')
+  }
+
   exploratoryReportPath(exploratoryRunId: string): string {
     this.assertIdentifier(exploratoryRunId)
     return join(this.#root, 'exploratory', exploratoryRunId, 'report.json')
@@ -147,6 +157,16 @@ export class QaRunStore {
   saveReportMarkdown(runId: string, markdown: string): void {
     if (markdown.trim().length === 0) throw new Error('QA Markdown report cannot be empty')
     this.writeText(this.reportMarkdownPath(runId), markdown)
+  }
+
+  saveReportHtml(runId: string, html: string): void {
+    if (html.trim().length === 0) throw new Error('QA HTML report cannot be empty')
+    this.writeText(this.reportHtmlPath(runId), html)
+  }
+
+  saveDeveloperReport(runId: string, markdown: string): void {
+    if (markdown.trim().length === 0) throw new Error('QA developer report cannot be empty')
+    this.writeText(this.developerReportPath(runId), markdown)
   }
 
   loadReport(runId: string): QaFinalReport {
