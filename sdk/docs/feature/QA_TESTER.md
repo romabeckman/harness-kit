@@ -15,7 +15,7 @@ edges:
     target: "feature:sdk_settings"
   - relation: depends_on
     target: "feature:sdk_terminal_ui"
-updated: "2026-09-13"
+updated: "2026-09-14"
 ---
 ```graph
 {
@@ -56,7 +56,7 @@ src/cli/services/qa/ # QA parsing, handlers, factories, CLI types
 5. **Regenerate** with `hrns qa report --run <id>`; explore with `hrns qa exploratory`.
 6. **Authenticate** with `--auth <profile>` and `.harness-kit/auth.json`.
 
-REQUIRED: Preserve scope byte-for-byte, use three-digit scenario IDs, and reuse one runner session per execution. Planning, analysis, and reporting use temporary JSON handoffs under `docs/qa/`; remove each after parsing. Use response fallback for runners without file tools.
+REQUIRED: Preserve scope bytes, use three-digit scenario IDs, and reuse one runner session per execution. Use temporary JSON handoffs under `docs/qa/`; remove them after parsing. Escape raw NUL as `\\u0000` before embedding invalid output in repair prompts. Use response fallback without file tools.
 
 ```text
 # CORRECT: run QA and generate the report during execution

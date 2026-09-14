@@ -346,6 +346,7 @@ function normalizeNavigationUrl(value: string, target: string): string {
 
 function escapePromptData(value: string): string {
   return value
+    .replaceAll('\u0000', '\\u0000')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
