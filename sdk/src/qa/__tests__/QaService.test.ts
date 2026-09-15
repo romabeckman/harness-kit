@@ -419,6 +419,45 @@ describe('PlaywrightDriver', () => {
     expect(result.evidence).toHaveLength(2)
   })
 
+  it('fails an HTTP 5xx page with captured browser evidence', async () => {
+    const page = {
+      on: () => undefined,
+      goto: async () => ({ status: () => 500 }),
+      locator: () => ({ isVisible: async () => true }),
+      screenshot: async ({ path }: { path: string }) => { writeFileSync(path, 'test image') },
+    }
+    const driver = new PlaywrightDriver('web', async () => ({
+      chromium: { launch: async () => ({ newPage: async () => page, close: async () => undefined }) },
+    }))
+
+    const result = await driver.execute({
+      id: 'server-error', criterionIds: ['criterion-1'], required: true, profile: 'web',
+      assertions: [{ type: 'visible', selector: '[data-ready]' }],
+    }, 'http://127.0.0.1:3000', join(tmpdir(), `hrns-qa-browser-http-${Date.now()}`))
+
+    expect(result).toMatchObject({ status: 'FAILED', observedStatus: 500, reason: expect.stringContaining('HTTP 500') })
+    expect(result.evidence.length).toBeGreaterThan(0)
+  })
+
+  it('captures evidence when browser navigation rejects with an HTTP error', async () => {
+    const page = {
+      on: () => undefined,
+      goto: async () => { throw new Error('page.goto: HTTP 500') },
+      screenshot: async ({ path }: { path: string }) => { writeFileSync(path, 'test image') },
+    }
+    const driver = new PlaywrightDriver('web', async () => ({
+      chromium: { launch: async () => ({ newPage: async () => page, close: async () => undefined }) },
+    }))
+
+    const result = await driver.execute({
+      id: 'rejected-server-error', criterionIds: ['criterion-1'], required: true, profile: 'web',
+      assertions: [{ type: 'visible', selector: '[data-ready]' }],
+    }, 'http://127.0.0.1:3000', join(tmpdir(), `hrns-qa-browser-http-rejected-${Date.now()}`))
+
+    expect(result).toMatchObject({ status: 'FAILED', observedStatus: 500, reason: expect.stringContaining('HTTP 500') })
+    expect(result.evidence.length).toBeGreaterThan(0)
+  })
+
   it('fails when an observable browser assertion does not match', async () => {
     const page = {
       on: () => undefined,

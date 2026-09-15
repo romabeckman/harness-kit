@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { QaBrowserAction, QaDriver, QaDriverExecutionContext, QaProfile, QaScenario, QaScenarioResult } from '../types'
+import type { QaBrowserAction, QaDriver, QaDriverExecutionContext, QaEvidence, QaProfile, QaScenario, QaScenarioResult } from '../types'
 
 export type PlaywrightModule = { chromium: { launch(options: { headless: boolean }): Promise<any> } }
 export type PlaywrightLoader = () => Promise<PlaywrightModule>
@@ -56,14 +56,18 @@ export class PlaywrightDriver implements QaDriver {
       const browser = sharedRun?.browser ?? await playwright!.chromium.launch({ headless: true })
       const ownsBrowser = !sharedRun
       let page: any
+      let pageReady = false
+      let pageErrors: string[] = []
       try {
         if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
-        const pageErrors: string[] = []
+        pageErrors = []
         // browser.newPage creates a fresh context; closing the page disposes that context.
         page = await browser.newPage({ ...this.pageOptions(), ...(context?.auth.basic ? { httpCredentials: { ...context.auth.basic, origin: new URL(target).origin } } : {}) })
         page.on?.('pageerror', (error: Error) => pageErrors.push(error.message))
         await applyBrowserAuth(page, target, context)
-        await page.goto(target, { waitUntil: 'networkidle', signal })
+        const initialResponse = await page.goto(target, { waitUntil: 'networkidle', signal })
+        pageReady = true
+        assertHttpError(initialResponse)
         for (const action of scenario.actions ?? []) {
           if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
           await this.perform(page, action, signal, context, target)
@@ -91,12 +95,22 @@ export class PlaywrightDriver implements QaDriver {
           status: 'PASSED',
           evidence,
         }
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : 'Browser execution failed'
+        const observedStatus = httpStatusFromError(error)
+        const isHttpError = observedStatus !== undefined || isHttpNavigationError(error)
+        if (signal?.aborted || !page || (!pageReady && !isHttpError)) {
+          return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason, evidence: [] }
+        }
+        const evidence = await captureFailureEvidence(page, evidenceDir, scenario.id, reason, pageErrors)
+        return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', observedStatus, reason, evidence }
       } finally {
         if (ownsBrowser) await browser.close()
         else await page?.close()
       }
     } catch (error) {
-      return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason: error instanceof Error ? error.message : 'Browser execution failed', evidence: [] }
+      const reason = error instanceof Error ? error.message : 'Browser execution failed'
+      return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason, evidence: [] }
     }
   }
 
@@ -132,7 +146,11 @@ export class PlaywrightDriver implements QaDriver {
 
   private async perform(page: any, action: QaBrowserAction, signal: AbortSignal | undefined, context: QaDriverExecutionContext | undefined, target: string): Promise<void> {
     if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
-    if (action.type === 'navigate') return page.goto(action.value, { waitUntil: 'networkidle', signal })
+    if (action.type === 'navigate') {
+      const response = await page.goto(action.value, { waitUntil: 'networkidle', signal })
+      assertHttpError(response)
+      return
+    }
     if (action.type === 'click' && action.selector) return page.locator(action.selector).click()
     if (action.type === 'fill' && action.selector) {
       const value = action.valueFrom ? context?.auth.environment[action.valueFrom] : action.value
@@ -180,6 +198,64 @@ export class PlaywrightDriver implements QaDriver {
 
   protected async loadPlaywright(): Promise<PlaywrightModule> {
     return this.#loader()
+  }
+}
+
+function assertHttpError(response: any): void {
+  const status = typeof response?.status === 'function' ? response.status() : undefined
+  if (typeof status === 'number' && status >= 500) throw new BrowserHttpError(status)
+}
+
+class BrowserHttpError extends Error {
+  constructor(readonly status: number) {
+    super(`Browser navigation returned HTTP ${status}`)
+    this.name = 'BrowserHttpError'
+  }
+}
+
+function httpStatusFromError(error: unknown): number | undefined {
+  if (error instanceof BrowserHttpError) return error.status
+  if (!(error instanceof Error)) return undefined
+  const match = /\bHTTP(?:\s+status)?\s*([45]\d{2})\b/i.exec(error.message)
+  return match ? Number(match[1]) : undefined
+}
+
+function isHttpNavigationError(error: unknown): boolean {
+  return error instanceof Error && /ERR_HTTP_RESPONSE_CODE_FAILURE/i.test(error.message)
+}
+
+async function captureFailureEvidence(page: any, evidenceDir: string, scenarioId: string, reason: string, pageErrors: string[]): Promise<QaEvidence[]> {
+  const evidence: QaEvidence[] = []
+  const capturedAt = new Date().toISOString()
+  const observationsPath = join(evidenceDir, 'observations.json')
+  try {
+    writeFileSync(observationsPath, JSON.stringify([{ type: 'execution', passed: false, message: reason }], null, 2), 'utf8')
+    if (isUsableEvidenceFile(observationsPath)) evidence.push({ id: `${scenarioId}-observations`, path: observationsPath, capturedAt, adapter: 'playwright' })
+  } catch {
+    // Keep trying the other evidence channels when a single artifact cannot be written.
+  }
+  const screenshotPath = join(evidenceDir, 'final.png')
+  try {
+    await page.screenshot?.({ path: screenshotPath, fullPage: true })
+    if (isUsableEvidenceFile(screenshotPath)) evidence.push({ id: `${scenarioId}-screenshot`, path: screenshotPath, capturedAt, adapter: 'playwright' })
+  } catch {
+    // A browser can fail before screenshots are available; the structured error remains useful evidence.
+  }
+  const errorPath = join(evidenceDir, 'error.json')
+  try {
+    writeFileSync(errorPath, JSON.stringify({ error: reason, pageErrors }, null, 2), 'utf8')
+    if (isUsableEvidenceFile(errorPath)) evidence.push({ id: `${scenarioId}-error`, path: errorPath, capturedAt, adapter: 'playwright' })
+  } catch {
+    // Return any artifacts captured successfully.
+  }
+  return evidence
+}
+
+function isUsableEvidenceFile(path: string): boolean {
+  try {
+    return existsSync(path) && statSync(path).size > 0
+  } catch {
+    return false
   }
 }
 

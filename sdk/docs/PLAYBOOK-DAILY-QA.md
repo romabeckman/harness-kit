@@ -174,7 +174,7 @@ Repeat `--scenario` for mandatory cases, such as valid, invalid, boundary, and a
 
 ## Manual interface check
 
-For a browser interface, validate the visible user path: navigate, click the controls, fill a form, submit it, and make sure the page remains operational. Browser flows save a final screenshot and fail if the page emits a JavaScript runtime error.
+For a browser interface, validate the visible user path: navigate, click the controls, fill a form, submit it, and make sure the page remains operational. Browser flows save a final screenshot and fail if the page emits a JavaScript runtime error. HTTP 5xx responses and post-load action or selector errors are `FAILED` and retain structured error/observation evidence; browser startup, target access, and cancellation remain `BLOCKED`.
 
 ```bash
 hrns qa run --report --scope "A guest can complete checkout" --scenario "A valid card completes payment" --target http://127.0.0.1:3000 --profile web
@@ -213,7 +213,7 @@ Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` direc
 | Run state | `state.json` | Final verdict, scenario status, reason, and timestamps. |
 | Generated report | `report.json`, `REPORT.html`, `REPORT.md`, `DEVELOPER-SCOPE.md` | `--report` creates JSON/Markdown; `hrns qa report --output` creates the selected artifact. Review results, evidence links, and open points. |
 | API evidence | `evidence/<nnn>-<scenario>/` | The `curl` request metadata and response body. Evidence folders use a zero-padded execution number, such as `001-create-order`. |
-| Browser evidence | `evidence/<nnn>-<scenario>/final.png` | Final browser screenshot after the planned user flow. |
+| Browser evidence | `evidence/<nnn>-<scenario>/` | `final.png` plus `observations.json`; execution failures also include `error.json` when the page was available. |
 
 | Verdict | Meaning | Daily action |
 | --- | --- | --- |
@@ -225,7 +225,7 @@ Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` direc
 ## Failure triage
 
 1. Run `hrns qa report --run <qa-run-id>` and identify the first failed or blocked scenario.
-2. Inspect response or screenshot evidence and verify the target is the intended version.
+2. Inspect response, screenshot, observation, and error evidence and verify the target is the intended version.
 3. For `BLOCKED`, confirm the target server, URL, Chromium, and authentication capability. Add an explicit CLI environment mapping when required; authenticated WebSocket scenarios remain unsupported.
 4. Run `hrns run --reset --run <qa-run-id>` to send only actionable results to development. Do not combine it with `--scope`.
 5. Preserve the run directory. Create a new QA run after a fix; do not overwrite failed evidence.

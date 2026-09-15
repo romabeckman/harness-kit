@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PlaywrightDriver } from '../engine/PlaywrightDriver'
@@ -103,7 +103,9 @@ describe('PlaywrightDriver scenario isolation', () => {
       const result = await driver.execute({
         ...scenario('failure'), actions: [{ type: 'click', selector: '#fail' }],
       }, 'https://qa.test', root, undefined, { auth: anonymous, runId: 'run' })
-      expect(result).toMatchObject({ status: 'BLOCKED', reason: 'Action failed' })
+      expect(result).toMatchObject({ status: 'FAILED', reason: 'Action failed' })
+      expect(result.evidence.map((item) => item.id)).toEqual(expect.arrayContaining(['failure-screenshot', 'failure-observations', 'failure-error']))
+      expect(result.evidence.every((item) => existsSync(item.path))).toBe(true)
       expect(pages[0].close).toHaveBeenCalledTimes(1)
       expect(browser.close).not.toHaveBeenCalled()
     } finally {
