@@ -186,8 +186,37 @@ describe('ReviewHandler', () => {
     expect(qaCall.prompt).toContain('Implemented retry handling. Review concurrency cleanup.')
     expect(tlCall.prompt).toContain('navigation context only')
     expect(qaCall.prompt).toContain('navigation context only')
+    expect(tlCall.prompt).toContain('<tdd_summary>')
+    expect(qaCall.prompt).toContain('<tdd_summary>')
+    expect(tlCall.prompt).toContain('Status: SUCCESS')
+    expect(tlCall.prompt).toContain('Tests: 2 total, 2 passed, 0 failed')
+    expect(tlCall.prompt).toContain('Modified files: src/example.ts')
+    expect(tlCall.prompt).toContain('<specification_provenance>')
+    expect(qaCall.prompt).toContain('<specification_provenance>')
     expect(tlCall.prompt).not.toContain('Read `developerNotes`')
     expect(qaCall.prompt).not.toContain('Read `developerNotes`')
+  })
+
+  it('invokes Tech Lead and Adversarial QA when complexity is LOW', async () => {
+    const fsm = makeFsm()
+    const specsDir = join(workingDir, 'docs', 'specs', 'sdk_core')
+    const context = makeContext(workingDir, fsm, async (inv: any) => {
+      if (inv.phaseKey === 'review_tl') {
+        const data = { featureId: 'F001', score: 0.95, openPoints: [], architectureTip: '' }
+        writeFileSync(join(specsDir, 'TL.json'), JSON.stringify(data))
+        return { success: true, stdout: '', stderr: '', raw: JSON.stringify(data) }
+      }
+
+      const data = { featureId: 'F001', score: 0.95, passedAdversarial: true, vulnerabilities: [], edgeCasesMissed: [] }
+      writeFileSync(join(specsDir, 'QA.json'), JSON.stringify(data))
+      return { success: true, stdout: '', stderr: '', raw: JSON.stringify(data) }
+    }, { complexity: Complexity.LOW })
+
+    await handler.handle(Phase.REVIEW, context)
+
+    expect(context.invokeAgent).toHaveBeenCalledTimes(2)
+    expect(context.invokeAgent).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'review_tl' }))
+    expect(context.invokeAgent).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'review_adv' }))
   })
 
   it('preserves developerSession on RETRY verdict', async () => {

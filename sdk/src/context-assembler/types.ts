@@ -42,6 +42,18 @@ export interface ReviewPayload extends ContextPayload {
   domain: string
   projectPaths: string[]
   developerHandoff?: string
+  tddSummary?: {
+    status: 'SUCCESS' | 'FAILED'
+    metrics: {
+      totalTests: number
+      passed: number
+      failed: number
+      coverage: number
+    }
+    modifiedFiles: string[]
+    reworksCount: number
+    developerHandoff?: string
+  }
   steeringRules?: string[]
   totalReworks: number
   specsContent?: DomainSpecs
@@ -51,6 +63,7 @@ export interface MemoryPayload extends ContextPayload {
   projectPaths: string[]
   workingDir: string
   steeringRules?: string[]
+  recentDecisions?: string[]
 }
 
 export interface PlanningPayloadRequest {

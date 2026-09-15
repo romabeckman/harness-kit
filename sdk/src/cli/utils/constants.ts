@@ -42,7 +42,7 @@ RESUME OPTIONS
 EXECUTION MODE
   --mode, -M <mode>         Controls which phases run and which complexity is forced:
                               quick   — Bootstrap → Planning → Development → Deploy (skip Review + Memory)
-                              fast    — All phases, simplify planning and only QA review
+                              fast    — All phases, simplified planning, Tech Lead + QA review
                               default — All phases, LLM decide complexity [default]
                               slow    — All phases, forced to high planning and deep review
   --complexity, -c <level>  Explicit complexity override: LOW | HIGH | AUTO
@@ -114,7 +114,7 @@ RESUME OPTIONS
 EXECUTION MODE
   --mode, -M <mode>         Controls phase execution and forced complexity:
                               quick   — Bootstrap → Planning → Development → Deploy (skip Review + Memory)
-                              fast    — All phases, simplified planning, QA review only
+                              fast    — All phases, simplified planning, Tech Lead + QA review
                               default — All phases, LLM decides complexity [default]
                               slow    — All phases, forced high planning and deep review
   --complexity, -c <level>  Explicit complexity override: LOW | HIGH | AUTO

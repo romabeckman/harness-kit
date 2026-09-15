@@ -276,6 +276,10 @@ describe('PlanningHandler', () => {
             expect(invokeCall.prompt).toContain('<project_paths>');
             expect(invokeCall.prompt).toContain('PROJECT NAME RULE');
             expect(invokeCall.prompt).not.toContain('<scope>');
+            expect(invokeCall.prompt).toContain('<context_anchors>');
+            expect(invokeCall.prompt).toContain('SCOPE.md');
+            expect(invokeCall.prompt).toContain(join(mockContext.workingDir, 'docs', 'specs', 'hello_world_cli'));
+            expect(invokeCall.prompt).toContain('/test/project');
 
             expect(mockContext.setDeveloperSession).toHaveBeenCalledWith({
                 featureId: '',

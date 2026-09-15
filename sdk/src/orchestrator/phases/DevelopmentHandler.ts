@@ -286,6 +286,8 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
   buildContinuationReworkPrompt(payload: DevelopmenPayload, context: Reviewontext): string {
     const tasksList = formatTasksList(payload.tasks)
     const workingDir = getSpecsDir(context.workingDir, payload.domain)
+    const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
+    const projectPathsList = formatProjectPathsList(payload.projectPaths)
     const reworkSection = this.buildReworkSection(payload, context)
 
     const tasksSection = [
@@ -318,6 +320,16 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       `- CRITICAL: You MUST NOT run \`step 5\` (Update Documentation)`,
       `- Execute autonomously without pausing or asking for confirmation`,
       `</strict_rules>`,
+      ``,
+      `<context_anchors>`,
+      `Feature: ${payload.featureId} — ${payload.featureTitle}`,
+      `Scope: ${join(productDir, 'SCOPE.md')}`,
+      ...(context.fsm.existRefinement?.() ? [`Refinement: ${join(productDir, 'REFINEMENT.md')}`] : []),
+      `Specifications: ${workingDir}`,
+      `<project_paths>`,
+      projectPathsList,
+      `</project_paths>`,
+      `</context_anchors>`,
       ``,
       reworkSection,
       tasksSection,
@@ -381,7 +393,13 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const specs = payload.specsContent
     if (!specs) return []
 
-    const sections: string[] = []
+    const sections: string[] = [
+      `<specification_provenance>`,
+      `- 001/002 are domain-wide context shared by all projects in this feature.`,
+      `- Each 003/004 file is project-specific; \`<!-- File: ... -->\` markers identify ownership when content is concatenated.`,
+      `- Match each task's [project] tag to its project path and owning 003/004 artifacts.`,
+      `</specification_provenance>`,
+    ]
 
     if (!payload.isRetry) {
       sections.push(...inlineOrReference('problem_space', specs.problemSpace, join(specsDir, '001-problem-space.md'), 'markdown', 'never', activeRunner))

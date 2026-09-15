@@ -13,6 +13,13 @@ export interface RefinementQuestion {
   context: string
 }
 
+interface RefinementAnswer {
+  question: string
+  answer: string
+  recommendation?: string
+  context?: string
+}
+
 export class RefinementHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.REFINEMENT) {
@@ -106,7 +113,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
       agent: 'harness-kit:software-architect',
       mode: 'autonomous',
       prompt,
-      phaseKey: 'planning',
+      phaseKey: 'refinement_questions',
     })
 
     const rawQuestions = this.parseQuestions(output?.raw || '')
@@ -147,9 +154,9 @@ export class RefinementHandler extends AbstractPhaseHandler {
     return []
   }
 
-  private async collectAnswers(questions: RefinementQuestion[]): Promise<Array<{ question: string; answer: string }>> {
+  private async collectAnswers(questions: RefinementQuestion[]): Promise<RefinementAnswer[]> {
     const { input } = await import('@inquirer/prompts')
-    const qaPairs: Array<{ question: string; answer: string }> = []
+    const qaPairs: RefinementAnswer[] = []
 
     if (questions.length === 0) {
       return qaPairs
@@ -173,6 +180,8 @@ export class RefinementHandler extends AbstractPhaseHandler {
 
       qaPairs.push({
         question: q.question,
+        recommendation: q.recommendation,
+        context: q.context,
         answer: answer.trim() || q.recommendation,
       })
       console.log()
@@ -199,7 +208,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
   private async consolidateRefinement(
     context: Reviewontext,
     scope: string,
-    qaPairs: Array<{ question: string; answer: string }>
+    qaPairs: RefinementAnswer[]
   ): Promise<void> {
     const productDir = getProductDir(context)
     const refinementPath = join(productDir, 'REFINEMENT.md')
@@ -208,6 +217,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
     const qaFormatted = qaPairs.length > 0
       ? qaPairs.map((pair, idx) => `| ${idx + 1} | ${pair.question} | ${pair.answer} |`).join('\n')
       : '| - | No specific questions answered | - |'
+    const refinementEvidence = JSON.stringify(qaPairs, null, 2)
 
     const prompt = [
       `<objective>`,
@@ -241,6 +251,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
       `- Base every section strictly on the scope and Q&A pairs provided; do not invent`,
       `  requirements that contradict them.`,
       `- The "Q&A Record" table must reproduce the <qa_pairs> content verbatim, unmodified.`,
+      `- Use recommendation and context from <refinement_evidence> as supporting rationale; the final human answer is authoritative.`,
       `- Keep each bullet point concise and actionable (one decision/risk/constraint per line).`,
       `- If a section has no applicable content, write "None identified." under its heading`,
       `  instead of omitting the heading.`,
@@ -258,13 +269,17 @@ export class RefinementHandler extends AbstractPhaseHandler {
       `<qa_pairs>`,
       qaFormatted,
       `</qa_pairs>`,
+      ``,
+      `<refinement_evidence>`,
+      refinementEvidence,
+      `</refinement_evidence>`,
     ].join('\n')
 
     await context.invokeAgent({
       agent: 'harness-kit:software-architect',
       mode: 'autonomous',
       prompt,
-      phaseKey: 'planning',
+      phaseKey: 'refinement_consolidation',
     })
   }
 }

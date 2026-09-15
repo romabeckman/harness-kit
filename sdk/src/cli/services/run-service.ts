@@ -66,7 +66,7 @@ async function promptForMode(parsedMode?: RunMode): Promise<RunMode> {
     message: "Select execution mode:",
     choices: [
       { name: "quick", value: RunMode.QUICK, description: "Bootstrap → Planning → Development → Deploy (skips Review and Memory)" },
-      { name: "fast", value: RunMode.FAST, description: "Bootstrap → Planning → Development → Review (Only QA) → Memory → Deploy" },
+      { name: "fast", value: RunMode.FAST, description: "Bootstrap → Planning → Development → Review (Tech Lead + QA) → Memory → Deploy" },
       { name: "Thinking", value: RunMode.THINKING, description: "Bootstrap → Planning → Development → Review → Memory → Deploy" },
       { name: "Deep Thinking", value: RunMode.DEEP_THINKING, description: "Bootstrap → Planning (Deep Thinking) → Development → Review → Memory → Deploy" },
     ],

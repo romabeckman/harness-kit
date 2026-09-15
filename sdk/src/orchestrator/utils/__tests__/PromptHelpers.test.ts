@@ -397,5 +397,14 @@ describe('PromptHelpers', () => {
       ]
       expect(formatTasksList(tasks)).toBe('- [T01] Setup database\n- [T02] Create model')
     })
+
+    it('includes project ownership when available', () => {
+      const tasks = [
+        { taskId: 'T01', project: 'api', description: 'Create endpoint' },
+        { taskId: 'T02', project: 'web', description: 'Create form' },
+      ]
+
+      expect(formatTasksList(tasks)).toBe('- [T01] [api] Create endpoint\n- [T02] [web] Create form')
+    })
   })
 })

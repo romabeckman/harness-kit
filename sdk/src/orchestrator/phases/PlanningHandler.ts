@@ -230,6 +230,8 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const dependenciesText = formatFeatureDependencies(backlog, feature)
     const rulesSection = formatRulesSection(payload.steeringRules)
     const projectPathsList = formatProjectPathsList(payload.projectPaths)
+    const productDir = getProductDir(context)
+    const refinementPath = join(productDir, 'REFINEMENT.md')
 
     return [
       `## Objective`,
@@ -270,6 +272,15 @@ export class PlanningHandler extends AbstractPhaseHandler {
       `</strict_rules>`,
       ``,
       `<inputs>`,
+      `<context_anchors>`,
+      `Feature: ${feature.id} — ${payload.featureTitle}`,
+      `Scope: ${join(productDir, 'SCOPE.md')}`,
+      ...(context.fsm.existRefinement?.() ? [`Refinement: ${refinementPath}`] : []),
+      `Specifications: ${payload.workingDir}`,
+      `Projects:`,
+      projectPathsList,
+      `</context_anchors>`,
+      ``,
       `<rules>`,
       rulesSection,
       `</rules>`,

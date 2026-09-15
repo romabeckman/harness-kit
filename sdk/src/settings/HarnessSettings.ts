@@ -4,6 +4,12 @@ import { existsSync, writeFileSync, mkdirSync, readFileSync } from 'fs'
 import type { HarnessSettingsMap, PhaseSettings } from './SettingsSchema'
 import { DEFAULT_SETTINGS } from './DefaultSettings'
 
+const LEGACY_PHASE_FALLBACKS: Record<string, string> = {
+  refinement_questions: 'planning',
+  refinement_consolidation: 'planning',
+  deploy_message: 'memory',
+}
+
 export class HarnessSettings {
   private constructor(private readonly settings: HarnessSettingsMap) { }
 
@@ -86,15 +92,16 @@ export class HarnessSettings {
   resolve(runnerType: string, phaseKey: string): PhaseSettings {
     const runner = this.settings[runnerType]
     if (!runner || !runner.phases) return {}
-    return runner.phases[phaseKey] ?? {}
+    return runner.phases[phaseKey] ?? runner.phases[LEGACY_PHASE_FALLBACKS[phaseKey]] ?? {}
   }
 
   getTimeoutMs(runnerType: string, phaseKey?: string): number | undefined {
     const runner = this.settings[runnerType]
     if (!runner) return undefined
 
-    if (phaseKey && runner.phases && runner.phases[phaseKey]) {
-      const phaseTimeout = runner.phases[phaseKey].timeoutMs
+    if (phaseKey && runner.phases) {
+      const phaseSettings = runner.phases[phaseKey] ?? runner.phases[LEGACY_PHASE_FALLBACKS[phaseKey]]
+      const phaseTimeout = phaseSettings?.timeoutMs
       if (phaseTimeout !== undefined) {
         return phaseTimeout
       }

@@ -237,10 +237,12 @@ export function formatFeatureDependencies(backlog: Feature[], feature: Feature):
   )
 }
 
-/** Formats pending tasks into a markdown list with taskId and description. */
-export function formatTasksList(tasks: Array<{ taskId: string; description: string }>): string {
+/** Formats pending tasks with their explicit project owner when available. */
+export function formatTasksList(tasks: Array<{ taskId: string; description: string; project?: string }>): string {
   if (tasks.length === 0) {
     return '- No pending tasks provided'
   }
-  return tasks.map((t) => `- [${t.taskId}] ${t.description}`).join('\n')
+  return tasks
+    .map((t) => `- [${t.taskId}]${t.project && t.project !== '-' ? ` [${t.project}]` : ''} ${t.description}`)
+    .join('\n')
 }
