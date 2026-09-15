@@ -212,13 +212,26 @@ For a local-only profile, the helper writes literal values using the following s
 
 `hrns qa auth` warns and asks for confirmation before writing a literal. Use `--auth qa-user` to override `defaultProfile`. Set a scenario's `authProfile` to another profile name or `none` when a stored plan mixes authenticated and anonymous behavior.
 
-Authentication values are resolved immediately before execution. Resolved values are never copied to plans, prompts, reports, execution memory, or persisted evidence. Curl sends its request configuration through stdin (`--config -`), so credentials do not appear in the curl process arguments. Curl request/response evidence, MCP response evidence, and CLI arguments/stdout/stderr are redacted both by credential field and by the exact resolved value. Review screenshots and application-specific output before sharing because an application can render secrets that are unrelated to the selected profile.
+### Planning with selected authentication
+
+`--auth <profile>` and `defaultProfile` apply before planning and execution. Planning and adaptive analysis receive only the selected profile name and mode; resolved credentials never enter prompts or plans.
+
+For `web`, `web-game`, `mobile-web`, `accessibility`, and browser portions of `full`, a selected non-`none` profile starts the browser context authenticated before initial navigation. Do not add login, sign-in, credential-entry, authentication-redirect, logout, or session-ending actions to those scenarios unless the scope explicitly tests that lifecycle. Omit scenario `authProfile` to inherit the selected profile.
+
+Use `authProfile: "none"` for guest, login, or other anonymous coverage. Keep those scenarios separate from authenticated scenarios. With no selected profile, include login only when the scope requires authenticated behavior, and keep login, redirects, protected navigation, and verification in one scenario.
+
+```text
+# CORRECT: selected cookie profile starts web scenario authenticated; planner omits login
+hrns qa run --auth admin --scope "Validate the protected admin area" --target http://127.0.0.1:3000 --profile web
+```
+
+Authentication values are resolved immediately before execution. Resolved values are never copied to plans, prompts, reports, execution memory, or persisted evidence. Curl sends its request configuration through stdin (`--config -`), so credentials do not appear in the curl process arguments. Curl request/response evidence, MCP response evidence, and CLI arguments/stdout/stderr are redacted both by credential field and by the exact resolved value; non-sensitive request body fields remain auditable. Review screenshots and application-specific output before sharing because an application can render secrets that are unrelated to the selected profile.
 
 ### Engine authentication boundaries
 
 | Engine | Supported authentication behavior | Unsupported or blocked behavior |
 | --- | --- | --- |
-| `api`, `security` | Curl applies `none`, `basic`, `bearer`, `api-key`, and `cookie` credentials to same-origin HTTP requests. | Redirects are not followed to another target origin. |
+| `api`, `security` | Curl applies `none`, `basic`, `bearer`, `api-key`, and `cookie` credentials to same-origin HTTP requests. A redirect to `/authentication/logout` is reported as rejected authentication so stale or invalid cookies can be refreshed. | Redirects are not followed to another target origin. |
 | `mcp` | HTTP MCP requests receive the resolved authentication headers. | Non-HTTP MCP targets remain unavailable. |
 | `web`, `web-game`, `mobile-web`, `accessibility`, `full` | Basic credentials are scoped to the configured target origin. Bearer/API-key headers are injected only into same-origin browser requests; cookies are installed through the browser context. | Header credentials are never attached to cross-origin browser requests. |
 | `cli` | Only explicitly mapped `environment` values are injected into the child process. Add mappings deliberately when the command expects a variable: `"environment": { "APP_TOKEN": { "source": "env", "name": "QA_USER_TOKEN" } }`. | An authenticated profile without at least one environment mapping is `BLOCKED` before the command starts; HTTP headers are not inferred for arbitrary CLIs. |

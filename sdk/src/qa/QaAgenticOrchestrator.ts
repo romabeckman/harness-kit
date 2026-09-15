@@ -41,11 +41,13 @@ export class QaAgenticOrchestrator {
 
   constructor(options: QaAgenticOrchestratorOptions) {
     const store = options.store ?? new QaRunStore(options.workspace)
+    const auth = new QaAuthConfigStore(options.workspace)
     this.#context = {
       workspace: options.workspace,
       runner: sessionScopedRunner(options.runner),
       store,
-      service: new QaService(store, options.drivers, options.targetProbe, new QaAuthConfigStore(options.workspace), options.authProfile),
+      service: new QaService(store, options.drivers, options.targetProbe, auth, options.authProfile),
+      authentication: auth.describeProfile(options.authProfile),
       settings: options.settings,
       model: options.model,
       effort: options.effort,

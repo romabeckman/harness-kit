@@ -28,6 +28,8 @@ describe('QaAuthConfigStore', () => {
     expect(store.resolve()).toMatchObject({ profile: 'user', mode: 'bearer', headers: { Authorization: 'Bearer secret-token' } })
     expect(store.resolve('admin')).toMatchObject({ profile: 'admin', mode: 'basic', headers: { Authorization: `Basic ${Buffer.from('qa-admin:secret-password').toString('base64')}` } })
     expect(store.describe()).toEqual([{ name: 'user', mode: 'bearer' }, { name: 'admin', mode: 'basic' }])
+    expect(store.describeProfile()).toEqual({ name: 'user', mode: 'bearer' })
+    expect(store.describeProfile('admin')).toEqual({ name: 'admin', mode: 'basic' })
   })
 
   it('resolves API key, cookie, and CLI environment without persisting their values', () => {
@@ -59,6 +61,18 @@ describe('QaAuthConfigStore', () => {
     const workspace = temporaryWorkspace()
     save(workspace, { schemaVersion: 1, profiles: { user: { mode: 'basic', username: 'roma', password: { source: 'literal', value: 'persisted-password' } } } })
     expect(new QaAuthConfigStore(workspace).resolve('user')).toMatchObject({ mode: 'basic', basic: { username: 'roma', password: 'persisted-password' } })
+  })
+
+  it('describes selected profiles without resolving or exposing secrets', () => {
+    const workspace = temporaryWorkspace()
+    save(workspace, { schemaVersion: 1, defaultProfile: 'admin', profiles: {
+      admin: { mode: 'cookie', name: 'PN', value: { source: 'literal', value: 'cookie-secret' } },
+    } })
+
+    const description = new QaAuthConfigStore(workspace).describeProfile()
+
+    expect(description).toEqual({ name: 'admin', mode: 'cookie' })
+    expect(JSON.stringify(description)).not.toContain('cookie-secret')
   })
 
   function temporaryWorkspace(): string {

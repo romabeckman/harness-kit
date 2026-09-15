@@ -9,6 +9,14 @@ export class QaAuthConfigStore {
   readonly #path: string
   constructor(workspace: string, private readonly environment: Readonly<Record<string, string | undefined>> = process.env) { this.#path = join(workspace, '.harness-kit', 'auth.json') }
   describe(): QaAuthProfileDescription[] { const config = this.load(); return config ? Object.entries(config.profiles).map(([name, profile]) => ({ name, mode: profile.mode })) : [] }
+  describeProfile(requestedProfile?: string): QaAuthProfileDescription | undefined {
+    const config = this.load()
+    const profileName = requestedProfile ?? config?.defaultProfile
+    if (!profileName) return undefined
+    if (profileName === 'none') return { name: 'none', mode: 'none' }
+    const profile = config?.profiles[profileName]
+    return profile ? { name: profileName, mode: profile.mode } : undefined
+  }
   addProfile(name: string, profile: Record<string, unknown>): void {
     if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) throw new Error('QA authentication profile name must start with a letter or number and contain only letters, numbers, dots, underscores, or hyphens')
     const config = this.load() ?? { schemaVersion: 1 as const, profiles: {} }

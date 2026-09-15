@@ -107,9 +107,22 @@ hrns qa exploratory --auth qa-user --target http://127.0.0.1:3000
 
 Omit `--auth` to use `defaultProfile`; interactive execution offers configured profiles. Resolved credentials are used only at execution time and are not copied into plans, prompts, reports, execution memory, or persisted evidence. `insecure` literals are the intentional exception in `auth.json` itself; do not copy them elsewhere.
 
+### Authentication-aware planning
+
+Resolve `--auth <profile>` or `defaultProfile` before planning. The planner and optional adaptive analysis receive only profile name and mode, never cookie, token, password, or other resolved values.
+
+For browser-capable profiles, a selected non-`none` profile starts each browser context authenticated before initial navigation. Omit login, sign-in, credential-entry, authentication-redirect, logout, and session-ending actions unless the scope explicitly tests that lifecycle. Omit scenario `authProfile` to inherit the selected profile. If an API target redirects an authenticated request to `/authentication/logout`, refresh the configured cookie or credentials and rerun.
+
+Set `authProfile: "none"` for guest or login scenarios and keep them separate from authenticated scenarios. With no selected profile, include login only when the scope requires it, keeping login, redirect, protected navigation, and verification in one scenario.
+
+```bash
+# CORRECT: cookie-backed admin profile skips login during web planning and execution
+hrns qa run --auth admin --scope "Validate the protected admin area" --target http://127.0.0.1:3000 --profile web
+```
+
 ### Authentication boundaries by engine
 
-- API and security requests use Curl with the selected Basic, Bearer, API-key, or Cookie credentials. Curl passes its transient request configuration through stdin, so credentials do not appear in process arguments. Request/response evidence is redacted by credential field and exact resolved value.
+- API and security requests use Curl with the selected Basic, Bearer, API-key, or Cookie credentials. Curl passes its transient request configuration through stdin, so credentials do not appear in process arguments. Request/response evidence is redacted by credential field and exact resolved value while non-sensitive body fields remain auditable.
 - MCP HTTP requests receive the selected authentication headers. MCP response evidence is redacted by field and exact resolved value.
 - Browser, mobile, and accessibility profiles scope Basic credentials to the configured target origin. Bearer/API-key headers are added only to same-origin requests, and cookies are installed through the browser context. Cross-origin requests never receive header credentials.
 - CLI profiles do not have a generic HTTP-header mapping. Add an explicit `environment` map for the variables expected by the command; otherwise an authenticated CLI scenario is `BLOCKED` before spawning. CLI arguments, stdout, and stderr are redacted before evidence is written.
@@ -161,7 +174,7 @@ Repeat `--scenario` for mandatory cases, such as valid, invalid, boundary, and a
 
 ## Manual interface check
 
-For a browser interface, validate the visible user path: navigate, click the controls, fill a form, submit it, and make sure the page remains operational. Browser flows save a final screenshot and fail if the page emits a JavaScript runtime error.
+For a browser interface, validate the visible user path: navigate, click the controls, fill a form, submit it, and make sure the page remains operational. Browser flows save a final screenshot and fail if the page emits a JavaScript runtime error. HTTP 5xx responses and post-load action or selector errors are `FAILED` and retain structured error/observation evidence; browser startup, target access, and cancellation remain `BLOCKED`.
 
 ```bash
 hrns qa run --report --scope "A guest can complete checkout" --scenario "A valid card completes payment" --target http://127.0.0.1:3000 --profile web
@@ -200,7 +213,7 @@ Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` direc
 | Run state | `state.json` | Final verdict, scenario status, reason, and timestamps. |
 | Generated report | `report.json`, `REPORT.html`, `REPORT.md`, `DEVELOPER-SCOPE.md` | `--report` creates JSON/Markdown; `hrns qa report --output` creates the selected artifact. Review results, evidence links, and open points. |
 | API evidence | `evidence/<nnn>-<scenario>/` | The `curl` request metadata and response body. Evidence folders use a zero-padded execution number, such as `001-create-order`. |
-| Browser evidence | `evidence/<nnn>-<scenario>/final.png` | Final browser screenshot after the planned user flow. |
+| Browser evidence | `evidence/<nnn>-<scenario>/` | `final.png` plus `observations.json`; execution failures also include `error.json` when the page was available. |
 
 | Verdict | Meaning | Daily action |
 | --- | --- | --- |
@@ -212,7 +225,7 @@ Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` direc
 ## Failure triage
 
 1. Run `hrns qa report --run <qa-run-id>` and identify the first failed or blocked scenario.
-2. Inspect response or screenshot evidence and verify the target is the intended version.
+2. Inspect response, screenshot, observation, and error evidence and verify the target is the intended version.
 3. For `BLOCKED`, confirm the target server, URL, Chromium, and authentication capability. Add an explicit CLI environment mapping when required; authenticated WebSocket scenarios remain unsupported.
 4. Run `hrns run --reset --run <qa-run-id>` to send only actionable results to development. Do not combine it with `--scope`.
 5. Preserve the run directory. Create a new QA run after a fix; do not overwrite failed evidence.
