@@ -76,6 +76,47 @@ describe('QA focused regressions', () => {
     expect(prompt).toContain('Do not return the JSON in your response.')
   })
 
+  it('tells the planner that a selected cookie profile starts the browser authenticated', async () => {
+    let prompt = ''
+    const runner: IAgentRunner = {
+      type: Runner.ANTIGRAVITY_CLI,
+      run: vi.fn(async (invocation) => {
+        prompt = invocation.prompt ?? ''
+        const outputPath = /<qa_output_file>([^<]+)<\/qa_output_file>/.exec(prompt)?.[1]
+        if (!outputPath) throw new Error('planning output path missing')
+        writeFileSync(join(workspace, outputPath), JSON.stringify({
+          ...plan(),
+          profile: 'web',
+          scenarios: [{
+            ...plan().scenarios[0],
+            profile: 'web',
+            actions: [{ type: 'navigate', value: '/' }],
+            assertions: [{ type: 'visible', selector: 'body' }],
+          }],
+        }))
+        return { raw: 'Plan written to file.' }
+      }),
+    }
+    const store = new QaRunStore(workspace)
+    const context: QaPhaseContext = {
+      workspace,
+      request: { scope: 'Open the protected admin area', target: 'http://127.0.0.1:8080', profile: 'web', authProfile: 'admin' },
+      runner,
+      store,
+      service: new QaService(store, []),
+      authentication: { name: 'admin', mode: 'cookie' },
+    }
+
+    await expect(new QaPlanningPhase().execute(context)).resolves.toBe('VALIDATION')
+
+    expect(prompt).toContain('<authentication_hint>')
+    expect(prompt).toContain('"name":"admin"')
+    expect(prompt).toContain('"mode":"cookie"')
+    expect(prompt).toContain('Browser request context starts authenticated')
+    expect(prompt).toContain('Do not plan login')
+    expect(prompt).not.toContain('Keep dependent authenticated steps (login, redirect, admin navigation, and verification) in one self-contained scenario.')
+  })
+
   it('escapes a raw NUL from invalid planner output before requesting repair', async () => {
     const prompts: string[] = []
     const runner: IAgentRunner = {

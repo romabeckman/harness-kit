@@ -8,7 +8,7 @@ import { QaAgenticOrchestrator } from '../QaAgenticOrchestrator'
 import { QaRunStore } from '../services/QaRunStore'
 import { HarnessSettings } from '../../settings/HarnessSettings'
 import { Runner } from '../../agent-runner/types'
-import { QaPhase, type QaPhaseHandler } from '../phases'
+import { QaPhase, type QaPhaseContext, type QaPhaseHandler } from '../phases'
 import { QaPlanningPhase } from '../phases/QaPlanningPhase'
 
 describe('QaAgenticOrchestrator', () => {
@@ -55,6 +55,45 @@ describe('QaAgenticOrchestrator', () => {
     await new QaAgenticOrchestrator({ workspace, runner, phases }).run()
 
     expect(invocations).toEqual([undefined, 'qa-cli-session', undefined, 'qa-cli-session'])
+  })
+
+  it('propagates safe selected authentication metadata into planning context', async () => {
+    mkdirSync(join(workspace, '.harness-kit'), { recursive: true })
+    writeFileSync(join(workspace, '.harness-kit', 'auth.json'), JSON.stringify({ schemaVersion: 1, profiles: {
+      admin: { mode: 'cookie', name: 'PN', value: { source: 'literal', value: 'runtime-secret' } },
+    } }), 'utf8')
+    let observed: QaPhaseContext | undefined
+    const plan = {
+      schemaVersion: 1 as const,
+      id: 'auth-context-plan',
+      version: 1,
+      target: 'http://127.0.0.1:3000',
+      profile: 'web' as const,
+      createdAt: '2026-09-14T00:00:00.000Z',
+      criteria: ['Protected page opens'],
+      scenarios: [{
+        id: '001-protected', criterionIds: ['criterion-1'], required: true, profile: 'web' as const,
+        actions: [{ type: 'navigate' as const, value: '/' }], assertions: [{ type: 'visible' as const, selector: 'body' }],
+      }],
+    }
+    const phases: QaPhaseHandler[] = [{
+      phase: QaPhase.PLANNING,
+      execute: async (context) => {
+        observed = context
+        context.plan = plan
+        context.run = {
+          schemaVersion: 1, id: 'auth-context-run', planId: plan.id, planVersion: plan.version,
+          target: plan.target, createdAt: plan.createdAt, completedAt: plan.createdAt, verdict: 'PASS', results: [],
+        }
+        return QaPhase.COMPLETED
+      },
+    }]
+    const runner: IAgentRunner = { run: vi.fn() }
+
+    await new QaAgenticOrchestrator({ workspace, runner, authProfile: 'admin', report: false, phases, runtime: { prepare: async () => undefined } }).run({ target: plan.target, profile: plan.profile })
+
+    expect(observed?.authentication).toEqual({ name: 'admin', mode: 'cookie' })
+    expect(JSON.stringify(observed?.authentication)).not.toContain('runtime-secret')
   })
 
   it('runs LLM planning, deterministic human-style execution, then LLM reporting', async () => {

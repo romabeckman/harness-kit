@@ -212,6 +212,19 @@ For a local-only profile, the helper writes literal values using the following s
 
 `hrns qa auth` warns and asks for confirmation before writing a literal. Use `--auth qa-user` to override `defaultProfile`. Set a scenario's `authProfile` to another profile name or `none` when a stored plan mixes authenticated and anonymous behavior.
 
+### Planning with selected authentication
+
+`--auth <profile>` and `defaultProfile` apply before planning and execution. Planning and adaptive analysis receive only the selected profile name and mode; resolved credentials never enter prompts or plans.
+
+For `web`, `web-game`, `mobile-web`, `accessibility`, and browser portions of `full`, a selected non-`none` profile starts the browser context authenticated before initial navigation. Do not add login, sign-in, credential-entry, or authentication-redirect actions to those scenarios. Omit scenario `authProfile` to inherit the selected profile.
+
+Use `authProfile: "none"` for guest, login, or other anonymous coverage. Keep those scenarios separate from authenticated scenarios. With no selected profile, include login only when the scope requires authenticated behavior, and keep login, redirects, protected navigation, and verification in one scenario.
+
+```text
+# CORRECT: selected cookie profile starts web scenario authenticated; planner omits login
+hrns qa run --auth admin --scope "Validate the protected admin area" --target http://127.0.0.1:3000 --profile web
+```
+
 Authentication values are resolved immediately before execution. Resolved values are never copied to plans, prompts, reports, execution memory, or persisted evidence. Curl sends its request configuration through stdin (`--config -`), so credentials do not appear in the curl process arguments. Curl request/response evidence, MCP response evidence, and CLI arguments/stdout/stderr are redacted both by credential field and by the exact resolved value. Review screenshots and application-specific output before sharing because an application can render secrets that are unrelated to the selected profile.
 
 ### Engine authentication boundaries

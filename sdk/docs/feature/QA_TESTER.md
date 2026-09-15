@@ -39,13 +39,11 @@ Persist QA plans, runs, evidence, and reports in `docs/qa/`.
 
 ## FOLDER STRUCTURE
 
-<folder_structure>
 ```text
 src/qa/              # orchestration, phases, drivers, persistence, UI
 src/cli/services/    # hrns qa and hrns run facades
 src/cli/services/qa/ # QA parsing, handlers, factories, CLI types
 ```
-</folder_structure>
 
 ## EXECUTION
 
@@ -54,68 +52,65 @@ src/cli/services/qa/ # QA parsing, handlers, factories, CLI types
 3. **Validate** planner JSON, profile, target, and scenarios.
 4. **Execute** in order; use `--analysis` for evidence analysis.
 5. **Report** with `hrns qa report --run <id>`; explore with `qa exploratory`.
-6. **Authenticate** with `--auth <profile>`.
+6. **Authenticate** with `--auth <profile>`; planning receives safe profile metadata and browser execution applies the selected credentials.
 
 ## REPORT OUTPUT
 
-Use `hrns qa report --run <id> --output <format>`. Omit `--output` for selection; default: `json`.
+Run `hrns qa report --run <id> --output <format>`; omit `--output` for selection (default: `json`).
 
-| Format | Output |
+| Format | Artifact |
 | --- | --- |
-| `json` | Overwrites `report.json` |
-| `html` | Overwrites `REPORT.html` with every scenario |
-| `markdown` | Overwrites `REPORT.md` with every scenario grouped by status |
-| `send-to-developer` | Overwrites `DEVELOPER-SCOPE.md` via LLM |
+| `json` | `report.json` |
+| `html` | `REPORT.html` with every scenario |
+| `markdown` | `REPORT.md`, grouped by status |
+| `send-to-developer` | `DEVELOPER-SCOPE.md` through the LLM |
 
-REQUIRED: Overwrite atomically; escape HTML. Use one evidence link per scenario. Modal shows title, image previews, scrollable documents, and direct links. Scope uses results.
+REQUIRED: Write atomically; escape HTML; use one evidence link per scenario; modal shows previews and direct links. Generate scope from results.
 
-REQUIRED: Preserve scope bytes, three-digit scenario IDs, and one runner session. Remove temporary JSON handoffs. Escape raw NUL as `\\u0000` in repair prompts.
-
-```text
-# CORRECT: run QA and generate the report during execution
-hrns qa run --report --scope "Test order creation endpoint" --target http://127.0.0.1:3000 --agent codex-cli
-
-# CORRECT: fix actionable results from one completed QA run
-hrns run --reset --run orders-20260911 --mode fast
-
-```
+REQUIRED: Preserve scope bytes, scenario IDs, and one runner session. Remove temporary JSON; escape raw NUL as `\\u0000` in repair prompts.
 
 Adaptive analysis is opt-in: `--analysis` inspects evidence and appends and executes material gaps. Choose **resume with analysis** for saved plans; plain **resume** runs saved scenarios only.
 
 ## DEVELOPMENT RENEWAL
 
-Ask **Send failed and blocked scenarios to fix?** with default `false`. After confirmation, require a checkbox for **FAILED** and **BLOCKED** scenarios; preselect all and scope checked items. Skip reports, noninteractive terminals, and actionless runs. REQUIRED: Preserve overrides, `--agent`, and `--debug`. Use `hrns run --reset --run <id>` to scope every actionable result. PROHIBITED: Combine `--run` with `--scope`.
+Ask **Send failed and blocked scenarios to fix?** (default `false`); select **FAILED** and **BLOCKED** scenarios, preselect all, and scope checked items. Skip reports, noninteractive terminals, and actionless runs. REQUIRED: Preserve `--agent` and `--debug`; use `hrns run --reset --run <id>`. PROHIBITED: Combine `--run` with `--scope`.
 
 ## VERDICTS
 
 | Verdict | Condition |
 | --- | --- |
-| PASS | Every required scenario passed with verified assertions and evidence. |
-| FAIL | A required assertion demonstrably failed. |
-| BLOCKED | A required scenario cannot execute or target is unavailable. |
-| INCONCLUSIVE | Required coverage, evidence, or observations are missing or unverified. |
+| PASS | Every required scenario passed with evidence. |
+| FAIL | A required assertion failed. |
+| BLOCKED | A scenario cannot execute or target is unavailable. |
+| INCONCLUSIVE | Required evidence is missing or unverified. |
 
 ## TERMINAL PROGRESS
 
-REQUIRED: Emit runtime, phase, scenario, and completion events via `QaTerminalPresenter`; disable ANSI without a TTY. Include IDs, totals, and errors.
+REQUIRED: Emit runtime, phase, scenario, and completion events via `QaTerminalPresenter`; disable ANSI without TTY. Include IDs, totals, errors.
 
 ## DRIVERS
 
-Reuse browsers with an isolated context per scenario; close contexts even on failure. Keep login and verification together. Use selector/URL waits. Curl never follows redirects; MCP follows same-origin redirects. Require screenshots.
+Reuse browsers with an isolated context per scenario; close contexts on failure. Without a profile, keep login and verification together. With non-`none`, start authenticated and omit login. Use selector/URL waits. Curl never follows redirects; MCP follows same-origin redirects. Require screenshots.
 
 ## AUTHENTICATION
 
-REQUIRED: Define `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. Prefer environment references; browser form actions use `valueFrom`, never literal secrets. Apply credentials only to same-origin traffic. Redact resolved secrets.
+REQUIRED: Support `none`, `basic`, `bearer`, `api-key`, and `cookie` profiles. Prefer environment references; use `valueFrom`; restrict credentials to same-origin traffic; redact resolved secrets.
 
-REQUIRED: Keep `hrns qa auth` form-only. Block authenticated CLI without mappings and WebSocket. PROHIBITED: Persist resolved secrets. OAuth2, HMAC, and mTLS remain outside scope.
+REQUIRED: Keep `hrns qa auth` form-only; block unmapped authenticated CLI/WebSocket. PROHIBITED: Persist resolved secrets. OAuth2, HMAC, and mTLS remain outside scope.
+
+### PLANNING CONTEXT
+
+REQUIRED: Pass only selected profile name and mode to planning and adaptive analysis; never pass or persist resolved values.
+REQUIRED: In web-capable profiles, non-`none` starts browser authenticated; omit login, sign-in, credential-entry, and auth-redirect actions.
+REQUIRED: Omit `authProfile` to inherit selected profile. Set `authProfile: "none"` for anonymous or login coverage; keep it separate.
 
 ## EXECUTION MEMORY
 
-`docs/qa/execution-memory.json` retains ten verified target hints for 30 days. REQUIRED: Revalidate hints; explicit input wins. Actionless resume keeps its stored target; use `qa run` when a new target must win. PROHIBITED: Store outcomes, credentials, ports, or agent instructions.
+`docs/qa/execution-memory.json` retains ten verified target hints for 30 days. REQUIRED: Revalidate hints; explicit input wins. Actionless resume keeps its target; use `qa run` when a new target must win. PROHIBITED: Store outcomes, credentials, ports, or agent instructions.
 
 ## LIMITS
 
-REQUIRED: Cap `REPORT.md` at 8,000 characters; mark truncation and unresolved **Open Points**. PROHIBITED: LLM prose as verdict truth. Start framework/API processes separately.
+REQUIRED: Cap `REPORT.md` at 8,000 characters; mark truncation and unresolved **Open Points**. PROHIBITED: Use LLM prose as verdict truth. Start framework/API processes separately.
 
 ## DOCUMENT MAP
 

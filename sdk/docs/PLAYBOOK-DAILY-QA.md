@@ -107,6 +107,19 @@ hrns qa exploratory --auth qa-user --target http://127.0.0.1:3000
 
 Omit `--auth` to use `defaultProfile`; interactive execution offers configured profiles. Resolved credentials are used only at execution time and are not copied into plans, prompts, reports, execution memory, or persisted evidence. `insecure` literals are the intentional exception in `auth.json` itself; do not copy them elsewhere.
 
+### Authentication-aware planning
+
+Resolve `--auth <profile>` or `defaultProfile` before planning. The planner and optional adaptive analysis receive only profile name and mode, never cookie, token, password, or other resolved values.
+
+For browser-capable profiles, a selected non-`none` profile starts each browser context authenticated before initial navigation. Omit login, sign-in, credential-entry, and authentication-redirect actions. Omit scenario `authProfile` to inherit the selected profile.
+
+Set `authProfile: "none"` for guest or login scenarios and keep them separate from authenticated scenarios. With no selected profile, include login only when the scope requires it, keeping login, redirect, protected navigation, and verification in one scenario.
+
+```bash
+# CORRECT: cookie-backed admin profile skips login during web planning and execution
+hrns qa run --auth admin --scope "Validate the protected admin area" --target http://127.0.0.1:3000 --profile web
+```
+
 ### Authentication boundaries by engine
 
 - API and security requests use Curl with the selected Basic, Bearer, API-key, or Cookie credentials. Curl passes its transient request configuration through stdin, so credentials do not appear in process arguments. Request/response evidence is redacted by credential field and exact resolved value.

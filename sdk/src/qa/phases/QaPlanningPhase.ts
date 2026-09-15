@@ -1,6 +1,7 @@
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../../json-extraction/types'
 import type { AgentSession } from '../../agent-runner/types'
+import type { QaAuthProfileDescription } from '../auth/types'
 import { formatQaScenarioId, type QaBrowserAction, type QaBrowserAssertion, type QaBrowserWaitState, type QaCliRequest, type QaHttpRequest, type QaMcpRequest, type QaPlan, type QaProfile, type QaScenario, type QaScenarioCategory, type QaWebSocketRequest } from '../types'
 import { buildQaAgentFileOutputInstructions, createQaAgentFileOutput, prepareQaAgentFileOutput, readQaAgentFileOutput, removeQaAgentFileOutput, type QaAgentFileOutput } from '../utils/QaAgentFileOutput'
 import { QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
@@ -15,6 +16,24 @@ const MAX_KEY_PRESSES = 500
 const MAX_WAIT_MS = 30_000
 const BROWSER_WAIT_STATES: QaBrowserWaitState[] = ['attached', 'detached', 'visible', 'hidden']
 const SAFE_ENVIRONMENT_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/
+
+export function buildQaAuthenticationGuidance(authentication?: QaAuthProfileDescription): string[] {
+  const selected = authentication ?? { name: 'none', mode: 'none' as const }
+  const hint = `<authentication_hint>${JSON.stringify(selected)}</authentication_hint>`
+  if (selected.mode === 'none') {
+    return [
+      hint,
+      'No authentication profile pre-authenticates the browser. Plan login steps only when the scope requires authenticated behavior.',
+      'Keep dependent authenticated steps (login, redirect, admin navigation, and verification) in one self-contained scenario. Do not assume page position from another scenario.',
+    ]
+  }
+  return [
+    hint,
+    `Authentication profile "${selected.name}" uses ${selected.mode}. Browser request context starts authenticated before initial navigation.`,
+    'Do not plan login, sign-in, credential-entry, or authentication redirect actions for this run.',
+    'If the scope explicitly tests login or anonymous behavior, set scenario authProfile to "none" and keep that scenario separate from authenticated scenarios.',
+  ]
+}
 
 export class QaPlanningPhase implements QaPhaseHandler {
   readonly phase = QaPhase.PLANNING
@@ -105,7 +124,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
       'Cover functional, negative, boundary, security, accessibility, and resilience risks when relevant. Try malformed input, unauthorized access, unsafe navigation, repeated actions, and recoverable failures without leaving the configured target.',
       'Treat user-supplied scenarios as a required baseline. Add only scenarios needed for material coverage gaps. Avoid duplicate scenarios and implementation-detail checks.',
       'For APIs, define real HTTP requests. For interfaces, define human navigation, click, fill, press, deterministic readiness waits, and resize actions. For web games, start a session and include meaningful player controls.',
-      'Keep dependent authenticated steps (login, redirect, admin navigation, and verification) in one self-contained scenario. Do not assume page position from another scenario.',
+      ...buildQaAuthenticationGuidance(context.authentication),
       'Use only these browser action JSON shapes: {"type":"navigate","url":"http://..."}, {"type":"click","selector":"..."}, {"type":"fill","selector":"...","value":"..."}, {"type":"fill","selector":"...","valueFrom":"QA_USERNAME"}, {"type":"press","key":"ArrowLeft","count":1}, {"type":"wait","milliseconds":500}, {"type":"waitForSelector","selector":"[data-ready]","state":"visible","timeout":10000}, {"type":"waitForUrl","value":"/admin","timeout":10000}, {"type":"resize","width":320,"height":800}.',
       'Use valueFrom for credentials or other configured environment values. Never place secrets in literal fill values. Use waitForSelector or waitForUrl after asynchronous navigation; use fixed wait only when no observable readiness signal exists.',
       'Do not invent browser action types or property names. Omit count only when one key press is enough. Omit state to use visible and omit timeout to use the driver default.',
@@ -122,6 +141,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
       'criterionIds reference criteria, not scenario numbers: if criteria has N entries, use only criterion-1 through criterion-N and reuse them across scenarios as needed.',
       'Prefix every scenario id by execution order with three digits: 001-<scenario>, 002-<scenario>, and so on.',
       'When no scenario is supplied, derive complete scenarios from the open scope and inspected project.',
+      'Omit scenario authProfile to inherit the selected authentication profile. Set authProfile to "none" for anonymous scenarios. Never invent authentication profile names.',
       ...buildQaAgentFileOutputInstructions(outputFile, 'the QA plan'),
       '{"id":"safe-plan-id","target":"http://127.0.0.1:3000","profile":"api|web|web-game|mobile-web|accessibility|mcp|cli|websocket|security|full","criteria":["observable success condition"],"scenarios":[{"id":"001-safe-scenario-id","criterionIds":["criterion-1"],"required":true,"profile":"api","category":"functional|negative|boundary|security|accessibility|resilience","description":"human action and expected result","request":{"method":"GET","path":"/health","expectedStatus":200}}]}',
       'Include only the request shape owned by the selected profile.',

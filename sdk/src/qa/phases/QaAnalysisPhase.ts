@@ -1,7 +1,7 @@
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../../json-extraction/types'
 import { isDeepStrictEqual } from 'node:util'
-import { QaPlanningPhase } from './QaPlanningPhase'
+import { buildQaAuthenticationGuidance, QaPlanningPhase } from './QaPlanningPhase'
 import { QaPlanValidator } from '../services/QaPlanValidator'
 import { buildQaAgentFileOutputInstructions, createQaAgentFileOutput, prepareQaAgentFileOutput, readQaAgentFileOutput, removeQaAgentFileOutput } from '../utils/QaAgentFileOutput'
 import { nextQaReportPhase, QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
@@ -65,6 +65,7 @@ export class QaAnalysisPhase implements QaPhaseHandler {
       'Inspect the executed plan, runtime results, referenced evidence files, and project. Decide whether important observable risks remain untested.',
       'Consider functional, negative, boundary, security, accessibility, resilience, and state-transition coverage.',
       'Use runtime evidence as verdict truth. Source code may identify a risk but cannot prove a pass, failure, or bug.',
+      ...buildQaAuthenticationGuidance(context.authentication),
       'Return complete when no material executable gap remains. Do not add speculative, duplicate, low-value, or implementation-detail scenarios.',
       'For a material gap, preserve every existing criterion and scenario unchanged. Preserve plan id, target, and profile. Append only executable criteria and scenarios justified by that gap.',
       'Stay within the configured target. Reuse the planning action, assertion, profile, category, criterionId, scenario ID, and budget contracts.',

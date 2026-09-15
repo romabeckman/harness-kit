@@ -1,6 +1,7 @@
 import type { AgentSession } from '../../agent-runner/types'
 import type { IAgentRunner } from '../../agent-runner/IAgentRunner'
 import type { QaAgenticRequest, QaFinalReport, QaPlan, QaRun } from '../types'
+import type { QaAuthProfileDescription } from '../auth/types'
 import type { QaRunStore } from '../services/QaRunStore'
 import type { QaService } from '../services/QaService'
 import type { HarnessSettings } from '../../settings/HarnessSettings'
@@ -21,6 +22,8 @@ export enum QaPhase {
 export interface QaPhaseContext {
   workspace: string
   request: QaAgenticRequest
+  /** Safe authentication metadata for planning; never contains resolved secrets. */
+  authentication?: QaAuthProfileDescription
   runner: IAgentRunner
   store: QaRunStore
   service: QaService
