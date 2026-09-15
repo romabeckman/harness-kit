@@ -349,22 +349,26 @@ describe('PromptHelpers', () => {
   describe('buildComplexityRules', () => {
     it('returns LOW override rules when complexity is LOW', () => {
       const result = buildComplexityRules('LOW' as any)
-      expect(result).toContain("- COMPLEXITY OVERRIDE: Classify as 'LOW' — do not re-evaluate scope complexity.")
-      expect(result).toContain('- For \'LOW\': Keep analysis concise, reuse established patterns, and produce only the required 003–004 artifacts. Do not produce 001–002 artifacts.')
+      expect(result).toContain('- Keep analysis concise, reuse established patterns, and produce only 003–004 artifacts.')
+      expect(result.join('\n')).not.toContain("For 'LOW'")
+      expect(result.join('\n')).not.toContain('Use LOW complexity')
     })
 
     it('returns HIGH override rules when complexity is HIGH', () => {
       const result = buildComplexityRules('HIGH' as any)
-      expect(result).toContain("- COMPLEXITY OVERRIDE: Classify as 'HIGH' — do not re-evaluate scope complexity.")
-      expect(result).toContain('- For \'HIGH\': Give additional depth to integrations, failure modes, security boundaries, concurrency, and compatibility risks while producing all required 001–004 artifacts.')
-      expect(result).toContain("- For 'HIGH': Before writing specifications, resolve refinement questions from scope and project evidence; record each answer in every applicable `003-${PROJECT_NAME}-tactical-design.md`.")
+      expect(result).toContain('- Deepen analysis of integrations, failure modes, security boundaries, concurrency, and compatibility risks.')
+      expect(result).toContain('- Resolve refinement questions from scope and project evidence; record each answer in every applicable `003-${PROJECT_NAME}-tactical-design.md`.')
+      expect(result.join('\n')).not.toContain("For 'HIGH'")
+      expect(result.join('\n')).not.toContain('Use HIGH complexity')
     })
 
     it('returns AUTO evaluation rules when complexity is AUTO or undefined', () => {
       const resultAuto = buildComplexityRules('AUTO' as any)
-      expect(resultAuto[0]).toContain("Evaluate scope complexity between 'LOW' and 'HIGH'")
+      expect(resultAuto[0]).toContain('Evaluate complexity from requirement clarity')
+      expect(resultAuto).toContain('- Produce only 003–004 artifacts by default.')
+      expect(resultAuto).toContain('- Produce 001–002 artifacts when <project_paths> contains more than one project or the scope has many integrations across modules and multiple layers.')
       const resultUndef = buildComplexityRules(undefined)
-      expect(resultUndef[0]).toContain("Evaluate scope complexity between 'LOW' and 'HIGH'")
+      expect(resultUndef[0]).toContain('Evaluate complexity from requirement clarity')
     })
   })
 
