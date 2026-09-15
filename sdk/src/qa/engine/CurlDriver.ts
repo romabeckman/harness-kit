@@ -42,6 +42,7 @@ export class CurlDriver implements QaDriver {
     const rawBody = existsSync(responsePath) ? readFileSync(responsePath, 'utf8') : ''
     const rawHeaders = existsSync(responseHeadersPath) ? readFileSync(responseHeadersPath, 'utf8') : ''
     const failures = evaluateResponse(request, rawBody, rawHeaders)
+    const authenticationFailure = authenticationRedirectReason(rawHeaders, auth)
     if (rawHeaders) writeFileSync(responseHeadersPath, redactHeaders(rawHeaders, auth), 'utf8')
     if (rawBody) {
       try {
@@ -62,7 +63,7 @@ export class CurlDriver implements QaDriver {
       required: scenario.required,
       status: status === request.expectedStatus && failures.length === 0 ? 'PASSED' : 'FAILED',
       observedStatus: status,
-      reason: status !== request.expectedStatus ? `Expected HTTP ${request.expectedStatus}; observed HTTP ${status}` : failures[0],
+      reason: authenticationFailure ?? (status !== request.expectedStatus ? `Expected HTTP ${request.expectedStatus}; observed HTTP ${status}` : failures[0]),
       evidence,
     }
   }
@@ -142,14 +143,44 @@ function findJsonMismatch(expected: unknown, actual: unknown, path = '$'): strin
 }
 
 function redactRequest(value: unknown, auth?: QaResolvedAuth, key = ''): unknown {
-  if (/(authorization|cookie|password|token|secret|api[-_]?key)/i.test(key)) return '[REDACTED]'
+  if (isSensitiveKey(key)) return '[REDACTED]'
   if (typeof value === 'string' && key === 'body') {
-    try { return redactRequest(JSON.parse(value), auth) } catch { return '[REDACTED]' }
+    return redactBody(value, auth)
   }
   if (typeof value === 'string') return redactSecrets(value, auth)
   if (Array.isArray(value)) return value.map((item) => redactRequest(item, auth))
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, redactRequest(item, auth, name)]))
   return value
+}
+
+function redactBody(value: string, auth?: QaResolvedAuth): string {
+  try {
+    return JSON.stringify(redactRequest(JSON.parse(value), auth))
+  } catch {
+    return value.split('&').map((part) => {
+      const separator = part.indexOf('=')
+      if (separator < 0) return redactSecrets(part, auth)
+      const encodedName = part.slice(0, separator)
+      const name = decodeFormComponent(encodedName)
+      if (isSensitiveKey(name)) return `${encodedName}=[REDACTED]`
+      return `${encodedName}=${redactSecrets(part.slice(separator + 1), auth)}`
+    }).join('&')
+  }
+}
+
+function decodeFormComponent(value: string): string {
+  try { return decodeURIComponent(value.replace(/\+/g, ' ')) } catch { return value }
+}
+
+function isSensitiveKey(key: string): boolean {
+  return /(authorization|cookie|password|token|secret|api[-_]?key)/i.test(key)
+}
+
+function authenticationRedirectReason(rawHeaders: string, auth?: QaResolvedAuth): string | undefined {
+  if (!auth || auth.mode === 'none') return undefined
+  const location = parseHeaders(rawHeaders).location
+  if (!location || !/\/authentication\/logout(?:[/?#]|$)/i.test(location)) return undefined
+  return `Authentication profile "${auth.profile}" was rejected by the target (redirected to /authentication/logout); refresh the cookie or credentials and rerun.`
 }
 
 function redactHeaders(raw: string, auth?: QaResolvedAuth): string {

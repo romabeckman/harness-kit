@@ -101,7 +101,7 @@ REQUIRED: Keep `hrns qa auth` form-only; block unmapped authenticated CLI/WebSoc
 ### PLANNING CONTEXT
 
 REQUIRED: Pass only selected profile name and mode to planning and adaptive analysis; never pass or persist resolved values.
-REQUIRED: In web-capable profiles, non-`none` starts browser authenticated; omit login, sign-in, credential-entry, and auth-redirect actions.
+REQUIRED: In web-capable profiles, non-`none` starts browser authenticated; omit login, sign-in, credential-entry, auth-redirect, logout, and session-ending actions unless the scope explicitly tests that lifecycle.
 REQUIRED: Omit `authProfile` to inherit selected profile. Set `authProfile: "none"` for anonymous or login coverage; keep it separate.
 
 ## EXECUTION MEMORY

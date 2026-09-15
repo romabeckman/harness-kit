@@ -30,7 +30,7 @@ export function buildQaAuthenticationGuidance(authentication?: QaAuthProfileDesc
   return [
     hint,
     `Authentication profile "${selected.name}" uses ${selected.mode}. Browser request context starts authenticated before initial navigation.`,
-    'Do not plan login, sign-in, credential-entry, or authentication redirect actions for this run.',
+    'Do not plan login, sign-in, credential-entry, authentication redirect, logout, or session-ending actions for this run unless the scope explicitly tests that lifecycle.',
     'If the scope explicitly tests login or anonymous behavior, set scenario authProfile to "none" and keep that scenario separate from authenticated scenarios.',
   ]
 }

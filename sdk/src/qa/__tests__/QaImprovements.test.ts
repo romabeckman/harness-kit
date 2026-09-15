@@ -114,6 +114,7 @@ describe('QA focused regressions', () => {
     expect(prompt).toContain('"mode":"cookie"')
     expect(prompt).toContain('Browser request context starts authenticated')
     expect(prompt).toContain('Do not plan login')
+    expect(prompt).toContain('logout')
     expect(prompt).not.toContain('Keep dependent authenticated steps (login, redirect, admin navigation, and verification) in one self-contained scenario.')
   })
 

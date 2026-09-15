@@ -111,7 +111,7 @@ Omit `--auth` to use `defaultProfile`; interactive execution offers configured p
 
 Resolve `--auth <profile>` or `defaultProfile` before planning. The planner and optional adaptive analysis receive only profile name and mode, never cookie, token, password, or other resolved values.
 
-For browser-capable profiles, a selected non-`none` profile starts each browser context authenticated before initial navigation. Omit login, sign-in, credential-entry, and authentication-redirect actions. Omit scenario `authProfile` to inherit the selected profile.
+For browser-capable profiles, a selected non-`none` profile starts each browser context authenticated before initial navigation. Omit login, sign-in, credential-entry, authentication-redirect, logout, and session-ending actions unless the scope explicitly tests that lifecycle. Omit scenario `authProfile` to inherit the selected profile. If an API target redirects an authenticated request to `/authentication/logout`, refresh the configured cookie or credentials and rerun.
 
 Set `authProfile: "none"` for guest or login scenarios and keep them separate from authenticated scenarios. With no selected profile, include login only when the scope requires it, keeping login, redirect, protected navigation, and verification in one scenario.
 
@@ -122,7 +122,7 @@ hrns qa run --auth admin --scope "Validate the protected admin area" --target ht
 
 ### Authentication boundaries by engine
 
-- API and security requests use Curl with the selected Basic, Bearer, API-key, or Cookie credentials. Curl passes its transient request configuration through stdin, so credentials do not appear in process arguments. Request/response evidence is redacted by credential field and exact resolved value.
+- API and security requests use Curl with the selected Basic, Bearer, API-key, or Cookie credentials. Curl passes its transient request configuration through stdin, so credentials do not appear in process arguments. Request/response evidence is redacted by credential field and exact resolved value while non-sensitive body fields remain auditable.
 - MCP HTTP requests receive the selected authentication headers. MCP response evidence is redacted by field and exact resolved value.
 - Browser, mobile, and accessibility profiles scope Basic credentials to the configured target origin. Bearer/API-key headers are added only to same-origin requests, and cookies are installed through the browser context. Cross-origin requests never receive header credentials.
 - CLI profiles do not have a generic HTTP-header mapping. Add an explicit `environment` map for the variables expected by the command; otherwise an authenticated CLI scenario is `BLOCKED` before spawning. CLI arguments, stdout, and stderr are redacted before evidence is written.
