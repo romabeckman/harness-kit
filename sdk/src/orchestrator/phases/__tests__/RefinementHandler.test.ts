@@ -74,6 +74,14 @@ describe('RefinementHandler', () => {
     expect(mockContext.invokeAgent.mock.calls[0][0].skill).toBeUndefined()
     expect(mockContext.invokeAgent.mock.calls[1][0].agent).toBe('harness-kit:software-architect')
     expect(mockContext.invokeAgent.mock.calls[1][0].skill).toBeUndefined()
+    expect(mockContext.invokeAgent.mock.calls[0][0].phaseKey).toBe('refinement_questions')
+    expect(mockContext.invokeAgent.mock.calls[1][0].phaseKey).toBe('refinement_consolidation')
+
+    const consolidationPrompt = mockContext.invokeAgent.mock.calls[1][0].prompt as string
+    expect(consolidationPrompt).toContain('<refinement_evidence>')
+    expect(consolidationPrompt).toContain('"recommendation": "R1"')
+    expect(consolidationPrompt).toContain('"context": "C1"')
+    expect(consolidationPrompt).toContain('"answer": "R1"')
 
     const questionsPath = join(productDir, 'QUESTIONS.json')
     expect(existsSync(questionsPath)).toBe(true)

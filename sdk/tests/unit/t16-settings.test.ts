@@ -88,6 +88,29 @@ describe('T16 — HarnessSettings', () => {
     expect(settings.resolve('claude', 'non-existent-phase')).toEqual({})
   })
 
+  it('falls back to legacy parent phase settings for new communication phase keys', () => {
+    const globalDir = join(tmpDir, 'global-config')
+    const globalFile = join(globalDir, 'harness-kit', 'settings.json')
+    process.env.HARNESS_SETTINGS_PATH = globalFile
+    mkdirSync(join(globalDir, 'harness-kit'), { recursive: true })
+    writeFileSync(globalFile, JSON.stringify({
+      codex: {
+        phases: {
+          planning: { model: 'planning-model', effort: 'high', timeoutMs: 111 },
+          memory: { model: 'memory-model', effort: 'low', timeoutMs: 222 },
+        },
+      },
+    }))
+
+    const settings = HarnessSettings.load(tmpDir)
+
+    expect(settings.resolve('codex', 'refinement_questions')).toEqual({ model: 'planning-model', effort: 'high', timeoutMs: 111 })
+    expect(settings.resolve('codex', 'refinement_consolidation')).toEqual({ model: 'planning-model', effort: 'high', timeoutMs: 111 })
+    expect(settings.resolve('codex', 'deploy_message')).toEqual({ model: 'memory-model', effort: 'low', timeoutMs: 222 })
+    expect(settings.getTimeoutMs('codex', 'refinement_questions')).toBe(111)
+    expect(settings.getTimeoutMs('codex', 'deploy_message')).toBe(222)
+  })
+
   it('resolves codex default settings', () => {
     const globalDir = join(tmpDir, 'global-config')
     const globalFile = join(globalDir, 'harness-kit', 'settings.json')
@@ -99,15 +122,27 @@ describe('T16 — HarnessSettings', () => {
       model: 'gpt-5.6-sol',
       effort: 'medium',
     })
+    expect(settings.resolve('codex', 'refinement_questions')).toEqual({
+      model: 'gpt-5.6-sol',
+      effort: 'low',
+    })
+    expect(settings.resolve('codex', 'refinement_consolidation')).toEqual({
+      model: 'gpt-5.6-sol',
+      effort: 'low',
+    })
     expect(settings.resolve('codex', 'implementation')).toEqual({
-      model: 'gpt-5.6-terra',
-      effort: 'high',
+      model: 'gpt-5.6-luna',
+      effort: 'xhigh',
     })
     expect(settings.resolve('codex', 'qa_planning')).toEqual({
       model: 'gpt-5.6-luna',
       effort: 'xhigh',
     })
     expect(settings.resolve('codex', 'qa_reporting')).toEqual({
+      model: 'gpt-5.6-luna',
+      effort: 'xhigh',
+    })
+    expect(settings.resolve('codex', 'deploy_message')).toEqual({
       model: 'gpt-5.6-luna',
       effort: 'xhigh',
     })

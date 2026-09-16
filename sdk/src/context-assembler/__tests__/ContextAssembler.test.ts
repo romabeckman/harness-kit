@@ -38,7 +38,7 @@ describe('ContextAssembler', () => {
       featureId: '1',
       status: 'SUCCESS',
       metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 },
-      modifiedFiles: [],
+      modifiedFiles: ['src/example.ts'],
       developerHandoff: 'Implemented typed handoff.',
       reworksCount: 0,
     }))
@@ -46,12 +46,20 @@ describe('ContextAssembler', () => {
     expect(payload.featureId).toBe('1')
     expect(payload.domain).toBe('domain')
     expect(payload.developerHandoff).toBe('Implemented typed handoff.')
+    expect(payload.tddSummary).toEqual({
+      status: 'SUCCESS',
+      metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 },
+      modifiedFiles: ['src/example.ts'],
+      reworksCount: 0,
+      developerHandoff: 'Implemented typed handoff.',
+    })
     rmSync(workingDir, { recursive: true, force: true })
   })
 
   it('should build phase E payload', () => {
     const feature = { domain: 'domain', title: 'scope desc' }
-    const payload = ContextAssembler.buildMemoryPayload(['path1'], 'workdir')
+    const payload = ContextAssembler.buildMemoryPayload(['path1'], 'workdir', undefined, ['Decision row'])
+    expect(payload.recentDecisions).toEqual(['Decision row'])
   })
 
   it('should flatten steering rules', () => {

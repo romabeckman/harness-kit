@@ -15,8 +15,6 @@ import {
 } from '../utils/PromptHelpers'
 import { getProductDir, getSpecsDir } from '../utils/PhaseFileUtils'
 
-const INLINE_THRESHOLD = 5000
-
 export class PlanningHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.PLANNING) {
@@ -127,6 +125,13 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const contextMapFile = join(payload.workingDir, '002-context-map.md');
     const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
     const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
+    const complexityPrompt = buildComplexityRules(complexity, {
+      outputDirectory: payload.workingDir,
+      problemSpaceFile,
+      contextMapFile,
+      tacticalDesignFile,
+      testScenariosFile,
+    })
 
     const backlog = context.fsm.loadBacklog();
     const dependenciesText = formatFeatureDependencies(backlog, feature)
@@ -169,19 +174,13 @@ export class PlanningHandler extends AbstractPhaseHandler {
       `- When <refinement_context> is present, treat its human-validated decisions as authoritative.`,
       `</workflow>`,
       ``,
-      `<expected_outputs>`,
-      `Produce, under \`${payload.workingDir}\` (one file per project in <project_paths> for phases 3 and 4, where \${PROJECT_NAME} is the project name linked to each project in <project_paths>):`,
-      `- \`${problemSpaceFile}\`   Strategic Design: Domain Events, Subdomains, Ubiquitous Language (Focused ONLY on the target feature; maximum ${INLINE_THRESHOLD} characters)`,
-      `- \`${contextMapFile}\`   Bounded Contexts and Context Map (maximum ${INLINE_THRESHOLD} characters)`,
-      `- \`${tacticalDesignFile}\` (one per project in <project_paths>) — project-scoped Refinement Questions and Answers plus Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array of objects`,
-      `- \`${testScenariosFile}\` (one per project in <project_paths>)   Test Scenarios`,
-      `</expected_outputs>`,
+      ...complexityPrompt.expectedOutputs,
       ``,
       `<strict_rules>`,
       `- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features present in the <scope>.`,
       `- DEPENDENCY RULE: If the <target_feature> has dependencies, acknowledge them as assumptions or interfaces in your design, but DO NOT design, spec, or generate tasks for the dependencies themselves.`,
       `- PROJECT NAME RULE: For phases 3 and 4, generate one tactical design and test scenarios file for each project listed in <project_paths>, replacing \${PROJECT_NAME} with the corresponding project name linked to that project path.`,
-      ...buildComplexityRules(complexity),
+      ...complexityPrompt.strictRules,
       `- Execute autonomously without pausing or asking for confirmation.`,
       `- Write every file to disk before advancing to the next.`,
       `</strict_rules>`,
@@ -225,11 +224,20 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const contextMapFile = join(payload.workingDir, '002-context-map.md');
     const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
     const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
+    const complexityPrompt = buildComplexityRules(complexity, {
+      outputDirectory: payload.workingDir,
+      problemSpaceFile,
+      contextMapFile,
+      tacticalDesignFile,
+      testScenariosFile,
+    })
 
     const backlog = context.fsm.loadBacklog();
     const dependenciesText = formatFeatureDependencies(backlog, feature)
     const rulesSection = formatRulesSection(payload.steeringRules)
     const projectPathsList = formatProjectPathsList(payload.projectPaths)
+    const productDir = getProductDir(context)
+    const refinementPath = join(productDir, 'REFINEMENT.md')
 
     return [
       `## Objective`,
@@ -252,24 +260,27 @@ export class PlanningHandler extends AbstractPhaseHandler {
       `- Then run all four autonomous document phases of \`harness-kit:scope-refinement\` in order.`,
       `</workflow>`,
       ``,
-      `<expected_outputs>`,
-      `Produce, under \`${payload.workingDir}\` (one file per project in <project_paths> for phases 3 and 4, where \${PROJECT_NAME} is the project name linked to each project in <project_paths>):`,
-      `- \`${problemSpaceFile}\`   Strategic Design: Domain Events, Subdomains, Ubiquitous Language (Focused ONLY on the target feature; maximum ${INLINE_THRESHOLD} characters)`,
-      `- \`${contextMapFile}\`   Bounded Contexts and Context Map (maximum ${INLINE_THRESHOLD} characters)`,
-      `- \`${tacticalDesignFile}\` (one per project in <project_paths>) — project-scoped Refinement Questions and Answers plus Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array of objects`,
-      `- \`${testScenariosFile}\` (one per project in <project_paths>)   Test Scenarios`,
-      `</expected_outputs>`,
+      ...complexityPrompt.expectedOutputs,
       ``,
       `<strict_rules>`,
       `- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features present in the scope.`,
       `- DEPENDENCY RULE: If the <target_feature> has dependencies, acknowledge them as assumptions or interfaces in your design, but DO NOT design, spec, or generate tasks for the dependencies themselves.`,
       `- PROJECT NAME RULE: For phases 3 and 4, generate one tactical design and test scenarios file for each project listed in <project_paths>, replacing \${PROJECT_NAME} with the corresponding project name linked to that project path.`,
-      ...buildComplexityRules(complexity),
+      ...complexityPrompt.strictRules,
       `- Execute autonomously without pausing or asking for confirmation.`,
       `- Write every file to disk before advancing to the next.`,
       `</strict_rules>`,
       ``,
       `<inputs>`,
+      `<context_anchors>`,
+      `Feature: ${feature.id} — ${payload.featureTitle}`,
+      `Scope: ${join(productDir, 'SCOPE.md')}`,
+      ...(context.fsm.existRefinement?.() ? [`Refinement: ${refinementPath}`] : []),
+      `Specifications: ${payload.workingDir}`,
+      `Projects:`,
+      projectPathsList,
+      `</context_anchors>`,
+      ``,
       `<rules>`,
       rulesSection,
       `</rules>`,

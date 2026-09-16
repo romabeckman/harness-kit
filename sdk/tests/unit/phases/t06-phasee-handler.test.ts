@@ -11,6 +11,7 @@ vi.mock('../../../src/context-assembler/ContextAssembler', () => ({
       projectPaths: ['/src'],
       workingDir: '/mock/dir',
       steeringRules: [],
+      recentDecisions: ['| timestamp | F001 | Review: PASS | TL:0.95, Adv:0.96 | verified |'],
     }),
   },
 }))
@@ -66,6 +67,13 @@ describe('MemoryHandler', () => {
     expect(prompt).not.toContain(join('/mock/dir', 'docs', 'product', 'specs'))
     expect(prompt).not.toContain('/harness-kit:project-memory')
     expect(prompt).toContain('docs/feature/*.md')
+    expect(prompt).toContain('<verification_sources>')
+    expect(prompt).toContain(join('/mock/dir', 'docs', 'product', 'DECISIONS.md'))
+    expect(prompt).toContain(join('/mock/dir', 'docs', 'specs', '[domain]', 'TL.json'))
+    expect(prompt).toContain(join('/mock/dir', 'docs', 'specs', '[domain]', 'QA.json'))
+    expect(prompt).toContain('<recent_decisions>')
+    expect(prompt).toContain('Review: PASS')
+    expect(mockContext.fsm.loadRecentDecisions).toHaveBeenCalledWith(20)
     expect(result).toBe(Phase.DEPLOY)
   })
 

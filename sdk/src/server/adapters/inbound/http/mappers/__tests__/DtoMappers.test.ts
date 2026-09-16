@@ -46,7 +46,7 @@ describe('DtoMappers Anti-Corruption Layer (ACL)', () => {
     process.env.PROJECT_BACKEND_PATH = '/tmp/backend'
     const quickConfig = DtoMappers.toOrchestratorConfig({ scope: 'quick-test', project: 'backend', agent: 'claude-cli', mode: 'quick', idempotencyKey: 'idem-1' })
     expect(quickConfig.skipValidation).toBe(true)
-    expect(quickConfig.skipMemory).toBe(true)
+    expect(quickConfig.skipMemory).toBe(false)
 
     const fastConfig = DtoMappers.toOrchestratorConfig({ scope: 'fast-test', project: 'backend', agent: 'claude-cli', mode: 'fast', idempotencyKey: 'idem-2' })
     expect(fastConfig.complexity).toBe('LOW')

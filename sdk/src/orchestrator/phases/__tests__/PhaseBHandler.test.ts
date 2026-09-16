@@ -270,7 +270,7 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).toContain('<rework')
       expect(invokeCall.prompt).toContain('<development_specifications>')
       expect(invokeCall.prompt).toContain('<tasks>')
-      expect(invokeCall.prompt).toContain('[T01] Do something')
+      expect(invokeCall.prompt).toContain('[T01] [sdk] Do something')
       expect(invokeCall.prompt).toContain('"status": "SUCCESS"')
       expect(invokeCall.prompt).toContain('"developerHandoff"')
       expect(invokeCall.prompt).toContain('maximum 500 characters')
@@ -360,9 +360,12 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).toContain('<expected_output>')
       expect(invokeCall.prompt).toContain('"developerHandoff"')
       expect(invokeCall.prompt).toContain('maximum 500 characters')
-      // Continuation prompt should NOT re-send full development specifications or project paths/orientation
+      // Continuation prompt keeps compact anchors without re-sending full specifications or orientation content.
       expect(invokeCall.prompt).not.toContain('<development_specifications>')
-      expect(invokeCall.prompt).not.toContain('<project_paths>')
+      expect(invokeCall.prompt).toContain('<context_anchors>')
+      expect(invokeCall.prompt).toContain('<project_paths>')
+      expect(invokeCall.prompt).toContain('SCOPE.md')
+      expect(invokeCall.prompt).toContain(join(workingDir, 'docs', 'specs', 'sdk_core'))
       expect(invokeCall.prompt).not.toContain('<orientation>')
     })
 

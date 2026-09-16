@@ -54,7 +54,7 @@ export class DeployHandler extends AbstractPhaseHandler {
           continue
         }
 
-        // Generate commit message via LLM (same model/phase_key as Memory/Steering)
+        // Generate commit message via its dedicated phase key.
         const commitMessage = await this.generateCommitMessage(projectPath, context)
         process.stdout.write(
           `  ${AnsiHelpers.dim('commit message:')} ${AnsiHelpers.cyan(commitMessage)}\n`
@@ -117,7 +117,7 @@ export class DeployHandler extends AbstractPhaseHandler {
   }
 
   /**
-   * Calls the LLM (same phaseKey as Memory/Phase E) to generate a Conventional
+   * Calls the LLM to generate a Conventional
    * Commit message based on the staged diff stat for the given project path.
    * Falls back to a deterministic message if the agent returns nothing usable.
    */
@@ -190,7 +190,7 @@ export class DeployHandler extends AbstractPhaseHandler {
       const output = await context.invokeAgent({
         agent: 'harness-kit:developer-devops',
         mode: 'autonomous',
-        phaseKey: 'memory',
+        phaseKey: 'deploy_message',
         prompt,
       })
 

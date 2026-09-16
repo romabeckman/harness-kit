@@ -112,12 +112,17 @@ describe('PlanningHandler', () => {
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'LOW'");
-            expect(invokedPrompt).toContain('only the required 003–004 artifacts');
+            expect(invokedPrompt).toContain('Keep analysis concise and produce only the two files listed above.');
+            expect(invokedPrompt).toContain('<expected_outputs>');
+            expect(invokedPrompt).toContain('003-${PROJECT_NAME}-tactical-design.md');
+            expect(invokedPrompt).toContain('004-${PROJECT_NAME}-test-scenarios.md');
+            expect(invokedPrompt).not.toContain('001-problem-space.md');
+            expect(invokedPrompt).not.toContain('002-context-map.md');
             expect(invokedPrompt).toContain('Before writing any specification, run autonomous refinement');
             expect(invokedPrompt).toContain('project-scoped Refinement Questions and Answers plus Tactical Design');
             expect(invokedPrompt).not.toContain('Socratic Questions');
             expect(invokedPrompt).not.toContain('the-grumpy-tech-lead');
+            expect(invokedPrompt).not.toContain("For 'LOW'");
             expect(mockContext.invokeAgent.mock.calls[0][0].phaseKey).toBe('planning');
         });
 
@@ -127,12 +132,12 @@ describe('PlanningHandler', () => {
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'HIGH'");
             expect(invokedPrompt).toContain('integrations, failure modes, security boundaries, concurrency, and compatibility risks');
-            expect(invokedPrompt).toContain('Before writing specifications, resolve refinement questions from scope and project evidence');
+            expect(invokedPrompt).toContain('Resolve refinement questions from scope and project evidence');
             expect(invokedPrompt).toContain('record each answer in every applicable `003-${PROJECT_NAME}-tactical-design.md`');
             expect(invokedPrompt).not.toContain('Socratic Questions');
             expect(invokedPrompt).not.toContain('the-grumpy-tech-lead');
+            expect(invokedPrompt).not.toContain("For 'HIGH'");
         });
 
         it('uses AUTO complexity evaluation when config.complexity is undefined', async () => {
@@ -141,8 +146,9 @@ describe('PlanningHandler', () => {
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain('Evaluate scope complexity between \'LOW\' and \'HIGH\'');
-            expect(invokedPrompt).not.toContain('COMPLEXITY OVERRIDE');
+            expect(invokedPrompt).toContain('Evaluate complexity from requirement clarity');
+            expect(invokedPrompt).toContain('Produce only 003–004 artifacts by default.');
+            expect(invokedPrompt).toContain('Produce 001–002 artifacts when <project_paths> contains 2+ projects, or when the scope identifies 3+ distinct integration points spanning 2+ modules and 2+ architectural layers');
         });
 
         it('limits only 001 and 002 output documents to INLINE_THRESHOLD characters', async () => {
@@ -276,6 +282,10 @@ describe('PlanningHandler', () => {
             expect(invokeCall.prompt).toContain('<project_paths>');
             expect(invokeCall.prompt).toContain('PROJECT NAME RULE');
             expect(invokeCall.prompt).not.toContain('<scope>');
+            expect(invokeCall.prompt).toContain('<context_anchors>');
+            expect(invokeCall.prompt).toContain('SCOPE.md');
+            expect(invokeCall.prompt).toContain(join(mockContext.workingDir, 'docs', 'specs', 'hello_world_cli'));
+            expect(invokeCall.prompt).toContain('/test/project');
 
             expect(mockContext.setDeveloperSession).toHaveBeenCalledWith({
                 featureId: '',
@@ -292,7 +302,12 @@ describe('PlanningHandler', () => {
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain("COMPLEXITY OVERRIDE: Classify as 'LOW'");
+            expect(invokedPrompt).toContain('Keep analysis concise and produce only the two files listed above.');
+            expect(invokedPrompt).toContain('<expected_outputs>');
+            expect(invokedPrompt).toContain('003-${PROJECT_NAME}-tactical-design.md');
+            expect(invokedPrompt).toContain('004-${PROJECT_NAME}-test-scenarios.md');
+            expect(invokedPrompt).not.toContain('001-problem-space.md');
+            expect(invokedPrompt).not.toContain('002-context-map.md');
             expect(invokedPrompt).toContain('<target_feature>');
             expect(invokedPrompt).toContain('PROJECT NAME RULE');
             expect(invokedPrompt).not.toContain('<scope>');

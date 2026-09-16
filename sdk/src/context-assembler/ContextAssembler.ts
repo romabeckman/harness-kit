@@ -84,7 +84,15 @@ export class ContextAssembler {
       specsContent: loadDomainSpecsContent(specsDir),
     }
     try {
-      payload.developerHandoff = readTddOutput(join(specsDir, 'TDD-OUTPUT.json')).developerHandoff
+      const tddOutput = readTddOutput(join(specsDir, 'TDD-OUTPUT.json'))
+      payload.developerHandoff = tddOutput.developerHandoff
+      payload.tddSummary = {
+        status: tddOutput.status,
+        metrics: tddOutput.metrics,
+        modifiedFiles: tddOutput.modifiedFiles,
+        reworksCount: tddOutput.reworksCount,
+        developerHandoff: tddOutput.developerHandoff,
+      }
     } catch {
       // Development validation owns transition safety. Keep payload construction tolerant for direct callers.
     }
@@ -102,10 +110,12 @@ export class ContextAssembler {
     projectPaths: string[],
     workingDir: string,
     steeringRules?: SteeringRulesConfig,
+    recentDecisions?: string[],
   ): MemoryPayload {
     const payload: MemoryPayload = {
       projectPaths,
       workingDir,
+      recentDecisions,
     }
     const flattened = this.flattenRules(Phase.MEMORY, steeringRules)
     if (flattened) {

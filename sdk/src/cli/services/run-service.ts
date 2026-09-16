@@ -48,12 +48,13 @@ interface ResolvedMode {
 export function resolveMode(mode?: RunMode): ResolvedMode {
   switch (mode) {
     case RunMode.QUICK:
-      return { complexity: Complexity.LOW, skipValidation: true, skipMemory: true, enableRefinement: false }
+      return { complexity: Complexity.LOW, skipValidation: true, skipMemory: false, enableRefinement: false }
     case RunMode.FAST:
       return { complexity: Complexity.LOW, skipValidation: false, skipMemory: false, enableRefinement: false }
     case RunMode.DEEP_THINKING:
       return { complexity: Complexity.HIGH, skipValidation: false, skipMemory: false, enableRefinement: true }
     case RunMode.THINKING:
+      return { complexity: Complexity.AUTO, skipValidation: false, skipMemory: false, enableRefinement: true }
     default:
       return { complexity: Complexity.AUTO, skipValidation: false, skipMemory: false, enableRefinement: false }
   }
@@ -65,10 +66,10 @@ async function promptForMode(parsedMode?: RunMode): Promise<RunMode> {
   return select({
     message: "Select execution mode:",
     choices: [
-      { name: "quick", value: RunMode.QUICK, description: "Bootstrap → Planning → Development → Deploy (skips Review and Memory)" },
-      { name: "fast", value: RunMode.FAST, description: "Bootstrap → Planning → Development → Review (Only QA) → Memory → Deploy" },
-      { name: "Thinking", value: RunMode.THINKING, description: "Bootstrap → Planning → Development → Review → Memory → Deploy" },
-      { name: "Deep Thinking", value: RunMode.DEEP_THINKING, description: "Bootstrap → Planning (Deep Thinking) → Development → Review → Memory → Deploy" },
+      { name: "quick", value: RunMode.QUICK, description: "Bootstrap → Planning → Development → Memory → Deploy (skips Review)" },
+      { name: "fast", value: RunMode.FAST, description: "Bootstrap → Planning → Development → Review → Memory → Deploy" },
+      { name: "Thinking", value: RunMode.THINKING, description: "Bootstrap → Refinement → Planning → Development → Review → Memory → Deploy" },
+      { name: "Deep Thinking", value: RunMode.DEEP_THINKING, description: "Bootstrap → Refinement → Planning (Deep Thinking) → Development → Review → Memory → Deploy" },
     ],
     default: RunMode.FAST,
   });

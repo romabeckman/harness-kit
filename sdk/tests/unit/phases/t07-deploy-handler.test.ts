@@ -106,7 +106,7 @@ describe('DeployHandler', () => {
     const result = await handler.handle(Phase.DEPLOY, mockContext)
     expect(result).toBe(Phase.HALTED)
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
-      expect.objectContaining({ agent: 'harness-kit:developer-devops' })
+      expect.objectContaining({ agent: 'harness-kit:developer-devops', phaseKey: 'deploy_message' })
     )
     expect(execFileSync).toHaveBeenCalledWith('git', expect.arrayContaining(['commit', '-m', 'chore: deploy commit']), expect.any(Object))
     expect(execFileSync).toHaveBeenCalledWith('git', ['push'], expect.any(Object))

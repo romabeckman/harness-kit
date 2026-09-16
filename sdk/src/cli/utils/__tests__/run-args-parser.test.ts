@@ -129,20 +129,22 @@ describe('resolveMode', () => {
     expect(r.complexity).toBe(Complexity.AUTO)
     expect(r.skipValidation).toBe(false)
     expect(r.skipMemory).toBe(false)
+    expect(r.enableRefinement).toBe(false)
   })
 
-  it('default mode → AUTO, no skips', () => {
+  it('thinking mode → AUTO, no skips + REFINEMENT', () => {
     const r = resolveMode(RunMode.THINKING)
     expect(r.complexity).toBe(Complexity.AUTO)
     expect(r.skipValidation).toBe(false)
     expect(r.skipMemory).toBe(false)
+    expect(r.enableRefinement).toBe(true)
   })
 
-  it('quick mode → LOW + skipValidation + skipMemory', () => {
+  it('quick mode → LOW + skipValidation while keeping Memory', () => {
     const r = resolveMode(RunMode.QUICK)
     expect(r.complexity).toBe(Complexity.LOW)
     expect(r.skipValidation).toBe(true)
-    expect(r.skipMemory).toBe(true)
+    expect(r.skipMemory).toBe(false)
   })
 
   it('fast mode → LOW, no skips', () => {
