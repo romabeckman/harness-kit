@@ -57,7 +57,7 @@ export interface ParsedRunArgs {
  * --score <0.1-1>          Acceptance score threshold
  * --reworks <1-10>         Max rework cycles before cascade fail
  * --steering <text>        Additional orchestration rules
- * --mode, -M <val>         Execution mode: quick | fast | default | slow (default: default)
+ * --mode, -M <val>         Execution mode: quick | fast | thinking | deep_thinking (interactive default: thinking)
  * --skip-validation         Skip Phase C (review) — jump directly to Phase D
  * --skip-memory           Skip Phase E (memory) — jump directly to Phase F
  * --skip-deploy             Skip Phase DEPLOY (git stage/commit/push) — halt after Phase F

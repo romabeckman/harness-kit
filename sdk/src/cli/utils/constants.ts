@@ -43,7 +43,7 @@ EXECUTION MODE
   --mode, -M <mode>         Controls which phases run and which complexity is forced:
                               quick        — Bootstrap → Planning → Development → Memory → Deploy (skip Review)
                               fast         — All phases, simplified planning, Tech Lead + QA review
-                              think        — All phases, LLM decide complexity
+                              thinking     — All phases, LOW complexity, pre-planning REFINEMENT [default]
                               deep-thinking — All phases, forced to high planning and deep review
   --complexity, -c <level>  Explicit complexity override: LOW | HIGH | AUTO
 
@@ -115,7 +115,7 @@ EXECUTION MODE
   --mode, -M <mode>         Controls phase execution and forced complexity:
                               quick   — Bootstrap → Planning → Development → Memory → Deploy (skip Review)
                               fast    — All phases, simplified planning, Tech Lead + QA review
-                              default — All phases, LLM decides complexity [default]
+                              thinking — All phases, LOW complexity, pre-planning REFINEMENT [default]
                               slow    — All phases, forced high planning and deep review
   --complexity, -c <level>  Explicit complexity override: LOW | HIGH | AUTO
 

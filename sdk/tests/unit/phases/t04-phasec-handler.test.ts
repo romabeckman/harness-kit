@@ -254,8 +254,8 @@ describe('ReviewHandler', () => {
 
     // No agent must be called
     expect(mockContext.invokeAgent).not.toHaveBeenCalled()
-    // Must mark feature COMPLETED with neutral scores
-    expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED', { tl: 1, adv: 1 })
+    // Must mark feature COMPLETED without fabricating reviewer scores
+    expect(mockContext.fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED')
     expect(mockContext.fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
     // Must go straight to Phase D
     expect(result).toBe(Phase.TRANSITION)

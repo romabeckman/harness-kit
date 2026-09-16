@@ -51,12 +51,12 @@ export function resolveMode(mode?: RunMode): ResolvedMode {
       return { complexity: Complexity.LOW, skipValidation: true, skipMemory: false, enableRefinement: false }
     case RunMode.FAST:
       return { complexity: Complexity.LOW, skipValidation: false, skipMemory: false, enableRefinement: false }
+    case RunMode.THINKING:
+      return { complexity: Complexity.LOW, skipValidation: false, skipMemory: false, enableRefinement: true }
     case RunMode.DEEP_THINKING:
       return { complexity: Complexity.HIGH, skipValidation: false, skipMemory: false, enableRefinement: true }
-    case RunMode.THINKING:
-      return { complexity: Complexity.AUTO, skipValidation: false, skipMemory: false, enableRefinement: true }
     default:
-      return { complexity: Complexity.AUTO, skipValidation: false, skipMemory: false, enableRefinement: false }
+      return { complexity: Complexity.AUTO, skipValidation: false, skipMemory: false, enableRefinement: true }
   }
 }
 
@@ -71,7 +71,7 @@ async function promptForMode(parsedMode?: RunMode): Promise<RunMode> {
       { name: "Thinking", value: RunMode.THINKING, description: "Bootstrap → Refinement → Planning → Development → Review → Memory → Deploy" },
       { name: "Deep Thinking", value: RunMode.DEEP_THINKING, description: "Bootstrap → Refinement → Planning (Deep Thinking) → Development → Review → Memory → Deploy" },
     ],
-    default: RunMode.FAST,
+    default: RunMode.THINKING,
   });
 }
 

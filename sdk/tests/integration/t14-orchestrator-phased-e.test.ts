@@ -11,6 +11,17 @@ let tmpDir: string
 let productDir: string
 let fake: FakeAgentRunner
 
+function writeValidTddOutput(specDir: string, featureId = 'F001'): void {
+  writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({
+    featureId,
+    status: 'SUCCESS',
+    metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 },
+    modifiedFiles: [],
+    developerHandoff: 'Ready for review.',
+    reworksCount: 0,
+  }))
+}
+
 beforeEach(() => {
   tmpDir = mkdtempSync(join(tmpdir(), 'harness-sdk-t14-'))
   productDir = join(tmpDir, 'docs', 'product')
@@ -69,7 +80,10 @@ function makeFullRunFake(specDir: string): void {
     }
     if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
       tddCallCount++
-      writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+      const featureId = String((inv.payload as { featureId?: string } | undefined)?.featureId
+        ?? inv.prompt?.match(/Feature ID:\s*(F\d+)/i)?.[1]
+        ?? 'F001')
+      writeValidTddOutput(specDir, featureId)
     }
     return origRun(inv)
   }
@@ -105,8 +119,14 @@ describe('T14 — HarnessOrchestrator TRANSITION + MEMORY', () => {
 
       const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
       mkdirSync(specDir, { recursive: true })
-      writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
-      writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+      writeFileSync(join(specDir, '003-sdk_core-tactical-design.md'), [
+        '## Section 6 — Ordered Development Tasks',
+        '```json',
+        '[{"id":"01","title":"Implement SDK core","description":"Implement SDK core"}]',
+        '```',
+      ].join('\n'))
+      writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios\n\n- SDK core succeeds.')
+      writeValidTddOutput(specDir)
 
       // First Phase C: failing scores → RETRY
       fake.enqueueResponse('the-grumpy-tech-lead', { raw: '```json\n{"scoreTL": 0.50}\n```' })
@@ -119,7 +139,9 @@ describe('T14 — HarnessOrchestrator TRANSITION + MEMORY', () => {
       const origRun = fake.run.bind(fake)
       fake.run = async (inv) => {
         if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
-          writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+          writeValidTddOutput(specDir, String((inv.payload as { featureId?: string } | undefined)?.featureId
+            ?? inv.prompt?.match(/Feature ID:\s*(F\d+)/i)?.[1]
+            ?? 'F001'))
         }
         return origRun(inv)
       }
@@ -245,8 +267,14 @@ describe('T14 — HarnessOrchestrator TRANSITION + MEMORY', () => {
 
       const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
       mkdirSync(specDir, { recursive: true })
-      writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
-      writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+      writeFileSync(join(specDir, '003-sdk_core-tactical-design.md'), [
+        '## Section 6 — Ordered Development Tasks',
+        '```json',
+        '[{"id":"01","title":"Implement SDK core","description":"Implement SDK core"}]',
+        '```',
+      ].join('\n'))
+      writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios\n\n- SDK core succeeds.')
+      writeValidTddOutput(specDir)
 
       fake.setResponse('the-grumpy-tech-lead', { raw: '```json\n{"scoreTL": 0.85}\n```' })
       fake.setResponse('adversarial-qa', { raw: '```json\n{"scoreAdv": 0.80}\n```' })

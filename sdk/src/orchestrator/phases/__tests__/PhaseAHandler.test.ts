@@ -52,18 +52,22 @@ describe('PlanningHandler', () => {
         // First call to extractTasksFromTacticalDesign returns empty, simulating initial failure
         mockContext.extractTasksFromTacticalDesign.mockReturnValueOnce([]);
 
-        // When invokeAgent is called, it simulates the agent writing to DEVELOPMENT-STATE.md
-        // so that the next call to loadDevelopmentState returns the mock tasks.
-        mockContext.invokeAgent.mockImplementationOnce(async () => {
-            mockFsm.loadDevelopmentState.mockReturnValueOnce(mockTasks.map((t: any) => ({
-                featureId: 'F001',
-                taskId: t.taskId,
-                project: 'project',
-                description: t.description,
-                domain: 'hello_world_cli',
-                currentPhase: '-' as const,
-                status: 'NOT_STARTED' as const,
-            })));
+        // Scope refinement runs first when no feature task provenance exists;
+        // the recovery invocation then simulates the agent writing task rows.
+        let invocationCount = 0;
+        mockContext.invokeAgent.mockImplementation(async () => {
+            invocationCount++;
+            if (invocationCount === 2) {
+                mockFsm.loadDevelopmentState.mockReturnValueOnce(mockTasks.map((t: any) => ({
+                    featureId: 'F001',
+                    taskId: t.taskId,
+                    project: 'project',
+                    description: t.description,
+                    domain: 'hello_world_cli',
+                    currentPhase: '-' as const,
+                    status: 'NOT_STARTED' as const,
+                })));
+            }
             return undefined;
         });
 
@@ -72,7 +76,7 @@ describe('PlanningHandler', () => {
         expect(result).not.toBe(Phase.HALTED);
 
         expect(mockContext.extractTasksFromTacticalDesign).toHaveBeenCalledTimes(1);
-        expect(mockContext.invokeAgent).toHaveBeenCalledTimes(1);
+        expect(mockContext.invokeAgent).toHaveBeenCalledTimes(2);
         // Recovery path: agent writes directly to DEVELOPMENT-STATE.md, appendTasks is not called
         expect(mockFsm.appendTasks).not.toHaveBeenCalled();
     });
@@ -119,6 +123,7 @@ describe('PlanningHandler', () => {
             expect(invokedPrompt).not.toContain('001-problem-space.md');
             expect(invokedPrompt).not.toContain('002-context-map.md');
             expect(invokedPrompt).toContain('Before writing any specification, run autonomous refinement');
+            expect(invokedPrompt).not.toContain('all four autonomous document phases');
             expect(invokedPrompt).toContain('project-scoped Refinement Questions and Answers plus Tactical Design');
             expect(invokedPrompt).not.toContain('Socratic Questions');
             expect(invokedPrompt).not.toContain('the-grumpy-tech-lead');

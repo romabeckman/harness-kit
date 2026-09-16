@@ -10,6 +10,28 @@ let tmpDir: string
 let productDir: string
 let fake: FakeAgentRunner
 
+function writeValidSpecs(specDir: string): void {
+  mkdirSync(specDir, { recursive: true })
+  writeFileSync(join(specDir, '003-sdk_core-tactical-design.md'), [
+    '## Section 6 — Ordered Development Tasks',
+    '```json',
+    '[{"id":"01","title":"Implement SDK core","description":"Implement SDK core"}]',
+    '```',
+  ].join('\n'))
+  writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios\n\n- SDK core succeeds.')
+}
+
+function writeValidTddOutput(specDir: string): void {
+  writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({
+    featureId: 'F001',
+    status: 'SUCCESS',
+    metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 },
+    modifiedFiles: [],
+    developerHandoff: 'Ready for review.',
+    reworksCount: 0,
+  }))
+}
+
 function setupProductFiles(backlogStatus: string = 'IN_PROGRESS', tasks: string = ''): void {
   const backlog = [
     '| ID | Title | Domain | Layer | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status |',
@@ -49,14 +71,13 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
   it('iterates NOT_STARTED tasks and marks each COMPLETED after tdd-orchestrator call', async () => {
     setupProductFiles()
     const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
-    mkdirSync(specDir, { recursive: true })
-    writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
+    writeValidSpecs(specDir)
 
     // tdd-orchestrator must always write TDD-OUTPUT.json (contract of the agent)
     const origRun = fake.run.bind(fake)
     fake.run = async (inv) => {
       if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
-        writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001', tasksCompleted: 2 }))
+        writeValidTddOutput(specDir)
       }
       return origRun(inv)
     }
@@ -82,13 +103,12 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
   it('Phase B payload uses correct skill tdd-orchestrator', async () => {
     setupProductFiles()
     const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
-    mkdirSync(specDir, { recursive: true })
-    writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
+    writeValidSpecs(specDir)
 
     const origRun = fake.run.bind(fake)
     fake.run = async (inv) => {
       if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
-        writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+        writeValidTddOutput(specDir)
       }
       return origRun(inv)
     }
@@ -111,12 +131,11 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
     expect(tddCalls[0].skill).toContain('tdd-orchestrator')
   })
 
-  describe('TS-F-10: runDevelopmen completes when TDD-OUTPUT.json absent after agent run', () => {
-    it('run() resolves successfully when tdd-orchestrator does NOT create TDD-OUTPUT.json', async () => {
+  describe('TS-F-10: runDevelopment requires a valid TDD handoff', () => {
+    it('run() does not report success when tdd-orchestrator does NOT create TDD-OUTPUT.json', async () => {
       setupProductFiles()
       const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
-      mkdirSync(specDir, { recursive: true })
-      writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
+      writeValidSpecs(specDir)
       // tdd-orchestrator returns output but does NOT write TDD-OUTPUT.json
       fake.setResponse('tdd-orchestrator', { raw: 'ok' })
       fake.setResponse('the-grumpy-tech-lead', { raw: '```json\n{"scoreTL": 0.85}\n```' })
@@ -131,7 +150,7 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
-      await expect(orchestrator.run()).resolves.toBeUndefined()
+      await expect(orchestrator.run()).rejects.toThrow(/exceeded consecutive iteration limit.*DEVELOPMENT/)
     })
   })
 
@@ -147,13 +166,12 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
       setupProductFiles('IN_PROGRESS', devStateInProgress)
 
       const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
-      mkdirSync(specDir, { recursive: true })
-      writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
+      writeValidSpecs(specDir)
 
       const origRun = fake.run.bind(fake)
       fake.run = async (inv) => {
         if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
-          writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+          writeValidTddOutput(specDir)
         }
         return origRun(inv)
       }

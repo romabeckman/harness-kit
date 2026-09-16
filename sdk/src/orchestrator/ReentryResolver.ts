@@ -8,8 +8,8 @@ import type { OnDiskState } from './types'
  * State Transition Table (ordered):
  * 1. No product files → BOOTSTRAP
  * 2. Active feature dependency is BLOCKED → CASCADE_BLOCKED
- * 3. TDD-OUTPUT present AND all tasks COMPLETED → REVIEW
- * 4. Spec files present AND tasks exist → DEVELOPMENT
+ * 3. Valid TDD-OUTPUT present AND all tasks COMPLETED → REVIEW
+ * 4. Ready spec files without a valid handoff → DEVELOPMENT
  * 5. Active feature in terminal status (COMPLETED/BLOCKED/FAILED) → TRANSITION
  * 6. No active feature or feature NOT_STARTED with no specs → PLANNING
  * 7. Fallback → BOOTSTRAP
@@ -20,7 +20,11 @@ export class ReentryResolver {
     if (state.config?.currentPhase) {
       const persistedPhase = state.config.currentPhase as Phase
       if (Object.values(Phase).includes(persistedPhase) && persistedPhase !== Phase.HALTED) {
-        return persistedPhase
+        // A persisted REVIEW marker is only trustworthy when the completion
+        // evidence is still present and valid on disk.
+        if (persistedPhase !== Phase.REVIEW || (state.tddOutputPresent && state.allTasksCompleted)) {
+          return persistedPhase
+        }
       }
     }
 
@@ -38,13 +42,13 @@ export class ReentryResolver {
       if (blocked) return Phase.CASCADE_BLOCKED
     }
 
-    // 3. TDD-OUTPUT present AND all tasks COMPLETED → REVIEW
+    // 3. A valid TDD handoff AND all tasks COMPLETED → REVIEW
     if (state.tddOutputPresent && state.allTasksCompleted) {
       return Phase.REVIEW
     }
 
-    // 4. Spec files present AND tasks exist (or no tasks yet) → DEVELOPMENT
-    if (state.specFilesPresent && !state.allTasksCompleted) {
+    // 4. Ready specs without a valid completed handoff → DEVELOPMENT
+    if (state.specFilesPresent && (!state.allTasksCompleted || !state.tddOutputPresent)) {
       return Phase.DEVELOPMENT
     }
 

@@ -82,6 +82,13 @@ describe('RefinementHandler', () => {
     expect(consolidationPrompt).toContain('"recommendation": "R1"')
     expect(consolidationPrompt).toContain('"context": "C1"')
     expect(consolidationPrompt).toContain('"answer": "R1"')
+    expect(consolidationPrompt).toContain('harness-kit:read-ui-prototype')
+    expect(consolidationPrompt).toContain('optionally invoke the `harness-kit:read-ui-prototype` skill')
+    expect(consolidationPrompt).not.toContain('C:\\Users\\romab\\Codigo\\harness-kit\\skills\\read-ui-prototype\\SKILL.md')
+    expect(consolidationPrompt).toContain('optional')
+    expect(consolidationPrompt).toContain('If no prototype, screen, frame, image, or link is available, skip the skill')
+    expect(consolidationPrompt).toContain('## Frontend Screens & Visualization')
+    expect(consolidationPrompt).toContain('None identified')
 
     const questionsPath = join(productDir, 'QUESTIONS.json')
     expect(existsSync(questionsPath)).toBe(true)

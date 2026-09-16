@@ -37,9 +37,9 @@ export enum Complexity {
  *
  * quick         — Bootstrap → Planning → Development → Memory → Deploy  (skips Review)
  * fast          — All phases, complexity forced to LOW
- * thinking      — All phases, complexity AUTO, pre-planning REFINEMENT
+ * thinking      — All phases, complexity LOW, pre-planning REFINEMENT
  * deep_thinking — All phases, complexity forced to HIGH, pre-planning REFINEMENT
- * omitted/invalid — All phases, complexity AUTO, no REFINEMENT
+ * omitted/invalid — All phases, complexity AUTO, pre-planning REFINEMENT
  */
 export enum RunMode {
   QUICK = 'quick',
