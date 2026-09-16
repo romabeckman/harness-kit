@@ -157,7 +157,7 @@ describe('DevelopmentHandler', () => {
   })
 
   describe('handle — handleResumedExecution transitions to REVIEW', () => {
-    it('returns REVIEW when TDD-OUTPUT.json exists', async () => {
+    it('returns REVIEW when TDD-OUTPUT.json exists and no tasks remain pending', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
       writeFileSync(tddPath, JSON.stringify({
         featureId: 'F001',
@@ -170,6 +170,7 @@ describe('DevelopmentHandler', () => {
 
       const fsm = makeFsm({
         loadBacklog: vi.fn().mockReturnValue([makeFeature()]),
+        loadDevelopmentState: vi.fn().mockReturnValue([makeTask({ status: 'COMPLETED' })]),
         updateTaskStatus: vi.fn(),
       })
 
@@ -177,6 +178,34 @@ describe('DevelopmentHandler', () => {
       const result = await handler.handle(Phase.DEVELOPMENT, context)
 
       expect(result).toBe(Phase.REVIEW)
+      expect(context.invokeAgent).not.toHaveBeenCalled()
+    })
+
+    it('discards a valid-looking stale TDD output when tasks remain pending', async () => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      writeFileSync(tddPath, JSON.stringify({
+        featureId: 'F001',
+        status: 'SUCCESS',
+        metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0.9 },
+        modifiedFiles: [],
+        developerHandoff: 'Stale output from an earlier run.',
+        reworksCount: 0,
+      }))
+
+      const fsm = makeFsm({ updateTaskStatus: vi.fn() })
+      const context = makeContext(workingDir, fsm, async () => {
+        expect(existsSync(tddPath)).toBe(false)
+        return { success: true, stdout: '', stderr: '', raw: '' }
+      })
+
+      const result = await handler.handle(Phase.DEVELOPMENT, context)
+
+      expect(result).toBe(Phase.DEVELOPMENT)
+      expect(context.invokeAgent).toHaveBeenCalledTimes(1)
+      expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+      expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({
+        decision: expect.stringContaining('pending tasks'),
+      }))
     })
 
     it('rejects malformed TDD-OUTPUT.json instead of invoking review', async () => {

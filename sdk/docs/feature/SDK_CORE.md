@@ -102,6 +102,7 @@ REQUIRED: Separate typed `readTddOutput` parsing from `summarizeTddOutput` audit
 REQUIRED: In `LOW` planning, request only `003-*` and `004-*`; never generate global `001-*` or `002-*` documents.
 REQUIRED: Accept planning only when every tactical design has ordered tasks, every scenario file is non-empty, and the active feature owns task rows.
 REQUIRED: Advance to `REVIEW` only after a valid successful `TDD-OUTPUT.json` for the active feature; otherwise remain in `DEVELOPMENT`.
+REQUIRED: Discard any pre-existing TDD handoff while tasks remain pending; require a fresh post-invocation handoff before completing them.
 REQUIRED: Apply the same TDD handoff guard when re-entering persisted `REVIEW` state.
 REQUIRED: When review is skipped, record the decision without synthetic Tech Lead or QA scores.
 REQUIRED: Summarize completed work and review focus in `TDD-OUTPUT.json.developerHandoff` using at most 500 characters.

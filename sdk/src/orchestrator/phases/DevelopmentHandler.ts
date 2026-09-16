@@ -29,15 +29,16 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     let pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
 
     const existingHandoff = validateTddOutput(tddOutputPath, activeFeature.id)
-    if (existingHandoff.valid) {
-      this.markTasksCompleted(activeFeature, context, pendingTasks)
+    if (existingHandoff.valid && pendingTasks.length === 0) {
       return Phase.REVIEW
     }
 
     if (existsSync(tddOutputPath)) {
       context.fsm.appendDecision({
         featureId: activeFeature.id,
-        decision: `DEVELOPMENT handoff rejected: ${existingHandoff.reason}`,
+        decision: existingHandoff.valid
+          ? 'DEVELOPMENT handoff discarded: pending tasks require a fresh handoff.'
+          : `DEVELOPMENT handoff rejected: ${existingHandoff.reason}`,
       })
     }
 
