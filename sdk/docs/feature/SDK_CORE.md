@@ -93,6 +93,8 @@ ALLOWED: Generate `003-*` and `004-*` files with `InlinePolicy = 'always'`.
 REQUIRED: Before writing `HIGH` complexity specifications, resolve refinement questions from scope and project evidence and record each answer in every applicable `003-${PROJECT_NAME}-tactical-design.md`.
 REQUIRED: Pass the active runner to `inlineOrReference`; `writePromptToStdin = false` emits only file-reference paths so positional spawn arguments stay bounded.
 REQUIRED: Render Bootstrap, Planning, and Refinement scope with policy `always` and canonical `SCOPE.md`; otherwise honor `FORCE_INLINE_MAX` (15,000 chars).
+ALLOWED: Add optional structural frontend screen descriptions to `REFINEMENT.md`; invoke `harness-kit:read-ui-prototype` only when prototype evidence exists.
+REQUIRED: When no prototype evidence exists, skip `harness-kit:read-ui-prototype` and continue refinement without requesting an image or link.
 PROHIBITED: Mutating state directly without using `IFileStateManager`.
 REQUIRED: Tag `DeveloperSessionState` with `phase` to isolate development and review.
 REQUIRED: Resume matching retry sessions with `REWORK-LOG.md`; otherwise use a standalone prompt.
