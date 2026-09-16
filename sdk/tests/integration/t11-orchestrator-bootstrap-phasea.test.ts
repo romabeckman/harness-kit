@@ -35,6 +35,29 @@ function setupProductFiles(): void {
   writeFileSync(join(productDir, 'BOOTSTRAP-CONFIG.json'), BOOTSTRAP_CONFIG)
 }
 
+function writeValidTddOutput(specDir: string): void {
+  writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({
+    featureId: 'F001',
+    status: 'SUCCESS',
+    metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 },
+    modifiedFiles: [],
+    developerHandoff: 'Ready for review.',
+    reworksCount: 0,
+  }))
+}
+
+function writeValidSpecs(specDir: string): void {
+  mkdirSync(specDir, { recursive: true })
+  writeFileSync(join(specDir, '003-sdk_core-tactical-design.md'), [
+    '# Tactical Design',
+    '## Section 6 — Ordered Development Tasks',
+    '```json',
+    '[{"id":"01","title":"Implement SDK core","description":"Implement SDK core"}]',
+    '```',
+  ].join('\n'))
+  writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios\n\n- SDK core succeeds.')
+}
+
 beforeEach(() => {
   tmpDir = mkdtempSync(join(tmpdir(), 'harness-sdk-t11-'))
   productDir = join(tmpDir, 'docs', 'product')
@@ -116,8 +139,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
     fake.run = async (inv) => {
       if ((inv.skill ?? '').endsWith('scope-refinement') && scopeRefinementCallCount === 0) {
         scopeRefinementCallCount++
-        mkdirSync(specDir, { recursive: true })
-        writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
+        writeValidSpecs(specDir)
         // Also write dev state tasks and TDD-OUTPUT so the loop can complete
         const devState = [
           '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |',
@@ -127,7 +149,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
         writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), devState)
       }
       if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
-        writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+        writeValidTddOutput(specDir)
       }
       return origRun(inv)
     }
@@ -164,8 +186,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
     fake.run = async (inv) => {
       if ((inv.skill ?? '').endsWith('scope-refinement')) {
         scopeCount++
-        mkdirSync(specDir, { recursive: true })
-        writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
+        writeValidSpecs(specDir)
         const devState = [
           '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |',
           '| --- | --- | --- | --- | --- | --- | --- |',
@@ -174,7 +195,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
         writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), devState)
       }
       if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
-        writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+        writeValidTddOutput(specDir)
       }
       return origRun(inv)
     }
@@ -415,7 +436,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
     expect(resumedOrchestrator.config.scope).toBe('my-custom-original-project-scope')
   })
 
-  it('re-entry resolves to DEVELOPMENT when spec directory exists, even if empty', () => {
+  it('re-entry resolves to PLANNING when spec directory exists but readiness artifacts are incomplete', () => {
     setupProductFiles()
     // Mark feature IN_PROGRESS in backlog to ensure we're not in bootstrap
     const backlogInProgress = [
@@ -437,9 +458,8 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
 
-    // With spec dir present, re-entry should resolve to DEVELOPMENT.
-    // This will fail with the old implementation because the dir is empty.
-    expect(orchestrator.getState().currentPhase).toBe(Phase.DEVELOPMENT)
+    // An empty directory is not enough to skip planning.
+    expect(orchestrator.getState().currentPhase).toBe(Phase.PLANNING)
   })
 
   it('PLANNING throws an error if no tasks are extracted and no existing tasks exist', async () => {

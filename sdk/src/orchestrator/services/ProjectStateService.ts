@@ -3,13 +3,45 @@ import { join } from 'path'
 import type { IFileStateManager } from '../../file-state/FileStateManager'
 import type { OnDiskState } from '../types'
 import { ExtractedTask } from '../phases'
+import { validateTddOutput } from '../utils/PhaseFileUtils'
 
 export class ProjectStateService {
   constructor(private readonly workingDir: string) { }
 
   checkSpecFilesPresent(domain: string): boolean {
     const specsDir = join(this.workingDir, 'docs', 'specs', domain)
-    return existsSync(specsDir)
+    if (!existsSync(specsDir)) return false
+
+    let files: string[]
+    try {
+      files = readdirSync(specsDir)
+    } catch {
+      return false
+    }
+
+    const tacticalFiles = files.filter(f => /^003-.*-tactical-design.*\.md$/i.test(f))
+    const scenarioFiles = files.filter(f => /^004-.*-test-scenarios.*\.md$/i.test(f))
+    if (tacticalFiles.length === 0 || scenarioFiles.length === 0) return false
+
+    const hasTasks = tacticalFiles.every(file => {
+      try {
+        return ProjectStateService._parseTasksFromMarkdown(
+          readFileSync(join(specsDir, file), 'utf8'),
+          file,
+        ).length > 0
+      } catch {
+        return false
+      }
+    })
+    if (!hasTasks) return false
+
+    return scenarioFiles.every(file => {
+      try {
+        return readFileSync(join(specsDir, file), 'utf8').trim().length > 0
+      } catch {
+        return false
+      }
+    })
   }
 
   extractTasksFromTacticalDesign(domain: string): ExtractedTask[] {
@@ -109,15 +141,21 @@ export class ProjectStateService {
       null
 
     const domain = activeFeature?.domain ?? ''
-    const specFilesPresent = domain ? this.checkSpecFilesPresent(domain) : false
-    const tddOutputPath = domain
-      ? join(this.workingDir, 'docs', 'specs', domain, 'TDD-OUTPUT.json')
-      : ''
-    const tddOutputPresent = tddOutputPath ? existsSync(tddOutputPath) : false
-
     const featureTasks = activeFeature
       ? tasks.filter(t => t.featureId === activeFeature.id)
       : []
+    // Specs from another feature in the same domain must not skip planning for
+    // a feature that has no task provenance yet.
+    const specFilesPresent = Boolean(
+      domain && featureTasks.length > 0 && this.checkSpecFilesPresent(domain),
+    )
+    const tddOutputPath = domain
+      ? join(this.workingDir, 'docs', 'specs', domain, 'TDD-OUTPUT.json')
+      : ''
+    const tddOutputPresent = activeFeature && tddOutputPath
+      ? validateTddOutput(tddOutputPath, activeFeature.id).valid
+      : false
+
     const allTasksCompleted =
       featureTasks.length > 0 && featureTasks.every(t => t.status === 'COMPLETED')
 

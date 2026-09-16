@@ -179,7 +179,7 @@ describe('DevelopmentHandler', () => {
       expect(result).toBe(Phase.REVIEW)
     })
 
-    it('returns REVIEW without invoking developer when TDD-OUTPUT.json exists', async () => {
+    it('rejects malformed TDD-OUTPUT.json instead of invoking review', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
       writeFileSync(tddPath, '{ existing output }')
       const fsm = makeFsm({ updateTaskStatus: vi.fn() })
@@ -187,9 +187,9 @@ describe('DevelopmentHandler', () => {
 
       const result = await handler.handle(Phase.DEVELOPMENT, context)
 
-      expect(result).toBe(Phase.REVIEW)
-      expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
-      expect(context.invokeAgent).not.toHaveBeenCalled()
+      expect(result).toBe(Phase.DEVELOPMENT)
+      expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+      expect(context.invokeAgent).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -226,13 +226,36 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).toContain('maximum 500 characters')
     })
 
-    it('advances to REVIEW after agent invocation when TDD output is absent', async () => {
+    it('stays in DEVELOPMENT after agent invocation when TDD output is absent', async () => {
       const fsm = makeFsm({ updateTaskStatus: vi.fn() })
       const context = makeContext(workingDir, fsm)
 
       const result = await handler.handle(Phase.DEVELOPMENT, context)
 
-      expect(result).toBe(Phase.REVIEW)
+      expect(result).toBe(Phase.DEVELOPMENT)
+    })
+
+    it('does not advance when an existing TDD output is malformed', async () => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      writeFileSync(tddPath, JSON.stringify({ featureId: 'F001' }))
+
+      const fsm = makeFsm({ updateTaskStatus: vi.fn() })
+      const context = makeContext(workingDir, fsm)
+
+      const result = await handler.handle(Phase.DEVELOPMENT, context)
+
+      expect(result).toBe(Phase.DEVELOPMENT)
+      expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+    })
+
+    it('does not advance when the developer does not write TDD output', async () => {
+      const fsm = makeFsm({ updateTaskStatus: vi.fn() })
+      const context = makeContext(workingDir, fsm)
+
+      const result = await handler.handle(Phase.DEVELOPMENT, context)
+
+      expect(result).toBe(Phase.DEVELOPMENT)
+      expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
     })
 
     it('embeds REWORK-LOG.md content in the prompt on retry run (standalone without session)', async () => {

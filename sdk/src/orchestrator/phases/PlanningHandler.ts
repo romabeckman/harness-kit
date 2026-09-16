@@ -1,7 +1,7 @@
 import { Complexity, Phase } from "../types";
 import { AbstractPhaseHandler, Reviewontext } from "./AbstractPhaseHandler";
 import { ContextAssembler } from "../../context-assembler/ContextAssembler";
-import type { Feature } from "../../file-state/types";
+import type { Feature, Task } from "../../file-state/types";
 import type { PlanningPayload } from "../../context-assembler/types";
 import { join } from "node:path";
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
@@ -42,11 +42,21 @@ export class PlanningHandler extends AbstractPhaseHandler {
     if (this.hasCascadeBlock(activeFeature, features))
       return Phase.CASCADE_BLOCKED;
 
-    if (!context.checkSpecFilesPresent(activeFeature.domain)) {
+    const existingFeatureTasks = context.fsm.loadDevelopmentState()
+      .filter(t => t.featureId === activeFeature.id)
+
+    // Domain-level artifacts may belong to a previous feature. Require task
+    // provenance for this feature before allowing planning to be skipped.
+    if (!context.checkSpecFilesPresent(activeFeature.domain) || existingFeatureTasks.length === 0) {
       await this.runScopeRefinement(activeFeature, context);
     }
 
-    await this.ensureTasksAppended(activeFeature, context, phase);
+    await this.ensureTasksAppended(
+      activeFeature,
+      context,
+      phase,
+      existingFeatureTasks.length > 0 ? existingFeatureTasks : undefined,
+    );
 
     const specsDir = getSpecsDir(context.workingDir, activeFeature.domain)
     const taskCount = context.fsm.loadDevelopmentState()
@@ -170,7 +180,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       `<workflow>`,
       `- Before writing any specification, run autonomous refinement: generate decision-changing questions and use each evidence-based recommendation as its answer.`,
       `- Route every refinement question and answer to each applicable \`003-\${PROJECT_NAME}-tactical-design.md\`; use exact project names and include global decisions in every project.`,
-      `- Then run all four autonomous document phases of \`harness-kit:scope-refinement\` in order.`,
+      `- Execute only the document phases required by <expected_outputs>; do not create artifacts that are not listed there.`,
       `- When <refinement_context> is present, treat its human-validated decisions as authoritative.`,
       `</workflow>`,
       ``,
@@ -257,7 +267,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       `<workflow>`,
       `- Before writing any specification, run autonomous refinement: generate decision-changing questions and use each evidence-based recommendation as its answer.`,
       `- Route every refinement question and answer to each applicable \`003-\${PROJECT_NAME}-tactical-design.md\`; use exact project names and include global decisions in every project.`,
-      `- Then run all four autonomous document phases of \`harness-kit:scope-refinement\` in order.`,
+      `- Execute only the document phases required by <expected_outputs>; do not create artifacts that are not listed there.`,
       `</workflow>`,
       ``,
       ...complexityPrompt.expectedOutputs,
@@ -308,9 +318,10 @@ export class PlanningHandler extends AbstractPhaseHandler {
   private async ensureTasksAppended(
     feature: Feature,
     context: Reviewontext,
-    phase: Phase
+    phase: Phase,
+    initialTasks?: Task[],
   ): Promise<void> {
-    const existing = context.fsm
+    const existing = initialTasks ?? context.fsm
       .loadDevelopmentState()
       .filter((t) => t.featureId === feature.id);
 

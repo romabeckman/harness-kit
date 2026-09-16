@@ -245,6 +245,7 @@ export function buildComplexityRules(
       expectedOutputs,
       strictRules: [
         `- Keep analysis concise and produce only the two files listed above.`,
+        `- LOW mode skips Strategic Design and Context Map; do not create 001 or 002 artifacts.`,
       ],
     }
   }

@@ -140,6 +140,11 @@ describe('ReviewHandler', () => {
 
     expect(result).toBe(Phase.TRANSITION)
     expect(context.developerSession).toBeUndefined()
+    expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'COMPLETED')
+    expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({
+      featureId: 'F001',
+      decision: expect.stringContaining('REVIEW skipped'),
+    }))
   })
 
   it('invokes Tech Lead and Adversarial QA without passing developerSession', async () => {

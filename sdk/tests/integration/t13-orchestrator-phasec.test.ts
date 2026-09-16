@@ -11,6 +11,28 @@ let tmpDir: string
 let productDir: string
 let fake: FakeAgentRunner
 
+function writeValidTddOutput(specDir: string): void {
+  writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({
+    featureId: 'F001',
+    status: 'SUCCESS',
+    metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 },
+    modifiedFiles: [],
+    developerHandoff: 'Ready for review.',
+    reworksCount: 0,
+  }))
+}
+
+function writeValidSpecs(specDir: string): void {
+  mkdirSync(specDir, { recursive: true })
+  writeFileSync(join(specDir, '003-sdk_core-tactical-design.md'), [
+    '## Section 6 — Ordered Development Tasks',
+    '```json',
+    '[{"id":"01","title":"Implement SDK core","description":"Implement SDK core"}]',
+    '```',
+  ].join('\n'))
+  writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios\n\n- SDK core succeeds.')
+}
+
 function setupFullRun(options: {
   reworks?: number
   backlogStatus?: string
@@ -40,9 +62,8 @@ function setupFullRun(options: {
   }, null, 2))
 
   const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
-  mkdirSync(specDir, { recursive: true })
-  writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
-  writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001', tasksCompleted: 1 }))
+  writeValidSpecs(specDir)
+  writeValidTddOutput(specDir)
 }
 
 beforeEach(() => {
@@ -194,8 +215,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
       const origRun = fake.run.bind(fake)
       fake.run = async (inv) => {
         if ((inv.skill ?? '').endsWith('scope-refinement')) {
-          mkdirSync(specDir, { recursive: true })
-          writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios')
+          writeValidSpecs(specDir)
           const devState = [
             '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |',
             '| --- | --- | --- | --- | --- | --- | --- |',
@@ -205,7 +225,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         }
         if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
           tddCallCount++
-          writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001' }))
+          writeValidTddOutput(join(tmpDir, 'docs', 'specs', 'sdk_core'))
         }
         return origRun(inv)
       }
@@ -298,7 +318,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
           if (!existsSync(tddOutputPath)) {
             tddOutputDeleted = true
           }
-          writeFileSync(tddOutputPath, JSON.stringify({ featureId: 'F001' }))
+          writeValidTddOutput(join(tmpDir, 'docs', 'specs', 'sdk_core'))
         }
         return origRun(inv)
       }

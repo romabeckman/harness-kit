@@ -10,7 +10,7 @@ import {
   formatProjectPathsList,
   formatTasksList,
 } from '../utils/PromptHelpers'
-import { getSpecsDir } from '../utils/PhaseFileUtils'
+import { getSpecsDir, validateTddOutput } from '../utils/PhaseFileUtils'
 import type { Feature, Task } from '../../file-state/types'
 import type { DevelopmenPayload } from '../../context-assembler/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
@@ -28,25 +28,37 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const tddOutputPath = join(getSpecsDir(context.workingDir, activeFeature.domain), 'TDD-OUTPUT.json')
     let pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
 
-    const shouldGoToReview = this.shouldGoToReview(activeFeature, tddOutputPath, context, pendingTasks)
-    if (shouldGoToReview) {
+    const existingHandoff = validateTddOutput(tddOutputPath, activeFeature.id)
+    if (existingHandoff.valid) {
+      this.markTasksCompleted(activeFeature, context, pendingTasks)
       return Phase.REVIEW
     }
 
+    if (existsSync(tddOutputPath)) {
+      context.fsm.appendDecision({
+        featureId: activeFeature.id,
+        decision: `DEVELOPMENT handoff rejected: ${existingHandoff.reason}`,
+      })
+    }
+
     await this.executeChunk(activeFeature, pendingTasks, tddOutputPath, context)
-    return Phase.REVIEW
+    const generatedHandoff = validateTddOutput(tddOutputPath, activeFeature.id)
+    if (generatedHandoff.valid) {
+      this.markTasksCompleted(activeFeature, context, pendingTasks)
+      return Phase.REVIEW
+    }
+
+    context.fsm.appendDecision({
+      featureId: activeFeature.id,
+      decision: `DEVELOPMENT handoff rejected: ${generatedHandoff.reason}`,
+    })
+    return Phase.DEVELOPMENT
   }
 
-  private shouldGoToReview(activeFeature: Feature, tddOutputPath: string, context: Reviewontext, pendingTasks: Task[]): boolean {
-    if (existsSync(tddOutputPath)) {
-      if (pendingTasks.length > 0) {
-        for (const task of pendingTasks) {
-          context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
-        }
-      }
-      return true
+  private markTasksCompleted(activeFeature: Feature, context: Reviewontext, pendingTasks: Task[]): void {
+    for (const task of pendingTasks) {
+      context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
     }
-    return false
   }
 
   private async executeChunk(activeFeature: Feature, chunkTasks: Task[], tddOutputPath: string, context: Reviewontext): Promise<void> {

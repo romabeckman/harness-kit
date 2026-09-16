@@ -38,8 +38,12 @@ export class ReviewHandler extends AbstractPhaseHandler {
     if (context.config.skipValidation) {
       process.stdout.write(`[phase_review] --skip-validation active — skipping review for feature ${activeFeature.id}\n`)
       clearFeatureDeveloperSessions(context)
-      context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED', { tl: 1, adv: 1 })
+      context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED')
       context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'COMPLETED')
+      context.fsm.appendDecision({
+        featureId: activeFeature.id,
+        decision: `REVIEW skipped by execution policy for feature ${activeFeature.id}.`,
+      })
       return Phase.TRANSITION
     }
 
