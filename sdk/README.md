@@ -305,13 +305,13 @@ hrns help settings        # show help for hrns settings
 > `--model` overrides the default for **all** phases. For per-phase model tuning, use `settings.json` instead.
 
 > [!TIP]
-> `--refine` enables an interactive pre-planning Socratic questionnaire (`Phase.REFINEMENT`). The grumpy tech-lead agent analyzes your project scope, surfaces architectural trade-offs into `docs/product/QUESTIONS.json`, collects human-validated choices, and consolidates them into `docs/product/REFINEMENT.md` prior to Phase A planning.
+> `--mode thinking` and `--mode deep_thinking` enable the interactive pre-planning Socratic questionnaire (`Phase.REFINEMENT`). Use `--refine` to enable it for other modes. The grumpy tech-lead agent analyzes your project scope, surfaces architectural trade-offs into `docs/product/QUESTIONS.json`, collects human-validated choices, and consolidates them into `docs/product/REFINEMENT.md` prior to Phase A planning.
 
 > [!TIP]
 > `--skip-validation` is useful for CI speed-runs or when you want to iterate on Phase B output without paying the cost of two agent reviews. All features are marked **COMPLETED** with neutral scores (TL: 1, Adv: 1) and the run proceeds directly to Phase D (state check) and then Phase E (memory).
 
 > [!TIP]
-> `--mode quick` is the fastest cycle: it runs Bootstrap → Planning → Development → Deploy, skipping both the Review (Phase C) and Memory (Phase E) phases. Ideal for rapid prototyping.
+> `--mode quick` is the fastest cycle: it runs Bootstrap → Planning → Development → Memory → Deploy, skipping Review (Phase C). Ideal for rapid prototyping.
 
 > [!TIP]
 > `--mode fast` forces complexity `LOW` on Phase A (scope refinement generates only docs `003` + `004`, skipping `001`–`002`). Use it for straightforward bug fixes or minor enhancements.

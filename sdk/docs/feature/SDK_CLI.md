@@ -11,7 +11,7 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_core"
-updated: "2026-09-13"
+updated: "2026-09-15"
 ---
 
 ```graph
@@ -102,7 +102,7 @@ hrns run --reset
 | `--agent, -a` | string | No | Agent type (e.g. `claude-cli`) | — |
 | `--model, -m` | string | No | Model name | — |
 | `--effort, -e` | string | No | Reasoning effort level for the model | — |
-| `--mode, -M` | string | No | Execution mode: `quick \| fast \| thinking \| deep_thinking` | `thinking` |
+| `--mode, -M` | string | No | Execution mode: `quick \| fast \| thinking \| deep_thinking`; explicit `thinking` and `deep_thinking` enable pre-planning `REFINEMENT`; fallback mode does not | `fast` (interactive) |
 | `--complexity, -c` | string | No | Scope complexity override: `LOW \| HIGH \| AUTO` | Mode-inferred |
 | `--reset` | boolean | No | Force a new cycle | false |
 | `--resume` | boolean | No | Resume from last saved session | false |

@@ -30,9 +30,9 @@ The CLI runner may use unattended permission flags. Steering text guides the mod
 
 | Mode | Complexity | Review | Refinement | Memory | Deploy |
 | --- | --- | --- | --- | --- | --- |
-| `quick` | LOW | skipped | no | skipped | enabled |
+| `quick` | LOW | skipped | no | enabled | enabled |
 | `fast` | LOW | adversarial QA only | no | enabled | enabled |
-| `thinking` / `default` | AUTO | tech lead + QA | no | enabled | enabled |
+| `thinking` / `default` | AUTO | tech lead + QA | yes | enabled | enabled |
 | `deep_thinking` / `slow` | HIGH | tech lead + QA | yes | enabled | enabled |
 
 `--complexity LOW|HIGH|AUTO` overrides planning complexity, but it does not change a mode's skip behavior. `--skip-validation`, `--skip-memory`, and `--skip-deploy` add independent skips.
@@ -117,7 +117,7 @@ hrns run \
 - `BLOCKED` when a crash or unresolved HIGH/CRITICAL vulnerability remains.
 - `FAILED` for a non-critical gate failure after budget exhaustion.
 
-Use `--mode quick` only when skipping review and memory is intentional. Quick mode marks features complete without reviewer calls. It still deploys unless `--skip-deploy` is present.
+Use `--mode quick` when skipping review is intentional. Quick mode marks features complete without reviewer calls, runs Memory, and deploys unless `--skip-deploy` is present.
 
 ## Scenario 5 — Deep refinement
 

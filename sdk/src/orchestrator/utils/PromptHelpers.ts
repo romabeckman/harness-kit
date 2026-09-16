@@ -203,26 +203,69 @@ export function formatProjectPathsList(projectPaths: string[]): string {
   return projectPaths.map((p) => `- ${p}`).join('\n')
 }
 
-/** Builds the scope complexity rules block for LOW, HIGH, or AUTO evaluation. */
-export function buildComplexityRules(complexity?: Complexity): string[] {
+export interface ComplexityPromptFiles {
+  outputDirectory: string
+  problemSpaceFile: string
+  contextMapFile: string
+  tacticalDesignFile: string
+  testScenariosFile: string
+}
+
+export interface ComplexityPromptSections {
+  expectedOutputs: string[]
+  strictRules: string[]
+}
+
+/** Builds expected outputs and strict rules for LOW, HIGH, or AUTO evaluation. */
+export function buildComplexityRules(
+  complexity: Complexity | undefined,
+  files: ComplexityPromptFiles,
+): ComplexityPromptSections {
   const resolved = complexity ?? Complexity.AUTO
-  if (resolved === Complexity.LOW) {
-    return [
-      `- Keep analysis concise, reuse established patterns, and produce only 003–004 artifacts.`,
+  const outputFiles = resolved === Complexity.LOW
+    ? [
+      `- \`${files.tacticalDesignFile}\` (one per project in <project_paths>) — project-scoped Refinement Questions and Answers plus Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array of objects`,
+      `- \`${files.testScenariosFile}\` (one per project in <project_paths>) Test Scenarios`,
     ]
+    : [
+      `- \`${files.problemSpaceFile}\` Strategic Design: Domain Events, Subdomains, Ubiquitous Language (Focused ONLY on the target feature; maximum ${INLINE_THRESHOLD} characters)`,
+      `- \`${files.contextMapFile}\` Bounded Contexts and Context Map (maximum ${INLINE_THRESHOLD} characters)`,
+      `- \`${files.tacticalDesignFile}\` (one per project in <project_paths>) — project-scoped Refinement Questions and Answers plus Tactical Design; must include \`## Section 6 — Ordered Development Tasks\` with a fenced JSON array of objects`,
+      `- \`${files.testScenariosFile}\` (one per project in <project_paths>) Test Scenarios`,
+    ]
+  const expectedOutputs = [
+    `<expected_outputs>`,
+    `Produce, under \`${files.outputDirectory}\` (one file per project in <project_paths> for phases 3 and 4, where \${PROJECT_NAME} is the project name linked to each project in <project_paths>):`,
+    ...outputFiles,
+    `</expected_outputs>`,
+  ]
+
+  if (resolved === Complexity.LOW) {
+    return {
+      expectedOutputs,
+      strictRules: [
+        `- Keep analysis concise and produce only the two files listed above.`,
+      ],
+    }
   }
   if (resolved === Complexity.HIGH) {
-    return [
-      `- Deepen analysis of integrations, failure modes, security boundaries, concurrency, and compatibility risks.`,
-      `- Resolve refinement questions from scope and project evidence; record each answer in every applicable \`003-\${PROJECT_NAME}-tactical-design.md\`.`,
-    ]
+    return {
+      expectedOutputs,
+      strictRules: [
+        `- Deepen analysis of integrations, failure modes, security boundaries, concurrency, and compatibility risks.`,
+        `- Resolve refinement questions from scope and project evidence; record each answer in every applicable \`003-\${PROJECT_NAME}-tactical-design.md\`.`,
+      ],
+    }
   }
-  return [
-    `- Evaluate complexity from requirement clarity, structural ambiguity, dependencies, integrations, layers, compatibility, and testing needs.`,
-    `- Produce only 003–004 artifacts by default.`,
-    `- Produce 001–002 artifacts when <project_paths> contains more than one project or the scope has many integrations across modules and multiple layers.`,
-    `- Resolve refinement questions from scope and project evidence; record each answer in every applicable \`003-\${PROJECT_NAME}-tactical-design.md\`.`,
-  ]
+  return {
+    expectedOutputs,
+    strictRules: [
+      `- Evaluate complexity from requirement clarity, structural ambiguity, dependencies, integrations, layers, compatibility, and testing needs.`,
+      `- Produce only 003–004 artifacts by default.`,
+      `- Produce 001–002 artifacts when <project_paths> contains 2+ projects, or when the scope identifies 3+ distinct integration points spanning 2+ modules and 2+ architectural layers; count each API, database, queue/topic, third-party service, or process boundary as one integration point.`,
+      `- Resolve refinement questions from scope and project evidence; record each answer in every applicable \`003-\${PROJECT_NAME}-tactical-design.md\`.`,
+    ],
+  }
 }
 
 /** Formats feature dependencies as a comma-separated list of specs folders or 'None'. */

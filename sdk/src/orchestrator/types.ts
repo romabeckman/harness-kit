@@ -35,10 +35,11 @@ export enum Complexity {
 /**
  * Execution mode for `hrns run --mode <mode>`.
  *
- * quick         — Bootstrap → Planning → Development → Deploy  (skips Review and Memory)
+ * quick         — Bootstrap → Planning → Development → Memory → Deploy  (skips Review)
  * fast          — All phases, complexity forced to LOW
- * thinking      — All phases, complexity AUTO  (default when --mode is omitted)
- * deep_thinking — All phases, complexity forced to HIGH
+ * thinking      — All phases, complexity AUTO, pre-planning REFINEMENT
+ * deep_thinking — All phases, complexity forced to HIGH, pre-planning REFINEMENT
+ * omitted/invalid — All phases, complexity AUTO, no REFINEMENT
  */
 export enum RunMode {
   QUICK = 'quick',

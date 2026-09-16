@@ -348,27 +348,52 @@ describe('PromptHelpers', () => {
 
   describe('buildComplexityRules', () => {
     it('returns LOW override rules when complexity is LOW', () => {
-      const result = buildComplexityRules('LOW' as any)
-      expect(result).toContain('- Keep analysis concise, reuse established patterns, and produce only 003–004 artifacts.')
-      expect(result.join('\n')).not.toContain("For 'LOW'")
-      expect(result.join('\n')).not.toContain('Use LOW complexity')
+      const result = buildComplexityRules('LOW' as any, {
+        outputDirectory: '/specs/hello_world_cli',
+        problemSpaceFile: '/specs/hello_world_cli/001-problem-space.md',
+        contextMapFile: '/specs/hello_world_cli/002-context-map.md',
+        tacticalDesignFile: '/specs/hello_world_cli/003-${PROJECT_NAME}-tactical-design.md',
+        testScenariosFile: '/specs/hello_world_cli/004-${PROJECT_NAME}-test-scenarios.md',
+      })
+
+      expect(result.expectedOutputs[0]).toBe('<expected_outputs>')
+      expect(result.expectedOutputs).toContain('- `/specs/hello_world_cli/003-${PROJECT_NAME}-tactical-design.md` (one per project in <project_paths>) — project-scoped Refinement Questions and Answers plus Tactical Design; must include `## Section 6 — Ordered Development Tasks` with a fenced JSON array of objects')
+      expect(result.expectedOutputs).toContain('- `/specs/hello_world_cli/004-${PROJECT_NAME}-test-scenarios.md` (one per project in <project_paths>) Test Scenarios')
+      expect(result.expectedOutputs.join('\n')).not.toContain('001-problem-space.md')
+      expect(result.expectedOutputs.join('\n')).not.toContain('002-context-map.md')
+      expect(result.strictRules).toContain('- Keep analysis concise and produce only the two files listed above.')
+      expect(result.strictRules.join('\n')).not.toContain('<expected_outputs>')
     })
 
     it('returns HIGH override rules when complexity is HIGH', () => {
-      const result = buildComplexityRules('HIGH' as any)
-      expect(result).toContain('- Deepen analysis of integrations, failure modes, security boundaries, concurrency, and compatibility risks.')
-      expect(result).toContain('- Resolve refinement questions from scope and project evidence; record each answer in every applicable `003-${PROJECT_NAME}-tactical-design.md`.')
-      expect(result.join('\n')).not.toContain("For 'HIGH'")
-      expect(result.join('\n')).not.toContain('Use HIGH complexity')
+      const result = buildComplexityRules('HIGH' as any, {
+        outputDirectory: '/specs/hello_world_cli',
+        problemSpaceFile: '/specs/hello_world_cli/001-problem-space.md',
+        contextMapFile: '/specs/hello_world_cli/002-context-map.md',
+        tacticalDesignFile: '/specs/hello_world_cli/003-${PROJECT_NAME}-tactical-design.md',
+        testScenariosFile: '/specs/hello_world_cli/004-${PROJECT_NAME}-test-scenarios.md',
+      })
+      expect(result.strictRules).toContain('- Deepen analysis of integrations, failure modes, security boundaries, concurrency, and compatibility risks.')
+      expect(result.strictRules).toContain('- Resolve refinement questions from scope and project evidence; record each answer in every applicable `003-${PROJECT_NAME}-tactical-design.md`.')
+      expect(result.expectedOutputs.join('\n')).toContain('001-problem-space.md')
+      expect(result.expectedOutputs.join('\n')).toContain('002-context-map.md')
     })
 
     it('returns AUTO evaluation rules when complexity is AUTO or undefined', () => {
-      const resultAuto = buildComplexityRules('AUTO' as any)
-      expect(resultAuto[0]).toContain('Evaluate complexity from requirement clarity')
-      expect(resultAuto).toContain('- Produce only 003–004 artifacts by default.')
-      expect(resultAuto).toContain('- Produce 001–002 artifacts when <project_paths> contains more than one project or the scope has many integrations across modules and multiple layers.')
-      const resultUndef = buildComplexityRules(undefined)
-      expect(resultUndef[0]).toContain('Evaluate complexity from requirement clarity')
+      const files = {
+        outputDirectory: '/specs/hello_world_cli',
+        problemSpaceFile: '/specs/hello_world_cli/001-problem-space.md',
+        contextMapFile: '/specs/hello_world_cli/002-context-map.md',
+        tacticalDesignFile: '/specs/hello_world_cli/003-${PROJECT_NAME}-tactical-design.md',
+        testScenariosFile: '/specs/hello_world_cli/004-${PROJECT_NAME}-test-scenarios.md',
+      }
+      const resultAuto = buildComplexityRules('AUTO' as any, files)
+      expect(resultAuto.strictRules[0]).toContain('Evaluate complexity from requirement clarity')
+      expect(resultAuto.strictRules).toContain('- Produce only 003–004 artifacts by default.')
+      expect(resultAuto.strictRules).toContain('- Produce 001–002 artifacts when <project_paths> contains 2+ projects, or when the scope identifies 3+ distinct integration points spanning 2+ modules and 2+ architectural layers; count each API, database, queue/topic, third-party service, or process boundary as one integration point.')
+      expect(resultAuto.expectedOutputs).toContain('- `/specs/hello_world_cli/001-problem-space.md` Strategic Design: Domain Events, Subdomains, Ubiquitous Language (Focused ONLY on the target feature; maximum 5000 characters)')
+      const resultUndef = buildComplexityRules(undefined, files)
+      expect(resultUndef.strictRules[0]).toContain('Evaluate complexity from requirement clarity')
     })
   })
 

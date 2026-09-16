@@ -9,10 +9,21 @@ describe('resolveMode', () => {
     expect(resolved.enableRefinement).toBe(true)
   })
 
-  it('returns enableRefinement undefined/falsy for other modes', () => {
-    expect(resolveMode(RunMode.THINKING).enableRefinement).toBeFalsy()
+  it('returns enableRefinement true for THINKING mode', () => {
+    expect(resolveMode(RunMode.THINKING).enableRefinement).toBe(true)
+  })
+
+  it('keeps refinement disabled for undefined mode fallback', () => {
+    expect(resolveMode(undefined).enableRefinement).toBe(false)
+  })
+
+  it('returns enableRefinement false for modes without refinement', () => {
     expect(resolveMode(RunMode.FAST).enableRefinement).toBeFalsy()
     expect(resolveMode(RunMode.QUICK).enableRefinement).toBeFalsy()
+  })
+
+  it('keeps Memory enabled for QUICK mode', () => {
+    expect(resolveMode(RunMode.QUICK).skipMemory).toBe(false)
   })
 
   it('maps RunModes to expected Complexity levels', () => {

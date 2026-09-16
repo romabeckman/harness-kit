@@ -32,7 +32,7 @@ export async function offerDevelopmentRenewal(
   const mode = await selectMode({
     message: 'Select development mode:',
     choices: [
-      { name: 'quick', value: 'quick', description: 'Low complexity; skip Review and Memory' },
+      { name: 'quick', value: 'quick', description: 'Low complexity; skip Review; keep Memory' },
       { name: 'fast', value: 'fast', description: 'Low complexity; run Review and Memory' },
       { name: 'thinking', value: 'thinking', description: 'Automatic complexity; full pipeline' },
       { name: 'deep thinking', value: 'deep_thinking', description: 'High complexity; refinement and full pipeline' },
