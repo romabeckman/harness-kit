@@ -19,7 +19,7 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
   │  Parses scope → writes BACKLOG.md with features, layers, priorities  │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │
-                                 ▼  (optional via --refine or --mode deep_thinking)
+                                 ▼  (optional via --refine or --mode thinking/deep_thinking)
   ┌──────────────────────────────────────────────────────────────────────┐
   │  REFINEMENT  ·  the-grumpy-tech-lead + software-architect            │
   │  Generates QUESTIONS.json → collects answers → REFINEMENT.md         │
@@ -311,7 +311,10 @@ hrns help settings        # show help for hrns settings
 > `--skip-validation` is useful for CI speed-runs or when you want to iterate on Phase B output without paying the cost of two agent reviews. All features are marked **COMPLETED** with neutral scores (TL: 1, Adv: 1) and the run proceeds directly to Phase D (state check) and then Phase E (memory).
 
 > [!TIP]
-> `--mode quick` is the fastest cycle: it runs Bootstrap → Planning → Development → Memory → Deploy, skipping Review (Phase C). Ideal for rapid prototyping.
+> `--mode quick` is the fastest cycle: it runs Bootstrap → Planning → Development → Memory → Deploy, skipping Review (Phase C). It uses LOW planning and generates only `003` and `004` spec files. Ideal for rapid prototyping.
+
+> [!TIP]
+> With AUTO complexity, planning generates `001` and `002` when `<project_paths>` contains 2+ projects, or when the scope identifies 3+ distinct integration points spanning 2+ modules and 2+ architectural layers. Count each API, database, queue/topic, third-party service, or process boundary as one integration point.
 
 > [!TIP]
 > `--mode fast` forces complexity `LOW` on Phase A (scope refinement generates only docs `003` + `004`, skipping `001`–`002`). Use it for straightforward bug fixes or minor enhancements.

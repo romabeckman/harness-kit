@@ -37,6 +37,8 @@ The CLI runner may use unattended permission flags. Steering text guides the mod
 
 `--complexity LOW|HIGH|AUTO` overrides planning complexity, but it does not change a mode's skip behavior. `--skip-validation`, `--skip-memory`, and `--skip-deploy` add independent skips.
 
+For AUTO complexity, planning generates `001` and `002` when `<project_paths>` contains 2+ projects, or when the scope identifies 3+ distinct integration points spanning 2+ modules and 2+ architectural layers. Count each API, database, queue/topic, third-party service, or process boundary as one integration point.
+
 ## Scenario 1 — Start a reviewed project safely
 
 ```bash
@@ -52,7 +54,7 @@ This command:
 
 1. Deletes and recreates `docs/product/` for a new cycle.
 2. Persists scope and project paths.
-3. Lets planning classify LOW or HIGH complexity.
+3. Lets planning evaluate AUTO complexity and select the output documents.
 4. Runs both review agents.
 5. Updates project memory.
 6. Stops without staging, committing, or pushing.
