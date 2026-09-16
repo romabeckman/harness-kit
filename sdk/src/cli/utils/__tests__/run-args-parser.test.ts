@@ -124,17 +124,17 @@ describe('parseRunArgs', () => {
 // ─── resolveMode ─────────────────────────────────────────────────────────────
 
 describe('resolveMode', () => {
-  it('defaults to AUTO complexity, no skips when mode is undefined', () => {
+  it('keeps AUTO complexity for undefined mode fallback', () => {
     const r = resolveMode(undefined)
     expect(r.complexity).toBe(Complexity.AUTO)
     expect(r.skipValidation).toBe(false)
     expect(r.skipMemory).toBe(false)
-    expect(r.enableRefinement).toBe(false)
+    expect(r.enableRefinement).toBe(true)
   })
 
-  it('thinking mode → AUTO, no skips + REFINEMENT', () => {
+  it('thinking mode → LOW, no skips + REFINEMENT', () => {
     const r = resolveMode(RunMode.THINKING)
-    expect(r.complexity).toBe(Complexity.AUTO)
+    expect(r.complexity).toBe(Complexity.LOW)
     expect(r.skipValidation).toBe(false)
     expect(r.skipMemory).toBe(false)
     expect(r.enableRefinement).toBe(true)

@@ -13,8 +13,9 @@ describe('resolveMode', () => {
     expect(resolveMode(RunMode.THINKING).enableRefinement).toBe(true)
   })
 
-  it('keeps refinement disabled for undefined mode fallback', () => {
-    expect(resolveMode(undefined).enableRefinement).toBe(false)
+  it('keeps AUTO complexity for undefined mode fallback', () => {
+    expect(resolveMode(undefined).complexity).toBe(Complexity.AUTO)
+    expect(resolveMode(undefined).enableRefinement).toBe(true)
   })
 
   it('returns enableRefinement false for modes without refinement', () => {
@@ -29,7 +30,7 @@ describe('resolveMode', () => {
   it('maps RunModes to expected Complexity levels', () => {
     expect(resolveMode(RunMode.QUICK).complexity).toBe(Complexity.LOW)
     expect(resolveMode(RunMode.FAST).complexity).toBe(Complexity.LOW)
-    expect(resolveMode(RunMode.THINKING).complexity).toBe(Complexity.AUTO)
+    expect(resolveMode(RunMode.THINKING).complexity).toBe(Complexity.LOW)
     expect(resolveMode(RunMode.DEEP_THINKING).complexity).toBe(Complexity.HIGH)
     expect(resolveMode(undefined).complexity).toBe(Complexity.AUTO)
   })

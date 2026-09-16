@@ -295,7 +295,7 @@ hrns help settings        # show help for hrns settings
 | `--reworks <1–10>` | | Max rework cycles before cascade fail | `--reworks 3` |
 | `--steering <text>` | | Additional orchestration rules | `--steering "prefer async/await"` |
 | `--refine` | | Enable interactive pre-planning Socratic questionnaire | `--refine` |
-| `--mode <mode>` | `-M` | Execution mode: `quick`, `fast` (default), `thinking`, `deep_thinking` | `--mode fast` |
+| `--mode <mode>` | `-M` | Execution mode: `quick`, `fast`, `thinking` (default), `deep_thinking` | `--mode thinking` |
 | `--skip-validation` | | Skip Phase C entirely — jump straight to Phase D | |
 | `--skip-memory` | | Skip Phase E entirely — jump straight to Phase F | |
 | `--skip-deploy` | | Skip DEPLOY phase — pipeline halts after Phase F | |
@@ -305,7 +305,7 @@ hrns help settings        # show help for hrns settings
 > `--model` overrides the default for **all** phases. For per-phase model tuning, use `settings.json` instead.
 
 > [!TIP]
-> `--mode thinking` and `--mode deep_thinking` enable the interactive pre-planning Socratic questionnaire (`Phase.REFINEMENT`). Use `--refine` to enable it for other modes. The grumpy tech-lead agent analyzes your project scope, surfaces architectural trade-offs into `docs/product/QUESTIONS.json`, collects human-validated choices, and consolidates them into `docs/product/REFINEMENT.md` prior to Phase A planning.
+> `--mode thinking` uses LOW complexity and `--mode deep_thinking` forces HIGH complexity; both enable the interactive pre-planning Socratic questionnaire (`Phase.REFINEMENT`). Use `--refine` to enable it for other modes. The grumpy tech-lead agent analyzes your project scope, surfaces architectural trade-offs into `docs/product/QUESTIONS.json`, collects human-validated choices, and consolidates them into `docs/product/REFINEMENT.md` prior to Phase A planning.
 
 > [!TIP]
 > `--skip-validation` is useful for CI speed-runs or when you want to iterate on Phase B output without paying the cost of two agent reviews. All features are marked **COMPLETED** with neutral scores (TL: 1, Adv: 1) and the run proceeds directly to Phase D (state check) and then Phase E (memory).
