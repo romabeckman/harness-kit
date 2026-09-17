@@ -181,7 +181,7 @@ describe('DevelopmentHandler', () => {
       expect(context.invokeAgent).not.toHaveBeenCalled()
     })
 
-    it('discards a valid-looking stale TDD output when tasks remain pending', async () => {
+    it('returns REVIEW from existing TDD output while tasks remain pending', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
       writeFileSync(tddPath, JSON.stringify({
         featureId: 'F001',
@@ -193,22 +193,17 @@ describe('DevelopmentHandler', () => {
       }))
 
       const fsm = makeFsm({ updateTaskStatus: vi.fn() })
-      const context = makeContext(workingDir, fsm, async () => {
-        expect(existsSync(tddPath)).toBe(false)
-        return { success: true, stdout: '', stderr: '', raw: '' }
-      })
+      const context = makeContext(workingDir, fsm)
 
       const result = await handler.handle(Phase.DEVELOPMENT, context)
 
-      expect(result).toBe(Phase.DEVELOPMENT)
-      expect(context.invokeAgent).toHaveBeenCalledTimes(1)
-      expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
-      expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({
-        decision: expect.stringContaining('pending tasks'),
-      }))
+      expect(result).toBe(Phase.REVIEW)
+      expect(context.invokeAgent).not.toHaveBeenCalled()
+      expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+      expect(fsm.appendDecision).not.toHaveBeenCalled()
     })
 
-    it('rejects malformed TDD-OUTPUT.json instead of invoking review', async () => {
+    it('returns REVIEW from malformed existing TDD-OUTPUT.json', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
       writeFileSync(tddPath, '{ existing output }')
       const fsm = makeFsm({ updateTaskStatus: vi.fn() })
@@ -216,14 +211,14 @@ describe('DevelopmentHandler', () => {
 
       const result = await handler.handle(Phase.DEVELOPMENT, context)
 
-      expect(result).toBe(Phase.DEVELOPMENT)
-      expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
-      expect(context.invokeAgent).toHaveBeenCalledTimes(1)
+      expect(result).toBe(Phase.REVIEW)
+      expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+      expect(context.invokeAgent).not.toHaveBeenCalled()
     })
   })
 
   describe('handle — chunk execution', () => {
-    it('returns REVIEW after agent runs', async () => {
+    it('returns REVIEW after agent runs with percentage coverage', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
 
       const tasks = [makeTask({ taskId: 'T01', status: 'NOT_STARTED' })]
@@ -238,7 +233,7 @@ describe('DevelopmentHandler', () => {
         writeFileSync(tddPath, JSON.stringify({
           featureId: 'F001',
           status: 'SUCCESS',
-          metrics: { totalTests: 3, passed: 3, failed: 0, coverage: 0.85 },
+          metrics: { totalTests: 3, passed: 3, failed: 0, coverage: 100 },
           modifiedFiles: [],
           developerHandoff: 'Ready for review.',
           reworksCount: 0,
@@ -255,16 +250,17 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).toContain('maximum 500 characters')
     })
 
-    it('stays in DEVELOPMENT after agent invocation when TDD output is absent', async () => {
+    it('returns REVIEW after agent invocation when TDD output is absent', async () => {
       const fsm = makeFsm({ updateTaskStatus: vi.fn() })
       const context = makeContext(workingDir, fsm)
 
       const result = await handler.handle(Phase.DEVELOPMENT, context)
 
-      expect(result).toBe(Phase.DEVELOPMENT)
+      expect(result).toBe(Phase.REVIEW)
+      expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
     })
 
-    it('does not advance when an existing TDD output is malformed', async () => {
+    it('returns REVIEW without invoking for existing malformed TDD output', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
       writeFileSync(tddPath, JSON.stringify({ featureId: 'F001' }))
 
@@ -273,17 +269,18 @@ describe('DevelopmentHandler', () => {
 
       const result = await handler.handle(Phase.DEVELOPMENT, context)
 
-      expect(result).toBe(Phase.DEVELOPMENT)
-      expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+      expect(result).toBe(Phase.REVIEW)
+      expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+      expect(context.invokeAgent).not.toHaveBeenCalled()
     })
 
-    it('does not advance when the developer does not write TDD output', async () => {
+    it('returns REVIEW when the developer does not write TDD output', async () => {
       const fsm = makeFsm({ updateTaskStatus: vi.fn() })
       const context = makeContext(workingDir, fsm)
 
       const result = await handler.handle(Phase.DEVELOPMENT, context)
 
-      expect(result).toBe(Phase.DEVELOPMENT)
+      expect(result).toBe(Phase.REVIEW)
       expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
     })
 
@@ -469,6 +466,7 @@ describe('DevelopmentHandler', () => {
       const fsm = makeFsm({
         loadBootstrapConfig: vi.fn().mockReturnValue(makeConfig()),
         loadBacklog: vi.fn().mockReturnValue([makeFeature({ id: 'F002', reworks: 1 })]),
+        loadDevelopmentState: vi.fn().mockReturnValue([makeTask({ featureId: 'F002' })]),
         updateTaskStatus: vi.fn(),
       })
 
