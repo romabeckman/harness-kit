@@ -103,8 +103,8 @@ REQUIRED: Run Tech Lead and adversarial QA reviews when validation is enabled, i
 REQUIRED: Separate typed `readTddOutput` parsing from `summarizeTddOutput` audit formatting.
 REQUIRED: In `LOW` planning, request only `003-*` and `004-*`; never generate global `001-*` or `002-*` documents.
 REQUIRED: Accept planning only when every tactical design has ordered tasks, every scenario file is non-empty, and the active feature owns task rows.
-REQUIRED: Advance to `REVIEW` after the development agent invocation completes and mark the pending tasks `COMPLETED`.
-REQUIRED: Discard any pre-existing TDD handoff while tasks remain pending so review receives current-attempt context when available.
+REQUIRED: Advance to `REVIEW` after the development agent invocation completes. When TDD output already exists, mark pending tasks `COMPLETED` before review.
+REQUIRED: Use existing `TDD-OUTPUT.json` as a resume signal; skip another development invocation and send the feature to review.
 REQUIRED: Treat `TDD-OUTPUT.json` as optional review context, not as a phase-transition gate.
 REQUIRED: When review is skipped, record the decision without synthetic Tech Lead or QA scores.
 REQUIRED: Summarize completed work and review focus in `TDD-OUTPUT.json.developerHandoff` using at most 500 characters.

@@ -28,26 +28,25 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const tddOutputPath = join(getSpecsDir(context.workingDir, activeFeature.domain), 'TDD-OUTPUT.json')
     const pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
 
-    if (pendingTasks.length === 0) {
+    const shouldGoToReview = this.shouldGoToReview(activeFeature, tddOutputPath, context, pendingTasks)
+    if (shouldGoToReview) {
       return Phase.REVIEW
     }
 
-    if (existsSync(tddOutputPath)) {
-      context.fsm.appendDecision({
-        featureId: activeFeature.id,
-        decision: 'DEVELOPMENT handoff discarded: pending tasks require a fresh handoff.',
-      })
-    }
-
     await this.executeChunk(activeFeature, pendingTasks, tddOutputPath, context)
-    this.markTasksCompleted(activeFeature, context, pendingTasks)
     return Phase.REVIEW
   }
 
-  private markTasksCompleted(activeFeature: Feature, context: Reviewontext, pendingTasks: Task[]): void {
-    for (const task of pendingTasks) {
-      context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
+  private shouldGoToReview(activeFeature: Feature, tddOutputPath: string, context: Reviewontext, pendingTasks: Task[]): boolean {
+    if (existsSync(tddOutputPath)) {
+      if (pendingTasks.length > 0) {
+        for (const task of pendingTasks) {
+          context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
+        }
+      }
+      return true
     }
+    return false
   }
 
   private async executeChunk(activeFeature: Feature, chunkTasks: Task[], tddOutputPath: string, context: Reviewontext): Promise<void> {
