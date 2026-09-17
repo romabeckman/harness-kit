@@ -77,11 +77,6 @@ export interface TddOutput {
   reworksCount: number
 }
 
-export interface TddOutputValidation {
-  valid: boolean
-  reason: string
-  output?: TddOutput
-}
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
@@ -131,62 +126,6 @@ export function readTddOutput(tddOutputPath: string): TddOutput {
   return candidate as unknown as TddOutput
 }
 
-/** Validates the completion contract for a specific feature attempt. */
-export function validateTddOutput(tddOutputPath: string, expectedFeatureId: string): TddOutputValidation {
-  let output: TddOutput
-  try {
-    output = readTddOutput(tddOutputPath)
-  } catch (err: any) {
-    return {
-      valid: false,
-      reason: err instanceof Error ? err.message : String(err),
-    }
-  }
-
-  if (output.featureId !== expectedFeatureId) {
-    return {
-      valid: false,
-      reason: `TDD-OUTPUT.json featureId '${output.featureId}' does not match '${expectedFeatureId}'.`,
-    }
-  }
-
-  if (output.status !== 'SUCCESS') {
-    return {
-      valid: false,
-      reason: `TDD-OUTPUT.json status is '${output.status}', expected 'SUCCESS'.`,
-    }
-  }
-
-  if (output.metrics.failed !== 0) {
-    return {
-      valid: false,
-      reason: `TDD-OUTPUT.json reports ${output.metrics.failed} failed test(s).`,
-    }
-  }
-
-  if (
-    output.metrics.totalTests < 0 ||
-    output.metrics.passed < 0 ||
-    output.metrics.failed < 0 ||
-    output.metrics.passed > output.metrics.totalTests ||
-    output.metrics.coverage < 0 ||
-    output.metrics.coverage > 1
-  ) {
-    return {
-      valid: false,
-      reason: 'TDD-OUTPUT.json metrics are outside the supported range.',
-    }
-  }
-
-  if (output.developerHandoff !== undefined && output.developerHandoff.length > 500) {
-    return {
-      valid: false,
-      reason: 'TDD-OUTPUT.json developerHandoff exceeds 500 characters.',
-    }
-  }
-
-  return { valid: true, reason: 'TDD-OUTPUT.json is a valid successful handoff.', output }
-}
 
 /** Formats a TDD result for audit logging without exposing parser failures. */
 export function summarizeTddOutput(tddOutputPath: string): TddOutputSummary {

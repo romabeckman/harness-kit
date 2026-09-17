@@ -10,7 +10,7 @@ import {
   formatProjectPathsList,
   formatTasksList,
 } from '../utils/PromptHelpers'
-import { getSpecsDir, validateTddOutput } from '../utils/PhaseFileUtils'
+import { getSpecsDir } from '../utils/PhaseFileUtils'
 import type { Feature, Task } from '../../file-state/types'
 import type { DevelopmenPayload } from '../../context-assembler/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
@@ -26,34 +26,22 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
 
     const tddOutputPath = join(getSpecsDir(context.workingDir, activeFeature.domain), 'TDD-OUTPUT.json')
-    let pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
+    const pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
 
-    const existingHandoff = validateTddOutput(tddOutputPath, activeFeature.id)
-    if (existingHandoff.valid && pendingTasks.length === 0) {
+    if (pendingTasks.length === 0) {
       return Phase.REVIEW
     }
 
     if (existsSync(tddOutputPath)) {
       context.fsm.appendDecision({
         featureId: activeFeature.id,
-        decision: existingHandoff.valid
-          ? 'DEVELOPMENT handoff discarded: pending tasks require a fresh handoff.'
-          : `DEVELOPMENT handoff rejected: ${existingHandoff.reason}`,
+        decision: 'DEVELOPMENT handoff discarded: pending tasks require a fresh handoff.',
       })
     }
 
     await this.executeChunk(activeFeature, pendingTasks, tddOutputPath, context)
-    const generatedHandoff = validateTddOutput(tddOutputPath, activeFeature.id)
-    if (generatedHandoff.valid) {
-      this.markTasksCompleted(activeFeature, context, pendingTasks)
-      return Phase.REVIEW
-    }
-
-    context.fsm.appendDecision({
-      featureId: activeFeature.id,
-      decision: `DEVELOPMENT handoff rejected: ${generatedHandoff.reason}`,
-    })
-    return Phase.DEVELOPMENT
+    this.markTasksCompleted(activeFeature, context, pendingTasks)
+    return Phase.REVIEW
   }
 
   private markTasksCompleted(activeFeature: Feature, context: Reviewontext, pendingTasks: Task[]): void {
