@@ -21,7 +21,7 @@ updated: "2026-09-18"
   "registration_files": ["src/orchestrator/ChainBuilder.ts","src/orchestrator/phases/index.ts"],
   "reference_files": ["src/orchestrator/phases/AbstractPhaseHandler.ts"],
   "code_files": ["src/context-assembler/ContextAssembler.ts","src/context-assembler/types.ts","src/json-extraction/JsonExtractionProtocol.ts","src/json-extraction/types.ts","src/orchestrator/ReentryResolver.ts","src/orchestrator/phases/BootstrapHandler.ts","src/orchestrator/phases/CascadeBlockedHandler.ts","src/orchestrator/phases/DeployHandler.ts","src/orchestrator/phases/DevelopmentHandler.ts","src/orchestrator/phases/MemoryHandler.ts","src/orchestrator/phases/PlanningHandler.ts","src/orchestrator/phases/RefinementHandler.ts","src/orchestrator/phases/ReviewHandler.ts","src/orchestrator/phases/TransitionHandler.ts","src/orchestrator/services/AgentInvocationService.ts","src/orchestrator/services/PhaseDecisionLogger.ts","src/orchestrator/services/ProjectStateService.ts","src/orchestrator/types.ts","src/orchestrator/utils/OrchestratorFormatter.ts","src/orchestrator/utils/PhaseFileUtils.ts","src/orchestrator/utils/PromptHelpers.ts","src/orchestrator/utils/SessionHelpers.ts","src/settings/DefaultSettings.ts","src/settings/HarnessSettings.ts","src/telemetry/TokenLedger.ts","src/validation-gate/ValidationGate.ts","src/validation-gate/types.ts"],
-  "test_files": ["src/context-assembler/__tests__/ContextAssembler.test.ts","src/orchestrator/__tests__/HarnessOrchestrator.test.ts","src/orchestrator/phases/__tests__/PhaseAHandler.test.ts","src/orchestrator/phases/__tests__/PhaseBHandler.test.ts","src/orchestrator/phases/__tests__/ReviewHandler.test.ts","src/orchestrator/services/__tests__/ProjectStateService.test.ts","src/orchestrator/services/__tests__/ProjectStateService.spec-readiness.test.ts","src/orchestrator/utils/__tests__/PhaseFileUtils.test.ts","src/orchestrator/utils/__tests__/PromptHelpers.test.ts","src/validation-gate/__tests__/ValidationGate.test.ts","tests/integration/t12-orchestrator-phaseb.test.ts","tests/integration/t13-orchestrator-phasec.test.ts","tests/unit/t09-reentry-resolver.test.ts","tests/unit/t10-state-machine.test.ts"]
+  "test_files": ["src/context-assembler/__tests__/ContextAssembler.test.ts","src/orchestrator/__tests__/HarnessOrchestrator.test.ts","src/orchestrator/phases/__tests__/PhaseAHandler.test.ts","src/orchestrator/phases/__tests__/PhaseBHandler.test.ts","src/orchestrator/phases/__tests__/ReviewHandler.test.ts","src/orchestrator/services/__tests__/ProjectStateService.test.ts","src/orchestrator/services/__tests__/ProjectStateService.spec-readiness.test.ts","src/orchestrator/utils/__tests__/PhaseFileUtils.test.ts","src/orchestrator/utils/__tests__/PromptHelpers.test.ts","src/validation-gate/__tests__/ValidationGate.test.ts","tests/integration/t12-orchestrator-phaseb.test.ts","tests/integration/t13-orchestrator-phasec.test.ts","tests/unit/phases/t04-phasec-handler.test.ts","tests/unit/phases/t06-phasee-handler.test.ts","tests/unit/t09-reentry-resolver.test.ts","tests/unit/t10-state-machine.test.ts"]
 }
 ```
 
@@ -55,8 +55,8 @@ sdk/src/
 ### State Machine Architecture
 - **Ports and adapters**: Keep orchestration independent from runners and persistence.
 - **State safety**: Use atomic writes and never-throw JSON extraction outcomes.
-- **Sessions**: Isolate `{featureId,agent,session,phase}`; resumed prompts cite feature, scope/refinement, specs, and projects. Dedicated phase keys retain runner tuning.
-- **Refinement/bootstrap/planning**: Run optional PBB refinement first; derive Bootstrap features and Planning specs from its traceable business context.
+- **Sessions**: Isolate `{featureId,agent,session,phase}`; resumed prompts cite feature, business context, specs, and projects.
+- **Refinement/bootstrap/planning**: Run optional PBB refinement first; derive features and specs from its traceable context.
 - **Review/memory**: Carry compact TDD metrics/files/handoff; verify docs from decisions, final TL/QA, rework, and changed files without process history
 
 ## HOW TO USE THE ORCHESTRATOR API
@@ -90,9 +90,10 @@ await orchestrator.run();
 REQUIRED: Use `isExtractionError` / `isExtractionResult` type guards to branch on extraction outcomes.
 REQUIRED: Keep `001-*` and `002-*` files at most 5,000 characters with `InlinePolicy = 'never'`.
 ALLOWED: Generate `003-*` and `004-*` files with `InlinePolicy = 'always'`.
-REQUIRED: Before writing `HIGH` complexity specifications, resolve refinement questions from scope and project evidence and record each answer in every applicable `003-${PROJECT_NAME}-tactical-design.md`.
-REQUIRED: Pass the active runner to `inlineOrReference`; `writePromptToStdin = false` emits only file-reference paths so positional spawn arguments stay bounded.
+REQUIRED: For `HIGH` complexity, resolve refinement questions from evidence and record answers in each applicable `003-${PROJECT_NAME}-tactical-design.md`.
+REQUIRED: Pass the active runner to `inlineOrReference`; `writePromptToStdin = false` emits file references only.
 REQUIRED: Render Bootstrap, Planning, and Refinement scope with policy `always` and canonical `SCOPE.md`; otherwise honor `FORCE_INLINE_MAX` (15,000 chars).
+REQUIRED: Planning, Development retries, Review, and Memory prefer `REFINEMENT.md` over `SCOPE.md`; never pass both.
 REQUIRED: Invoke `harness-kit:pbb-design` during optional REFINEMENT, transition to BOOTSTRAP, and preserve PBB decisions and provisional assumptions in Planning.
 ALLOWED: Ask 0–12 PBB gap questions; keep `Frontend Screens & Visualization` as an optional evidence-based complement.
 PROHIBITED: Mutating state directly without using `IFileStateManager`.
@@ -102,7 +103,7 @@ REQUIRED: Reuse review sessions on retry; clear feature sessions after transitio
 REQUIRED: Run Tech Lead and adversarial QA reviews when validation is enabled, including fast mode.
 REQUIRED: Separate typed `readTddOutput` parsing from `summarizeTddOutput` audit formatting.
 REQUIRED: In `LOW` planning, request only `003-*` and `004-*`; never generate global `001-*` or `002-*` documents.
-REQUIRED: Accept planning only when every tactical design has ordered tasks, every scenario file is non-empty, and the active feature owns task rows.
+REQUIRED: Accept planning only with ordered tasks, non-empty scenarios, and task rows owned by the active feature.
 REQUIRED: Advance to `REVIEW` after the development agent invocation completes. When TDD output already exists, mark pending tasks `COMPLETED` before review.
 REQUIRED: Use existing `TDD-OUTPUT.json` as a resume signal; skip another development invocation and send the feature to review.
 REQUIRED: Treat `TDD-OUTPUT.json` as optional review context, not as a phase-transition gate.

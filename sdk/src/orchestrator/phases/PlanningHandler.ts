@@ -13,7 +13,7 @@ import {
   formatFeatureDependencies,
   inlineOrReference,
 } from '../utils/PromptHelpers'
-import { getProductDir, getSpecsDir } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getSpecsDir } from '../utils/PhaseFileUtils'
 
 export class PlanningHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
@@ -81,14 +81,15 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const config = context.fsm.loadBootstrapConfig();
     const workingDir = getSpecsDir(context.workingDir, feature.domain)
 
-    if (!context.fsm.existScope()) {
-      throw new Error('Scope file (SCOPE.md) does not exist')
+    const planningSource = getPlanningSource(context)
+    if (!planningSource.exists) {
+      throw new Error(`${planningSource.label} file (${planningSource.fileName}) does not exist`)
     }
 
-    const scope = context.fsm.loadScope()
-    if (!scope) {
-      throw new Error('Scope file (SCOPE.md) is empty')
+    if (!planningSource.content) {
+      throw new Error(`${planningSource.label} file (${planningSource.fileName}) is empty`)
     }
+    const scope = planningSource.content
     context.config.scope = scope
 
     const payload = ContextAssembler.buildPlanningPayload(
@@ -146,21 +147,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const backlog = context.fsm.loadBacklog();
     const dependenciesText = formatFeatureDependencies(backlog, feature)
 
-    const refinementBlock = context.fsm.existRefinement?.()
-      ? [
-        ``,
-      `<refinement_context>`,
-        `The following PBB document defines business problems, expectations, personas,`,
-        `functionalities, PBIs, traceability, assumptions, and resolved questions.`,
-        `Use human-validated decisions as authoritative business context. Preserve model`,
-        `answers as provisional assumptions until validated.`,
-        ``,
-        `\`\`\`markdown`,
-        context.fsm.loadRefinement().trim(),
-        `\`\`\``,
-        `</refinement_context>`,
-      ]
-      : []
+    const planningSource = getPlanningSource(context)
 
     const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
@@ -183,8 +170,8 @@ export class PlanningHandler extends AbstractPhaseHandler {
       `- Before writing any specification, run autonomous refinement: generate decision-changing questions and use each evidence-based recommendation as its answer.`,
       `- Route every refinement question and answer to each applicable \`003-\${PROJECT_NAME}-tactical-design.md\`; use exact project names and include global decisions in every project.`,
       `- Execute only the document phases required by <expected_outputs>; do not create artifacts that are not listed there.`,
-      `- When <refinement_context> is present, map the target feature to its PBI, functionality, persona, and underlying need.`,
-      `- Treat its human-validated decisions as authoritative and its model answers as provisional assumptions.`,
+      `- When the selected planning source is REFINEMENT.md, map the target feature to its PBI, functionality, persona, and underlying need.`,
+      `- Treat human-validated decisions as authoritative and model answers as provisional assumptions.`,
       `</workflow>`,
       ``,
       ...complexityPrompt.expectedOutputs,
@@ -212,12 +199,11 @@ export class PlanningHandler extends AbstractPhaseHandler {
       ...inlineOrReference(
         'scope',
         payload.scope.trim(),
-        join(getProductDir(context), 'SCOPE.md'),
+        planningSource.path,
         'markdown',
         'always',
         context.config.agentRunner,
       ),
-      ...refinementBlock,
       ``,
       `<target_feature>`,
       `ID: ${feature.id}`,
@@ -249,8 +235,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const dependenciesText = formatFeatureDependencies(backlog, feature)
     const rulesSection = formatRulesSection(payload.steeringRules)
     const projectPathsList = formatProjectPathsList(payload.projectPaths)
-    const productDir = getProductDir(context)
-    const refinementPath = join(productDir, 'REFINEMENT.md')
+    const planningSource = getPlanningSource(context)
 
     return [
       `## Objective`,
@@ -287,13 +272,12 @@ export class PlanningHandler extends AbstractPhaseHandler {
       `<inputs>`,
       `<context_anchors>`,
       `Feature: ${feature.id} — ${payload.featureTitle}`,
-      `Scope: ${join(productDir, 'SCOPE.md')}`,
-      ...(context.fsm.existRefinement?.() ? [`Refinement: ${refinementPath}`] : []),
+      `${planningSource.label}: ${planningSource.path}`,
       `Specifications: ${payload.workingDir}`,
       `Projects:`,
       projectPathsList,
       `</context_anchors>`,
-      ...(context.fsm.existRefinement?.() ? [
+      ...(planningSource.isRefinement ? [
         ``,
         `<refinement_rules>`,
         `Read the PBB refinement anchor before designing the target feature.`,

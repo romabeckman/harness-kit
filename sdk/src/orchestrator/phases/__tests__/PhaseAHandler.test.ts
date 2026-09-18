@@ -210,15 +210,20 @@ describe('PlanningHandler', () => {
             await expect(handler.handle(Phase.PLANNING, mockContext)).rejects.toThrow('Scope file (SCOPE.md) is empty');
         });
 
-        it('injects refinement_context in prompt when existRefinement is true', async () => {
-            mockFsm.existRefinement = vi.fn().mockReturnValue(true);
-            mockFsm.loadRefinement = vi.fn().mockReturnValue('# Refinement Content\n- Decision 1');
+        it('uses REFINEMENT.md as the exclusive planning source when it exists', async () => {
+            mockFsm.existRefinement.mockReturnValue(true);
+            mockFsm.loadRefinement.mockReturnValue('# Refinement Content\n- Decision 1');
+            mockFsm.loadScope.mockReturnValue('scope content must not be used');
 
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain('<refinement_context>');
+            expect(mockContext.config.scope).toBe('# Refinement Content\n- Decision 1');
+            expect(invokedPrompt).toContain('<scope>');
             expect(invokedPrompt).toContain('# Refinement Content\n- Decision 1');
+            expect(invokedPrompt).not.toContain('SCOPE.md');
+            expect(invokedPrompt).not.toContain('<refinement_context>');
+            expect(invokedPrompt).not.toContain('scope content must not be used');
         });
     });
 
@@ -298,6 +303,18 @@ describe('PlanningHandler', () => {
                 session: { id: 'PLANNING-SESSION-2' },
                 phase: Phase.PLANNING,
             });
+        });
+
+        it('uses only REFINEMENT.md in the feature-focused prompt when it exists', async () => {
+            mockFsm.existRefinement.mockReturnValue(true);
+            mockFsm.loadRefinement.mockReturnValue('# Refinement Content\n- Decision 1');
+            mockContext.getDeveloperSession = vi.fn().mockReturnValue({ id: 'PLANNING-SESSION-1' });
+
+            await handler.handle(Phase.PLANNING, mockContext);
+
+            const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
+            expect(invokedPrompt).toContain(`Refinement: ${join(mockContext.workingDir, 'docs', 'product', 'REFINEMENT.md')}`);
+            expect(invokedPrompt).not.toContain('SCOPE.md');
         });
 
         it('supports buildFeatureScopeRefinementPrompt with LOW complexity override', async () => {

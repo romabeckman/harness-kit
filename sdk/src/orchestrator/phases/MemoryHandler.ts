@@ -9,7 +9,7 @@ import {
   formatRulesSection,
   formatProjectPathsList,
 } from '../utils/PromptHelpers'
-import { getProductDir } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getProductDir } from '../utils/PhaseFileUtils'
 
 export class MemoryHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
@@ -21,6 +21,11 @@ export class MemoryHandler extends AbstractPhaseHandler {
     if (context.config.skipMemory) {
       process.stdout.write(`[phase_memory] --skip-memory active — skipping project-memory\n`)
       return Phase.DEPLOY
+    }
+
+    const planningSource = getPlanningSource(context)
+    if (planningSource.exists) {
+      context.config.scope = planningSource.content
     }
 
     const config = context.fsm.loadBootstrapConfig();
