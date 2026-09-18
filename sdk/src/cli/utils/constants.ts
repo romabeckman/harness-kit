@@ -43,7 +43,7 @@ EXECUTION MODE
   --mode, -M <mode>         Controls which phases run and which complexity is forced:
                               quick        — Bootstrap → Planning → Development → Memory → Deploy (skip Review)
                               fast         — All phases, simplified planning, Tech Lead + QA review
-                              thinking     — PBB Refinement → Bootstrap → Planning, LOW complexity [default]
+                              thinking     — Refinement → Bootstrap → Planning, LOW complexity [default]
                               deep-thinking — All phases, forced to high planning and deep review
   --complexity, -c <level>  Explicit complexity override: LOW | HIGH | AUTO
 
@@ -51,7 +51,7 @@ SKIP OPTIONS
   --skip-validation         Skip Phase REVIEW (code review + QA) - jump directly to TRANSITION
   --skip-memory             Skip Phase MEMORY (project-memory) — jump directly to TRANSITION
   --skip-deploy             Skip Phase DEPLOY (git stage/commit/push) — halt after TRANSITION
-  --refine                  Enable interactive pre-bootstrap PBB REFINEMENT phase (default: false)
+  --refine                  Enable interactive pre-bootstrap REFINEMENT phase (default: false)
 
 OPTIONS
   --help, -h                Show this help message
@@ -115,7 +115,7 @@ EXECUTION MODE
   --mode, -M <mode>         Controls phase execution and forced complexity:
                               quick   — Bootstrap → Planning → Development → Memory → Deploy (skip Review)
                               fast    — All phases, simplified planning, Tech Lead + QA review
-                              thinking — PBB Refinement → Bootstrap → Planning, LOW complexity [default]
+                              thinking — Refinement → Bootstrap → Planning, LOW complexity [default]
                               slow    — All phases, forced high planning and deep review
   --complexity, -c <level>  Explicit complexity override: LOW | HIGH | AUTO
 
@@ -123,7 +123,7 @@ SKIP OPTIONS
   --skip-validation         Skip Phase REVIEW (code review + QA) — jump directly to TRANSITION
   --skip-memory             Skip Phase MEMORY (project-memory) — jump directly to TRANSITION
   --skip-deploy             Skip Phase DEPLOY (git stage/commit/push) — halt after TRANSITION
-  --refine                  Enable interactive pre-bootstrap PBB REFINEMENT phase (default: false)
+  --refine                  Enable interactive pre-bootstrap REFINEMENT phase (default: false)
 
 GENERAL OPTIONS
   --help, -h                Show this help message
