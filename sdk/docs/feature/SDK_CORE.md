@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-17"
+updated: "2026-09-18"
 ---
 ```graph
 {
@@ -56,7 +56,7 @@ sdk/src/
 - **Ports and adapters**: Keep orchestration independent from runners and persistence.
 - **State safety**: Use atomic writes and never-throw JSON extraction outcomes.
 - **Sessions**: Isolate `{featureId,agent,session,phase}`; resumed prompts cite feature, scope/refinement, specs, and projects. Dedicated phase keys retain runner tuning.
-- **Planning/development**: Preserve refinement evidence and task project ownership; distinguish global 001/002 specs from project 003/004 specs.
+- **Refinement/bootstrap/planning**: Run optional PBB refinement first; derive Bootstrap features and Planning specs from its traceable business context.
 - **Review/memory**: Carry compact TDD metrics/files/handoff; verify docs from decisions, final TL/QA, rework, and changed files without process history
 
 ## HOW TO USE THE ORCHESTRATOR API
@@ -93,8 +93,8 @@ ALLOWED: Generate `003-*` and `004-*` files with `InlinePolicy = 'always'`.
 REQUIRED: Before writing `HIGH` complexity specifications, resolve refinement questions from scope and project evidence and record each answer in every applicable `003-${PROJECT_NAME}-tactical-design.md`.
 REQUIRED: Pass the active runner to `inlineOrReference`; `writePromptToStdin = false` emits only file-reference paths so positional spawn arguments stay bounded.
 REQUIRED: Render Bootstrap, Planning, and Refinement scope with policy `always` and canonical `SCOPE.md`; otherwise honor `FORCE_INLINE_MAX` (15,000 chars).
-ALLOWED: Add optional structural frontend screen descriptions to `REFINEMENT.md`; invoke `harness-kit:read-ui-prototype` only when prototype evidence exists.
-REQUIRED: When no prototype evidence exists, skip `harness-kit:read-ui-prototype` and continue refinement without requesting an image or link.
+REQUIRED: Invoke `harness-kit:pbb-design` during optional REFINEMENT, transition to BOOTSTRAP, and preserve PBB decisions and provisional assumptions in Planning.
+ALLOWED: Ask 0–12 PBB gap questions; keep `Frontend Screens & Visualization` as an optional evidence-based complement.
 PROHIBITED: Mutating state directly without using `IFileStateManager`.
 REQUIRED: Tag `DeveloperSessionState` with `phase` to isolate development and review.
 REQUIRED: Resume matching retry sessions with `REWORK-LOG.md`; otherwise use a standalone prompt.

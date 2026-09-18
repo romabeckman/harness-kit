@@ -33,7 +33,7 @@ export interface ParsedRunArgs {
   // Skip Phase DEPLOY (git stage/commit/push) — pipeline halts after Phase F
   skipDeploy?: boolean
 
-  // Enable interactive pre-planning REFINEMENT phase
+  // Enable interactive pre-bootstrap PBB REFINEMENT phase
   refine?: boolean
 
   // Complexity hint for Phase A scope refinement ('LOW' | 'HIGH' | undefined = AUTO)

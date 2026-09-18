@@ -22,7 +22,7 @@ export interface OrchestratorConfig {
   skipMemory?: boolean
   /** When true, Phase DEPLOY (git stage/commit/push) is skipped and pipeline halts after Phase F. */
   skipDeploy?: boolean
-  /** When true, interactive REFINEMENT phase runs before Phase PLANNING. */
+  /** When true, interactive PBB REFINEMENT runs before BOOTSTRAP. */
   enableRefinement?: boolean
 }
 
@@ -37,9 +37,9 @@ export enum Complexity {
  *
  * quick         — Bootstrap → Planning → Development → Memory → Deploy  (skips Review)
  * fast          — All phases, complexity forced to LOW
- * thinking      — All phases, complexity LOW, pre-planning REFINEMENT
- * deep_thinking — All phases, complexity forced to HIGH, pre-planning REFINEMENT
- * omitted/invalid — All phases, complexity AUTO, pre-planning REFINEMENT
+ * thinking      — All phases, complexity LOW, pre-bootstrap PBB REFINEMENT
+ * deep_thinking — All phases, complexity forced to HIGH, pre-bootstrap PBB REFINEMENT
+ * omitted/invalid — All phases, complexity AUTO, pre-bootstrap PBB REFINEMENT
  */
 export enum RunMode {
   QUICK = 'quick',

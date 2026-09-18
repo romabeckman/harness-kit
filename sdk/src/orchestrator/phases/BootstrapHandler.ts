@@ -37,9 +37,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     }
 
     const existing = context.fsm.loadBacklog()
-    const shouldRefine = context.config.enableRefinement && !context.fsm.existRefinement()
-
-    if (existing.length > 0) return shouldRefine ? Phase.REFINEMENT : Phase.PLANNING
+    if (existing.length > 0) return Phase.PLANNING
 
     const productDir = getProductDir(context)
     const backlogPath = join(productDir, 'BACKLOG.md')
@@ -59,7 +57,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
 
     const promptLines = [
       `# ROLE`,
-      `You are software architect defining the backlog of a project. Understand the project scope and generate a \`BACKLOG.md\` table with all the features of the project.`,
+      `You are a software architect defining the implementation backlog from validated business context. Generate a \`BACKLOG.md\` table with all cohesive product features.`,
       ``,
       `# OBJECTIVE`,
       `Parse the project scope below and generate the \`BACKLOG.md\` table. Write it to: \`${backlogPath}\``,
@@ -77,6 +75,8 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `- Dependencies: comma-separated IDs, or None`,
       `- Reworks: 0 | Score (TL) & Score (Adv): - | Status: NOT_STARTED`,
       `- Output ONLY the markdown table, no additional text.`,
+      `- When <business_refinement> is present, derive features from its functionalities and PBIs.`,
+      `- Preserve human-validated decisions. Treat provisional model assumptions as assumptions.`,
       ``,
       `# FEATURE SIZING`,
       `Each feature has fixed pipeline overhead: scope refinement → TDD → tech lead review → QA review → documentation (4-7 agent calls per feature). Broader scope still increases context, testing, and rework risk. Prefer the fewest cohesive features that each remain independently implementable and testable in one cycle.`,
@@ -111,6 +111,20 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       )
     )
 
+    if (context.fsm.existRefinement()) {
+      promptLines.push(
+        ``,
+        ...inlineOrReference(
+          'business_refinement',
+          context.fsm.loadRefinement().trim(),
+          join(productDir, 'REFINEMENT.md'),
+          'markdown',
+          'always',
+          context.config.agentRunner,
+        )
+      )
+    }
+
     if (rulesList.length > 0) {
       promptLines.push(
         ``,
@@ -137,6 +151,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     }
     PhaseDecisionLogger.logBootstrap(context.fsm, created)
 
-    return shouldRefine ? Phase.REFINEMENT : Phase.PLANNING
+    return Phase.PLANNING
   }
 }

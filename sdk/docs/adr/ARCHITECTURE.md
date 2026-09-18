@@ -7,7 +7,7 @@ tags: [architecture, ports-and-adapters, state-machine, orchestrator]
 edges:
   - relation: references
     target: "adr:tests"
-updated: "2026-09-13"
+updated: "2026-09-18"
 ---
 # Project Architecture
 
@@ -50,7 +50,7 @@ sdk/
 
 | Module | Responsibility | Location |
 |---|---|---|
-| SDK core | Run `BOOTSTRAP`, optional `REFINEMENT`, `PLANNING`, `DEVELOPMENT`, `REVIEW`, `TRANSITION`, `MEMORY`, and `DEPLOY`; handle `CASCADE_BLOCKED` and `HALTED`. | [SDK_CORE.md](../feature/SDK_CORE.md) |
+| SDK core | Run optional PBB `REFINEMENT`, then `BOOTSTRAP`, `PLANNING`, `DEVELOPMENT`, `REVIEW`, `TRANSITION`, `MEMORY`, and `DEPLOY`; handle `CASCADE_BLOCKED` and `HALTED`. | [SDK_CORE.md](../feature/SDK_CORE.md) |
 | Agent runners | Register CLI and SDK strategies behind `IAgentRunner`. | [SDK_AGENT_RUNNER.md](../feature/SDK_AGENT_RUNNER.md) |
 | File state | Parse and atomically mutate Markdown and JSON project state. | [SDK_STATE.md](../feature/SDK_STATE.md) |
 | Steering | Validate free-text directives and apply rule, rollback, or score actions. | [SDK_STEERING.md](../feature/SDK_STEERING.md) |

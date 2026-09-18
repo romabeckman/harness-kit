@@ -20,18 +20,19 @@ export class ChainBuilder {
   }
 
   build(): IPhaseHandler {
+    const refinement = new RefinementHandler()
     const bootstrap = new BootstrapHandler()
+    refinement.setNext(bootstrap)
     let tail: IPhaseHandler = bootstrap
     const ordered = this.handlersPhases
     for (const handler of ordered) {
       tail = tail.setNext(handler)
     }
-    return bootstrap
+    return refinement
   }
 
   static buildDefault(): IPhaseHandler {
     return new ChainBuilder()
-      .addPhase(new RefinementHandler())
       .addPhase(new PlanningHandler())
       .addPhase(new DevelopmentHandler())
       .addPhase(new ReviewHandler())

@@ -20,7 +20,8 @@ describe('BootstrapHandler', () => {
         loadBacklog: vi.fn()
           .mockReturnValueOnce([])
           .mockReturnValueOnce([{ id: 'F001' }]),
-        existRefinement: vi.fn().mockReturnValue(false),
+        existRefinement: vi.fn().mockReturnValue(true),
+        loadRefinement: vi.fn().mockReturnValue('# Product Backlog\n\nPBI-001'),
         appendDecision: vi.fn(),
       },
       invokeAgent: vi.fn().mockResolvedValue({ raw: '' }),
@@ -32,5 +33,7 @@ describe('BootstrapHandler', () => {
     expect(prompt).toContain('<scope_ref>')
     expect(prompt).toContain(`Read file: \`${join(productDir, 'SCOPE.md')}\``)
     expect(prompt).not.toContain('<scope>')
+    expect(prompt).toContain('<business_refinement>')
+    expect(prompt).toContain('PBI-001')
   })
 })

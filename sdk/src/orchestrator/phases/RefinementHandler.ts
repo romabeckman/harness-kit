@@ -18,6 +18,8 @@ interface RefinementAnswer {
   answer: string
   recommendation?: string
   context?: string
+  answeredBy: 'human'
+  status: 'Human validated'
 }
 
 export class RefinementHandler extends AbstractPhaseHandler {
@@ -27,11 +29,11 @@ export class RefinementHandler extends AbstractPhaseHandler {
     }
 
     if (!context.config.enableRefinement) {
-      return Phase.PLANNING
+      return Phase.BOOTSTRAP
     }
 
     if (context.fsm.existRefinement()) {
-      return Phase.PLANNING
+      return Phase.BOOTSTRAP
     }
 
     const scope = context.fsm.existScope() ? context.fsm.loadScope() : context.config.scope
@@ -45,7 +47,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
     // Step 3: Consolidate via the software architect
     await this.consolidateRefinement(context, scope, qaPairs)
 
-    return Phase.PLANNING
+    return Phase.BOOTSTRAP
   }
 
   private async generateQuestions(context: Reviewontext, scope: string): Promise<RefinementQuestion[]> {
@@ -54,32 +56,33 @@ export class RefinementHandler extends AbstractPhaseHandler {
     const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     const staticPrompt = [
-      `<role>`,
-      `You are a software architect who surfaces systemic risks through Socratic questioning`,
-      `rather than prescribing solutions outright.`,
-      `</role>`,
+      `<skill_context>`,
+      `Invoke the \`harness-kit:pbb-design\` skill before starting.`,
+      `Mode: autonomous question discovery; the handler collects human answers.`,
+      `For this pass, follow the JSON question contract below instead of producing`,
+      `the final PBB document.`,
+      `</skill_context>`,
       ``,
       `<objective>`,
-      `Analyze the project scope provided in <dynamic_context> and generate 5-8 Socratic`,
-      `questions that surface architectural decisions, technical risks, edge cases,`,
-      `constraints, and quality requirements that are implicit or missing from the scope.`,
+      `Use Product Backlog Building (PBB) to analyze the scope in <dynamic_context>.`,
+      `Generate only decision-relevant questions needed to produce a traceable Product`,
+      `Backlog from problems, expectations, personas, functionalities, and PBIs.`,
       `</objective>`,
       ``,
       `<rules>`,
-      `- Focus on decisions that will impact the development plan, not syntax or style.`,
-      `- Prioritize in this order: architecture > security > performance > maintainability.`,
-      `- Recommendations must be opinionated and justified — not generic advice.`,
-      `- Questions must be answerable by a developer who knows the project (avoid`,
-      `  questions requiring info the scope doesn't imply).`,
-      `- Mentally simulate the scope under production stress (scale, failures, concurrency)`,
-      `  before writing each question.`,
+      `- Ask 0-12 questions. Do not fabricate gaps to reach a quota.`,
+      `- Focus on missing business outcomes, boundaries, personas, permissions, workflows,`,
+      `  pricing, integrations, and regulatory needs that change the Product Backlog.`,
+      `- Do not ask architecture, implementation, framework, or code questions.`,
+      `- Recommendations must be conservative, scope-preserving, and grounded in evidence.`,
+      `- Treat every recommendation as provisional until the human accepts or replaces it.`,
       `</rules>`,
       ``,
       `<question_requirements>`,
       `For each question, provide:`,
-      `- "question": a clear, specific, Socratic question (not a directive)`,
-      `- "recommendation": a recommended answer based on your analysis of the scope`,
-      `- "context": brief explanation of why this question matters (cite systemic impact)`,
+      `- "question": a clear, specific business question`,
+      `- "recommendation": the safest scope-preserving suggested answer`,
+      `- "context": why the answer changes PBB traceability or backlog scope`,
       `</question_requirements>`,
       ``,
       `<output_format>`,
@@ -110,6 +113,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
     const prompt = `${staticPrompt}\n\n${dynamicPrompt}`
 
     const output = await context.invokeAgent({
+      skill: 'harness-kit:pbb-design',
       agent: 'harness-kit:software-architect',
       mode: 'autonomous',
       prompt,
@@ -183,6 +187,8 @@ export class RefinementHandler extends AbstractPhaseHandler {
         recommendation: q.recommendation,
         context: q.context,
         answer: answer.trim() || q.recommendation,
+        answeredBy: 'human',
+        status: 'Human validated',
       })
       console.log()
     }
@@ -196,6 +202,8 @@ export class RefinementHandler extends AbstractPhaseHandler {
       qaPairs.push({
         question: 'Any additional information?',
         answer: additionalAnswer.trim(),
+        answeredBy: 'human',
+        status: 'Human validated',
       })
       console.log()
     }
@@ -214,16 +222,18 @@ export class RefinementHandler extends AbstractPhaseHandler {
     const refinementPath = join(productDir, 'REFINEMENT.md')
     const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
-    const qaFormatted = qaPairs.length > 0
-      ? qaPairs.map((pair, idx) => `| ${idx + 1} | ${pair.question} | ${pair.answer} |`).join('\n')
-      : '| - | No specific questions answered | - |'
     const refinementEvidence = JSON.stringify(qaPairs, null, 2)
 
     const prompt = [
+      `<skill_context>`,
+      `Invoke the \`harness-kit:pbb-design\` skill before starting.`,
+      `Mode: autonomous consolidation using human-validated refinement evidence.`,
+      `Produce the final PBB document at <output_file>.`,
+      `</skill_context>`,
+      ``,
       `<objective>`,
-      `Given the project scope and human-validated Q&A pairs below, produce a structured`,
-      `refinement document that captures architectural decisions, constraints, risks, and`,
-      `design guidelines derived from the conversation.`,
+      `Use Product Backlog Building (PBB) to transform the scope and refinement evidence`,
+      `into business context for Bootstrap backlog generation and Planning.`,
       `</objective>`,
       ``,
       `<output_file>`,
@@ -234,38 +244,42 @@ export class RefinementHandler extends AbstractPhaseHandler {
       `<output_format>`,
       `Write the file with exactly this structure (Markdown):`,
       ``,
-      `# Refinement — Project Context`,
+      `# Product Backlog Building — Project Context`,
       ``,
-      `## Architectural Decisions`,
-      `## Constraints & Boundaries`,
-      `## Identified Risks`,
-      `## Quality Requirements`,
-      `## Design Guidelines`,
+      `## 1. Product`,
+      `## 2. Problems`,
+      `## 3. Expectations`,
+      `## 4. Personas`,
+      `## 5. Functionalities`,
+      `## 6. Product Backlog`,
+      `## 7. Traceability`,
+      `## 8. Assumptions`,
+      `## 9. Open Questions`,
+      ``,
       `## Frontend Screens & Visualization`,
-      `## Q&A Record`,
-      `| # | Question | Answer |`,
-      `| --- | --- | --- |`,
-      `<qa_table_placeholder>`,
       `</output_format>`,
       ``,
       `<rules>`,
-      `- Base every section strictly on the scope and Q&A pairs provided; do not invent`,
-      `  requirements that contradict them.`,
-      `- The "Q&A Record" table must reproduce the <qa_pairs> content verbatim, unmodified.`,
-      `- Use recommendation and context from <refinement_evidence> as supporting rationale; the final human answer is authoritative.`,
-      `- Keep each bullet point concise and actionable (one decision/risk/constraint per line).`,
-      `- If a section has no applicable content, write "None identified." under its heading`,
-      `  instead of omitting the heading.`,
+      `- Invoke and follow the loaded pbb-design skill.`,
+      `- Base every item strictly on scope and <refinement_evidence>.`,
+      `- Human answers are authoritative. Recommendations remain supporting rationale.`,
+      `- Trace every PBI to a functionality, persona, and problem or expectation.`,
+      `- In Open Questions preserve question, suggested answer, rationale, resolved answer,`,
+      `  answered-by value, and status from the evidence.`,
+      `- Mark any model-derived statement as a Provisional model assumption.`,
+      `- Do not include architecture or implementation details.`,
+      `- If no decision-relevant gap remains, write "No open questions."`,
+      `- Treat Frontend Screens & Visualization as a complement to PBB, never as a replacement`,
+      `  for problems, expectations, personas, functionalities, PBIs, or traceability.`,
       `</rules>`,
       ``,
       `<optional_ui_prototype_analysis>`,
       `UI prototype analysis is optional. If a prototype, screen, frame, image, or link is available,`,
-      `optionally invoke the \`harness-kit:read-ui-prototype\` skill`,
-      `and use its structural screen description in the \`## Frontend Screens & Visualization\` section.`,
-      `If no prototype, screen, frame, image, or link is available, skip the skill and continue without`,
-      `asking for one. When the scope or Q&A describes frontend behavior, derive screen descriptions`,
-      `from that evidence; otherwise write \"None identified.\" under the frontend section.`,
-      `Do not write frontend code or invent visual values, components, or requirements.`,
+      `optionally invoke the \`harness-kit:read-ui-prototype\` skill and place its structural`,
+      `screen description under \`## Frontend Screens & Visualization\`.`,
+      `If no prototype, screen, frame, image, or link is available, skip the skill. Derive only`,
+      `screen-level interactions supported by the scope, PBIs, and answers. If none exist, write`,
+      `"None identified." Do not request a prototype or invent visual values or implementation details.`,
       `</optional_ui_prototype_analysis>`,
       ``,
       ...inlineOrReference(
@@ -277,20 +291,21 @@ export class RefinementHandler extends AbstractPhaseHandler {
         context.config.agentRunner,
       ),
       ``,
-      `<qa_pairs>`,
-      qaFormatted,
-      `</qa_pairs>`,
-      ``,
       `<refinement_evidence>`,
       refinementEvidence,
       `</refinement_evidence>`,
     ].join('\n')
 
-    await context.invokeAgent({
+    const output = await context.invokeAgent({
+      skill: 'harness-kit:pbb-design',
       agent: 'harness-kit:software-architect',
       mode: 'autonomous',
       prompt,
       phaseKey: 'refinement_consolidation',
     })
+
+    if (!context.fsm.existRefinement() && output?.raw?.trim()) {
+      context.fsm.saveRefinement(output.raw.trim())
+    }
   }
 }

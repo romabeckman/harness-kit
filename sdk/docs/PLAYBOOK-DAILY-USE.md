@@ -134,7 +134,7 @@ hrns run \
   --skip-deploy
 ```
 
-`deep_thinking` forces HIGH-complexity planning and enables the interactive REFINEMENT questionnaire. Use it for ambiguous requirements, cross-domain changes, migrations, and compatibility-sensitive work.
+`deep_thinking` runs interactive PBB REFINEMENT before BOOTSTRAP, then forces HIGH-complexity planning. Use it for ambiguous requirements, cross-domain changes, migrations, and compatibility-sensitive work.
 
 ## Scenario 6 — Resume after interruption or timeout
 

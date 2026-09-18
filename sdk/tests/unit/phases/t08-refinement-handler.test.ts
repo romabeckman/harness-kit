@@ -37,6 +37,7 @@ describe('RefinementHandler', () => {
       config: { enableRefinement: true, scope: 'Test scope' },
       fsm: {
         existRefinement: vi.fn().mockReturnValue(false),
+        saveRefinement: vi.fn(),
         existScope: vi.fn().mockReturnValue(false),
         loadScope: vi.fn().mockReturnValue('Test scope'),
       },
@@ -58,7 +59,7 @@ describe('RefinementHandler', () => {
 
     const nextPhase = await handler.handle(Phase.REFINEMENT, mockContext)
 
-    expect(nextPhase).toBe(Phase.PLANNING)
+    expect(nextPhase).toBe(Phase.BOOTSTRAP)
     expect(input).toHaveBeenCalledTimes(2)
     expect(input).toHaveBeenNthCalledWith(1, {
       message: 'Your answer (Enter to accept recommendation):',
@@ -73,6 +74,7 @@ describe('RefinementHandler', () => {
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
         agent: 'harness-kit:software-architect',
+        skill: 'harness-kit:pbb-design',
         prompt: expect.stringContaining('Any additional information?'),
       })
     )
@@ -89,6 +91,7 @@ describe('RefinementHandler', () => {
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
         agent: 'harness-kit:software-architect',
+        skill: 'harness-kit:pbb-design',
         prompt: expect.not.stringContaining('Any additional information?'),
       })
     )

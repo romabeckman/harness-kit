@@ -38,17 +38,17 @@ describe('RefinementHandler', () => {
     handler = new RefinementHandler()
   })
 
-  it('passes through to Phase.PLANNING when enableRefinement is false', async () => {
+  it('passes through to Phase.BOOTSTRAP when enableRefinement is false', async () => {
     mockContext.config.enableRefinement = false
     const next = await handler.handle(Phase.REFINEMENT, mockContext)
-    expect(next).toBe(Phase.PLANNING)
+    expect(next).toBe(Phase.BOOTSTRAP)
     expect(mockContext.invokeAgent).not.toHaveBeenCalled()
   })
 
-  it('passes through to Phase.PLANNING when REFINEMENT.md already exists', async () => {
+  it('passes through to Phase.BOOTSTRAP when REFINEMENT.md already exists', async () => {
     mockFsm.existRefinement.mockReturnValue(true)
     const next = await handler.handle(Phase.REFINEMENT, mockContext)
-    expect(next).toBe(Phase.PLANNING)
+    expect(next).toBe(Phase.BOOTSTRAP)
     expect(mockContext.invokeAgent).not.toHaveBeenCalled()
   })
 
@@ -68,27 +68,34 @@ describe('RefinementHandler', () => {
     })
 
     const next = await handler.handle(Phase.REFINEMENT, mockContext)
-    expect(next).toBe(Phase.PLANNING)
+    expect(next).toBe(Phase.BOOTSTRAP)
     expect(mockContext.invokeAgent).toHaveBeenCalledTimes(2)
     expect(mockContext.invokeAgent.mock.calls[0][0].agent).toBe('harness-kit:software-architect')
-    expect(mockContext.invokeAgent.mock.calls[0][0].skill).toBeUndefined()
+    expect(mockContext.invokeAgent.mock.calls[0][0].skill).toBe('harness-kit:pbb-design')
     expect(mockContext.invokeAgent.mock.calls[1][0].agent).toBe('harness-kit:software-architect')
-    expect(mockContext.invokeAgent.mock.calls[1][0].skill).toBeUndefined()
+    expect(mockContext.invokeAgent.mock.calls[1][0].skill).toBe('harness-kit:pbb-design')
     expect(mockContext.invokeAgent.mock.calls[0][0].phaseKey).toBe('refinement_questions')
     expect(mockContext.invokeAgent.mock.calls[1][0].phaseKey).toBe('refinement_consolidation')
 
+    const questionsPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string
+    expect(questionsPrompt).toContain('Ask 0-12 questions')
+    expect(questionsPrompt).toContain('<skill_context>')
+    expect(questionsPrompt).toContain('harness-kit:pbb-design')
+
     const consolidationPrompt = mockContext.invokeAgent.mock.calls[1][0].prompt as string
+    expect(consolidationPrompt).toContain('<skill_context>')
+    expect(consolidationPrompt).toContain('harness-kit:pbb-design')
     expect(consolidationPrompt).toContain('<refinement_evidence>')
     expect(consolidationPrompt).toContain('"recommendation": "R1"')
     expect(consolidationPrompt).toContain('"context": "C1"')
     expect(consolidationPrompt).toContain('"answer": "R1"')
-    expect(consolidationPrompt).toContain('harness-kit:read-ui-prototype')
-    expect(consolidationPrompt).toContain('optionally invoke the `harness-kit:read-ui-prototype` skill')
-    expect(consolidationPrompt).not.toContain('C:\\Users\\romab\\Codigo\\harness-kit\\skills\\read-ui-prototype\\SKILL.md')
-    expect(consolidationPrompt).toContain('optional')
-    expect(consolidationPrompt).toContain('If no prototype, screen, frame, image, or link is available, skip the skill')
+    expect(consolidationPrompt).toContain('## 1. Product')
+    expect(consolidationPrompt).toContain('## 6. Product Backlog')
+    expect(consolidationPrompt).toContain('## 9. Open Questions')
+    expect(consolidationPrompt).toContain('Provisional model assumption')
     expect(consolidationPrompt).toContain('## Frontend Screens & Visualization')
-    expect(consolidationPrompt).toContain('None identified')
+    expect(consolidationPrompt).toContain('harness-kit:read-ui-prototype')
+    expect(consolidationPrompt).toContain('If no prototype, screen, frame, image, or link is available, skip the skill')
 
     const questionsPath = join(productDir, 'QUESTIONS.json')
     expect(existsSync(questionsPath)).toBe(true)
