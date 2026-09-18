@@ -128,7 +128,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
 
     return [
       `## Objective`,
-      `Execute the TDD workflow for the tasks listed below. Follow steps 1, 2, 3, 4 and 6 of the \`harness-kit:tdd-orchestrator\` skill sequentially without pausing.`,
+      `Execute the TDD workflow for the tasks listed below. Follow all steps of the \`harness-kit:tdd-orchestrator\` skill sequentially without pausing.`,
       ``,
       `<skill_context>`,
       `Invoke the \`harness-kit:tdd-orchestrator\` skill before starting.`,
@@ -218,7 +218,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
 
     return [
       `## Objective`,
-      `Execute the TDD workflow for the tasks listed below. Follow steps 1, 2, 3, 4 and 6 of the \`harness-kit:tdd-orchestrator\` skill sequentially without pausing.`,
+      `Execute the TDD workflow for the tasks listed below. Follow all steps of the \`harness-kit:tdd-orchestrator\` skill sequentially without pausing.`,
       ``,
       `<skill_context>`,
       `Invoke the \`harness-kit:tdd-orchestrator\` skill before starting.`,
@@ -299,7 +299,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
 
     return [
       `## Objective`,
-      `Address the findings from the latest review. Follow steps 1, 2, 3, 4 and 6 of the \`harness-kit:tdd-orchestrator\` skill sequentially without pausing.`,
+      `Address the findings from the latest review. Follow all steps of the \`harness-kit:tdd-orchestrator\` skill sequentially without pausing.`,
       ``,
       `<skill_context>`,
       `Invoke the \`harness-kit:tdd-orchestrator\` skill before starting.`,
