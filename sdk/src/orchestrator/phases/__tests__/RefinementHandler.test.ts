@@ -81,10 +81,12 @@ describe('RefinementHandler', () => {
     expect(questionsPrompt).toContain('Ask 0-12 questions')
     expect(questionsPrompt).toContain('<skill_context>')
     expect(questionsPrompt).toContain('harness-kit:pbb-design')
+    expect(questionsPrompt).toContain('CRITICAL: Do not narrate progress or emit interim status updates.')
 
     const consolidationPrompt = mockContext.invokeAgent.mock.calls[1][0].prompt as string
     expect(consolidationPrompt).toContain('<skill_context>')
     expect(consolidationPrompt).toContain('harness-kit:pbb-design')
+    expect(consolidationPrompt).toContain('CRITICAL: Do not narrate progress or emit interim status updates.')
     expect(consolidationPrompt).toContain('<refinement_evidence>')
     expect(consolidationPrompt).toContain('"recommendation": "R1"')
     expect(consolidationPrompt).toContain('"context": "C1"')
