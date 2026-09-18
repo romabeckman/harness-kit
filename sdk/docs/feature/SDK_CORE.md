@@ -92,8 +92,7 @@ REQUIRED: Keep `001-*` and `002-*` files at most 5,000 characters with `InlinePo
 ALLOWED: Generate `003-*` and `004-*` files with `InlinePolicy = 'always'`.
 REQUIRED: For `HIGH` complexity, resolve refinement questions from evidence and record answers in each applicable `003-${PROJECT_NAME}-tactical-design.md`.
 REQUIRED: Pass the active runner to `inlineOrReference`; `writePromptToStdin = false` emits file references only.
-REQUIRED: Render Bootstrap, Planning, and Refinement scope with policy `always` and canonical `SCOPE.md`; otherwise honor `FORCE_INLINE_MAX` (15,000 chars).
-REQUIRED: Planning, Development retries, Review, and Memory prefer `REFINEMENT.md` over `SCOPE.md`; never pass both.
+REQUIRED: Render Bootstrap, Planning, Refinement, Development retries, Review, and Memory business context with policy `always`; Bootstrap, Planning, Development retries, Review, and Memory select `REFINEMENT.md` when present, otherwise `SCOPE.md`, and never pass both. Refinement consumes `SCOPE.md` to create `REFINEMENT.md`. Honor `FORCE_INLINE_MAX` (15,000 chars) when rendering content.
 REQUIRED: Invoke `harness-kit:pbb-design` during optional REFINEMENT, transition to BOOTSTRAP, and preserve PBB decisions and provisional assumptions in Planning.
 ALLOWED: Ask 0–12 PBB gap questions; keep `Frontend Screens & Visualization` as an optional evidence-based complement.
 PROHIBITED: Mutating state directly without using `IFileStateManager`.

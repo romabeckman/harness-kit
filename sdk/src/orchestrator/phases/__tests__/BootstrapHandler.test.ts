@@ -5,12 +5,13 @@ import { Phase } from '../../types'
 import { FORCE_INLINE_MAX } from '../../utils/PromptHelpers'
 
 describe('BootstrapHandler', () => {
-  it('references SCOPE.md when an always-inline scope exceeds FORCE_INLINE_MAX', async () => {
+  it('uses REFINEMENT.md exclusively when it exists', async () => {
     const productDir = '/test/working-dir/docs/product'
+    const refinement = `# Product Backlog\n\n${'PBI-001 '.repeat(FORCE_INLINE_MAX)}`
     const context: any = {
       workingDir: '/test/working-dir',
       config: {
-        scope: 'a'.repeat(FORCE_INLINE_MAX + 1),
+        scope: 'legacy scope must not be used',
         projectPaths: [],
         productDir,
       },
@@ -21,7 +22,9 @@ describe('BootstrapHandler', () => {
           .mockReturnValueOnce([])
           .mockReturnValueOnce([{ id: 'F001' }]),
         existRefinement: vi.fn().mockReturnValue(true),
-        loadRefinement: vi.fn().mockReturnValue('# Product Backlog\n\nPBI-001'),
+        loadRefinement: vi.fn().mockReturnValue(refinement),
+        existScope: vi.fn().mockReturnValue(true),
+        loadScope: vi.fn().mockReturnValue('scope content must not be used'),
         appendDecision: vi.fn(),
       },
       invokeAgent: vi.fn().mockResolvedValue({ raw: '' }),
@@ -31,9 +34,47 @@ describe('BootstrapHandler', () => {
 
     const prompt = context.invokeAgent.mock.calls[0][0].prompt as string
     expect(prompt).toContain('<scope_ref>')
-    expect(prompt).toContain(`Read file: \`${join(productDir, 'SCOPE.md')}\``)
+    expect(prompt).toContain(`Read file: \`${join(productDir, 'REFINEMENT.md')}\``)
+    expect(prompt).not.toContain('SCOPE.md')
     expect(prompt).not.toContain('<scope>')
-    expect(prompt).toContain('<business_refinement>')
-    expect(prompt).toContain('PBI-001')
+    expect(prompt).not.toContain('<business_refinement>')
+    expect(prompt).not.toContain('legacy scope must not be used')
+    expect(context.fsm.loadRefinement).toHaveBeenCalledOnce()
+    expect(context.fsm.loadScope).not.toHaveBeenCalled()
+  })
+
+  it('uses SCOPE.md when REFINEMENT.md does not exist', async () => {
+    const productDir = '/test/working-dir/docs/product'
+    const context: any = {
+      workingDir: '/test/working-dir',
+      config: {
+        scope: 'initial scope',
+        projectPaths: [],
+        productDir,
+      },
+      fsm: {
+        ensureProductFiles: vi.fn(),
+        loadBootstrapConfig: vi.fn().mockReturnValue({ steeringRules: {} }),
+        loadBacklog: vi.fn()
+          .mockReturnValueOnce([])
+          .mockReturnValueOnce([{ id: 'F001' }]),
+        existRefinement: vi.fn().mockReturnValue(false),
+        loadRefinement: vi.fn(),
+        existScope: vi.fn().mockReturnValue(true),
+        loadScope: vi.fn().mockReturnValue('# Scope content'),
+        appendDecision: vi.fn(),
+      },
+      invokeAgent: vi.fn().mockResolvedValue({ raw: '' }),
+    }
+
+    await new BootstrapHandler().handle(Phase.BOOTSTRAP, context)
+
+    const prompt = context.invokeAgent.mock.calls[0][0].prompt as string
+    expect(prompt).toContain('<scope>')
+    expect(prompt).toContain('# Scope content')
+    expect(prompt).not.toContain('<scope_ref>')
+    expect(prompt).not.toContain(`Read file: \`${join(productDir, 'REFINEMENT.md')}\``)
+    expect(context.fsm.loadScope).toHaveBeenCalledOnce()
+    expect(context.fsm.loadRefinement).not.toHaveBeenCalled()
   })
 })

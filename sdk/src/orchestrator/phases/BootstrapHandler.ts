@@ -4,7 +4,7 @@ import { Phase, CliCommand } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 import { buildDocsOrientationSection, inlineOrReference } from '../utils/PromptHelpers'
-import { getProductDir } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getProductDir } from '../utils/PhaseFileUtils'
 import { BacklogParser } from '../../file-state/parsers/BacklogParser'
 
 export class BootstrapHandler extends AbstractPhaseHandler {
@@ -41,6 +41,10 @@ export class BootstrapHandler extends AbstractPhaseHandler {
 
     const productDir = getProductDir(context)
     const backlogPath = join(productDir, 'BACKLOG.md')
+    const planningSource = getPlanningSource(context)
+    const planningContent = planningSource.exists
+      ? planningSource.content.trim()
+      : context.config.scope.trim()
 
     const rulesList: string[] = []
     if (bootConfig && bootConfig.steeringRules) {
@@ -75,7 +79,6 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `- Dependencies: comma-separated IDs, or None`,
       `- Reworks: 0 | Score (TL) & Score (Adv): - | Status: NOT_STARTED`,
       `- Output ONLY the markdown table, no additional text.`,
-      `- When <business_refinement> is present, derive features from its functionalities and PBIs.`,
       `- Preserve human-validated decisions. Treat provisional model assumptions as assumptions.`,
       ``,
       `# FEATURE SIZING`,
@@ -103,27 +106,13 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       ...orientationSection,
       ...inlineOrReference(
         'scope',
-        context.config.scope.trim(),
-        join(productDir, 'SCOPE.md'),
+        planningContent,
+        planningSource.path,
         'markdown',
         'always',
         context.config.agentRunner,
       )
     )
-
-    if (context.fsm.existRefinement()) {
-      promptLines.push(
-        ``,
-        ...inlineOrReference(
-          'business_refinement',
-          context.fsm.loadRefinement().trim(),
-          join(productDir, 'REFINEMENT.md'),
-          'markdown',
-          'always',
-          context.config.agentRunner,
-        )
-      )
-    }
 
     if (rulesList.length > 0) {
       promptLines.push(
