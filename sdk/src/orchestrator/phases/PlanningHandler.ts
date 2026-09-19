@@ -21,10 +21,6 @@ export class PlanningHandler extends AbstractPhaseHandler {
       return super.handle(phase, context);
     }
 
-    if (context.config.enableRefinement && !context.fsm.existRefinement()) {
-      return Phase.REFINEMENT;
-    }
-
     const features = context.fsm.loadBacklog();
     const activeFeature = context.getActiveFeature(features);
 
@@ -41,6 +37,10 @@ export class PlanningHandler extends AbstractPhaseHandler {
 
     if (this.hasCascadeBlock(activeFeature, features))
       return Phase.CASCADE_BLOCKED;
+
+    if (activeFeature.status !== 'IN_PROGRESS') {
+      context.fsm.updateFeatureStatus(activeFeature.id, 'IN_PROGRESS');
+    }
 
     const existingFeatureTasks = context.fsm.loadDevelopmentState()
       .filter(t => t.featureId === activeFeature.id)
@@ -77,7 +77,6 @@ export class PlanningHandler extends AbstractPhaseHandler {
     feature: Feature,
     context: Reviewontext,
   ): Promise<void> {
-    context.fsm.updateFeatureStatus(feature.id, "IN_PROGRESS");
     const config = context.fsm.loadBootstrapConfig();
     const workingDir = getSpecsDir(context.workingDir, feature.domain)
 

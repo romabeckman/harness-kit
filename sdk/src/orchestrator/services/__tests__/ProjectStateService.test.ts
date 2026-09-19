@@ -123,4 +123,27 @@ describe('ProjectStateService', () => {
             expect(tasksFrontend[0].file).toBe('frontend');
         });
     });
+
+    describe('readOnDiskState', () => {
+        it('preserves the configured active feature after it reaches a terminal status', () => {
+            (fs.existsSync as Mock).mockReturnValue(true);
+            const completedFeature = {
+                id: 'F001', title: 'Feature', domain: 'core', priority: 1,
+                dependencies: [], reworks: 0, scoreTL: 1, scoreAdv: 1,
+                status: 'COMPLETED' as const,
+            };
+            const fsm = {
+                loadBacklog: vi.fn().mockReturnValue([completedFeature]),
+                loadDevelopmentState: vi.fn().mockReturnValue([]),
+                loadBootstrapConfig: vi.fn().mockReturnValue({
+                    activeFeatureId: 'F001', completionCriteria: { maxReworks: 2 },
+                    cycleCounter: { completedCycles: 0 }, scoreThresholdTL: 0.7, scoreThresholdAdv: 0.7,
+                }),
+            } as any;
+
+            const state = service.readOnDiskState(fsm, '/fake/product');
+
+            expect(state.activeFeature).toEqual(completedFeature);
+        });
+    });
 });

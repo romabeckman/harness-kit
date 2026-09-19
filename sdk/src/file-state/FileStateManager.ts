@@ -329,6 +329,7 @@ export class FileStateManager implements IFileStateManager {
 
     for (const id of newlyBlocked) {
       this.updateFeatureStatus(id, 'BLOCKED')
+      this.updateAllFeatureTasks(id, '-', 'BLOCKED')
     }
 
     return newlyBlocked

@@ -47,19 +47,14 @@ export class TransitionHandler extends AbstractPhaseHandler {
       return this.retryableFeatures(features, context, phase)
     }
 
-    const pendingStatus = activeFeature.status ?? (
-      ['COMPLETED', 'BLOCKED', 'FAILED'].includes(activeFeature.status)
-        ? activeFeature.status
-        : null
-    )
-
-    if (!pendingStatus) {
-      throw new Error(`Illegal state: phase ${phase} requires pendingStatus in config or terminal active feature status but none is set`)
+    const terminalStatuses = ['COMPLETED', 'BLOCKED', 'FAILED'] as const
+    if (!terminalStatuses.some(status => status === activeFeature.status)) {
+      throw new Error(`Illegal state: phase ${phase} requires a terminal active feature but ${activeFeature.id} is ${activeFeature.status}`)
     }
 
     // Cascade block: only BLOCKED propagates to transitive dependents
     // FAILED is non-critical — dependents remain NOT_STARTED and can proceed
-    if (pendingStatus === 'BLOCKED') {
+    if (activeFeature.status === 'BLOCKED') {
       const cascadedIds = context.fsm.blockDependents(activeFeature.id, features)
       if (cascadedIds.length > 0) {
         context.fsm.appendDecision({
