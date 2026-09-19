@@ -16,13 +16,16 @@ import type { OnDiskState } from './types'
  */
 export class ReentryResolver {
   static resolve(state: OnDiskState): Phase {
-    // 0. If currentPhase is explicitly saved in config, respect it!
+    // 0. Respect saved phases except stale startup markers for populated backlogs.
     if (state.config?.currentPhase) {
       const persistedPhase = state.config.currentPhase as Phase
+      const backlogAlreadyPopulated = state.productFilesExist && state.features.length > 0
+      const staleInitialPhase = backlogAlreadyPopulated &&
+        (persistedPhase === Phase.BOOTSTRAP || persistedPhase === Phase.REFINEMENT)
       if (Object.values(Phase).includes(persistedPhase) && persistedPhase !== Phase.HALTED) {
         // A persisted REVIEW marker is only trustworthy when the completion
         // evidence is still present and valid on disk.
-        if (persistedPhase !== Phase.REVIEW || (state.tddOutputPresent && state.allTasksCompleted)) {
+        if (!staleInitialPhase && (persistedPhase !== Phase.REVIEW || (state.tddOutputPresent && state.allTasksCompleted))) {
           return persistedPhase
         }
       }

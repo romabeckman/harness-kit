@@ -70,8 +70,10 @@ export class HarnessOrchestrator implements Reviewontext {
     // Determine initial phase via re-entry resolver
     const onDisk = this.readOnDiskState()
     const resolvedEntryPhase = ReentryResolver.resolve(onDisk)
+    const backlogAlreadyPopulated = onDisk.productFilesExist && onDisk.features.length > 0
     const entryPhase = config.enableRefinement
       && !this.fsm.existRefinement()
+      && !backlogAlreadyPopulated
       && (resolvedEntryPhase === Phase.BOOTSTRAP || resolvedEntryPhase === Phase.PLANNING)
       ? Phase.REFINEMENT
       : resolvedEntryPhase

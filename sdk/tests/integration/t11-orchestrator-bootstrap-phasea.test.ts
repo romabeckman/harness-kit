@@ -136,6 +136,20 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
     expect(state.currentPhase).toBe(Phase.PLANNING)
   })
 
+  it('does not re-enter REFINEMENT when a populated backlog already exists', () => {
+    setupProductFiles()
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'test-scope',
+      projectPaths: [tmpDir],
+      agentRunner: fake,
+      productDir,
+      complexity: Complexity.AUTO,
+      enableRefinement: true,
+    }, { workingDir: tmpDir })
+
+    expect(orchestrator.getState().currentPhase).toBe(Phase.PLANNING)
+  })
+
   it('PLANNING invokes scope-refinement agent with correct payload', async () => {
     // Use fresh files with NOT_STARTED feature and no tasks yet
     setupProductFiles()
