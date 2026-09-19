@@ -96,17 +96,24 @@ describe('TransitionHandler', () => {
     await expect(handler.handle(Phase.TRANSITION, ctx)).rejects.toThrow('Illegal state')
   })
 
+  it('throws when the active feature is not terminal', async () => {
+    const active = makeFeature({ status: 'IN_PROGRESS' })
+    const next = makeFeature({ id: 'F002', status: 'NOT_STARTED' })
+    const fsm = makeFsm([active, next])
+    const ctx = makeContext(fsm, active)
+
+    await expect(handler.handle(Phase.TRANSITION, ctx)).rejects.toThrow(
+      'requires a terminal active feature',
+    )
+  })
+
   describe('COMPLETED — no cascade', () => {
     it('does not call blockDependents and advances to next NOT_STARTED feature', async () => {
-      const f1 = makeFeature({ id: 'F001', status: 'IN_PROGRESS', scoreTL: 0.9, scoreAdv: 0.9 })
+      const f1 = makeFeature({ id: 'F001', status: 'COMPLETED', scoreTL: 0.9, scoreAdv: 0.9 })
       const f2 = makeFeature({ id: 'F002', status: 'NOT_STARTED', dependencies: [] })
       const fsm = makeFsm([f1, f2], 'COMPLETED')
 
-      // After update F1 is COMPLETED, F2 still NOT_STARTED
-      const updatedFeatures = [
-        { ...f1, status: 'COMPLETED' as const },
-        f2,
-      ]
+      const updatedFeatures = [f1, f2]
       fsm.loadBacklog = vi.fn()
         .mockReturnValueOnce([f1, f2])   // initial load in handle()
         .mockReturnValueOnce(updatedFeatures) // reload after cascade
@@ -225,16 +232,15 @@ describe('TransitionHandler', () => {
     })
   })
 
-  describe('HALTED — no NOT_STARTED features remain and all BLOCKED exhausted', () => {
-    it('clears activeFeatureId and returns HALTED', async () => {
-      const f1 = makeFeature({ id: 'F001', status: 'IN_PROGRESS', reworks: 2 })
+  describe('MEMORY — no NOT_STARTED features remain', () => {
+    it('clears activeFeatureId and returns MEMORY', async () => {
+      const f1 = makeFeature({ id: 'F001', status: 'COMPLETED', reworks: 2 })
       const fsm = makeFsm([f1], 'COMPLETED')
 
-      const completedF1 = { ...f1, status: 'COMPLETED' as const }
       fsm.loadBacklog = vi.fn()
         .mockReturnValueOnce([f1])           // initial load
-        .mockReturnValueOnce([completedF1])  // reload after cascade
-        .mockReturnValueOnce([completedF1])  // for saveBootstrapConfig reload
+        .mockReturnValueOnce([f1])           // reload after cascade
+        .mockReturnValueOnce([f1])           // for saveBootstrapConfig reload
 
       const ctx = makeContext(fsm, f1)
       const result = await handler.handle(Phase.TRANSITION, ctx)

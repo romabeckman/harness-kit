@@ -12,6 +12,7 @@ export class CascadeBlockedHandler extends AbstractPhaseHandler {
     if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
 
     context.fsm.updateFeatureStatus(activeFeature.id, 'BLOCKED')
+    context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'BLOCKED')
 
     context.fsm.appendDecision({
       featureId: activeFeature.id,

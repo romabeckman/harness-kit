@@ -135,6 +135,7 @@ export class ProjectStateService {
     const config = fsm.loadBootstrapConfig()
 
     const activeFeature =
+      features.find(f => f.id === config.activeFeatureId) ??
       features.find(f => f.status === 'IN_PROGRESS') ??
       features.find(f => f.status === 'NOT_STARTED') ??
       null

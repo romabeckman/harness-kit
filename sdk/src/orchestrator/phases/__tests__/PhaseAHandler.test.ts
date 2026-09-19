@@ -102,6 +102,18 @@ describe('PlanningHandler', () => {
         expect(mockFsm.appendTasks).not.toHaveBeenCalled();
     });
 
+    it('continues from PLANNING and marks the next backlog feature IN_PROGRESS', async () => {
+        mockContext.config = { ...mockContext.config, enableRefinement: true };
+        mockFsm.loadDevelopmentState.mockReturnValue([
+            { featureId: 'F001', taskId: 'T001', description: 'Existing Task', domain: 'hello_world_cli', project: 'project', status: 'NOT_STARTED' },
+        ]);
+
+        const result = await handler.handle(Phase.PLANNING, mockContext);
+
+        expect(result).toBe(Phase.DEVELOPMENT);
+        expect(mockFsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'IN_PROGRESS');
+    });
+
     describe('complexity override in scope-refinement prompt', () => {
         beforeEach(() => {
             mockContext.checkSpecFilesPresent = vi.fn().mockReturnValue(false);

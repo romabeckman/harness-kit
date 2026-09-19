@@ -80,6 +80,26 @@ describe('FileStateManager.blockDependents', () => {
     expect(updated.find(f => f.id === 'F002')?.status).toBe('BLOCKED')
   })
 
+  it('blocks task rows for cascaded dependents', () => {
+    const features = [
+      makeFeatureObj('F001', [], 'BLOCKED'),
+      makeFeatureObj('F002', ['F001'], 'NOT_STARTED'),
+    ]
+    writeFileSync(join(productDir, 'BACKLOG.md'), makeBacklogContent([
+      { id: 'F001', deps: [], status: 'BLOCKED' },
+      { id: 'F002', deps: ['F001'], status: 'NOT_STARTED' },
+    ]))
+    writeFileSync(join(productDir, 'DEVELOPMENT-STATE.md'), [
+      '| Feature ID | Task ID | Project | Description | Domain | Current Phase | Status |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      '| F002 | T01 | sdk | task | core | - | NOT_STARTED |',
+    ].join('\n'))
+
+    fsm.blockDependents('F001', features)
+
+    expect(fsm.loadDevelopmentState()[0].status).toBe('BLOCKED')
+  })
+
   it('blocks transitive dependents (F001→F002→F003)', () => {
     const features = [
       makeFeatureObj('F001', [], 'BLOCKED'),
