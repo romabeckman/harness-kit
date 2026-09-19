@@ -45,6 +45,17 @@ describe('T09 — ReentryResolver', () => {
       })
       expect(ReentryResolver.resolve(state)).toBe(Phase.MEMORY)
     })
+
+    it.each([Phase.BOOTSTRAP, Phase.REFINEMENT])(
+      'starts at PLANNING instead of stale %s when backlog already contains features',
+      (currentPhase) => {
+        const state = makeState({
+          config: { ...defaultConfig, currentPhase },
+          activeFeature: { ...baseFeature, status: 'NOT_STARTED' },
+        })
+        expect(ReentryResolver.resolve(state)).toBe(Phase.PLANNING)
+      },
+    )
   })
 
   describe('TS-U-38: Fresh state resolves to BOOTSTRAP', () => {

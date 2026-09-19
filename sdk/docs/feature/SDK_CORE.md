@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-18"
+updated: "2026-09-19"
 ---
 ```graph
 {
@@ -21,7 +21,7 @@ updated: "2026-09-18"
   "registration_files": ["src/orchestrator/ChainBuilder.ts","src/orchestrator/phases/index.ts"],
   "reference_files": ["src/orchestrator/phases/AbstractPhaseHandler.ts"],
   "code_files": ["src/context-assembler/ContextAssembler.ts","src/context-assembler/types.ts","src/json-extraction/JsonExtractionProtocol.ts","src/json-extraction/types.ts","src/orchestrator/ReentryResolver.ts","src/orchestrator/phases/BootstrapHandler.ts","src/orchestrator/phases/CascadeBlockedHandler.ts","src/orchestrator/phases/DeployHandler.ts","src/orchestrator/phases/DevelopmentHandler.ts","src/orchestrator/phases/MemoryHandler.ts","src/orchestrator/phases/PlanningHandler.ts","src/orchestrator/phases/RefinementHandler.ts","src/orchestrator/phases/ReviewHandler.ts","src/orchestrator/phases/TransitionHandler.ts","src/orchestrator/services/AgentInvocationService.ts","src/orchestrator/services/PhaseDecisionLogger.ts","src/orchestrator/services/ProjectStateService.ts","src/orchestrator/types.ts","src/orchestrator/utils/OrchestratorFormatter.ts","src/orchestrator/utils/PhaseFileUtils.ts","src/orchestrator/utils/PromptHelpers.ts","src/orchestrator/utils/SessionHelpers.ts","src/settings/DefaultSettings.ts","src/settings/HarnessSettings.ts","src/telemetry/TokenLedger.ts","src/validation-gate/ValidationGate.ts","src/validation-gate/types.ts"],
-  "test_files": ["src/context-assembler/__tests__/ContextAssembler.test.ts","src/orchestrator/__tests__/HarnessOrchestrator.test.ts","src/orchestrator/phases/__tests__/PhaseAHandler.test.ts","src/orchestrator/phases/__tests__/PhaseBHandler.test.ts","src/orchestrator/phases/__tests__/ReviewHandler.test.ts","src/orchestrator/services/__tests__/ProjectStateService.test.ts","src/orchestrator/services/__tests__/ProjectStateService.spec-readiness.test.ts","src/orchestrator/utils/__tests__/PhaseFileUtils.test.ts","src/orchestrator/utils/__tests__/PromptHelpers.test.ts","src/validation-gate/__tests__/ValidationGate.test.ts","tests/integration/t12-orchestrator-phaseb.test.ts","tests/integration/t13-orchestrator-phasec.test.ts","tests/unit/phases/t04-phasec-handler.test.ts","tests/unit/phases/t06-phasee-handler.test.ts","tests/unit/t09-reentry-resolver.test.ts","tests/unit/t10-state-machine.test.ts"]
+  "test_files": ["src/context-assembler/__tests__/ContextAssembler.test.ts","src/orchestrator/__tests__/HarnessOrchestrator.test.ts","src/orchestrator/phases/__tests__/PhaseAHandler.test.ts","src/orchestrator/phases/__tests__/PhaseBHandler.test.ts","src/orchestrator/phases/__tests__/ReviewHandler.test.ts","src/orchestrator/services/__tests__/ProjectStateService.test.ts","src/orchestrator/services/__tests__/ProjectStateService.spec-readiness.test.ts","src/orchestrator/utils/__tests__/PhaseFileUtils.test.ts","src/orchestrator/utils/__tests__/PromptHelpers.test.ts","src/validation-gate/__tests__/ValidationGate.test.ts","tests/integration/t11-orchestrator-bootstrap-phasea.test.ts","tests/integration/t12-orchestrator-phaseb.test.ts","tests/integration/t13-orchestrator-phasec.test.ts","tests/unit/phases/t04-phasec-handler.test.ts","tests/unit/phases/t06-phasee-handler.test.ts","tests/unit/t09-reentry-resolver.test.ts","tests/unit/t10-state-machine.test.ts"]
 }
 ```
 
@@ -56,7 +56,7 @@ sdk/src/
 - **Ports and adapters**: Keep orchestration independent from runners and persistence.
 - **State safety**: Use atomic writes and never-throw JSON extraction outcomes.
 - **Sessions**: Isolate `{featureId,agent,session,phase}`; resumed prompts cite feature, business context, specs, and projects.
-- **Refinement/bootstrap/planning**: Run optional PBB refinement first; derive features and specs from its traceable context.
+- **Refinement/bootstrap/planning**: Run optional PBB refinement before bootstrap when no populated backlog exists. Resume a populated backlog from PLANNING or later based on saved artifacts; ignore stale BOOTSTRAP and REFINEMENT markers.
 - **Review/memory**: Carry compact TDD metrics/files/handoff; verify docs from decisions, final TL/QA, rework, and changed files without process history
 
 ## HOW TO USE THE ORCHESTRATOR API
@@ -67,6 +67,7 @@ sdk/src/
 3. Call `run()`.
 
 <code_example>
+// # CORRECT: Start the orchestrator with its required scope and runner.
 const orchestrator = new HarnessOrchestrator({
   scope: "Implement login",
   projectPaths: ["./src"],
