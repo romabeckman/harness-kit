@@ -109,6 +109,19 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
     expect(state.currentPhase).toBe(Phase.BOOTSTRAP)
   })
 
+  it('getState returns REFINEMENT before BOOTSTRAP when optional refinement is enabled', () => {
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'test-scope',
+      projectPaths: [tmpDir],
+      agentRunner: fake,
+      productDir,
+      complexity: Complexity.AUTO,
+      enableRefinement: true,
+    }, { workingDir: tmpDir })
+
+    expect(orchestrator.getState().currentPhase).toBe(Phase.REFINEMENT)
+  })
+
   it('getState returns PLANNING after BOOTSTRAP when product files present', async () => {
     setupProductFiles()
     const orchestrator = new HarnessOrchestrator({

@@ -8,6 +8,7 @@ import {
   readTddOutput,
   summarizeTddOutput,
   getProductDir,
+  getPlanningSource,
   getSpecsDir,
 } from '../../utils/PhaseFileUtils'
 
@@ -176,6 +177,56 @@ describe('PhaseFileUtils', () => {
         workingDir: '/workspace',
       }
       expect(getProductDir(context as any)).toBe(join('/workspace', 'docs', 'product'))
+    })
+  })
+
+  describe('getPlanningSource', () => {
+    it('selects REFINEMENT.md without loading SCOPE.md when refinement exists', () => {
+      const fsm = {
+        existRefinement: vi.fn().mockReturnValue(true),
+        loadRefinement: vi.fn().mockReturnValue('# Refinement'),
+        existScope: vi.fn().mockReturnValue(true),
+        loadScope: vi.fn().mockReturnValue('# Scope'),
+      }
+
+      const source = getPlanningSource({
+        config: { productDir: join(tmpDir, 'docs', 'product') },
+        workingDir: tmpDir,
+        fsm,
+      } as any)
+
+      expect(source).toMatchObject({
+        content: '# Refinement',
+        exists: true,
+        fileName: 'REFINEMENT.md',
+        isRefinement: true,
+        label: 'Refinement',
+      })
+      expect(fsm.loadScope).not.toHaveBeenCalled()
+    })
+
+    it('selects SCOPE.md when refinement does not exist', () => {
+      const fsm = {
+        existRefinement: vi.fn().mockReturnValue(false),
+        loadRefinement: vi.fn(),
+        existScope: vi.fn().mockReturnValue(true),
+        loadScope: vi.fn().mockReturnValue('# Scope'),
+      }
+
+      const source = getPlanningSource({
+        config: { productDir: join(tmpDir, 'docs', 'product') },
+        workingDir: tmpDir,
+        fsm,
+      } as any)
+
+      expect(source).toMatchObject({
+        content: '# Scope',
+        exists: true,
+        fileName: 'SCOPE.md',
+        isRefinement: false,
+        label: 'Scope',
+      })
+      expect(fsm.loadRefinement).not.toHaveBeenCalled()
     })
   })
 

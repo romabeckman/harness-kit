@@ -52,7 +52,11 @@ describe('ReviewHandler', () => {
         updateFeatureStatus: vi.fn(),
         incrementReworks: vi.fn(),
         writeReworkLog: vi.fn(),
-        updateAllFeatureTasks: vi.fn()
+        updateAllFeatureTasks: vi.fn(),
+        existScope: vi.fn().mockReturnValue(false),
+        loadScope: vi.fn().mockReturnValue(''),
+        existRefinement: vi.fn().mockReturnValue(false),
+        loadRefinement: vi.fn().mockReturnValue(''),
       }
     }
   })

@@ -102,7 +102,7 @@ hrns run --reset
 | `--agent, -a` | string | No | Agent type (e.g. `claude-cli`) | — |
 | `--model, -m` | string | No | Model name | — |
 | `--effort, -e` | string | No | Reasoning effort level for the model | — |
-| `--mode, -M` | string | No | Execution mode: `quick \| fast \| thinking \| deep_thinking`; `thinking` uses `LOW` complexity and enables pre-planning `REFINEMENT` | `thinking` (interactive) |
+| `--mode, -M` | string | No | Execution mode: `quick \| fast \| thinking \| deep_thinking`; `thinking` uses `LOW` complexity and runs PBB `REFINEMENT` before `BOOTSTRAP` | `thinking` (interactive) |
 | `--complexity, -c` | string | No | Scope complexity override: `LOW \| HIGH \| AUTO` | Mode-inferred |
 | `--reset` | boolean | No | Force a new cycle | false |
 | `--resume` | boolean | No | Resume from last saved session | false |

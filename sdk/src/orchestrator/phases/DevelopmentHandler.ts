@@ -10,7 +10,7 @@ import {
   formatProjectPathsList,
   formatTasksList,
 } from '../utils/PromptHelpers'
-import { getSpecsDir } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getSpecsDir } from '../utils/PhaseFileUtils'
 import type { Feature, Task } from '../../file-state/types'
 import type { DevelopmenPayload } from '../../context-assembler/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
@@ -286,7 +286,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
   buildContinuationReworkPrompt(payload: DevelopmenPayload, context: Reviewontext): string {
     const tasksList = formatTasksList(payload.tasks)
     const workingDir = getSpecsDir(context.workingDir, payload.domain)
-    const productDir = context.config.productDir ?? join(context.workingDir, 'docs', 'product')
+    const planningSource = getPlanningSource(context)
     const projectPathsList = formatProjectPathsList(payload.projectPaths)
     const reworkSection = this.buildReworkSection(payload, context)
 
@@ -323,8 +323,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       ``,
       `<context_anchors>`,
       `Feature: ${payload.featureId} — ${payload.featureTitle}`,
-      `Scope: ${join(productDir, 'SCOPE.md')}`,
-      ...(context.fsm.existRefinement?.() ? [`Refinement: ${join(productDir, 'REFINEMENT.md')}`] : []),
+      `${planningSource.label}: ${planningSource.path}`,
       `Specifications: ${workingDir}`,
       `<project_paths>`,
       projectPathsList,

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { DomainSpecs } from '../../context-assembler/types'
+import type { IFileStateManager } from '../../file-state/FileStateManager'
 
 /**
  * File-system utilities shared across phase decision loggers and other
@@ -155,8 +156,40 @@ export function getProductDir(context: { config?: { productDir?: string }; worki
   return context.config?.productDir ?? join(context.workingDir ?? process.cwd(), 'docs', 'product')
 }
 
+export interface PlanningSource {
+  content: string
+  exists: boolean
+  fileName: 'SCOPE.md' | 'REFINEMENT.md'
+  isRefinement: boolean
+  label: 'Scope' | 'Refinement'
+  path: string
+}
+
+/** Resolves the only business context document that a phase may consume. */
+export function getPlanningSource(context: {
+  config?: { productDir?: string }
+  workingDir?: string
+  fsm: Pick<IFileStateManager, 'existRefinement' | 'loadRefinement' | 'existScope' | 'loadScope'>
+}): PlanningSource {
+  const isRefinement = context.fsm.existRefinement()
+  const exists = isRefinement || context.fsm.existScope()
+  const fileName = isRefinement ? 'REFINEMENT.md' : 'SCOPE.md'
+
+  return {
+    content: isRefinement
+      ? context.fsm.loadRefinement()
+      : exists
+        ? context.fsm.loadScope()
+        : '',
+    exists,
+    fileName,
+    isRefinement,
+    label: isRefinement ? 'Refinement' : 'Scope',
+    path: join(getProductDir(context), fileName),
+  }
+}
+
 /** Resolves the domain specs directory under a working directory. */
 export function getSpecsDir(workingDir: string, domain: string): string {
   return join(workingDir, 'docs', 'specs', domain)
 }
-

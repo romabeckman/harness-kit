@@ -15,8 +15,8 @@ export class OrchestratorFormatter {
 
   static printPipelineHeader(current: Phase): void {
     const phases = [
-      Phase.BOOTSTRAP,
       Phase.REFINEMENT,
+      Phase.BOOTSTRAP,
       Phase.PLANNING,
       Phase.DEVELOPMENT,
       Phase.REVIEW,

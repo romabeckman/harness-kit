@@ -14,7 +14,7 @@ import {
   buildDocsOrientationSection
 } from '../utils/PromptHelpers'
 import { clearFeatureDeveloperSessions } from '../utils/SessionHelpers'
-import { getSpecsDir } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getSpecsDir } from '../utils/PhaseFileUtils'
 import type { ReviewPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
@@ -45,6 +45,11 @@ export class ReviewHandler extends AbstractPhaseHandler {
         decision: `REVIEW skipped by execution policy for feature ${activeFeature.id}.`,
       })
       return Phase.TRANSITION
+    }
+
+    const planningSource = getPlanningSource(context)
+    if (planningSource.exists) {
+      context.config.scope = planningSource.content
     }
 
     this.cleanTemporaryFiles(context, activeFeature.domain)

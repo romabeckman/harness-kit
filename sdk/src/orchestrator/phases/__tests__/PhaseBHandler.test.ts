@@ -64,6 +64,10 @@ function makeFsm(overrides: Partial<IFileStateManager> = {}): IFileStateManager 
     appendDecision: vi.fn(),
     updateFeatureStatus: vi.fn(),
     getPendingTasks: vi.fn(),
+    existScope: vi.fn().mockReturnValue(true),
+    loadScope: vi.fn().mockReturnValue('test scope'),
+    existRefinement: vi.fn().mockReturnValue(false),
+    loadRefinement: vi.fn().mockReturnValue(''),
     ...overrides,
   } as any
 
@@ -369,6 +373,8 @@ describe('DevelopmentHandler', () => {
         loadBootstrapConfig: vi.fn().mockReturnValue(makeConfig()),
         loadBacklog: vi.fn().mockReturnValue([makeFeature({ reworks: 1 })]),
         updateTaskStatus: vi.fn(),
+        existRefinement: vi.fn().mockReturnValue(true),
+        loadRefinement: vi.fn().mockReturnValue('# Refined backlog'),
       })
 
       const context = makeContext(workingDir, fsm, async () => {
@@ -413,7 +419,8 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).not.toContain('<development_specifications>')
       expect(invokeCall.prompt).toContain('<context_anchors>')
       expect(invokeCall.prompt).toContain('<project_paths>')
-      expect(invokeCall.prompt).toContain('SCOPE.md')
+      expect(invokeCall.prompt).toContain('REFINEMENT.md')
+      expect(invokeCall.prompt).not.toContain('SCOPE.md')
       expect(invokeCall.prompt).toContain(join(workingDir, 'docs', 'specs', 'sdk_core'))
       expect(invokeCall.prompt).not.toContain('<orientation>')
     })

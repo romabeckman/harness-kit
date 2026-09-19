@@ -22,6 +22,9 @@ This document references the core skills and supporting documentation for the ha
 ### Meta-Harness
 @./skills/meta-harness/SKILL.md
 
+### PBB Design
+@./skills/pbb-design/SKILL.md
+
 ### Project Memory
 @./skills/project-memory/SKILL.md
 @./skills/project-memory/references/ARCHITECTURE-RULES.md

@@ -41,7 +41,9 @@ For each path in ${projectPaths}:
 1. IF valid ${orientation} is supplied, use its digest summary, selected nodes, edges, and feature micrographs; do not reread global indexes
 2. Validate and inspect relevant test_files first; use entrypoints only to identify functional boundaries
 3. If any route is stale or missing, fallback to rg --files plus targeted test-name searches
-4. If ${orientation} is absent or invalid, read docs/.digest.md + docs/.graph.json, select matching feature nodes, and extract their top graph blocks
+4. If ${orientation} is absent or invalid, read docs/.digest.md + docs/.graph.json, select matching feature nodes,
+read all `related_docs.must_read`, evaluate applicable
+`related_docs.optional`, then continue with existing routing.
 5. Final fallback: read docs/README.md + docs/adr/TESTS.md and scan docs/adr/ / docs/feature/
 ```
 

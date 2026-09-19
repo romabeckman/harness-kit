@@ -39,6 +39,13 @@ function makeContext(): Reviewontext {
 }
 
 describe('ChainBuilder', () => {
+  it('handles optional REFINEMENT before BOOTSTRAP', async () => {
+    const chain = new ChainBuilder().build()
+    const ctx = makeContext()
+    const result = await chain.handle(Phase.REFINEMENT, ctx)
+    expect(result).toBe(Phase.BOOTSTRAP)
+  })
+
   it('always starts with BootstrapHandler — handles BOOTSTRAP phase', async () => {
     const chain = new ChainBuilder().build()
     const ctx = makeContext()

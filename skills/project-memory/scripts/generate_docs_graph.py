@@ -81,11 +81,11 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
         title = frontmatter["title"]
 
     doc_type = frontmatter.get("doc_type")
-    if not doc_type:
+    if "feature/" in rel_path:
+        doc_type = "feature"
+    elif not doc_type:
         if "adr/" in rel_path:
             doc_type = "adr"
-        elif "feature/" in rel_path:
-            doc_type = "feature"
         elif "specs/" in rel_path:
             doc_type = "spec"
         else:
@@ -111,14 +111,91 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
     edges = []
     # 1. Processar edges do YAML frontmatter
     fm_edges = frontmatter.get("edges", [])
-    if isinstance(fm_edges, list):
+
+    if doc_type == "feature":
+        must_read = []
+        optional_docs = []
+        seen_routing_targets = {}
+
+        if not isinstance(fm_edges, list):
+            raise ValueError(f"Feature frontmatter 'edges' must be an array in {file_path}")
+
         for edge in fm_edges:
-            if isinstance(edge, dict) and "target" in edge:
-                edges.append({
-                    "source": node_id,
-                    "target": edge["target"],
-                    "relation": edge.get("relation", "references")
+            if not isinstance(edge, dict) or "target" not in edge:
+                raise ValueError(f"Invalid feature frontmatter edge in {file_path}")
+
+            target = edge["target"]
+            if not isinstance(target, str) or not target.strip():
+                raise ValueError(f"Invalid edge target in {file_path}")
+
+            relation = edge.get("relation", "references")
+            edges.append({
+                "source": node_id,
+                "target": target,
+                "relation": relation
+            })
+
+            has_read = "read" in edge
+            has_when = "when" in edge
+            read_val = edge.get("read")
+            when_val = edge.get("when")
+
+            if has_read and read_val not in ("must", "optional"):
+                raise ValueError(
+                    f"Invalid read value '{read_val}' for target '{target}' in {file_path}. Must be 'must' or 'optional'."
+                )
+
+            if has_read and target in seen_routing_targets:
+                if seen_routing_targets[target] != read_val:
+                    raise ValueError(
+                        f"Target '{target}' cannot be classified as both must and optional in {file_path}"
+                    )
+                raise ValueError(
+                    f"Duplicate routing target '{target}' in {file_path}"
+                )
+
+            if read_val == "must":
+                if has_when:
+                    raise ValueError(
+                        f"Target '{target}' with 'read: must' cannot include 'when' in {file_path}"
+                    )
+                seen_routing_targets[target] = "must"
+                must_read.append(target)
+
+            elif read_val == "optional":
+                if not has_when or when_val is None or not isinstance(when_val, str) or not when_val.strip():
+                    raise ValueError(
+                        f"Missing required 'when' for optional read target '{target}' in {file_path}"
+                    )
+                when_clean = when_val.strip()
+                if len(when_clean) > 300:
+                    raise ValueError(
+                        f"'when' exceeds 300 characters ({len(when_clean)} chars) for optional target '{target}' in {file_path}"
+                    )
+                seen_routing_targets[target] = "optional"
+                optional_docs.append({
+                    "target": target,
+                    "description": when_clean
                 })
+            elif has_when:
+                raise ValueError(
+                    f"Target '{target}' in {file_path} specifies 'when' without 'read: optional'"
+                )
+
+        node["related_docs"] = {
+            "must_read": must_read,
+            "optional": optional_docs
+        }
+    else:
+        # Non-feature nodes: omit related_docs
+        if isinstance(fm_edges, list):
+            for edge in fm_edges:
+                if isinstance(edge, dict) and "target" in edge:
+                    edges.append({
+                        "source": node_id,
+                        "target": edge["target"],
+                        "relation": edge.get("relation", "references")
+                    })
 
     # 2. Processar bloco embutido ```graph
     graph_block_match = re.search(r"```graph\s*\n(.*?)\n```", content, re.DOTALL)
@@ -172,6 +249,20 @@ def build_docs_graph(docs_dir: Path):
         if edge_key not in seen_edges:
             seen_edges.add(edge_key)
             unique_edges.append(edge)
+
+    # Validate routing targets for feature nodes
+    for node in sorted(nodes, key=lambda n: n["id"]):
+        if "related_docs" in node:
+            for target in sorted(node["related_docs"].get("must_read", [])):
+                if target not in node_ids:
+                    raise ValueError(
+                        f"Unresolved routing target '{target}' in '{node['id']}'"
+                    )
+            for item in sorted(node["related_docs"].get("optional", []), key=lambda x: x["target"]):
+                if item["target"] not in node_ids:
+                    raise ValueError(
+                        f"Unresolved routing target '{item['target']}' in '{node['id']}'"
+                    )
 
     unresolved = sorted(
         (edge for edge in unique_edges if edge["target"] not in node_ids),

@@ -197,6 +197,208 @@ class BuildDocsGraphTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Duplicate routing path"):
                 build_docs_graph(docs)
 
+    def test_feature_node_macro_reading_policy_in_related_docs(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "architecture.md", "adr:architecture")
+            write_doc(docs / "adr" / "security.md", "adr:security")
+            feature_edges = (
+                "edges:\n"
+                "  - relation: implements\n"
+                '    target: "adr:architecture"\n'
+                "    read: must\n"
+                "  - relation: references\n"
+                '    target: "adr:security"\n'
+                "    read: optional\n"
+                '    when: "Read when changing authorization, sensitive data, secrets, authentication, or trust boundaries."'
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            graph = build_docs_graph(docs)
+
+            feature_node = next(n for n in graph["nodes"] if n["id"] == "feature:checkout")
+            self.assertEqual(
+                {
+                    "must_read": ["adr:architecture"],
+                    "optional": [
+                        {
+                            "target": "adr:security",
+                            "description": "Read when changing authorization, sensitive data, secrets, authentication, or trust boundaries.",
+                        }
+                    ],
+                },
+                feature_node.get("related_docs"),
+            )
+
+            # Omit related_docs from non-feature nodes
+            adr_node = next(n for n in graph["nodes"] if n["id"] == "adr:architecture")
+            self.assertNotIn("related_docs", adr_node)
+
+            # Global edges unchanged, no read or when copied
+            global_edges = graph["edges"]
+            self.assertEqual(
+                [
+                    {"source": "feature:checkout", "target": "adr:architecture", "relation": "implements"},
+                    {"source": "feature:checkout", "target": "adr:security", "relation": "references"},
+                ],
+                global_edges,
+            )
+
+    def test_rejects_optional_read_missing_when(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "security.md", "adr:security")
+            feature_edges = (
+                "edges:\n"
+                "  - relation: references\n"
+                '    target: "adr:security"\n'
+                "    read: optional"
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            with self.assertRaisesRegex(ValueError, "Missing required 'when'"):
+                build_docs_graph(docs)
+
+    def test_rejects_feature_edge_without_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(
+                docs / "feature" / "checkout.md",
+                "feature:checkout",
+                "edges:\n  - relation: references",
+                doc_type="feature",
+            )
+
+            with self.assertRaisesRegex(ValueError, "Invalid feature frontmatter edge"):
+                build_docs_graph(docs)
+
+    def test_rejects_invalid_feature_read_value(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "security.md", "adr:security")
+            feature_edges = (
+                "edges:\n"
+                "  - relation: references\n"
+                '    target: "adr:security"\n'
+                "    read: later"
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            with self.assertRaisesRegex(ValueError, "Invalid read value"):
+                build_docs_graph(docs)
+
+    def test_rejects_when_without_read_policy(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "security.md", "adr:security")
+            feature_edges = (
+                "edges:\n"
+                "  - relation: references\n"
+                '    target: "adr:security"\n'
+                '    when: "Read when changing authorization"'
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            with self.assertRaisesRegex(ValueError, "specifies 'when' without"):
+                build_docs_graph(docs)
+
+    def test_rejects_optional_read_when_exceeds_300_chars(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "security.md", "adr:security")
+            long_when = "x" * 301
+            feature_edges = (
+                "edges:\n"
+                "  - relation: references\n"
+                '    target: "adr:security"\n'
+                "    read: optional\n"
+                f'    when: "{long_when}"'
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            with self.assertRaisesRegex(ValueError, "exceeds 300 characters"):
+                build_docs_graph(docs)
+
+    def test_rejects_must_read_with_when(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "architecture.md", "adr:architecture")
+            feature_edges = (
+                "edges:\n"
+                "  - relation: implements\n"
+                '    target: "adr:architecture"\n'
+                "    read: must\n"
+                '    when: "Should not be here"'
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            with self.assertRaisesRegex(ValueError, "cannot include 'when'"):
+                build_docs_graph(docs)
+
+    def test_rejects_duplicate_routing_targets(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "architecture.md", "adr:architecture")
+            feature_edges = (
+                "edges:\n"
+                "  - relation: implements\n"
+                '    target: "adr:architecture"\n'
+                "    read: must\n"
+                "  - relation: references\n"
+                '    target: "adr:architecture"\n'
+                "    read: must"
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            with self.assertRaisesRegex(ValueError, "Duplicate routing target"):
+                build_docs_graph(docs)
+
+    def test_rejects_same_target_both_must_and_optional(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "architecture.md", "adr:architecture")
+            feature_edges = (
+                "edges:\n"
+                "  - relation: implements\n"
+                '    target: "adr:architecture"\n'
+                "    read: must\n"
+                "  - relation: references\n"
+                '    target: "adr:architecture"\n'
+                "    read: optional\n"
+                '    when: "Read when modifying architecture"'
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            with self.assertRaisesRegex(ValueError, "both must and optional"):
+                build_docs_graph(docs)
+
+    def test_rejects_unresolved_routing_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            feature_edges = (
+                "edges:\n"
+                "  - relation: implements\n"
+                '    target: "adr:missing"\n'
+                "    read: must"
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            with self.assertRaisesRegex(ValueError, "Unresolved routing target"):
+                build_docs_graph(docs)
+
+    def test_skill_defines_macro_routing_rules_and_step_9_schema(self) -> None:
+        skill_content = (Path(__file__).parents[1] / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("read: must | optional", skill_content)
+        self.assertIn("related_docs.must_read", skill_content)
+        self.assertIn("related_docs.optional", skill_content)
+        self.assertIn("exceeds 300 characters", skill_content)
+        self.assertIn("both must and optional", skill_content)
+
+    def test_template_defines_macro_routing_fields(self) -> None:
+        template = (Path(__file__).parents[1] / "references" / "DOCUMENT-TEMPLATE.md").read_text(encoding="utf-8")
+        self.assertIn("read: [must | optional]", template)
+        self.assertIn("when: \"[required only for optional, max 300 chars]\"", template)
+
 
 if __name__ == "__main__":
     unittest.main()

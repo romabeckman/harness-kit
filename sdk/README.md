@@ -15,14 +15,14 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
                                  │
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  BOOTSTRAP  ·  software-architect agent                              │
-  │  Parses scope → writes BACKLOG.md with features, layers, priorities  │
+  │  REFINEMENT  ·  pbb-design skill (optional)                          │
+  │  Builds PBB context → questions → answers → REFINEMENT.md            │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │
-                                 ▼  (optional via --refine or --mode thinking/deep_thinking)
+                                 ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  REFINEMENT  ·  the-grumpy-tech-lead + software-architect            │
-  │  Generates QUESTIONS.json → collects answers → REFINEMENT.md         │
+  │  BOOTSTRAP  ·  software-architect agent                              │
+  │  Uses scope + PBB context → writes BACKLOG.md                        │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │  (for each feature)
                                  ▼
@@ -73,7 +73,7 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
                                                             (HALTED)
 ```
 
-> Phases DEVELOPMENT → REVIEW loop per rework. A feature can cycle back from REVIEW to DEVELOPMENT up to `maxReworks` times before being marked BLOCKED. BLOCKED features cascade to dependents; FAILED features do not.
+> REFINEMENT runs before BOOTSTRAP when enabled by `--refine` or thinking modes. DEVELOPMENT → REVIEW loops per rework. A feature can cycle back from REVIEW to DEVELOPMENT up to `maxReworks` times before being marked BLOCKED. BLOCKED features cascade to dependents; FAILED features do not.
 
 ---
 

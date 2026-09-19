@@ -52,6 +52,10 @@ function makeFsm(feature: Feature = makeFeature(), config: BootstrapConfig = mak
     updateAllFeatureTasks: vi.fn(),
     incrementReworks: vi.fn(),
     writeReworkLog: vi.fn(),
+    existScope: vi.fn().mockReturnValue(true),
+    loadScope: vi.fn().mockReturnValue('test'),
+    existRefinement: vi.fn().mockReturnValue(false),
+    loadRefinement: vi.fn().mockReturnValue(''),
   } as unknown as IFileStateManager
 }
 
@@ -222,6 +226,23 @@ describe('ReviewHandler', () => {
     expect(context.invokeAgent).toHaveBeenCalledTimes(2)
     expect(context.invokeAgent).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'review_tl' }))
     expect(context.invokeAgent).toHaveBeenCalledWith(expect.objectContaining({ phaseKey: 'review_adv' }))
+  })
+
+  it('uses REFINEMENT.md content as the exclusive review scope when it exists', async () => {
+    const fsm = makeFsm() as any
+    fsm.existRefinement.mockReturnValue(true)
+    fsm.loadRefinement.mockReturnValue('# Refined review context')
+    const context = makeContext(workingDir, fsm, undefined, { scope: 'scope content must not be used' })
+
+    await handler.handle(Phase.REVIEW, context)
+
+    const prompts = (context.invokeAgent as any).mock.calls.map((call: any[]) => call[0].prompt as string)
+    expect(prompts).toHaveLength(2)
+    for (const prompt of prompts) {
+      expect(prompt).toContain('# Refined review context')
+      expect(prompt).not.toContain('scope content must not be used')
+    }
+    expect(fsm.loadScope).not.toHaveBeenCalled()
   })
 
   it('preserves developerSession on RETRY verdict', async () => {
