@@ -54,6 +54,11 @@ You are a technical documentation specialist. Your sole responsibility is to cre
   - `tested_by`: ALLOWED only from a feature/code node to the ADR defining its test strategy. PROHIBITED between two ADR/documentation nodes.
   - `references`: default relation between two ADR/documentation nodes.
   - PROHIBITED: reciprocal edges between the same pair with the same relation (A `tested_by` B and B `tested_by` A simultaneously). Encode each relation once, from the dependent node only.
+- ALLOWED: Feature `edges[]` may define macro reading policy using `read: must | optional`.
+- REQUIRED: `read: optional` must include `when` describing when the target document is relevant.
+- REQUIRED: Keep `when` at 300 characters maximum.
+- PROHIBITED: Add `when` to `read: must`.
+- PROHIBITED: Classify the same target as both `must` and `optional`.
 
 ---
 
@@ -162,10 +167,19 @@ Execute steps in order. Do not skip steps.
 - REQUIRED: Update `docs/.graph.json` aggregating macro document nodes and document-level edges (`implements`, `depends_on`, `tested_by`).
 - REQUIRED: Execute the Python script `./scripts/generate_docs_graph.py <target_docs_dir>` (or embedded logic) to extract nodes/edges and generate `docs/.graph.json`.
 - REQUIRED: Write `docs/.graph.json` as **compact JSON** (no indentation, `separators=(',',':')`) — it is a machine-read routing index, not a human-diffed file.
-- Schema format: `{"nodes":[{"id":"...","type":"...","title":"...","path":"...","tags":[...]}],"edges":[{"source":"...","target":"...","relation":"..."}]}`.
+- Feature nodes may include:
+  - `related_docs.must_read`: Array of target `node_id` values marked `read: must`.
+  - `related_docs.optional`: Array of `{target, description}` generated from edges marked `read: optional` (`description` comes from the edge `when` value).
+- Keep global `edges[]` unchanged as `{source,target,relation}`.
+- Do not copy `read` or `when` into global edges.
 - PROHIBITED: Including `path` in edge entries — resolve target paths via `node_id` lookup in `nodes[]`. Duplicating path in edges wastes tokens and creates drift risk.
 - REQUIRED: Sort nodes by `id` and edges by `source`, `relation`, then `target` for deterministic output.
-- REQUIRED: Fail generation on duplicate `node_id` values or unresolved edge targets; never silently discard invalid topology.
+- REQUIRED: Fail generation when:
+  - a routing target cannot be resolved;
+  - optional `when` is missing or exceeds 300 characters;
+  - duplicate routing targets exist;
+  - the same target is both must and optional;
+  - duplicate `node_id` values or unresolved edge targets exist.
 - PROHIBITED: Adding feature `entrypoints`, `registration_files`, `reference_files`, `code_files`, or `test_files` to macro nodes. Read these only from the selected feature micrograph.
 - Purpose: macro graph routing for orchestrator without scanning individual code files.
 

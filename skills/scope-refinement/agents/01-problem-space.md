@@ -19,7 +19,9 @@ For each path in ${projectPaths}:
 ```
 1. IF valid ${orientation} is supplied, use its digest summary, selected nodes, one-hop edges, and document paths; do not reread global indexes
 2. Read selected document prose needed for business and architectural context
-3. Fallback: if ${orientation} is absent, invalid, or stale, read docs/.digest.md + docs/.graph.json and select matching nodes
+3. Fallback: if ${orientation} is absent, invalid, or stale, read docs/.digest.md + docs/.graph.json, select matching feature nodes,
+read all `related_docs.must_read`, evaluate applicable
+`related_docs.optional`, then continue with existing routing.
 4. Final fallback: read docs/README.md + docs/adr/ARCHITECTURE.md and scan docs/adr/ / docs/feature/
 ```
 

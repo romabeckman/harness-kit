@@ -50,7 +50,9 @@ For each path in ${projectPaths}:
 1. IF valid ${orientation} is supplied, use its digest summary, selected nodes, edges, and feature micrographs; do not reread global indexes
 2. Validate routed files, then inspect relevant paths in order: entrypoints, registration_files, reference_files, code_files
 3. If any route is stale or missing, fallback to rg --files plus targeted rg searches inside likely source directories
-4. If ${orientation} is absent or invalid, read docs/.digest.md + docs/.graph.json, select matching feature nodes, and extract their top graph blocks
+4. If ${orientation} is absent or invalid, read docs/.digest.md + docs/.graph.json, select matching feature nodes,
+read all `related_docs.must_read`, evaluate applicable
+`related_docs.optional`, then continue with existing routing.
 5. Final fallback: read docs/README.md + docs/adr/ARCHITECTURE.md and scan docs/adr/ / docs/feature/
 ```
 

@@ -102,9 +102,13 @@ Before Phase 1, load orientation once for each `${projectPaths}` entry:
 
 1. Read `docs/.digest.md` and `docs/.graph.json` when present.
 2. Select only nodes matching `${scope}` and `${domain}` by ID, title, path, or tags; include their one-hop edges.
-3. For selected feature nodes, extract only frontmatter and top `graph` block.
-4. Build in-memory `${orientation}` with project path, digest summary, selected nodes, selected document paths, and selected feature micrographs.
-5. Validate routed paths before Phases 3–4. Mark stale paths in `${orientation}`; do not create another routing artifact.
+3. For each selected feature node:
+   - Resolve and read every `related_docs.must_read` document.
+   - Evaluate `related_docs.optional[].description` against `${scope}`, `${domain}`, and `${rules}`.
+   - Read only optional documents whose condition applies.
+4. For selected feature nodes, extract only frontmatter and top `graph` block.
+5. Build `${orientation}` with project path, digest summary, selected nodes, required documents, selected optional documents, document paths, and selected feature micrographs.
+6. Validate routed paths before Phases 3–4. Mark stale paths in `${orientation}`; do not create another routing artifact.
 
 Pass `${orientation}` to every phase agent. Agents must not reread global indexes when valid orientation is supplied. If orientation is absent, invalid, or stale, agents use their documented fallback.
 
@@ -148,6 +152,13 @@ AUTONOMOUS  → Do not ask or pause.
 ```
 
 Stop when no decision-changing gap remains or 8 questions have been resolved. Store all entries as `${refinementAnswers}`. Consolidate their resolved decisions into `${refinedScope}` without changing the original `${scope}`. Explicit human answers outrank the original scope, repository evidence, and inference, in that order. Preserve deferred and unknown answers; never invent certainty.
+
+After `${refinedScope}` and `${refinementAnswers}` are resolved:
+
+1. Re-evaluate only the selected feature nodes' `related_docs.optional`.
+2. Use `${refinedScope}` and `${refinementAnswers}` as additional routing evidence.
+3. Add newly applicable documents to `${orientation}`.
+4. Do not rebuild the remaining orientation or reread already loaded documents.
 
 </phase>
 

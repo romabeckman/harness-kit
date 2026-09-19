@@ -26,6 +26,8 @@ tags: [tag1, tag2]
 edges:
   - relation: [implements | depends_on | tested_by | references | child_of]
     target: "[target_node_id]"
+    read: [must | optional]
+    when: "[required only for optional, max 300 chars]"
 updated: YYYY-MM-DD
 ---
 # [Document Title]
@@ -67,6 +69,7 @@ REQUIRED: Use project-relative paths, remove duplicates across arrays, and list 
 REQUIRED: Use empty arrays when a routing role does not apply.
 PROHIBITED: Copying these source paths into YAML `edges`, `.digest.md`, or `.graph.json`.
 REQUIRED: For ADR documents, omit the entire embedded `graph` block; source routing belongs only to feature documents.
+ALLOWED: `read` remains optional for ADR-to-ADR edges when no feature routing policy is required.
 
 ## OVERVIEW
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]

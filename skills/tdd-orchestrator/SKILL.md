@@ -41,11 +41,16 @@ IF invoked directly by human:
 After macro orientation:
 
 1. Match `${featureId}` and `${domain}` against `.graph.json` node IDs, titles, paths, and tags.
-2. Read only frontmatter and top `graph` block from selected `docs/feature/*.md` document.
-3. Validate every routed path exists. If any path is stale or feature node is absent, use `rg --files` plus targeted `rg` searches, then continue with discovered paths.
-4. RED phase: read relevant `test_files` first.
-5. GREEN phase: read relevant files in this order: `entrypoints`, `registration_files`, `reference_files`, then `code_files`.
-6. Read full feature prose only when implementation needs design context not present in digest, graph, specs, or routed code.
+2. Resolve the selected feature node's `related_docs`:
+   - Read every document in `must_read`.
+   - Evaluate each `optional[].description` against `${tasks}`, current requirements, and rework findings when present.
+   - Read only optional documents whose condition applies.
+3. Resolve document paths through `.graph.json` `nodes[]`.
+4. Read only frontmatter and top `graph` block from the selected `docs/feature/*.md`.
+5. Validate every routed path exists. If any path is stale or feature node is absent, use `rg --files` plus targeted `rg` searches, then continue with discovered paths.
+6. RED phase: read relevant `test_files` first.
+7. GREEN phase: read relevant files in this order: `entrypoints`, `registration_files`, `reference_files`, then `code_files`.
+8. Read full feature prose only when implementation needs design context not present in digest, graph, specs, or routed code.
 
 Do not copy routing arrays into `.graph.json` or create another routing artifact.
 
@@ -65,8 +70,12 @@ Do not copy routing arrays into `.graph.json` or create another routing artifact
 | `docs/specs/${domain}/004-*-test-scenarios.md` | Pre-specified unit/integration/functional scenarios — **drives RED phase; do not invent test cases** |
 | `docs/specs/${domain}/REWORK-LOG.md` | Present only on retry — findings from previous validation to address |
 
-### Optional documents:
-Read on-demand as indicated in `README.md` or `.graph.json` (API specs, deployment, configuration, etc.).
+### Related documents:
+Use the selected feature node's `related_docs` from `.graph.json`.
+
+- `must_read`: always load before implementation.
+- `optional`: load only when its `description` matches the current task or rework context.
+- Do not load unrelated optional documents.
 
 </context>
 
