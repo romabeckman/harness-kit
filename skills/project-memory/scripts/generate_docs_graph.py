@@ -117,65 +117,70 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
         optional_docs = []
         seen_routing_targets = {}
 
-        if isinstance(fm_edges, list):
-            for edge in fm_edges:
-                if not isinstance(edge, dict) or "target" not in edge:
-                    continue
+        if not isinstance(fm_edges, list):
+            raise ValueError(f"Feature frontmatter 'edges' must be an array in {file_path}")
 
-                target = edge["target"]
-                relation = edge.get("relation", "references")
-                edges.append({
-                    "source": node_id,
+        for edge in fm_edges:
+            if not isinstance(edge, dict) or "target" not in edge:
+                raise ValueError(f"Invalid feature frontmatter edge in {file_path}")
+
+            target = edge["target"]
+            if not isinstance(target, str) or not target.strip():
+                raise ValueError(f"Invalid edge target in {file_path}")
+
+            relation = edge.get("relation", "references")
+            edges.append({
+                "source": node_id,
+                "target": target,
+                "relation": relation
+            })
+
+            has_read = "read" in edge
+            has_when = "when" in edge
+            read_val = edge.get("read")
+            when_val = edge.get("when")
+
+            if has_read and read_val not in ("must", "optional"):
+                raise ValueError(
+                    f"Invalid read value '{read_val}' for target '{target}' in {file_path}. Must be 'must' or 'optional'."
+                )
+
+            if has_read and target in seen_routing_targets:
+                if seen_routing_targets[target] != read_val:
+                    raise ValueError(
+                        f"Target '{target}' cannot be classified as both must and optional in {file_path}"
+                    )
+                raise ValueError(
+                    f"Duplicate routing target '{target}' in {file_path}"
+                )
+
+            if read_val == "must":
+                if has_when:
+                    raise ValueError(
+                        f"Target '{target}' with 'read: must' cannot include 'when' in {file_path}"
+                    )
+                seen_routing_targets[target] = "must"
+                must_read.append(target)
+
+            elif read_val == "optional":
+                if not has_when or when_val is None or not isinstance(when_val, str) or not when_val.strip():
+                    raise ValueError(
+                        f"Missing required 'when' for optional read target '{target}' in {file_path}"
+                    )
+                when_clean = when_val.strip()
+                if len(when_clean) > 300:
+                    raise ValueError(
+                        f"'when' exceeds 300 characters ({len(when_clean)} chars) for optional target '{target}' in {file_path}"
+                    )
+                seen_routing_targets[target] = "optional"
+                optional_docs.append({
                     "target": target,
-                    "relation": relation
+                    "description": when_clean
                 })
-
-                read_val = edge.get("read")
-                when_val = edge.get("when")
-
-                if read_val is not None:
-                    if read_val not in ("must", "optional"):
-                        raise ValueError(
-                            f"Invalid read value '{read_val}' for target '{target}' in {file_path}. Must be 'must' or 'optional'."
-                        )
-
-                    if target in seen_routing_targets:
-                        if seen_routing_targets[target] != read_val:
-                            raise ValueError(
-                                f"Target '{target}' cannot be classified as both must and optional in {file_path}"
-                            )
-                        raise ValueError(
-                            f"Duplicate routing target '{target}' in {file_path}"
-                        )
-
-                    if read_val == "must":
-                        if when_val is not None:
-                            raise ValueError(
-                                f"Target '{target}' with 'read: must' cannot include 'when' in {file_path}"
-                            )
-                        seen_routing_targets[target] = "must"
-                        must_read.append(target)
-
-                    elif read_val == "optional":
-                        if when_val is None or not isinstance(when_val, str) or not when_val.strip():
-                            raise ValueError(
-                                f"Missing required 'when' for optional read target '{target}' in {file_path}"
-                            )
-                        when_clean = when_val.strip()
-                        if len(when_clean) > 300:
-                            raise ValueError(
-                                f"'when' exceeds 300 characters ({len(when_clean)} chars) for optional target '{target}' in {file_path}"
-                            )
-                        seen_routing_targets[target] = "optional"
-                        optional_docs.append({
-                            "target": target,
-                            "description": when_clean
-                        })
-                else:
-                    if when_val is not None:
-                        raise ValueError(
-                            f"Target '{target}' in {file_path} specifies 'when' without 'read: optional'"
-                        )
+            elif has_when:
+                raise ValueError(
+                    f"Target '{target}' in {file_path} specifies 'when' without 'read: optional'"
+                )
 
         node["related_docs"] = {
             "must_read": must_read,

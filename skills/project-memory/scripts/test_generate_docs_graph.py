@@ -259,6 +259,49 @@ class BuildDocsGraphTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Missing required 'when'"):
                 build_docs_graph(docs)
 
+    def test_rejects_feature_edge_without_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(
+                docs / "feature" / "checkout.md",
+                "feature:checkout",
+                "edges:\n  - relation: references",
+                doc_type="feature",
+            )
+
+            with self.assertRaisesRegex(ValueError, "Invalid feature frontmatter edge"):
+                build_docs_graph(docs)
+
+    def test_rejects_invalid_feature_read_value(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "security.md", "adr:security")
+            feature_edges = (
+                "edges:\n"
+                "  - relation: references\n"
+                '    target: "adr:security"\n'
+                "    read: later"
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            with self.assertRaisesRegex(ValueError, "Invalid read value"):
+                build_docs_graph(docs)
+
+    def test_rejects_when_without_read_policy(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "security.md", "adr:security")
+            feature_edges = (
+                "edges:\n"
+                "  - relation: references\n"
+                '    target: "adr:security"\n'
+                '    when: "Read when changing authorization"'
+            )
+            write_doc(docs / "feature" / "checkout.md", "feature:checkout", edges=feature_edges, doc_type="feature")
+
+            with self.assertRaisesRegex(ValueError, "specifies 'when' without"):
+                build_docs_graph(docs)
+
     def test_rejects_optional_read_when_exceeds_300_chars(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             docs = Path(temp_dir) / "docs"
