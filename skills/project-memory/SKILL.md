@@ -95,7 +95,7 @@ Use this table to determine which rules file to read and which constraints apply
 - REQUIRED: Keep `MODULES` documentation in `ARCHITECTURE.md` strictly high-level (name + 1 line + link). Move detailed module documentation exclusively to the respective feature docs in `docs/feature/`.
 - PROHIBITED: Mixing unrelated topics in a single file.
 - REQUIRED: Follow `./references/DOCUMENT-TEMPLATE.md` structure when it exists.
-- REQUIRED: Keep documents short, dense, and strictly under 8,000 characters so an LLM or developer can extract all relevant context in a single pass.
+- REQUIRED: Keep documents short, dense, and strictly under 8,000 characters (excluding YAML frontmatter header and graph blocks) so an LLM or developer can extract all relevant context in a single pass.
 
 ### Rules for root `README.md`
 
