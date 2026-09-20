@@ -15,7 +15,7 @@ edges:
     target: "feature:sdk_settings"
   - relation: depends_on
     target: "feature:sdk_terminal_ui"
-updated: "2026-09-14"
+updated: "2026-09-20"
 ---
 ```graph
 {
@@ -49,7 +49,7 @@ src/cli/services/qa/ # QA parsing, handlers, factories, CLI types
 
 1. **Run** `hrns qa run`; choose resume, analysis, or new when plans exist.
 2. **Define** scope with `--scope`; repeat `--scenario` for baselines.
-3. **Validate** planner JSON, profile, target, and scenarios.
+3. **Validate** planner JSON, profile, target, and scenarios. On validation error, request one LLM correction using the exact error and original contract; throw if corrected output remains invalid.
 4. **Execute** in order; use `--analysis` for evidence analysis.
 5. **Report** with `hrns qa report --run <id>`; explore with `qa exploratory`.
 6. **Authenticate** with `--auth <profile>`; planning receives safe profile metadata and browser execution applies the selected credentials.

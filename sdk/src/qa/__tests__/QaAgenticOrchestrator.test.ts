@@ -387,15 +387,19 @@ describe('QaAgenticOrchestrator', () => {
     await expect(orchestrator.run({ scope: 'Test form' })).rejects.toThrow('Invalid agentic QA plan')
   })
 
-  it('repairs an invalid browser action before persisting the QA plan', async () => {
+  it('moves misplaced browser assertions during planner repair before persisting the QA plan', async () => {
     const invalidPlan = {
       id: 'recoverable-browser-plan', target: 'http://127.0.0.1:3000', profile: 'web', criteria: ['Page loads'],
       scenarios: [{ id: 'page-load', criterionIds: ['criterion-1'], required: true, profile: 'web',
-        actions: [{ type: 'press', key: 'ArrowLeft', count: 501 }], assertions: [{ type: 'visible', selector: 'body' }] }],
+        actions: [{ type: 'count', selector: '.cell', count: 200 }], assertions: [{ type: 'visible', selector: 'body' }] }],
     }
     const validPlan = {
       ...invalidPlan,
-      scenarios: [{ ...invalidPlan.scenarios[0], actions: [{ type: 'navigate', url: 'http://127.0.0.1:3000' }] }],
+      scenarios: [{
+        ...invalidPlan.scenarios[0],
+        actions: [{ type: 'navigate', url: 'http://127.0.0.1:3000' }],
+        assertions: [...invalidPlan.scenarios[0].assertions, { type: 'count', selector: '.cell', count: 200 }],
+      }],
     }
     const runner: IAgentRunner = { run: vi.fn()
       .mockResolvedValueOnce({ raw: JSON.stringify(invalidPlan) })
@@ -414,11 +418,31 @@ describe('QaAgenticOrchestrator', () => {
     await expect(orchestrator.run({ scope: 'Test page load' })).resolves.toMatchObject({ verdict: 'PASS' })
 
     expect(runner.run).toHaveBeenCalledTimes(4)
-    expect(runner.run).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      phaseKey: 'qa_planning',
-      prompt: expect.stringContaining('scenario 1 action 1 is invalid'),
-    }), expect.anything())
+    const repairPrompt = vi.mocked(runner.run).mock.calls[1]?.[0].prompt ?? ''
+    expect(repairPrompt).toContain('"count" is an assertion type; move it to scenario.assertions')
+    expect(repairPrompt).toContain('If a browser action error names an assertion type, move that object to the scenario assertions array')
     expect(store.loadPlan('recoverable-browser-plan', 1).scenarios[0]?.actions).toEqual([{ type: 'navigate', value: 'http://127.0.0.1:3000' }])
+    expect(store.loadPlan('recoverable-browser-plan', 1).scenarios[0]?.assertions).toContainEqual({ type: 'count', selector: '.cell', count: 200 })
+  })
+
+  it('throws the repaired plan error when one correction attempt remains invalid', async () => {
+    const invalidPlan = {
+      id: 'still-invalid-browser-plan', target: 'http://127.0.0.1:3000', profile: 'web', criteria: ['Page loads'],
+      scenarios: [{ id: 'page-load', criterionIds: ['criterion-1'], required: true, profile: 'web',
+        actions: [{ type: 'count', selector: '.cell', count: 200 }], assertions: [{ type: 'visible', selector: 'body' }] }],
+    }
+    const execute = vi.fn()
+    const runner: IAgentRunner = { run: vi.fn().mockResolvedValue({ raw: JSON.stringify(invalidPlan) }) }
+    const orchestrator = new QaAgenticOrchestrator({
+      workspace, runner, store: new QaRunStore(workspace),
+      drivers: [{ profile: 'web', doctor: async () => ({ available: true }), execute }],
+    })
+
+    await expect(orchestrator.run({ scope: 'Test page load' }))
+      .rejects.toThrow('"count" is an assertion type; move it to scenario.assertions')
+
+    expect(runner.run).toHaveBeenCalledTimes(2)
+    expect(execute).not.toHaveBeenCalled()
   })
 
   it('validates the generated plan before invoking any QA driver', async () => {

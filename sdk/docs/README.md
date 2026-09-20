@@ -26,7 +26,7 @@ Index of technical documentation for **harness-kit SDK**. Use links below for do
 | [**SDK_STATE.md**](./feature/SDK_STATE.md) | SDK state feature guide. | Optional |
 | [**SDK_STEERING.md**](./feature/SDK_STEERING.md) | SDK steering feature guide. | Optional |
 | [**SDK_TERMINAL_UI.md**](./feature/SDK_TERMINAL_UI.md) | SDK terminal UI feature guide. | Optional |
-| [**QA_TESTER.md**](./feature/QA_TESTER.md) | Runtime acceptance, auth-aware planning, saved-plan exploratory execution, report formats, and evidence modal behavior. | Optional |
+| [**QA_TESTER.md**](./feature/QA_TESTER.md) | Runtime acceptance, auth-aware planning, one-attempt LLM plan repair, saved-plan exploratory execution, and reports. | Optional |
 
 ## Recommended Reading Order
 
