@@ -92,6 +92,8 @@ REQUIRED: Emit runtime, phase, scenario, and completion events via `QaTerminalPr
 
 Reuse browsers with an isolated context per scenario; close contexts on failure. Without a profile, keep login and verification together. With non-`none`, start authenticated and omit login. Use selector/URL waits. Curl never follows redirects; MCP follows same-origin redirects. Require screenshots.
 
+Legacy **Streamable HTTP** sends `initialize`, then `notifications/initialized`; reuse returned `Mcp-Session-Id` and negotiated `MCP-Protocol-Version` for the scenario request. Stateless `2026-07-28` requests carry protocol, client, and capability metadata plus `Mcp-Method` and tool `Mcp-Name` headers.
+
 ## AUTHENTICATION
 
 REQUIRED: Support `none`, `basic`, `bearer`, `api-key`, and `cookie` profiles. Prefer environment references; use `valueFrom`; restrict credentials to same-origin traffic; redact resolved secrets.
