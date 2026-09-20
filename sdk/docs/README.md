@@ -17,7 +17,7 @@ Index of technical documentation for **harness-kit SDK**. Use links below for do
 | [**E2E_TESTING_SUITE.md**](./feature/E2E_TESTING_SUITE.md) | E2E testing feature guide. | Optional |
 | [**HTTP_SERVER.md**](./feature/HTTP_SERVER.md) | HTTP server and Docker adapter guide. | Optional |
 | [**SDK_AGENT_RUNNER.md**](./feature/SDK_AGENT_RUNNER.md) | SDK agent runner guide, including OpenCode CLI mapping and session handling. | Optional |
-| [**SDK_CLI.md**](./feature/SDK_CLI.md) | SDK CLI feature guide. | Optional |
+| [**SDK_CLI.md**](./feature/SDK_CLI.md) | SDK CLI feature guide, including interactive agent-runner selection. | Optional |
 | [**SDK_CORE.md**](./feature/SDK_CORE.md) | SDK core feature guide. | Optional |
 | [**SDK_DIAGNOSE.md**](./feature/SDK_DIAGNOSE.md) | SDK diagnose and meta-harness feature guide. | Optional |
 | [**SDK_PACKAGE.md**](./feature/SDK_PACKAGE.md) | SDK package feature guide. | Optional |

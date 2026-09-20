@@ -21,10 +21,10 @@ COMMANDS
   help      Show this help message
 
 RUN OPTIONS
-  --agent, -a <type>        Specify agent type (e.g., 'copilot-sdk', 'antigravity-cli')
+  --agent, -a <type>        Specify agent type; prompt opens when omitted (Claude CLI preselected)
   --model, -m <name>        Specify model name for the agent
 
-ACTION (skips interactive prompt)
+ACTION (skips action prompt)
   --reset                   Discard current session and start a new cycle
   --resume                  Continue from last session
 
@@ -91,12 +91,12 @@ DESCRIPTION
   Start a new autonomous orchestration cycle or resume an existing session.
 
 RUN OPTIONS
-  --agent, -a <type>        Specify agent runner (e.g. 'claude-cli', 'copilot-cli', 'antigravity-cli')
+  --agent, -a <type>        Specify agent runner; prompt opens when omitted (Claude CLI preselected)
   --model, -m <name>        Specify model name for the agent
   --effort, -e <level>      Reasoning effort level (low | medium | high | xhigh)
   --complexity, -c <level>  Explicit complexity override: LOW | HIGH | AUTO
 
-ACTION (skips interactive prompt)
+ACTION (skips action prompt)
   --reset                   Discard current session and start a new cycle
   --resume                  Continue from last saved session
 
@@ -201,7 +201,7 @@ DESCRIPTION
   sessions in batches of 3, and updates trace history and candidate improvements.
 
 OPTIONS
-  --agent, -a <type>        Specify agent runner (e.g. 'claude-cli', 'copilot-cli', 'antigravity-cli')
+  --agent, -a <type>        Specify agent runner; prompt opens when omitted (Claude CLI preselected)
   --model, -m <name>        Override model name (defaults to DefaultSettings.ts diagnose model)
   --effort, -e <level>      Override reasoning effort level (defaults to DefaultSettings.ts diagnose effort)
   --batch-size <number>     Number of pending sessions to process per batch (default: 3)
@@ -229,7 +229,7 @@ OPTIONS
   --scope <text>           Open QA scope; omit to choose short input or editor form
   --scenario <text>        Optional detailed scenario; repeatable
   --project <path>         Project to inspect and test (default: current directory)
-  --agent <runner>         Agent runner (default: claude-cli)
+  --agent <runner>         Agent runner; prompt opens when omitted (Claude CLI preselected)
   --model <model>          Model override for QA phases
   --effort <level>         Reasoning effort override for QA phases
   --analysis               After execution, inspect evidence and add and execute material missing scenarios before reporting
@@ -279,9 +279,10 @@ ACTIONS
   review [id] --auto        Apply candidate autonomously via LLM using phaseKey: diagnose
 
 OPTIONS
+  --agent, -a <type>        Select agent runner; interactive selection opens when omitted
   --model, -m <name>        Override model name for autonomous promotion
   --effort, -e <level>      Override reasoning effort level
-  --non-interactive, --auto Apply candidate autonomously without interactive runner
+  --non-interactive, --auto Apply candidate autonomously; pass --agent to skip runner selection
   --help, -h                Show this help message
 
 EXAMPLES

@@ -1,5 +1,4 @@
 import { AgentRunnerFactory } from '../../../agent-runner/AgentRunnerFactory'
-import { Runner } from '../../../agent-runner/types'
 import { QaAgenticOrchestrator } from '../../../qa/QaAgenticOrchestrator'
 import type { QaProgressListener } from '../../../qa/progress'
 import { QaRunStore } from '../../../qa/services/QaRunStore'
@@ -13,8 +12,11 @@ export function createQaOrchestrator(
   onProgress?: QaProgressListener,
   store?: QaRunStore,
 ): QaAgenticOrchestrator {
+  if (!dependencies.runner && !options.agentType) {
+    throw new Error('An agent runner must be selected before creating the QA orchestrator.')
+  }
   const runner = dependencies.runner ?? AgentRunnerFactory.create({
-    type: options.agentType ?? Runner.CLAUDE_CLI,
+    type: options.agentType!,
     model: options.model,
     effort: options.effort,
   })

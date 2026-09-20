@@ -14,8 +14,8 @@ import {
 } from "../utils/constants";
 import { ResetOptions, resetOptions } from "./reset-service";
 import { parseRunArgs } from "../utils/run-args-parser";
+import { selectAgentRunner } from "../utils/agent-selection";
 import { DebugContext } from "../DebugContext";
-import { Runner } from "../../agent-runner/types";
 import { FileStateManager } from "../../file-state/FileStateManager";
 import type { Feature } from "../../file-state/types";
 import { buildDevelopmentScopeFromRun } from "./qa/QaDevelopmentRenewal";
@@ -303,8 +303,10 @@ export async function cmdRun(cwd: string, runArgs: string[], isFromInit?: boolea
     rmSync(productDir, { recursive: true, force: true });
   }
 
+  options.agentType = await selectAgentRunner(options.agentType)
+
   const agentRunner = AgentRunnerFactory.create({
-    type: options.agentType ?? Runner.CLAUDE_CLI,
+    type: options.agentType,
     model: options.model,
     effort: options.effort,
   })

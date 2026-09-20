@@ -12,6 +12,7 @@ import type { QaCliOptions, QaCommandDependencies, QaReportOutput } from './qa/t
 import { QaAuthConfigStore } from '../../qa/auth/QaAuthConfigStore'
 import { runQaAuthCommand } from './qa/QaAuthCommand'
 import { renderQaReportOutput } from './qa/QaReportOutput'
+import { selectAgentRunner } from '../utils/agent-selection'
 
 export { parseQaArgs }
 export type { QaAction, QaCliOptions, QaCommandDependencies } from './qa/types'
@@ -149,6 +150,10 @@ async function selectReportOutput(): Promise<QaReportOutput> {
   })
 }
 
+async function ensureAgentRunner(options: QaCliOptions, dependencies: QaCommandDependencies): Promise<void> {
+  if (!dependencies.runner) options.agentType = await selectAgentRunner(options.agentType)
+}
+
 export async function cmdQa(cwd: string, args: string[], dependencies: QaCommandDependencies = {}): Promise<void> {
   const explicitAction = args[0] && !args[0].startsWith('-')
   const options = parseQaArgs(args)
@@ -172,6 +177,7 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
     if (savedPlans.length > 0 && (savedPlanAction === 'resume' || savedPlanAction === 'resume-with-analysis')) {
       options.analysis = options.analysis || savedPlanAction === 'resume-with-analysis'
       const savedPlan = await selectSavedPlan(savedPlans)
+      await ensureAgentRunner(options, dependencies)
       const view = dependencies.view ?? new QaTerminalView()
       view.start({ target: savedPlan.target, profile: savedPlan.profile }, workspace)
       const report = await createQaOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event), store).resume(savedPlan)
@@ -190,6 +196,7 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
     if (targetValidation !== true) throw new Error(targetValidation)
     const view = dependencies.view ?? new QaTerminalView()
     const request = { scope, scenarios: options.scenarios, target: profile === 'cli' ? resolve(workspace, target || '.') : target, profile, authProfile: options.authProfile }
+    await ensureAgentRunner(options, dependencies)
     view.start(request, workspace)
     const report = await createQaOrchestrator(workspace, options, dependencies, (event) => view.onProgress(event)).run(request)
     if (options.report) view.renderReport(report)
@@ -201,6 +208,7 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
   const run = options.runId ? store.loadRun(options.runId) : await selectCompletedRun(store)
   if (!run.completedAt || !run.verdict) throw new Error(`QA run is not completed: ${run.id}`)
   options.output ??= await selectReportOutput()
+  await ensureAgentRunner(options, dependencies)
   const plan = store.loadPlan(run.planId, run.planVersion)
   const orchestrator = createQaOrchestrator(workspace, options, dependencies, undefined, store)
   if (options.output === 'send-to-developer') {
