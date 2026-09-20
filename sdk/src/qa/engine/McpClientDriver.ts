@@ -4,6 +4,9 @@ import type { QaDriver, QaDriverExecutionContext, QaEvidence, QaScenario, QaScen
 import { redactSecrets } from './QaAuthRedaction'
 
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>
+const MCP_PROTOCOL_VERSION = '2025-11-25'
+const MCP_MODERN_PROTOCOL_VERSION = '2026-07-28'
+const MCP_CLIENT_INFO = { name: 'harness-kit-qa', version: '0.9.2' }
 
 export class McpClientDriver implements QaDriver {
   readonly profile = 'mcp' as const
@@ -21,10 +24,79 @@ export class McpClientDriver implements QaDriver {
       const targetUrl = new URL(target)
       if (targetUrl.protocol !== 'http:' && targetUrl.protocol !== 'https:') return blocked(scenario, 'MCP target must use HTTP or HTTPS')
       mkdirSync(evidenceDir, { recursive: true })
-      const payload = { jsonrpc: '2.0', id: 1, method: scenario.mcp.method, params: scenario.mcp.params ?? {} }
+      const headers: Record<string, string> = { ...(context?.auth.headers ?? {}), accept: 'application/json, text/event-stream', 'content-type': 'application/json' }
+      const initializePayload = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: MCP_PROTOCOL_VERSION,
+          capabilities: {},
+          clientInfo: MCP_CLIENT_INFO,
+        },
+      }
+      const initializeResult = await requestWithOriginBoundRedirects(this.request, targetUrl.toString(), {
+        method: 'POST',
+        signal,
+        headers,
+        body: JSON.stringify(initializePayload),
+      }, targetUrl.origin)
+      if ('blockedReason' in initializeResult) return blocked(scenario, initializeResult.blockedReason, [], context?.auth)
+
+      const initializeResponse = initializeResult.response
+      let useModernProtocol = false
+      let followUpHeaders = headers
+      let sessionId: string | null = null
+      if (!initializeResponse.ok) {
+        if ([400, 404, 405].includes(initializeResponse.status)) {
+          useModernProtocol = true
+        } else {
+          return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', observedStatus: initializeResponse.status, reason: `MCP HTTP ${initializeResponse.status} during initialization`, evidence }
+        }
+      } else {
+        const initializeParsed = parseMcpResponse(await initializeResponse.text())
+        if (isModernInitializationUnsupported(initializeParsed)) {
+          useModernProtocol = true
+        } else if (isRecord(initializeParsed) && isRecord(initializeParsed.error)) {
+          const message = typeof initializeParsed.error.message === 'string' ? initializeParsed.error.message : 'MCP protocol error'
+          return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: redactSecrets(`MCP initialization failed: ${message}`, context?.auth), evidence }
+        } else {
+          const initializeValue = isRecord(initializeParsed) ? initializeParsed.result : undefined
+          if (!isRecord(initializeValue) || typeof initializeValue.protocolVersion !== 'string') {
+            return blocked(scenario, 'MCP initialize response did not include a negotiated protocol version', evidence, context?.auth)
+          }
+
+          sessionId = initializeResponse.headers.get('mcp-session-id')
+          followUpHeaders = {
+            ...headers,
+            'MCP-Protocol-Version': initializeValue.protocolVersion,
+            ...(sessionId ? { 'Mcp-Session-Id': sessionId } : {}),
+          }
+          const initializedPayload = { jsonrpc: '2.0', method: 'notifications/initialized' }
+          const initializedResult = await requestWithOriginBoundRedirects(this.request, targetUrl.toString(), {
+            method: 'POST',
+            signal,
+            headers: followUpHeaders,
+            body: JSON.stringify(initializedPayload),
+          }, targetUrl.origin)
+          if ('blockedReason' in initializedResult) return blocked(scenario, initializedResult.blockedReason, evidence, context?.auth)
+          if (!initializedResult.response.ok) {
+            return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', observedStatus: initializedResult.response.status, reason: `MCP HTTP ${initializedResult.response.status} after initialization`, evidence }
+          }
+        }
+      }
+
+      const scenarioParams = scenario.mcp.params ?? {}
+      const payload = {
+        jsonrpc: '2.0',
+        id: useModernProtocol ? 1 : 2,
+        method: scenario.mcp.method,
+        params: useModernProtocol ? addModernMetadata(scenarioParams) : scenarioParams,
+      }
+      if (useModernProtocol) followUpHeaders = modernRequestHeaders(headers, scenario.mcp.method, scenarioParams)
       const responseResult = await requestWithOriginBoundRedirects(this.request, targetUrl.toString(), {
         method: 'POST', signal,
-        headers: { accept: 'application/json, text/event-stream', 'content-type': 'application/json', ...(context?.auth.headers ?? {}) },
+        headers: followUpHeaders,
         body: JSON.stringify(payload),
       }, targetUrl.origin)
       if ('blockedReason' in responseResult) return blocked(scenario, responseResult.blockedReason, [], context?.auth)
@@ -145,4 +217,34 @@ function containsMcpText(result: Record<string, unknown>, expected: string): boo
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isModernInitializationUnsupported(value: unknown): boolean {
+  return isRecord(value) && isRecord(value.error) && value.error.code === -32601
+}
+
+function addModernMetadata(params: Record<string, unknown>): Record<string, unknown> {
+  const existingMeta = isRecord(params._meta) ? params._meta : {}
+  return {
+    ...params,
+    _meta: {
+      ...existingMeta,
+      'io.modelcontextprotocol/protocolVersion': MCP_MODERN_PROTOCOL_VERSION,
+      'io.modelcontextprotocol/clientInfo': MCP_CLIENT_INFO,
+      'io.modelcontextprotocol/clientCapabilities': {},
+    },
+  }
+}
+
+function modernRequestHeaders(
+  headers: Record<string, string>,
+  method: string,
+  params: Record<string, unknown>,
+): Record<string, string> {
+  return {
+    ...headers,
+    'MCP-Protocol-Version': MCP_MODERN_PROTOCOL_VERSION,
+    'Mcp-Method': method,
+    ...(method === 'tools/call' && typeof params.name === 'string' ? { 'Mcp-Name': params.name } : {}),
+  }
 }

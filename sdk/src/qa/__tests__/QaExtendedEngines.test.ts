@@ -22,7 +22,7 @@ describe('extended QA engines', () => {
   afterEach(() => rmSync(evidenceDir, { recursive: true, force: true }))
 
   it('calls an MCP tool over Streamable HTTP and verifies its result', async () => {
-    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const request = mcpSessionRequest(new Response(JSON.stringify({
       jsonrpc: '2.0', id: 1, result: { content: [{ type: 'text', text: 'healthy' }] },
     }), { status: 200, headers: { 'content-type': 'application/json' } }))
     const driver = new McpClientDriver(request)
@@ -36,8 +36,99 @@ describe('extended QA engines', () => {
     expect(readFileSync(result.evidence[0].path, 'utf8')).toContain('tools/call')
   })
 
+  it('initializes an MCP session before listing tools and sends the session ID on follow-up requests', async () => {
+    const request = vi.fn(async (_input: string, init?: RequestInit) => {
+      const payload = JSON.parse(String(init?.body)) as { id?: number; method: string }
+      if (payload.method === 'initialize') {
+        return new Response(JSON.stringify({
+          jsonrpc: '2.0',
+          id: payload.id,
+          result: {
+            protocolVersion: '2025-11-25',
+            capabilities: { tools: {} },
+            serverInfo: { name: 'qa-test-server', version: '1.0.0' },
+          },
+        }), { status: 200, headers: { 'content-type': 'application/json', 'Mcp-Session-Id': 'qa-session-1' } })
+      }
+      if (payload.method === 'notifications/initialized') return new Response(null, { status: 202 })
+      return new Response(JSON.stringify({ jsonrpc: '2.0', id: payload.id, result: { tools: [{ name: 'search_entities' }] } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    })
+
+    const result = await new McpClientDriver(request).execute(scenario('mcp', {
+      mcp: { method: 'tools/list', params: {} },
+    }), MCP_TARGET, evidenceDir)
+
+    expect(result.status).toBe('PASSED')
+    expect(request.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).method)).toEqual([
+      'initialize',
+      'notifications/initialized',
+      'tools/list',
+    ])
+    expect(JSON.parse(String(request.mock.calls[0]?.[1]?.body))).toMatchObject({
+      params: {
+        protocolVersion: '2025-11-25',
+        capabilities: {},
+        clientInfo: { name: 'harness-kit-qa', version: '0.9.2' },
+      },
+    })
+    expect(request).toHaveBeenNthCalledWith(2, MCP_TARGET, expect.objectContaining({
+      headers: expect.objectContaining({
+        'Mcp-Session-Id': 'qa-session-1',
+        'MCP-Protocol-Version': '2025-11-25',
+      }),
+    }))
+    expect(request).toHaveBeenNthCalledWith(3, MCP_TARGET, expect.objectContaining({
+      headers: expect.objectContaining({
+        'Mcp-Session-Id': 'qa-session-1',
+        'MCP-Protocol-Version': '2025-11-25',
+      }),
+    }))
+  })
+
+  it('uses stateless MCP requests when the server rejects legacy initialization', async () => {
+    const request = vi.fn(async (_input: string, init?: RequestInit) => {
+      const payload = JSON.parse(String(init?.body)) as { id?: number; method: string }
+      if (payload.method === 'initialize') {
+        return new Response(JSON.stringify({
+          jsonrpc: '2.0',
+          id: payload.id,
+          error: { code: -32601, message: 'Method not found' },
+        }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      return new Response(JSON.stringify({ jsonrpc: '2.0', id: payload.id, result: { content: [{ type: 'text', text: 'healthy' }] } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    })
+
+    const result = await new McpClientDriver(request).execute(scenario('mcp', {
+      mcp: { method: 'tools/call', params: { name: 'health', arguments: {} }, expectedResultContains: 'healthy' },
+    }), MCP_TARGET, evidenceDir)
+
+    expect(result.status).toBe('PASSED')
+    expect(request.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).method)).toEqual(['initialize', 'tools/call'])
+    const [, modernInit] = request.mock.calls[1]
+    expect(modernInit?.headers).toEqual(expect.objectContaining({
+      'MCP-Protocol-Version': '2026-07-28',
+      'Mcp-Method': 'tools/call',
+      'Mcp-Name': 'health',
+    }))
+    expect(JSON.parse(String(modernInit?.body))).toMatchObject({
+      params: {
+        _meta: {
+          'io.modelcontextprotocol/protocolVersion': '2026-07-28',
+          'io.modelcontextprotocol/clientInfo': { name: 'harness-kit-qa', version: '0.9.2' },
+          'io.modelcontextprotocol/clientCapabilities': {},
+        },
+      },
+    })
+  })
+
   it('matches MCP textual result assertions without case sensitivity', async () => {
-    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const request = mcpSessionRequest(new Response(JSON.stringify({
       jsonrpc: '2.0', id: 1, result: { structuredContent: { matches: [{ label: 'ALPHA MODEL' }] } },
     }), { status: 200 }))
     const driver = new McpClientDriver(request)
@@ -50,7 +141,7 @@ describe('extended QA engines', () => {
   })
 
   it('parses MCP Streamable HTTP SSE frames with an event prefix', async () => {
-    const request = vi.fn().mockResolvedValue(new Response([
+    const request = mcpSessionRequest(new Response([
       'event: message',
       'data: {"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"healthy"}]}}',
       '',
@@ -65,7 +156,7 @@ describe('extended QA engines', () => {
   })
 
   it('fails MCP protocol errors without treating them as infrastructure errors', async () => {
-    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const request = mcpSessionRequest(new Response(JSON.stringify({
       jsonrpc: '2.0', id: 1, error: { code: -32601, message: 'Unknown tool' },
     }), { status: 200 }))
 
@@ -77,7 +168,7 @@ describe('extended QA engines', () => {
   })
 
   it('fails MCP tool errors returned inside the result envelope', async () => {
-    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const request = mcpSessionRequest(new Response(JSON.stringify({
       jsonrpc: '2.0', id: 1, result: {
         isError: true,
         content: [{ type: 'text', text: 'Unknown tool' }],
@@ -93,7 +184,7 @@ describe('extended QA engines', () => {
   })
 
   it('accepts an expected MCP tool error when the plan declares it', async () => {
-    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const request = mcpSessionRequest(new Response(JSON.stringify({
       jsonrpc: '2.0', id: 1, result: {
         isError: true,
         content: [{ type: 'text', text: 'Unknown tool' }],
@@ -116,7 +207,7 @@ describe('extended QA engines', () => {
   })
 
   it('does not match MCP envelope metadata as result content', async () => {
-    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const request = mcpSessionRequest(new Response(JSON.stringify({
       jsonrpc: '2.0', id: 1, result: {
         isError: false,
         content: [{ type: 'text', text: 'No matching record' }],
@@ -132,7 +223,7 @@ describe('extended QA engines', () => {
   })
 
   it('checks structured MCP state and reason without requiring an error envelope', async () => {
-    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const request = mcpSessionRequest(new Response(JSON.stringify({
       jsonrpc: '2.0', id: 1, result: {
         isError: false,
         content: [{ type: 'text', text: 'No matching record' }],
@@ -153,7 +244,7 @@ describe('extended QA engines', () => {
   })
 
   it('retains captured evidence when MCP response parsing fails', async () => {
-    const request = vi.fn().mockResolvedValue(new Response('event: message\ndata: not-json\n\n', { status: 200 }))
+    const request = mcpSessionRequest(new Response('event: message\ndata: not-json\n\n', { status: 200 }))
 
     const result = await new McpClientDriver(request).execute(scenario('mcp', {
       mcp: { method: 'tools/call', params: { name: 'health' } },
@@ -243,6 +334,25 @@ describe('extended QA engines', () => {
 })
 
 const MCP_TARGET = 'https://qa.test/mcp'
+
+function mcpSessionRequest(toolResponse: Response) {
+  return vi.fn(async (_input: string, init?: RequestInit) => {
+    const payload = JSON.parse(String(init?.body)) as { id?: number; method: string }
+    if (payload.method === 'initialize') {
+      return new Response(JSON.stringify({
+        jsonrpc: '2.0',
+        id: payload.id,
+        result: {
+          protocolVersion: '2025-11-25',
+          capabilities: { tools: {} },
+          serverInfo: { name: 'qa-test-server', version: '1.0.0' },
+        },
+      }), { status: 200, headers: { 'content-type': 'application/json', 'Mcp-Session-Id': 'qa-session-1' } })
+    }
+    if (payload.method === 'notifications/initialized') return new Response(null, { status: 202 })
+    return toolResponse.clone()
+  })
+}
 
 function scenario(profile: QaScenario['profile'], values: Partial<QaScenario> = {}): QaScenario {
   return { id: `${profile}-scenario`, criterionIds: ['criterion-1'], required: true, profile, ...values }

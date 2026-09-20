@@ -57,7 +57,7 @@ describe('QA authentication engine security', () => {
   })
 
   it('passes literal authentication headers to MCP without persisting them', async () => {
-    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result: { content: [{ type: 'text', text: 'ok' }] } }), { status: 200 }))
+    const request = mcpSessionRequest(new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result: { content: [{ type: 'text', text: 'ok' }] } }), { status: 200 }))
     const context: QaDriverExecutionContext = { auth: { mode: 'bearer', profile: 'local', headers: { Authorization: 'Bearer mcp-secret' }, environment: {} } }
 
     const result = await new McpClientDriver(request).execute(mcpScenario(), 'https://qa.test/mcp', workspace, undefined, context)
@@ -81,7 +81,7 @@ describe('QA authentication engine security', () => {
   })
 
   it('redacts authentication values from MCP protocol error reasons', async () => {
-    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const request = mcpSessionRequest(new Response(JSON.stringify({
       jsonrpc: '2.0',
       id: 1,
       error: { code: -32000, message: 'backend echoed redirect-secret' },
@@ -188,6 +188,25 @@ function apiScenario(): QaScenario {
 
 function mcpScenario(): QaScenario {
   return { id: 'mcp', criterionIds: ['criterion-1'], required: true, profile: 'mcp', mcp: { method: 'tools/call', params: { name: 'health' }, expectedResultContains: 'ok' } }
+}
+
+function mcpSessionRequest(toolResponse: Response) {
+  return vi.fn(async (_input: string, init?: RequestInit) => {
+    const payload = JSON.parse(String(init?.body)) as { id?: number; method: string }
+    if (payload.method === 'initialize') {
+      return new Response(JSON.stringify({
+        jsonrpc: '2.0',
+        id: payload.id,
+        result: {
+          protocolVersion: '2025-11-25',
+          capabilities: { tools: {} },
+          serverInfo: { name: 'qa-test-server', version: '1.0.0' },
+        },
+      }), { status: 200, headers: { 'content-type': 'application/json', 'Mcp-Session-Id': 'qa-session-1' } })
+    }
+    if (payload.method === 'notifications/initialized') return new Response(null, { status: 202 })
+    return toolResponse.clone()
+  })
 }
 
 function cliScenario(): QaScenario {

@@ -220,6 +220,8 @@ Each scenario must describe one observable behavior, expected result, supported 
 
 Do not invent routes, methods, payloads, credentials, or statuses. Mark unresolved details for user confirmation.
 
+For the `mcp` profile, use `tools/list` to discover tool names and schemas, and `tools/call` with the exact public tool name and `inputSchema` keys to test behavior. Do not model protocol setup as a product scenario: the MCP driver handles Streamable HTTP initialization/session negotiation or stateless request metadata. Keep tool-level expected results separate from transport expectations.
+
 Output: numbered scenarios with category, expected observation, and source or user basis.
 
 </phase>
@@ -309,6 +311,8 @@ Output: command exit status, run ID, artifact paths, and shortest decisive error
 <phase name="VERIFICATION" owner="verification-agent" access="read-only">
 
 Spawn verification sub-agent. Read new artifacts under `<project>/docs/qa/runs/<run-id>/`. Prefer `report.json`, cross-check `state.json`, and use `REPORT.md` for readable detail. Inspect only evidence needed to explain non-passing results. Never expose secrets or dump raw evidence.
+
+For MCP failures, inspect the recorded request/response evidence and determine whether the intended `tools/call` reached a handler. Treat protocol/session errors such as `-32600` missing session ID as transport failures when evidence shows the handler was not reached; group repeated failures with that shared cause instead of reporting one tool defect per scenario or acceptance criterion. Do not use successful calls through a separate connected MCP client as proof that the `hrns qa` HTTP run passed.
 
 Output: reconciled verdict, scenario counts, non-passing reasons, bugs, errors, gaps, warnings, and artifact paths.
 

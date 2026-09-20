@@ -20,7 +20,7 @@ updated: "2026-09-13"
 Defines the publication surface of `@romabeckman/hrns` for npm.
 
 ## OVERVIEW
-The `sdk_package` configures `package.json` and `tsconfig.build.json` so `npm publish` emits a clean, type-safe CJS-only package. Release `1.6.0` publishes SDK version `0.9.0`; the exports map exposes one entry and restricts the tarball to compiled files.
+The `sdk_package` configures `package.json` and `tsconfig.build.json` so `npm publish` emits a clean, type-safe CJS-only package. Release `1.6.1` publishes SDK version `0.9.0`; the exports map exposes one entry and restricts the tarball to compiled files.
 
 ## FOLDER STRUCTURE
 <folder_structure>
