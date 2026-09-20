@@ -93,6 +93,7 @@ export class QaPlanningPhase implements QaPhaseHandler {
       `Exact planner error: ${error instanceof Error ? error.message : String(error)}`,
       'Repair the JSON plan by overwriting the plan output file. Return only a short confirmation after the file is written.',
       'Preserve valid content. Fix every issue described by the exact planner error. Use only the JSON contract in this prompt.',
+      'If a browser action error names an assertion type, move that object to the scenario assertions array without changing its assertion fields. Never leave or rename assertion types in actions.',
       'criterionIds reference the criteria array, not scenario numbers. If criteria has N entries, valid references are only criterion-1 through criterion-N; reuse an existing criterion ID when multiple scenarios cover the same criterion.',
       '<previous_plan>',
       escapePromptData(raw),
@@ -259,8 +260,17 @@ export class QaPlanningPhase implements QaPhaseHandler {
   private parseActions(value: unknown, target: string, index: number): QaBrowserAction[] {
     if (!Array.isArray(value) || value.length === 0 || value.length > MAX_ACTIONS) throw new Error(`Invalid agentic QA plan: browser scenario ${index + 1} needs bounded actions`)
     return value.map((action, actionIndex) => {
-      if (!isRecord(action) || !ACTIONS.includes(action.type as typeof ACTIONS[number])) {
+      if (!isRecord(action)) {
         throw new Error(`Invalid agentic QA plan: scenario ${index + 1} action ${actionIndex + 1} is invalid`)
+      }
+      if (!ACTIONS.includes(action.type as typeof ACTIONS[number])) {
+        const assertionType = typeof action.type === 'string' && ASSERTIONS.includes(action.type as typeof ASSERTIONS[number])
+          ? action.type
+          : undefined
+        const detail = assertionType
+          ? `: "${assertionType}" is an assertion type; move it to scenario.assertions`
+          : `: type must be one of ${ACTIONS.map((type) => `"${type}"`).join(', ')}`
+        throw new Error(`Invalid agentic QA plan: scenario ${index + 1} action ${actionIndex + 1} is invalid${detail}`)
       }
       const invalid = () => new Error(`Invalid agentic QA plan: scenario ${index + 1} action ${actionIndex + 1} is invalid`)
       if (action.type === 'navigate') {

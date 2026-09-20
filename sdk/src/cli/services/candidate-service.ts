@@ -1,12 +1,12 @@
 import { CandidateReader } from '../../diagnose/CandidateReader'
 import { CandidatePromotionService } from '../../diagnose/CandidatePromotionService'
 import { MetaHarnessAgentAdapter } from '../../diagnose/MetaHarnessAgentAdapter'
-import { Runner } from '../../agent-runner/types'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
 import { readdirSync, existsSync, readFileSync } from 'node:fs'
 import { DiagnosePaths } from '../../diagnose/utils/DiagnosePaths'
 
 import { parseStandardRunnerArgs } from '../utils/runner-args-parser'
+import { INTERACTIVE_CANDIDATE_RUNNER_CHOICES, selectAgentRunner } from '../utils/agent-selection'
 
 export async function cmdCandidate(cwd: string, args: string[]): Promise<void> {
   const subCommand = args[0] ?? 'list'
@@ -93,7 +93,9 @@ export async function cmdCandidate(cwd: string, args: string[]): Promise<void> {
       ? candidateInfo.targetSkill
       : 'unknown'
 
-    const runnerType = agentArg ?? Runner.CLAUDE_CLI
+    const runnerType = await selectAgentRunner(agentArg, {
+      choices: isNonInteractive ? undefined : INTERACTIVE_CANDIDATE_RUNNER_CHOICES,
+    })
 
     if (isNonInteractive) {
       console.log(`\n${AnsiHelpers.blue('►')} Applying candidate ${candidateId} autonomously using LLM (${runnerType})...\n`)

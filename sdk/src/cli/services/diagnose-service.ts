@@ -9,12 +9,12 @@ import { DiagnoseReportRenderer } from '../../diagnose/DiagnoseReportRenderer'
 import { DiagnosePaths } from '../../diagnose/utils/DiagnosePaths'
 import type { DiagnoseSettings } from '../../diagnose/types'
 import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
-import { Runner } from '../../agent-runner/types'
 import { HarnessSettings } from '../../settings/HarnessSettings'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
 import { DebugContext } from '../DebugContext'
 
 import { parseStandardRunnerArgs } from '../utils/runner-args-parser'
+import { selectAgentRunner } from '../utils/agent-selection'
 
 export interface DiagnoseCliOptions {
   agentType?: string
@@ -79,8 +79,10 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
     return
   }
 
+  options.agentType = await selectAgentRunner(options.agentType)
+
   const agentRunner = AgentRunnerFactory.create({
-    type: options.agentType ?? Runner.CLAUDE_CLI,
+    type: options.agentType,
     model: options.model,
     effort: options.effort,
   })

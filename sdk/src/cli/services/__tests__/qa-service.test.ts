@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { cmdQa, parseQaArgs } from '../qa-service'
 import { QaRunStore } from '../../../qa/services/QaRunStore'
+import { AgentRunnerFactory } from '../../../agent-runner/AgentRunnerFactory'
 import type { IAgentRunner } from '../../../agent-runner/IAgentRunner'
 import type { QaDriver, QaPlan, QaRun } from '../../../qa/types'
 
@@ -127,6 +128,26 @@ describe('QA CLI', () => {
     const runner: IAgentRunner = { run: vi.fn() }
     await expect(cmdQa(workspace, ['run', '--scope', '   '], { runner })).rejects.toThrow('scope')
     expect(runner.run).not.toHaveBeenCalled()
+  })
+
+  it('prompts for an agent when a QA run omits --agent', async () => {
+    prompts.select.mockResolvedValueOnce('codex-cli')
+    const runner: IAgentRunner = { run: vi.fn().mockRejectedValue(new Error('stop after runner selection')) }
+    const factory = vi.spyOn(AgentRunnerFactory, 'create').mockReturnValue(runner)
+
+    try {
+      await expect(cmdQa(workspace, [
+        'run', '--scope', 'Validate runtime', '--profile', 'cli', '--target', '.',
+      ])).rejects.toThrow('stop after runner selection')
+
+      expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'Select agent runner:',
+        default: 'claude-cli',
+      }))
+      expect(factory).toHaveBeenCalledWith(expect.objectContaining({ type: 'codex-cli' }))
+    } finally {
+      factory.mockRestore()
+    }
   })
 
   it('validates interactive target input and offers a profile choice', async () => {

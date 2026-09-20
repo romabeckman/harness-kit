@@ -6,6 +6,10 @@ import { cmdDiagnose } from '../diagnose-service'
 
 import { AgentRunnerFactory } from '../../../agent-runner/AgentRunnerFactory'
 
+const prompts = vi.hoisted(() => ({ select: vi.fn() }))
+
+vi.mock('@inquirer/prompts', () => prompts)
+
 vi.mock('../../../agent-runner/AgentRunnerFactory', () => ({
   AgentRunnerFactory: {
     create: vi.fn(() => ({
@@ -22,6 +26,8 @@ describe('cmdDiagnose CLI Service', () => {
   let consoleErrorSpy: any
 
   beforeEach(() => {
+    prompts.select.mockReset()
+    vi.mocked(AgentRunnerFactory.create).mockClear()
     tmpDir = mkdtempSync(join(tmpdir(), 'harness-cli-diagnose-'))
     productDir = join(tmpDir, 'docs', 'product')
     mkdirSync(productDir, { recursive: true })
@@ -37,9 +43,31 @@ describe('cmdDiagnose CLI Service', () => {
 
   it('prints message when no pending sessions exist', async () => {
     await cmdDiagnose(tmpDir, [])
+    expect(prompts.select).not.toHaveBeenCalled()
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining('No pending diagnose sessions found')
     )
+  })
+
+  it('prompts for an agent when pending sessions need diagnosis and --agent is absent', async () => {
+    const ledgerFile = join(productDir, 'diagnose-sessions.jsonl')
+    const record = {
+      sessionId: 'session-2026-08-15-001',
+      runner: 'claude-cli',
+      agent: 'developer-backend',
+      status: 'pending',
+      timestamp: '2026-08-15T12:00:00.000Z',
+    }
+    writeFileSync(ledgerFile, JSON.stringify(record) + '\n', 'utf8')
+    prompts.select.mockResolvedValueOnce('codex-cli')
+
+    await cmdDiagnose(tmpDir, [])
+
+    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Select agent runner:',
+      default: 'claude-cli',
+    }))
+    expect(AgentRunnerFactory.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'codex-cli' }))
   })
 
   it('processes pending sessions from JSONL ledger in batches', async () => {

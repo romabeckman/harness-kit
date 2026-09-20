@@ -5,6 +5,10 @@ import { tmpdir } from 'node:os'
 import { cmdCandidate } from '../candidate-service'
 import { AgentRunnerFactory } from '../../../agent-runner/AgentRunnerFactory'
 
+const prompts = vi.hoisted(() => ({ select: vi.fn() }))
+
+vi.mock('@inquirer/prompts', () => prompts)
+
 vi.mock('../../../agent-runner/AgentRunnerFactory', () => ({
   AgentRunnerFactory: {
     create: vi.fn(() => ({
@@ -20,6 +24,8 @@ describe('cmdCandidate CLI Service', () => {
   let consoleErrorSpy: any
 
   beforeEach(() => {
+    prompts.select.mockReset()
+    vi.mocked(AgentRunnerFactory.create).mockClear()
     tmpDir = mkdtempSync(join(tmpdir(), 'harness-cli-candidate-'))
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -56,7 +62,15 @@ describe('cmdCandidate CLI Service', () => {
       'utf8'
     )
 
+    prompts.select.mockResolvedValueOnce('codex-cli')
+
     await cmdCandidate(tmpDir, ['review', 'v001', '--auto'])
+
+    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Select agent runner:',
+      default: 'claude-cli',
+    }))
+    expect(AgentRunnerFactory.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'codex-cli' }))
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Applying candidate v001 autonomously'))
   })
 
@@ -70,6 +84,7 @@ describe('cmdCandidate CLI Service', () => {
     )
 
     await cmdCandidate(tmpDir, ['review', 'v001', '--auto', '--agent', 'antigravity-cli'])
+    expect(prompts.select).not.toHaveBeenCalled()
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('antigravity-cli'))
     expect(AgentRunnerFactory.create).toHaveBeenCalledWith(
       expect.objectContaining({
