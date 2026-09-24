@@ -41,7 +41,7 @@
     "eslint": "^10.11.0",
     "playwright": "1.63.0",
     "typescript": "^7.0.2",
-    "vitest": "5.0.0"
+    "vitest": "5.0.1"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
