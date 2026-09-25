@@ -291,33 +291,29 @@ export class TokenLedger {
     const models = [...new Set(entries.map(e => e.model).filter(Boolean))]
     const efforts = [...new Set(entries.map(e => e.effort).filter(e => e && e !== 'default'))]
 
-    // cache_read rate per token by tier (source: Anthropic, OpenAI, Google pricing Jun 2026)
-    // extra_large ~$0.916/MTok: gpt-4o $1.25, Fable5 $1.00, Opus $0.50, gpt-5.5 $0.50, o3 $0.50, gpt-4.1 $0.50
-    // large       ~$0.235/MTok: Sonnet $0.30, gpt-5.4 $0.25, Gemini3.1Pro $0.20, gpt-5.2 $0.175
-    // medium      ~$0.108/MTok: Gemini3.5Flash $0.15, gpt-5/5.1 $0.125, Haiku $0.10, gpt-4.1-mini $0.10
-    // fast        ~$0.045/MTok: gpt-4o-mini $0.075, Gemini3Flash $0.05, gpt-4.1-nano $0.025, gpt-5-mini $0.025, GeminiFlashLite $0.025
-    const RATE_EXTRA_LARGE = 0.000000916
-    const RATE_LARGE = 0.000000235
-    const RATE_MEDIUM = 0.000000108
-    const RATE_FAST = 0.000000045
+    // Estimated USD saved per cached input token, averaged by model tier.
+    // These tier averages are indicative, not provider billing rates.
+    const RATE_EXTRA_LARGE = 3.7 / 1_000_000
+    const RATE_LARGE = 2.1 / 1_000_000
+    const RATE_MEDIUM = 0.9 / 1_000_000
+    const RATE_FAST = 0.2 / 1_000_000
 
-    const isExtraLargeModel = (m: string) => /fable|mythos|opus|gemini.*ultra|gpt-5\.5(?!-(?:mini|nano))/i.test(m)
+    const modelRate = (model: string): number => {
+      const m = model.toLowerCase()
+      if (/flash.?lite|haiku|gpt-.*-(?:mini|nano|luna)\b/.test(m)) return RATE_FAST
+      if (/gpt-.*-terra\b/.test(m)) return RATE_MEDIUM
+      if (/gpt-.*-sol\b|sonnet|gemini-.*pro/.test(m)) return RATE_LARGE
+      if (/fable|mythos|opus|gpt-.*-astra\b|gpt-5\.5|gpt-4o|gpt-4\.1(?!-(?:mini|nano))|\bo3\b/.test(m)) return RATE_EXTRA_LARGE
+      if (/gpt-5(?:\.1)?(?:\b|-)|gpt-3\.5|claude-2|gemini-.*flash/.test(m)) return RATE_MEDIUM
+      // Unrecognized models use the large tier.
+      return RATE_LARGE
+    }
 
-    // Agora exige explicitamente o "lite" junto do flash para ser considerado FAST
-    const isFastModel = (m: string) => /haiku|mini|nano|flash.?lite/i.test(m)
-
-    // Adicionado o "flash" geral aqui. Como o isFastModel roda antes, o flash-lite já terá sido filtrado.
-    const isMediumModel = (m: string) => /gpt-3\.5|claude-2|flash/i.test(m)
-
-    const modelRate = (m: string) =>
-      isExtraLargeModel(m) ? RATE_EXTRA_LARGE :
-        isFastModel(m) ? RATE_FAST :
-          isMediumModel(m) ? RATE_MEDIUM :
-            RATE_LARGE
-
-    const cacheReadRate = models.length > 0
-      ? models.reduce((sum, m) => sum + modelRate(m), 0) / models.length
-      : RATE_LARGE
+    // Sum per entry so each model contributes according to its cached tokens.
+    const cacheSaved = entries.reduce(
+      (sum, entry) => sum + entry.cacheReadTokens * modelRate(entry.model),
+      0,
+    )
 
     console.log('\nharness-kit-sdk — token report')
     if (models.length) console.log(`  model:  ${models.join(', ')}`)
@@ -336,12 +332,9 @@ export class TokenLedger {
     console.log(
       `${'TOTAL'.padEnd(28)} ${fmt(totals.inputTokens)} ${fmt(totals.outputTokens)} ${fmt(totals.cacheReadTokens)}  ${usd(totals.costUsd)}`
     )
-    const cacheSaved = totals.cacheReadTokens > 0
-      ? `  cache_read saved ~${usd(totals.cacheReadTokens * cacheReadRate)}`
-      : ''
-    if (cacheSaved) console.log(cacheSaved)
+    if (totals.cacheReadTokens > 0) console.log(`  cache_read saved ~${usd(cacheSaved)}`)
 
-    console.log('  * Note: all costs are estimated tier averages, not real pricing.')
+    console.log('  * Note: cache savings use estimated rates; costs come from recorded usage.')
     console.log()
   }
 }
