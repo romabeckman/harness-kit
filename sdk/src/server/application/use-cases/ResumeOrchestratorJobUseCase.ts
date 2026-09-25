@@ -32,6 +32,15 @@ export class ResumeOrchestratorJobUseCase {
       )
     }
 
+    if (previousJob.status !== 'failed' && previousJob.status !== 'aborted') {
+      throw new HttpServerError(400, 'JOB_NOT_RESUMABLE', `Job '${jobId}' is not stopped or failed.`)
+    }
+
+    if (overrides && (Object.keys(overrides).some(key => key !== 'steeringMessage') ||
+      (overrides.steeringMessage !== undefined && typeof overrides.steeringMessage !== 'string'))) {
+      throw new HttpServerError(400, 'INVALID_RESUME_OVERRIDE', 'Only steeringMessage can be changed when resuming a job.')
+    }
+
     const newJobId = randomUUID()
     const createdAt = new Date().toISOString()
 
@@ -45,6 +54,7 @@ export class ResumeOrchestratorJobUseCase {
       jobId: newJobId,
       status: 'queued',
       workspacePath: previousJob.workspacePath,
+      resumeFromJobId: previousJob.resumeFromJobId ?? previousJob.jobId,
       request: resumeRequest,
       createdAt,
     }

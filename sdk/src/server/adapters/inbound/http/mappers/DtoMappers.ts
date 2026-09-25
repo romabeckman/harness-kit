@@ -5,6 +5,7 @@ import { resolveMode } from '../../../../../cli/services/run-service'
 import { HttpServerError } from '../../../../domain/types'
 import type { RunRequestDtoExtended } from '../dto/RunRequestDto'
 import { Runner } from '../../../../../agent-runner/types'
+import { RunMode } from '../../../../../orchestrator/types'
 
 const VALID_RUNNERS = Object.values(Runner) as string[]
 
@@ -71,11 +72,7 @@ export class DtoMappers {
     }
 
     if ((dto as any).skipDeploy !== undefined) {
-      throw new HttpServerError(
-        400,
-        'SKIP_DEPLOY_NOT_ALLOWED',
-        'The skipDeploy parameter cannot be set in HTTP request body.'
-      )
+      throw new HttpServerError(400, 'SKIP_DEPLOY_NOT_ALLOWED', 'The skipDeploy parameter cannot be set in HTTP request body.')
     }
 
     if (dto.mode === 'deep_thinking') {
@@ -84,6 +81,19 @@ export class DtoMappers {
         'INTERACTIVE_MODE_NOT_ALLOWED',
         'Interactive mode deep_thinking is not allowed in background HTTP execution.'
       )
+    }
+
+    if (dto.mode !== undefined && ![RunMode.QUICK, RunMode.FAST, RunMode.THINKING].includes(dto.mode as RunMode)) {
+      throw new HttpServerError(400, 'INVALID_MODE', 'HTTP mode must be quick, fast, or thinking.')
+    }
+    if (dto.score !== undefined && (typeof dto.score !== 'number' || !Number.isFinite(dto.score) || dto.score < 0.1 || dto.score > 1)) {
+      throw new HttpServerError(400, 'INVALID_SCORE', 'Score must be a number between 0.1 and 1.')
+    }
+    if (dto.reworks !== undefined && (typeof dto.reworks !== 'number' || !Number.isInteger(dto.reworks) || dto.reworks < 1 || dto.reworks > 10)) {
+      throw new HttpServerError(400, 'INVALID_REWORKS', 'Reworks must be an integer between 1 and 10.')
+    }
+    if (dto.steeringMessage !== undefined && typeof dto.steeringMessage !== 'string') {
+      throw new HttpServerError(400, 'INVALID_STEERING_MESSAGE', 'Steering message must be a string.')
     }
 
     const idempotencyKey = dto.idempotencyKey
@@ -130,17 +140,24 @@ export class DtoMappers {
       ? [resolve(overrideWorkspacePath)]
       : this.resolveWorkspacePaths(dto)
 
+    if (Array.isArray(dto.project) && dto.project.length > 1) {
+      throw new HttpServerError(400, 'MULTIPLE_PROJECTS_NOT_SUPPORTED', 'HTTP jobs currently support one project per isolated worktree.')
+    }
+
     const rawMode = dto.mode ?? 'fast'
     const modeConfig = resolveMode(rawMode as any)
 
     return {
       scope: scope.trim(),
+      score: dto.score,
+      initialRules: dto.steeringMessage?.trim() || undefined,
       projectPaths: resolvedWorkspaces,
       complexity: modeConfig.complexity,
       reworks: dto.reworks ?? 2,
       skipValidation: dto.skipValidation ?? modeConfig.skipValidation,
       skipMemory: dto.skipMemory ?? modeConfig.skipMemory,
-      skipDeploy: false,
+      // The server owns branch-specific deployment after checking completion.
+      skipDeploy: true,
       enableRefinement: false,
     }
   }

@@ -3,6 +3,7 @@ import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
 import { buildDocsOrientationSection } from '../utils/PromptHelpers'
+import { findSensitiveGitPaths } from '../utils/GitSensitiveFiles'
 
 export class DeployHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
@@ -242,23 +243,7 @@ export class DeployHandler extends AbstractPhaseHandler {
       })
       const stagedFiles = output.split('\n').map(f => f.trim()).filter(Boolean)
 
-      const sensitivePatterns = [
-        /\.env($|\.)/i,
-        /\.pem$/i,
-        /\.key$/i,
-        /\.pfx$/i,
-        /\.p12$/i,
-        /\.crt$/i,
-        /\.cer$/i,
-        /\.kdbx$/i,
-        /id_(rsa|dsa|ecdsa|ed25519)/i,
-        /credentials(\.json)?$/i,
-        /service[-_]account.*\.json$/i,
-        /secrets?\.(json|yaml|yml)$/i,
-        /\.aws\/credentials/i,
-      ]
-
-      return stagedFiles.filter(file => sensitivePatterns.some(pattern => pattern.test(file)))
+      return findSensitiveGitPaths(stagedFiles)
     } catch {
       return []
     }
