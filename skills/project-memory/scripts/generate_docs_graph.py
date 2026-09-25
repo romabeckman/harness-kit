@@ -20,6 +20,7 @@ ROUTING_FIELDS = (
     "test_files",
 )
 MICROGRAPH_FIELDS = ("node_id", "domain", "implements", "tested_by", *ROUTING_FIELDS)
+PROJECT_RELATIONS = {"depends_on", "provides_to"}
 
 
 def validate_feature_micrograph(data, node_id: str, file_path: Path, base_dir: Path):
@@ -282,6 +283,37 @@ def build_docs_graph(docs_dir: Path):
         "edges": unique_edges
     }
 
+
+def load_related_projects(graph_path: Path):
+    if not graph_path.exists():
+        return []
+
+    existing_graph = json.loads(graph_path.read_text(encoding="utf-8"))
+    if not isinstance(existing_graph, dict):
+        raise ValueError(f"Invalid graph object in {graph_path}")
+
+    related_projects = existing_graph.get("related_projects", [])
+    if not isinstance(related_projects, list):
+        raise ValueError(f"related_projects must be an array in {graph_path}")
+
+    seen = set()
+    normalized = []
+    for entry in related_projects:
+        if not isinstance(entry, dict) or set(entry) != {"key", "relation"}:
+            raise ValueError(f"Invalid related project entry in {graph_path}")
+        key = entry["key"]
+        relation = entry["relation"]
+        if not isinstance(key, str) or not key.strip() or not isinstance(relation, str) or relation not in PROJECT_RELATIONS:
+            raise ValueError(f"Invalid related project key or relation in {graph_path}")
+        normalized_key = key.strip()
+        pair = (normalized_key, relation)
+        if pair in seen:
+            raise ValueError(f"Duplicate related project entry in {graph_path}: {pair}")
+        seen.add(pair)
+        normalized.append({"key": normalized_key, "relation": relation})
+
+    return sorted(normalized, key=lambda entry: (entry["key"], entry["relation"]))
+
 def main():
     docs_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("docs")
     
@@ -289,8 +321,9 @@ def main():
         print(f"Erro: Diretório '{docs_path}' não encontrado.", file=sys.stderr)
         sys.exit(1)
 
-    graph_data = build_docs_graph(docs_path)
     output_file = docs_path / ".graph.json"
+    graph_data = build_docs_graph(docs_path)
+    graph_data["related_projects"] = load_related_projects(output_file)
 
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(graph_data, f, separators=(',', ':'), ensure_ascii=False)

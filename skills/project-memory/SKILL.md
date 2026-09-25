@@ -17,6 +17,7 @@ You are a technical documentation specialist. Your sole responsibility is to cre
    - REQUIRED: Read the corresponding `./references/<DOC>-RULES.md` before creating or updating each baseline document.
    - REQUIRED: Create any missing baseline document before proceeding with the user's request.
    - REQUIRED: Make it clear that `docs/adr/ARCHITECTURE.md` and `docs/adr/TESTS.md` are the ONLY mandatory ADR documents to be created. All other ADRs are optional and the human must decide whether to create them.
+4. **Read Harness Memory project hints** — check `.harness-kit/memory.toml` for `related_projects` on every invocation. Treat cached keys as candidates, not proof of relationship direction. Continue when the file or MCP connection is unavailable.
 
 ---
 
@@ -59,6 +60,10 @@ You are a technical documentation specialist. Your sole responsibility is to cre
 - REQUIRED: Keep `when` at 300 characters maximum.
 - PROHIBITED: Add `when` to `read: must`.
 - PROHIBITED: Classify the same target as both `must` and `optional`.
+- REQUIRED: Keep Harness Memory project links in top-level `docs/.graph.json` `related_projects[]`, separate from document `nodes[]` and `edges[]`. Each entry contains only `key` and `relation`, such as `{"key":"ledger","relation":"depends_on"}`. Valid relations are `depends_on` and `provides_to`.
+- REQUIRED: Interpret relations from this project's perspective: `depends_on` means this project consumes or requires the related project's capability; `provides_to` means this project supplies a capability to it. Record both entries if both directions are supported.
+- REQUIRED: Confirm each new key against Harness Memory `search_projects` or an already confirmed cache entry. Determine direction from an explicit user statement, project documentation, or MCP relationship evidence. If direction is unclear, ask the user and omit the new entry until resolved.
+- PROHIBITED: Put external project keys in document `edges[]` or infer direction from project names alone. Preserve existing verified links when the cache or MCP is unavailable; remove a link only when its removal is established.
 
 ---
 
@@ -72,7 +77,7 @@ Use this table to determine which rules file to read and which constraints apply
 | `docs/adr/ARCHITECTURE.md` | `./references/ARCHITECTURE-RULES.md` | Architecture, layers, patterns, integrations (max 8,000 chars; compact or decompose into `docs/adr/` when full) |
 | `docs/adr/TESTS.md` | `./references/TESTS-RULES.md` | Test strategies, standards, execution commands |
 | `docs/.digest.md` | N/A | Machine-readable orientation digest — MUST read in Step 1 and update in Step 8 |
-| `docs/.graph.json` | N/A | Macro relation graph index aggregating document nodes & high-level doc edges across docs — MUST update in Step 9 |
+| `docs/.graph.json` | N/A | Macro document graph plus Harness Memory `related_projects` links — MUST update in Step 9 |
 | Any other ADR (e.g., `SECURITY.md`, `DATABASE.md`, `API-DESIGN.md`, `OBSERVABILITY.md`, `TELEMETRY.md`) | `./references/DOCUMENT-TEMPLATE.md` | OPTIONAL: Specific architectural decisions, standards, or decomposed topics. MUST strictly stay under 8,000 characters |
 | Any feature document (e.g., `docs/feature/*.md`) | `./references/DOCUMENT-TEMPLATE.md` | One business domain or feature per file |
 | `docs/harness-history/**` | N/A | PROHIBITED: project-memory must never read, create, or modify any file under `docs/harness-history/`. This folder is managed exclusively by `harness-tracer`, `harness-evaluator`, and `meta-harness`. |
@@ -167,10 +172,12 @@ Execute steps in order. Do not skip steps.
 - REQUIRED: Update `docs/.graph.json` aggregating macro document nodes and document-level edges (`implements`, `depends_on`, `tested_by`).
 - REQUIRED: Execute the Python script `./scripts/generate_docs_graph.py <target_docs_dir>` (or embedded logic) to extract nodes/edges and generate `docs/.graph.json`.
 - REQUIRED: Write `docs/.graph.json` as **compact JSON** (no indentation, `separators=(',',':')`) — it is a machine-read routing index, not a human-diffed file.
+- REQUIRED: On every invocation, write top-level `related_projects` as an array, including `[]` when no direction is known. The generator preserves existing entries; after it runs, reconcile confirmed cache candidates and new relationship evidence. Sort entries by `key`, then `relation`, and keep each entry to the exact key and direction fields defined above.
+- REQUIRED: Keep an existing link unless explicit evidence changes it. Do not copy an unclassified cache hint into `related_projects`; ask for the direction when needed. Confirm new keys through Harness Memory before adding them.
 - Feature nodes may include:
   - `related_docs.must_read`: Array of target `node_id` values marked `read: must`.
   - `related_docs.optional`: Array of `{target, description}` generated from edges marked `read: optional` (`description` comes from the edge `when` value).
-- Keep global `edges[]` unchanged as `{source,target,relation}`.
+- Keep global `edges[]` unchanged as `{source,target,relation}`. Harness Memory project links stay outside document edges.
 - Do not copy `read` or `when` into global edges.
 - PROHIBITED: Including `path` in edge entries — resolve target paths via `node_id` lookup in `nodes[]`. Duplicating path in edges wastes tokens and creates drift risk.
 - REQUIRED: Sort nodes by `id` and edges by `source`, `relation`, then `target` for deterministic output.
@@ -188,5 +195,5 @@ Execute steps in order. Do not skip steps.
 - REQUIRED: Treat `docs/.graph.json` `nodes[]` as the source of truth for *which* documents exist; `docs/README.md` adds the human-facing layer (`Mandatory`/`Optional`, 1–2 sentence description) on top of those same nodes.
 - Follow `./references/README-RULES.md` structure and prohibitions exactly — do not skip this step even when the user's request only targeted one specific document.
 - Purpose: prevents `docs/README.md` from drifting out of sync while `docs/.digest.md`/`docs/.graph.json` are kept current every invocation.
-- Final validation: confirm `docs/.digest.md` is under 60 lines and 3000 characters, contains only relative plain-text paths, and lists only baseline docs plus the `.graph.json` pointer. Confirm `.graph.json` topology resolves and `docs/README.md` matches its nodes.
+- Final validation: confirm `docs/.digest.md` is under 60 lines and 3000 characters, contains only relative plain-text paths, and lists only baseline docs plus the `.graph.json` pointer. Confirm `.graph.json` topology resolves, `related_projects[]` contains exact keys and valid directions, and `docs/README.md` matches its nodes.
 - Deliver only the concise Step 7 summary and changed file paths. Do not repeat full document contents unless the user asks.
