@@ -13,6 +13,7 @@ import { probeQaTarget, type QaTargetProbe } from './services/QaTargetProbe'
 import { QaExecutionMemory } from './services/QaExecutionMemory'
 import { QaAuthConfigStore } from './auth/QaAuthConfigStore'
 import { generateQaDeveloperReport } from './services/QaDeveloperReportGenerator'
+import { retargetQaPlan } from './utils/QaPlanRetargeting'
 
 export interface QaAgenticOrchestratorOptions {
   workspace: string
@@ -68,8 +69,8 @@ export class QaAgenticOrchestrator {
   async resume(plan: QaPlan, signal?: AbortSignal): Promise<QaFinalReport> {
     const managedTarget = await shouldRestartManagedTarget(plan, this.#context.workspace, signal)
     return this.runFrom(QaPhase.VALIDATION, {
-      scope: `Resume stored QA plan ${plan.id}@${plan.version}`,
-      scenarios: plan.scenarios.flatMap((scenario) => scenario.description ? [scenario.description] : []),
+      scope: this.#context.store.loadScope(plan.id) ?? `Resume stored QA plan ${plan.id}@${plan.version}`,
+      scenarios: plan.mandatoryScenarios?.map((scenario) => scenario.requirement) ?? [],
       target: managedTarget ? undefined : plan.target,
       profile: plan.profile,
     }, plan, signal)
@@ -104,7 +105,7 @@ export class QaAgenticOrchestrator {
       const context: QaPhaseContext = {
         ...this.#context,
         request: resolvedRequest,
-        plan: runtime?.managed && plan ? retargetManagedPlan(plan, runtime.target) : plan,
+        plan: runtime?.managed && plan ? retargetQaPlan(plan, runtime.target) : plan,
         persistPlan: start === QaPhase.PLANNING,
         executionMemory: this.#memory.read(resolvedRequest.profile, resolvedRequest.target),
       }
@@ -175,36 +176,6 @@ export class QaAgenticOrchestrator {
         .map((result) => ({ scenarioId: result.scenarioId, message: result.reason ?? result.status })),
       completedAt: run.completedAt ?? new Date().toISOString(),
     }
-  }
-}
-
-function retargetManagedPlan(plan: QaPlan, target: string): QaPlan {
-  const previousTarget = plan.target
-  return {
-    ...plan,
-    target,
-    scenarios: plan.scenarios.map((scenario) => ({
-      ...scenario,
-      actions: scenario.actions?.map((action) => action.type === 'navigate' && action.value
-        ? { ...action, value: retargetManagedUrl(action.value, previousTarget, target) }
-        : action),
-      assertions: scenario.assertions?.map((assertion) => assertion.type === 'url' && assertion.value
-        ? { ...assertion, value: retargetManagedUrl(assertion.value, previousTarget, target) }
-        : assertion),
-    })),
-  }
-}
-
-function retargetManagedUrl(value: string, previousTarget: string, target: string): string {
-  try {
-    const previous = new URL(previousTarget)
-    const requested = new URL(value, previous)
-    if (requested.origin !== previous.origin) return value
-    const next = new URL(target)
-    if (requested.pathname === '/' && !requested.search && !requested.hash) return target
-    return new URL(`${requested.pathname}${requested.search}${requested.hash}`, next).toString()
-  } catch {
-    return value
   }
 }
 

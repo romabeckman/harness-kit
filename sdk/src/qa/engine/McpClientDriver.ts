@@ -7,6 +7,7 @@ type Fetcher = (input: string, init?: RequestInit) => Promise<Response>
 const MCP_PROTOCOL_VERSION = '2025-11-25'
 const MCP_MODERN_PROTOCOL_VERSION = '2026-07-28'
 const MCP_CLIENT_INFO = { name: 'harness-kit-qa', version: '0.9.2' }
+const MAX_MCP_EXECUTION_MS = 30_000
 
 export class McpClientDriver implements QaDriver {
   readonly profile = 'mcp' as const
@@ -20,7 +21,13 @@ export class McpClientDriver implements QaDriver {
   async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal, context?: QaDriverExecutionContext): Promise<QaScenarioResult> {
     if (!scenario.mcp) return blocked(scenario, 'MCP scenario has no JSON-RPC request')
     let evidence: QaEvidence[] = []
+    const controller = new AbortController()
+    const abort = () => controller.abort(signal?.reason ?? new Error('MCP request cancelled'))
+    if (signal?.aborted) abort()
+    else signal?.addEventListener('abort', abort, { once: true })
+    const timeout = setTimeout(() => controller.abort(new Error(`MCP request exceeded ${MAX_MCP_EXECUTION_MS} ms deadline`)), MAX_MCP_EXECUTION_MS)
     try {
+      if (controller.signal.aborted) throw controller.signal.reason
       const targetUrl = new URL(target)
       if (targetUrl.protocol !== 'http:' && targetUrl.protocol !== 'https:') return blocked(scenario, 'MCP target must use HTTP or HTTPS')
       mkdirSync(evidenceDir, { recursive: true })
@@ -37,7 +44,7 @@ export class McpClientDriver implements QaDriver {
       }
       const initializeResult = await requestWithOriginBoundRedirects(this.request, targetUrl.toString(), {
         method: 'POST',
-        signal,
+        signal: controller.signal,
         headers,
         body: JSON.stringify(initializePayload),
       }, targetUrl.origin)
@@ -54,7 +61,8 @@ export class McpClientDriver implements QaDriver {
           return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', observedStatus: initializeResponse.status, reason: `MCP HTTP ${initializeResponse.status} during initialization`, evidence }
         }
       } else {
-        const initializeParsed = parseMcpResponse(await initializeResponse.text())
+        const initializeRead = await readMcpResponse(initializeResponse, initializePayload.id, controller.signal)
+        const initializeParsed = initializeRead.value
         if (isModernInitializationUnsupported(initializeParsed)) {
           useModernProtocol = true
         } else if (isRecord(initializeParsed) && isRecord(initializeParsed.error)) {
@@ -75,7 +83,7 @@ export class McpClientDriver implements QaDriver {
           const initializedPayload = { jsonrpc: '2.0', method: 'notifications/initialized' }
           const initializedResult = await requestWithOriginBoundRedirects(this.request, targetUrl.toString(), {
             method: 'POST',
-            signal,
+            signal: controller.signal,
             headers: followUpHeaders,
             body: JSON.stringify(initializedPayload),
           }, targetUrl.origin)
@@ -95,13 +103,14 @@ export class McpClientDriver implements QaDriver {
       }
       if (useModernProtocol) followUpHeaders = modernRequestHeaders(headers, scenario.mcp.method, scenarioParams)
       const responseResult = await requestWithOriginBoundRedirects(this.request, targetUrl.toString(), {
-        method: 'POST', signal,
+        method: 'POST', signal: controller.signal,
         headers: followUpHeaders,
         body: JSON.stringify(payload),
       }, targetUrl.origin)
       if ('blockedReason' in responseResult) return blocked(scenario, responseResult.blockedReason, [], context?.auth)
       const response = responseResult.response
-      const raw = await response.text()
+      const responseRead = await readMcpResponse(response, payload.id, controller.signal)
+      const raw = responseRead.raw
       const requestPath = join(evidenceDir, 'request.json')
       const responsePath = join(evidenceDir, 'response.json')
       writeFileSync(requestPath, JSON.stringify(redact(payload, context?.auth), null, 2), 'utf8')
@@ -112,7 +121,7 @@ export class McpClientDriver implements QaDriver {
       ]
       evidence = capturedEvidence
       if (!response.ok) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', observedStatus: response.status, reason: `MCP HTTP ${response.status}`, evidence }
-      const parsed = parseMcpResponse(raw)
+      const parsed = responseRead.value
       const expected = scenario.mcp
       if (isRecord(parsed) && isRecord(parsed.error)) {
         if (expected.expectedIsError !== true) {
@@ -141,6 +150,9 @@ export class McpClientDriver implements QaDriver {
       return { scenarioId: scenario.id, required: scenario.required, status: 'PASSED', evidence }
     } catch (error) {
       return blocked(scenario, error instanceof Error ? error.message : 'MCP request failed', evidence, context?.auth)
+    } finally {
+      clearTimeout(timeout)
+      signal?.removeEventListener('abort', abort)
     }
   }
 }
@@ -181,7 +193,18 @@ function redact(value: unknown, auth?: QaDriverExecutionContext['auth']): unknow
 }
 
 function redactText(value: string, auth?: QaDriverExecutionContext['auth']): string {
-  try { return JSON.stringify(redact(parseMcpResponse(value), auth), null, 2) } catch { return redactSecrets(value, auth) }
+  if (/^(?:event|data):/m.test(value)) return JSON.stringify(redact(parseMcpEvents(value), auth), null, 2)
+  try { return JSON.stringify(redact(JSON.parse(value), auth), null, 2) } catch { return redactSecrets(value, auth) }
+}
+
+function parseMcpEvents(value: string): unknown[] {
+  return value.split(/\r?\n\r?\n/).flatMap((event) => {
+    const data = event.split(/\r?\n/)
+      .filter((line) => line.startsWith('data:'))
+      .map((line) => line.slice(5).replace(/^ /, ''))
+    if (data.length === 0) return []
+    try { return [JSON.parse(data.join('\n'))] } catch { return [] }
+  })
 }
 
 function parseMcpResponse(value: string): unknown {
@@ -196,6 +219,68 @@ function parseMcpResponse(value: string): unknown {
     if (dataLines.length > 0) return JSON.parse(dataLines.join('\n'))
   }
   throw new Error('MCP event stream contained no JSON data')
+}
+
+interface McpResponseRead { value: unknown; raw: string }
+
+async function readMcpResponse(response: Response, requestId: number, signal?: AbortSignal): Promise<McpResponseRead> {
+  const contentType = response.headers.get('content-type')?.toLowerCase() ?? ''
+  if (!contentType.includes('text/event-stream')) {
+    const raw = await response.text()
+    try {
+      const value = parseMcpResponse(raw)
+      return { value: isMatchingJsonRpcResponse(value, requestId) ? value : undefined, raw }
+    } catch {
+      return { value: undefined, raw }
+    }
+  }
+
+  const reader = response.body?.getReader()
+  if (!reader) return { value: undefined, raw: '' }
+  const cancelReader = () => { void reader.cancel(signal?.reason).catch(() => undefined) }
+  signal?.addEventListener('abort', cancelReader, { once: true })
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let raw = ''
+  try {
+    while (true) {
+      signal?.throwIfAborted()
+      const chunk = await reader.read()
+      if (chunk.done) {
+        buffer += decoder.decode()
+        break
+      }
+      const text = decoder.decode(chunk.value, { stream: true })
+      raw += text
+      buffer += text
+      const frames = buffer.split(/\r?\n\r?\n/)
+      buffer = frames.pop() ?? ''
+      for (const frame of frames) {
+        const value = eventPayload(frame)
+        if (isMatchingJsonRpcResponse(value, requestId)) {
+          await reader.cancel()
+          return { value, raw }
+        }
+      }
+    }
+    const finalValue = eventPayload(buffer)
+    return { value: isMatchingJsonRpcResponse(finalValue, requestId) ? finalValue : undefined, raw }
+  } finally {
+    signal?.removeEventListener('abort', cancelReader)
+    reader.releaseLock()
+  }
+}
+
+function eventPayload(frame: string): unknown {
+  const data = frame.split(/\r?\n/)
+    .filter((line) => line.startsWith('data:'))
+    .map((line) => line.slice(5).replace(/^ /, ''))
+  if (data.length === 0) return undefined
+  try { return JSON.parse(data.join('\n')) } catch { return undefined }
+}
+
+function isMatchingJsonRpcResponse(value: unknown, requestId: number): value is Record<string, unknown> {
+  return isRecord(value) && value.id === requestId && (isRecord(value.result) || isRecord(value.error))
 }
 
 function mcpErrorMessage(result: Record<string, unknown>): string {

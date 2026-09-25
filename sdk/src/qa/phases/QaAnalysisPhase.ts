@@ -1,20 +1,16 @@
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../../json-extraction/types'
 import { isDeepStrictEqual } from 'node:util'
-import { buildQaAuthenticationGuidance, QaPlanningPhase } from './QaPlanningPhase'
+import { buildQaAuthenticationGuidance, buildQaExecutionContract, QaPlanningPhase } from './QaPlanningPhase'
 import { QaPlanValidator } from '../services/QaPlanValidator'
 import { buildQaAgentFileOutputInstructions, createQaAgentFileOutput, prepareQaAgentFileOutput, readQaAgentFileOutput, removeQaAgentFileOutput } from '../utils/QaAgentFileOutput'
 import { nextQaReportPhase, QaPhase, resolveQaPhaseSettings, type QaPhaseContext, type QaPhaseHandler } from './types'
-
-const MAX_ANALYSIS_CYCLES = 3
 
 export class QaAnalysisPhase implements QaPhaseHandler {
   readonly phase = QaPhase.ANALYSIS
 
   async execute(context: QaPhaseContext, signal?: AbortSignal): Promise<QaPhase> {
     if (!context.plan || !context.run) throw new Error('Agentic QA analysis requires a completed execution')
-    context.analysisCycles = (context.analysisCycles ?? 0) + 1
-    if (context.analysisCycles > MAX_ANALYSIS_CYCLES) return nextQaReportPhase(context)
     const agentSettings = resolveQaPhaseSettings(context, 'qa_analysis')
     const outputFile = createQaAgentFileOutput(context.workspace, 'analysis')
     prepareQaAgentFileOutput(outputFile)
@@ -66,9 +62,14 @@ export class QaAnalysisPhase implements QaPhaseHandler {
       'Consider functional, negative, boundary, security, accessibility, resilience, and state-transition coverage.',
       'Use runtime evidence as verdict truth. Source code may identify a risk but cannot prove a pass, failure, or bug.',
       ...buildQaAuthenticationGuidance(context.authentication),
+      '<original_scope>', context.request.scope ?? '', '</original_scope>',
+      '<mandatory_scenarios>', JSON.stringify(context.plan?.mandatoryScenarios ?? []), '</mandatory_scenarios>',
+      'Check each mandatory scenario mapping and assertion against observed behavior. Keep unsupported requirements open.',
       'Return complete when no material executable gap remains. Do not add speculative, duplicate, low-value, or implementation-detail scenarios.',
       'For a material gap, preserve every existing criterion and scenario unchanged. Preserve plan id, target, and profile. Append only executable criteria and scenarios justified by that gap.',
-      'Stay within the configured target. Reuse the planning action, assertion, profile, category, criterionId, scenario ID, and budget contracts.',
+      'Stay within the configured target. Preserve explicit anonymous identities. Do not repeat side effects without a safe state strategy.',
+      'Use this complete executable scenario contract for appended scenarios:',
+      buildQaExecutionContract(),
       'Write exactly one of these JSON formats to the output file without Markdown, comments, or extra fields:',
       '{"complete":true}',
       '{"complete":false,"plan":<complete revised plan object>}',

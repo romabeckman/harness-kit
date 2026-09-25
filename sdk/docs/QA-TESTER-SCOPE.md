@@ -11,7 +11,7 @@ A QA run follows five stages:
 1. **Planning** — an agent inspects the project and turns the scope into executable scenarios.
 2. **Validation** — Harness Kit checks the plan, target, action limits, and execution engines.
 3. **Execution** — deterministic drivers perform HTTP calls, browser actions, CLI commands, MCP calls, or WebSocket exchanges.
-4. **Optional analysis** — when enabled, the agent checks for material coverage gaps and may append scenarios. It cannot change executed scenarios.
+4. **Optional analysis** — when enabled, the agent performs one bounded evidence pass and may append scenarios. It cannot change executed scenarios; appended scenarios run once before reporting.
 5. **Reporting** — Harness Kit reconciles the agent's description with runtime evidence and saves the report.
 
 The agent plans tests. Optional analysis checks coverage after execution. Drivers perform the actions. Source code or agent prose alone cannot prove that a scenario passed.
@@ -28,13 +28,14 @@ flowchart TD
     VALIDATE["VALIDATE<br/>Check plan and engines"]
     EXECUTE["EXECUTE<br/>Drivers collect evidence"]
     ANALYZE["OPTIONAL ANALYZE<br/>Check results and coverage"]
+    APPENDED["EXECUTE APPENDED<br/>Run new validated scenarios once"]
     REPORT["REPORT<br/>Persist report and evidence"]
     VERDICT["VERDICT<br/>PASS · FAIL · BLOCKED · INCONCLUSIVE"]
     LEARN["UPDATE MEMORY<br/>Save verified setup hints"]
 
     INPUT --> MEMORY --> PLAN --> VALIDATE --> EXECUTE --> REPORT --> VERDICT --> LEARN
     EXECUTE -. "--analysis" .-> ANALYZE --> REPORT
-    ANALYZE -. append and execute validated coverage .-> ANALYZE
+    ANALYZE -. append validated scenarios once .-> APPENDED --> REPORT
 ```
 
 The reporting phase still runs when the target is unavailable or adaptive analysis fails. Cancellation propagates immediately, preserves already written run state, and closes only runtimes created by Harness Kit.
@@ -367,7 +368,9 @@ hrns qa exploratory --target http://localhost:3000
 
 QA supports API, browser, mobile web, accessibility, MCP, CLI, WebSocket, security-focused, and combined HTTP/browser flows. It does not provide native desktop, console, VR, hardware-input, load-testing, or formal security-certification engines.
 
-Known engineering follow-ups include stronger browser navigation boundaries, internal CLI/MCP deadlines, more reliable browser readiness for persistent connections, and stricter Markdown reconciliation with structured verdicts.
+Browser readiness uses DOM content readiness and bounded explicit waits. CLI and MCP executions have 30-second deadlines; WebSocket exchanges have a 5-second deadline. Reports render summary and Markdown from runtime results. Coverage separates scenario outcomes from scenarios that did not run and does not mark unplanned categories as missing coverage.
+
+Current scope does not support chaining a value from one API response into a later request in the same scenario. The accessibility driver covers common image, form-label, and document-language checks; use a dedicated accessibility engine for broader audits.
 
 ## Related documentation
 

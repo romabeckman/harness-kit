@@ -62,6 +62,7 @@ export interface QaWebSocketRequest {
 export interface QaScenario {
   id: string
   criterionIds: string[]
+  mandatoryScenarioIds?: string[]
   required: boolean
   profile: QaProfile
   authProfile?: string | 'none'
@@ -75,6 +76,8 @@ export interface QaScenario {
   websocket?: QaWebSocketRequest
 }
 
+export interface QaMandatoryScenario { id: string; requirement: string }
+
 export interface QaPlan {
   schemaVersion: 1
   id: string
@@ -85,6 +88,7 @@ export interface QaPlan {
   profile: QaProfile
   createdAt: string
   criteria: string[]
+  mandatoryScenarios?: QaMandatoryScenario[]
   scenarios: QaScenario[]
 }
 
@@ -145,6 +149,7 @@ export interface QaCoverageArea {
   passed: number
   failed: number
   blocked: number
+  inconclusive: number
   untested: number
 }
 
