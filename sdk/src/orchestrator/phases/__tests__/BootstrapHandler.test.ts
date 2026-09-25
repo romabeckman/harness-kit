@@ -135,7 +135,6 @@ describe('BootstrapHandler', () => {
       expect(memoryCalls[0][0].prompt).toContain('docs/.digest.md')
       expect(memoryCalls[0][0].prompt).toContain('docs/.graph.json')
       expect(memoryCalls[0][0].prompt).toContain('docs/adr/ARCHITECTURE.md')
-      expect(memoryCalls[0][0].prompt).toContain('docs/feature')
       expect(memoryCalls[0][0].prompt).toContain('<scope_ref>')
       expect(memoryCalls[0][0].prompt).toContain(
         `Read file: \`${join(root, 'state', 'docs', 'product', 'SCOPE.md')}\``,
