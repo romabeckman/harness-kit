@@ -291,6 +291,24 @@ describe('RouteHandlers Integration Tests', () => {
     expect(parsed.code).toBe('FORBIDDEN')
   })
 
+  it('rejects resume access to a job outside token project scope', async () => {
+    process.env.AUTH_MODE = 'jwt'
+    process.env.AUTH_JWT_SECRET = 'my-jwt-secret-123'
+    const handlers = new RouteHandlers(jobStore, jobQueue, lockManager)
+    await jobStore.save({ jobId: 'backend-job', status: 'failed', workspacePath: '/tmp/backend',
+      request: { idempotencyKey: 'resume-id', scope: 'task', project: 'backend', agent: 'claude-cli' }, createdAt: new Date().toISOString() })
+    const { JwtAuthStrategy } = await import('../../../../outbound/auth/JwtAuthStrategy.js')
+    const token = JwtAuthStrategy.signPayload({ sub: 'user-1', allowed_projects: ['frontend'] }, 'my-jwt-secret-123')
+    const req = new MockIncomingMessage('/orchestrator/jobs/backend-job/resume', 'POST')
+    req.headers.authorization = `Bearer ${token}`
+    const res = new MockServerResponse()
+    const handled = handlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+    req.emit('end')
+    await handled
+    expect(res.statusCode).toBe(403)
+    expect(jobQueue.size).toBe(0)
+  })
+
   it('GET /orchestrator/telemetry/tokens?project=backend&startDate=2026-08-01T00:00:00Z&model=claude-3-5-sonnet&limit=10 -> 200 OK with query parameters', async () => {
     const req = new MockIncomingMessage('/orchestrator/telemetry/tokens?project=backend&startDate=2026-08-01T00:00:00Z&model=claude-3-5-sonnet&limit=10', 'GET')
     const res = new MockServerResponse()

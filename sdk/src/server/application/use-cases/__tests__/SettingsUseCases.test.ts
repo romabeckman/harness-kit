@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { existsSync, mkdirSync, rmSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { GetSettingsUseCase } from '../GetSettingsUseCase'
 import { UpdateSettingsUseCase } from '../UpdateSettingsUseCase'
@@ -72,6 +72,24 @@ describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', 
   })
 
   describe('UpdateSettingsUseCase', () => {
+    it('preserves current phase configuration and timeout during a targeted update', async () => {
+      process.env.PROJECT_MAPPINGS = JSON.stringify({ backend: testWorkspaceDir })
+      const settingsDir = join(testWorkspaceDir, '.harness-kit')
+      mkdirSync(settingsDir, { recursive: true })
+      writeFileSync(join(settingsDir, 'settings.json'), JSON.stringify({
+        claude: { timeoutMs: 42000, phases: {
+          planning: { model: 'old', timeoutMs: 7000 },
+          deploy_message: { model: 'deploy', effort: 'low', timeoutMs: 3000 },
+        } },
+      }))
+      const result = await new UpdateSettingsUseCase().execute({
+        project: 'backend', agent: 'claude-cli', phases: ['planning'], model: 'new',
+      })
+      expect(result.settings.claude.timeoutMs).toBe(42000)
+      expect(result.settings.claude.phases?.planning).toMatchObject({ model: 'new', timeoutMs: 7000 })
+      expect(result.settings.claude.phases?.deploy_message).toEqual({ model: 'deploy', effort: 'low', timeoutMs: 3000 })
+    })
+
     it('resolves project identifier and updates .harness-kit/settings.json file with flat format', async () => {
       process.env.PROJECT_MAPPINGS = JSON.stringify({
         backend: testWorkspaceDir,
@@ -242,7 +260,7 @@ describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', 
       }
     })
 
-    it('resets timeoutMs to default (1800000) when timeoutMs is omitted in request body', async () => {
+    it('preserves timeoutMs when omitted in a later update', async () => {
       process.env.PROJECT_MAPPINGS = JSON.stringify({
         backend: testWorkspaceDir,
       })
@@ -266,11 +284,11 @@ describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', 
       }
 
       const result = await updateUseCase.execute(flatPayload)
-      expect(result.settings['antigravity']?.timeoutMs).toBe(1800000)
+      expect(result.settings['antigravity']?.timeoutMs).toBe(45000)
 
       const settingsFilePath = join(testWorkspaceDir, '.harness-kit', 'settings.json')
       const fileContent = JSON.parse(readFileSync(settingsFilePath, 'utf-8'))
-      expect(fileContent['antigravity']?.timeoutMs).toBe(1800000)
+      expect(fileContent['antigravity']?.timeoutMs).toBe(45000)
     })
 
     it('throws HttpServerError(400, MISSING_PROJECT_IDENTIFIER) when project parameter is omitted', async () => {

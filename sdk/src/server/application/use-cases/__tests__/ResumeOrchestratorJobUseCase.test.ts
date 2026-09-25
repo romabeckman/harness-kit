@@ -34,6 +34,7 @@ describe('ResumeOrchestratorJobUseCase', () => {
     const resumedJob = await jobStore.findById(result.jobId)
     expect(resumedJob).not.toBeNull()
     expect(resumedJob?.request.action).toBe('resume')
+    expect(resumedJob?.resumeFromJobId).toBe('failed-job-123')
     expect(jobQueue.size).toBe(1)
   })
 
@@ -52,5 +53,17 @@ describe('ResumeOrchestratorJobUseCase', () => {
 
   it('throws HttpServerError(404) for non-existent job ID', async () => {
     await expect(useCase.execute('unknown-job-id')).rejects.toThrowError(HttpServerError)
+  })
+
+  it('rejects resume overrides that replace the saved project', async () => {
+    await jobStore.save({ jobId: 'failed', status: 'failed', workspacePath: '/tmp/backend',
+      request: { idempotencyKey: 'id', scope: 'task', project: 'backend', agent: 'claude-cli' }, createdAt: new Date().toISOString() })
+    await expect(useCase.execute('failed', { project: 'other' })).rejects.toMatchObject({ code: 'INVALID_RESUME_OVERRIDE' })
+  })
+
+  it('does not resume a completed job whose worktree was removed', async () => {
+    await jobStore.save({ jobId: 'complete', status: 'completed', workspacePath: '/tmp/backend',
+      request: { idempotencyKey: 'id', scope: 'task', project: 'backend', agent: 'claude-cli' }, createdAt: new Date().toISOString() })
+    await expect(useCase.execute('complete')).rejects.toMatchObject({ code: 'JOB_NOT_RESUMABLE' })
   })
 })

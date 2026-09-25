@@ -36,6 +36,7 @@ export interface UseCaseContainer {
 }
 
 export class RouteHandlers {
+  private jobStore: JobStoreRepository
   private runJobUseCase: RunOrchestratorJobUseCase
   private getStatusUseCase: GetJobStatusUseCase
   private getHealthUseCase: GetHealthStatusUseCase
@@ -60,6 +61,7 @@ export class RouteHandlers {
     config?: HttpServerConfig,
     useCases?: UseCaseContainer
   ) {
+    this.jobStore = jobStore
     this.config = config
     this.runJobUseCase = useCases?.runJobUseCase ?? new RunOrchestratorJobUseCase(jobStore, jobQueue, config)
     this.getStatusUseCase = useCases?.getStatusUseCase ?? new GetJobStatusUseCase(jobStore)
@@ -173,7 +175,11 @@ export class RouteHandlers {
           }
         }
 
-        await this.authenticateAndAuthorize(req, res, undefined, rawBody)
+        const previousJob = await this.jobStore.findById(jobId)
+        const previousProjects = previousJob
+          ? (Array.isArray(previousJob.request.project) ? previousJob.request.project : [previousJob.request.project])
+          : undefined
+        await this.authenticateAndAuthorize(req, res, previousProjects, rawBody)
         const responseDto = await this.resumeJobUseCase.execute(jobId, overrides)
         this.sendJson(res, 202, responseDto)
         return
@@ -181,7 +187,13 @@ export class RouteHandlers {
 
       if (pathname.startsWith('/orchestrator/')) {
         const projectParam = url.searchParams.get('project') ?? undefined
-        await this.authenticateAndAuthorize(req, res, projectParam ? [projectParam] : undefined, rawBody)
+        const statusJob = method === 'GET' && pathname.startsWith('/orchestrator/status/')
+          ? await this.jobStore.findById(pathname.replace('/orchestrator/status/', ''))
+          : null
+        const statusProjects = statusJob
+          ? (Array.isArray(statusJob.request.project) ? statusJob.request.project : [statusJob.request.project])
+          : undefined
+        await this.authenticateAndAuthorize(req, res, statusProjects ?? (projectParam ? [projectParam] : undefined), rawBody)
       }
 
       if (method === 'DELETE' && pathname === '/orchestrator/jobs/clean') {

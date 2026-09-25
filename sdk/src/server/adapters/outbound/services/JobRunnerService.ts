@@ -12,6 +12,7 @@ import { AgentRunnerFactory } from '../../../../agent-runner/AgentRunnerFactory'
 import { DtoMappers } from '../../inbound/http/mappers/DtoMappers'
 import { HarnessOrchestrator } from '../../../../orchestrator/HarnessOrchestrator'
 import { FileStateManager } from '../../../../file-state/FileStateManager'
+import { findSensitiveGitPaths } from '../../../../orchestrator/utils/GitSensitiveFiles'
 
 const execFileAsync = promisify(execFile)
 
@@ -102,11 +103,12 @@ export class JobRunnerService {
     }
 
     let createdWorktreePath: string | undefined
+    let completed = false
 
     try {
       await this.jobStore.updateStatus(job.jobId, 'running')
 
-      const gitPrep = await this.prepareWorkspaceGit(job.workspacePath, job.request, job.jobId)
+      const gitPrep = await this.prepareWorkspaceGit(job.workspacePath, job.request, job.jobId, job.resumeFromJobId)
       const effectivePath = gitPrep.effectiveWorkspacePath
       createdWorktreePath = gitPrep.createdWorktreePath
 
@@ -153,19 +155,28 @@ export class JobRunnerService {
         workingDir: effectivePath,
       })
 
+      if (action === 'resume' && job.request.steeringMessage?.trim()) {
+        orchestrator.applySteeringActions([{ type: 'add_rule', rule: job.request.steeringMessage.trim() }])
+      }
+
       await orchestrator.run()
 
+      const features = orchestrator.fsm.loadBacklog()
+      if (features.length === 0 || features.some(feature => feature.status !== 'COMPLETED')) {
+        throw new Error('Orchestration halted before all features completed. Resume this job from its preserved worktree.')
+      }
+
       // Commit and push completed changes before cleaning up worktree
-      const targetBranch = `job-${job.jobId}`
-      await this.finalizeGitCommitPush(effectivePath, targetBranch, job.request.scope, job.jobId)
+      await this.finalizeGitCommitPush(effectivePath, gitPrep.branch, job.request.scope, job.jobId)
 
       await this.jobStore.updateStatus(job.jobId, 'completed')
+      completed = true
     } catch (err: any) {
       const message = err instanceof Error ? err.message : String(err)
       const code = err && typeof err.code === 'string' ? err.code : 'JOB_EXECUTION_FAILED'
       await this.jobStore.updateStatus(job.jobId, 'failed', { code, message })
     } finally {
-      if (createdWorktreePath) {
+      if (createdWorktreePath && completed) {
         this.syncWorktreeTelemetry(createdWorktreePath, job.workspacePath)
         try {
           await execGit(['worktree', 'remove', '--force', createdWorktreePath], job.workspacePath)
@@ -229,9 +240,16 @@ export class JobRunnerService {
   private async prepareWorkspaceGit(
     workspacePath: string,
     request: OrchestrationJob['request'],
-    jobId: string
-  ): Promise<{ effectiveWorkspacePath: string; createdWorktreePath?: string }> {
-    const useWorktree = true
+    jobId: string,
+    resumeFromJobId?: string
+  ): Promise<{ effectiveWorkspacePath: string; createdWorktreePath?: string; branch: string }> {
+    if (resumeFromJobId) {
+      const previousWorktreePath = join(workspacePath, '.worktrees', resumeFromJobId)
+      if (!existsSync(previousWorktreePath)) {
+        throw new Error(`Resume state for job '${resumeFromJobId}' is no longer available.`)
+      }
+      return { effectiveWorkspacePath: previousWorktreePath, createdWorktreePath: previousWorktreePath, branch: `job-${resumeFromJobId}` }
+    }
 
     const firstProject = typeof request.project === 'string'
       ? request.project
@@ -257,31 +275,18 @@ export class JobRunnerService {
     }
 
     const targetBranch = `job-${jobId}`
-    if (useWorktree && existsSync(join(workspacePath, '.git'))) {
+    if (existsSync(join(workspacePath, '.git'))) {
       const worktreePath = join(workspacePath, '.worktrees', jobId)
-      let addRes = await execGit(
+      const addRes = await execGit(
         ['worktree', 'add', '-B', targetBranch, worktreePath, `origin/${baseBranch}`],
         workspacePath
       )
-      if (addRes.exitCode !== 0) {
-        addRes = await execGit(['worktree', 'add', '-B', targetBranch, worktreePath], workspacePath)
-      }
       if (addRes.exitCode === 0) {
-        return { effectiveWorkspacePath: worktreePath, createdWorktreePath: worktreePath }
+        return { effectiveWorkspacePath: worktreePath, createdWorktreePath: worktreePath, branch: targetBranch }
       }
+      throw new Error(`Git worktree creation failed: ${addRes.stderr || addRes.stdout}`)
     }
-
-    if (existsSync(workspacePath)) {
-      const checkoutRes = await execGit(['checkout', targetBranch], workspacePath)
-      if (checkoutRes.exitCode !== 0) {
-        const createRes = await execGit(['checkout', '-B', targetBranch], workspacePath)
-        if (createRes.exitCode !== 0) {
-          throw new Error(`Git checkout failed for branch '${targetBranch}': ${checkoutRes.stderr || createRes.stderr}`)
-        }
-      }
-    }
-
-    return { effectiveWorkspacePath: workspacePath }
+    throw new Error(`Workspace '${workspacePath}' is not a Git repository; an isolated worktree is required.`)
   }
 
   /**
@@ -296,6 +301,7 @@ export class JobRunnerService {
     if (!existsSync(join(workingDir, '.git')) && !existsSync(workingDir)) return
 
     const statusRes = await execGit(['status', '--porcelain'], workingDir)
+    if (statusRes.exitCode !== 0) throw new Error(`Git status failed: ${statusRes.stderr}`)
     const hasChanges = statusRes.stdout && statusRes.stdout.trim().length > 0
 
     if (hasChanges) {
@@ -303,6 +309,15 @@ export class JobRunnerService {
       if (addRes.exitCode !== 0) {
         const err: any = new Error(`Git add failed: ${addRes.stderr}`)
         err.code = 'GIT_COMMIT_FAILED'
+        throw err
+      }
+
+      const staged = await execGit(['diff', '--cached', '--name-only'], workingDir)
+      if (staged.exitCode !== 0) throw new Error(`Git staged-file inspection failed: ${staged.stderr}`)
+      const sensitive = findSensitiveGitPaths(staged.stdout.split(/\r?\n/).filter(Boolean))
+      if (sensitive.length > 0) {
+        const err: any = new Error(`Security pre-check blocked commit: sensitive file(s) staged [${sensitive.join(', ')}].`)
+        err.code = 'SENSITIVE_FILES_STAGED'
         throw err
       }
 

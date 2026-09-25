@@ -26,6 +26,8 @@ describe('OpenApiSpecGenerator', () => {
     // Verify component schemas exist
     const schemas = (spec as any).components.schemas
     expect(schemas.RunRequestDtoExtended).toBeDefined()
+    expect(schemas.ResumeRequestDto.properties.steeringMessage.type).toBe('string')
+    expect(schemas.ResumeRequestDto.properties.project).toBeUndefined()
     expect(schemas.RunResponseDto).toBeDefined()
     expect(schemas.JobStatusDto).toBeDefined()
     expect(schemas.SyncWorkspaceRequestDto).toBeDefined()
@@ -56,6 +58,9 @@ describe('OpenApiSpecGenerator', () => {
     expect(schema.properties.skipDeploy).toBeUndefined()
     expect(schema.properties.baseBranch).toBeUndefined()
     expect(schema.properties.useWorktree).toBeUndefined()
+    expect(schema.properties.project.type).toBe('string')
+    expect(schema.properties.mode.enum).not.toContain('deep_thinking')
+    expect(schema.properties.score).toBeDefined()
   })
 
   it('Generates Swagger UI HTML template', () => {
@@ -64,4 +69,3 @@ describe('OpenApiSpecGenerator', () => {
     expect(html).toContain('swagger-ui')
   })
 })
-
