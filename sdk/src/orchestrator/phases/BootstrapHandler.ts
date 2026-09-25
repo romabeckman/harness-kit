@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Phase, CliCommand } from "../types";
 import { AbstractPhaseHandler, Reviewontext } from "./AbstractPhaseHandler";
@@ -40,15 +40,21 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       context.fsm.saveBootstrapConfig(bootConfig);
     }
 
-    const existing = context.fsm.loadBacklog();
-    if (existing.length > 0) return Phase.PLANNING;
-
     const productDir = getProductDir(context);
     const backlogPath = join(productDir, "BACKLOG.md");
     const planningSource = getPlanningSource(context);
     const planningContent = planningSource.exists
       ? planningSource.content.trim()
       : context.config.scope.trim();
+
+    await this.ensureProjectDocumentation(
+      context,
+      planningContent,
+      planningSource.path,
+    );
+
+    const existing = context.fsm.loadBacklog();
+    if (existing.length > 0) return Phase.PLANNING;
 
     const rulesList: string[] = [];
     if (bootConfig && bootConfig.steeringRules) {
@@ -164,5 +170,67 @@ export class BootstrapHandler extends AbstractPhaseHandler {
     PhaseDecisionLogger.logBootstrap(context.fsm, created);
 
     return Phase.PLANNING;
+  }
+
+  private async ensureProjectDocumentation(
+    context: Reviewontext,
+    planningContent: string,
+    planningSourcePath: string,
+  ): Promise<void> {
+    const projectPaths = context.config.projectPaths ?? [];
+    const missingDocsPaths = projectPaths.filter((projectPath) => {
+      try {
+        const docsPath = join(projectPath, "docs");
+        return !existsSync(join(docsPath, ".digest.md")) ||
+          !existsSync(join(docsPath, ".graph.json"));
+      } catch {
+        return true;
+      }
+    });
+
+    if (missingDocsPaths.length === 0) return;
+
+    console.log(
+      `[BOOTSTRAP] Preparing project documentation before starting bootstrap: ${missingDocsPaths.join(", ")}`,
+    );
+
+    const prompt = [
+      `# TASK`,
+      `Invoke and follow the \`harness-kit:project-memory\` skill to prepare initial project documentation.`,
+      `Inspect every configured project independently; do not combine evidence or documentation between projects.`,
+      `For each project, check for \`docs/.digest.md\` and \`docs/.graph.json\`. If both exist, do not change that project's documentation.`,
+      `Prepare or complete documentation only for projects listed under \`projects_missing_docs\`, keeping each project's files under its own \`docs\` directory.`,
+      `Follow the skill to create or complete \`docs/README.md\`, \`docs/.digest.md\`, and \`docs/.graph.json\`,`,
+      `\`docs/adr/ARCHITECTURE.md\`, \`docs/adr/TESTS.md\`, the required \`docs/adr\` and`,
+      `\`docs/feature\` folders, and feature documents supported by actual project evidence.`,
+      `Follow the skill's frontmatter, feature graph, digest, graph index, and README rules for each project.`,
+      `Do not ask questions; use available project evidence.`,
+      `Use the implementation scope below to understand the intended project and document planned work separately from current implementation evidence.`,
+      `Return only the final output required by the skill.`,
+      ...inlineOrReference(
+        "scope",
+        planningContent,
+        planningSourcePath,
+        "markdown",
+        "always",
+        context.config.agentRunner,
+      ),
+      ``,
+      `<project_paths_to_inspect>`,
+      ...projectPaths.map((projectPath) => `- \`${projectPath}\``),
+      `</project_paths_to_inspect>`,
+      ``,
+      `<projects_missing_docs>`,
+      ...missingDocsPaths.map((projectPath) => `- \`${projectPath}\``),
+      `</projects_missing_docs>`,
+    ].join("\n");
+
+    await context.invokeAgent({
+      agent: "harness-kit:software-architect",
+      skill: "harness-kit:project-memory",
+      mode: "autonomous",
+      prompt,
+      phaseKey: "bootstrap_project_memory",
+    });
   }
 }
