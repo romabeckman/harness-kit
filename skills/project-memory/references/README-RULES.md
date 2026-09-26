@@ -11,7 +11,7 @@ Defines strict rules for generating and maintaining `docs/README.md`.
 | Field | Value |
 |---|---|
 | Target file | `docs/README.md` (root of the `docs/` folder) |
-| Max size | Strictly fewer than 8,000 counted-body characters; exclude YAML frontmatter and graph blocks when present per [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget). Content restrictions still apply. |
+| Max size | 10,000 total characters maximum, including all content; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
 | Agent action | Generate or overwrite `docs/README.md` using the MANDATORY TEMPLATE exactly as specified. |
 | When to update | REQUIRED: Every time a document is added, removed, or renamed in `docs/`, update `docs/README.md` in the same operation. |
 

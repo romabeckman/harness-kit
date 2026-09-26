@@ -7,11 +7,11 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 ## RULES BEFORE WRITING
 
 - REQUIRED: Generate each `json` and `graph` payload on one physical line using compact JSON, without indentation or formatting line breaks. Keep the Markdown fences on separate lines.
-- REQUIRED: Apply [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget): exclude leading YAML frontmatter, complete `graph` and `mermaid` blocks, and the entire `## KNOWLEDGE` section from all character limits below. Count other headings and surrounding prose.
+- REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget): at most 10,000 characters for the entire file, with no exclusions.
 - REQUIRED: One document covers exactly **one** business domain, module, or architectural layer.
 - PROHIBITED: Mixing unrelated topics in a single file.
-- REQUIRED: Keep document compact, objective, and dense — strictly under **8,000 characters** (excluding YAML frontmatter header and graph blocks).
-- REQUIRED: For complementary ADRs extracted from `ARCHITECTURE.md` (e.g., `SECURITY.md`, `OBSERVABILITY.md`, `TELEMETRY.md`, `DATABASE.md`), ensure strict compliance with the 8,000 character limit (excluding YAML frontmatter header and graph blocks) and cross-reference back to `ARCHITECTURE.md`.
+- REQUIRED: Keep document compact, objective, and dense — at most **10,000 total characters**.
+- REQUIRED: For complementary ADRs extracted from `ARCHITECTURE.md` (e.g., `SECURITY.md`, `OBSERVABILITY.md`, `TELEMETRY.md`, `DATABASE.md`), ensure strict compliance with the 10,000 character limit and cross-reference back to `ARCHITECTURE.md`.
 - REQUIRED: Cross-reference section at the end listing related `docs/` files.
 - REQUIRED: For consequential domain or behavior claims, read [ONTOLOGY-RULES.md](./ONTOLOGY-RULES.md) and include `## KNOWLEDGE` as specified there. Keep uncertainty and evidence status explicit, including when every source is LLM-generated.
 
@@ -58,7 +58,7 @@ ALLOWED: `read` remains optional for ADR-to-ADR edges when no feature routing po
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]
 
 ## KNOWLEDGE
-[For consequential claims touched by this task, insert one fenced json block following ONTOLOGY-RULES.md: schema_version, entities, claims. Use canonical IDs and inspected evidence. Preserve requirements, observations, hypotheses, and unresolved gaps separately. Omit this section when no consequential claims apply. The entire section is excluded from the character count.]
+[For consequential claims touched by this task, insert one fenced json block following ONTOLOGY-RULES.md: schema_version, entities, claims. Use canonical IDs and inspected evidence. Preserve requirements, observations, hypotheses, and unresolved gaps separately. Omit this section when no consequential claims apply. The entire section counts toward the file limit.]
 
 ## FOLDER STRUCTURE
 [High-level architectural view: folders and layers only, not a file inventory. Show one representative entry per folder/layer — enough to convey the module's shape and where new code of each type belongs. PROHIBITED: enumerating every individual file already listed in the `code_files`/`test_files` arrays of the top ````graph` block — that duplicates content and wastes tokens. If a folder holds many similar files (e.g. multiple use cases, multiple adapters), collapse them into one annotated line (e.g. `use-cases/ # RunX, GetY, UpdateZ use cases`) instead of one line per file.]

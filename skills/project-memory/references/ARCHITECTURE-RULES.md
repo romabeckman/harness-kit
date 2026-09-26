@@ -9,7 +9,7 @@ Defines the analysis framework and strict rules for generating and maintaining `
 | Field | Value |
 |---|---|
 | Target file | `docs/adr/ARCHITECTURE.md` |
-| Max size | Strictly fewer than 8,000 counted-body characters, excluding YAML frontmatter and graph blocks |
+| Max size | 10,000 total characters maximum, including all content; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
 | Content style | Compact, dense, and objective — no lengthy narrative explanations or verbose prose |
 | Agent action | Read the repository, apply the PRE-GENERATION ANALYSIS below, then generate or overwrite the file using the MANDATORY TEMPLATE exactly as specified |
 
@@ -17,13 +17,13 @@ Defines the analysis framework and strict rules for generating and maintaining `
 
 ## SIZE LIMIT & DECOMPOSITION RULES
 
-- REQUIRED: Apply [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget) to every size check and decomposition decision: exclude leading YAML frontmatter and complete `graph`, `mermaid`, and ontology JSON graph blocks. Count headings and surrounding prose.
-- REQUIRED: Keep `docs/adr/ARCHITECTURE.md` strictly under **8,000 characters**.
+- REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget): at most 10,000 characters for the entire file, with no exclusions.
+- REQUIRED: Keep `docs/adr/ARCHITECTURE.md` at most **10,000 total characters**.
 - REQUIRED: Text must be compact, objective, and dense. PROHIBITED: Long theoretical explanations, conversational filler, or verbose historical context.
-- When `docs/adr/ARCHITECTURE.md` approaches or reaches the 8,000-character limit, apply one or both of the following pathways:
+- When `docs/adr/ARCHITECTURE.md` approaches or reaches the 10,000-character limit, apply one or both of the following pathways:
   1. **Text Compacting:** Condense prose into concise bullet points, replace narrative with compact tables, and remove redundant explanations while preserving strict technical constraints.
   2. **Decomposition into Complementary ADRs (`docs/adr/`):** Split deep or specialized architectural domains into separate complementary ADR documents inside `docs/adr/` (e.g., `docs/adr/SECURITY.md`, `docs/adr/OBSERVABILITY.md`, `docs/adr/TELEMETRY.md`, `docs/adr/DATABASE.md`, `docs/adr/API-DESIGN.md`).
-     - REQUIRED: Each complementary ADR document must also strictly observe the **8,000 character limit** and follow `./DOCUMENT-TEMPLATE.md`.
+     - REQUIRED: Each complementary ADR document must also strictly observe the **10,000 character limit** and follow `./DOCUMENT-TEMPLATE.md`.
      - REQUIRED: Retain only a high-level summary or reference row in `docs/adr/ARCHITECTURE.md` and register the edge in frontmatter (`edges: [{relation: references, target: "adr:<slug>"}]`) and `## REFERENCES`.
 
 ---
@@ -113,6 +113,6 @@ updated: YYYY-MM-DD
 
 ## LLM OPTIMIZATION RULES (MANDATORY)
 
-- REQUIRED: Keep document length strictly under 8,000 characters. If approaching the limit, compact prose or decompose into complementary `docs/adr/*.md` documents.
+- REQUIRED: Keep document length at most 10,000 total characters. If approaching the limit, compact prose or decompose into complementary `docs/adr/*.md` documents.
 - REQUIRED: Use tables for `## MODULES` and `## INTEGRATIONS` — never prose paragraphs for relational data.
 - REQUIRED: Annotate every directory in `## FOLDER STRUCTURE` with a `#` comment explaining where new files of each type should be created.

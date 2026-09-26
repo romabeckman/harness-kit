@@ -141,7 +141,7 @@ class BuildDocsGraphTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("8,000", rules)
+        self.assertIn("10,000", rules)
         self.assertIn("docs/adr/", rules)
 
     def test_sorts_nodes_and_edges_for_stable_compact_output(self) -> None:

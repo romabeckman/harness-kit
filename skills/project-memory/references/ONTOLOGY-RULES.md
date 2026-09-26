@@ -9,7 +9,7 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 - REQUIRED: Serialize the knowledge JSON on one physical line without indentation or formatting line breaks. Keep Markdown fences on separate lines and preserve escaped newlines within string values.
 - REQUIRED: Store one fenced `json` block under `## KNOWLEDGE` in the owning ADR or feature document. Use the top-level shape `{"schema_version":1,"entities":[],"claims":[]}` and populate the arrays with relevant records; allow no additional top-level fields.
 - REQUIRED: Keep the existing feature `graph` block for source routing. The knowledge block is separate and is not parsed by `generate_docs_graph.py`.
-- REQUIRED: Exclude the entire `## KNOWLEDGE` section, including its heading and JSON block, from the document's character count, following [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget). Record consequential knowledge only.
+- REQUIRED: Count the entire `## KNOWLEDGE` section toward the 10,000-character file limit. Record consequential knowledge only.
 - REQUIRED: Use local IDs `<type>:<slug>` for entities and `claim:<slug>` for claims. Resolve cross-document IDs as `<node_id>#<local_id>` through `.graph.json` and the target knowledge block.
 - REQUIRED: Give each concept one canonical owner. Reuse its qualified ID elsewhere; use aliases for synonyms within that domain. Never merge concepts solely because names match.
 - REQUIRED: Preserve IDs across renames. Reconcile affected references when ownership changes; do not silently delete referenced concepts.
