@@ -29,7 +29,7 @@ export class GetReportsSummaryUseCase implements IGetReportsSummaryUseCase {
       targetProjects.push({ name: cleanProject, path: resolve(resolved.path) })
     } else {
       // Find all configured projects
-      let mappings: Record<string, string> = {}
+      let mappings: Record<string, string | { path: string }> = {}
       if (process.env.PROJECT_MAPPINGS) {
         try {
           mappings = JSON.parse(process.env.PROJECT_MAPPINGS)
@@ -45,7 +45,8 @@ export class GetReportsSummaryUseCase implements IGetReportsSummaryUseCase {
       }
 
       for (const [name, path] of Object.entries(mappings)) {
-        if (path) targetProjects.push({ name, path: resolve(path) })
+        const projectPath = typeof path === 'string' ? path : path?.path
+        if (typeof projectPath === 'string' && projectPath) targetProjects.push({ name, path: resolve(projectPath) })
       }
     }
 

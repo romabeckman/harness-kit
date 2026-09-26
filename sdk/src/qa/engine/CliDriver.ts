@@ -9,6 +9,7 @@ export type CliExecutor = (command: string, args: string[], cwd: string, signal?
 
 const SAFE_COMMAND = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
 const MAX_ARGS = 100
+const MAX_EXECUTION_MS = 30_000
 
 export class CliDriver implements QaDriver {
   readonly profile = 'cli' as const
@@ -20,6 +21,7 @@ export class CliDriver implements QaDriver {
   }
 
   async execute(scenario: QaScenario, target: string, evidenceDir: string, signal?: AbortSignal, context?: QaDriverExecutionContext): Promise<QaScenarioResult> {
+    if (signal?.aborted) return blocked(scenario, signal.reason instanceof Error ? signal.reason.message : 'CLI execution cancelled')
     const request = scenario.cli
     if (!request) return blocked(scenario, 'CLI scenario has no command')
     if (!SAFE_COMMAND.test(request.command)) return blocked(scenario, 'CLI command must be a safe executable name without a path')
@@ -68,15 +70,46 @@ function redactArgs(args: string[], auth?: QaDriverExecutionContext['auth']): st
 }
 
 function executeCommand(command: string, args: string[], cwd: string, signal?: AbortSignal, environment?: Record<string, string>): Promise<CliExecutionResult> {
-  return new Promise((resolveExecution) => {
+  return new Promise((resolveExecution, rejectExecution) => {
+    if (signal?.aborted) return rejectExecution(signal.reason ?? new Error('CLI execution cancelled'))
     const child = spawn(command, args, { cwd, shell: false, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...environment } })
     let stdout = ''
     let stderr = ''
     child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
     child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
-    child.once('error', (error) => resolveExecution({ code: null, stdout, stderr: error.message }))
-    child.once('close', (code) => resolveExecution({ code, stdout, stderr }))
-    signal?.addEventListener('abort', () => child.kill(), { once: true })
+    let settled = false
+    let escalation: ReturnType<typeof setTimeout> | undefined
+    const deadline = setTimeout(() => stop(new Error(`CLI command exceeded ${MAX_EXECUTION_MS} ms deadline`)), MAX_EXECUTION_MS)
+    const cleanup = () => {
+      clearTimeout(deadline)
+      if (escalation) clearTimeout(escalation)
+      signal?.removeEventListener('abort', abort)
+    }
+    const fail = (error: unknown) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      rejectExecution(error)
+    }
+    const finish = (code: number | null) => {
+      if (settled) return
+      if (signal?.aborted) return fail(signal.reason ?? new Error('CLI execution cancelled'))
+      settled = true
+      cleanup()
+      resolveExecution({ code, stdout, stderr })
+    }
+    const stop = (reason: Error) => {
+      if (settled) return
+      child.once('close', () => fail(reason))
+      try { child.kill() } catch { /* The process may have exited already. */ }
+      if (settled) return
+      escalation = setTimeout(() => { try { child.kill('SIGKILL') } catch { /* The process may have exited already. */ } }, 1_000)
+    }
+    const abort = () => stop(signal?.reason instanceof Error ? signal.reason : new Error('CLI execution cancelled'))
+    child.once('error', (error) => fail(error))
+    child.once('close', finish)
+    signal?.addEventListener('abort', abort, { once: true })
+    if (signal?.aborted) abort()
   })
 }
 

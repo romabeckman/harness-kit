@@ -1,14 +1,20 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import type { QaExploratoryReport, QaFinalReport, QaPlan, QaRun } from '../types'
 
 const SAFE_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
 
 export class QaRunStore {
   readonly #root: string
+  readonly #workspace: string
 
   constructor(workspace: string) {
-    this.#root = join(workspace, 'docs', 'qa')
+    this.#workspace = resolve(workspace)
+    this.#root = join(this.#workspace, 'docs', 'qa')
+  }
+
+  resolveCliTarget(target: string): string {
+    return resolve(this.#workspace, target)
   }
 
   planPath(planId: string, version: number): string {
@@ -83,6 +89,11 @@ export class QaRunStore {
     const path = this.scopePath(planId)
     if (existsSync(path)) return
     this.writeText(path, scope)
+  }
+
+  loadScope(planId: string): string | undefined {
+    const path = this.scopePath(planId)
+    return existsSync(path) ? readFileSync(path, 'utf8') : undefined
   }
 
   loadPlan(planId: string, version: number): QaPlan {

@@ -10,7 +10,7 @@ import { Runner } from '../../../agent-runner/types'
 const SHORT_AGENT_NAMES = ['antigravity', 'claude', 'copilot', 'cursor', 'codex', 'kiro']
 const VALID_RUNNERS = Object.values(Runner) as string[]
 const ALL_VALID_AGENTS = Array.from(new Set([...SHORT_AGENT_NAMES, ...VALID_RUNNERS]))
-const VALID_PHASE_KEYS = ['bootstrap', 'planning', 'implementation', 'review_tl', 'review_adv', 'memory']
+const VALID_PHASE_KEYS = Array.from(new Set(Object.values(DEFAULT_SETTINGS).flatMap(setting => Object.keys(setting.phases ?? {}))))
 
 function normalizeAgentKey(agent: string): string {
   const clean = agent.trim().toLowerCase()
@@ -128,7 +128,7 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
     const existingAgentSettings = existingSettings[agentKey] ?? {}
     const existingPhases = existingAgentSettings.phases ?? {}
 
-    const updatedPhases: Record<string, PhaseSettings> = {}
+    const updatedPhases: Record<string, PhaseSettings> = { ...defaultPhases, ...existingPhases }
 
     const newModel =
       typeof (settingsPayload as any).model === 'string' && (settingsPayload as any).model.trim() !== ''
@@ -147,11 +147,13 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
         updatedPhases[phase] = {
           model: newModel ?? existingPhase.model ?? defaultPhase.model ?? '',
           effort: newEffort !== undefined ? newEffort : (existingPhase.effort ?? defaultPhase.effort ?? ''),
+          timeoutMs: existingPhase.timeoutMs ?? defaultPhase.timeoutMs,
         }
       } else {
         updatedPhases[phase] = {
           model: existingPhase.model ?? defaultPhase.model ?? '',
           effort: existingPhase.effort ?? defaultPhase.effort ?? '',
+          timeoutMs: existingPhase.timeoutMs ?? defaultPhase.timeoutMs,
         }
       }
     }
@@ -169,7 +171,7 @@ export class UpdateSettingsUseCase implements IUpdateSettingsUseCase {
       }
       timeoutMs = rawTimeoutMs
     } else {
-      timeoutMs = defaultAgentSettings.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS
+      timeoutMs = existingAgentSettings.timeoutMs ?? defaultAgentSettings.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS
     }
 
     const mergedSettings: HarnessSettingsMap = {

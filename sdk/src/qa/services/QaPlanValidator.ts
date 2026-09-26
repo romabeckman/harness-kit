@@ -38,6 +38,14 @@ export class QaPlanValidator {
   }
 
   async validate(value: unknown, workspace = process.cwd(), signal?: AbortSignal): Promise<QaPlanValidationResult> {
+    return this.validatePlan(value, workspace, signal, true)
+  }
+
+  async validateContract(value: unknown, workspace = process.cwd(), signal?: AbortSignal): Promise<QaPlanValidationResult> {
+    return this.validatePlan(value, workspace, signal, false)
+  }
+
+  private async validatePlan(value: unknown, workspace: string, signal: AbortSignal | undefined, checkDriverAvailability: boolean): Promise<QaPlanValidationResult> {
     if (signal?.aborted) throw signal.reason ?? new Error('QA plan validation aborted')
     const errors: string[] = []
     if (!isRecord(value)) return { valid: false, errors: ['plan must be an object'] }
@@ -61,6 +69,22 @@ export class QaPlanValidator {
     if (!Array.isArray(criteria) || criteria.length === 0 || criteria.some((criterion) => typeof criterion !== 'string' || criterion.trim().length === 0)) {
       errors.push('criteria must contain only non-empty strings')
     }
+    const mandatoryScenarios = plan.mandatoryScenarios
+    const mandatoryIds = new Set<string>()
+    if (mandatoryScenarios !== undefined) {
+      if (!Array.isArray(mandatoryScenarios)) {
+        errors.push('mandatoryScenarios must be an array')
+      } else {
+        for (const item of mandatoryScenarios) {
+          if (!isRecord(item) || typeof item.id !== 'string' || !/^mandatory-\d+$/.test(item.id) || typeof item.requirement !== 'string' || item.requirement.trim().length === 0) {
+            errors.push('each mandatory scenario requires a stable ID and non-empty requirement')
+            continue
+          }
+          if (mandatoryIds.has(item.id)) errors.push(`mandatory scenario IDs must be unique: ${item.id}`)
+          mandatoryIds.add(item.id)
+        }
+      }
+    }
     const validCriteria = Array.isArray(criteria) ? criteria : []
     const scenarios = plan.scenarios
     if (!Array.isArray(scenarios) || scenarios.length === 0 || scenarios.length > MAX_SCENARIOS) {
@@ -73,7 +97,13 @@ export class QaPlanValidator {
         errors.push('each scenario must be an object')
         continue
       }
-      this.validateScenario(scenario, profile as QaProfile, target, validCriteria, ids, errors)
+      this.validateScenario(scenario, profile as QaProfile, target, validCriteria, ids, mandatoryIds, errors)
+    }
+
+    for (const mandatoryId of mandatoryIds) {
+      if (!scenarioValues.some((scenario) => isRecord(scenario) && Array.isArray(scenario.mandatoryScenarioIds) && scenario.mandatoryScenarioIds.includes(mandatoryId))) {
+        errors.push(`mandatory scenario ${mandatoryId} has no executable scenario`)
+      }
     }
 
     for (let index = 0; index < validCriteria.length; index++) {
@@ -83,15 +113,17 @@ export class QaPlanValidator {
       }
     }
 
-    const profiles = [...new Set(scenarioValues.flatMap((scenario) => isRecord(scenario) && typeof scenario.profile === 'string' ? [scenario.profile as QaProfile] : []))]
-    for (const scenarioProfile of profiles) {
-      if (signal?.aborted) throw signal.reason ?? new Error('QA plan validation aborted')
-      if (!PROFILES.includes(scenarioProfile)) continue
-      try {
-        const availability = await this.#drivers.doctor(scenarioProfile)
-        if (!availability.available) errors.push(`${scenarioProfile} driver unavailable: ${availability.reason ?? 'driver is unavailable'}`)
-      } catch (error) {
-        errors.push(`${scenarioProfile} driver unavailable: ${error instanceof Error ? error.message : 'doctor check failed'}`)
+    if (checkDriverAvailability) {
+      const profiles = [...new Set(scenarioValues.flatMap((scenario) => isRecord(scenario) && typeof scenario.profile === 'string' ? [scenario.profile as QaProfile] : []))]
+      for (const scenarioProfile of profiles) {
+        if (signal?.aborted) throw signal.reason ?? new Error('QA plan validation aborted')
+        if (!PROFILES.includes(scenarioProfile)) continue
+        try {
+          const availability = await this.#drivers.doctor(scenarioProfile)
+          if (!availability.available) errors.push(`${scenarioProfile} driver unavailable: ${availability.reason ?? 'driver is unavailable'}`)
+        } catch (error) {
+          errors.push(`${scenarioProfile} driver unavailable: ${error instanceof Error ? error.message : 'doctor check failed'}`)
+        }
       }
     }
 
@@ -125,7 +157,7 @@ export class QaPlanValidator {
     }
   }
 
-  private validateScenario(scenario: Record<string, unknown>, planProfile: QaProfile, target: string, criteria: unknown[], ids: Set<string>, errors: string[]): void {
+  private validateScenario(scenario: Record<string, unknown>, planProfile: QaProfile, target: string, criteria: unknown[], ids: Set<string>, mandatoryIds: Set<string>, errors: string[]): void {
     const id = typeof scenario.id === 'string' ? scenario.id : ''
     if (!id || !SAFE_IDENTIFIER.test(id)) errors.push('scenario id must be a safe identifier')
     if (id && ids.has(id)) errors.push('scenario IDs must be unique')
@@ -151,6 +183,9 @@ export class QaPlanValidator {
         const index = Number.parseInt(criterionId.slice('criterion-'.length), 10) - 1
         if (index < 0 || index >= criteria.length) errors.push(`scenario ${id || '<unknown>'} references unknown criterion ${criterionId}`)
       }
+    }
+    if (scenario.mandatoryScenarioIds !== undefined && (!Array.isArray(scenario.mandatoryScenarioIds) || scenario.mandatoryScenarioIds.some((mandatoryId) => typeof mandatoryId !== 'string' || !mandatoryIds.has(mandatoryId)))) {
+      errors.push(`scenario ${id || '<unknown>'} references an unknown mandatory scenario`)
     }
     if (typeof scenario.category === 'string' && !CATEGORIES.has(scenario.category)) errors.push(`scenario ${id || '<unknown>'} category is invalid`)
 
@@ -244,11 +279,14 @@ export class QaPlanValidator {
     } else {
       for (const [index, action] of actions.entries()) this.validateBrowserAction(action, id, index, target, errors)
     }
-    if (scenario.profile === 'accessibility') return
     const assertions = scenario.assertions
-    if (!Array.isArray(assertions) || assertions.length === 0 || assertions.length > MAX_ACTIONS) {
+    if (scenario.profile !== 'accessibility' && (!Array.isArray(assertions) || assertions.length === 0 || assertions.length > MAX_ACTIONS)) {
       errors.push(`scenario ${id || '<unknown>'} browser assertions are missing or exceed safety bounds`)
-    } else {
+    } else if (assertions !== undefined) {
+      if (!Array.isArray(assertions) || assertions.length === 0 || assertions.length > MAX_ACTIONS) {
+        errors.push(`scenario ${id || '<unknown>'} browser assertions exceed safety bounds`)
+        return
+      }
       for (const [index, assertion] of assertions.entries()) this.validateBrowserAssertion(assertion, id, index, target, errors)
     }
   }
@@ -304,7 +342,7 @@ export class QaPlanValidator {
   }
 
   private validateBrowserTimeout(value: unknown, id: string, index: number, errors: string[]): void {
-    if (value !== undefined && (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > MAX_WAIT_MS)) errors.push(`scenario ${id} browser action ${index + 1} timeout exceeds safety bounds`)
+    if (value !== undefined && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || value > MAX_WAIT_MS)) errors.push(`scenario ${id} browser action ${index + 1} timeout exceeds safety bounds`)
   }
 
   private validateBrowserAssertion(value: unknown, id: string, index: number, target: string, errors: string[]): void {

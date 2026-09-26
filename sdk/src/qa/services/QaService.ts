@@ -51,25 +51,28 @@ export class QaService {
   }
 
   async execute(plan: QaPlan, signal?: AbortSignal, onProgress?: QaProgressListener): Promise<QaRun> {
+    const executionPlan = plan.profile === 'cli' ? { ...plan, target: this.#store.resolveCliTarget(plan.target) } : plan
     const run: QaRun = {
       schemaVersion: 1,
       id: this.createRunId(plan.id),
       planId: plan.id,
       planVersion: plan.version,
-      target: plan.target,
+      target: executionPlan.target,
       createdAt: new Date().toISOString(),
       results: [],
     }
     this.#store.saveRun(run)
-    const availability = needsHttpProbe(plan.profile) ? await this.#targetProbe(plan.target, signal) : { available: true }
-    await this.executeInto(run, plan, plan.scenarios, availability, signal, onProgress)
+    const availability = needsHttpProbe(executionPlan.profile) ? await this.#targetProbe(executionPlan.target, signal) : { available: true }
+    await this.executeInto(run, executionPlan, executionPlan.scenarios, availability, signal, onProgress)
     return this.finalize(run)
   }
 
   async continue(run: QaRun, plan: QaPlan, scenarios: QaPlan['scenarios'], signal?: AbortSignal, onProgress?: QaProgressListener): Promise<QaRun> {
-    run.planVersion = plan.version
-    const availability = needsHttpProbe(plan.profile) ? await this.#targetProbe(plan.target, signal) : { available: true }
-    await this.executeInto(run, plan, scenarios, availability, signal, onProgress)
+    const executionPlan = plan.profile === 'cli' ? { ...plan, target: this.#store.resolveCliTarget(plan.target) } : plan
+    run.planVersion = executionPlan.version
+    run.target = executionPlan.target
+    const availability = needsHttpProbe(executionPlan.profile) ? await this.#targetProbe(executionPlan.target, signal) : { available: true }
+    await this.executeInto(run, executionPlan, scenarios, availability, signal, onProgress)
     return this.finalize(run)
   }
 

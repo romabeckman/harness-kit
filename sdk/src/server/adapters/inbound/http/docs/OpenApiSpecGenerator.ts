@@ -131,7 +131,7 @@ export class OpenApiSpecGenerator {
           post: {
             tags: ['Orchestration Jobs'],
             summary: 'Resume/retry a stopped or failed job',
-            description: 'Resumes execution of a previously failed, stopped, or completed job by ID.',
+            description: 'Resumes a failed or aborted job from its preserved worktree. Only steeringMessage may be supplied.',
             security: [{ BearerAuth: [] }, { BasicAuth: [] }],
             parameters: [
               {
@@ -146,7 +146,7 @@ export class OpenApiSpecGenerator {
               required: false,
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/RunRequestDtoExtended' },
+                  schema: { $ref: '#/components/schemas/ResumeRequestDto' },
                 },
               },
             },
@@ -927,22 +927,27 @@ export class OpenApiSpecGenerator {
           },
         },
         schemas: {
+          ResumeRequestDto: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              steeringMessage: { type: 'string', description: 'Optional guidance for the resumed job' },
+            },
+          },
           RunRequestDtoExtended: {
             type: 'object',
             properties: {
               idempotencyKey: { type: 'string', description: 'Mandatory client-supplied unique request correlation ID' },
               scope: { type: 'string', description: 'Mandatory target task scope prompt' },
               project: {
-                oneOf: [
-                  { type: 'string', description: 'Registered project identifier' },
-                  { type: 'array', items: { type: 'string' }, description: 'List of registered project identifiers' },
-                ],
-                description: 'Mandatory registered project identifier or list of project identifiers (min 1 required)',
+                type: 'string',
+                description: 'Mandatory registered project identifier; one isolated project per job',
               },
               agent: { type: 'string', enum: [...VALID_RUNNER_TYPES], description: 'Mandatory registered agent runner strategy' },
-              mode: { type: 'string', enum: ['quick', 'fast', 'thinking', 'deep_thinking'], default: 'fast', description: 'Execution mode strategy (default "fast")' },
+              mode: { type: 'string', enum: ['quick', 'fast', 'thinking'], default: 'fast', description: 'Execution mode strategy (default "fast"); refinement does not run in HTTP mode' },
               action: { type: 'string', enum: ['reset', 'resume'], description: 'Execution action strategy (always "reset" on /orchestrator/run)' },
               reworks: { type: 'integer', default: 2, description: 'Maximum rework attempts (default 2)' },
+              score: { type: 'number', description: 'Minimum review score threshold' },
               steeringMessage: { type: 'string', description: 'Optional initial steering guidance message' },
               model: { type: 'string', description: 'Optional LLM model override string' },
               effort: { type: 'string', description: 'Optional effort/reasoning intensity level' },

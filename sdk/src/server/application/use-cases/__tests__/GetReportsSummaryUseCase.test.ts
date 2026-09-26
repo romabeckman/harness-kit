@@ -95,6 +95,12 @@ describe('GetReportsSummaryUseCase', () => {
     expect(result.grandTotal.totalCostUsd).toBeCloseTo(0.015)
   })
 
+  it('accepts object project mappings when summarizing every project', async () => {
+    process.env.PROJECT_MAPPINGS = JSON.stringify({ backend: { path: testWorkspaceDir, baseBranch: 'main' } })
+    const result = await new GetReportsSummaryUseCase().execute()
+    expect(result.grandTotal.totalInvocations).toBe(0)
+  })
+
   it('filters summary entries by date range', async () => {
     process.env.PROJECT_MAPPINGS = JSON.stringify({
       backend: testWorkspaceDir,

@@ -12,6 +12,7 @@ import { QaRunStore } from './QaRunStore'
 import { QaService } from './QaService'
 import type { QaTargetProbe } from './QaTargetProbe'
 import { QaAuthConfigStore } from '../auth/QaAuthConfigStore'
+import { retargetQaPlan } from '../utils/QaPlanRetargeting'
 
 export interface QaExploratoryOptions {
   target?: string
@@ -84,7 +85,7 @@ export class QaExploratoryService {
 }
 
 function applyAuthProfile(plan: QaPlan, authProfile?: string): QaPlan {
-  return authProfile ? { ...plan, scenarios: plan.scenarios.map((scenario) => ({ ...scenario, authProfile })) } : plan
+  return authProfile ? { ...plan, scenarios: plan.scenarios.map((scenario) => scenario.authProfile !== undefined ? scenario : { ...scenario, authProfile }) } : plan
 }
 
 function latestPlanVersions(plans: QaPlan[]): QaPlan[] {
@@ -98,7 +99,7 @@ function latestPlanVersions(plans: QaPlan[]): QaPlan[] {
 
 function applyTargetOverride(plan: QaPlan, target?: string): QaPlan {
   if (!target || plan.profile === 'cli') return plan
-  return { ...plan, target }
+  return retargetQaPlan(plan, target)
 }
 
 function aggregateTotals(plans: QaExploratoryPlanReport[]): QaExploratoryTotals {

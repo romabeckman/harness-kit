@@ -118,6 +118,56 @@ describe('TokenLedger', () => {
   })
 
   describe('modelRate classification (via report + printReport)', () => {
+    it.each([
+      ['gpt-4o', '$3.7000'],
+      ['gpt-4.1', '$3.7000'],
+      ['o3', '$3.7000'],
+      ['gpt-5-mini', '$0.2000'],
+      ['gpt-6.2-mini', '$0.2000'],
+      ['gpt-6.2-nano', '$0.2000'],
+      ['gpt-5.6-luna', '$0.2000'],
+      ['gpt-5.9-luna', '$0.2000'],
+      ['gpt-5.6-terra', '$0.9000'],
+      ['gpt-6.2-terra', '$0.9000'],
+      ['gpt-5.6-sol', '$2.1000'],
+      ['gpt-6.2-sol', '$2.1000'],
+      ['gpt-6-astra', '$3.7000'],
+      ['gpt-6.2-astra', '$3.7000'],
+      ['gpt-6-sol', '$2.1000'],
+      ['gpt-6-luna', '$0.2000'],
+      ['fable-5', '$3.7000'],
+      ['fable-6', '$3.7000'],
+      ['claude-sonnet-4-6', '$2.1000'],
+      ['claude-opus-4-8', '$3.7000'],
+      ['gemini-2.5-pro', '$2.1000'],
+      ['gemini-3.1-pro', '$2.1000'],
+      ['gemini-3.5-pro-preview', '$2.1000'],
+      ['gemini-3.5-flash', '$0.9000'],
+      ['gemini-3.8-flash', '$0.9000'],
+      ['gemini-3.8-flash-lite', '$0.2000'],
+    ])('estimates one million cached tokens for %s as %s saved', (model, saved) => {
+      const ledger = new TokenLedger(ledgerPath)
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      ledger.record('skill', 'agent', makeUsage({ model, cacheReadTokens: 1_000_000 }))
+
+      ledger.printReport()
+
+      expect(consoleSpy.mock.calls.flat().join('\n')).toContain(`cache_read saved ~${saved}`)
+      consoleSpy.mockRestore()
+    })
+
+    it('weights estimated savings by each entry’s cached tokens', () => {
+      const ledger = new TokenLedger(ledgerPath)
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      ledger.record('skill', 'agent', makeUsage({ model: 'claude-sonnet-4-6', cacheReadTokens: 1_000_000 }))
+      ledger.record('skill', 'agent', makeUsage({ model: 'gpt-5.6-luna', cacheReadTokens: 100_000 }))
+
+      ledger.printReport()
+
+      expect(consoleSpy.mock.calls.flat().join('\n')).toContain('cache_read saved ~$2.1200')
+      consoleSpy.mockRestore()
+    })
+
     it('classifies opus/fable as extra-large model tier', () => {
       const ledger = new TokenLedger(ledgerPath)
       ledger.record('skill', 'agent', makeUsage({ model: 'claude-opus-4-8', cacheReadTokens: 1000000 }))
@@ -147,18 +197,26 @@ describe('TokenLedger', () => {
       expect(() => ledger.printReport()).not.toThrow()
     })
 
-    it('uses average rate when multiple models are present', () => {
+    it('prints all models when multiple tiers are present', () => {
       const ledger = new TokenLedger(ledgerPath)
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
       ledger.record('skill', 'agent', makeUsage({ model: 'claude-opus-4-8', cacheReadTokens: 100 }))
       ledger.record('skill', 'agent', makeUsage({ model: 'claude-haiku-4-5', cacheReadTokens: 100 }))
 
-      expect(() => ledger.printReport()).not.toThrow()
+      ledger.printReport()
+
+      expect(consoleSpy.mock.calls.flat().join('\n')).toContain('claude-opus-4-8, claude-haiku-4-5')
+      consoleSpy.mockRestore()
     })
 
-    it('falls back to RATE_LARGE when no entries exist', () => {
+    it('prints no cache savings when no entries exist', () => {
       const ledger = new TokenLedger(join(tempDir, 'empty.jsonl'))
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
-      expect(() => ledger.printReport()).not.toThrow()
+      ledger.printReport()
+
+      expect(consoleSpy.mock.calls.flat().join('\n')).not.toContain('cache_read saved')
+      consoleSpy.mockRestore()
     })
 
     it('does NOT show cache savings line when cacheReadTokens is 0', () => {
@@ -276,4 +334,3 @@ describe('TokenLedger', () => {
     })
   })
 })
-

@@ -1,11 +1,14 @@
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { QaBrowserAction, QaDriver, QaDriverExecutionContext, QaEvidence, QaProfile, QaScenario, QaScenarioResult } from '../types'
+import { redactSecrets } from './QaAuthRedaction'
 
 export type PlaywrightModule = { chromium: { launch(options: { headless: boolean }): Promise<any> } }
 export type PlaywrightLoader = () => Promise<PlaywrightModule>
 
 const MAX_WAIT_MS = 30_000
+const ASSERTION_TIMEOUT_MS = 3_000
+const ASSERTION_POLL_MS = 50
 
 type PlaywrightRun = {
   browser: any
@@ -63,18 +66,19 @@ export class PlaywrightDriver implements QaDriver {
         pageErrors = []
         // browser.newPage creates a fresh context; closing the page disposes that context.
         page = await browser.newPage({ ...this.pageOptions(), ...(context?.auth.basic ? { httpCredentials: { ...context.auth.basic, origin: new URL(target).origin } } : {}) })
-        page.on?.('pageerror', (error: Error) => pageErrors.push(error.message))
+        page.on?.('pageerror', (error: Error) => pageErrors.push(redactSecrets(error.message, context?.auth)))
         await applyBrowserAuth(page, target, context)
-        const initialResponse = await page.goto(target, { waitUntil: 'networkidle', signal })
+        const initialResponse = await page.goto(target, { waitUntil: 'domcontentloaded', signal })
         pageReady = true
         assertHttpError(initialResponse)
         for (const action of scenario.actions ?? []) {
           if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
           await this.perform(page, action, signal, context, target)
         }
-        const observations = await this.inspect(page, scenario)
+        const observations = await this.inspect(page, scenario, signal)
+        const safeObservations = redactBrowserObservations(observations, context)
         const observationsPath = join(evidenceDir, 'observations.json')
-        writeFileSync(observationsPath, JSON.stringify(observations, null, 2), 'utf8')
+        writeFileSync(observationsPath, JSON.stringify(safeObservations, null, 2), 'utf8')
         const screenshotPath = join(evidenceDir, 'final.png')
         await page.screenshot({ path: screenshotPath, fullPage: true })
         if (!existsSync(screenshotPath) || statSync(screenshotPath).size === 0 || !existsSync(observationsPath)) {
@@ -87,7 +91,7 @@ export class PlaywrightDriver implements QaDriver {
         if (pageErrors.length > 0) {
           return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: `Browser page error: ${pageErrors[0]}`, evidence }
         }
-        const failure = observations.find((observation) => !observation.passed)
+        const failure = safeObservations.find((observation) => !observation.passed)
         if (failure) return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', reason: failure.message, evidence }
         return {
           scenarioId: scenario.id,
@@ -96,20 +100,20 @@ export class PlaywrightDriver implements QaDriver {
           evidence,
         }
       } catch (error) {
-        const reason = error instanceof Error ? error.message : 'Browser execution failed'
+        const reason = redactSecrets(error instanceof Error ? error.message : 'Browser execution failed', context?.auth)
         const observedStatus = httpStatusFromError(error)
         const isHttpError = observedStatus !== undefined || isHttpNavigationError(error)
         if (signal?.aborted || !page || (!pageReady && !isHttpError)) {
           return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason, evidence: [] }
         }
-        const evidence = await captureFailureEvidence(page, evidenceDir, scenario.id, reason, pageErrors)
+        const evidence = await captureFailureEvidence(page, evidenceDir, scenario.id, reason, pageErrors, context)
         return { scenarioId: scenario.id, required: scenario.required, status: 'FAILED', observedStatus, reason, evidence }
       } finally {
         if (ownsBrowser) await browser.close()
         else await page?.close()
       }
     } catch (error) {
-      const reason = error instanceof Error ? error.message : 'Browser execution failed'
+      const reason = redactSecrets(error instanceof Error ? error.message : 'Browser execution failed', context?.auth)
       return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED', reason, evidence: [] }
     }
   }
@@ -118,28 +122,19 @@ export class PlaywrightDriver implements QaDriver {
     return {}
   }
 
-  protected async inspect(page: any, scenario: QaScenario): Promise<Array<{ type: string; passed: boolean; message: string }>> {
+  protected async inspect(page: any, scenario: QaScenario, signal?: AbortSignal): Promise<Array<{ type: string; passed: boolean; message: string }>> {
     if (!scenario.assertions?.length) return [{ type: 'coverage', passed: false, message: 'Browser scenario has no executable assertions' }]
     const results: Array<{ type: string; passed: boolean; message: string }> = []
     for (const assertion of scenario.assertions) {
-      const locator = assertion.selector ? page.locator(assertion.selector) : undefined
-      if (assertion.type === 'visible' || assertion.type === 'hidden') {
-        const visible = await locator.isVisible()
-        const expected = assertion.type === 'visible'
-        results.push({ type: assertion.type, passed: visible === expected, message: `Expected ${assertion.selector} to be ${assertion.type}` })
-      } else if (assertion.type === 'text') {
-        const actual = (await locator.textContent()) ?? ''
-        results.push({ type: assertion.type, passed: actual.includes(assertion.value ?? ''), message: `Expected text ${JSON.stringify(assertion.value)} in ${assertion.selector}; observed ${JSON.stringify(actual)}` })
-      } else if (assertion.type === 'url') {
-        const actual = page.url()
-        results.push({ type: assertion.type, passed: actual === assertion.value, message: `Expected URL ${assertion.value}; observed ${actual}` })
-      } else if (assertion.type === 'count') {
-        const actual = await locator.count()
-        results.push({ type: assertion.type, passed: actual === assertion.count, message: `Expected ${assertion.selector} count ${assertion.count}; observed ${actual}` })
-      } else {
-        const actual = await locator.getAttribute(assertion.attribute)
-        results.push({ type: assertion.type, passed: actual === assertion.value, message: `Expected ${assertion.selector} attribute ${assertion.attribute}=${JSON.stringify(assertion.value)}; observed ${JSON.stringify(actual)}` })
-      }
+      const deadline = Date.now() + ASSERTION_TIMEOUT_MS
+      let observation: { type: string; passed: boolean; message: string }
+      do {
+        if (signal?.aborted) throw signal.reason ?? new Error('Browser assertion cancelled')
+        observation = await inspectAssertion(page, assertion)
+        if (observation.passed || Date.now() >= deadline) break
+        await delayWithSignal(Math.min(ASSERTION_POLL_MS, deadline - Date.now()), signal)
+      } while (true)
+      results.push(observation)
     }
     return results
   }
@@ -147,7 +142,9 @@ export class PlaywrightDriver implements QaDriver {
   private async perform(page: any, action: QaBrowserAction, signal: AbortSignal | undefined, context: QaDriverExecutionContext | undefined, target: string): Promise<void> {
     if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
     if (action.type === 'navigate') {
-      const response = await page.goto(action.value, { waitUntil: 'networkidle', signal })
+      const url = new URL(action.value!, target)
+      if (url.origin !== new URL(target).origin) throw new Error('Browser navigation must stay within target origin')
+      const response = await page.goto(url.toString(), { waitUntil: 'domcontentloaded', signal })
       assertHttpError(response)
       return
     }
@@ -224,7 +221,7 @@ function isHttpNavigationError(error: unknown): boolean {
   return error instanceof Error && /ERR_HTTP_RESPONSE_CODE_FAILURE/i.test(error.message)
 }
 
-async function captureFailureEvidence(page: any, evidenceDir: string, scenarioId: string, reason: string, pageErrors: string[]): Promise<QaEvidence[]> {
+async function captureFailureEvidence(page: any, evidenceDir: string, scenarioId: string, reason: string, pageErrors: string[], context?: QaDriverExecutionContext): Promise<QaEvidence[]> {
   const evidence: QaEvidence[] = []
   const capturedAt = new Date().toISOString()
   const observationsPath = join(evidenceDir, 'observations.json')
@@ -243,7 +240,7 @@ async function captureFailureEvidence(page: any, evidenceDir: string, scenarioId
   }
   const errorPath = join(evidenceDir, 'error.json')
   try {
-    writeFileSync(errorPath, JSON.stringify({ error: reason, pageErrors }, null, 2), 'utf8')
+    writeFileSync(errorPath, JSON.stringify({ error: redactSecrets(reason, context?.auth), pageErrors: pageErrors.map((error) => redactSecrets(error, context?.auth)) }, null, 2), 'utf8')
     if (isUsableEvidenceFile(errorPath)) evidence.push({ id: `${scenarioId}-error`, path: errorPath, capturedAt, adapter: 'playwright' })
   } catch {
     // Return any artifacts captured successfully.
@@ -272,8 +269,64 @@ async function applyBrowserAuth(page: any, target: string, context?: QaDriverExe
   const origin = new URL(target).origin
   await page.route('**/*', (route: any) => {
     const request = route.request()
-    if (new URL(request.url()).origin !== origin) return route.continue()
-    return route.continue({ headers: { ...request.headers(), ...auth.headers } })
+    const headers = { ...request.headers() }
+    if (new URL(request.url()).origin !== origin) {
+      for (const name of Object.keys(auth.headers)) {
+        for (const existing of Object.keys(headers)) if (existing.toLowerCase() === name.toLowerCase()) delete headers[existing]
+      }
+      return route.continue({ headers })
+    }
+    return route.continue({ headers: mergeAuthHeaders(headers, auth.headers) })
+  })
+}
+
+async function inspectAssertion(page: any, assertion: NonNullable<QaScenario['assertions']>[number]): Promise<{ type: string; passed: boolean; message: string }> {
+  const locator = assertion.selector ? page.locator(assertion.selector) : undefined
+  if (assertion.type === 'visible' || assertion.type === 'hidden') {
+    const visible = await locator.isVisible()
+    return { type: assertion.type, passed: visible === (assertion.type === 'visible'), message: `Expected ${assertion.selector} to be ${assertion.type}` }
+  }
+  if (assertion.type === 'text') {
+    const actual = (await locator.textContent()) ?? ''
+    return { type: assertion.type, passed: actual.includes(assertion.value ?? ''), message: `Expected text ${JSON.stringify(assertion.value)} in ${assertion.selector}; observed ${JSON.stringify(actual)}` }
+  }
+  if (assertion.type === 'url') {
+    const actual = page.url()
+    return { type: assertion.type, passed: actual === assertion.value, message: `Expected URL ${assertion.value}; observed ${actual}` }
+  }
+  if (assertion.type === 'count') {
+    const actual = await locator.count()
+    return { type: assertion.type, passed: actual === assertion.count, message: `Expected ${assertion.selector} count ${assertion.count}; observed ${actual}` }
+  }
+  const actual = await locator.getAttribute(assertion.attribute)
+  return { type: assertion.type, passed: actual === assertion.value, message: `Expected ${assertion.selector} attribute ${assertion.attribute}=${JSON.stringify(assertion.value)}; observed ${JSON.stringify(actual)}` }
+}
+
+function redactBrowserObservations(observations: Array<{ type: string; passed: boolean; message: string }>, context?: QaDriverExecutionContext): typeof observations {
+  return observations.map((observation) => ({ ...observation, message: redactSecrets(observation.message, context?.auth) }))
+}
+
+function mergeAuthHeaders(headers: Record<string, string>, authentication: Record<string, string>): Record<string, string> {
+  const merged = { ...headers }
+  for (const [name, value] of Object.entries(authentication)) {
+    for (const existing of Object.keys(merged)) if (existing.toLowerCase() === name.toLowerCase()) delete merged[existing]
+    merged[name] = value
+  }
+  return merged
+}
+
+function delayWithSignal(milliseconds: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason ?? new Error('Browser assertion cancelled'))
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', abort)
+      resolve()
+    }, milliseconds)
+    const abort = () => {
+      clearTimeout(timer)
+      reject(signal?.reason ?? new Error('Browser assertion cancelled'))
+    }
+    signal?.addEventListener('abort', abort, { once: true })
   })
 }
 

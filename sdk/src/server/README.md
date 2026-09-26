@@ -128,13 +128,13 @@ AUTH_BEARER_TOKEN=hrns_sk_live_9876543210
 curl -X POST http://localhost:3000/orchestrator/run \
   -H "Authorization: Bearer hrns_sk_live_9876543210" \
   -H "Content-Type: application/json" \
-  -d '{ "scope": "build", "project": "backend" }'
+  -d '{ "idempotencyKey": "build-request-001", "scope": "build", "project": "backend", "agent": "claude-cli" }'
 
 # Or using X-API-Key header
 curl -X POST http://localhost:3000/orchestrator/run \
   -H "X-API-Key: hrns_sk_live_9876543210" \
   -H "Content-Type: application/json" \
-  -d '{ "scope": "build", "project": "backend" }'
+  -d '{ "idempotencyKey": "build-request-002", "scope": "build", "project": "backend", "agent": "claude-cli" }'
 ```
 
 ### 2. Basic Auth Mode (`AUTH_MODE=basic`)
@@ -148,7 +148,7 @@ AUTH_BASIC_PASS=secret123
 # cURL with Basic Auth
 curl -u admin:secret123 -X POST http://localhost:3000/orchestrator/run \
   -H "Content-Type: application/json" \
-  -d '{ "scope": "build", "project": "backend" }'
+  -d '{ "idempotencyKey": "build-request-003", "scope": "build", "project": "backend", "agent": "claude-cli" }'
 ```
 
 ### 3. Disabled Mode (`AUTH_MODE=none`)
@@ -164,7 +164,7 @@ In HTTP daemon execution mode:
    - The server inspects modified files and stages them (`git add -A`).
    - Commits changes (`git commit -m "feat(harness): completed orchestration job <jobId> [<scope>]"`).
    - Pushes branch to remote origin (`git push origin <branch>`).
-3. **Clean Up**: The worktree is safely deleted in a `finally` block, leaving the main repository clean.
+3. **Resume**: Failed jobs keep their worktree and branch. Resume uses that state; successful jobs remove the worktree.
 
 ---
 
@@ -189,17 +189,18 @@ Once the server is running, the following REST endpoints are available:
 
 ### Triggering an Orchestration Job on Remote Server (Using Project Alias)
 
-The client sending the request does **not** need to know internal server filesystem paths. Instead, the client sends a clean project alias or list of project aliases (`"project": "backend"` or `"project": ["backend"]`, minimum 1 required):
+The client sends one registered project alias, plus idempotencyKey, scope, and agent. The server resolves the workspace and creates an isolated worktree:
 
 ```bash
 curl -X POST http://localhost:3000/orchestrator/run \
   -H "Content-Type: application/json" \
   -d '{
+    "idempotencyKey": "auth-request-001",
     "scope": "implement-user-authentication",
-    "project": ["backend"],
-    "branch": "feature/login-auth",
+    "project": "backend",
+    "agent": "claude-cli",
     "mode": "fast",
-    "useWorktree": true
+    "score": 0.8
   }'
 ```
 
@@ -217,7 +218,7 @@ curl -X POST http://localhost:3000/orchestrator/jobs/job-123-abc/resume \
 
 ### Cleaning Old Jobs & Stale Worktrees (`DELETE /orchestrator/jobs/clean`)
 
-To purge completed/failed jobs from memory and clean up stale `.worktrees/` directories:
+To purge completed/failed jobs from memory and clean up stale `.worktrees/` directories, including saved resume state:
 
 ```bash
 curl -X DELETE http://localhost:3000/orchestrator/jobs/clean \
@@ -247,4 +248,6 @@ curl -X DELETE http://localhost:3000/orchestrator/jobs/clean \
 > - Interactive pre-planning refinement (`refine: true`) requires terminal TTY input and is **forbidden** in HTTP mode. The server returns `HTTP 400 Bad Request`.
 > - Interactive `mode: "deep_thinking"` is forbidden in HTTP mode and returns `HTTP 400 Bad Request`.
 > - Parameter `project` is required and must contain at least 1 project identifier.
+> - One project is supported per job. Arrays with multiple projects return `HTTP 400 Bad Request`.
+> - `idempotencyKey`, `scope`, and `agent` are required.
 > - Path traversal sequences (`..`) in `project` parameter are blocked (`HTTP 400 Bad Request`).

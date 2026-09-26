@@ -53,9 +53,11 @@ src/server/
 
 ## REQUEST CONTRACT
 
-REQUIRED: Send registered `project` and runner values.
+REQUIRED: Send one registered `project`, a registered `agent`, a unique `idempotencyKey`, and a non-empty `scope`.
+ALLOWED: Set `score` from 0.1 to 1, `reworks` from 1 to 10, and initial `steeringMessage`.
+ALLOWED: Resume failed or aborted jobs with an optional `steeringMessage` only.
 REQUIRED: Use `OpenApiSpecGenerator.ts` as endpoint contract source.
-PROHIBITED: Send filesystem paths, `branch`, `baseBranch`, or `useWorktree`.
+PROHIBITED: Send multiple projects, filesystem paths, `branch`, `baseBranch`, `useWorktree`, or `skipDeploy`.
 PROHIBITED: Request interactive refinement through HTTP.
 
 ## CONFIGURATION
@@ -73,6 +75,10 @@ PROHIBITED: Request interactive refinement through HTTP.
 REQUIRED: Validate input with `DtoMappers`.
 REQUIRED: Persist `.harness-kit/settings.json` per project.
 REQUIRED: Derive worktrees from job IDs and configured base branches.
+REQUIRED: Keep failed job worktrees for resume; reuse the original worktree and branch.
+REQUIRED: Mark jobs complete only when every backlog feature is `COMPLETED`.
+REQUIRED: Run the shared sensitive-file check before committing server jobs.
+REQUIRED: Let the server deploy its job branch after the SDK skips its own deploy phase.
 REQUIRED: Sync `OpenApiSpecGenerator.ts` after endpoint changes.
 PROHIBITED: Block request handling during agent execution.
 

@@ -65,6 +65,7 @@ export interface OrchestrationJob {
   idempotencyKey?: string
   status: JobStatus
   workspacePath: string
+  resumeFromJobId?: string
   request: RunRequestDtoExtended
   createdAt: string
   startedAt?: string

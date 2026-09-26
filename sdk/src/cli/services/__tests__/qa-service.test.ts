@@ -209,7 +209,9 @@ describe('QA CLI', () => {
     }))
     expect(run.mock.calls.map(([invocation]) => invocation.phaseKey)).toEqual(['qa_reporting'])
     expect(view.start).toHaveBeenCalledWith({ target: plan.target, profile: plan.profile }, workspace)
-    expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({ summary: 'Stored plan resumed.' }))
+    expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({
+      summary: 'QA verdict PASS: 1 passed, 0 failed, 0 blocked, 0 inconclusive, 0 not run across 1 planned scenarios.',
+    }))
   })
 
   it('offers resume with analysis and describes additional scenario generation', async () => {
@@ -304,7 +306,10 @@ describe('QA CLI', () => {
     expect(runner.run).toHaveBeenCalledTimes(3)
     expect(view.start).toHaveBeenCalledWith(expect.objectContaining({ scope: 'Validate runtime behavior' }), workspace)
     expect(view.onProgress).toHaveBeenCalledWith(expect.objectContaining({ type: 'scenario_completed', status: 'PASSED' }))
-    expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({ verdict: 'PASS', summary: 'Health check passed.' }))
+    expect(view.renderReport).toHaveBeenCalledWith(expect.objectContaining({
+      verdict: 'PASS',
+      summary: 'QA verdict PASS: 1 passed, 0 failed, 0 blocked, 0 inconclusive, 0 not run across 1 planned scenarios.',
+    }))
     expect(log).not.toHaveBeenCalled()
   })
 
