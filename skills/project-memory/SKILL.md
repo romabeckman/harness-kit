@@ -27,9 +27,9 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 
 ### ONTOLOGY & EVIDENCE
 
-- REQUIRED: Read [ONTOLOGY-RULES.md](./references/ONTOLOGY-RULES.md) before authoring feature knowledge or migrating legacy knowledge. Create `## KNOWLEDGE` only in `docs/feature/**/*.md`, after `## OVERVIEW`. ADRs provide architectural evidence in prose; README and digest provide navigation and summaries.
-- REQUIRED: Store concepts and claims in the owning feature document's `## KNOWLEDGE` section, using the versioned JSON contract in that reference. Keep document routing in the existing frontmatter and feature micrograph.
-- REQUIRED: Apply the extraction workflow and completion gate in ONTOLOGY-RULES.md. In targeted mode, update affected claims only. In full review mode, assess each scoped feature for consequential knowledge and read relevant ADRs as evidence, including legacy documents without a block. Preserve IDs and do not inventory every symbol.
+- REQUIRED: Read [ONTOLOGY-RULES.md](./references/ONTOLOGY-RULES.md) before authoring feature knowledge. Store `knowledge` inside the single `graph` block only in `docs/feature/**/*.md`, directly after YAML. ADRs provide architectural evidence in prose; README and digest provide navigation and summaries.
+- REQUIRED: Store concepts and claims in the owning feature document's `graph.knowledge` object, using the versioned JSON contract in that reference. Keep document routing in the existing frontmatter and feature micrograph.
+- REQUIRED: Apply the extraction workflow and completion gate in ONTOLOGY-RULES.md. In targeted mode, update affected claims only. In full review mode, assess each scoped feature for consequential knowledge and read relevant ADRs as evidence, including existing documents without a block. Preserve IDs and do not inventory every symbol.
 - REQUIRED: Trace a supported claim to inspected evidence. Generated documents that cite each other are not independent confirmation. When grounding is missing, retain an explicit unresolved claim and the missing evidence.
 - PROHIBITED: Promote generated proposals to approved requirements, test definitions to passing results, or code observations to business authority. Do not invent approvals, sources, execution results, revisions, or confidence percentages.
 - REQUIRED: Preserve claim status and scope in prose, digest summaries, and downstream handoffs. A document's `updated` date does not mean its claims were reverified.
@@ -37,15 +37,15 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 
 ### TOTAL CONTEXT BUDGET
 
-- REQUIRED: Keep every generated or updated Markdown file at **10,000 characters maximum**, except `docs/.digest.md`, which has a **3,000-character maximum**. Count the entire file: YAML, graph blocks, `## KNOWLEDGE`, fences, headings, and whitespace. Normalize CRLF/CR to LF and count Unicode characters, not bytes or tokens. No sections are exempt.
+- REQUIRED: Keep every generated or updated Markdown file at **10,000 characters maximum**, except `docs/.digest.md`, which has a **3,000-character maximum**. Count the entire file: YAML, graph blocks and their knowledge, fences, headings, and whitespace. Normalize CRLF/CR to LF and count Unicode characters, not bytes or tokens. No sections are exempt.
 - REQUIRED: If the limit is exceeded, remove redundant explanations and repeated facts first. Then split by coherent capability or responsibility within the authorized documentation scope, preserving canonical IDs, evidence, uncertainty, and resolvable references; synchronize indexes. Never truncate JSON, discard material constraints, or replace evidence with unsupported summaries to fit.
-- REQUIRED: For feature knowledge, apply the priority order in [ONTOLOGY-RULES.md](./references/ONTOLOGY-RULES.md#knowledge-priority-under-the-size-limit) and disclose material coverage gaps.
+- REQUIRED: For feature knowledge, apply the priority order in [ONTOLOGY-RULES.md](./references/ONTOLOGY-RULES.md#priority-under-the-size-limit) and disclose material coverage gaps.
 - REQUIRED: Budget accumulated context across documents too: route through the indexes, read only task-relevant sections from one domain at a time, and expand to cited evidence or dependencies when needed. A full review processes all scoped domains sequentially; it does not require loading every document together.
 - REQUIRED: Keep claim IDs and source locators in working summaries. Reopen evidence before relying on a compressed or conflicting claim; report missing support explicitly instead of inferring it from unrelated context.
 
 ### DOCUMENT CONTRACT
 
-| Document | YAML frontmatter | Feature micrograph | `## KNOWLEDGE` | Sections |
+| Document | YAML frontmatter | Feature micrograph | `graph.knowledge` | Sections |
 |---|---|---|---|---|
 | `docs/feature/**/*.md` | Required | Required, directly after YAML | When consequential claims apply | Uppercase; REFERENCES last |
 | `docs/adr/**/*.md` | Required | Omit | Prohibited | Uppercase; REFERENCES last |
@@ -55,10 +55,10 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 
 ### FORMATTING & HYBRID GRAPH MODEL
 
-- REQUIRED: Generate every JSON payload, including `json` examples, `## KNOWLEDGE`, feature `graph` blocks, and `.graph.json`, as compact JSON on exactly one physical line, with no indentation or formatting line breaks (`json.dumps(data, ensure_ascii=False, separators=(',', ':'))`). Preserve escaped newlines inside string values. Markdown opening and closing fences remain on separate lines.
+- REQUIRED: Generate every JSON payload, including `json` examples, feature `graph` blocks with nested knowledge, and `.graph.json`, as compact JSON on exactly one physical line, with no indentation or formatting line breaks (`json.dumps(data, ensure_ascii=False, separators=(',', ':'))`). Preserve escaped newlines inside string values. Markdown opening and closing fences remain on separate lines.
 - REQUIRED: Include a YAML frontmatter at the top of each ADR and feature document. Must include: `doc_type`, `domain`, `stack`, `node_id` (`<type>:<slug>`), `tags` (2–5 terms), `edges` (list of `{relation, target}`), `updated`.
 - PROHIBITED: Including `path` in frontmatter `edges[]` entries — resolve target paths via `node_id` lookup in `docs/.graph.json` nodes[]. Duplicating path in edges wastes tokens and creates a second source of truth that can drift.
-- REQUIRED: Include an embedded micro ````graph` JSON block directly after YAML frontmatter in every feature document (`docs/feature/*.md`). Include `node_id`, `domain`, `implements`, `tested_by`, plus project-relative routing arrays: `entrypoints`, `registration_files`, `reference_files`, `code_files`, and `test_files`.
+- REQUIRED: Include an embedded micro ````graph` JSON block directly after YAML frontmatter in every feature document (`docs/feature/*.md`). Include `node_id`, `domain`, `implements`, `tested_by`, plus project-relative routing arrays: `entrypoints`, `registration_files`, `reference_files`, `code_files`, and `test_files`. Add optional `knowledge` using ONTOLOGY-RULES.md when consequential claims apply.
 - REQUIRED: Use `entrypoints` for public/runtime entry files, `registration_files` for registries/factories/exports, and `reference_files` for the smallest representative implementations worth reading as patterns. Use empty arrays when a role does not apply.
 - REQUIRED: Keep each source or test path in exactly one routing array. Confirm every listed path exists.
 - PROHIBITED: Copying implementation paths from feature micrographs into `.digest.md` or `.graph.json`; global indexes must remain cheap to read.
@@ -74,7 +74,7 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 - PROHIBITED: Placeholder literals in the final file — replace every `[placeholder]` with actual project content.
 - PROHIBITED: Long introductions and filler text — remove any sentence starting with "This document describes…", "This section describes…", or "This guide aims to…".
 - PROHIBITED: Decorative content — no emojis, filler phrases, or motivational text.
-- PROHIBITED: Prose sections longer than 15 lines — split into sub-sections if needed. Keep machine-readable graph and knowledge blocks intact.
+- PROHIBITED: Prose sections longer than 15 lines — split into sub-sections if needed. Keep the unified graph block intact.
 
 ### LLM OPTIMIZATION & GRAPH TOPOLOGY
 
@@ -83,7 +83,7 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 - REQUIRED: Follow DOCUMENT CONTRACT for REFERENCES sections; describe each related document in one line.
 - REQUIRED: Standardize frontmatter `edges[].relation` enum: `implements`, `depends_on`, `tested_by`, `references`, `child_of`.
   - `tested_by`: ALLOWED only from a feature/code node to the ADR defining its test strategy. PROHIBITED between two ADR/documentation nodes.
-    This legacy routing relation identifies a strategy document only; it never proves test execution, coverage, or correctness.
+    This document routing relation identifies a strategy document only; it never proves test execution, coverage, or correctness.
   - `references`: default relation between two ADR/documentation nodes.
   - PROHIBITED: reciprocal edges between the same pair with the same relation (A `tested_by` B and B `tested_by` A simultaneously). Encode each relation once, from the dependent node only.
 - ALLOWED: Feature `edges[]` may define macro reading policy using `read: must | optional`.
@@ -159,7 +159,7 @@ Execute steps in order. Do not skip steps.
 - REQUIRED: If the target document already exists and the task is a targeted update (gap, correction, new integration), apply targeted edits only to the affected section, preserving the rest of the content. Full file regeneration is only allowed when the structure is outdated relative to the current template or if explicitly requested by the user.
 - Use the correct language syntax in all code blocks.
 - Add explanatory comments only where the example language supports them; JSON stays comment-free.
-- For consequential claims in feature documents only, add or reconcile `## KNOWLEDGE` using `ONTOLOGY-RULES.md`. Explain unresolved or conflicting claims without silently selecting a convenient source. Keep JSON blocks comment-free.
+- For consequential claims in feature documents only, add or reconcile `graph.knowledge` using `ONTOLOGY-RULES.md`. Explain unresolved or conflicting claims without silently selecting a convenient source. Keep JSON blocks comment-free.
 - PROHIBITED: Technical content in `docs/README.md`.
 
 **Step 6 — Validate before delivering**
@@ -193,7 +193,7 @@ Execute steps in order. Do not skip steps.
 - REQUIRED: Reference every document path in `docs/.digest.md` as a plain relative path (e.g. `` `docs/adr/ARCHITECTURE.md` ``), never as a Markdown link, and never with an absolute filesystem path or a `file://` URI.
 - REQUIRED: Keep digest under 60 total lines and at most 3,000 total characters — this is an LLM orientation file, not a replacement for full docs.
 - REQUIRED: Include a `## LAST UPDATED` section with the current date.
-- REQUIRED: Include a compact `## ROUTING` section: use an exact supplied path directly; otherwise use `.graph.json` to select one feature and extract its top `graph` block. For semantic questions, read that document's `## KNOWLEDGE` and the relevant evidence; for implementation tasks, read routed source files. Read other prose only when design context is needed.
+- REQUIRED: Include a compact `## ROUTING` section: use an exact supplied path directly; otherwise use `.graph.json` to select one feature and extract its top `graph` block. For semantic questions, read its `graph.knowledge` and relevant evidence; for implementation tasks, read routed source files. Read other prose only when design context is needed.
 - Purpose: enables `tdd-orchestrator` and other skills to perform initial orientation without reading full documents.
 
 **Step 9 — Update macro document graph index**

@@ -25,16 +25,23 @@ class OntologyTests(unittest.TestCase):
         self.docs = Path(self.temp.name) / "docs"
         (self.docs / "feature").mkdir(parents=True)
         nodes = [{"id": f"feature:{name}", "path": f"docs/feature/{name}.md"}
-                 for name in ("payments", "rules", "legacy")]
+                 for name in ("payments", "rules", "unannotated")]
         (self.docs / ".graph.json").write_text(json.dumps({"nodes": nodes}), encoding="utf-8")
         self.write("payments", [entity("capability:charge", "capability")], [claim()])
         self.write("rules", [entity("rule:positive", "rule")], [])
-        (self.docs / "feature/legacy.md").write_text("# Legacy\n", encoding="utf-8")
+        (self.docs / "feature/unannotated.md").write_text("# Unannotated\n", encoding="utf-8")
 
     def write(self, name, entities, claims):
         data = dict(schema_version=1, entities=entities, claims=claims)
+        self.write_graph(name, data)
+
+    def write_graph(self, name, data):
+        graph = dict(node_id=f"feature:{name}", domain=name, implements=[], tested_by=[],
+                     entrypoints=[], registration_files=[], reference_files=[],
+                     code_files=[], test_files=[], knowledge=data)
         (self.docs / f"feature/{name}.md").write_text(
-            "# Fixture\n## KNOWLEDGE\n```json\n" + json.dumps(data) + "\n```\n## OTHER\n",
+            f'---\nnode_id: "feature:{name}"\ndoc_type: feature\nedges: []\n---\n'
+            + "```graph\n" + json.dumps(graph, separators=(',', ':')) + "\n```\n# Feature\n",
             encoding="utf-8")
 
     def test_targeted_validation_follows_qualified_owner(self):
@@ -43,8 +50,8 @@ class OntologyTests(unittest.TestCase):
         self.assertEqual(result["claims_checked"], 1)
         self.assertFalse(result["evidence_verified"])
 
-    def test_legacy_is_reported_without_semantic_success(self):
-        self.assertEqual(Validator(self.docs).validate()["without_knowledge"], ["feature:legacy"])
+    def test_unannotated_is_reported_without_semantic_success(self):
+        self.assertEqual(Validator(self.docs).validate()["without_knowledge"], ["feature:unannotated"])
 
     def test_missing_target_and_wrong_relation_type_fail(self):
         for target in ("feature:rules#rule:missing", "capability:charge"):
@@ -83,16 +90,16 @@ class OntologyTests(unittest.TestCase):
                     dict(data, entities=data["entities"] * 2)]
         for variant in variants:
             with self.subTest(variant=variant):
-                path.write_text("## KNOWLEDGE\n```json\n" + json.dumps(variant) + "\n```", encoding="utf-8")
+                self.write_graph("payments", variant)
                 with self.assertRaises(ValueError):
                     Validator(self.docs).validate()
 
     def test_fenced_examples_do_not_create_sections(self):
-        self.assertIsNone(knowledge_block("````markdown\n## KNOWLEDGE\n```json\n{}\n```\n````"))
+        self.assertIsNone(knowledge_block("````markdown\n## EXAMPLE\n```graph\n{}\n```\n````"))
         with self.assertRaisesRegex(ValueError, "Duplicate JSON key"):
-            knowledge_block('## KNOWLEDGE\n```json\n{"a":1,"a":2}\n```')
+            knowledge_block('```graph\n{"a":1,"a":2}\n```')
         with self.assertRaises(ValueError):
-            knowledge_block("## KNOWLEDGE\n```json\n{}")
+            knowledge_block("```graph\n{}")
 
     def test_graph_path_cannot_escape_allowed_directories(self):
         (self.docs / ".graph.json").write_text(json.dumps({"nodes": [
@@ -114,7 +121,7 @@ class OntologyTests(unittest.TestCase):
         self.add_adr("# Architecture\nUse a gateway.\n")
         result = Validator(self.docs).validate()
         self.assertEqual(result["documents_checked"], 4)
-        self.assertEqual(result["without_knowledge"], ["feature:legacy"])
+        self.assertEqual(result["without_knowledge"], ["feature:unannotated"])
 
     def test_adr_knowledge_is_rejected_even_with_feature_node_id(self):
         content = (self.docs / "feature/rules.md").read_text(encoding="utf-8")
@@ -140,6 +147,48 @@ class OntologyTests(unittest.TestCase):
         index["nodes"][0]["path"] = "docs/feature/billing/payments.md"
         index_path.write_text(json.dumps(index), encoding="utf-8")
         self.assertEqual(Validator(self.docs).validate()["claims_checked"], 1)
+
+    def test_unrelated_json_does_not_supply_or_override_graph_knowledge(self):
+        path = self.docs / "feature/payments.md"
+        graph_text = path.read_text(encoding="utf-8")
+        expected = knowledge_block(graph_text)
+        example = '\n## EXAMPLE\n```json\n{"schema_version":999,"entities":[],"claims":[]}\n```\n'
+        self.assertIsNone(knowledge_block(example))
+        self.assertEqual(knowledge_block(graph_text + example), expected)
+
+    def test_invalid_graph_knowledge_is_not_silently_skipped(self):
+        for payload in ('{"knowledge":null}', '{"knowledge":[]}',
+                        '{"knowledge":{},"knowledge":{}}', '{"knowledge":'):
+            with self.subTest(payload=payload), self.assertRaises(ValueError):
+                data = knowledge_block("```graph\n" + payload + "\n```")
+                if data is not None:
+                    path = self.docs / "feature/payments.md"
+                    path.write_text("```graph\n" + payload + "\n```", encoding="utf-8")
+                    Validator(self.docs).validate()
+
+    def test_duplicate_or_unclosed_graph_is_rejected(self):
+        for text in ('```graph\n{}', '```graph\n{}\n```\n```graph\n{}\n```'):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                knowledge_block(text)
+
+    def test_graph_inside_code_example_is_ignored(self):
+        self.assertIsNone(knowledge_block('````markdown\n```graph\n{"knowledge":{}}\n```\n````'))
+        self.assertIsNone(knowledge_block('```graph\n{"node_id":"feature:unannotated"}\n```'))
+
+    def test_nested_knowledge_remains_prohibited_in_adrs(self):
+        self.add_adr((self.docs / "feature/rules.md").read_text(encoding="utf-8"))
+        with self.assertRaisesRegex(ValueError, "allowed only in docs/feature"):
+            Validator(self.docs).validate()
+
+    def test_macro_graph_does_not_copy_nested_knowledge(self):
+        from generate_docs_graph import build_docs_graph
+        data = knowledge_block((self.docs / "feature/payments.md").read_text(encoding="utf-8"))
+        graph = build_docs_graph(self.docs)
+        self.assertEqual({node['id'] for node in graph['nodes']},
+                         {"feature:payments", "feature:rules", "feature:unannotated"})
+        self.assertNotIn('knowledge', json.dumps(graph))
+        self.assertEqual(graph['edges'], [])
+        self.assertEqual(knowledge_block((self.docs / "feature/payments.md").read_text()), data)
 
 
 if __name__ == "__main__":

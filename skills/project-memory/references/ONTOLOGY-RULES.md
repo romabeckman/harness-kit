@@ -6,17 +6,18 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 
 ## STORAGE AND OWNERSHIP
 
-- PROHIBITED: Add `## KNOWLEDGE` to ADRs, README, or digest. Represent a relevant ADR decision as an entity in its owning feature and cite the ADR as evidence; entity/claim references must resolve to feature knowledge.
-- REQUIRED: When updating a legacy ADR containing knowledge, preserve its substantive facts and evidence in prose or an existing owning feature before removing the block. If moved, preserve local IDs and update affected qualified references within scope. Report references outside scope needing migration; never silently discard evidence or create a feature solely to hold metadata.
+- PROHIBITED: Add `graph.knowledge` to ADRs, README, or digest. Represent a relevant ADR decision as an entity in its owning feature and cite the ADR as evidence; entity/claim references must resolve to feature knowledge.
 - REQUIRED: Serialize the knowledge JSON on one physical line without indentation or formatting line breaks. Keep Markdown fences on separate lines and preserve escaped newlines within string values.
-- REQUIRED: Store one fenced `json` block under `## KNOWLEDGE` in the owning `docs/feature/**/*.md` document, after `## OVERVIEW`. Use the top-level shape `{"schema_version":1,"entities":[],"claims":[]}` and populate the arrays with relevant records; allow no additional top-level fields.
-- REQUIRED: Keep the existing feature `graph` block for source routing. The knowledge block is separate and is not parsed by `generate_docs_graph.py`.
-- REQUIRED: Count the entire `## KNOWLEDGE` section toward the 10,000-character file limit. Record consequential knowledge only.
-- REQUIRED: Use local IDs `<type>:<slug>` for entities and `claim:<slug>` for claims. Resolve cross-document IDs as `<node_id>#<local_id>` through `.graph.json` and the target knowledge block.
+- REQUIRED: Store knowledge in the `knowledge` property of the existing fenced `graph` JSON block in the owning `docs/feature/**/*.md` document, directly after YAML. Use the nested shape `{"schema_version":1,"entities":[],"claims":[]}` and populate the arrays with relevant records; allow no additional fields inside `knowledge`. Omit the property when no consequential claims apply.
+- REQUIRED: Preserve existing graph routing fields beside `knowledge`. `generate_docs_graph.py` extracts document routing only; `validate_ontology.py` validates the nested knowledge. Never copy knowledge into the macro graph.
+- REQUIRED: Count the entire unified `graph` block toward the 10,000-character file limit. Record consequential knowledge only.
+- REQUIRED: Use local IDs `<type>:<slug>` for entities and `claim:<slug>` for claims. Resolve cross-document IDs as `<node_id>#<local_id>` through `.graph.json` and the target `graph.knowledge`.
 - REQUIRED: Give each concept one canonical owner. Reuse its qualified ID elsewhere; use aliases for synonyms within that domain. Never merge concepts solely because names match.
 - REQUIRED: Preserve IDs across renames. Reconcile affected references when ownership changes; do not silently delete referenced concepts.
 - REQUIRED: Use existing document `references` edges to make external concept owners discoverable. Keep semantic relations out of document routing edges.
-- ALLOWED: Leave legacy documents outside the selected scope untouched. Within a full review, assess legacy documents even without existing knowledge. If a referenced owner is outside authorized scope, keep a local unresolved assertion with null relation/object and describe the missing target in `gap`; never invent a dangling ID.
+- ALLOWED: Leave existing documents outside the selected scope untouched. Within a full review, assess existing documents even without existing knowledge. If a referenced owner is outside authorized scope, keep a local unresolved assertion with null relation/object and describe the missing target in `gap`; never invent a dangling ID.
+
+- REQUIRED: Use only `graph.knowledge`. Features without knowledge remain valid structural inputs.
 
 ## SCOPE AND EXTRACTION
 
@@ -29,7 +30,7 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 7. Cite the exact guard, call, declaration, request, or execution result supporting each claim. Preserve scope and exceptions in the statement. If only metadata is relevant to the task, metadata-only knowledge is sufficient; explain that scope.
 8. Reconcile with existing knowledge, preserve uncertainty, and apply the completion gate below. Do not add redundant claims merely to populate the section.
 
-## KNOWLEDGE PRIORITY UNDER THE SIZE LIMIT
+## PRIORITY UNDER THE SIZE LIMIT
 
 - REQUIRED: Prioritize scoped knowledge in this order: (1) invariants whose violation causes incorrect behavior, security failures, or data loss; (2) public contracts and consequential dependencies; (3) governing decisions; (4) secondary metadata. Preserve applicable conditions and exceptions with each retained claim, regardless of priority.
 - REQUIRED: Apply this priority autonomously. Remove redundant wording and repeated facts before secondary detail; preserve evidence, uncertainty, canonical IDs, and referenced records. If essential knowledge still exceeds the file limit, split by coherent responsibility under TOTAL CONTEXT BUDGET and update references.
@@ -123,6 +124,8 @@ Use nonempty strings for these fields, except `snapshot` may be `null`.
 
 ## CONNECTED EXAMPLE
 
+The JSON below is the value of `graph.knowledge`; insert it into the feature graph rather than creating another fenced block.
+
 Illustrative inspected fixture, not project evidence. Suppose `src/payments.py`, function `charge`, actually contains:
 
 ```python
@@ -142,6 +145,8 @@ The guard supports an implementation observation; it does not establish who appr
 For another document owning the contract, reference `feature:payments#contract:charge-call` and add a document `references` edge to `feature:payments`; do not duplicate the entity. Test outcomes remain unknown until execution evidence is available.
 
 ## UNRESOLVED EXAMPLE
+
+Use this JSON as the value of `graph.knowledge`.
 
 Illustrative unresolved proposal. Use real domain content when authoring; this example asserts no project facts.
 

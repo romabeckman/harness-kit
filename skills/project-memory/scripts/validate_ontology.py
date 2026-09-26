@@ -47,19 +47,17 @@ def unique_object(pairs):
 
 
 def knowledge_block(text):
-    """Ignore headings inside fenced examples; keep subsections within KNOWLEDGE."""
-    active = False
-    found = False
+    """Read only graph.knowledge, ignoring fenced examples."""
     fence = None
     capture = False
     buffer = []
-    blocks = []
+    graphs = []
     for line in text.splitlines():
         if fence:
             if re.fullmatch(r" {0,3}" + re.escape(fence[0]) +
                             "{" + str(len(fence)) + r",}\s*", line):
                 if capture:
-                    blocks.append("\n".join(buffer))
+                    graphs.append("\n".join(buffer))
                 fence = None
                 capture = False
             elif capture:
@@ -68,19 +66,19 @@ def knowledge_block(text):
         opening = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
         if opening:
             fence = opening[1]
-            capture = active and opening[2].strip() == "json"
+            capture = opening[2].strip() == "graph"
             buffer = []
             continue
-        heading = re.match(r"^ {0,3}(#{1,6})\s+(.+?)\s*#*\s*$", line)
-        if heading and len(heading[1]) <= 2:
-            active = heading[1] == "##" and heading[2] == "KNOWLEDGE"
-            if active:
-                require(not found, "Duplicate KNOWLEDGE section")
-                found = True
-    if not found:
+    require(not capture, "Unclosed graph block")
+    require(len(graphs) <= 1, "Duplicate graph blocks")
+    if not graphs:
         return None
-    require(not capture and len(blocks) == 1, "KNOWLEDGE must contain one closed JSON block")
-    return json.loads(blocks[0], object_pairs_hook=unique_object)
+    graph = json.loads(graphs[0], object_pairs_hook=unique_object)
+    require(isinstance(graph, dict), "Graph must be an object")
+    if "knowledge" not in graph:
+        return None
+    require(isinstance(graph["knowledge"], dict), "graph.knowledge must be an object")
+    return graph["knowledge"]
 
 
 class Validator:
@@ -113,7 +111,7 @@ class Validator:
             data = knowledge_block(self.paths[document].read_text(encoding="utf-8"))
             is_feature = self.paths[document].is_relative_to(self.docs / "feature")
             require(data is None or is_feature,
-                    "KNOWLEDGE is allowed only in docs/feature documents")
+                    "graph.knowledge is allowed only in docs/feature documents")
             if data is None:
                 self.records[document] = {}
                 if is_feature:

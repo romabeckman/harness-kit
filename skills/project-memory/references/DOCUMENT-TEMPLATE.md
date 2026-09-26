@@ -12,7 +12,7 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 - PROHIBITED: Mixing unrelated topics in a single file.
 - REQUIRED: Cross-reference complementary ADRs back to `ARCHITECTURE.md`; apply the shared total size limit.
 - REQUIRED: Cross-reference section at the end listing related `docs/` files.
-- REQUIRED: For consequential domain or behavior claims in feature documents only, read [ONTOLOGY-RULES.md](./ONTOLOGY-RULES.md) and include `## KNOWLEDGE` as specified there. Omit KNOWLEDGE entirely for ADRs. Keep uncertainty and evidence status explicit, including when every source is LLM-generated.
+- REQUIRED: For consequential domain or behavior claims in feature documents only, read [ONTOLOGY-RULES.md](./ONTOLOGY-RULES.md) and include `knowledge` inside the feature `graph` as specified there. Omit the entire graph for ADRs. Keep uncertainty and evidence status explicit, including when every source is LLM-generated.
 
 ---
 
@@ -33,7 +33,7 @@ edges:
 updated: YYYY-MM-DD
 ---
 ```graph
-{"node_id":"[type]:[slug]","domain":"[domain name]","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["relative/path/to/public-entrypoint.ts"],"registration_files":["relative/path/to/registry-or-factory.ts"],"reference_files":["relative/path/to/representative-implementation.ts"],"code_files":["relative/path/to/source1.ts"],"test_files":["relative/path/to/test1.test.ts"]}
+{"node_id":"[type]:[slug]","domain":"[domain name]","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["relative/path/to/public-entrypoint.ts"],"registration_files":["relative/path/to/registry-or-factory.ts"],"reference_files":["relative/path/to/representative-implementation.ts"],"code_files":["relative/path/to/source1.ts"],"test_files":["relative/path/to/test1.test.ts"],"knowledge":{"schema_version":1,"entities":[],"claims":[]}}
 ```
 
 # [Document Title]
@@ -48,7 +48,7 @@ Use routing arrays by role:
 - `test_files`: test definitions for feature behavior and integration; listing a file does not prove execution or passing results.
 
 REQUIRED: Use project-relative paths, remove duplicates across arrays, and list only files that exist.
-REQUIRED: Use empty arrays when a routing role does not apply.
+REQUIRED: Use empty arrays when a routing role does not apply. Populate `knowledge` following ONTOLOGY-RULES.md when consequential claims apply; otherwise omit that property. Keep all fields in this single graph block.
 PROHIBITED: Copying these source paths into YAML `edges`, `.digest.md`, or `.graph.json`.
 REQUIRED: For ADR documents, omit the entire embedded `graph` block; source routing belongs only to feature documents.
 ALLOWED: `read` remains optional for ADR-to-ADR edges when no feature routing policy is required.
@@ -56,8 +56,6 @@ ALLOWED: `read` remains optional for ADR-to-ADR edges when no feature routing po
 ## OVERVIEW
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]
 
-## KNOWLEDGE
-[Feature documents only; omit this heading and section for ADRs. For consequential claims touched by this task, insert one fenced json block following ONTOLOGY-RULES.md: schema_version, entities, claims. Use canonical IDs and inspected evidence. Preserve requirements, observations, hypotheses, and unresolved gaps separately. Omit this section when no consequential claims apply. The entire section counts toward the file limit.]
 
 ## FOLDER STRUCTURE
 [High-level architectural view: folders and layers only, not a file inventory. Show one representative entry per folder/layer — enough to convey the module's shape and where new code of each type belongs. PROHIBITED: enumerating every individual file already listed in the `code_files`/`test_files` arrays of the top ````graph` block — that duplicates content and wastes tokens. If a folder holds many similar files (e.g. multiple use cases, multiple adapters), collapse them into one annotated line (e.g. `use-cases/ # RunX, GetY, UpdateZ use cases`) instead of one line per file.]

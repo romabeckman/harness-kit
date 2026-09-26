@@ -6,7 +6,7 @@ Defines the analysis framework and strict rules for generating and maintaining `
 
 ## EXPECTED OUTPUT
 
-PROHIBITED: Add `## KNOWLEDGE` to this ADR. Record decisions and evidence in prose; feature documents own ontology records.
+PROHIBITED: Add a feature graph or `graph.knowledge` to this ADR. Record decisions and evidence in prose; feature documents own ontology records.
 
 | Field | Value |
 |---|---|
