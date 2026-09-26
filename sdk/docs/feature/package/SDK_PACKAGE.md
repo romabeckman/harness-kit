@@ -9,11 +9,11 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-26"
+updated: 2026-09-26
 ---
 
 ```graph
-{"node_id":"feature:sdk_package","domain":"package","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/index.ts","src/cli/run.ts"],"registration_files":["package.json"],"reference_files":[],"code_files":["tsconfig.json","tsconfig.build.json"],"test_files":["tests/unit/t01-scaffold.test.ts","tests/unit/t15-public-api.test.ts"]}
+{"node_id":"feature:sdk_package","domain":"package","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/index.ts","src/cli/run.ts"],"registration_files":["package.json"],"reference_files":[],"code_files":["tsconfig.json","tsconfig.build.json"],"test_files":["tests/unit/t01-scaffold.test.ts","tests/unit/t15-public-api.test.ts"],"knowledge":{"schema_version":1,"entities":[{"id":"contract:npm-package-surface","type":"contract","label":"SDK package surface","definition":"Package metadata that selects the published version, public entry, and included files.","aliases":[]}],"claims":[{"id":"claim:package-version-and-exports","subject":"contract:npm-package-surface","relation":null,"object":null,"statement":"package.json sets version 0.9.2, exposes dist/index.js and dist/index.d.ts from the root export, and allows dist plus README.md in the package.","kind":"observation","status":"supported","evidence":[{"kind":"configuration","source":"package.json","locator":"version, exports['.'], and files","snapshot":null}],"derived_from":[],"gap":null}]}}
 ```
 
 # SDK PACKAGE
@@ -21,12 +21,6 @@ Defines the publication surface of `@romabeckman/hrns` for npm.
 
 ## OVERVIEW
 The package manifest sets `@romabeckman/hrns` to version `0.9.2`. Its exports map exposes the compiled CommonJS entry and declarations; the publish allowlist contains `dist` and `README.md`.
-
-## KNOWLEDGE
-
-```json
-{"schema_version":1,"entities":[{"id":"contract:npm-package-surface","type":"contract","label":"SDK package surface","definition":"Package metadata that selects the published version, public entry, and included files.","aliases":[]}],"claims":[{"id":"claim:package-version-and-exports","subject":"contract:npm-package-surface","relation":null,"object":null,"statement":"package.json sets version 0.9.2, exposes dist/index.js and dist/index.d.ts from the root export, and allows dist plus README.md in the package.","kind":"observation","status":"supported","evidence":[{"kind":"configuration","source":"package.json","locator":"version, exports[\u0027.\u0027], and files","snapshot":null}],"derived_from":[],"gap":null}]}
-```
 
 ## FOLDER STRUCTURE
 <folder_structure>

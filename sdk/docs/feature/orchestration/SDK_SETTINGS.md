@@ -9,11 +9,11 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-26"
+updated: 2026-09-26
 ---
 
 ```graph
-{"node_id":"feature:sdk_settings","domain":"settings","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/settings/HarnessSettings.ts"],"registration_files":[],"reference_files":["src/settings/DefaultSettings.ts"],"code_files":["src/settings/SettingsSchema.ts"],"test_files":["tests/unit/t16-settings.test.ts","tests/unit/t17-orchestrator-settings.test.ts","tests/unit/t28-harness-settings.test.ts"]}
+{"node_id":"feature:sdk_settings","domain":"settings","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/settings/HarnessSettings.ts"],"registration_files":[],"reference_files":["src/settings/DefaultSettings.ts"],"code_files":["src/settings/SettingsSchema.ts"],"test_files":["tests/unit/t16-settings.test.ts","tests/unit/t17-orchestrator-settings.test.ts","tests/unit/t28-harness-settings.test.ts"],"knowledge":{"schema_version":1,"entities":[{"id":"capability:phase-settings-resolution","type":"capability","label":"Phase settings resolution","definition":"Resolve effective configuration for a runner and orchestration phase.","aliases":[]}],"claims":[{"id":"claim:settings-precedence","subject":"capability:phase-settings-resolution","relation":null,"object":null,"statement":"HarnessSettings.resolve accepts runner type and phase key and resolves the corresponding phase settings.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/settings/HarnessSettings.ts","locator":"resolve(runnerType, phaseKey)","snapshot":null}],"derived_from":[],"gap":null}]}}
 ```
 
 # SDK SETTINGS
@@ -21,12 +21,6 @@ Configure models and effort parameters per orchestration phase and agent runner.
 
 ## OVERVIEW
 The settings module manages default and project-level configurations. It provides mechanisms to override global settings based on the runner type and specific execution phase.
-
-## KNOWLEDGE
-
-```json
-{"schema_version":1,"entities":[{"id":"capability:phase-settings-resolution","type":"capability","label":"Phase settings resolution","definition":"Resolve effective configuration for a runner and orchestration phase.","aliases":[]}],"claims":[{"id":"claim:settings-precedence","subject":"capability:phase-settings-resolution","relation":null,"object":null,"statement":"HarnessSettings.resolve accepts runner type and phase key and resolves the corresponding phase settings.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/settings/HarnessSettings.ts","locator":"resolve(runnerType, phaseKey)","snapshot":null}],"derived_from":[],"gap":null}]}
-```
 
 ## FOLDER STRUCTURE
 <folder_structure>

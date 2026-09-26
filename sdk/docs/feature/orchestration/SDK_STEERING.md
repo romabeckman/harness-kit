@@ -9,11 +9,11 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-26"
+updated: 2026-09-26
 ---
 
 ```graph
-{"node_id":"feature:sdk_steering","domain":"steering","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/orchestrator/SteeringAnalyzer.ts"],"registration_files":[],"reference_files":["src/orchestrator/services/SteeringService.ts"],"code_files":["src/file-state/types.ts"],"test_files":["src/orchestrator/__tests__/SteeringAnalyzer.test.ts","src/orchestrator/services/__tests__/SteeringService.test.ts","tests/integration/FileStateSteering.test.ts","tests/unit/t02-types.test.ts","tests/unit/t18-steering-constraints.test.ts","tests/unit/t31-steering-analyzer-and-directives.test.ts"]}
+{"node_id":"feature:sdk_steering","domain":"steering","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/orchestrator/SteeringAnalyzer.ts"],"registration_files":[],"reference_files":["src/orchestrator/services/SteeringService.ts"],"code_files":["src/file-state/types.ts"],"test_files":["src/orchestrator/__tests__/SteeringAnalyzer.test.ts","src/orchestrator/services/__tests__/SteeringService.test.ts","tests/integration/FileStateSteering.test.ts","tests/unit/t02-types.test.ts","tests/unit/t18-steering-constraints.test.ts","tests/unit/t31-steering-analyzer-and-directives.test.ts"],"knowledge":{"schema_version":1,"entities":[{"id":"capability:session-steering","type":"capability","label":"Session steering","definition":"Convert developer steering messages into validated actions that update runtime rules, phase state, or review scores.","aliases":[]},{"id":"rule:steering-action-validation","type":"rule","label":"Steering action validation","definition":"Accept only recognized actions with valid phase names and bounded rule lengths; clamp numeric scores to the supported range.","aliases":[]}],"claims":[{"id":"claim:steering-actions-validated","subject":"capability:session-steering","relation":"constrained_by","object":"rule:steering-action-validation","statement":"SteeringAnalyzer accepts add_rule strings up to 5000 characters, rollback targets from its valid phase list, and clamps numeric scores to 0 through 10; other malformed actions are ignored.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/orchestrator/SteeringAnalyzer.ts","locator":"validateActions; MAX_RULE_LENGTH, VALID_PHASES, SCORE_MIN, SCORE_MAX","snapshot":null}],"derived_from":[],"gap":null},{"id":"claim:steering-persists-config","subject":"capability:session-steering","relation":null,"object":null,"statement":"SteeringService loads bootstrap config, applies each supplied action, and saves the config after processing.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/orchestrator/services/SteeringService.ts","locator":"applySteeringActions","snapshot":null}],"derived_from":[],"gap":null}]}}
 ```
 
 # SDK STEERING
@@ -21,12 +21,6 @@ Allows developers to inject runtime directives when resuming an orchestration se
 
 ## OVERVIEW
 The steering module translates a free-text steering message into structured `SteeringAction` values using an LLM. It modifies `BOOTSTRAP-CONFIG.json` to persist rules or roll back the orchestrator's phase state. Default user rules suppress progress narration and require an empty JSON completion response.
-
-## KNOWLEDGE
-
-```json
-{"schema_version":1,"entities":[{"id":"capability:session-steering","type":"capability","label":"Session steering","definition":"Convert developer steering messages into validated actions that update runtime rules, phase state, or review scores.","aliases":[]},{"id":"rule:steering-action-validation","type":"rule","label":"Steering action validation","definition":"Accept only recognized actions with valid phase names and bounded rule lengths; clamp numeric scores to the supported range.","aliases":[]}],"claims":[{"id":"claim:steering-actions-validated","subject":"capability:session-steering","relation":"constrained_by","object":"rule:steering-action-validation","statement":"SteeringAnalyzer accepts add_rule strings up to 5000 characters, rollback targets from its valid phase list, and clamps numeric scores to 0 through 10; other malformed actions are ignored.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/orchestrator/SteeringAnalyzer.ts","locator":"validateActions; MAX_RULE_LENGTH, VALID_PHASES, SCORE_MIN, SCORE_MAX","snapshot":null}],"derived_from":[],"gap":null},{"id":"claim:steering-persists-config","subject":"capability:session-steering","relation":null,"object":null,"statement":"SteeringService loads bootstrap config, applies each supplied action, and saves the config after processing.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/orchestrator/services/SteeringService.ts","locator":"applySteeringActions","snapshot":null}],"derived_from":[],"gap":null}]}
-```
 
 ## FOLDER STRUCTURE
 <folder_structure>

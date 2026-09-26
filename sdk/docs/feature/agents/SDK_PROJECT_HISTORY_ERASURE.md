@@ -13,11 +13,11 @@ edges:
     target: "feature:sdk_cli"
   - relation: depends_on
     target: "feature:sdk_agent_runner"
-updated: "2026-09-26"
+updated: 2026-09-26
 ---
 
 ```graph
-{"node_id":"feature:sdk_project_history_erasure","domain":"project_history_erasure","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/cli/services/erase-service.ts"],"registration_files":["src/agent-runner/erase/CLIEraseRegistry.ts","src/cli/run.ts"],"reference_files":["src/agent-runner/erase/AbstractCLIErase.ts"],"code_files":["src/agent-runner/erase/types.ts","src/agent-runner/erase/NodeEraseFileSystem.ts","src/agent-runner/erase/manifest-utils.ts","src/agent-runner/claude-cli/ClaudeCLIErase.ts","src/agent-runner/codex-cli/CodexCLIErase.ts","src/agent-runner/copilot-cli/CopilotCLIErase.ts","src/agent-runner/antigravity-cli/AntigravityCLIErase.ts","src/agent-runner/opencode-cli/OpenCodeCLIErase.ts"],"test_files":["src/agent-runner/erase/__tests__/AbstractCLIErase.test.ts","src/agent-runner/__tests__/ClaudeCLIErase.test.ts","src/agent-runner/__tests__/CodexCLIErase.test.ts","src/agent-runner/__tests__/CopilotCLIErase.test.ts","src/agent-runner/__tests__/AntigravityCLIErase.test.ts","src/agent-runner/__tests__/OpenCodeCLIErase.test.ts","src/cli/services/__tests__/erase-service.test.ts","tests/e2e/integration/erase-cli.test.ts"]}
+{"node_id":"feature:sdk_project_history_erasure","domain":"project_history_erasure","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/cli/services/erase-service.ts"],"registration_files":["src/agent-runner/erase/CLIEraseRegistry.ts","src/cli/run.ts"],"reference_files":["src/agent-runner/erase/AbstractCLIErase.ts"],"code_files":["src/agent-runner/erase/types.ts","src/agent-runner/erase/NodeEraseFileSystem.ts","src/agent-runner/erase/manifest-utils.ts","src/agent-runner/claude-cli/ClaudeCLIErase.ts","src/agent-runner/codex-cli/CodexCLIErase.ts","src/agent-runner/copilot-cli/CopilotCLIErase.ts","src/agent-runner/antigravity-cli/AntigravityCLIErase.ts","src/agent-runner/opencode-cli/OpenCodeCLIErase.ts"],"test_files":["src/agent-runner/erase/__tests__/AbstractCLIErase.test.ts","src/agent-runner/__tests__/ClaudeCLIErase.test.ts","src/agent-runner/__tests__/CodexCLIErase.test.ts","src/agent-runner/__tests__/CopilotCLIErase.test.ts","src/agent-runner/__tests__/AntigravityCLIErase.test.ts","src/agent-runner/__tests__/OpenCodeCLIErase.test.ts","src/cli/services/__tests__/erase-service.test.ts","tests/e2e/integration/erase-cli.test.ts"],"knowledge":{"schema_version":1,"entities":[{"id":"capability:agent-history-erasure","type":"capability","label":"Agent history erasure","definition":"Discover and remove mapped agent-history files through a reviewed preview.","aliases":[]},{"id":"rule:erase-preview-binding","type":"rule","label":"Erase preview binding","definition":"Execute only the exact discovery preview associated with its prepared plan.","aliases":[]}],"claims":[{"id":"claim:erase-uses-discovery-plan","subject":"capability:agent-history-erasure","relation":"constrained_by","object":"rule:erase-preview-binding","statement":"AbstractCLIErase.erase looks up the prepared plan by preview.planId and returns a failed result when the plan is absent or the preview entries do not match the prepared entries.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/agent-runner/erase/AbstractCLIErase.ts","locator":"erase: preparedPlans lookup and preview validation","snapshot":null}],"derived_from":[],"gap":null}]}}
 ```
 
 # SDK PROJECT HISTORY ERASURE
@@ -25,12 +25,6 @@ Use `hrns erase` to discover and remove allowlisted agent runtime history while 
 
 ## OVERVIEW
 Select Claude Code, Codex, Copilot, Antigravity, or OpenCode. The CLI previews an ordered snapshot, requires explicit confirmation (default `false`), then removes only approved entries. Shell manifests under `docs/sh/` are reference data and never execute.
-
-## KNOWLEDGE
-
-```json
-{"schema_version":1,"entities":[{"id":"capability:agent-history-erasure","type":"capability","label":"Agent history erasure","definition":"Discover and remove mapped agent-history files through a reviewed preview.","aliases":[]},{"id":"rule:erase-preview-binding","type":"rule","label":"Erase preview binding","definition":"Execute only the exact discovery preview associated with its prepared plan.","aliases":[]}],"claims":[{"id":"claim:erase-uses-discovery-plan","subject":"capability:agent-history-erasure","relation":"constrained_by","object":"rule:erase-preview-binding","statement":"AbstractCLIErase.erase looks up the prepared plan by preview.planId and returns a failed result when the plan is absent or the preview entries do not match the prepared entries.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/agent-runner/erase/AbstractCLIErase.ts","locator":"erase: preparedPlans lookup and preview validation","snapshot":null}],"derived_from":[],"gap":null}]}
-```
 
 ## FOLDER STRUCTURE
 <folder_structure>

@@ -9,11 +9,11 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-26"
+updated: 2026-09-26
 ---
 
 ```graph
-{"node_id":"feature:sdk_state","domain":"state","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/file-state/FileStateManager.ts"],"registration_files":[],"reference_files":["src/file-state/parsers/BacklogParser.ts"],"code_files":["src/file-state/parsers/BootstrapConfigParser.ts","src/file-state/parsers/DevStateParser.ts","src/file-state/types.ts"],"test_files":["src/file-state/__tests__/blockDependents.test.ts","src/file-state/parsers/__tests__/BacklogParser.test.ts","tests/integration/FileStateSteering.test.ts","tests/integration/t07-file-state-manager.test.ts","tests/integration/t16-file-state-f002.test.ts","tests/unit/t06-parsers.test.ts","tests/unit/t27-bootstrap-config-parser.test.ts"]}
+{"node_id":"feature:sdk_state","domain":"state","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/file-state/FileStateManager.ts"],"registration_files":[],"reference_files":["src/file-state/parsers/BacklogParser.ts"],"code_files":["src/file-state/parsers/BootstrapConfigParser.ts","src/file-state/parsers/DevStateParser.ts","src/file-state/types.ts"],"test_files":["src/file-state/__tests__/blockDependents.test.ts","src/file-state/parsers/__tests__/BacklogParser.test.ts","tests/integration/FileStateSteering.test.ts","tests/integration/t07-file-state-manager.test.ts","tests/integration/t16-file-state-f002.test.ts","tests/unit/t06-parsers.test.ts","tests/unit/t27-bootstrap-config-parser.test.ts"],"knowledge":{"schema_version":1,"entities":[{"id":"capability:file-backed-project-state","type":"capability","label":"File-backed project state","definition":"Read and mutate orchestration project state stored in files.","aliases":[]},{"id":"rule:atomic-state-replacement","type":"rule","label":"Atomic state replacement","definition":"Replace state files through a temporary file and rename to avoid partially written content.","aliases":[]}],"claims":[{"id":"claim:file-state-atomic-writes","subject":"capability:file-backed-project-state","relation":"constrained_by","object":"rule:atomic-state-replacement","statement":"FileStateManager routes state mutations through atomicWrite, which writes a temporary path and renames it to the target path.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/file-state/FileStateManager.ts","locator":"atomicWrite helper and FileStateManager mutation calls","snapshot":null}],"derived_from":[],"gap":null}]}}
 ```
 
 # SDK STATE
@@ -25,12 +25,6 @@ The `sdk_state` module provides state mutations for tracking features, tasks, de
 The backlog parser treats `-`, empty cells, and `None` as no dependencies. This keeps root features executable when bootstrap follows its documented dependency marker.
 
 Dependency cascade writes `BLOCKED` to both the affected backlog features and all of their task rows, keeping feature and task state aligned.
-
-## KNOWLEDGE
-
-```json
-{"schema_version":1,"entities":[{"id":"capability:file-backed-project-state","type":"capability","label":"File-backed project state","definition":"Read and mutate orchestration project state stored in files.","aliases":[]},{"id":"rule:atomic-state-replacement","type":"rule","label":"Atomic state replacement","definition":"Replace state files through a temporary file and rename to avoid partially written content.","aliases":[]}],"claims":[{"id":"claim:file-state-atomic-writes","subject":"capability:file-backed-project-state","relation":"constrained_by","object":"rule:atomic-state-replacement","statement":"FileStateManager routes state mutations through atomicWrite, which writes a temporary path and renames it to the target path.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/file-state/FileStateManager.ts","locator":"atomicWrite helper and FileStateManager mutation calls","snapshot":null}],"derived_from":[],"gap":null}]}
-```
 
 ## FOLDER STRUCTURE
 <folder_structure>

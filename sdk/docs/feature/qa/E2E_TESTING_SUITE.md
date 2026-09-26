@@ -9,11 +9,11 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-26"
+updated: 2026-09-26
 ---
 
 ```graph
-{"node_id":"feature:e2e_testing_suite","domain":"e2e_testing","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["vitest.e2e.config.ts"],"registration_files":[],"reference_files":["tests/e2e/scenarios/02-full-orchestration-cycle.test.ts"],"code_files":["tests/e2e/vitest.e2e.config.ts","tests/e2e/helpers/AssertionHelpers.ts","tests/e2e/helpers/CliRunner.ts","tests/e2e/helpers/MockAgentCli.ts","tests/e2e/helpers/OrchestrationStateValidator.ts","tests/e2e/helpers/SandboxEnvironment.ts"],"test_files":["tests/e2e/helpers/AssertionHelpers.test.ts","tests/e2e/helpers/MockAgentCli.test.ts","tests/e2e/helpers/OrchestrationStateValidator.test.ts","tests/e2e/helpers/SandboxEnvironment.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/e2e/scenarios/01-init-and-bootstrap.test.ts","tests/e2e/scenarios/03-session-resume-and-steering.test.ts","tests/e2e/scenarios/04-multi-project-readonly-steering.test.ts","tests/e2e/scenarios/05-report-dashboard-and-telemetry.test.ts","tests/e2e/scenarios/06-quota-exceeded-and-halt-recovery.test.ts","tests/e2e/scenarios/07-http-server-daemon.test.ts","tests/unit/t32-e2e-ci-pipeline-integration.test.ts"]}
+{"node_id":"feature:e2e_testing_suite","domain":"e2e_testing","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["vitest.e2e.config.ts"],"registration_files":[],"reference_files":["tests/e2e/scenarios/02-full-orchestration-cycle.test.ts"],"code_files":["tests/e2e/vitest.e2e.config.ts","tests/e2e/helpers/AssertionHelpers.ts","tests/e2e/helpers/CliRunner.ts","tests/e2e/helpers/MockAgentCli.ts","tests/e2e/helpers/OrchestrationStateValidator.ts","tests/e2e/helpers/SandboxEnvironment.ts"],"test_files":["tests/e2e/helpers/AssertionHelpers.test.ts","tests/e2e/helpers/MockAgentCli.test.ts","tests/e2e/helpers/OrchestrationStateValidator.test.ts","tests/e2e/helpers/SandboxEnvironment.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/e2e/scenarios/01-init-and-bootstrap.test.ts","tests/e2e/scenarios/03-session-resume-and-steering.test.ts","tests/e2e/scenarios/04-multi-project-readonly-steering.test.ts","tests/e2e/scenarios/05-report-dashboard-and-telemetry.test.ts","tests/e2e/scenarios/06-quota-exceeded-and-halt-recovery.test.ts","tests/e2e/scenarios/07-http-server-daemon.test.ts","tests/unit/t32-e2e-ci-pipeline-integration.test.ts"],"knowledge":{"schema_version":1,"entities":[{"id":"capability:e2e-suite-selection","type":"capability","label":"E2E suite selection","definition":"Configure Vitest to select end-to-end test files and run them serially with bounded timeouts.","aliases":[]}],"claims":[{"id":"claim:e2e-runner-configuration","subject":"capability:e2e-suite-selection","relation":null,"object":null,"statement":"The E2E Vitest configuration includes tests/e2e/**/*.test.ts, disables file parallelism, and sets test and hook timeouts to 30000 ms.","kind":"observation","status":"supported","evidence":[{"kind":"configuration","source":"tests/e2e/vitest.e2e.config.ts","locator":"test.include, fileParallelism, testTimeout, and hookTimeout","snapshot":null}],"derived_from":[],"gap":null}]}}
 ```
 
 # END-TO-END (E2E) TESTING SUITE
@@ -21,12 +21,6 @@ Provides an end-to-end integration and CLI test suite validating the complete Ha
 
 ## OVERVIEW
 The E2E testing suite executes non-interactive scenarios against compiled CLI binaries (`dist/cli/run.js`). Use Vitest 5 with dedicated configuration to verify state transitions and safety constraints.
-
-## KNOWLEDGE
-
-```json
-{"schema_version":1,"entities":[{"id":"capability:e2e-suite-selection","type":"capability","label":"E2E suite selection","definition":"Configure Vitest to select end-to-end test files and run them serially with bounded timeouts.","aliases":[]}],"claims":[{"id":"claim:e2e-runner-configuration","subject":"capability:e2e-suite-selection","relation":null,"object":null,"statement":"The E2E Vitest configuration includes tests/e2e/**/*.test.ts, disables file parallelism, and sets test and hook timeouts to 30000 ms.","kind":"observation","status":"supported","evidence":[{"kind":"configuration","source":"tests/e2e/vitest.e2e.config.ts","locator":"test.include, fileParallelism, testTimeout, and hookTimeout","snapshot":null}],"derived_from":[],"gap":null}]}
-```
 
 ## FOLDER STRUCTURE
 <folder_structure>
