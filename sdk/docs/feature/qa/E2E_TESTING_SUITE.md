@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-25"
+updated: "2026-09-26"
 ---
 
 ```graph
@@ -21,6 +21,12 @@ Provides an end-to-end integration and CLI test suite validating the complete Ha
 
 ## OVERVIEW
 The E2E testing suite executes non-interactive scenarios against compiled CLI binaries (`dist/cli/run.js`). Use Vitest 5 with dedicated configuration to verify state transitions and safety constraints.
+
+## KNOWLEDGE
+
+```json
+{"schema_version":1,"entities":[{"id":"capability:e2e-suite-selection","type":"capability","label":"E2E suite selection","definition":"Configure Vitest to select end-to-end test files and run them serially with bounded timeouts.","aliases":[]}],"claims":[{"id":"claim:e2e-runner-configuration","subject":"capability:e2e-suite-selection","relation":null,"object":null,"statement":"The E2E Vitest configuration includes tests/e2e/**/*.test.ts, disables file parallelism, and sets test and hook timeouts to 30000 ms.","kind":"observation","status":"supported","evidence":[{"kind":"configuration","source":"tests/e2e/vitest.e2e.config.ts","locator":"test.include, fileParallelism, testTimeout, and hookTimeout","snapshot":null}],"derived_from":[],"gap":null}]}
+```
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -83,5 +89,4 @@ graph TD
 ## REFERENCES
 - [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Core architectural layers and CLI runner patterns.
 - [**TESTS.md**](../../adr/TESTS.md): Test strategies, tooling, and execution standards.
-- [**SDK_CLI.md**](../sdk_cli.md): CLI command flag definitions and interactive wizard specifications.
-
+- [**SDK_CLI.md**](../cli/sdk_cli.md): CLI command flag definitions and interactive wizard specifications.

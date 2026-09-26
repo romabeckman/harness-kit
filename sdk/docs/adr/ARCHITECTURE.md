@@ -20,21 +20,9 @@ Keep source under `src/`, test suites under `tests/`, and documentation under `d
 ### SOURCE LAYERS
 
 ```text
-sdk/
 ├── src/       # CLI, orchestration, state, runners, server, and UI
 ├── tests/     # Unit, integration, and isolated E2E suites
 └── docker/    # Container workspace bootstrap
-```
-
-### DOCUMENT GROUPS
-
-```text
-docs/
-├── adr/       # Architecture, tests, and optional technical decisions
-└── feature/
-    ├── agents/ orchestration/ qa/ server/
-    ├── package/ terminal/
-    └── Stable public links: sdk_cli.md, sdk_steering.md, QA_TESTER.md
 ```
 
 ## LAYERS
@@ -54,10 +42,10 @@ docs/
 | SDK core | Run optional PBB `REFINEMENT`, then `BOOTSTRAP`, `PLANNING`, `DEVELOPMENT`, `REVIEW`, `TRANSITION`, `MEMORY`, and `DEPLOY`; handle `CASCADE_BLOCKED` and `HALTED`. | [SDK_CORE.md](../feature/orchestration/SDK_CORE.md) |
 | Agent runners | Register CLI and SDK strategies behind `IAgentRunner`. | [SDK_AGENT_RUNNER.md](../feature/agents/SDK_AGENT_RUNNER.md) |
 | File state | Parse and atomically mutate Markdown and JSON project state. | [SDK_STATE.md](../feature/orchestration/SDK_STATE.md) |
-| Steering | Validate free-text directives and apply rule, rollback, or score actions. | [SDK_STEERING.md](../feature/sdk_steering.md) |
+| Steering | Validate free-text directives and apply rule, rollback, or score actions. | [SDK_STEERING.md](../feature/orchestration/SDK_STEERING.md) |
 | Settings | Resolve runner defaults and per-phase overrides. | [SDK_SETTINGS.md](../feature/orchestration/SDK_SETTINGS.md) |
 | Diagnose | Process pending sessions, trace execution, and trigger meta-harness optimization. | [SDK_DIAGNOSE.md](../feature/agents/SDK_DIAGNOSE.md) |
-| CLI | Parse `hrns` commands and coordinate interactive execution. | [SDK_CLI.md](../feature/sdk_cli.md) |
+| CLI | Parse `hrns` commands and coordinate interactive execution. | [SDK_CLI.md](../feature/cli/../cli/sdk_cli.md) |
 
 ### SUPPORTING MODULES
 
@@ -65,7 +53,7 @@ docs/
 | HTTP server | Expose non-interactive orchestration, settings, telemetry, reports, and health endpoints. | [HTTP_SERVER.md](../feature/server/HTTP_SERVER.md) |
 | Terminal UI | Render banners, progress, and ANSI output. | [SDK_TERMINAL_UI.md](../feature/terminal/SDK_TERMINAL_UI.md) |
 | Package | Define public exports and npm build output. | [SDK_PACKAGE.md](../feature/package/SDK_PACKAGE.md) |
-| QA tester | Plan, validate, execute, and report runtime acceptance scenarios. | [QA_TESTER.md](../feature/QA_TESTER.md) |
+| QA tester | Plan, validate, execute, and report runtime acceptance scenarios. | [QA_TESTER.md](../feature/qa/QA_TESTER.md) |
 
 ## PATTERNS
 

@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-25"
+updated: "2026-09-26"
 ---
 
 ```graph
@@ -21,6 +21,12 @@ Provides ANSI-based terminal rendering utilities for the CLI orchestrator.
 
 ## OVERVIEW
 The terminal UI module handles visual representation in the CLI, including startup banners, animated spinners, and progress bars. It leverages ANSI escape sequences to provide a rich CLI experience.
+
+## KNOWLEDGE
+
+```json
+{"schema_version":1,"entities":[{"id":"capability:terminal-progress-rendering","type":"capability","label":"Terminal progress rendering","definition":"Render orchestration progress and animated status in the terminal.","aliases":[]}],"claims":[{"id":"claim:spinner-stream-and-cleanup","subject":"capability:terminal-progress-rendering","relation":null,"object":null,"statement":"TerminalProgress writes spinner frames to stderr, stops an existing spinner before starting another, and stopSpinner clears its interval and restores the cursor.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/ui/TerminalProgress.ts","locator":"startSpinner and stopSpinner","snapshot":null}],"derived_from":[],"gap":null}]}
+```
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -69,5 +75,4 @@ graph TD
 ## REFERENCES
 - [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Folder structure and module responsibilities.
 - [**SDK_CORE.md**](../orchestration/SDK_CORE.md): Orchestrator integration points.
-- [**SDK_STEERING.md**](../sdk_steering.md): Steering output confirmation UI dependencies.
-
+- [**SDK_STEERING.md**](../orchestration/SDK_STEERING.md): Steering output confirmation UI dependencies.

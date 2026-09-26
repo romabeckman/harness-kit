@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-25"
+updated: "2026-09-26"
 ---
 
 ```graph
@@ -25,51 +25,19 @@ The package manifest sets `@romabeckman/hrns` to version `0.9.2`. Its exports ma
 ## KNOWLEDGE
 
 ```json
-{
-  "schema_version": 1,
-  "entities": [
-    {
-      "id": "contract:npm-package-surface",
-      "type": "contract",
-      "label": "SDK package surface",
-      "definition": "Package metadata that selects the published version, public entry, and included files.",
-      "aliases": []
-    }
-  ],
-  "claims": [
-    {
-      "id": "claim:package-version-and-exports",
-      "subject": "contract:npm-package-surface",
-      "relation": null,
-      "object": null,
-      "statement": "package.json sets version 0.9.2, exposes dist/index.js and dist/index.d.ts from the root export, and allows dist plus README.md in the package.",
-      "kind": "observation",
-      "status": "supported",
-      "evidence": [
-        {
-          "kind": "configuration",
-          "source": "package.json",
-          "locator": "version, exports['.'], and files",
-          "snapshot": null
-        }
-      ],
-      "derived_from": [],
-      "gap": null
-    }
-  ]
-}
+{"schema_version":1,"entities":[{"id":"contract:npm-package-surface","type":"contract","label":"SDK package surface","definition":"Package metadata that selects the published version, public entry, and included files.","aliases":[]}],"claims":[{"id":"claim:package-version-and-exports","subject":"contract:npm-package-surface","relation":null,"object":null,"statement":"package.json sets version 0.9.2, exposes dist/index.js and dist/index.d.ts from the root export, and allows dist plus README.md in the package.","kind":"observation","status":"supported","evidence":[{"kind":"configuration","source":"package.json","locator":"version, exports[\u0027.\u0027], and files","snapshot":null}],"derived_from":[],"gap":null}]}
 ```
 
 ## FOLDER STRUCTURE
 <folder_structure>
 ```
 sdk/
-├── package.json          # npm config with prepublishOnly gate
-├── tsconfig.build.json   # Scoped to src/**/*, excludes tests
-├── README.md             # Package documentation
-└── src/
-    └── cli/
-        └── run.ts        # CLI entry point
+â”œâ”€â”€ package.json          # npm config with prepublishOnly gate
+â”œâ”€â”€ tsconfig.build.json   # Scoped to src/**/*, excludes tests
+â”œâ”€â”€ README.md             # Package documentation
+â””â”€â”€ src/
+    â””â”€â”€ cli/
+        â””â”€â”€ run.ts        # CLI entry point
 ```
 </folder_structure>
 
@@ -90,7 +58,7 @@ sdk/
 2. Define the `files` array.
 
 <code_example>
-# CORRECT: single "." entry — forces callers through the public index
+# CORRECT: single "." entry â€” forces callers through the public index
 "exports": {
   ".": {
     "require": "./dist/index.js",
@@ -98,7 +66,7 @@ sdk/
   }
 }
 
-# WRONG: no exports field — allows deep imports to private modules
+# WRONG: no exports field â€” allows deep imports to private modules
 "main": "dist/index.js"
 </code_example>
 

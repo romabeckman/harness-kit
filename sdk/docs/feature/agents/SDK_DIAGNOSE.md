@@ -13,41 +13,11 @@ edges:
     target: "feature:sdk_agent_runner"
   - relation: depends_on
     target: "feature:sdk_settings"
-updated: "2026-09-25"
+updated: "2026-09-26"
 ---
 
 ```graph
-{
-  "node_id": "feature:sdk_diagnose",
-  "domain": "diagnose",
-  "implements": ["adr:architecture"],
-  "tested_by": ["adr:tests"],
-  "depends_on": ["feature:sdk_agent_runner", "feature:sdk_settings"],
-  "entrypoints": ["src/diagnose/DiagnoseService.ts"],
-  "registration_files": ["src/index.ts"],
-  "reference_files": ["src/diagnose/JsonlSessionLedger.ts", "src/diagnose/SessionIdGenerator.ts"],
-  "code_files": [
-    "src/diagnose/CandidatePromotionService.ts",
-    "src/diagnose/CandidateReader.ts",
-    "src/diagnose/DiagnoseReportRenderer.ts",
-    "src/diagnose/MetaHarnessAgentAdapter.ts",
-    "src/diagnose/TraceDirectoryScanner.ts",
-    "src/diagnose/types.ts",
-    "src/diagnose/utils/DiagnosePaths.ts"
-  ],
-  "test_files": [
-    "src/diagnose/__tests__/CandidatePromotionService.test.ts",
-    "src/diagnose/__tests__/CandidateReader.test.ts",
-    "src/diagnose/__tests__/DiagnoseReportRenderer.test.ts",
-    "src/diagnose/__tests__/DiagnoseService.test.ts",
-    "src/diagnose/__tests__/JsonlSessionLedger.test.ts",
-    "src/diagnose/__tests__/MetaHarnessAgentAdapter.test.ts",
-    "src/diagnose/__tests__/SessionIdGenerator.test.ts",
-    "src/diagnose/__tests__/TraceDirectoryScanner.test.ts",
-    "src/diagnose/__tests__/types.test.ts",
-    "src/diagnose/utils/__tests__/DiagnosePaths.test.ts"
-  ]
-}
+{"node_id":"feature:sdk_diagnose","domain":"diagnose","implements":["adr:architecture"],"tested_by":["adr:tests"],"depends_on":["feature:sdk_agent_runner","feature:sdk_settings"],"entrypoints":["src/diagnose/DiagnoseService.ts"],"registration_files":["src/index.ts"],"reference_files":["src/diagnose/JsonlSessionLedger.ts","src/diagnose/SessionIdGenerator.ts"],"code_files":["src/diagnose/CandidatePromotionService.ts","src/diagnose/CandidateReader.ts","src/diagnose/DiagnoseReportRenderer.ts","src/diagnose/MetaHarnessAgentAdapter.ts","src/diagnose/TraceDirectoryScanner.ts","src/diagnose/types.ts","src/diagnose/utils/DiagnosePaths.ts"],"test_files":["src/diagnose/__tests__/CandidatePromotionService.test.ts","src/diagnose/__tests__/CandidateReader.test.ts","src/diagnose/__tests__/DiagnoseReportRenderer.test.ts","src/diagnose/__tests__/DiagnoseService.test.ts","src/diagnose/__tests__/JsonlSessionLedger.test.ts","src/diagnose/__tests__/MetaHarnessAgentAdapter.test.ts","src/diagnose/__tests__/SessionIdGenerator.test.ts","src/diagnose/__tests__/TraceDirectoryScanner.test.ts","src/diagnose/__tests__/types.test.ts","src/diagnose/utils/__tests__/DiagnosePaths.test.ts"]}
 ```
 
 # SDK DIAGNOSE
@@ -55,6 +25,12 @@ Automates execution trace recording, session ledger persistence, meta-harness op
 
 ## OVERVIEW
 The diagnose module captures orchestration performance in `docs/product/diagnose-sessions.jsonl` (recording runner, agent, skill, model, effort, phase across all executions, and domain during `DEVELOPMENT` and `REVIEW` phases). It processes pending sessions in batches, generates sequential trace session IDs (`session-YYYY-MM-DD-NNN`), delegates trace logging to `harness-kit:meta-harness-agent`, triggers candidate generation upon completing batches, renders diagnosis reports, and delegates candidate review/promotion interactively or autonomously via `CandidatePromotionService`.
+
+## KNOWLEDGE
+
+```json
+{"schema_version":1,"entities":[{"id":"capability:diagnosis-session-processing","type":"capability","label":"Diagnosis session processing","definition":"Process pending diagnosis sessions and produce diagnosis outputs through the configured agent runner.","aliases":[]}],"claims":[{"id":"claim:diagnose-phase-settings","subject":"capability:diagnosis-session-processing","relation":null,"object":null,"statement":"DiagnoseService resolves phase settings for the selected runner using the diagnose phase key.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/diagnose/DiagnoseService.ts","locator":"phase settings resolution with key and \u0027diagnose\u0027","snapshot":null}],"derived_from":[],"gap":null}]}
+```
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -150,7 +126,7 @@ graph TD
 ```
 
 ## REFERENCES
-- [**SDK_CLI.md**](../sdk_cli.md): `hrns diagnose` and `hrns candidate` commands.
+- [**SDK_CLI.md**](../cli/sdk_cli.md): `hrns diagnose` and `hrns candidate` commands.
 - [**SDK_AGENT_RUNNER.md**](SDK_AGENT_RUNNER.md): `AgentRunnerFactory` and `IAgentRunner` interface.
 - [**SDK_SETTINGS.md**](../orchestration/SDK_SETTINGS.md): `HarnessSettings` resolution for diagnose phase.
 - [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): System architecture and integration boundaries.

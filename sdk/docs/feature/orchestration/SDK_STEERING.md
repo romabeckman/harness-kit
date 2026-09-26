@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-25"
+updated: "2026-09-26"
 ---
 
 ```graph
@@ -22,14 +22,20 @@ Allows developers to inject runtime directives when resuming an orchestration se
 ## OVERVIEW
 The steering module translates a free-text steering message into structured `SteeringAction` values using an LLM. It modifies `BOOTSTRAP-CONFIG.json` to persist rules or roll back the orchestrator's phase state. Default user rules suppress progress narration and require an empty JSON completion response.
 
+## KNOWLEDGE
+
+```json
+{"schema_version":1,"entities":[{"id":"capability:session-steering","type":"capability","label":"Session steering","definition":"Convert developer steering messages into validated actions that update runtime rules, phase state, or review scores.","aliases":[]},{"id":"rule:steering-action-validation","type":"rule","label":"Steering action validation","definition":"Accept only recognized actions with valid phase names and bounded rule lengths; clamp numeric scores to the supported range.","aliases":[]}],"claims":[{"id":"claim:steering-actions-validated","subject":"capability:session-steering","relation":"constrained_by","object":"rule:steering-action-validation","statement":"SteeringAnalyzer accepts add_rule strings up to 5000 characters, rollback targets from its valid phase list, and clamps numeric scores to 0 through 10; other malformed actions are ignored.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/orchestrator/SteeringAnalyzer.ts","locator":"validateActions; MAX_RULE_LENGTH, VALID_PHASES, SCORE_MIN, SCORE_MAX","snapshot":null}],"derived_from":[],"gap":null},{"id":"claim:steering-persists-config","subject":"capability:session-steering","relation":null,"object":null,"statement":"SteeringService loads bootstrap config, applies each supplied action, and saves the config after processing.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/orchestrator/services/SteeringService.ts","locator":"applySteeringActions","snapshot":null}],"derived_from":[],"gap":null}]}
+```
+
 ## FOLDER STRUCTURE
 <folder_structure>
 ```
 sdk/src/orchestrator/
-└── SteeringAnalyzer.ts   # LLM-based steering message classifier
+â””â”€â”€ SteeringAnalyzer.ts   # LLM-based steering message classifier
 
 docs/product/
-└── BOOTSTRAP-CONFIG.json # Persists steeringRules[]
+â””â”€â”€ BOOTSTRAP-CONFIG.json # Persists steeringRules[]
 ```
 </folder_structure>
 
@@ -65,12 +71,11 @@ PROHIBITED: Calling `applySteeringActions` with an empty array.
 graph TD
     THIS["SDK Steering Feature"] -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**SDK_CORE.md**](orchestration/SDK_CORE.md): `BootstrapConfig` type and `applySteeringActions` method.
-- [**SDK_AGENT_RUNNER.md**](agents/SDK_AGENT_RUNNER.md): `IAgentRunner` interface used by `SteeringAnalyzer`.
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): `SteeringAnalyzer` module responsibilities.
-
+- [**SDK_CORE.md**](SDK_CORE.md): `BootstrapConfig` type and `applySteeringActions` method.
+- [**SDK_AGENT_RUNNER.md**](../agents/SDK_AGENT_RUNNER.md): `IAgentRunner` interface used by `SteeringAnalyzer`.
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): `SteeringAnalyzer` module responsibilities.

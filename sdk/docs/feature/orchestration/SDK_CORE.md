@@ -9,44 +9,40 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-25"
+updated: "2026-09-26"
 ---
 ```graph
-{
-  "node_id": "feature:sdk_core",
-  "domain": "core",
-  "implements": ["adr:architecture"],
-  "tested_by": ["adr:tests"],
-  "entrypoints": ["src/orchestrator/HarnessOrchestrator.ts"],
-  "registration_files": ["src/orchestrator/ChainBuilder.ts","src/orchestrator/phases/index.ts"],
-  "reference_files": ["src/orchestrator/phases/AbstractPhaseHandler.ts"],
-  "code_files": ["src/context-assembler/ContextAssembler.ts","src/context-assembler/types.ts","src/json-extraction/JsonExtractionProtocol.ts","src/json-extraction/types.ts","src/orchestrator/ReentryResolver.ts","src/orchestrator/phases/BootstrapHandler.ts","src/orchestrator/phases/CascadeBlockedHandler.ts","src/orchestrator/phases/DeployHandler.ts","src/orchestrator/phases/DevelopmentHandler.ts","src/orchestrator/phases/MemoryHandler.ts","src/orchestrator/phases/PlanningHandler.ts","src/orchestrator/phases/RefinementHandler.ts","src/orchestrator/phases/ReviewHandler.ts","src/orchestrator/phases/TransitionHandler.ts","src/orchestrator/services/AgentInvocationService.ts","src/orchestrator/services/PhaseDecisionLogger.ts","src/orchestrator/services/ProjectStateService.ts","src/orchestrator/types.ts","src/orchestrator/utils/GitSensitiveFiles.ts","src/orchestrator/utils/OrchestratorFormatter.ts","src/orchestrator/utils/PhaseFileUtils.ts","src/orchestrator/utils/PromptHelpers.ts","src/orchestrator/utils/SessionHelpers.ts","src/settings/DefaultSettings.ts","src/settings/HarnessSettings.ts","src/telemetry/TokenLedger.ts","src/validation-gate/ValidationGate.ts","src/validation-gate/types.ts"],
-  "test_files": ["src/context-assembler/__tests__/ContextAssembler.test.ts","src/orchestrator/__tests__/HarnessOrchestrator.test.ts","src/orchestrator/phases/__tests__/BootstrapHandler.test.ts","src/orchestrator/phases/__tests__/CascadeBlockedHandler.test.ts","src/orchestrator/phases/__tests__/PhaseAHandler.test.ts","src/orchestrator/phases/__tests__/PhaseBHandler.test.ts","src/orchestrator/phases/__tests__/PhaseFHandler.test.ts","src/orchestrator/phases/__tests__/RefinementHandler.test.ts","src/orchestrator/phases/__tests__/ReviewHandler.test.ts","src/orchestrator/services/__tests__/ProjectStateService.test.ts","src/orchestrator/services/__tests__/ProjectStateService.spec-readiness.test.ts","src/orchestrator/utils/__tests__/GitSensitiveFiles.test.ts","src/orchestrator/utils/__tests__/PhaseFileUtils.test.ts","src/orchestrator/utils/__tests__/PromptHelpers.test.ts","src/validation-gate/__tests__/ValidationGate.test.ts","tests/integration/t11-orchestrator-bootstrap-phasea.test.ts","tests/integration/t12-orchestrator-phaseb.test.ts","tests/integration/t13-orchestrator-phasec.test.ts","tests/unit/phases/t04-phasec-handler.test.ts","tests/unit/phases/t06-phasee-handler.test.ts","tests/unit/t09-reentry-resolver.test.ts","tests/unit/t10-state-machine.test.ts"]
-}
+{"node_id":"feature:sdk_core","domain":"core","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/orchestrator/HarnessOrchestrator.ts"],"registration_files":["src/orchestrator/ChainBuilder.ts","src/orchestrator/phases/index.ts"],"reference_files":["src/orchestrator/phases/AbstractPhaseHandler.ts"],"code_files":["src/context-assembler/ContextAssembler.ts","src/context-assembler/types.ts","src/json-extraction/JsonExtractionProtocol.ts","src/json-extraction/types.ts","src/orchestrator/ReentryResolver.ts","src/orchestrator/phases/BootstrapHandler.ts","src/orchestrator/phases/CascadeBlockedHandler.ts","src/orchestrator/phases/DeployHandler.ts","src/orchestrator/phases/DevelopmentHandler.ts","src/orchestrator/phases/MemoryHandler.ts","src/orchestrator/phases/PlanningHandler.ts","src/orchestrator/phases/RefinementHandler.ts","src/orchestrator/phases/ReviewHandler.ts","src/orchestrator/phases/TransitionHandler.ts","src/orchestrator/services/AgentInvocationService.ts","src/orchestrator/services/PhaseDecisionLogger.ts","src/orchestrator/services/ProjectStateService.ts","src/orchestrator/types.ts","src/orchestrator/utils/GitSensitiveFiles.ts","src/orchestrator/utils/OrchestratorFormatter.ts","src/orchestrator/utils/PhaseFileUtils.ts","src/orchestrator/utils/PromptHelpers.ts","src/orchestrator/utils/SessionHelpers.ts","src/settings/DefaultSettings.ts","src/settings/HarnessSettings.ts","src/telemetry/TokenLedger.ts","src/validation-gate/ValidationGate.ts","src/validation-gate/types.ts"],"test_files":["src/context-assembler/__tests__/ContextAssembler.test.ts","src/orchestrator/__tests__/HarnessOrchestrator.test.ts","src/orchestrator/phases/__tests__/BootstrapHandler.test.ts","src/orchestrator/phases/__tests__/CascadeBlockedHandler.test.ts","src/orchestrator/phases/__tests__/PhaseAHandler.test.ts","src/orchestrator/phases/__tests__/PhaseBHandler.test.ts","src/orchestrator/phases/__tests__/PhaseFHandler.test.ts","src/orchestrator/phases/__tests__/RefinementHandler.test.ts","src/orchestrator/phases/__tests__/ReviewHandler.test.ts","src/orchestrator/services/__tests__/ProjectStateService.test.ts","src/orchestrator/services/__tests__/ProjectStateService.spec-readiness.test.ts","src/orchestrator/utils/__tests__/GitSensitiveFiles.test.ts","src/orchestrator/utils/__tests__/PhaseFileUtils.test.ts","src/orchestrator/utils/__tests__/PromptHelpers.test.ts","src/validation-gate/__tests__/ValidationGate.test.ts","tests/integration/t11-orchestrator-bootstrap-phasea.test.ts","tests/integration/t12-orchestrator-phaseb.test.ts","tests/integration/t13-orchestrator-phasec.test.ts","tests/unit/phases/t04-phasec-handler.test.ts","tests/unit/phases/t06-phasee-handler.test.ts","tests/unit/t09-reentry-resolver.test.ts","tests/unit/t10-state-machine.test.ts"]}
 ```
 
 # SDK CORE
 
-Implements the autonomous-orchestrator state machine as an importable library.
+Implements SDK orchestration as an importable library.
 
 ## OVERVIEW
 `sdk_core` provides `HarnessOrchestrator`, phase handlers, payloads, validation, and state ports.
+
+## KNOWLEDGE
+
+```json
+{"schema_version":1,"entities":[{"id":"capability:orchestration-cycle","type":"capability","label":"Orchestration cycle","definition":"Run the project workflow through persisted phases using configured handlers and state.","aliases":[]}],"claims":[{"id":"claim:orchestrator-phase-chain","subject":"capability:orchestration-cycle","relation":null,"object":null,"statement":"HarnessOrchestrator.run enters the resolved re-entry phase and processes the configured phase chain until the orchestration loop completes.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/orchestrator/HarnessOrchestrator.ts","locator":"run and ReentryResolver.resolve call","snapshot":null}],"derived_from":[],"gap":null}]}
+```
 
 ## FOLDER STRUCTURE
 <folder_structure>
 ```
 sdk/src/
-├── index.ts                          # Public re-exports only
-├── orchestrator/
-│   ├── HarnessOrchestrator.ts        # State machine loop & session storage
-│   ├── phases/                       # Chain-of-Responsibility handlers
-│   └── ReentryResolver.ts            # Ordered re-entry predicates
-├── file-state/
-│   └── FileStateManager.ts           # IFileStateManager implementation
-├── context-assembler/
-│   └── ContextAssembler.ts           # Per-phase payload builders
-├── validation-gate/
-│   └── ValidationGate.ts             # Pure evaluate() function
+â”œâ”€â”€ index.ts                          # Public re-exports only
+â”œâ”€â”€ orchestrator/
+â”‚   â”œâ”€â”€ HarnessOrchestrator.ts        # State machine loop & session storage
+â”‚   â”œâ”€â”€ phases/                       # Chain-of-Responsibility handlers
+â”‚   â””â”€â”€ ReentryResolver.ts            # Ordered re-entry predicates
+â”œâ”€â”€ file-state/
+â”‚   â””â”€â”€ FileStateManager.ts           # IFileStateManager implementation
+â”œâ”€â”€ context-assembler/
+â”‚   â””â”€â”€ ContextAssembler.ts           # Per-phase payload builders
+â”œâ”€â”€ validation-gate/
+â”‚   â””â”€â”€ ValidationGate.ts             # Pure evaluate() function
 ```
 </folder_structure>
 
@@ -64,28 +60,14 @@ sdk/src/
 
 ## HOW TO USE THE ORCHESTRATOR API
 
-### Steps
-1. Import `HarnessOrchestrator` from `@romabeckman/hrns`.
-2. Instantiate it with required options and an `IAgentRunner`.
-3. Call `run()`.
-
-<code_example>
-// # CORRECT: Start the orchestrator with its required scope and runner.
-const orchestrator = new HarnessOrchestrator({
-  scope: "Implement login",
-  projectPaths: ["./src"],
-  agentRunner: myAgentRunner,
-  complexity: "AUTO"
-});
-await orchestrator.run();
-</code_example>
+Instantiate `HarnessOrchestrator` with scope, project paths, and an `IAgentRunner`; call `run()` to start or resume the state machine.
 
 ## PARAMETERS / CONFIGURATIONS
 
 | Name | Type | Required | Description | Default |
 |---|---|---|---|---|
-| `scope` | string | Yes | The objective for the current cycle | — |
-| `projectPaths` | string[] | Yes | Directories involved | — |
+| `scope` | string | Yes | The objective for the current cycle | â€” |
+| `projectPaths` | string[] | Yes | Directories involved | â€” |
 | `agentRunner` | IAgentRunner | No | Runner implementation | Auto-detected |
 | `productDir` | string | No | Custom output directory for docs | `docs/product/` |
 
@@ -95,11 +77,11 @@ REQUIRED: Check staged Git paths with the shared sensitive-file utility before d
 REQUIRED: Use `isExtractionError` / `isExtractionResult` type guards to branch on extraction outcomes.
 REQUIRED: Keep `001-*` and `002-*` files at most 5,000 characters with `InlinePolicy = 'never'`.
 ALLOWED: Generate `003-*` and `004-*` files with `InlinePolicy = 'always'`.
-REQUIRED: For `HIGH` complexity, resolve refinement questions from evidence and record answers in each applicable `003-${PROJECT_NAME}-tactical-design.md`.
+REQUIRED: Ground `HIGH`-complexity refinement answers in each applicable `003-${PROJECT_NAME}-tactical-design.md`.
 REQUIRED: Pass the active runner to `inlineOrReference`; `writePromptToStdin = false` emits file references only.
 REQUIRED: Render Bootstrap, Planning, Refinement, Development retries, Review, and Memory business context with policy `always`; Bootstrap, Planning, Development retries, Review, and Memory select `REFINEMENT.md` when present, otherwise `SCOPE.md`, and never pass both. Refinement consumes `SCOPE.md` to create `REFINEMENT.md`. Honor `FORCE_INLINE_MAX` (15,000 chars) when rendering content.
 REQUIRED: Invoke `harness-kit:pbb-design` during optional REFINEMENT, transition to BOOTSTRAP, and preserve PBB decisions and provisional assumptions in Planning.
-ALLOWED: Ask 0–12 PBB gap questions; keep `Frontend Screens & Visualization` as an optional evidence-based complement.
+ALLOWED: Ask 0â€“12 PBB gap questions; keep `Frontend Screens & Visualization` as an optional evidence-based complement.
 PROHIBITED: Mutating state directly without using `IFileStateManager`.
 REQUIRED: Tag `DeveloperSessionState` with `phase` to isolate development and review.
 REQUIRED: Resume matching retry sessions with `REWORK-LOG.md`; otherwise use a standalone prompt.
@@ -113,16 +95,6 @@ REQUIRED: Use existing `TDD-OUTPUT.json` as a resume signal; skip another develo
 REQUIRED: Treat `TDD-OUTPUT.json` as optional review context, not as a phase-transition gate.
 REQUIRED: When review is skipped, record the decision without synthetic Tech Lead or QA scores.
 REQUIRED: Summarize completed work and review focus in `TDD-OUTPUT.json.developerHandoff` using at most 500 characters.
-
-## DOCUMENT MAP
-
-```mermaid
-graph TD
-    THIS["SDK Core Feature"] -->|implements| ARCH["Architecture ADR"]
-    THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../../adr/ARCHITECTURE.md"
-    click TESTS "../../adr/TESTS.md"
-```
 
 ## REFERENCES
 

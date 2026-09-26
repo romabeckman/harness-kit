@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-25"
+updated: "2026-09-26"
 ---
 
 ```graph
@@ -26,15 +26,21 @@ The backlog parser treats `-`, empty cells, and `None` as no dependencies. This 
 
 Dependency cascade writes `BLOCKED` to both the affected backlog features and all of their task rows, keeping feature and task state aligned.
 
+## KNOWLEDGE
+
+```json
+{"schema_version":1,"entities":[{"id":"capability:file-backed-project-state","type":"capability","label":"File-backed project state","definition":"Read and mutate orchestration project state stored in files.","aliases":[]},{"id":"rule:atomic-state-replacement","type":"rule","label":"Atomic state replacement","definition":"Replace state files through a temporary file and rename to avoid partially written content.","aliases":[]}],"claims":[{"id":"claim:file-state-atomic-writes","subject":"capability:file-backed-project-state","relation":"constrained_by","object":"rule:atomic-state-replacement","statement":"FileStateManager routes state mutations through atomicWrite, which writes a temporary path and renames it to the target path.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/file-state/FileStateManager.ts","locator":"atomicWrite helper and FileStateManager mutation calls","snapshot":null}],"derived_from":[],"gap":null}]}
+```
+
 ## FOLDER STRUCTURE
 <folder_structure>
 ```
 sdk/src/file-state/
-├── FileStateManager.ts     # Implementation of state methods
-├── types.ts                # Interfaces like DecisionEntry
-└── parsers/
-    ├── BacklogParser.ts    # Strips markdown wrapping from IDs
-    └── DevStateParser.ts   # Parses development state tables
+â”œâ”€â”€ FileStateManager.ts     # Implementation of state methods
+â”œâ”€â”€ types.ts                # Interfaces like DecisionEntry
+â””â”€â”€ parsers/
+    â”œâ”€â”€ BacklogParser.ts    # Strips markdown wrapping from IDs
+    â””â”€â”€ DevStateParser.ts   # Parses development state tables
 ```
 </folder_structure>
 
@@ -78,7 +84,6 @@ graph TD
 ```
 
 ## REFERENCES
-- [**SDK_CORE.md**](SDK_CORE.md): Foundation — IFileStateManager port and adapter.
+- [**SDK_CORE.md**](SDK_CORE.md): Foundation â€” IFileStateManager port and adapter.
 - [**SDK_AGENT_RUNNER.md**](../agents/SDK_AGENT_RUNNER.md): Outbound port implementation.
 - [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Ports-and-Adapters structure.
-
