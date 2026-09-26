@@ -39,6 +39,7 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 
 - REQUIRED: Keep every generated or updated Markdown file at **10,000 characters maximum**, except `docs/.digest.md`, which has a **3,000-character maximum**. Count the entire file: YAML, graph blocks, `## KNOWLEDGE`, fences, headings, and whitespace. Normalize CRLF/CR to LF and count Unicode characters, not bytes or tokens. No sections are exempt.
 - REQUIRED: If the limit is exceeded, remove redundant explanations and repeated facts first. Then split by coherent capability or responsibility within the authorized documentation scope, preserving canonical IDs, evidence, uncertainty, and resolvable references; synchronize indexes. Never truncate JSON, discard material constraints, or replace evidence with unsupported summaries to fit.
+- REQUIRED: For feature knowledge, apply the priority order in [ONTOLOGY-RULES.md](./references/ONTOLOGY-RULES.md#knowledge-priority-under-the-size-limit) and disclose material coverage gaps.
 - REQUIRED: Budget accumulated context across documents too: route through the indexes, read only task-relevant sections from one domain at a time, and expand to cited evidence or dependencies when needed. A full review processes all scoped domains sequentially; it does not require loading every document together.
 - REQUIRED: Keep claim IDs and source locators in working summaries. Reopen evidence before relying on a compressed or conflicting claim; report missing support explicitly instead of inferring it from unrelated context.
 

@@ -29,6 +29,13 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 7. Cite the exact guard, call, declaration, request, or execution result supporting each claim. Preserve scope and exceptions in the statement. If only metadata is relevant to the task, metadata-only knowledge is sufficient; explain that scope.
 8. Reconcile with existing knowledge, preserve uncertainty, and apply the completion gate below. Do not add redundant claims merely to populate the section.
 
+## KNOWLEDGE PRIORITY UNDER THE SIZE LIMIT
+
+- REQUIRED: Prioritize scoped knowledge in this order: (1) invariants whose violation causes incorrect behavior, security failures, or data loss; (2) public contracts and consequential dependencies; (3) governing decisions; (4) secondary metadata. Preserve applicable conditions and exceptions with each retained claim, regardless of priority.
+- REQUIRED: Apply this priority autonomously. Remove redundant wording and repeated facts before secondary detail; preserve evidence, uncertainty, canonical IDs, and referenced records. If essential knowledge still exceeds the file limit, split by coherent responsibility under TOTAL CONTEXT BUDGET and update references.
+- REQUIRED: Declare material coverage gaps in the feature prose and delivery summary; use claim `gap` for missing evidence about that claim. Never present omitted information as nonexistent or unknown evidence as confirmed. Apply SEMANTIC COMPLETION GATE to partial coverage too.
+- REQUIRED: Ask the user only when a missing business decision or conflicting requirements materially block the requested outcome; routine selection and compression do not require approval.
+
 ## SEMANTIC COMPLETION GATE
 
 - REQUIRED: For each scoped feature domain, answer from knowledge records: what capability is provided, which applicable rule or contract constrains it, what dependency matters for a change, and where the supporting evidence is located.
