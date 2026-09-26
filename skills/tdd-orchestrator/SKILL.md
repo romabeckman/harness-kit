@@ -161,7 +161,7 @@ Task is COMPLETE only when: 100% tests pass WITH verified output evidence
 
 <step id="5" name="Update Documentation">
 
-INTERACTIVE mode only: when applicable, invoke `project-memory` to update:
+Invoke `project-memory` to update:
 - OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs
 - Input/Output schemas, descriptions, HTTP status codes
 - The `docs/feature/{FEATURE_NAME}.md` file must be updated whenever a feature is created or updated.
