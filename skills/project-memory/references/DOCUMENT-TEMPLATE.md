@@ -6,17 +6,19 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 
 ## RULES BEFORE WRITING
 
+- REQUIRED: Apply [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget): exclude leading YAML frontmatter and complete graph blocks (`graph`, `mermaid`, and ontology JSON under `## KNOWLEDGE`) from all character limits below. Count headings and surrounding prose.
 - REQUIRED: One document covers exactly **one** business domain, module, or architectural layer.
 - PROHIBITED: Mixing unrelated topics in a single file.
 - REQUIRED: Keep document compact, objective, and dense — strictly under **8,000 characters** (excluding YAML frontmatter header and graph blocks).
 - REQUIRED: For complementary ADRs extracted from `ARCHITECTURE.md` (e.g., `SECURITY.md`, `OBSERVABILITY.md`, `TELEMETRY.md`, `DATABASE.md`), ensure strict compliance with the 8,000 character limit (excluding YAML frontmatter header and graph blocks) and cross-reference back to `ARCHITECTURE.md`.
 - REQUIRED: Cross-reference section at the end listing related `docs/` files.
+- REQUIRED: For consequential domain or behavior claims, read [ONTOLOGY-RULES.md](./ONTOLOGY-RULES.md) and include `## KNOWLEDGE` as specified there. Keep uncertainty and evidence status explicit, including when every source is LLM-generated.
 
 ---
 
 ## MANDATORY TEMPLATE
 
-```markdown
+````markdown
 ---
 doc_type: [feature or adr]
 domain: [domain name]
@@ -30,9 +32,6 @@ edges:
     when: "[required only for optional, max 300 chars]"
 updated: YYYY-MM-DD
 ---
-# [Document Title]
-[One sentence stating the purpose of this document.]
-
 ```graph
 {
   "node_id": "[type]:[slug]",
@@ -57,13 +56,16 @@ updated: YYYY-MM-DD
 }
 ```
 
+# [Document Title]
+[One sentence stating the purpose of this document.]
+
 Use routing arrays by role:
 
 - `entrypoints`: public or runtime entry files agents should inspect first.
 - `registration_files`: registries, factories, dependency injection, exports, or command maps changed when extending the feature.
 - `reference_files`: smallest representative implementations to copy as patterns.
 - `code_files`: remaining production files defining the feature.
-- `test_files`: tests proving feature behavior and integration.
+- `test_files`: test definitions for feature behavior and integration; listing a file does not prove execution or passing results.
 
 REQUIRED: Use project-relative paths, remove duplicates across arrays, and list only files that exist.
 REQUIRED: Use empty arrays when a routing role does not apply.
@@ -73,6 +75,9 @@ ALLOWED: `read` remains optional for ADR-to-ADR edges when no feature routing po
 
 ## OVERVIEW
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]
+
+## KNOWLEDGE
+[For consequential claims touched by this task, insert one fenced json block following ONTOLOGY-RULES.md: schema_version, entities, claims. Use canonical IDs and inspected evidence. Preserve requirements, observations, hypotheses, and unresolved gaps separately. Omit this section when no consequential claims apply. Exclude this graph block from the character count; count the heading and surrounding prose.]
 
 ## FOLDER STRUCTURE
 [High-level architectural view: folders and layers only, not a file inventory. Show one representative entry per folder/layer — enough to convey the module's shape and where new code of each type belongs. PROHIBITED: enumerating every individual file already listed in the `code_files`/`test_files` arrays of the top ````graph` block — that duplicates content and wastes tokens. If a folder holds many similar files (e.g. multiple use cases, multiple adapters), collapse them into one annotated line (e.g. `use-cases/ # RunX, GetY, UpdateZ use cases`) instead of one line per file.]
@@ -150,7 +155,7 @@ graph TD
 
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md or ./ARCHITECTURE.md): [One-line description of the relationship]
 - [**TESTS.md**](../adr/TESTS.md or ./TESTS.md): [One-line description of the relationship]
-```
+````
 
 ---
 

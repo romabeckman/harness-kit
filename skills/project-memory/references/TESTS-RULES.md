@@ -9,6 +9,7 @@ Defines the analysis framework and strict rules for generating and maintaining `
 | Field | Value |
 |---|---|
 | Target file | `docs/adr/TESTS.md` |
+| Max size | Strictly fewer than 8,000 counted-body characters; exclude YAML frontmatter and graph blocks per [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget) |
 | Agent action | Analyze the repository, apply the PRE-GENERATION ANALYSIS below, then generate or overwrite the file using the MANDATORY TEMPLATE exactly as specified |
 
 ---

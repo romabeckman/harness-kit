@@ -9,7 +9,7 @@ Defines the analysis framework and strict rules for generating and maintaining `
 | Field | Value |
 |---|---|
 | Target file | `docs/adr/ARCHITECTURE.md` |
-| Max size | 8,000 characters (strictly enforced) |
+| Max size | Strictly fewer than 8,000 counted-body characters, excluding YAML frontmatter and graph blocks |
 | Content style | Compact, dense, and objective — no lengthy narrative explanations or verbose prose |
 | Agent action | Read the repository, apply the PRE-GENERATION ANALYSIS below, then generate or overwrite the file using the MANDATORY TEMPLATE exactly as specified |
 
@@ -17,6 +17,7 @@ Defines the analysis framework and strict rules for generating and maintaining `
 
 ## SIZE LIMIT & DECOMPOSITION RULES
 
+- REQUIRED: Apply [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget) to every size check and decomposition decision: exclude leading YAML frontmatter and complete `graph`, `mermaid`, and ontology JSON graph blocks. Count headings and surrounding prose.
 - REQUIRED: Keep `docs/adr/ARCHITECTURE.md` strictly under **8,000 characters**.
 - REQUIRED: Text must be compact, objective, and dense. PROHIBITED: Long theoretical explanations, conversational filler, or verbose historical context.
 - When `docs/adr/ARCHITECTURE.md` approaches or reaches the 8,000-character limit, apply one or both of the following pathways:
