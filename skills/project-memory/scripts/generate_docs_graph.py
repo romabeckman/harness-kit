@@ -12,6 +12,8 @@ import json
 import sys
 from pathlib import Path
 
+from document_graph import graph_block
+
 ROUTING_FIELDS = (
     "entrypoints",
     "registration_files",
@@ -64,14 +66,16 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
         fm_text = fm_match.group(1)
         try:
             import yaml
-            frontmatter = yaml.safe_load(fm_text) or {}
-        except Exception:
-            # Fallback para regex simples
-            for line in fm_text.splitlines():
-                line = line.strip()
-                if ":" in line and not line.startswith("-"):
-                    k, v = line.split(":", 1)
-                    frontmatter[k.strip()] = v.strip().strip("'\"")
+        except ImportError as error:
+            raise ValueError("PyYAML is required; install it with 'python -m pip install PyYAML'") from error
+        try:
+            frontmatter = yaml.safe_load(fm_text)
+        except yaml.YAMLError as error:
+            raise ValueError(f"Invalid YAML frontmatter in {file_path}: {error}") from error
+        if frontmatter is None:
+            frontmatter = {}
+        if not isinstance(frontmatter, dict):
+            raise ValueError(f"YAML frontmatter must be an object in {file_path}")
 
     # Extrair título principal (# Title)
     title = file_path.stem.replace("_", " ").replace("-", " ").title()
@@ -198,22 +202,23 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
                         "relation": edge.get("relation", "references")
                     })
 
-    # 2. Processar bloco embutido ```graph
-    graph_block_match = re.search(r"```graph\s*\n(.*?)\n```", content, re.DOTALL)
-    if graph_block_match:
-        try:
-            gb_data = json.loads(graph_block_match.group(1))
-            if doc_type == "feature":
-                validate_feature_micrograph(gb_data, node_id, file_path, base_dir)
-            for relation in ("implements", "depends_on", "tested_by"):
-                targets = gb_data.get(relation, [])
-                if not isinstance(targets, list):
-                    targets = [targets]
-                for target in targets:
-                    if target:
-                        edges.append({"source": node_id, "target": target, "relation": relation})
-        except json.JSONDecodeError as error:
-            raise ValueError(f"Invalid micrograph JSON in {file_path}: {error.msg}") from error
+    # Read the same fenced graph used by the ontology validator.
+    try:
+        gb_data = graph_block(content)
+    except ValueError as error:
+        raise ValueError(f"Invalid micrograph in {file_path}: {error}") from error
+    if doc_type == "feature":
+        if gb_data is None:
+            raise ValueError(f"Missing required feature micrograph in {file_path}")
+        validate_feature_micrograph(gb_data, node_id, file_path, base_dir)
+    if gb_data is not None:
+        for relation in ("implements", "depends_on", "tested_by"):
+            targets = gb_data.get(relation, [])
+            if not isinstance(targets, list):
+                targets = [targets]
+            for target in targets:
+                if target:
+                    edges.append({"source": node_id, "target": target, "relation": relation})
 
     return node, edges
 
