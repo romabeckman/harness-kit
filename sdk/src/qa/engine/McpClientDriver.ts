@@ -6,7 +6,7 @@ import { redactSecrets } from './QaAuthRedaction'
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>
 const MCP_PROTOCOL_VERSION = '2025-11-25'
 const MCP_MODERN_PROTOCOL_VERSION = '2026-07-28'
-const MCP_CLIENT_INFO = { name: 'harness-kit-qa', version: '0.9.2' }
+const MCP_CLIENT_INFO = { name: 'harness-kit-qa', version: '0.9.3' }
 const MAX_MCP_EXECUTION_MS = 30_000
 
 export class McpClientDriver implements QaDriver {

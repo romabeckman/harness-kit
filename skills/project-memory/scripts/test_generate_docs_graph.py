@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -84,6 +85,41 @@ class BuildDocsGraphTests(unittest.TestCase):
             )
 
             self.assertEqual(0, result.returncode, result.stderr)
+            graph = json.loads((docs / ".graph.json").read_text(encoding="utf-8"))
+            self.assertEqual([], graph["related_projects"])
+
+    def test_cli_preserves_related_projects_when_regenerating_document_graph(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "adr" / "architecture.md", "adr:architecture")
+            (docs / ".graph.json").write_text(
+                json.dumps({
+                    "nodes": [],
+                    "edges": [],
+                    "related_projects": [
+                        {"key": "ledger", "relation": "provides_to"},
+                        {"key": "authentication", "relation": "depends_on"},
+                    ],
+                }),
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, str(Path(__file__).parent / "generate_docs_graph.py"), str(docs)],
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            graph = json.loads((docs / ".graph.json").read_text(encoding="utf-8"))
+            self.assertEqual(["adr:architecture"], [node["id"] for node in graph["nodes"]])
+            self.assertEqual(
+                [
+                    {"key": "authentication", "relation": "depends_on"},
+                    {"key": "ledger", "relation": "provides_to"},
+                ],
+                graph["related_projects"],
+            )
 
     def test_feature_template_exposes_direct_source_routing_fields(self) -> None:
         template = (Path(__file__).parent.parent / "references" / "DOCUMENT-TEMPLATE.md").read_text(
@@ -105,7 +141,7 @@ class BuildDocsGraphTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("8,000", rules)
+        self.assertIn("10,000", rules)
         self.assertIn("docs/adr/", rules)
 
     def test_sorts_nodes_and_edges_for_stable_compact_output(self) -> None:

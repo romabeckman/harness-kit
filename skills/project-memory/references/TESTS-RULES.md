@@ -6,10 +6,13 @@ Defines the analysis framework and strict rules for generating and maintaining `
 
 ## EXPECTED OUTPUT
 
+PROHIBITED: Add a feature graph or `graph.knowledge` to this ADR. Record decisions and evidence in prose; feature documents own ontology records.
+
 | Field | Value |
 |---|---|
 | Target file | `docs/adr/TESTS.md` |
-| Agent action | Analyze the repository, apply the PRE-GENERATION ANALYSIS below, then generate or overwrite the file using the MANDATORY TEMPLATE exactly as specified |
+| Max size | 10,000 total characters maximum, including all content; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
+| Agent action | Analyze the repository, apply the PRE-GENERATION ANALYSIS below, then create or update affected sections of the file using the MANDATORY TEMPLATE exactly as specified |
 
 ---
 
@@ -32,7 +35,7 @@ PROHIBITED: Inventing commands or coverage thresholds not found in the repositor
 
 ## MANDATORY TEMPLATE
 
-REQUIRED: Use the exact structure below as literal output when generating or updating `docs/adr/TESTS.md`. Replace every `[placeholder]` with actual project content — **never leave placeholder literals in the final file.**
+REQUIRED: Use the structure below when creating; preserve unaffected content when updating `docs/adr/TESTS.md`. Replace every `[placeholder]` with actual project content — **never leave placeholder literals in the final file.**
 
 ```markdown
 ---
@@ -72,8 +75,8 @@ REQUIRED: Maintain the following minimum coverage levels:
 ## PATTERNS & BEST PRACTICES
 REQUIRED: [e.g., AAA (Arrange, Act, Assert) — one assertion per test]
 REQUIRED: [e.g., Mock only external boundaries, never internal domain logic]
-FORBIDDEN: [e.g., Business logic inside test setup methods]
-FORBIDDEN: [e.g., Tests that depend on execution order]
+PROHIBITED: [e.g., Business logic inside test setup methods]
+PROHIBITED: [e.g., Tests that depend on execution order]
 
 ## TOOLING
 - **Framework:** [Name and version]
@@ -86,7 +89,7 @@ FORBIDDEN: [e.g., Tests that depend on execution order]
 - **Flaky tests:** [How to identify and report]
 - **Debug mode:** [Command or flag to run tests with verbose/debug output]
 
-<!-- DOCUMENT MAP: omitted — this baseline ADR has exactly 1 edge. The ## REFERENCES section below carries the relation. Include ## DOCUMENT MAP with Mermaid graph TD only when 2+ edges exist. -->
+<!-- DOCUMENT MAP: omitted — this baseline ADR has exactly 1 edge. The ## REFERENCES section below carries the relation. Add a DOCUMENT MAP only when it explains relationships beyond existing references. -->
 
 ## REFERENCES
 

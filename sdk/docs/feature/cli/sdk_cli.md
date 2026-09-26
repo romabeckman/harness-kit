@@ -11,25 +11,18 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_core"
-updated: "2026-09-20"
+updated: 2026-09-26
 ---
 
 ```graph
-{
-  "node_id":"feature:sdk_cli","domain":"cli","implements":["adr:architecture"],"tested_by":["adr:tests"],"depends_on":["feature:sdk_core"],
-  "entrypoints":["src/cli/run.ts"],
-  "registration_files":["package.json"],
-  "reference_files":["src/cli/services/run-service.ts"],
-  "code_files":["src/cli/DebugContext.ts","src/cli/services/candidate-service.ts","src/cli/services/diagnose-service.ts","src/cli/services/erase-service.ts","src/cli/services/init-service.ts","src/cli/services/qa-service.ts","src/cli/services/report-service.ts","src/cli/services/report/ReportDataAggregator.ts","src/cli/services/report/ReportExporter.ts","src/cli/services/report/ReportRenderer.ts","src/cli/services/report/types.ts","src/cli/services/reset-service.ts","src/cli/services/settings-service.ts","src/cli/services/qa/QaOrchestratorFactory.ts","src/cli/utils/agent-selection.ts","src/cli/utils/cli-utils.ts","src/cli/utils/constants.ts","src/cli/utils/report-args-parser.ts","src/cli/utils/run-args-parser.ts","src/cli/utils/runner-args-parser.ts"],
-  "test_files":["src/cli/services/__tests__/candidate-service.test.ts","src/cli/services/__tests__/diagnose-service.test.ts","src/cli/services/__tests__/erase-service.test.ts","src/cli/services/__tests__/qa-service.test.ts","src/cli/services/__tests__/run-service.test.ts","src/cli/services/report/__tests__/ReportDataAggregator.test.ts","src/cli/services/report/__tests__/ReportExporter.test.ts","src/cli/services/report/__tests__/ReportRenderer.test.ts","src/cli/services/report/__tests__/report-service.test.ts","src/cli/utils/__tests__/agent-selection.test.ts","src/cli/utils/__tests__/report-args-parser.test.ts","src/cli/utils/__tests__/run-args-parser.test.ts","src/cli/utils/__tests__/runner-args-parser.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/e2e/integration/erase-cli.test.ts","tests/unit/t19-run-args-parser.test.ts","tests/unit/t20-debug-context.test.ts","tests/unit/t27-cli-utils.test.ts","tests/unit/t29-init-service.test.ts","tests/unit/t30-resolve-mode.test.ts","tests/unit/t33-resume-phase-choices.test.ts"]
-}
+{"node_id":"feature:sdk_cli","domain":"cli","implements":["adr:architecture"],"tested_by":["adr:tests"],"depends_on":["feature:sdk_core"],"entrypoints":["src/cli/run.ts"],"registration_files":["package.json"],"reference_files":["src/cli/services/run-service.ts"],"code_files":["src/cli/DebugContext.ts","src/cli/services/candidate-service.ts","src/cli/services/diagnose-service.ts","src/cli/services/erase-service.ts","src/cli/services/init-service.ts","src/cli/services/qa-service.ts","src/cli/services/report-service.ts","src/cli/services/report/ReportDataAggregator.ts","src/cli/services/report/ReportExporter.ts","src/cli/services/report/ReportRenderer.ts","src/cli/services/report/types.ts","src/cli/services/reset-service.ts","src/cli/services/settings-service.ts","src/cli/services/qa/QaOrchestratorFactory.ts","src/cli/utils/agent-selection.ts","src/cli/utils/cli-utils.ts","src/cli/utils/constants.ts","src/cli/utils/report-args-parser.ts","src/cli/utils/run-args-parser.ts","src/cli/utils/runner-args-parser.ts","src/cli/utils/update-notifier.ts"],"test_files":["src/cli/services/__tests__/candidate-service.test.ts","src/cli/services/__tests__/diagnose-service.test.ts","src/cli/services/__tests__/erase-service.test.ts","src/cli/services/__tests__/qa-service.test.ts","src/cli/services/__tests__/run-service.test.ts","src/cli/services/report/__tests__/ReportDataAggregator.test.ts","src/cli/services/report/__tests__/ReportExporter.test.ts","src/cli/services/report/__tests__/ReportRenderer.test.ts","src/cli/services/report/__tests__/report-service.test.ts","src/cli/utils/__tests__/agent-selection.test.ts","src/cli/utils/__tests__/report-args-parser.test.ts","src/cli/utils/__tests__/run-args-parser.test.ts","src/cli/utils/__tests__/runner-args-parser.test.ts","tests/e2e/integration/cli-sandbox.test.ts","tests/e2e/integration/erase-cli.test.ts","tests/unit/t19-run-args-parser.test.ts","tests/unit/t20-debug-context.test.ts","tests/unit/t27-cli-utils.test.ts","tests/unit/t29-init-service.test.ts","tests/unit/t30-resolve-mode.test.ts","tests/unit/t33-resume-phase-choices.test.ts","src/cli/utils/__tests__/update-notifier.test.ts"],"knowledge":{"schema_version":1,"entities":[{"id":"capability:hrns-command-dispatch","type":"capability","label":"hrns command dispatch","definition":"Dispatch CLI commands to their command-specific service handlers.","aliases":[]}],"claims":[{"id":"claim:cli-command-routing","subject":"capability:hrns-command-dispatch","relation":null,"object":null,"statement":"The CLI handles help, version, run, init, report, settings, diagnose, qa, candidate, and erase commands; unknown commands print an error and exit with status 1.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/cli/run.ts","locator":"main: command comparisons and unknown-command branch","snapshot":null}],"derived_from":[],"gap":null},{"id":"claim:cli-update-notification","subject":"capability:hrns-command-dispatch","relation":null,"object":null,"statement":"CLI startup checks the main branch package.json asynchronously and reports newer stable versions on stderr with an npm update command. The request has a 1500ms deadline, unreferenced socket and timer, bounded body, and silent failure handling; short commands may exit before notification.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/cli/run.ts","locator":"main: checkForUpdates before command dispatch","snapshot":null},{"kind":"code","source":"src/cli/utils/update-notifier.ts","locator":"checkForUpdates and isNewer","snapshot":null}],"derived_from":[],"gap":null}]}}
 ```
 
 # SDK CLI
 Provides the `hrns` command-line interface for launching and managing orchestration sessions.
 
 ## OVERVIEW
-The CLI module delegates execution to `HarnessOrchestrator` after resolving runtime options. It also exposes independent QA execution, report regeneration, exploratory runs, and correction-scope generation.
+The CLI resolves options and delegates orchestration, QA, reports, and correction scopes to services.
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -58,6 +51,12 @@ src/cli/
 
 ### Available Commands
 Use `hrns init`, `run`, `diagnose`, `candidate`, `report`, `erase`, `qa`, `version`, or `help`; each command delegates to its service.
+
+### Updates
+
+At startup, `hrns` checks `https://raw.githubusercontent.com/romabeckman/harness-kit/main/sdk/package.json` in the background. A newer stable version produces an **stderr** notice with `npm install -g @romabeckman/hrns@latest`. Equal, older, prerelease, and malformed versions produce no notice. The main branch may be ahead of the npm release.
+
+The check has a **1.5-second deadline** and a 64 KiB text limit. Network, HTTP, and JSON failures remain silent. Its socket and timer are unreferenced, so short commands may finish before the notice arrives. Command dispatch never awaits the check.
 
 ## HOW TO USE CLI COMMANDS
 
@@ -128,12 +127,12 @@ graph TD
     THIS["SDK CLI Feature"] -->|depends_on| CORE["SDK Core Feature"]
     THIS -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click CORE "./SDK_CORE.md"
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click CORE "../orchestration/SDK_CORE.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**SDK_SETTINGS.md**](./SDK_SETTINGS.md): Settings and configuration resolver details.
-- [**SDK_STEERING.md**](./SDK_STEERING.md): Orchestration phase steering rules details.
-- [**SDK_CORE.md**](./SDK_CORE.md): Core orchestrator lifecycle and phases.
+- [**SDK_SETTINGS.md**](../orchestration/SDK_SETTINGS.md): Settings and configuration resolver details.
+- [**SDK_STEERING.md**](../orchestration/SDK_STEERING.md): Orchestration phase steering rules details.
+- [**SDK_CORE.md**](../orchestration/SDK_CORE.md): Core orchestrator lifecycle and phases.

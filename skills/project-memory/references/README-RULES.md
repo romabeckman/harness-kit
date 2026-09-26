@@ -11,7 +11,8 @@ Defines strict rules for generating and maintaining `docs/README.md`.
 | Field | Value |
 |---|---|
 | Target file | `docs/README.md` (root of the `docs/` folder) |
-| Agent action | Generate or overwrite `docs/README.md` using the MANDATORY TEMPLATE exactly as specified. |
+| Max size | 10,000 total characters maximum, including all content; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
+| Agent action | Create or update affected sections of `docs/README.md` using the MANDATORY TEMPLATE exactly as specified. |
 | When to update | REQUIRED: Every time a document is added, removed, or renamed in `docs/`, update `docs/README.md` in the same operation. |
 
 ---
@@ -56,7 +57,7 @@ REQUIRED: Reject any attempt to include the following content in this file.
 
 ## MANDATORY TEMPLATE
 
-REQUIRED: Use the exact structure below as literal output when generating or updating `docs/README.md`. Replace every `[placeholder]` with actual project content.
+REQUIRED: Use the structure below when creating; preserve unaffected content when updating `docs/README.md`. Replace every `[placeholder]` with actual project content.
 
 ```markdown
 # Project Documentation

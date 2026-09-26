@@ -12,6 +12,8 @@ import json
 import sys
 from pathlib import Path
 
+from document_graph import graph_block
+
 ROUTING_FIELDS = (
     "entrypoints",
     "registration_files",
@@ -20,6 +22,7 @@ ROUTING_FIELDS = (
     "test_files",
 )
 MICROGRAPH_FIELDS = ("node_id", "domain", "implements", "tested_by", *ROUTING_FIELDS)
+PROJECT_RELATIONS = {"depends_on", "provides_to"}
 
 
 def validate_feature_micrograph(data, node_id: str, file_path: Path, base_dir: Path):
@@ -63,14 +66,16 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
         fm_text = fm_match.group(1)
         try:
             import yaml
-            frontmatter = yaml.safe_load(fm_text) or {}
-        except Exception:
-            # Fallback para regex simples
-            for line in fm_text.splitlines():
-                line = line.strip()
-                if ":" in line and not line.startswith("-"):
-                    k, v = line.split(":", 1)
-                    frontmatter[k.strip()] = v.strip().strip("'\"")
+        except ImportError as error:
+            raise ValueError("PyYAML is required; install it with 'python -m pip install PyYAML'") from error
+        try:
+            frontmatter = yaml.safe_load(fm_text)
+        except yaml.YAMLError as error:
+            raise ValueError(f"Invalid YAML frontmatter in {file_path}: {error}") from error
+        if frontmatter is None:
+            frontmatter = {}
+        if not isinstance(frontmatter, dict):
+            raise ValueError(f"YAML frontmatter must be an object in {file_path}")
 
     # Extrair título principal (# Title)
     title = file_path.stem.replace("_", " ").replace("-", " ").title()
@@ -197,22 +202,23 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
                         "relation": edge.get("relation", "references")
                     })
 
-    # 2. Processar bloco embutido ```graph
-    graph_block_match = re.search(r"```graph\s*\n(.*?)\n```", content, re.DOTALL)
-    if graph_block_match:
-        try:
-            gb_data = json.loads(graph_block_match.group(1))
-            if doc_type == "feature":
-                validate_feature_micrograph(gb_data, node_id, file_path, base_dir)
-            for relation in ("implements", "depends_on", "tested_by"):
-                targets = gb_data.get(relation, [])
-                if not isinstance(targets, list):
-                    targets = [targets]
-                for target in targets:
-                    if target:
-                        edges.append({"source": node_id, "target": target, "relation": relation})
-        except json.JSONDecodeError as error:
-            raise ValueError(f"Invalid micrograph JSON in {file_path}: {error.msg}") from error
+    # Read the same fenced graph used by the ontology validator.
+    try:
+        gb_data = graph_block(content)
+    except ValueError as error:
+        raise ValueError(f"Invalid micrograph in {file_path}: {error}") from error
+    if doc_type == "feature":
+        if gb_data is None:
+            raise ValueError(f"Missing required feature micrograph in {file_path}")
+        validate_feature_micrograph(gb_data, node_id, file_path, base_dir)
+    if gb_data is not None:
+        for relation in ("implements", "depends_on", "tested_by"):
+            targets = gb_data.get(relation, [])
+            if not isinstance(targets, list):
+                targets = [targets]
+            for target in targets:
+                if target:
+                    edges.append({"source": node_id, "target": target, "relation": relation})
 
     return node, edges
 
@@ -282,6 +288,37 @@ def build_docs_graph(docs_dir: Path):
         "edges": unique_edges
     }
 
+
+def load_related_projects(graph_path: Path):
+    if not graph_path.exists():
+        return []
+
+    existing_graph = json.loads(graph_path.read_text(encoding="utf-8"))
+    if not isinstance(existing_graph, dict):
+        raise ValueError(f"Invalid graph object in {graph_path}")
+
+    related_projects = existing_graph.get("related_projects", [])
+    if not isinstance(related_projects, list):
+        raise ValueError(f"related_projects must be an array in {graph_path}")
+
+    seen = set()
+    normalized = []
+    for entry in related_projects:
+        if not isinstance(entry, dict) or set(entry) != {"key", "relation"}:
+            raise ValueError(f"Invalid related project entry in {graph_path}")
+        key = entry["key"]
+        relation = entry["relation"]
+        if not isinstance(key, str) or not key.strip() or not isinstance(relation, str) or relation not in PROJECT_RELATIONS:
+            raise ValueError(f"Invalid related project key or relation in {graph_path}")
+        normalized_key = key.strip()
+        pair = (normalized_key, relation)
+        if pair in seen:
+            raise ValueError(f"Duplicate related project entry in {graph_path}: {pair}")
+        seen.add(pair)
+        normalized.append({"key": normalized_key, "relation": relation})
+
+    return sorted(normalized, key=lambda entry: (entry["key"], entry["relation"]))
+
 def main():
     docs_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("docs")
     
@@ -289,8 +326,9 @@ def main():
         print(f"Erro: Diretório '{docs_path}' não encontrado.", file=sys.stderr)
         sys.exit(1)
 
-    graph_data = build_docs_graph(docs_path)
     output_file = docs_path / ".graph.json"
+    graph_data = build_docs_graph(docs_path)
+    graph_data["related_projects"] = load_related_projects(output_file)
 
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(graph_data, f, separators=(',', ':'), ensure_ascii=False)

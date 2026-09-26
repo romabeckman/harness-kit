@@ -9,11 +9,11 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-13"
+updated: 2026-09-26
 ---
 
 ```graph
-{"node_id":"feature:sdk_terminal_ui","domain":"terminal_ui","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/ui/TerminalProgress.ts"],"registration_files":[],"reference_files":["src/ui/AnsiHelpers.ts"],"code_files":["src/ui/StartupBanner.ts"],"test_files":["src/ui/__tests__/StartupBanner.test.ts","tests/unit/t26-terminal-progress.test.ts"]}
+{"node_id":"feature:sdk_terminal_ui","domain":"terminal_ui","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/ui/TerminalProgress.ts"],"registration_files":[],"reference_files":["src/ui/AnsiHelpers.ts"],"code_files":["src/ui/StartupBanner.ts"],"test_files":["src/ui/__tests__/StartupBanner.test.ts","tests/unit/t26-terminal-progress.test.ts"],"knowledge":{"schema_version":1,"entities":[{"id":"capability:terminal-progress-rendering","type":"capability","label":"Terminal progress rendering","definition":"Render orchestration progress and animated status in the terminal.","aliases":[]}],"claims":[{"id":"claim:spinner-stream-and-cleanup","subject":"capability:terminal-progress-rendering","relation":null,"object":null,"statement":"TerminalProgress writes spinner frames to stderr, stops an existing spinner before starting another, and stopSpinner clears its interval and restores the cursor.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/ui/TerminalProgress.ts","locator":"startSpinner and stopSpinner","snapshot":null}],"derived_from":[],"gap":null}]}}
 ```
 
 # SDK TERMINAL UI
@@ -62,12 +62,11 @@ PROHIBITED: Calling `startSpinner()` again without calling `stopSpinner()` first
 graph TD
     THIS["SDK Terminal UI Feature"] -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Folder structure and module responsibilities.
-- [**SDK_CORE.md**](./SDK_CORE.md): Orchestrator integration points.
-- [**SDK_STEERING.md**](./SDK_STEERING.md): Steering output confirmation UI dependencies.
-
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Folder structure and module responsibilities.
+- [**SDK_CORE.md**](../orchestration/SDK_CORE.md): Orchestrator integration points.
+- [**SDK_STEERING.md**](../orchestration/SDK_STEERING.md): Steering output confirmation UI dependencies.

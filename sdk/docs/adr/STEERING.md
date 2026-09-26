@@ -7,7 +7,7 @@ tags: [steering, rules, rollback, overrides]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 # Session Steering
 Guides the runtime classification and application of developer steering overrides in the orchestration loop.
@@ -73,5 +73,5 @@ REQUIRED: Flatten all phase-specific rules along with user overrides before invo
 PROHIBITED: Modify steering configurations without persisting the updated bootstrap config to disk.
 
 ## REFERENCES
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md): Global patterns and Ports-and-Adapters layer details.
-- [**TESTS.md**](./TESTS.md): Test standards and Vitest commands.
+- [**ARCHITECTURE.md**](ARCHITECTURE.md): Global patterns and Ports-and-Adapters layer details.
+- [**TESTS.md**](TESTS.md): Test standards and Vitest commands.

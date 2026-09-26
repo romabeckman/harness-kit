@@ -4,8 +4,11 @@ import { printVersion } from './utils/cli-utils'
 import { cmdReport } from './services/report-service'
 import { HELP, COMMAND_HELP } from './utils/constants'
 import { DebugContext } from './DebugContext'
+import { checkForUpdates } from './utils/update-notifier'
 
 async function main(): Promise<void> {
+  const { version } = require('../../package.json') as { version: string }
+  checkForUpdates(version)
   const args = process.argv.slice(2)
   const cmd = args[0]
   const cwd = process.cwd()

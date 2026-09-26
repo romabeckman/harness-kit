@@ -9,11 +9,11 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-13"
+updated: 2026-09-26
 ---
 
 ```graph
-{"node_id":"feature:sdk_settings","domain":"settings","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/settings/HarnessSettings.ts"],"registration_files":[],"reference_files":["src/settings/DefaultSettings.ts"],"code_files":["src/settings/SettingsSchema.ts"],"test_files":["tests/unit/t16-settings.test.ts","tests/unit/t17-orchestrator-settings.test.ts","tests/unit/t28-harness-settings.test.ts"]}
+{"node_id":"feature:sdk_settings","domain":"settings","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["src/settings/HarnessSettings.ts"],"registration_files":[],"reference_files":["src/settings/DefaultSettings.ts"],"code_files":["src/settings/SettingsSchema.ts"],"test_files":["tests/unit/t16-settings.test.ts","tests/unit/t17-orchestrator-settings.test.ts","tests/unit/t28-harness-settings.test.ts"],"knowledge":{"schema_version":1,"entities":[{"id":"capability:phase-settings-resolution","type":"capability","label":"Phase settings resolution","definition":"Resolve effective configuration for a runner and orchestration phase.","aliases":[]}],"claims":[{"id":"claim:settings-precedence","subject":"capability:phase-settings-resolution","relation":null,"object":null,"statement":"HarnessSettings.resolve accepts runner type and phase key and resolves the corresponding phase settings.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/settings/HarnessSettings.ts","locator":"resolve(runnerType, phaseKey)","snapshot":null}],"derived_from":[],"gap":null}]}}
 ```
 
 # SDK SETTINGS
@@ -26,9 +26,9 @@ The settings module manages default and project-level configurations. It provide
 <folder_structure>
 ```
 sdk/src/settings/
-├── SettingsSchema.ts     # Schema and types for Settings Map
-├── DefaultSettings.ts    # Complete out-of-the-box configurations
-└── HarnessSettings.ts    # Settings loader, merger, and resolver
+â”œâ”€â”€ SettingsSchema.ts     # Schema and types for Settings Map
+â”œâ”€â”€ DefaultSettings.ts    # Complete out-of-the-box configurations
+â””â”€â”€ HarnessSettings.ts    # Settings loader, merger, and resolver
 ```
 </folder_structure>
 
@@ -71,10 +71,9 @@ REQUIRED: Use `qa_planning`, `qa_analysis`, and `qa_reporting` for QA phases. CL
 graph TD
     THIS["SDK Settings Feature"] -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Structural details and registry patterns.
-
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Structural details and registry patterns.

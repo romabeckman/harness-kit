@@ -7,7 +7,7 @@ tags: [agent-runner, strategies, factory, registry, opencode]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 # Agent Runners
 Decouples agent execution clients and strategies from the orchestrator engine.
@@ -81,6 +81,6 @@ PROHIBITED: Make direct external API calls without a concrete adapter.
 PROHIBITED: Assume optional vendor flags exist without checking the installed CLI contract.
 
 ## REFERENCES
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md): System layers, ports, adapters, and composition boundaries.
-- [**SDK_AGENT_RUNNER.md**](../feature/SDK_AGENT_RUNNER.md): Operational runner behavior, including OpenCode mapping and output normalization.
-- [**TESTS.md**](./TESTS.md): Vitest commands and external-process test boundaries.
+- [**ARCHITECTURE.md**](ARCHITECTURE.md): System layers, ports, adapters, and composition boundaries.
+- [**SDK_AGENT_RUNNER.md**](../feature/agents/SDK_AGENT_RUNNER.md): Operational runner behavior, including OpenCode mapping and output normalization.
+- [**TESTS.md**](TESTS.md): Vitest commands and external-process test boundaries.

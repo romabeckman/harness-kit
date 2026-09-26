@@ -6,17 +6,19 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 
 ## RULES BEFORE WRITING
 
+- REQUIRED: Generate each `json` and `graph` payload on one physical line using compact JSON, without indentation or formatting line breaks. Keep the Markdown fences on separate lines.
+- REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget): at most 10,000 characters for the entire file, with no exclusions.
 - REQUIRED: One document covers exactly **one** business domain, module, or architectural layer.
 - PROHIBITED: Mixing unrelated topics in a single file.
-- REQUIRED: Keep document compact, objective, and dense — strictly under **8,000 characters** (excluding YAML frontmatter header and graph blocks).
-- REQUIRED: For complementary ADRs extracted from `ARCHITECTURE.md` (e.g., `SECURITY.md`, `OBSERVABILITY.md`, `TELEMETRY.md`, `DATABASE.md`), ensure strict compliance with the 8,000 character limit (excluding YAML frontmatter header and graph blocks) and cross-reference back to `ARCHITECTURE.md`.
+- REQUIRED: Cross-reference complementary ADRs back to `ARCHITECTURE.md`; apply the shared total size limit.
 - REQUIRED: Cross-reference section at the end listing related `docs/` files.
+- REQUIRED: For consequential domain or behavior claims in feature documents only, read [ONTOLOGY-RULES.md](./ONTOLOGY-RULES.md) and include `knowledge` inside the feature `graph` as specified there. Omit the entire graph for ADRs. Keep uncertainty and evidence status explicit, including when every source is LLM-generated.
 
 ---
 
 ## MANDATORY TEMPLATE
 
-```markdown
+````markdown
 ---
 doc_type: [feature or adr]
 domain: [domain name]
@@ -30,32 +32,12 @@ edges:
     when: "[required only for optional, max 300 chars]"
 updated: YYYY-MM-DD
 ---
+```graph
+{"node_id":"[type]:[slug]","domain":"[domain name]","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["relative/path/to/public-entrypoint.ts"],"registration_files":["relative/path/to/registry-or-factory.ts"],"reference_files":["relative/path/to/representative-implementation.ts"],"code_files":["relative/path/to/source1.ts"],"test_files":["relative/path/to/test1.test.ts"],"knowledge":{"schema_version":1,"entities":[],"claims":[]}}
+```
+
 # [Document Title]
 [One sentence stating the purpose of this document.]
-
-```graph
-{
-  "node_id": "[type]:[slug]",
-  "domain": "[domain name]",
-  "implements": ["adr:architecture"],
-  "tested_by": ["adr:tests"],
-  "entrypoints": [
-    "relative/path/to/public-entrypoint.ts"
-  ],
-  "registration_files": [
-    "relative/path/to/registry-or-factory.ts"
-  ],
-  "reference_files": [
-    "relative/path/to/representative-implementation.ts"
-  ],
-  "code_files": [
-    "relative/path/to/source1.ts"
-  ],
-  "test_files": [
-    "relative/path/to/test1.test.ts"
-  ]
-}
-```
 
 Use routing arrays by role:
 
@@ -63,16 +45,17 @@ Use routing arrays by role:
 - `registration_files`: registries, factories, dependency injection, exports, or command maps changed when extending the feature.
 - `reference_files`: smallest representative implementations to copy as patterns.
 - `code_files`: remaining production files defining the feature.
-- `test_files`: tests proving feature behavior and integration.
+- `test_files`: test definitions for feature behavior and integration; listing a file does not prove execution or passing results.
 
 REQUIRED: Use project-relative paths, remove duplicates across arrays, and list only files that exist.
-REQUIRED: Use empty arrays when a routing role does not apply.
+REQUIRED: Use empty arrays when a routing role does not apply. Populate `knowledge` following ONTOLOGY-RULES.md when consequential claims apply; otherwise omit that property. Keep all fields in this single graph block.
 PROHIBITED: Copying these source paths into YAML `edges`, `.digest.md`, or `.graph.json`.
 REQUIRED: For ADR documents, omit the entire embedded `graph` block; source routing belongs only to feature documents.
 ALLOWED: `read` remains optional for ADR-to-ADR edges when no feature routing policy is required.
 
 ## OVERVIEW
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]
+
 
 ## FOLDER STRUCTURE
 [High-level architectural view: folders and layers only, not a file inventory. Show one representative entry per folder/layer — enough to convey the module's shape and where new code of each type belongs. PROHIBITED: enumerating every individual file already listed in the `code_files`/`test_files` arrays of the top ````graph` block — that duplicates content and wastes tokens. If a folder holds many similar files (e.g. multiple use cases, multiple adapters), collapse them into one annotated line (e.g. `use-cases/ # RunX, GetY, UpdateZ use cases`) instead of one line per file.]
@@ -124,7 +107,7 @@ wrong_code()
 ## BEST PRACTICES
 REQUIRED: [Practice name] — [brief justification]
 REQUIRED: [Practice name] — [brief justification]
-FORBIDDEN: [Anti-pattern] — [brief justification]
+PROHIBITED: [Anti-pattern] — [brief justification]
 
 ## TIPS
 [One actionable tip that saves time or avoids a common problem in this stack. Omit if there is nothing non-obvious to add.]
@@ -134,8 +117,7 @@ FORBIDDEN: [Anti-pattern] — [brief justification]
 optimized_code()
 </code_tip>
 
-<!-- Include ## DOCUMENT MAP with Mermaid graph TD ONLY when the document has 2+ edges.
-     For single-edge documents, omit this section — ## REFERENCES already carries the relation. -->
+<!-- Include DOCUMENT MAP only when it explains relationships beyond frontmatter and REFERENCES; otherwise omit it. -->
 ## DOCUMENT MAP
 
 ```mermaid
@@ -150,7 +132,7 @@ graph TD
 
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md or ./ARCHITECTURE.md): [One-line description of the relationship]
 - [**TESTS.md**](../adr/TESTS.md or ./TESTS.md): [One-line description of the relationship]
-```
+````
 
 ---
 
