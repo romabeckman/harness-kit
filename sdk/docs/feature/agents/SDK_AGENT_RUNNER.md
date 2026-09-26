@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 
 ```graph
@@ -81,11 +81,11 @@ PROHIBITED: Pass credentials or other sensitive environment values to child proc
 graph TD
     THIS["SDK Agent Runner Feature"] -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**AGENT-RUNNERS.md**](../adr/AGENT-RUNNERS.md): Runner registration, adapter boundaries, and vendor-specific conventions.
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Ports, layers, composition boundaries, and integrations.
-- [**TESTS.md**](../adr/TESTS.md): Vitest commands and external-process test boundaries.
+- [**AGENT-RUNNERS.md**](../../adr/AGENT-RUNNERS.md): Runner registration, adapter boundaries, and vendor-specific conventions.
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Ports, layers, composition boundaries, and integrations.
+- [**TESTS.md**](../../adr/TESTS.md): Vitest commands and external-process test boundaries.

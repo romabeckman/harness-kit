@@ -1,16 +1,54 @@
 ---
 doc_type: adr
 domain: testing
-stack: [Vitest 5.0.0, TypeScript 7.0.2, V8 coverage]
+stack: [Vitest 5.0.1, TypeScript 7.0.2, V8 coverage]
 node_id: "adr:tests"
 tags: [testing, vitest, unit-tests, e2e-tests, coverage]
 edges: []
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 # Testing Protocol
 
 ## OVERVIEW
-Use **Vitest 5.0.0** for unit, integration, and E2E validation. Keep external agent calls mocked and isolate filesystem-heavy E2E scenarios in temporary sandboxes.
+Use **Vitest 5.0.1** for unit, integration, and E2E validation. Keep external agent calls mocked and isolate filesystem-heavy E2E scenarios in temporary sandboxes.
+
+## KNOWLEDGE
+
+```json
+{
+  "schema_version": 1,
+  "entities": [
+    {
+      "id": "contract:test-toolchain",
+      "type": "contract",
+      "label": "SDK test toolchain",
+      "definition": "Configured test runner and coverage package versions.",
+      "aliases": []
+    }
+  ],
+  "claims": [
+    {
+      "id": "claim:vitest-package-versions",
+      "subject": "contract:test-toolchain",
+      "relation": null,
+      "object": null,
+      "statement": "package.json declares Vitest with range ^5.0.1 and @vitest/coverage-v8 at 5.0.1.",
+      "kind": "observation",
+      "status": "supported",
+      "evidence": [
+        {
+          "kind": "configuration",
+          "source": "package.json",
+          "locator": "devDependencies.vitest and dependencies.@vitest/coverage-v8",
+          "snapshot": null
+        }
+      ],
+      "derived_from": [],
+      "gap": null
+    }
+  ]
+}
+```
 
 ## COMMANDS
 
@@ -40,9 +78,9 @@ PROHIBITED: Call real external APIs from unit or integration tests.
 
 ## TOOLING
 
-- **Framework and assertions:** Vitest 5.0.0 with built-in `expect`.
+- **Framework and assertions:** Vitest 5.0.1 with built-in `expect`.
 - **Mocks and stubs:** Vitest mocks plus `FakeAgentRunner` and `MockAgentCli` helpers.
-- **Coverage:** `@vitest/coverage-v8` 5.0.0; no numeric gate configured.
+- **Coverage:** `@vitest/coverage-v8` 5.0.1; no numeric gate configured.
 - **E2E configuration:** `vitest.e2e.config.ts`; include `tests/e2e/**/*.test.ts`, use 30-second test and hook timeouts.
 - **Release gate:** `prepublishOnly` runs build and default tests; no repository-local CI workflow exists.
 
@@ -56,4 +94,4 @@ PROHIBITED: Call real external APIs from unit or integration tests.
 ## REFERENCES
 
 - [**README.md**](../README.md): Main documentation index.
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md): System layers, boundaries, and integration patterns.
+- [**ARCHITECTURE.md**](ARCHITECTURE.md): System layers, boundaries, and integration patterns.

@@ -6,7 +6,8 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 
 ## RULES BEFORE WRITING
 
-- REQUIRED: Apply [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget): exclude leading YAML frontmatter and complete graph blocks (`graph`, `mermaid`, and ontology JSON under `## KNOWLEDGE`) from all character limits below. Count headings and surrounding prose.
+- REQUIRED: Generate each `json` and `graph` payload on one physical line using compact JSON, without indentation or formatting line breaks. Keep the Markdown fences on separate lines.
+- REQUIRED: Apply [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget): exclude leading YAML frontmatter, complete `graph` and `mermaid` blocks, and the entire `## KNOWLEDGE` section from all character limits below. Count other headings and surrounding prose.
 - REQUIRED: One document covers exactly **one** business domain, module, or architectural layer.
 - PROHIBITED: Mixing unrelated topics in a single file.
 - REQUIRED: Keep document compact, objective, and dense — strictly under **8,000 characters** (excluding YAML frontmatter header and graph blocks).
@@ -33,27 +34,7 @@ edges:
 updated: YYYY-MM-DD
 ---
 ```graph
-{
-  "node_id": "[type]:[slug]",
-  "domain": "[domain name]",
-  "implements": ["adr:architecture"],
-  "tested_by": ["adr:tests"],
-  "entrypoints": [
-    "relative/path/to/public-entrypoint.ts"
-  ],
-  "registration_files": [
-    "relative/path/to/registry-or-factory.ts"
-  ],
-  "reference_files": [
-    "relative/path/to/representative-implementation.ts"
-  ],
-  "code_files": [
-    "relative/path/to/source1.ts"
-  ],
-  "test_files": [
-    "relative/path/to/test1.test.ts"
-  ]
-}
+{"node_id":"[type]:[slug]","domain":"[domain name]","implements":["adr:architecture"],"tested_by":["adr:tests"],"entrypoints":["relative/path/to/public-entrypoint.ts"],"registration_files":["relative/path/to/registry-or-factory.ts"],"reference_files":["relative/path/to/representative-implementation.ts"],"code_files":["relative/path/to/source1.ts"],"test_files":["relative/path/to/test1.test.ts"]}
 ```
 
 # [Document Title]
@@ -77,7 +58,7 @@ ALLOWED: `read` remains optional for ADR-to-ADR edges when no feature routing po
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]
 
 ## KNOWLEDGE
-[For consequential claims touched by this task, insert one fenced json block following ONTOLOGY-RULES.md: schema_version, entities, claims. Use canonical IDs and inspected evidence. Preserve requirements, observations, hypotheses, and unresolved gaps separately. Omit this section when no consequential claims apply. Exclude this graph block from the character count; count the heading and surrounding prose.]
+[For consequential claims touched by this task, insert one fenced json block following ONTOLOGY-RULES.md: schema_version, entities, claims. Use canonical IDs and inspected evidence. Preserve requirements, observations, hypotheses, and unresolved gaps separately. Omit this section when no consequential claims apply. The entire section is excluded from the character count.]
 
 ## FOLDER STRUCTURE
 [High-level architectural view: folders and layers only, not a file inventory. Show one representative entry per folder/layer — enough to convey the module's shape and where new code of each type belongs. PROHIBITED: enumerating every individual file already listed in the `code_files`/`test_files` arrays of the top ````graph` block — that duplicates content and wastes tokens. If a folder holds many similar files (e.g. multiple use cases, multiple adapters), collapse them into one annotated line (e.g. `use-cases/ # RunX, GetY, UpdateZ use cases`) instead of one line per file.]

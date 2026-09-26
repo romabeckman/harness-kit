@@ -7,7 +7,7 @@ tags: [state, persistence, atomic, file-state]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 # State Persistence
 Governs localized file state mutations and data structures for features and tasks.
@@ -66,5 +66,5 @@ REQUIRED: Parse and sanitize all markdown structures defensively to handle forma
 PROHIBITED: Mutate development files directly without calling the file state manager adapter.
 
 ## REFERENCES
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md): Ports-and-Adapters structure and dependencies.
-- [**TESTS.md**](./TESTS.md): Vitest runner mock execution protocols.
+- [**ARCHITECTURE.md**](ARCHITECTURE.md): Ports-and-Adapters structure and dependencies.
+- [**TESTS.md**](TESTS.md): Vitest runner mock execution protocols.

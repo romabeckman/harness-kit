@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 
 ```graph
@@ -71,10 +71,10 @@ REQUIRED: Use `qa_planning`, `qa_analysis`, and `qa_reporting` for QA phases. CL
 graph TD
     THIS["SDK Settings Feature"] -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Structural details and registry patterns.
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Structural details and registry patterns.
 

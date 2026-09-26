@@ -11,7 +11,7 @@ edges:
     target: "adr:tests"
   - relation: depends_on
     target: "feature:sdk_core"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 ```graph
@@ -128,12 +128,12 @@ graph TD
     THIS["SDK CLI Feature"] -->|depends_on| CORE["SDK Core Feature"]
     THIS -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click CORE "./SDK_CORE.md"
+    click CORE "orchestration/SDK_CORE.md"
     click ARCH "../adr/ARCHITECTURE.md"
     click TESTS "../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**SDK_SETTINGS.md**](./SDK_SETTINGS.md): Settings and configuration resolver details.
-- [**SDK_STEERING.md**](./SDK_STEERING.md): Orchestration phase steering rules details.
-- [**SDK_CORE.md**](./SDK_CORE.md): Core orchestrator lifecycle and phases.
+- [**SDK_SETTINGS.md**](orchestration/SDK_SETTINGS.md): Settings and configuration resolver details.
+- [**SDK_STEERING.md**](sdk_steering.md): Orchestration phase steering rules details.
+- [**SDK_CORE.md**](orchestration/SDK_CORE.md): Core orchestrator lifecycle and phases.

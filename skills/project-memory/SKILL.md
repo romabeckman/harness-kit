@@ -13,7 +13,7 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 
 ## PRECONDITIONS (execute before every task)
 
-1. **Route before reading** — If the request names an exact document or source path, read it directly. Otherwise read `docs/.digest.md`, then `docs/.graph.json`, and select only relevant documents by tags and one-hop edges. Do not read every indexed document.
+1. **Route before reading** — For targeted work, read an exact supplied path directly; otherwise use `docs/.digest.md`, then `docs/.graph.json` tags and one-hop edges. For an explicitly requested full documentation/ontology review, inventory every ADR and feature inside the requested scope, then inspect one domain at a time. Do not confuse a directory supplied as context with authorization for a full review.
 2. **Detect the technology stack** — read `package.json`, `requirements.txt`, `go.mod`, `pom.xml`, or equivalent manifest files. If none exist, scan the existing `docs/` folder.
 3. **Verify baseline documents** — check whether `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md` exist.
    - REQUIRED: Read the corresponding `./references/<DOC>-RULES.md` before creating or updating each baseline document.
@@ -29,7 +29,7 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 
 - REQUIRED: Read [ONTOLOGY-RULES.md](./references/ONTOLOGY-RULES.md) before creating or changing domain concepts, business rules, contracts, decisions, or claims about behavior. Apply it to baseline documents too; navigation-only edits need no ontology block.
 - REQUIRED: Store concepts and claims in the owning document's `## KNOWLEDGE` section, using the versioned JSON contract in that reference. Keep document routing in the existing frontmatter and feature micrograph.
-- REQUIRED: Add knowledge records for consequential claims touched by the task: invariants, contracts, dependencies, decisions, and verification claims. Preserve existing IDs; update only affected records. Do not inventory every symbol or migrate unrelated documents.
+- REQUIRED: Apply the extraction workflow and completion gate in ONTOLOGY-RULES.md. In targeted mode, update affected claims only. In full review mode, assess each scoped ADR/feature for consequential knowledge, including legacy documents without a block. Preserve IDs and do not inventory every symbol.
 - REQUIRED: Trace a supported claim to inspected evidence. Generated documents that cite each other are not independent confirmation. When grounding is missing, retain an explicit unresolved claim and the missing evidence.
 - PROHIBITED: Promote generated proposals to approved requirements, test definitions to passing results, or code observations to business authority. Do not invent approvals, sources, execution results, revisions, or confidence percentages.
 - REQUIRED: Preserve claim status and scope in prose, digest summaries, and downstream handoffs. A document's `updated` date does not mean its claims were reverified.
@@ -38,13 +38,14 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 ### MARKDOWN CHARACTER BUDGET
 
 - REQUIRED: Apply character limits to the counted body of every generated or updated `*.md` file, including baseline documents, indexes, digest, and root README. Default: strictly fewer than 8,000 characters; retain stricter document-specific limits such as the digest's 3,000 characters.
-- REQUIRED: Exclude the leading YAML frontmatter (`head`), including its delimiters, and complete fenced graph blocks, including their fences: `graph`, `mermaid`, and the ontology JSON block under `## KNOWLEDGE`.
+- REQUIRED: Exclude the leading YAML frontmatter (`head`), including its delimiters; complete fenced graph blocks, including their fences (`graph` and `mermaid`); and the entire `## KNOWLEDGE` section, including its heading and content up to the next heading at the same level or end of file.
 - REQUIRED: Count all remaining text, including Markdown titles/headings, whitespace, tables, ordinary code/JSON examples, and prose around graphs. Normalize CRLF/CR to LF and count Unicode characters, not bytes or tokens. Do not trim the remaining body.
 - REQUIRED: Apply these exclusions to every character-limit check and decomposition decision below and in references. Separate line limits and field limits (such as `when`) remain unchanged.
-- PROHIBITED: Move prose into metadata or graph blocks to evade the budget. Preserve complete graph records and compact or decompose only the counted body when necessary.
+- PROHIBITED: Move prose into metadata, graph blocks, or `## KNOWLEDGE` to evade the budget. Preserve complete structured records and compact or decompose only the counted body when necessary.
 
 ### FORMATTING & HYBRID GRAPH MODEL
 
+- REQUIRED: Generate every JSON payload, including `json` examples, `## KNOWLEDGE`, feature `graph` blocks, and `.graph.json`, as compact JSON on exactly one physical line, with no indentation or formatting line breaks (`json.dumps(data, ensure_ascii=False, separators=(',', ':'))`). Preserve escaped newlines inside string values. Markdown opening and closing fences remain on separate lines.
 - REQUIRED: Include a YAML frontmatter at the top of every document (except README.md). Must include: `doc_type`, `domain`, `stack`, `node_id` (`<type>:<slug>`), `tags` (2–5 terms), `edges` (list of `{relation, target}`), `updated`.
 - PROHIBITED: Including `path` in frontmatter `edges[]` entries — resolve target paths via `node_id` lookup in `docs/.graph.json` nodes[]. Duplicating path in edges wastes tokens and creates a second source of truth that can drift.
 - REQUIRED: Include an embedded micro ````graph` JSON block directly after YAML frontmatter in every feature document (`docs/feature/*.md`). Include `node_id`, `domain`, `implements`, `tested_by`, plus project-relative routing arrays: `entrypoints`, `registration_files`, `reference_files`, `code_files`, and `test_files`.
@@ -63,7 +64,7 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 - PROHIBITED: Placeholder literals in the final file — replace every `[placeholder]` with actual project content.
 - PROHIBITED: Long introductions and filler text — remove any sentence starting with "This document describes…", "This section describes…", or "This guide aims to…".
 - PROHIBITED: Decorative content — no emojis, filler phrases, or motivational text.
-- PROHIBITED: Sections longer than 15 lines — split into sub-sections if needed.
+- PROHIBITED: Prose sections longer than 15 lines — split into sub-sections if needed. Keep machine-readable graph and knowledge blocks intact.
 - REQUIRED: Keep every generated Markdown document within its counted-body limit defined in MARKDOWN CHARACTER BUDGET.
 
 ### LLM OPTIMIZATION & GRAPH TOPOLOGY
@@ -141,11 +142,13 @@ Execute steps in order. Do not skip steps.
 **Step 2 — Analyze the request**
 - Identify: new document, update, gap correction, or inconsistency fix.
 - Map the request to the correct document using the DOCUMENT ROUTING TABLE.
+- Select targeted or full review mode from the request. Follow ONTOLOGY-RULES.md for scope, extraction, and completion. A full review covers scoped documents even when no code changed.
 
 **Step 3 — Read current content**
 - Read all documents relevant to the request.
 - List gaps, outdated information, or inconsistencies with the current codebase.
 - For affected consequential claims, inspect their evidence and distinguish intended from implemented behavior. Follow document citations to their grounding source; stop circular chains as unresolved. Reuse existing concept IDs and canonical owners.
+- Trace representative flows from entry through decisions, contracts, dependencies, state changes, and failure paths. Use the reference's extraction questions; do not stop at manifest metadata when behavior is in scope.
 
 **Step 4 — Plan the structure**
 - For baseline documents: follow the rules file strictly (no deviations).
@@ -165,7 +168,8 @@ Execute steps in order. Do not skip steps.
 
 **Step 6 — Validate before delivering**
 - Confirm every generated document.
-- Confirm every generated or updated Markdown file meets its counted-body limit after excluding YAML frontmatter and graph blocks as defined in MARKDOWN CHARACTER BUDGET.
+- Confirm every generated `json` and `graph` block contains exactly one compact JSON payload line; never wrap long payloads for readability.
+- Confirm every generated or updated Markdown file meets its counted-body limit after excluding YAML frontmatter, graph blocks, and the entire `## KNOWLEDGE` section as defined in MARKDOWN CHARACTER BUDGET.
 - Confirm `node_id` format (`<type>:<slug>`) is unique and all `edges[].target` references resolve.
 - Confirm each feature micrograph contains `entrypoints`, `registration_files`, `reference_files`, `code_files`, and `test_files`; contains no duplicate paths; and resolves every path from project root.
 - Confirm `## DOCUMENT MAP` Mermaid graph is present for documents with 2+ edges and absent for single-edge documents.
@@ -175,11 +179,13 @@ Execute steps in order. Do not skip steps.
 - Confirm UPPERCASE section titles are present.
 - Confirm cross-reference section exists at the end of each document.
 - Validate affected knowledge records using the reference's validation procedure: JSON structure, entity types, relation direction, ID resolution, evidence support, and uncertainty. The document graph generator does not validate ontology records or factual truth.
+- Apply the semantic completion gate before summarizing. Run the structural ontology validator after rebuilding the macro index in Step 9; missing knowledge is a coverage decision, not a JSON validation success.
 - At this stage validate the target documents only. Validate generated indexes after Steps 8–10, once those files have actually been updated.
 
 **Step 7 — Prepare delivery summary**
 - Record what was added, updated, or removed, and why.
 - Record material unresolved claims, contradictions, and the checks actually performed. Distinguish structural validation from behavior observed in an executed check.
+- Include scope coverage for full reviews: documents assessed, with knowledge, omitted with reasons, and blocked by evidence gaps. Report which domain questions the records answer; never equate block count with understanding.
 - Do not deliver yet; Steps 8–10 must complete first.
 
 **Step 8 — Generate project digest**
@@ -217,6 +223,7 @@ Execute steps in order. Do not skip steps.
 - PROHIBITED: Adding feature `entrypoints`, `registration_files`, `reference_files`, `code_files`, or `test_files` to macro nodes. Read these only from the selected feature micrograph.
 - PROHIBITED: Copying ontology entities, claims, or evidence into the macro graph. Keep its existing schema compatible; load knowledge from the selected document only. A successful graph build validates routing, not the truth of generated content.
 - Purpose: macro graph routing for orchestrator without scanning individual code files.
+- REQUIRED: After generation, run `python ./scripts/validate_ontology.py <target_docs_dir>` for full reviews; for targeted work append `--document <node_id>` for each changed ADR/feature. The validator also follows their qualified references. Resolve structural errors before delivery; inspect factual support separately.
 
 **Step 10 — Sync docs/README.md index**
 - REQUIRED: After updating `docs/.graph.json` (Step 9), reconcile `docs/README.md`'s index table against `nodes[]`: add a row for every node without one, remove rows whose file no longer exists, update descriptions that drifted.

@@ -1,7 +1,7 @@
 ---
 doc_type: feature
 domain: qa
-stack: [TypeScript, Node.js, Vitest 5.0.0, LLM agent runners, Playwright]
+stack: [TypeScript, Node.js, Vitest 5.0.1, LLM agent runners, Playwright]
 node_id: "feature:qa_tester"
 tags: [qa, acceptance, curl, playwright, runtime]
 edges:
@@ -15,7 +15,7 @@ edges:
     target: "feature:sdk_settings"
   - relation: depends_on
     target: "feature:sdk_terminal_ui"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 ```graph
 {
@@ -129,6 +129,6 @@ graph TD
 
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Ports and adapter boundaries.
 - [**TESTS.md**](../adr/TESTS.md): Test commands and isolation rules.
-- [**SDK_CLI.md**](./SDK_CLI.md): CLI registration and command conventions.
-- [**SDK_SETTINGS.md**](./SDK_SETTINGS.md): QA phase defaults.
-- [**SDK_TERMINAL_UI.md**](./SDK_TERMINAL_UI.md): Shared terminal helpers.
+- [**SDK_CLI.md**](sdk_cli.md): CLI registration and command conventions.
+- [**SDK_SETTINGS.md**](orchestration/SDK_SETTINGS.md): QA phase defaults.
+- [**SDK_TERMINAL_UI.md**](terminal/SDK_TERMINAL_UI.md): Shared terminal helpers.

@@ -1,7 +1,7 @@
 ---
 doc_type: feature
 domain: e2e_testing
-stack: [TypeScript, Node.js, Vitest 5.0.0]
+stack: [TypeScript, Node.js, Vitest 5.0.1]
 node_id: "feature:e2e_testing_suite"
 tags: [testing, e2e, sandbox, vitest]
 edges:
@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 
 ```graph
@@ -76,12 +76,12 @@ PROHIBITED: Modifying workspace root source or production configuration during E
 graph TD
     THIS["E2E Testing Suite Feature"] -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Core architectural layers and CLI runner patterns.
-- [**TESTS.md**](../adr/TESTS.md): Test strategies, tooling, and execution standards.
-- [**SDK_CLI.md**](./SDK_CLI.md): CLI command flag definitions and interactive wizard specifications.
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Core architectural layers and CLI runner patterns.
+- [**TESTS.md**](../../adr/TESTS.md): Test strategies, tooling, and execution standards.
+- [**SDK_CLI.md**](../sdk_cli.md): CLI command flag definitions and interactive wizard specifications.
 

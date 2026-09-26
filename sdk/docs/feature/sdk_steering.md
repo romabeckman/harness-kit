@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 
 ```graph
@@ -70,7 +70,7 @@ graph TD
 ```
 
 ## REFERENCES
-- [**SDK_CORE.md**](./SDK_CORE.md): `BootstrapConfig` type and `applySteeringActions` method.
-- [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): `IAgentRunner` interface used by `SteeringAnalyzer`.
+- [**SDK_CORE.md**](orchestration/SDK_CORE.md): `BootstrapConfig` type and `applySteeringActions` method.
+- [**SDK_AGENT_RUNNER.md**](agents/SDK_AGENT_RUNNER.md): `IAgentRunner` interface used by `SteeringAnalyzer`.
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): `SteeringAnalyzer` module responsibilities.
 

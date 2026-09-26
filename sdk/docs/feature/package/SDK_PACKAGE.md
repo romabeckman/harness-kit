@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 
 ```graph
@@ -20,7 +20,45 @@ updated: "2026-09-13"
 Defines the publication surface of `@romabeckman/hrns` for npm.
 
 ## OVERVIEW
-The `sdk_package` configures `package.json` and `tsconfig.build.json` so `npm publish` emits a clean, type-safe CJS-only package. Release `1.7.0` publishes SDK version `0.9.0`; the exports map exposes one entry and restricts the tarball to compiled files.
+The package manifest sets `@romabeckman/hrns` to version `0.9.2`. Its exports map exposes the compiled CommonJS entry and declarations; the publish allowlist contains `dist` and `README.md`.
+
+## KNOWLEDGE
+
+```json
+{
+  "schema_version": 1,
+  "entities": [
+    {
+      "id": "contract:npm-package-surface",
+      "type": "contract",
+      "label": "SDK package surface",
+      "definition": "Package metadata that selects the published version, public entry, and included files.",
+      "aliases": []
+    }
+  ],
+  "claims": [
+    {
+      "id": "claim:package-version-and-exports",
+      "subject": "contract:npm-package-surface",
+      "relation": null,
+      "object": null,
+      "statement": "package.json sets version 0.9.2, exposes dist/index.js and dist/index.d.ts from the root export, and allows dist plus README.md in the package.",
+      "kind": "observation",
+      "status": "supported",
+      "evidence": [
+        {
+          "kind": "configuration",
+          "source": "package.json",
+          "locator": "version, exports['.'], and files",
+          "snapshot": null
+        }
+      ],
+      "derived_from": [],
+      "gap": null
+    }
+  ]
+}
+```
 
 ## FOLDER STRUCTURE
 <folder_structure>
@@ -69,7 +107,7 @@ sdk/
 | Name | Type | Required | Description | Default |
 |------|------|----------|-------------|---------|
 | `name` | string | Yes | Scoped package name for npm registry | `@romabeckman/hrns` |
-| `version` | string | Yes | Published SDK version | `0.9.0` |
+| `version` | string | Yes | Published SDK version | `0.9.2` |
 | `exports["."].require` | string | Yes | CJS entry via `exports` map | `./dist/index.js` |
 | `files` | string[] | Yes | Tarball whitelist | `["dist", "README.md"]` |
 
@@ -84,12 +122,12 @@ PROHIBITED: Committing the `dist/` directory to source control.
 graph TD
     THIS["SDK Package Feature"] -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**SDK_CORE.md**](./SDK_CORE.md): Public API surface compiled into `dist/`.
-- [**SDK_STATE.md**](./SDK_STATE.md): High-level state mutation methods included in the published package.
-- [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): Agent Runner error types included in the published package.
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): CJS-only exports boundary decision.
+- [**SDK_CORE.md**](../orchestration/SDK_CORE.md): Public API surface compiled into `dist/`.
+- [**SDK_STATE.md**](../orchestration/SDK_STATE.md): High-level state mutation methods included in the published package.
+- [**SDK_AGENT_RUNNER.md**](../agents/SDK_AGENT_RUNNER.md): Agent Runner error types included in the published package.
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): CJS-only exports boundary decision.

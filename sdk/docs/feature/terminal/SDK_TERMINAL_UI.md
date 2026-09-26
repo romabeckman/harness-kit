@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 
 ```graph
@@ -62,12 +62,12 @@ PROHIBITED: Calling `startSpinner()` again without calling `stopSpinner()` first
 graph TD
     THIS["SDK Terminal UI Feature"] -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Folder structure and module responsibilities.
-- [**SDK_CORE.md**](./SDK_CORE.md): Orchestrator integration points.
-- [**SDK_STEERING.md**](./SDK_STEERING.md): Steering output confirmation UI dependencies.
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Folder structure and module responsibilities.
+- [**SDK_CORE.md**](../orchestration/SDK_CORE.md): Orchestrator integration points.
+- [**SDK_STEERING.md**](../sdk_steering.md): Steering output confirmation UI dependencies.
 

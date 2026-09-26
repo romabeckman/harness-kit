@@ -7,7 +7,7 @@ tags: [telemetry, ledger, tokens, costs]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 # Telemetry and Ledger
 Tracks token consumption, execution costs, and quota limits across agent run cycles.
@@ -66,5 +66,5 @@ PROHIBITED: Duplicate token metrics at the event root and inside `tokenUsage`.
 PROHIBITED: Execute orchestrator loops without an active `TokenLedger` tracking backend.
 
 ## REFERENCES
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md): Global patterns and Ports-and-Adapters layer details.
-- [**TESTS.md**](./TESTS.md): Vitest runner mock execution protocols.
+- [**ARCHITECTURE.md**](ARCHITECTURE.md): Global patterns and Ports-and-Adapters layer details.
+- [**TESTS.md**](TESTS.md): Vitest runner mock execution protocols.

@@ -13,7 +13,7 @@ edges:
     target: "feature:sdk_cli"
   - relation: depends_on
     target: "feature:sdk_agent_runner"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 
 ```graph
@@ -92,14 +92,14 @@ graph TD
     THIS -->|depends_on| RUNNER["SDK Agent Runner Feature"]
     THIS -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click CLI "./SDK_CLI.md"
-    click RUNNER "./SDK_AGENT_RUNNER.md"
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click CLI "../sdk_cli.md"
+    click RUNNER "SDK_AGENT_RUNNER.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**SDK_CLI.md**](./SDK_CLI.md): Command registration and service conventions.
-- [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): Runner registry and adapter boundaries.
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Ports-and-Adapters composition rules.
-- [**TESTS.md**](../adr/TESTS.md): Test commands and isolation boundaries.
+- [**SDK_CLI.md**](../sdk_cli.md): Command registration and service conventions.
+- [**SDK_AGENT_RUNNER.md**](SDK_AGENT_RUNNER.md): Runner registry and adapter boundaries.
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Ports-and-Adapters composition rules.
+- [**TESTS.md**](../../adr/TESTS.md): Test commands and isolation boundaries.

@@ -6,14 +6,35 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 
 ## STORAGE AND OWNERSHIP
 
+- REQUIRED: Serialize the knowledge JSON on one physical line without indentation or formatting line breaks. Keep Markdown fences on separate lines and preserve escaped newlines within string values.
 - REQUIRED: Store one fenced `json` block under `## KNOWLEDGE` in the owning ADR or feature document. Use the top-level shape `{"schema_version":1,"entities":[],"claims":[]}` and populate the arrays with relevant records; allow no additional top-level fields.
 - REQUIRED: Keep the existing feature `graph` block for source routing. The knowledge block is separate and is not parsed by `generate_docs_graph.py`.
-- REQUIRED: Exclude the ontology JSON graph block, including its fences, from the document's character count, following [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget). Count the `## KNOWLEDGE` heading and surrounding prose. Record consequential knowledge only.
+- REQUIRED: Exclude the entire `## KNOWLEDGE` section, including its heading and JSON block, from the document's character count, following [MARKDOWN CHARACTER BUDGET](../SKILL.md#markdown-character-budget). Record consequential knowledge only.
 - REQUIRED: Use local IDs `<type>:<slug>` for entities and `claim:<slug>` for claims. Resolve cross-document IDs as `<node_id>#<local_id>` through `.graph.json` and the target knowledge block.
 - REQUIRED: Give each concept one canonical owner. Reuse its qualified ID elsewhere; use aliases for synonyms within that domain. Never merge concepts solely because names match.
 - REQUIRED: Preserve IDs across renames. Reconcile affected references when ownership changes; do not silently delete referenced concepts.
 - REQUIRED: Use existing document `references` edges to make external concept owners discoverable. Keep semantic relations out of document routing edges.
-- ALLOWED: Leave untouched legacy documents without knowledge blocks. When a needed target lacks a concept, read its evidence and add the concept only within authorized scope; otherwise keep the claim unresolved without a dangling ID.
+- ALLOWED: Leave legacy documents outside the selected scope untouched. Within a full review, assess legacy documents even without existing knowledge. If a referenced owner is outside authorized scope, keep a local unresolved assertion with null relation/object and describe the missing target in `gap`; never invent a dangling ID.
+
+## SCOPE AND EXTRACTION
+
+1. Select **targeted update** for a named correction or feature change; include affected claims and their referenced owners. Select **full review** when the user requests ontology enrichment, audit, or regeneration across a docs scope. A directory alone does not imply full review.
+2. For a full review, inventory actual ADR/feature files within scope and reconcile the macro index. Track each as assessed with knowledge, assessed with no consequential knowledge (reason), or unresolved (missing evidence). Keep this inventory in working notes and summarize it at delivery; do not create another permanent index.
+3. For each domain, ask what operation it enables, what must remain true, which boundary it exposes or consumes, and which choice governs it. Use existing IDs before creating concepts. Versions and dependency lists alone do not describe behavioral domains.
+4. Trace a representative operation from entrypoint to validation, decision, dependency call, state change, and failure/cancellation handling. Inspect relevant branches and constraints; stop when the scoped questions are answered or the missing evidence is identified. Do not read every source file.
+5. Extract capabilities from outcomes, rules from enforced or required invariants, contracts from inputs/outputs/errors, and decisions from established choices. Keep observations separate from requirements; do not infer design intent from code alone.
+6. Connect entities using supported relations: capability constrained by rule, capability exposing contract, dependency on another capability/contract, or behavior governed by decision. Create relations only when evidence establishes them; no minimum entity or edge quota.
+7. Cite the exact guard, call, declaration, request, or execution result supporting each claim. Preserve scope and exceptions in the statement. If only metadata is relevant to the task, metadata-only knowledge is sufficient; explain that scope.
+8. Reconcile with existing knowledge, preserve uncertainty, and apply the completion gate below. Do not add redundant claims merely to populate the section.
+
+## SEMANTIC COMPLETION GATE
+
+- REQUIRED: For each scoped behavioral domain, answer from knowledge records: what capability is provided, which applicable rule or contract constrains it, what dependency matters for a change, and where the supporting evidence is located.
+- REQUIRED: Mark each question answered by claim IDs, not applicable with a reason, or unresolved with a concrete evidence gap. Answer using existing records and inspected sources; do not fabricate relations to satisfy the gate.
+- REQUIRED: If prose describes a consequential invariant or dependency absent from knowledge, reconcile it or record why it remains unresolved. Metadata-only records do not complete a behavioral review.
+- REQUIRED: When checking change impact, distinguish explicitly recorded dependents from inferred impact; do not claim completeness beyond assessed scope.
+- REQUIRED: Finish only when every scoped document has a disposition and every applicable question has an answer or explicit gap. A review with gaps may finish, but report partial grounding; never claim full semantic coverage.
+- REQUIRED: Report structural validation and semantic assessment separately. Neither measures improved LLM accuracy; that requires a separate task-based comparison.
 
 ## ENTITY CONTRACT
 
@@ -91,45 +112,40 @@ Use nonempty strings for these fields, except `snapshot` may be `null`.
 - REQUIRED: On updates, recheck affected claims and their dependents; do not mark unrelated claims freshly verified. Resolve supported status only from new inspection, never from editing prose or regenerating indexes.
 - REQUIRED: Continue useful documentation work with explicit gaps. Ask the user only when a missing decision materially blocks the requested outcome.
 
-## EXAMPLE
+## CONNECTED EXAMPLE
+
+Illustrative inspected fixture, not project evidence. Suppose `src/payments.py`, function `charge`, actually contains:
+
+```python
+# CORRECT: evidence fixture for this example only
+def charge(request, gateway):
+    if request.amount <= 0:
+        raise ValueError("amount must be positive")
+    return gateway.charge(request.amount)
+```
+
+The guard supports an implementation observation; it does not establish who approved the rule. The call supports the exposed function contract. Replace fixture paths and concepts with inspected project content when authoring.
+
+```json
+{"schema_version":1,"entities":[{"id":"capability:charge-payment","type":"capability","label":"Charge payment","definition":"Submit an amount to the payment gateway.","aliases":[]},{"id":"rule:positive-amount","type":"rule","label":"Positive amount","definition":"Reject amounts less than or equal to zero before calling the gateway.","aliases":[]},{"id":"contract:charge-call","type":"contract","label":"Charge call","definition":"Accept a request and gateway, return the gateway result, or raise ValueError for a nonpositive amount.","aliases":[]}],"claims":[{"id":"claim:positive-amount-guard","subject":"capability:charge-payment","relation":"constrained_by","object":"rule:positive-amount","statement":"The charge function rejects amounts <= 0 before invoking the gateway.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/payments.py","locator":"charge: amount guard before gateway.charge","snapshot":null}],"derived_from":[],"gap":null},{"id":"claim:charge-call-boundary","subject":"capability:charge-payment","relation":"exposes","object":"contract:charge-call","statement":"charge(request, gateway) returns gateway.charge(request.amount) or raises ValueError for a nonpositive amount.","kind":"observation","status":"supported","evidence":[{"kind":"code","source":"src/payments.py","locator":"charge: signature, raise, and return","snapshot":null}],"derived_from":[],"gap":null}]}
+```
+
+For another document owning the contract, reference `feature:payments#contract:charge-call` and add a document `references` edge to `feature:payments`; do not duplicate the entity. Test outcomes remain unknown until execution evidence is available.
+
+## UNRESOLVED EXAMPLE
 
 Illustrative unresolved proposal. Use real domain content when authoring; this example asserts no project facts.
 
 ```json
-{
-  "schema_version": 1,
-  "entities": [
-    {
-      "id": "rule:payment-idempotency",
-      "type": "rule",
-      "label": "Payment idempotency",
-      "definition": "The treatment of repeated payment requests sharing a key.",
-      "aliases": []
-    }
-  ],
-  "claims": [
-    {
-      "id": "claim:deduplicate-payment",
-      "subject": "rule:payment-idempotency",
-      "relation": null,
-      "object": null,
-      "statement": "Proposed: repeated requests with the same key create at most one charge.",
-      "kind": "hypothesis",
-      "status": "unresolved",
-      "evidence": [],
-      "derived_from": [],
-      "gap": "An authorized requirement must establish key scope and retention period."
-    }
-  ]
-}
+{"schema_version":1,"entities":[{"id":"rule:payment-idempotency","type":"rule","label":"Payment idempotency","definition":"The treatment of repeated payment requests sharing a key.","aliases":[]}],"claims":[{"id":"claim:deduplicate-payment","subject":"rule:payment-idempotency","relation":null,"object":null,"statement":"Proposed: repeated requests with the same key create at most one charge.","kind":"hypothesis","status":"unresolved","evidence":[],"derived_from":[],"gap":"An authorized requirement must establish key scope and retention period."}]}
 ```
 
 ## VALIDATION PROCEDURE
 
-1. Parse the knowledge JSON and check the version, exact fields, enums, value types, and unique entity/claim IDs. Stop on unknown versions; do not silently rewrite them.
-2. Resolve subjects, objects, and derivation IDs locally or through document IDs. Check relation endpoint types and reject circular derivation. Read only referenced owners needed for the affected records.
+1. After regenerating `.graph.json`, run `python ./scripts/validate_ontology.py <target_docs_dir>` from the skill directory. For targeted work, append repeated `--document <node_id>` options. The script is read-only and uses only the Python standard library.
+2. Resolve reported structural errors: JSON fields/version, IDs, reference resolution, relation endpoint types, statuses, and circular derivation. Unknown versions fail; never silently rewrite them. Documents without knowledge are reported as skipped, not semantically complete.
 3. Inspect cited evidence, including locators and available snapshots. Check whether it establishes the statement's kind, conditions, and scope. Reclassify unsupported claims and preserve contradictory evidence.
-4. Answer the task's relevant questions from the records: which rule applies, which capability depends on it, and what evidence supports the answer? Report missing knowledge explicitly.
+4. Apply SEMANTIC COMPLETION GATE, including scoped coverage and unanswered questions. No structural validator can determine whether all material business concepts were extracted.
 5. Check that prose and digest preserve uncertainty and distinguish intended behavior from observed behavior. Report which checks actually ran.
 
-These are authoring checks performed by the agent. The existing graph generator checks document routing only; it does not enforce this contract or prove factual correctness.
+The ontology validator checks structure and references; the graph generator checks document routing. Neither inspects evidence contents, resolves external sources, proves factual correctness, or executes tests described by claims. Evidence and semantic coverage remain agent responsibilities.

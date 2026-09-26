@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-19"
+updated: "2026-09-25"
 ---
 ```graph
 {
@@ -118,11 +118,11 @@ REQUIRED: Summarize completed work and review focus in `TDD-OUTPUT.json.develope
 graph TD
     THIS["SDK Core Feature"] -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
 
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Architectural decisions like Ports and Adapters.
-- [**TESTS.md**](../adr/TESTS.md): Test documentation.
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Architectural decisions like Ports and Adapters.
+- [**TESTS.md**](../../adr/TESTS.md): Test documentation.

@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: "2026-09-19"
+updated: "2026-09-25"
 ---
 
 ```graph
@@ -73,12 +73,12 @@ PROHIBITED: Calling `incrementReworks` more than once per validation failure.
 graph TD
     THIS["SDK State Feature"] -->|implements| ARCH["Architecture ADR"]
     THIS -->|tested_by| TESTS["Tests ADR"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
 ```
 
 ## REFERENCES
-- [**SDK_CORE.md**](./SDK_CORE.md): Foundation — IFileStateManager port and adapter.
-- [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): Outbound port implementation.
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): Ports-and-Adapters structure.
+- [**SDK_CORE.md**](SDK_CORE.md): Foundation — IFileStateManager port and adapter.
+- [**SDK_AGENT_RUNNER.md**](../agents/SDK_AGENT_RUNNER.md): Outbound port implementation.
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): Ports-and-Adapters structure.
 

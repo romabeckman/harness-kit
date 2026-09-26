@@ -1,13 +1,13 @@
 ---
 doc_type: adr
 domain: architecture
-stack: [TypeScript 7.0.2, Node.js, Vitest 5.0.0, Docker]
+stack: [TypeScript 7.0.2, Node.js, Vitest 5.0.1, Docker]
 node_id: "adr:architecture"
 tags: [architecture, ports-and-adapters, state-machine, orchestrator]
 edges:
   - relation: references
     target: "adr:tests"
-updated: "2026-09-18"
+updated: "2026-09-25"
 ---
 # Project Architecture
 
@@ -15,28 +15,27 @@ updated: "2026-09-18"
 Use **Ports and Adapters** around a Chain-of-Responsibility orchestrator. TypeScript entrypoints drive phase handlers, filesystem state, agent runners, telemetry, CLI output, HTTP jobs, and independent QA.
 
 ## FOLDER STRUCTURE
-<folder_structure>
+Keep source under `src/`, test suites under `tests/`, and documentation under `docs/`.
+
+### SOURCE LAYERS
 
 ```text
 sdk/
-├── src/
-│   ├── cli/                 # CLI entrypoint and command services
-│   ├── orchestrator/        # State machine, phase chain, and application services
-│   ├── agent-runner/        # Agent port, registry, factory, CLI, and SDK adapters
-│   ├── file-state/          # Filesystem port, atomic adapter, and parsers
-│   ├── context-assembler/   # Typed phase payload construction
-│   ├── validation-gate/     # Review score evaluation
-│   ├── telemetry/           # NDJSON token ledger
-│   ├── diagnose/            # Performance tracing, session ledger, and meta-harness adapter
-│   ├── server/              # HTTP ports, use cases, and adapters
-│   ├── settings/            # Runner and phase configuration
-│   └── ui/                  # Terminal rendering helpers
-├── tests/                   # Unit, integration, and isolated E2E suites
-├── docker/                  # Container workspace bootstrap
-└── docs/                    # ADR and feature documentation
+├── src/       # CLI, orchestration, state, runners, server, and UI
+├── tests/     # Unit, integration, and isolated E2E suites
+└── docker/    # Container workspace bootstrap
 ```
 
-</folder_structure>
+### DOCUMENT GROUPS
+
+```text
+docs/
+├── adr/       # Architecture, tests, and optional technical decisions
+└── feature/
+    ├── agents/ orchestration/ qa/ server/
+    ├── package/ terminal/
+    └── Stable public links: sdk_cli.md, sdk_steering.md, QA_TESTER.md
+```
 
 ## LAYERS
 
@@ -48,22 +47,29 @@ sdk/
 
 ## MODULES
 
+### CORE WORKFLOWS
+
 | Module | Responsibility | Location |
 |---|---|---|
-| SDK core | Run optional PBB `REFINEMENT`, then `BOOTSTRAP`, `PLANNING`, `DEVELOPMENT`, `REVIEW`, `TRANSITION`, `MEMORY`, and `DEPLOY`; handle `CASCADE_BLOCKED` and `HALTED`. | [SDK_CORE.md](../feature/SDK_CORE.md) |
-| Agent runners | Register CLI and SDK strategies behind `IAgentRunner`. | [SDK_AGENT_RUNNER.md](../feature/SDK_AGENT_RUNNER.md) |
-| File state | Parse and atomically mutate Markdown and JSON project state. | [SDK_STATE.md](../feature/SDK_STATE.md) |
-| Steering | Validate free-text directives and apply rule, rollback, or score actions. | [SDK_STEERING.md](../feature/SDK_STEERING.md) |
-| Settings | Resolve runner defaults and per-phase overrides. | [SDK_SETTINGS.md](../feature/SDK_SETTINGS.md) |
-| Diagnose | Process pending sessions, trace execution, and trigger meta-harness optimization. | [SDK_DIAGNOSE.md](../feature/SDK_DIAGNOSE.md) |
-| CLI | Parse `hrns` commands and coordinate interactive execution. | [SDK_CLI.md](../feature/SDK_CLI.md) |
-| Project history erasure | Discover and safely delete agent-generated runtime history for Claude Code, Codex, Copilot, Antigravity, and OpenCode via `hrns erase`. | [SDK_PROJECT_HISTORY_ERASURE.md](../feature/SDK_PROJECT_HISTORY_ERASURE.md) |
-| HTTP server | Expose non-interactive orchestration, settings, telemetry, reports, and health endpoints. | [HTTP_SERVER.md](../feature/HTTP_SERVER.md) |
-| Terminal UI | Render banners, progress, and ANSI output. | [SDK_TERMINAL_UI.md](../feature/SDK_TERMINAL_UI.md) |
-| Package | Define public exports and npm build output. | [SDK_PACKAGE.md](../feature/SDK_PACKAGE.md) |
+| SDK core | Run optional PBB `REFINEMENT`, then `BOOTSTRAP`, `PLANNING`, `DEVELOPMENT`, `REVIEW`, `TRANSITION`, `MEMORY`, and `DEPLOY`; handle `CASCADE_BLOCKED` and `HALTED`. | [SDK_CORE.md](../feature/orchestration/SDK_CORE.md) |
+| Agent runners | Register CLI and SDK strategies behind `IAgentRunner`. | [SDK_AGENT_RUNNER.md](../feature/agents/SDK_AGENT_RUNNER.md) |
+| File state | Parse and atomically mutate Markdown and JSON project state. | [SDK_STATE.md](../feature/orchestration/SDK_STATE.md) |
+| Steering | Validate free-text directives and apply rule, rollback, or score actions. | [SDK_STEERING.md](../feature/sdk_steering.md) |
+| Settings | Resolve runner defaults and per-phase overrides. | [SDK_SETTINGS.md](../feature/orchestration/SDK_SETTINGS.md) |
+| Diagnose | Process pending sessions, trace execution, and trigger meta-harness optimization. | [SDK_DIAGNOSE.md](../feature/agents/SDK_DIAGNOSE.md) |
+| CLI | Parse `hrns` commands and coordinate interactive execution. | [SDK_CLI.md](../feature/sdk_cli.md) |
+
+### SUPPORTING MODULES
+
+| Project history erasure | Discover and safely delete agent-generated runtime history for Claude Code, Codex, Copilot, Antigravity, and OpenCode via `hrns erase`. | [SDK_PROJECT_HISTORY_ERASURE.md](../feature/agents/SDK_PROJECT_HISTORY_ERASURE.md) |
+| HTTP server | Expose non-interactive orchestration, settings, telemetry, reports, and health endpoints. | [HTTP_SERVER.md](../feature/server/HTTP_SERVER.md) |
+| Terminal UI | Render banners, progress, and ANSI output. | [SDK_TERMINAL_UI.md](../feature/terminal/SDK_TERMINAL_UI.md) |
+| Package | Define public exports and npm build output. | [SDK_PACKAGE.md](../feature/package/SDK_PACKAGE.md) |
 | QA tester | Plan, validate, execute, and report runtime acceptance scenarios. | [QA_TESTER.md](../feature/QA_TESTER.md) |
 
 ## PATTERNS
+
+### REQUIRED
 
 REQUIRED: Inject ports through constructors or orchestrator options.
 REQUIRED: Register runner strategies with `AgentRunnerRegistry`; instantiate them with `AgentRunnerFactory`.
@@ -72,9 +78,14 @@ REQUIRED: Mutate persistent state through `IFileStateManager` using atomic tempo
 REQUIRED: Validate changes in order: `rtk npm install`, lint, build, typecheck, then tests.
 REQUIRED: Track and isolate agent sessions across phases using `DeveloperSessionState` with mandatory `phase` tag; resume Development and Review sessions on retries and clear all sessions on feature transition.
 REQUIRED: Select the outer agent runner explicitly for QA; keep QA phase decisions independent of provider-specific sub-agents.
+
+### PROHIBITED
+
 PROHIBITED: Import concrete agent runners into orchestration decisions.
 PROHIBITED: Put HTTP transport logic inside use cases.
 PROHIBITED: Bypass state adapters with direct writes from phase handlers.
+
+### REGISTRATION EXAMPLE
 
 <code_patterns>
 
@@ -101,4 +112,4 @@ const runner = new ClaudeCLIRunner()
 ## REFERENCES
 
 - [**README.md**](../README.md): Main documentation index.
-- [**TESTS.md**](./TESTS.md): Validation order, test tooling, and suite boundaries.
+- [**TESTS.md**](TESTS.md): Validation order, test tooling, and suite boundaries.

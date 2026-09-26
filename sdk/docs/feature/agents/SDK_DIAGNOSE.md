@@ -1,7 +1,7 @@
 ---
 doc_type: feature
 domain: diagnose
-stack: [TypeScript, Node.js, Vitest 5.0.0]
+stack: [TypeScript, Node.js, Vitest 5.0.1]
 node_id: "feature:sdk_diagnose"
 tags: [diagnose, meta-harness, traces, ledger, session]
 edges:
@@ -13,7 +13,7 @@ edges:
     target: "feature:sdk_agent_runner"
   - relation: depends_on
     target: "feature:sdk_settings"
-updated: "2026-09-13"
+updated: "2026-09-25"
 ---
 
 ```graph
@@ -143,15 +143,15 @@ graph TD
     THIS -->|tested_by| TESTS["Tests ADR"]
     THIS -->|depends_on| RUNNER["SDK Agent Runner Feature"]
     THIS -->|depends_on| SETTINGS["SDK Settings Feature"]
-    click ARCH "../adr/ARCHITECTURE.md"
-    click TESTS "../adr/TESTS.md"
-    click RUNNER "./SDK_AGENT_RUNNER.md"
-    click SETTINGS "./SDK_SETTINGS.md"
+    click ARCH "../../adr/ARCHITECTURE.md"
+    click TESTS "../../adr/TESTS.md"
+    click RUNNER "SDK_AGENT_RUNNER.md"
+    click SETTINGS "../orchestration/SDK_SETTINGS.md"
 ```
 
 ## REFERENCES
-- [**SDK_CLI.md**](./SDK_CLI.md): `hrns diagnose` and `hrns candidate` commands.
-- [**SDK_AGENT_RUNNER.md**](./SDK_AGENT_RUNNER.md): `AgentRunnerFactory` and `IAgentRunner` interface.
-- [**SDK_SETTINGS.md**](./SDK_SETTINGS.md): `HarnessSettings` resolution for diagnose phase.
-- [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md): System architecture and integration boundaries.
-- [**TESTS.md**](../adr/TESTS.md): Test guidelines and execution commands.
+- [**SDK_CLI.md**](../sdk_cli.md): `hrns diagnose` and `hrns candidate` commands.
+- [**SDK_AGENT_RUNNER.md**](SDK_AGENT_RUNNER.md): `AgentRunnerFactory` and `IAgentRunner` interface.
+- [**SDK_SETTINGS.md**](../orchestration/SDK_SETTINGS.md): `HarnessSettings` resolution for diagnose phase.
+- [**ARCHITECTURE.md**](../../adr/ARCHITECTURE.md): System architecture and integration boundaries.
+- [**TESTS.md**](../../adr/TESTS.md): Test guidelines and execution commands.
