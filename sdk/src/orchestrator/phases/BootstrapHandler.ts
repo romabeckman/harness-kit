@@ -201,7 +201,7 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       `For each project, check for \`docs/.digest.md\` and \`docs/.graph.json\`. If both exist, do not change that project's documentation.`,
       `Prepare or complete documentation only for projects listed under \`projects_missing_docs\`, keeping each project's files under its own \`docs\` directory.`,
       `Follow the skill to create: \`docs/README.md\`, \`docs/.digest.md\`, and \`docs/.graph.json\`,`,
-      `\`docs/adr/ARCHITECTURE.md\`, \`docs/adr/TESTS.md\`, only the required \`docs/adr\` files if not present.`,
+      `\`docs/adr/ARCHITECTURE.md\`, \`docs/adr/TESTS.md\` for each project, only the required \`docs/adr\` files if not present.`,
       `Follow the skill's frontmatter, feature graph, digest, graph index, and README rules for each project.`,
       `Do not ask questions; use available project evidence.`,
       `Use the implementation scope below to understand the intended project and document planned work separately from current implementation evidence.`,
