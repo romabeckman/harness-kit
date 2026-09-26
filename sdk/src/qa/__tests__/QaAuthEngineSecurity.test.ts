@@ -133,6 +133,42 @@ describe('QA authentication engine security', () => {
     expect(evidence).toContain('[REDACTED]')
   })
 
+  it.each(['ENOENT', 'EACCES'] as const)('blocks CLI execution when startup fails with %s', async (code) => {
+    vi.mocked(spawn).mockImplementation(((_command: string) => {
+      const child = Object.assign(new EventEmitter(), {
+        stdin: { end: vi.fn() },
+        stdout: new EventEmitter(),
+        stderr: new EventEmitter(),
+        kill: vi.fn(),
+      })
+      queueMicrotask(() => child.emit('error', Object.assign(new Error(`spawn ${code}`), { code })))
+      return child
+    }) as unknown as typeof spawn)
+
+    const result = await new CliDriver().execute(cliScenario(), workspace, workspace)
+
+    expect(result.status).toBe('BLOCKED')
+    expect(result.reason).toContain(code)
+  })
+
+  it('stops the CLI process when cancellation races child listener registration', async () => {
+    const controller = new AbortController()
+    let child: EventEmitter & { stdin: { end: ReturnType<typeof vi.fn> }; stdout: EventEmitter; stderr: EventEmitter; kill: ReturnType<typeof vi.fn> }
+    vi.mocked(spawn).mockImplementation(((_command: string) => {
+      child = Object.assign(new EventEmitter(), {
+        stdin: { end: vi.fn() }, stdout: new EventEmitter(), stderr: new EventEmitter(),
+        kill: vi.fn(() => child.emit('close', null)),
+      })
+      controller.abort(new Error('QA cancelled'))
+      return child
+    }) as unknown as typeof spawn)
+
+    const result = await new CliDriver().execute(cliScenario(), workspace, workspace, controller.signal)
+
+    expect(result).toMatchObject({ status: 'BLOCKED', reason: 'QA cancelled' })
+    expect(child!.kill).toHaveBeenCalledOnce()
+  })
+
   it('scopes literal Basic browser credentials to the target origin', async () => {
     const page = browserPage()
     const newPage = vi.fn().mockResolvedValue(page)
@@ -170,6 +206,73 @@ describe('QA authentication engine security', () => {
     expect(page.addCookies).toHaveBeenCalledWith([{ name: 'session', value: 'browser-cookie', url: 'https://qa.test/app' }])
   })
 
+  it('removes configured credentials when a browser request redirects off origin', async () => {
+    const page = browserPage()
+    let routeHandler: ((route: any) => Promise<void>) | undefined
+    page.route.mockImplementation(async (_pattern: string, handler: (route: any) => Promise<void>) => { routeHandler = handler })
+    const loader = async () => ({ chromium: { launch: async () => ({ newPage: async () => page, close: async () => undefined }) } })
+    const auth: QaDriverExecutionContext['auth'] = { mode: 'bearer', profile: 'local', headers: { Authorization: 'Bearer browser-secret' }, environment: {} }
+
+    const result = await new PlaywrightDriver('web', loader).execute(browserScenario(), 'https://qa.test/app', workspace, undefined, { auth })
+    const sameOriginContinue = vi.fn()
+    const redirectedOriginContinue = vi.fn()
+    await routeHandler!({ request: () => ({ url: () => 'https://qa.test/api', headers: () => ({}) }), continue: sameOriginContinue })
+    await routeHandler!({ request: () => ({ url: () => 'https://evil.test/collect', headers: () => ({ Authorization: 'Bearer browser-secret', accept: 'text/html' }) }), continue: redirectedOriginContinue })
+
+    expect(result.status).toBe('PASSED')
+    expect(sameOriginContinue).toHaveBeenCalledWith({ headers: { Authorization: 'Bearer browser-secret' } })
+    expect(redirectedOriginContinue).toHaveBeenCalledWith({ headers: { accept: 'text/html' } })
+  })
+
+  it('redacts configured credentials from browser assertion results and evidence', async () => {
+    const page = browserPage()
+    page.locator.mockReturnValue({ isVisible: vi.fn().mockResolvedValue(true), textContent: vi.fn().mockResolvedValue('browser-secret') })
+    const loader = async () => ({ chromium: { launch: async () => ({ newPage: async () => page, close: async () => undefined }) } })
+    const auth: QaDriverExecutionContext['auth'] = { mode: 'bearer', profile: 'local', headers: { Authorization: 'Bearer browser-secret' }, environment: {} }
+    const scenario = { ...browserScenario(), assertions: [{ type: 'text' as const, selector: '#token', value: 'not the secret' }] }
+
+    const result = await new PlaywrightDriver('web', loader).execute(scenario, 'https://qa.test/app', workspace, undefined, { auth })
+    const observations = readFileSync(join(workspace, 'observations.json'), 'utf8')
+
+    expect(result.status).toBe('FAILED')
+    expect(result.reason).not.toContain('browser-secret')
+    expect(observations).not.toContain('browser-secret')
+  })
+
+  it('redacts credentials from browser page errors, rejected actions, and setup failures', async () => {
+    const auth: QaDriverExecutionContext['auth'] = { mode: 'bearer', profile: 'local', headers: { Authorization: 'Bearer browser-secret' }, environment: {} }
+    const createDriver = (page: any, close = async () => undefined) => new PlaywrightDriver('web', async () => ({
+      chromium: { launch: async () => ({ newPage: async () => page, close }) },
+    }))
+
+    const pageErrorPage = browserPage()
+    let reportPageError: ((error: Error) => void) | undefined
+    pageErrorPage.on.mockImplementation((event: string, listener: (error: Error) => void) => {
+      if (event === 'pageerror') reportPageError = listener
+    })
+    pageErrorPage.goto.mockImplementation(async () => { reportPageError?.(new Error('page echoed browser-secret')) })
+    const pageError = await createDriver(pageErrorPage).execute(browserScenario(), 'https://qa.test/app', join(workspace, 'page-error'), undefined, { auth })
+
+    const actionErrorPage = browserPage()
+    actionErrorPage.locator.mockImplementation(() => ({ click: vi.fn().mockRejectedValue(new Error('action echoed browser-secret')) }))
+    const actionError = await createDriver(actionErrorPage).execute({
+      ...browserScenario(), actions: [{ type: 'click', selector: '#submit' }],
+    }, 'https://qa.test/app', join(workspace, 'action-error'), undefined, { auth })
+
+    const setupError = await createDriver(browserPage(), async () => { throw new Error('close echoed browser-secret') })
+      .execute(browserScenario(), 'https://qa.test/app', join(workspace, 'setup-error'), undefined, { auth })
+
+    for (const result of [pageError, actionError, setupError]) {
+      expect(result.status).not.toBe('PASSED')
+      expect(result.reason).not.toContain('browser-secret')
+      const artifacts = result.evidence.filter((item) => item.path.endsWith('.json')).map((item) => readFileSync(item.path, 'utf8')).join('\n')
+      expect(artifacts).not.toContain('browser-secret')
+    }
+    expect(pageError.status).toBe('FAILED')
+    expect(actionError.status).toBe('FAILED')
+    expect(setupError.status).toBe('BLOCKED')
+  })
+
   it('blocks authenticated WebSocket scenarios instead of running unauthenticated', async () => {
     const exchange = vi.fn()
     const driver: QaDriver = new WebSocketDriver(exchange)
@@ -205,7 +308,14 @@ function mcpSessionRequest(toolResponse: Response) {
       }), { status: 200, headers: { 'content-type': 'application/json', 'Mcp-Session-Id': 'qa-session-1' } })
     }
     if (payload.method === 'notifications/initialized') return new Response(null, { status: 202 })
-    return toolResponse.clone()
+    const headers = new Headers(toolResponse.headers)
+    let body = await toolResponse.clone().text()
+    try {
+      const data = JSON.parse(body)
+      if (data && typeof data === 'object' && 'id' in data) data.id = payload.id
+      body = JSON.stringify(data)
+    } catch { /* Preserve intentionally malformed protocol fixtures. */ }
+    return new Response(body, { status: toolResponse.status, headers })
   })
 }
 

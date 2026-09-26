@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { QaDriver, QaDriverExecutionContext, QaScenario, QaScenarioResult } from '../types'
 
-export type WebSocketExchange = (target: string, messages: string[], signal?: AbortSignal) => Promise<string[]>
+export type WebSocketExchange = (target: string, messages: string[], signal?: AbortSignal, expectedMessages?: string[]) => Promise<string[]>
 
 export class WebSocketDriver implements QaDriver {
   readonly profile = 'websocket' as const
@@ -21,7 +21,7 @@ export class WebSocketDriver implements QaDriver {
     try { url = new URL(target) } catch { return blocked(scenario, 'WebSocket target must be a URL') }
     if (url.protocol !== 'ws:' && url.protocol !== 'wss:') return blocked(scenario, 'WebSocket target must use ws or wss')
     try {
-      const received = await this.exchange(url.toString(), request.messages, signal)
+      const received = await this.exchange(url.toString(), request.messages, signal, request.expectedMessages)
       mkdirSync(evidenceDir, { recursive: true })
       const evidencePath = join(evidenceDir, 'websocket.json')
       writeFileSync(evidencePath, JSON.stringify({ sent: request.messages, received }, null, 2), 'utf8')
@@ -34,13 +34,16 @@ export class WebSocketDriver implements QaDriver {
   }
 }
 
-function exchangeMessages(target: string, messages: string[], signal?: AbortSignal): Promise<string[]> {
+function exchangeMessages(target: string, messages: string[], signal?: AbortSignal, expectedMessages: string[] = []): Promise<string[]> {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(target)
     const received: string[] = []
     let idle: ReturnType<typeof setTimeout> | undefined
+    let settled = false
     const timeout = setTimeout(() => finish(new Error('WebSocket exchange timed out')), 5_000)
     const finish = (error?: Error) => {
+      if (settled) return
+      settled = true
       clearTimeout(timeout)
       if (idle) clearTimeout(idle)
       signal?.removeEventListener('abort', abort)
@@ -51,12 +54,13 @@ function exchangeMessages(target: string, messages: string[], signal?: AbortSign
     signal?.addEventListener('abort', abort, { once: true })
     socket.addEventListener('open', () => {
       for (const message of messages) socket.send(message)
-      if (messages.length === 0) idle = setTimeout(() => finish(), 250)
+      if (expectedMessages.length === 0) idle = setTimeout(() => finish(), 250)
     })
     socket.addEventListener('message', (event) => {
       received.push(typeof event.data === 'string' ? event.data : String(event.data))
       if (idle) clearTimeout(idle)
-      idle = setTimeout(() => finish(), 250)
+      if (expectedMessages.length > 0 && expectedMessages.every((expected) => received.some((message) => message.includes(expected)))) finish()
+      else if (expectedMessages.length === 0) idle = setTimeout(() => finish(), 250)
     })
     socket.addEventListener('error', () => finish(new Error('WebSocket connection failed')))
     socket.addEventListener('close', () => finish())

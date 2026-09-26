@@ -18,14 +18,8 @@ export const probeQaTarget: QaTargetProbe = async (target, signal) => {
     const targetUrl = new URL(target)
     for (let attempt = 0; attempt < MAX_PROBE_ATTEMPTS; attempt++) {
       try {
-        const response = await fetch(target, { method: 'HEAD', signal: controller.signal })
-        // Some MCP Streamable HTTP servers reject HEAD while still serving POST.
-        // A root 404 can be valid for API targets whose scenarios use relative paths.
-        // A path-specific 404 or any 5xx proves the configured target is unusable.
-        const rootNotFound = response.status === 404 && targetUrl.pathname === '/'
-        if (response.status >= 400 && ![401, 403, 405].includes(response.status) && !rootNotFound) {
-          return { available: false, reason: `Target unavailable at ${target}: HTTP ${response.status}` }
-        }
+        await fetch(target, { method: 'HEAD', signal: controller.signal })
+        // An HTTP response proves the target is reachable; scenario drivers own status assertions.
         return { available: true }
       } catch (error) {
         lastError = error

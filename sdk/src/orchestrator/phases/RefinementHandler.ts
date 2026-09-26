@@ -53,7 +53,9 @@ export class RefinementHandler extends AbstractPhaseHandler {
   private async generateQuestions(context: Reviewontext, scope: string): Promise<RefinementQuestion[]> {
     const productDir = getProductDir(context)
     const questionsPath = join(productDir, 'QUESTIONS.json')
-    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
+    const projectPaths = context.config.projectPaths ?? []
+    const pathsToInspect = projectPaths.length > 0 ? projectPaths : [context.workingDir]
+    const orientationSection = buildDocsOrientationSection(projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     const staticPrompt = [
       `<skill_context>`,
@@ -69,12 +71,24 @@ export class RefinementHandler extends AbstractPhaseHandler {
       `Backlog from problems, expectations, personas, functionalities, and PBIs.`,
       `</objective>`,
       ``,
+      `<project_setup_questions>`,
+      `Inspect actual files in the paths listed in <project_paths_to_inspect>. Decide`,
+      `whether the project is`,
+      `initial or has no working implementation. Base this decision on code and project`,
+      `evidence. Do not treat a missing docs directory alone as proof that the project is initial.`,
+      `If the project is initial or has no working implementation, ask up to 4 additional setup questions.`,
+      `Ask about architecture and how the project should be built. Keep these`,
+      `separate from the 0-12 PBB business questions. If implementation exists, ask no setup questions.`,
+      `These setup questions are an explicit exception to the PBB restriction on`,
+      `architecture questions.`,
+      `</project_setup_questions>`,
+      ``,
       `<rules>`,
       `- CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally. After completing all required work, return only the final output explicitly required by the current prompt. If no final output is required, return exactly {}.`,
-      `- Ask 0-12 questions. Do not fabricate gaps to reach a quota.`,
+      `- Ask 0-12 questions for PBB business discovery. Do not fabricate gaps to reach a quota.`,
       `- Focus on missing business outcomes, boundaries, personas, permissions, workflows,`,
       `  pricing, integrations, and regulatory needs that change the Product Backlog.`,
-      `- Do not ask architecture, implementation, framework, or code questions.`,
+      `- Do not ask architecture, implementation, framework, or code questions for business discovery.`,
       `- Recommendations must be conservative, scope-preserving, and grounded in evidence.`,
       `- Treat every recommendation as provisional until the human accepts or replaces it.`,
       `</rules>`,
@@ -97,6 +111,9 @@ export class RefinementHandler extends AbstractPhaseHandler {
     const dynamicPrompt = [
       `<dynamic_context>`,
       `<output_path>${questionsPath}</output_path>`,
+      `<project_paths_to_inspect>`,
+      ...pathsToInspect.map((projectPath) => `- ${projectPath}`),
+      `</project_paths_to_inspect>`,
       ...orientationSection,
       ...inlineOrReference(
         'scope',

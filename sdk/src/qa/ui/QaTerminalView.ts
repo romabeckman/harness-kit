@@ -106,6 +106,8 @@ export class QaTerminalView implements QaTerminalPresenter {
           if (area.passed > 0) parts.push(`${area.passed} passed`)
           if (area.failed > 0) parts.push(`${area.failed} failed`)
           if (area.blocked > 0) parts.push(`${area.blocked} blocked`)
+          if (area.inconclusive > 0) parts.push(`${area.inconclusive} inconclusive`)
+          if (area.untested > 0) parts.push(`${area.untested} untested`)
           this.line(`  ${category}: ${parts.join(', ')}`)
         }
       }

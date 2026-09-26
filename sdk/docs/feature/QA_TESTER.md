@@ -15,7 +15,7 @@ edges:
     target: "feature:sdk_settings"
   - relation: depends_on
     target: "feature:sdk_terminal_ui"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 ```graph
 {
@@ -26,8 +26,8 @@ updated: "2026-09-20"
   "entrypoints": ["src/qa/QaAgenticOrchestrator.ts", "src/cli/services/qa-service.ts", "src/cli/services/run-service.ts"],
   "registration_files": ["src/cli/run.ts", "src/cli/utils/constants.ts", "src/cli/services/qa/QaOrchestratorFactory.ts", "src/index.ts", "src/qa/index.ts"],
   "reference_files": ["src/qa/engine/CurlDriver.ts", "src/qa/auth/QaAuthConfigStore.ts", "src/qa/auth/types.ts", "src/cli/services/qa/QaAuthCommand.ts"],
-  "code_files": ["src/cli/utils/run-args-parser.ts", "src/cli/services/qa/types.ts", "src/cli/services/qa/QaArgsParser.ts", "src/cli/services/qa/QaDevelopmentRenewal.ts", "src/cli/services/qa/QaExploratoryCommand.ts", "src/cli/services/qa/QaReportOutput.ts", "src/qa/services/QaService.ts", "src/qa/services/QaDeveloperReportGenerator.ts", "src/qa/services/QaExploratoryService.ts", "src/qa/services/QaExecutionMemory.ts", "src/qa/services/QaPlanValidator.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/MobileWebDriver.ts", "src/qa/engine/AccessibilityDriver.ts", "src/qa/engine/McpClientDriver.ts", "src/qa/engine/CliDriver.ts", "src/qa/engine/WebSocketDriver.ts", "src/qa/engine/QaAuthRedaction.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/utils/QaAgentFileOutput.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaValidationPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
-  "test_files": ["src/qa/__tests__/PlaywrightDriverIsolation.test.ts", "src/qa/auth/__tests__/QaAuthConfigStore.test.ts", "src/qa/auth/__tests__/QaAuthExecution.test.ts", "src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaExtendedEngines.test.ts", "src/qa/__tests__/QaAuthEngineSecurity.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaImprovements.test.ts", "src/qa/__tests__/QaCurlRegressions.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/services/__tests__/QaPlanValidator.test.ts", "src/qa/services/__tests__/QaTargetProbe.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts", "src/cli/services/__tests__/run-service.test.ts", "src/cli/utils/__tests__/run-args-parser.test.ts"]
+  "code_files": ["src/cli/utils/run-args-parser.ts", "src/cli/services/qa/types.ts", "src/cli/services/qa/QaArgsParser.ts", "src/cli/services/qa/QaDevelopmentRenewal.ts", "src/cli/services/qa/QaExploratoryCommand.ts", "src/cli/services/qa/QaReportOutput.ts", "src/qa/services/QaService.ts", "src/qa/services/QaDeveloperReportGenerator.ts", "src/qa/services/QaExploratoryService.ts", "src/qa/services/QaExecutionMemory.ts", "src/qa/services/QaPlanValidator.ts", "src/qa/services/QaRuntimeManager.ts", "src/qa/services/QaTargetProbe.ts", "src/qa/types.ts", "src/qa/progress.ts", "src/qa/services/QaRunStore.ts", "src/qa/services/QaVerdictPolicy.ts", "src/qa/engine/PlaywrightDriver.ts", "src/qa/engine/MobileWebDriver.ts", "src/qa/engine/AccessibilityDriver.ts", "src/qa/engine/McpClientDriver.ts", "src/qa/engine/CliDriver.ts", "src/qa/engine/WebSocketDriver.ts", "src/qa/engine/QaAuthRedaction.ts", "src/qa/engine/index.ts", "src/qa/services/index.ts", "src/qa/ui/QaTerminalView.ts", "src/qa/utils/QaAgentFileOutput.ts", "src/qa/utils/QaPlanRetargeting.ts", "src/qa/phases/types.ts", "src/qa/phases/QaPlanningPhase.ts", "src/qa/phases/QaValidationPhase.ts", "src/qa/phases/QaExecutionPhase.ts", "src/qa/phases/QaAnalysisPhase.ts", "src/qa/phases/QaReportingPhase.ts", "src/qa/phases/index.ts"],
+  "test_files": ["src/qa/__tests__/PlaywrightDriverIsolation.test.ts", "src/qa/auth/__tests__/QaAuthConfigStore.test.ts", "src/qa/auth/__tests__/QaAuthExecution.test.ts", "src/qa/__tests__/QaArchitecture.test.ts", "src/qa/__tests__/QaExtendedEngines.test.ts", "src/qa/__tests__/QaAuthEngineSecurity.test.ts", "src/qa/__tests__/QaAgenticOrchestrator.test.ts", "src/qa/__tests__/QaService.test.ts", "src/qa/__tests__/QaImprovements.test.ts", "src/qa/__tests__/QaCurlRegressions.test.ts", "src/qa/__tests__/QaRunStore.test.ts", "src/qa/__tests__/QaReviewRegressions.test.ts", "src/qa/services/__tests__/QaPlanValidator.test.ts", "src/qa/services/__tests__/QaTargetProbe.test.ts", "src/qa/ui/__tests__/QaTerminalView.test.ts", "src/cli/services/__tests__/qa-service.test.ts", "src/cli/services/__tests__/run-service.test.ts", "src/cli/utils/__tests__/run-args-parser.test.ts"]
 }
 ```
 
@@ -49,10 +49,12 @@ src/cli/services/qa/ # QA parsing, handlers, factories, CLI types
 
 1. **Run** `hrns qa run`; choose resume, analysis, or new when plans exist.
 2. **Define** scope with `--scope`; repeat `--scenario` for baselines.
-3. **Validate** planner JSON, profile, target, and scenarios. On validation error, request one LLM correction using the exact error and original contract; throw if corrected output remains invalid.
+3. **Validate** the executable plan contract, target, profile, and scenarios. Allow one correction for plan-contract errors; check driver prerequisites after planning and block without asking the agent to rewrite scope.
 4. **Execute** in order; use `--analysis` for evidence analysis.
 5. **Report** with `hrns qa report --run <id>`; explore with `qa exploratory`.
 6. **Authenticate** with `--auth <profile>`; planning receives safe profile metadata and browser execution applies the selected credentials.
+
+Each supplied `--scenario` is a mandatory baseline. Preserve its stable ID and require an executable scenario mapping before execution. Shared planning, repair, and analysis instructions require an actor, preconditions, starting state, action, and observable outcome; assert business behavior when transport or action success alone is insufficient.
 
 ## REPORT OUTPUT
 
@@ -69,7 +71,7 @@ REQUIRED: Write atomically; escape HTML; use one evidence link per scenario; mod
 
 REQUIRED: Preserve scope bytes, scenario IDs, and one runner session. Remove temporary JSON; escape raw NUL as `\\u0000` in repair prompts.
 
-Adaptive analysis is opt-in: `--analysis` inspects evidence and appends and executes material gaps. Choose **resume with analysis** for saved plans; plain **resume** runs saved scenarios only.
+Adaptive analysis is opt-in and runs one bounded evidence pass. It may append and execute material gaps, then reporting starts; it does not repeat analysis. Choose **resume with analysis** for saved plans; plain **resume** runs saved scenarios only.
 
 ## DEVELOPMENT RENEWAL
 
@@ -84,15 +86,19 @@ Ask **Send failed and blocked scenarios to fix?** (default `false`); select **FA
 | BLOCKED | A scenario cannot execute or target is unavailable. |
 | INCONCLUSIVE | Required evidence is missing or unverified. |
 
+Coverage counts reconcile to planned scenarios: passed, failed, blocked, inconclusive, and not run. Only categories with passed or failed observations count as tested. Unplanned categories are not reported as coverage gaps.
+
 ## TERMINAL PROGRESS
 
 REQUIRED: Emit runtime, phase, scenario, and completion events via `QaTerminalPresenter`; disable ANSI without TTY. Include IDs, totals, errors.
 
 ## DRIVERS
 
-Reuse browsers with an isolated context per scenario; close contexts on failure. Without a profile, keep login and verification together. With non-`none`, start authenticated and omit login. Use selector/URL waits. Curl never follows redirects; MCP follows same-origin redirects. Require screenshots.
+Reuse browsers with an isolated context per scenario; close contexts on failure. Without a profile, keep login and verification together. With non-`none`, start authenticated and omit login. Use DOM readiness and bounded selector/URL waits, not `networkidle`. Browser assertions poll for expected state for up to three seconds. Keep explicit navigation, URL waits, and URL assertions within the target origin. Curl never follows redirects; MCP follows same-origin redirects and matches the active JSON-RPC response ID. Require screenshots and redacted observations.
 
 Legacy **Streamable HTTP** sends `initialize`, then `notifications/initialized`; reuse returned `Mcp-Session-Id` and negotiated `MCP-Protocol-Version` for the scenario request. Stateless `2026-07-28` requests carry protocol, client, and capability metadata plus `Mcp-Method` and tool `Mcp-Name` headers.
+
+CLI and MCP executions have 30-second deadlines. WebSocket exchanges have a five-second deadline and complete when all expected messages arrive. The deterministic accessibility check covers image alternatives, form labels, and document language; it is not a comprehensive accessibility audit. A target probe checks reachability only; scenario drivers own HTTP status assertions.
 
 ## AUTHENTICATION
 

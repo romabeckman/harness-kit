@@ -108,6 +108,23 @@ describe('RefinementHandler', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
+  it('asks the LLM to decide whether setup questions apply from project evidence', async () => {
+    mockContext.config.projectPaths = ['/projects/frontend', '/projects/backend']
+    await handler.handle(Phase.REFINEMENT, mockContext)
+
+    const prompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string
+    expect(prompt).toContain('<project_setup_questions>')
+    expect(prompt).toContain('<project_paths_to_inspect>')
+    expect(prompt).toContain('- /projects/frontend')
+    expect(prompt).toContain('- /projects/backend')
+    expect(prompt).toContain('Inspect actual files in the paths listed in <project_paths_to_inspect>')
+    expect(prompt).toContain('initial or has no working implementation')
+    expect(prompt).toContain('up to 4 additional setup questions')
+    expect(prompt).toContain('ask no setup questions')
+    expect(prompt).toContain('missing docs directory alone')
+    expect(prompt).toContain('explicit exception to the PBB restriction')
+  })
+
   it('includes RefinementHandler in ChainBuilder.buildDefault()', () => {
     const chain = ChainBuilder.buildDefault()
     expect(chain).toBeDefined()

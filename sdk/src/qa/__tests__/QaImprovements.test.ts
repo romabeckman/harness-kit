@@ -192,7 +192,7 @@ describe('QA focused regressions', () => {
     expect(prompts).toHaveLength(2)
     expect(prompts[0]).toContain('Generate the QA analysis result directly in this file using file tools.')
     expect(prompts[1]).toContain('Generate the QA report directly in this file using file tools.')
-    expect(context.report?.summary).toBe('File report.')
+    expect(context.report?.summary).toBe('QA verdict PASS: 1 passed, 0 failed, 0 blocked, 0 inconclusive, 0 not run across 1 planned scenarios.')
   })
 
   it('rejects changed executed scenarios during adaptive revision and reports the skipped analysis', async () => {
