@@ -6,19 +6,20 @@ Defines the analysis framework and strict rules for generating and maintaining `
 
 ## EXPECTED OUTPUT
 
+PROHIBITED: Add `## KNOWLEDGE` to this ADR. Record decisions and evidence in prose; feature documents own ontology records.
+
 | Field | Value |
 |---|---|
 | Target file | `docs/adr/ARCHITECTURE.md` |
 | Max size | 10,000 total characters maximum, including all content; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
 | Content style | Compact, dense, and objective — no lengthy narrative explanations or verbose prose |
-| Agent action | Read the repository, apply the PRE-GENERATION ANALYSIS below, then generate or overwrite the file using the MANDATORY TEMPLATE exactly as specified |
+| Agent action | Read the repository, apply the PRE-GENERATION ANALYSIS below, then create or update affected sections of the file using the MANDATORY TEMPLATE exactly as specified |
 
 ---
 
 ## SIZE LIMIT & DECOMPOSITION RULES
 
 - REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget): at most 10,000 characters for the entire file, with no exclusions.
-- REQUIRED: Keep `docs/adr/ARCHITECTURE.md` at most **10,000 total characters**.
 - REQUIRED: Text must be compact, objective, and dense. PROHIBITED: Long theoretical explanations, conversational filler, or verbose historical context.
 - When `docs/adr/ARCHITECTURE.md` approaches or reaches the 10,000-character limit, apply one or both of the following pathways:
   1. **Text Compacting:** Condense prose into concise bullet points, replace narrative with compact tables, and remove redundant explanations while preserving strict technical constraints.
@@ -42,9 +43,9 @@ REQUIRED: Complete all three analyses by inspecting the repository before writin
 
 ## MANDATORY TEMPLATE
 
-REQUIRED: Use the exact structure below as literal output when generating or updating `docs/adr/ARCHITECTURE.md`. UPPERCASE section titles are mandatory and must not be renamed or removed.
+REQUIRED: Use the structure below when creating; preserve unaffected content when updating `docs/adr/ARCHITECTURE.md`. UPPERCASE section titles are mandatory and must not be renamed or removed.
 
-```markdown
+````markdown
 ---
 doc_type: adr
 domain: architecture
@@ -92,7 +93,7 @@ updated: YYYY-MM-DD
 # REQUIRED: [Pattern name — e.g., Constructor dependency injection]
 [Code example demonstrating the correct pattern]
 
-# FORBIDDEN: [Anti-pattern name — e.g., Global state usage]
+# PROHIBITED: [Anti-pattern name — e.g., Global state usage]
 [Code example demonstrating what NOT to do]
 </code_patterns>
 
@@ -101,18 +102,17 @@ updated: YYYY-MM-DD
 |------------------------------|---------|-------------------------------------|
 | [Name]                       | [Use]   | [How it connects]                   |
 
-<!-- DOCUMENT MAP: omitted — this baseline ADR has exactly 1 edge. The ## REFERENCES section below carries the relation. Include ## DOCUMENT MAP with Mermaid graph TD only when 2+ edges exist. -->
+<!-- DOCUMENT MAP: omitted — this baseline ADR has exactly 1 edge. The ## REFERENCES section below carries the relation. Add a DOCUMENT MAP only when it explains relationships beyond existing references. -->
 
 ## REFERENCES
 
 - [**README.md**](../README.md): Main documentation index.
 - [**TESTS.md**](./TESTS.md): Testing strategies and commands.
-```
+````
 
 ---
 
 ## LLM OPTIMIZATION RULES (MANDATORY)
 
-- REQUIRED: Keep document length at most 10,000 total characters. If approaching the limit, compact prose or decompose into complementary `docs/adr/*.md` documents.
 - REQUIRED: Use tables for `## MODULES` and `## INTEGRATIONS` — never prose paragraphs for relational data.
 - REQUIRED: Annotate every directory in `## FOLDER STRUCTURE` with a `#` comment explaining where new files of each type should be created.

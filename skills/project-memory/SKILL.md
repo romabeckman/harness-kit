@@ -18,7 +18,7 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 3. **Verify baseline documents** — check whether `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md` exist.
    - REQUIRED: Read the corresponding `./references/<DOC>-RULES.md` before creating or updating each baseline document.
    - REQUIRED: Create any missing baseline document before proceeding with the user's request.
-   - REQUIRED: Make it clear that `docs/adr/ARCHITECTURE.md` and `docs/adr/TESTS.md` are the ONLY mandatory ADR documents to be created. All other ADRs are optional and the human must decide whether to create them.
+   - REQUIRED: Make it clear that `docs/adr/ARCHITECTURE.md` and `docs/adr/TESTS.md` are the ONLY mandatory ADR documents to be created. Additional ADR creation follows the single authorization rule in DOCUMENT ORGANIZATION below.
 4. **Read Harness Memory project hints** — check `.harness-kit/memory.toml` for `related_projects` on every invocation. Treat cached keys as candidates, not proof of relationship direction. Continue when the file or MCP connection is unavailable.
 
 ---
@@ -27,9 +27,9 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 
 ### ONTOLOGY & EVIDENCE
 
-- REQUIRED: Read [ONTOLOGY-RULES.md](./references/ONTOLOGY-RULES.md) before creating or changing domain concepts, business rules, contracts, decisions, or claims about behavior. Apply it to baseline documents too; navigation-only edits need no ontology block.
-- REQUIRED: Store concepts and claims in the owning document's `## KNOWLEDGE` section, using the versioned JSON contract in that reference. Keep document routing in the existing frontmatter and feature micrograph.
-- REQUIRED: Apply the extraction workflow and completion gate in ONTOLOGY-RULES.md. In targeted mode, update affected claims only. In full review mode, assess each scoped ADR/feature for consequential knowledge, including legacy documents without a block. Preserve IDs and do not inventory every symbol.
+- REQUIRED: Read [ONTOLOGY-RULES.md](./references/ONTOLOGY-RULES.md) before authoring feature knowledge or migrating legacy knowledge. Create `## KNOWLEDGE` only in `docs/feature/**/*.md`, after `## OVERVIEW`. ADRs provide architectural evidence in prose; README and digest provide navigation and summaries.
+- REQUIRED: Store concepts and claims in the owning feature document's `## KNOWLEDGE` section, using the versioned JSON contract in that reference. Keep document routing in the existing frontmatter and feature micrograph.
+- REQUIRED: Apply the extraction workflow and completion gate in ONTOLOGY-RULES.md. In targeted mode, update affected claims only. In full review mode, assess each scoped feature for consequential knowledge and read relevant ADRs as evidence, including legacy documents without a block. Preserve IDs and do not inventory every symbol.
 - REQUIRED: Trace a supported claim to inspected evidence. Generated documents that cite each other are not independent confirmation. When grounding is missing, retain an explicit unresolved claim and the missing evidence.
 - PROHIBITED: Promote generated proposals to approved requirements, test definitions to passing results, or code observations to business authority. Do not invent approvals, sources, execution results, revisions, or confidence percentages.
 - REQUIRED: Preserve claim status and scope in prose, digest summaries, and downstream handoffs. A document's `updated` date does not mean its claims were reverified.
@@ -42,20 +42,30 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 - REQUIRED: Budget accumulated context across documents too: route through the indexes, read only task-relevant sections from one domain at a time, and expand to cited evidence or dependencies when needed. A full review processes all scoped domains sequentially; it does not require loading every document together.
 - REQUIRED: Keep claim IDs and source locators in working summaries. Reopen evidence before relying on a compressed or conflicting claim; report missing support explicitly instead of inferring it from unrelated context.
 
+### DOCUMENT CONTRACT
+
+| Document | YAML frontmatter | Feature micrograph | `## KNOWLEDGE` | Sections |
+|---|---|---|---|---|
+| `docs/feature/**/*.md` | Required | Required, directly after YAML | When consequential claims apply | Uppercase; REFERENCES last |
+| `docs/adr/**/*.md` | Required | Omit | Prohibited | Uppercase; REFERENCES last |
+| `docs/README.md` | Omit | Omit | Prohibited | Exact navigation template; no REFERENCES |
+| `docs/.digest.md` | Omit | Omit | Prohibited | Compact digest sections from Step 8; no REFERENCES |
+| Root `README.md` | Preserve existing | Do not add | Do not add | Preserve existing structure |
+
 ### FORMATTING & HYBRID GRAPH MODEL
 
 - REQUIRED: Generate every JSON payload, including `json` examples, `## KNOWLEDGE`, feature `graph` blocks, and `.graph.json`, as compact JSON on exactly one physical line, with no indentation or formatting line breaks (`json.dumps(data, ensure_ascii=False, separators=(',', ':'))`). Preserve escaped newlines inside string values. Markdown opening and closing fences remain on separate lines.
-- REQUIRED: Include a YAML frontmatter at the top of every document (except README.md). Must include: `doc_type`, `domain`, `stack`, `node_id` (`<type>:<slug>`), `tags` (2–5 terms), `edges` (list of `{relation, target}`), `updated`.
+- REQUIRED: Include a YAML frontmatter at the top of each ADR and feature document. Must include: `doc_type`, `domain`, `stack`, `node_id` (`<type>:<slug>`), `tags` (2–5 terms), `edges` (list of `{relation, target}`), `updated`.
 - PROHIBITED: Including `path` in frontmatter `edges[]` entries — resolve target paths via `node_id` lookup in `docs/.graph.json` nodes[]. Duplicating path in edges wastes tokens and creates a second source of truth that can drift.
 - REQUIRED: Include an embedded micro ````graph` JSON block directly after YAML frontmatter in every feature document (`docs/feature/*.md`). Include `node_id`, `domain`, `implements`, `tested_by`, plus project-relative routing arrays: `entrypoints`, `registration_files`, `reference_files`, `code_files`, and `test_files`.
 - REQUIRED: Use `entrypoints` for public/runtime entry files, `registration_files` for registries/factories/exports, and `reference_files` for the smallest representative implementations worth reading as patterns. Use empty arrays when a role does not apply.
 - REQUIRED: Keep each source or test path in exactly one routing array. Confirm every listed path exists.
 - PROHIBITED: Copying implementation paths from feature micrographs into `.digest.md` or `.graph.json`; global indexes must remain cheap to read.
 - REQUIRED: Keep `## FOLDER STRUCTURE` a high-level architectural view (folders/layers, one representative entry per group) — PROHIBITED: enumerating the same individual files already listed in the top ````graph` block's `code_files`/`test_files`. That block is the exhaustive machine-readable file list; the folder tree is for human/LLM orientation only.
-- REQUIRED: Include `## DOCUMENT MAP` with Mermaid `graph TD` only when the document has **2+ edges** in its frontmatter. For nodes with exactly 1 edge, omit this section — the `## REFERENCES` line already carries the relation.
+- REQUIRED: Include `## DOCUMENT MAP` with Mermaid `graph TD` when it adds explanatory value in its frontmatter. For nodes with exactly 1 edge, omit this section — the `## REFERENCES` line already carries the relation.
 - PROHIBITED: Encoding the same edge in `edges[]` frontmatter, DOCUMENT MAP Mermaid, and REFERENCES prose simultaneously without added value.
 - REQUIRED: Use Standard Markdown only (no MDX, no custom extensions).
-- REQUIRED: Use UPPERCASE section titles (`## OVERVIEW`, `## LAYERS`, `## DOCUMENT MAP`, etc.) in every document.
+- REQUIRED: Use section casing defined in DOCUMENT CONTRACT.
 - REQUIRED: Use imperative verbs: "use", "add", "avoid" — never "you can use" or "it is recommended".
 - REQUIRED: Use `REQUIRED:`, `PROHIBITED:`, `ALLOWED:` prefixes on all constraint statements.
 - REQUIRED: Use numbered lists for sequential steps; use bullet lists for non-ordered characteristics.
@@ -64,13 +74,12 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 - PROHIBITED: Long introductions and filler text — remove any sentence starting with "This document describes…", "This section describes…", or "This guide aims to…".
 - PROHIBITED: Decorative content — no emojis, filler phrases, or motivational text.
 - PROHIBITED: Prose sections longer than 15 lines — split into sub-sections if needed. Keep machine-readable graph and knowledge blocks intact.
-- REQUIRED: Keep every generated Markdown document within the limit defined in TOTAL CONTEXT BUDGET.
 
 ### LLM OPTIMIZATION & GRAPH TOPOLOGY
 
-- REQUIRED: Tables for parameters, flags, comparisons, and cross-references.
+- REQUIRED: Use tables for parameters, flags, and comparisons. Use a concise list for document references, as shown in the templates.
 - REQUIRED: Label instructional code examples CORRECT / WRONG. For machine-readable JSON blocks, place any explanation outside the fence; never insert comments or labels into JSON.
-- REQUIRED: Cross-reference section at the end of every document listing related `docs/` files with a one-line description of the relationship.
+- REQUIRED: Follow DOCUMENT CONTRACT for REFERENCES sections; describe each related document in one line.
 - REQUIRED: Standardize frontmatter `edges[].relation` enum: `implements`, `depends_on`, `tested_by`, `references`, `child_of`.
   - `tested_by`: ALLOWED only from a feature/code node to the ADR defining its test strategy. PROHIBITED between two ADR/documentation nodes.
     This legacy routing relation identifies a strategy document only; it never proves test execution, coverage, or correctness.
@@ -90,7 +99,7 @@ Assume documents, code, datasets, and summaries may all be LLM-generated. Establ
 
 ## DOCUMENT ROUTING TABLE
 
-Use this table to determine which rules file to read and which constraints apply before writing. Document-to-document references must resolve within `./docs/adr/` or `./docs/feature/`. Evidence may cite inspected project code, configuration, requirements, or execution artifacts outside those folders; this does not grant permission to modify them or access `docs/harness-history/`.
+Use this table to determine which rules file to read and which constraints apply before writing. Document graph edges must resolve to indexed ADR/feature nodes. Prose navigation links may also point to `docs/README.md`, `.digest.md`, and `.graph.json`. Evidence may cite inspected project code, configuration, requirements, or execution artifacts outside those folders; this does not grant permission to modify them or access `docs/harness-history/`.
 
 | Document | Rules file to read | Key constraint |
 |---|---|---|
@@ -101,27 +110,16 @@ Use this table to determine which rules file to read and which constraints apply
 | `docs/.graph.json` | N/A | Macro document graph plus Harness Memory `related_projects` links — MUST update in Step 9 |
 | Any other ADR (e.g., `SECURITY.md`, `DATABASE.md`, `API-DESIGN.md`, `OBSERVABILITY.md`, `TELEMETRY.md`) | `./references/DOCUMENT-TEMPLATE.md` | OPTIONAL: Specific architectural decisions, standards, or decomposed topics. MUST stay at or below 10,000 total characters |
 | Any feature document (e.g., `docs/feature/*.md`) | `./references/DOCUMENT-TEMPLATE.md` | One business domain or feature per file |
-| `docs/harness-history/**` | N/A | PROHIBITED: project-memory must never read, create, or modify any file under `docs/harness-history/`. This folder is managed exclusively by `harness-tracer`, `harness-evaluator`, and `meta-harness`. |
+| `docs/harness-history/**` | N/A | Reserved for harness history tools; see DOCUMENT ORGANIZATION. |
 
-### Rules for document folders and organization
+### DOCUMENT ORGANIZATION
 
-- REQUIRED: Only `docs/adr/` and `docs/feature/` folders may be created and manipulated inside the `docs/` directory.
-- ALLOWED: `docs/.digest.md` and `docs/.graph.json` directly under `docs/`.
-- REQUIRED: Save all Architecture Decision Records and baseline/optional technical guides (such as `ARCHITECTURE.md`, `TESTS.md`, `SECURITY.md`, `DATABASE.md`, `API-DESIGN.md`, `OBSERVABILITY.md`, `TELEMETRY.md`, `DEPLOYMENT.md`, etc.) in the `docs/adr/` folder.
-- REQUIRED: Save all feature and business domain documentation (such as specific features, modules) in the `docs/feature/` folder.
-- PROHIBITED: Creating documents directly under `docs/` other than `docs/README.md`, `docs/.digest.md`, and `docs/.graph.json`.
-- PROHIBITED: Creating or manipulating any folders under `docs/` other than `docs/adr/` and `docs/feature/`.
-- PROHIBITED: Reading, creating, or modifying any file under `docs/harness-history/`. That folder is reserved for the harness optimization loop (`harness-tracer`, `harness-evaluator`, `meta-harness`) and must not be touched by `project-memory`.
-
-### Rules for non-baseline documents
-
-- REQUIRED: The only mandatory ADR documents to be created are `docs/adr/ARCHITECTURE.md` and `docs/adr/TESTS.md`. Any other ADR documents are strictly optional and must only be created if explicitly requested/decided by a human, or when decomposing `ARCHITECTURE.md` to meet the 10,000-character total limit.
-- REQUIRED: When `docs/adr/ARCHITECTURE.md` approaches the 10,000-character limit, apply one of two strategies: (1) compact text and tables, or (2) decompose specialized topics (e.g., security, observability, telemetry, database) into complementary ADR documents in `docs/adr/` (each also capped at 10,000 characters).
-- REQUIRED: Each file covers exactly **one** business domain, module, or architectural layer.
-- REQUIRED: Keep `MODULES` documentation in `ARCHITECTURE.md` strictly high-level (name + 1 line + link). Move detailed module documentation exclusively to the respective feature docs in `docs/feature/`.
-- PROHIBITED: Mixing unrelated topics in a single file.
-- REQUIRED: Follow `./references/DOCUMENT-TEMPLATE.md` structure when it exists.
-- REQUIRED: Keep documents short, dense, and at or below 10,000 total characters so an LLM or developer can extract all relevant context in a single pass.
+- REQUIRED: Store architecture, decisions, and technical guides in `docs/adr/`; store feature/domain documents in `docs/feature/`. Subfolders are allowed within these two trees.
+- ALLOWED: Maintain `docs/README.md`, `docs/.digest.md`, and `docs/.graph.json` directly under `docs/`.
+- PROHIBITED: Read or modify `docs/harness-history/`, or create/manage other documentation folders through this skill.
+- REQUIRED: Only `ARCHITECTURE.md` and `TESTS.md` are mandatory ADRs. Create additional ADRs only when requested by the user or when decomposing `ARCHITECTURE.md` to meet the total size limit. Compact other ADRs first; request a scope decision if a new ADR is necessary.
+- REQUIRED: Give each feature or specialized ADR one coherent domain, module, or responsibility. Keep architecture module summaries to name, one-line purpose, and link; put module details in the owning feature.
+- REQUIRED: Use the document-specific reference from the routing table. Apply the common contract below; a template supplies structure and does not require regenerating unaffected content.
 
 ### Rules for root `README.md`
 
@@ -150,19 +148,17 @@ Execute steps in order. Do not skip steps.
 - Trace representative flows from entry through decisions, contracts, dependencies, state changes, and failure paths. Use the reference's extraction questions; do not stop at manifest metadata when behavior is in scope.
 
 **Step 4 — Plan the structure**
-- For baseline documents: follow the rules file strictly (no deviations).
+- For baseline documents: follow their reference and DOCUMENT CONTRACT; preserve unaffected content during targeted updates.
 - For other documents: follow `./references/DOCUMENT-TEMPLATE.md`.
 - Identify which sections need code examples and whether CORRECT/WRONG labels apply.
 - Identify the questions the changed knowledge must answer: which rule applies, what depends on the concept, and which evidence supports the answer. Include only concepts and claims needed for the task.
 
 **Step 5 — Write or update content**
-- REQUIRED: Include graph YAML frontmatter (`node_id`, `tags`, `edges[]`) in every document. PROHIBITED: `path` key in `edges[]` entries.
-- REQUIRED: For `docs/feature/*.md`, include top embedded micro ````graph` JSON block mapping entry, registration, representative, production, and test files by role.
-- REQUIRED: Include `## DOCUMENT MAP` with Mermaid `graph TD` only when the document has **2+ edges**. Omit for single-edge documents.
+- Apply DOCUMENT CONTRACT and the formatting rules; preserve document IDs and source-routing roles.
 - REQUIRED: If the target document already exists and the task is a targeted update (gap, correction, new integration), apply targeted edits only to the affected section, preserving the rest of the content. Full file regeneration is only allowed when the structure is outdated relative to the current template or if explicitly requested by the user.
 - Use the correct language syntax in all code blocks.
-- Add inline comments to code snippets.
-- For consequential claims, add or reconcile `## KNOWLEDGE` using `ONTOLOGY-RULES.md`. Explain unresolved or conflicting claims without silently selecting a convenient source. Keep JSON blocks comment-free.
+- Add explanatory comments only where the example language supports them; JSON stays comment-free.
+- For consequential claims in feature documents only, add or reconcile `## KNOWLEDGE` using `ONTOLOGY-RULES.md`. Explain unresolved or conflicting claims without silently selecting a convenient source. Keep JSON blocks comment-free.
 - PROHIBITED: Technical content in `docs/README.md`.
 
 **Step 6 — Validate before delivering**
@@ -171,12 +167,11 @@ Execute steps in order. Do not skip steps.
 - Confirm every generated or updated Markdown file meets its total limit (10,000 characters; 3,000 for `docs/.digest.md`), with no exclusions. Recheck after index synchronization; report unresolved excess rather than claiming completion.
 - Confirm `node_id` format (`<type>:<slug>`) is unique and all `edges[].target` references resolve.
 - Confirm each feature micrograph contains `entrypoints`, `registration_files`, `reference_files`, `code_files`, and `test_files`; contains no duplicate paths; and resolves every path from project root.
-- Confirm `## DOCUMENT MAP` Mermaid graph is present for documents with 2+ edges and absent for single-edge documents.
+- Confirm any DOCUMENT MAP adds useful context instead of duplicating edges.
 - Confirm `docs/README.md` contains only navigation links and 1–2 sentence descriptions.
 - Confirm terminal commands match the project's actual technology stack.
 - Confirm imperative tone and bold on key terms.
-- Confirm UPPERCASE section titles are present.
-- Confirm cross-reference section exists at the end of each document.
+- Confirm sections, casing, frontmatter, and knowledge placement match DOCUMENT CONTRACT.
 - Validate affected knowledge records using the reference's validation procedure: JSON structure, entity types, relation direction, ID resolution, evidence support, and uncertainty. The document graph generator does not validate ontology records or factual truth.
 - Apply the semantic completion gate before summarizing. Run the structural ontology validator after rebuilding the macro index in Step 9; missing knowledge is a coverage decision, not a JSON validation success.
 - At this stage validate the target documents only. Validate generated indexes after Steps 8–10, once those files have actually been updated.
@@ -184,7 +179,7 @@ Execute steps in order. Do not skip steps.
 **Step 7 — Prepare delivery summary**
 - Record what was added, updated, or removed, and why.
 - Record material unresolved claims, contradictions, and the checks actually performed. Distinguish structural validation from behavior observed in an executed check.
-- Include scope coverage for full reviews: documents assessed, with knowledge, omitted with reasons, and blocked by evidence gaps. Report which domain questions the records answer; never equate block count with understanding.
+- Include scope coverage for full reviews: features assessed, with knowledge, omitted with reasons, and blocked by evidence gaps; ADRs inspected as evidence. Report which domain questions the records answer; never equate block count with understanding.
 - Do not deliver yet; Steps 8–10 must complete first.
 
 **Step 8 — Generate project digest**
@@ -201,7 +196,7 @@ Execute steps in order. Do not skip steps.
 - Purpose: enables `tdd-orchestrator` and other skills to perform initial orientation without reading full documents.
 
 **Step 9 — Update macro document graph index**
-- REQUIRED: Update `docs/.graph.json` aggregating macro document nodes and document-level edges (`implements`, `depends_on`, `tested_by`).
+- REQUIRED: Update `docs/.graph.json` aggregating macro document nodes and all document-level relation types defined in LLM OPTIMIZATION & GRAPH TOPOLOGY.
 - REQUIRED: Execute the Python script `./scripts/generate_docs_graph.py <target_docs_dir>` (or embedded logic) to extract nodes/edges and generate `docs/.graph.json`.
 - REQUIRED: Write `docs/.graph.json` as **compact JSON** (no indentation, `separators=(',',':')`) — it is a machine-read routing index, not a human-diffed file.
 - REQUIRED: On every invocation, write top-level `related_projects` as an array, including `[]` when no direction is known. The generator preserves existing entries; after it runs, reconcile confirmed cache candidates and new relationship evidence. Sort entries by `key`, then `relation`, and keep each entry to the exact key and direction fields defined above.
@@ -211,7 +206,6 @@ Execute steps in order. Do not skip steps.
   - `related_docs.optional`: Array of `{target, description}` generated from edges marked `read: optional` (`description` comes from the edge `when` value).
 - Keep global `edges[]` unchanged as `{source,target,relation}`. Harness Memory project links stay outside document edges.
 - Do not copy `read` or `when` into global edges.
-- PROHIBITED: Including `path` in edge entries — resolve target paths via `node_id` lookup in `nodes[]`. Duplicating path in edges wastes tokens and creates drift risk.
 - REQUIRED: Sort nodes by `id` and edges by `source`, `relation`, then `target` for deterministic output.
 - REQUIRED: Fail generation when:
   - a routing target cannot be resolved;

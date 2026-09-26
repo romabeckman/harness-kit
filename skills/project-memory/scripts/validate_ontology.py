@@ -111,9 +111,13 @@ class Validator:
         require(document in self.paths, f"Unknown document ID: {document}")
         try:
             data = knowledge_block(self.paths[document].read_text(encoding="utf-8"))
+            is_feature = self.paths[document].is_relative_to(self.docs / "feature")
+            require(data is None or is_feature,
+                    "KNOWLEDGE is allowed only in docs/feature documents")
             if data is None:
                 self.records[document] = {}
-                self.skipped.add(document)
+                if is_feature:
+                    self.skipped.add(document)
                 return
             fields(data, {"schema_version", "entities", "claims"}, document)
             require(type(data["schema_version"]) is int and data["schema_version"] == 1,

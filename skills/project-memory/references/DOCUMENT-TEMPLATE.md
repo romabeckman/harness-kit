@@ -10,10 +10,9 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 - REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget): at most 10,000 characters for the entire file, with no exclusions.
 - REQUIRED: One document covers exactly **one** business domain, module, or architectural layer.
 - PROHIBITED: Mixing unrelated topics in a single file.
-- REQUIRED: Keep document compact, objective, and dense — at most **10,000 total characters**.
-- REQUIRED: For complementary ADRs extracted from `ARCHITECTURE.md` (e.g., `SECURITY.md`, `OBSERVABILITY.md`, `TELEMETRY.md`, `DATABASE.md`), ensure strict compliance with the 10,000 character limit and cross-reference back to `ARCHITECTURE.md`.
+- REQUIRED: Cross-reference complementary ADRs back to `ARCHITECTURE.md`; apply the shared total size limit.
 - REQUIRED: Cross-reference section at the end listing related `docs/` files.
-- REQUIRED: For consequential domain or behavior claims, read [ONTOLOGY-RULES.md](./ONTOLOGY-RULES.md) and include `## KNOWLEDGE` as specified there. Keep uncertainty and evidence status explicit, including when every source is LLM-generated.
+- REQUIRED: For consequential domain or behavior claims in feature documents only, read [ONTOLOGY-RULES.md](./ONTOLOGY-RULES.md) and include `## KNOWLEDGE` as specified there. Omit KNOWLEDGE entirely for ADRs. Keep uncertainty and evidence status explicit, including when every source is LLM-generated.
 
 ---
 
@@ -58,7 +57,7 @@ ALLOWED: `read` remains optional for ADR-to-ADR edges when no feature routing po
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]
 
 ## KNOWLEDGE
-[For consequential claims touched by this task, insert one fenced json block following ONTOLOGY-RULES.md: schema_version, entities, claims. Use canonical IDs and inspected evidence. Preserve requirements, observations, hypotheses, and unresolved gaps separately. Omit this section when no consequential claims apply. The entire section counts toward the file limit.]
+[Feature documents only; omit this heading and section for ADRs. For consequential claims touched by this task, insert one fenced json block following ONTOLOGY-RULES.md: schema_version, entities, claims. Use canonical IDs and inspected evidence. Preserve requirements, observations, hypotheses, and unresolved gaps separately. Omit this section when no consequential claims apply. The entire section counts toward the file limit.]
 
 ## FOLDER STRUCTURE
 [High-level architectural view: folders and layers only, not a file inventory. Show one representative entry per folder/layer — enough to convey the module's shape and where new code of each type belongs. PROHIBITED: enumerating every individual file already listed in the `code_files`/`test_files` arrays of the top ````graph` block — that duplicates content and wastes tokens. If a folder holds many similar files (e.g. multiple use cases, multiple adapters), collapse them into one annotated line (e.g. `use-cases/ # RunX, GetY, UpdateZ use cases`) instead of one line per file.]
@@ -110,7 +109,7 @@ wrong_code()
 ## BEST PRACTICES
 REQUIRED: [Practice name] — [brief justification]
 REQUIRED: [Practice name] — [brief justification]
-FORBIDDEN: [Anti-pattern] — [brief justification]
+PROHIBITED: [Anti-pattern] — [brief justification]
 
 ## TIPS
 [One actionable tip that saves time or avoids a common problem in this stack. Omit if there is nothing non-obvious to add.]
@@ -120,8 +119,7 @@ FORBIDDEN: [Anti-pattern] — [brief justification]
 optimized_code()
 </code_tip>
 
-<!-- Include ## DOCUMENT MAP with Mermaid graph TD ONLY when the document has 2+ edges.
-     For single-edge documents, omit this section — ## REFERENCES already carries the relation. -->
+<!-- Include DOCUMENT MAP only when it explains relationships beyond frontmatter and REFERENCES; otherwise omit it. -->
 ## DOCUMENT MAP
 
 ```mermaid

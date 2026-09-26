@@ -6,8 +6,10 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 
 ## STORAGE AND OWNERSHIP
 
+- PROHIBITED: Add `## KNOWLEDGE` to ADRs, README, or digest. Represent a relevant ADR decision as an entity in its owning feature and cite the ADR as evidence; entity/claim references must resolve to feature knowledge.
+- REQUIRED: When updating a legacy ADR containing knowledge, preserve its substantive facts and evidence in prose or an existing owning feature before removing the block. If moved, preserve local IDs and update affected qualified references within scope. Report references outside scope needing migration; never silently discard evidence or create a feature solely to hold metadata.
 - REQUIRED: Serialize the knowledge JSON on one physical line without indentation or formatting line breaks. Keep Markdown fences on separate lines and preserve escaped newlines within string values.
-- REQUIRED: Store one fenced `json` block under `## KNOWLEDGE` in the owning ADR or feature document. Use the top-level shape `{"schema_version":1,"entities":[],"claims":[]}` and populate the arrays with relevant records; allow no additional top-level fields.
+- REQUIRED: Store one fenced `json` block under `## KNOWLEDGE` in the owning `docs/feature/**/*.md` document, after `## OVERVIEW`. Use the top-level shape `{"schema_version":1,"entities":[],"claims":[]}` and populate the arrays with relevant records; allow no additional top-level fields.
 - REQUIRED: Keep the existing feature `graph` block for source routing. The knowledge block is separate and is not parsed by `generate_docs_graph.py`.
 - REQUIRED: Count the entire `## KNOWLEDGE` section toward the 10,000-character file limit. Record consequential knowledge only.
 - REQUIRED: Use local IDs `<type>:<slug>` for entities and `claim:<slug>` for claims. Resolve cross-document IDs as `<node_id>#<local_id>` through `.graph.json` and the target knowledge block.
@@ -19,7 +21,7 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 ## SCOPE AND EXTRACTION
 
 1. Select **targeted update** for a named correction or feature change; include affected claims and their referenced owners. Select **full review** when the user requests ontology enrichment, audit, or regeneration across a docs scope. A directory alone does not imply full review.
-2. For a full review, inventory actual ADR/feature files within scope and reconcile the macro index. Track each as assessed with knowledge, assessed with no consequential knowledge (reason), or unresolved (missing evidence). Keep this inventory in working notes and summarize it at delivery; do not create another permanent index.
+2. For a full review, inventory actual feature files within scope; use ADRs as evidence sources and reconcile the macro index. Track each as assessed with knowledge, assessed with no consequential knowledge (reason), or unresolved (missing evidence). Keep this inventory in working notes and summarize it at delivery; do not create another permanent index.
 3. For each domain, ask what operation it enables, what must remain true, which boundary it exposes or consumes, and which choice governs it. Use existing IDs before creating concepts. Versions and dependency lists alone do not describe behavioral domains.
 4. Trace a representative operation from entrypoint to validation, decision, dependency call, state change, and failure/cancellation handling. Inspect relevant branches and constraints; stop when the scoped questions are answered or the missing evidence is identified. Do not read every source file.
 5. Extract capabilities from outcomes, rules from enforced or required invariants, contracts from inputs/outputs/errors, and decisions from established choices. Keep observations separate from requirements; do not infer design intent from code alone.
@@ -29,11 +31,11 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 
 ## SEMANTIC COMPLETION GATE
 
-- REQUIRED: For each scoped behavioral domain, answer from knowledge records: what capability is provided, which applicable rule or contract constrains it, what dependency matters for a change, and where the supporting evidence is located.
+- REQUIRED: For each scoped feature domain, answer from knowledge records: what capability is provided, which applicable rule or contract constrains it, what dependency matters for a change, and where the supporting evidence is located.
 - REQUIRED: Mark each question answered by claim IDs, not applicable with a reason, or unresolved with a concrete evidence gap. Answer using existing records and inspected sources; do not fabricate relations to satisfy the gate.
 - REQUIRED: If prose describes a consequential invariant or dependency absent from knowledge, reconcile it or record why it remains unresolved. Metadata-only records do not complete a behavioral review.
 - REQUIRED: When checking change impact, distinguish explicitly recorded dependents from inferred impact; do not claim completeness beyond assessed scope.
-- REQUIRED: Finish only when every scoped document has a disposition and every applicable question has an answer or explicit gap. A review with gaps may finish, but report partial grounding; never claim full semantic coverage.
+- REQUIRED: Finish only when every scoped feature has a disposition and every applicable question has an answer or explicit gap. A review with gaps may finish, but report partial grounding; never claim full semantic coverage.
 - REQUIRED: Report structural validation and semantic assessment separately. Neither measures improved LLM accuracy; that requires a separate task-based comparison.
 
 ## ENTITY CONTRACT
@@ -143,7 +145,7 @@ Illustrative unresolved proposal. Use real domain content when authoring; this e
 ## VALIDATION PROCEDURE
 
 1. After regenerating `.graph.json`, run `python ./scripts/validate_ontology.py <target_docs_dir>` from the skill directory. For targeted work, append repeated `--document <node_id>` options. The script is read-only and uses only the Python standard library.
-2. Resolve reported structural errors: JSON fields/version, IDs, reference resolution, relation endpoint types, statuses, and circular derivation. Unknown versions fail; never silently rewrite them. Documents without knowledge are reported as skipped, not semantically complete.
+2. Resolve reported structural errors: JSON fields/version, IDs, reference resolution, relation endpoint types, statuses, and circular derivation. Unknown versions fail; never silently rewrite them. Features without knowledge are reported as skipped, not semantically complete. Knowledge blocks in ADRs fail validation; ADRs without them are accepted as evidence documents.
 3. Inspect cited evidence, including locators and available snapshots. Check whether it establishes the statement's kind, conditions, and scope. Reclassify unsupported claims and preserve contradictory evidence.
 4. Apply SEMANTIC COMPLETION GATE, including scoped coverage and unanswered questions. No structural validator can determine whether all material business concepts were extracted.
 5. Check that prose and digest preserve uncertainty and distinguish intended behavior from observed behavior. Report which checks actually ran.

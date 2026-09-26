@@ -101,6 +101,46 @@ class OntologyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Invalid document path"):
             Validator(self.docs)
 
+    def add_adr(self, content, identifier="adr:architecture"):
+        path = self.docs / "adr/architecture.md"
+        path.parent.mkdir(exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        index_path = self.docs / ".graph.json"
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+        index["nodes"].append({"id": identifier, "path": "docs/adr/architecture.md"})
+        index_path.write_text(json.dumps(index), encoding="utf-8")
+
+    def test_adr_without_knowledge_is_not_reported_as_missing(self):
+        self.add_adr("# Architecture\nUse a gateway.\n")
+        result = Validator(self.docs).validate()
+        self.assertEqual(result["documents_checked"], 4)
+        self.assertEqual(result["without_knowledge"], ["feature:legacy"])
+
+    def test_adr_knowledge_is_rejected_even_with_feature_node_id(self):
+        content = (self.docs / "feature/rules.md").read_text(encoding="utf-8")
+        self.add_adr(content, "feature:misclassified")
+        with self.assertRaisesRegex(ValueError, "allowed only in docs/feature"):
+            Validator(self.docs).validate()
+
+    def test_qualified_claim_cannot_use_adr_as_entity_owner(self):
+        self.add_adr("# Architecture\n")
+        record = claim()
+        record["object"] = "adr:architecture#rule:positive"
+        self.write("payments", [entity("capability:charge", "capability")], [record])
+        with self.assertRaisesRegex(ValueError, "unresolved entity"):
+            Validator(self.docs).validate(["feature:payments"])
+
+    def test_nested_feature_knowledge_remains_supported(self):
+        old = self.docs / "feature/payments.md"
+        new = self.docs / "feature/billing/payments.md"
+        new.parent.mkdir()
+        old.rename(new)
+        index_path = self.docs / ".graph.json"
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+        index["nodes"][0]["path"] = "docs/feature/billing/payments.md"
+        index_path.write_text(json.dumps(index), encoding="utf-8")
+        self.assertEqual(Validator(self.docs).validate()["claims_checked"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
