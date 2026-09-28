@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
-    "@cursor/sdk": "^1.0.31",
+    "@cursor/sdk": "^1.0.32",
     "@github/copilot-sdk": "^1.0.14",
     "@inquirer/prompts": "^8.7.1",
     "@vitest/coverage-v8": "5.0.1",
