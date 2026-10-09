@@ -37,16 +37,16 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/cross-spawn": "^6.0.6",
-    "@types/node": "^26.6.3",
-    "eslint": "^10.11.0",
+    "@types/node": "^26.6.4",
+    "eslint": "^10.12.0",
     "playwright": "1.63.0",
     "typescript": "^7.0.2",
     "vitest": "5.0.3"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.129.0",
-    "@cursor/sdk": "^1.0.34",
-    "@github/copilot-sdk": "^1.0.15",
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@cursor/sdk": "^1.0.35",
+    "@github/copilot-sdk": "^1.0.16",
     "@inquirer/prompts": "^8.7.2",
     "@vitest/coverage-v8": "5.0.3",
     "cross-spawn": "^7.0.6",
