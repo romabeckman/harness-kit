@@ -5,6 +5,7 @@ import { type AgentRunnerConfig, DEFAULT_AGENT_RUNNER_CONFIG } from './AgentRunn
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { extractJsonOrNull } from '../CliRunnerProgress'
+import { runWithAgentNameFallback } from '../AgentNameFallback'
 
 // ─── Internal value object ────────────────────────────────────────────────────
 interface AgentResult {
@@ -78,6 +79,10 @@ export class ClaudeSDKRunner implements IAgentRunner {
   }
 
   async run(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput> {
+    return runWithAgentNameFallback(invocation, (attempt) => this.runAttempt(attempt, options), options?.signal)
+  }
+
+  private async runAttempt(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput> {
     const controller = new AbortController()
     const model = invocation.model ?? this.#config.model
 
