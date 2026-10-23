@@ -4,6 +4,7 @@ import { Runner, type AgentInvocation, type AgentOutput } from '../types'
 import { AgentRunnerRegistry } from '../AgentRunnerRegistry'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../AgentRunnerError'
 import { DEFAULT_PHASE_TIMEOUT_MS } from '../../settings/DefaultSettings'
+import { runWithAgentNameFallback } from '../AgentNameFallback'
 
 export interface CursorSDKRunnerConfig {
   readonly model?: string
@@ -21,6 +22,13 @@ export class CursorSDKRunner implements IAgentRunner {
   }
 
   async run(
+    invocation: AgentInvocation,
+    options?: { signal?: AbortSignal },
+  ): Promise<AgentOutput> {
+    return runWithAgentNameFallback(invocation, (attempt) => this.runAttempt(attempt, options), options?.signal)
+  }
+
+  private async runAttempt(
     invocation: AgentInvocation,
     options?: { signal?: AbortSignal },
   ): Promise<AgentOutput> {

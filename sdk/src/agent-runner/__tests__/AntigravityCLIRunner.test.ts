@@ -60,7 +60,7 @@ describe('AntigravityCLIRunner', () => {
   let mockSpawn: ReturnType<typeof vi.mocked<typeof spawn>>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     mockSpawn = vi.mocked(spawn)
 
     invocation = {
@@ -76,6 +76,29 @@ describe('AntigravityCLIRunner', () => {
     const runner = new AntigravityCLIRunner()
     // @ts-ignore - protected property access
     expect(runner.writePromptToStdin).toBe(true)
+  })
+
+  it.each([0, 1])('retries an unknown namespaced agent with its local name (exit %i)', async (exitCode) => {
+    invocation = { ...invocation, agent: 'harness-kit:software-architect' }
+    mockSpawn
+      .mockImplementationOnce(() => new MockChildProcess([
+        JSON.stringify({ status: 'ERROR', response: '', error: 'unknown agent "harness-kit:software-architect"' }),
+      ], [
+        'error: unknown agent "harness-kit:software-architect" (available: software-architect)',
+      ], exitCode) as any)
+      .mockImplementationOnce(() => new MockChildProcess([
+        JSON.stringify({ status: 'SUCCESS', response: 'ok', conversation_id: 'native-session' }),
+      ]) as any)
+
+    const result = await new AntigravityCLIRunner().run(invocation)
+
+    expect(result.raw).toBe('ok')
+    expect(result.session).toEqual({ id: 'native-session' })
+    expect(mockSpawn).toHaveBeenCalledTimes(2)
+    expect(mockSpawn.mock.calls[0][1]).toContain('harness-kit:software-architect')
+    expect(mockSpawn.mock.calls[1][1]).toContain('software-architect')
+    expect(mockSpawn.mock.calls[1][1]).not.toContain('harness-kit:software-architect')
+    expect(invocation.agent).toBe('harness-kit:software-architect')
   })
 
   it('should build correct CLI arguments without -p prompt flag', () => {
