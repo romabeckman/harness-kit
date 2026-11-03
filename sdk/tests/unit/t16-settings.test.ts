@@ -119,15 +119,15 @@ describe('T16 — HarnessSettings', () => {
     const settings = HarnessSettings.load(tmpDir)
 
     expect(settings.resolve('codex', 'planning')).toEqual({
-      model: 'gpt-6-sol',
+      model: 'gpt-6.1-sol',
       effort: 'medium',
     })
     expect(settings.resolve('codex', 'refinement_questions')).toEqual({
-      model: 'gpt-6-sol',
+      model: 'gpt-6.1-sol',
       effort: 'low',
     })
     expect(settings.resolve('codex', 'refinement_consolidation')).toEqual({
-      model: 'gpt-6-sol',
+      model: 'gpt-6.1-sol',
       effort: 'low',
     })
     expect(settings.resolve('codex', 'implementation')).toEqual({
@@ -156,7 +156,7 @@ describe('T16 — HarnessSettings', () => {
     const settings = HarnessSettings.load(tmpDir)
 
     expect(settings.resolve('claude', 'diagnose')).toEqual({
-      model: 'claude-sonnet-5',
+      model: 'claude-haiku-5-5',
       effort: 'high',
     })
     expect(settings.resolve('antigravity', 'diagnose')).toEqual({

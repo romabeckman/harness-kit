@@ -4,6 +4,15 @@ import type { HarnessSettingsMap } from "./SettingsSchema";
 export const DEFAULT_PHASE_TIMEOUT_MS = 3_600_000; // 60 minutes
 export const DEFAULT_WAIT_TIMEOUT_MS = 60_000; // 60 seconds
 
+/**
+ * Model versions verified against official catalogs on 2026-11-03:
+ * https://platform.claude.com/docs/en/models/overview
+ * https://ai.google.dev/gemini-api/docs/models
+ * https://developers.openai.com/codex/models
+ * https://docs.github.com/en/copilot/reference/ai-models/supported-models
+ * https://cursor.com/docs/models-and-pricing
+ * Keep each phase's model line and effort when updating versions.
+ */
 export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   claude: {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
