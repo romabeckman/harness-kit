@@ -10,7 +10,12 @@
 
 ## Initial input gate
 
-The skill permits one pause window:
+> [!TIP]
+> The autonomous backlog loop is optional for developers. For clear, bounded work, invoke `tdd-orchestrator` directly with project memory. When business and technical refinement are needed, use `pbb-design` first, then `scope-refinement`, as described in the [Daily Use Playbook](PLAYBOOK-DAILY-USE.md#flow-2-business-and-technical-refinement-optional).
+
+When using the `cto` agent for a product idea or underspecified feature, it invokes `pbb-design` before delivery. A validated, traceable backlog may be reused; analysis-only requests do not start delivery. The handoff includes product boundaries, problems, expectations, personas, functionalities, PBIs, validated decisions, provisional assumptions, and deferred questions. PBB is not an automatic phase of a direct `autonomous-orchestrator` invocation.
+
+The skill collects required input at its initial gate and Bootstrap:
 
 1. Choose `resume` or `reset`.
 2. For `reset`, provide the project scope or PRD.
@@ -24,6 +29,7 @@ After required bootstrap input exists, the orchestrator continues without phase-
 
 | Work | Skill | Agent |
 | --- | --- | --- |
+| Business design before delivery, when routed through CTO | `pbb-design` | `cto` invokes the skill |
 | Domain planning | `scope-refinement` | `software-architect` |
 | Backend implementation | `tdd-orchestrator` | `developer-backend` |
 | Frontend implementation | `tdd-orchestrator` | `developer-frontend` |
@@ -53,7 +59,7 @@ flowchart TD
     H --> I
 ```
 
-Optional REFINEMENT runs after BOOTSTRAP when enabled by the host and no prior `REFINEMENT.md` exists.
+The skill also mentions an optional `REFINEMENT` handler after BOOTSTRAP when enabled and `REFINEMENT.md` is absent. Its current prompt and configuration template do not define the enabling option or handler contract. Do not assume this step invokes PBB or replaces Phase A; supply business refinement explicitly before delivery when needed.
 
 ## Phase responsibilities
 
@@ -62,7 +68,8 @@ Optional REFINEMENT runs after BOOTSTRAP when enabled by the host and no prior `
 - Create product files from `skills/autonomous-orchestrator/models/` when missing.
 - Persist project paths, scope, `currentPhase`, `activeFeatureId`, and cycle count.
 - Build cohesive, independently testable features.
-- Load default thresholds `0.70` and maximum reworks `2` unless configured otherwise.
+- Load `scoreThresholdTL` and `scoreThresholdAdv` (default `0.70`) and `completionCriteria.maxReworks` (default `2`) from `BOOTSTRAP-CONFIG.json`.
+- Preserve supplied phase-scoped `steeringRules`. Keep feature scores and rework counts in `BACKLOG.md`; `DEVELOPMENT-STATE.md` tracks task-level progress.
 
 ### PHASE A: PLANNING
 
@@ -71,11 +78,13 @@ Optional REFINEMENT runs after BOOTSTRAP when enabled by the host and no prior `
 - Require `004-*-test-scenarios.md`.
 - Extract ordered task JSON from `003-*-tactical-design.md` into `DEVELOPMENT-STATE.md`.
 
+This planning contract still applies inside the autonomous loop even though refinement is optional for direct interactive TDD. Invalid task JSON is logged and prevents that feature's planning from advancing.
+
 ### PHASE B: DEVELOPMENT
 
 - Mark all pending feature tasks `IN_PROGRESS`.
 - Delegate all pending tasks together through `tdd-orchestrator`.
-- Require matching `TDD-OUTPUT.json`, `status = "SUCCESS"`, zero failed tests, and a bounded developer handoff.
+- Require matching `featureId` in `TDD-OUTPUT.json`, `status = "SUCCESS"`, zero failed tests, and `developerHandoff` of at most 500 characters. Missing, corrupt, mismatched, or failed output keeps affected tasks non-complete and prevents review.
 - Route unexpected test failures through `developer-debugging` before a fix attempt.
 
 ### PHASE C: REVIEW
@@ -84,6 +93,8 @@ Optional REFINEMENT runs after BOOTSTRAP when enabled by the host and no prior `
 - Read `TL.json` and `QA.json` scores in the `[0.00, 1.00]` range.
 - Compare scores with `scoreThresholdTL` and `scoreThresholdAdv`.
 - Treat demonstrated HIGH/CRITICAL vulnerabilities and crashes as gate failures regardless of score.
+
+Every task must be `COMPLETED` before review starts. Pass the developer handoff as navigation context; both reviewers verify it independently. Review reports live under `docs/specs/{domain}/`; if report files are unavailable or corrupt, the skill attempts JSON extraction from reviewer output. That fallback still needs valid evidence for the active feature.
 
 Verdicts:
 
@@ -101,11 +112,17 @@ Verdicts:
 - Do not cascade `FAILED`.
 - Select the next executable feature or continue to memory.
 
+A blocked feature may leave independent work executable. `HALTED` means the loop stopped, not that every feature succeeded. Report completed, failed, blocked, and remaining work separately. Any inconsistent state or unresolved gate condition must remain explicit.
+
 ### PHASE E: MEMORY
 
 - Delegate `project-memory` once after no executable feature remains.
-- Update feature docs, relevant existing ADRs, `docs/.digest.md`, and `docs/.graph.json`.
+- Document completed features and relevant architecture/test-strategy changes. Assess digest and graph synchronization; preserve equivalent content under the project-memory contract.
 - Keep harness history outside this skill's access.
+
+Project memory executes its six-stage workflow, including one bounded Dream-inspired consolidation pass and digest curation. Preserve evidence, IDs, uncertainty, and canonical ownership. Review scores and TDD process history remain in product records rather than feature documentation. Do not create extra ADRs during this phase without the human decision required by the orchestrator.
+
+The orchestrator requires this delegation; missing validation or incomplete memory work must be reported rather than treated as successful synchronization. Runtime acceptance through `qa-orchestrator` is a separate workflow and is not automatically implied by the Phase C scores.
 
 ### DEPLOY
 
@@ -114,7 +131,7 @@ Delegate only when current user and repository rules authorize deployment. If st
 ## Recovery and human control
 
 - Interrupt a drifting run with the host's stop mechanism.
-- Resume from persisted `currentPhase` and `activeFeatureId`.
+- Resume first from a valid persisted `currentPhase` other than `HALTED`, with its `activeFeatureId`. Otherwise apply the skill's ordered re-entry table against current files; do not restart an in-progress feature from planning by default.
 - Change scope or architecture only after stopping active writes.
 - Keep `BACKLOG.md`, `DEVELOPMENT-STATE.md`, `DECISIONS.md`, and `BOOTSTRAP-CONFIG.json` consistent when editing manually.
 - Inspect `DECISIONS.md` before treating a halted loop as successful.

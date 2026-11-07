@@ -22,12 +22,14 @@ The agent applies this order:
 
 Explicit meta-harness work has priority over trace-count routing.
 
+These rules apply when the agent is invoked; trace count does not schedule background execution. To request only a fresh history comparison, invoke `harness-evaluator` directly. A request to evaluate an already tested candidate belongs to `meta-harness` with that candidate's evaluation context.
+
 ## Evidence flow
 
 ```mermaid
 flowchart LR
     A[Completed skill session] --> B[harness-tracer]
-    B --> C[Immutable trace evidence]
+    B --> C[Preserved raw trace evidence]
     C --> D[harness-evaluator]
     D --> E[Pareto frontier]
     C --> F[meta-harness]
@@ -53,6 +55,8 @@ Provide:
 
 Each trace contains `metadata.md`, `input.md`, `steps.md`, `score.md`, and `verdict.md`. Record what happened, not what should have happened.
 
+On first use, the tracer initializes the history structure, score-weight configuration, baseline, and empty frontier from its templates. A completed development session is not automatically a recorded trace: invoke the tracer with the actual session context. Do not invent missing measurements or reconstruct an expected execution as observed evidence.
+
 ## Evaluate history
 
 ```text
@@ -69,6 +73,8 @@ The evaluator:
 - Treats groups below `3` sessions as insufficient evidence.
 
 The evaluator may run with fewer than `3` total sessions, but its comparison is provisional. It must not declare a reliable winner from an undersized group.
+
+At least one recorded session is required. Missing score-weight configuration is initialized from the tracer's template. Existing raw metrics and filled score blocks remain preserved; the evaluator's explicit exception is backfilling blank computed-score blocks.
 
 ## Propose an improvement
 
@@ -93,11 +99,15 @@ docs/harness-history/candidates/v001/
 
 Candidate creation does not modify the active skill.
 
+The initial candidate score is pending (`evaluated: false`, `promoted: false`). The proposer returns `PROPOSED` with `EVALUATE_CANDIDATE`; this requests evaluation rather than proving that any comparison has run. The skill does not define a self-contained candidate execution runner. Arrange a comparable evaluation and persist its results before invoking promotion mode.
+
 ## Promotion rule
 
 Require explicit human approval before copying candidate instructions into `skills/{skill}/SKILL.md`. Present the score comparison and diff first.
 
 If candidate score does not beat baseline, keep the active skill unchanged and return a revert decision.
+
+An improvement without approval returns `PROPOSED` / `AWAIT_APPROVAL`. Approved promotion returns `PROMOTED` / `OPTIMIZED`; a score at or below baseline returns `PROPOSED` / `REVERT`. Here, `REVERT` is a decision to leave the active skill unchanged, not permission to discard unrelated workspace edits.
 
 ## Interpretation cautions
 
@@ -107,3 +117,7 @@ If candidate score does not beat baseline, keep the active skill unchanged and r
 - Preserve raw traces as append-only evidence.
 - Never change score weights during the same experiment as a skill change.
 - Reject hypotheses that do not cite specific trace evidence.
+
+## Distinguish optimization from Dream
+
+Dream-inspired consolidation in `project-memory` maintains evidence-backed project knowledge and curates its digest. Meta-harness changes the instructions used to perform work, using session traces and candidate evaluation. Neither process proves improved model accuracy from document structure alone. Do not use `project-memory` to inspect harness history, and do not treat repeated generated claims as independent experimental evidence.
