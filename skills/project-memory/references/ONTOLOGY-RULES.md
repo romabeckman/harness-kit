@@ -21,14 +21,14 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 
 ## SCOPE AND EXTRACTION
 
-1. Select **targeted update** for a named correction or feature change; include affected claims and their referenced owners. Select **full review** when the user requests ontology enrichment, audit, or regeneration across a docs scope. A directory alone does not imply full review.
-2. For a full review, inventory actual feature files within scope; use ADRs as evidence sources and reconcile the macro index. Track each as assessed with knowledge, assessed with no consequential knowledge (reason), or unresolved (missing evidence). Keep this inventory in working notes and summarize it at delivery; do not create another permanent index.
+1. Use the mode, selected questions, scope, and budget from the orchestrator's Stage 1. Targeted updates and incremental consolidation cover affected claims, necessary referenced owners, and affected dependents; a full review requires an explicit request across a docs scope. A directory alone does not imply full review.
+2. For a full review, inventory actual feature files within scope; use ADRs as evidence sources and reconcile the macro index. Track each as assessed with knowledge, assessed with no consequential knowledge (reason), unresolved (missing evidence), or unassessed (budget/scope limit). Unassessed does not mean no knowledge applies. Keep this inventory in working notes and summarize it at delivery; do not create another permanent index.
 3. For each domain, ask what operation it enables, what must remain true, which boundary it exposes or consumes, and which choice governs it. Use existing IDs before creating concepts. Versions and dependency lists alone do not describe behavioral domains.
 4. Trace a representative operation from entrypoint to validation, decision, dependency call, state change, and failure/cancellation handling. Inspect relevant branches and constraints; stop when the scoped questions are answered or the missing evidence is identified. Do not read every source file.
 5. Extract capabilities from outcomes, rules from enforced or required invariants, contracts from inputs/outputs/errors, and decisions from established choices. Keep observations separate from requirements; do not infer design intent from code alone.
 6. Connect entities using supported relations: capability constrained by rule, capability exposing contract, dependency on another capability/contract, or behavior governed by decision. Create relations only when evidence establishes them; no minimum entity or edge quota.
 7. Cite the exact guard, call, declaration, request, or execution result supporting each claim. Preserve scope and exceptions in the statement. If only metadata is relevant to the task, metadata-only knowledge is sufficient; explain that scope.
-8. Reconcile with existing knowledge, preserve uncertainty, and apply the completion gate below. Do not add redundant claims merely to populate the section.
+8. Reconcile with existing knowledge, preserve uncertainty, and apply the completion gate below. Use the orchestrator's single second pass for cross-document consolidation; do not restart extraction or add redundant claims merely to populate the section. If the selected budget is exhausted, report partial coverage and the concrete remaining questions.
 
 ## PRIORITY UNDER THE SIZE LIMIT
 
@@ -39,12 +39,16 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 
 ## SEMANTIC COMPLETION GATE
 
+<completion_gate name="semantic_coverage">
+
 - REQUIRED: For each scoped feature domain, answer from knowledge records: what capability is provided, which applicable rule or contract constrains it, what dependency matters for a change, and where the supporting evidence is located.
 - REQUIRED: Mark each question answered by claim IDs, not applicable with a reason, or unresolved with a concrete evidence gap. Answer using existing records and inspected sources; do not fabricate relations to satisfy the gate.
 - REQUIRED: If prose describes a consequential invariant or dependency absent from knowledge, reconcile it or record why it remains unresolved. Metadata-only records do not complete a behavioral review.
 - REQUIRED: When checking change impact, distinguish explicitly recorded dependents from inferred impact; do not claim completeness beyond assessed scope.
 - REQUIRED: Finish only when every scoped feature has a disposition and every applicable question has an answer or explicit gap. A review with gaps may finish, but report partial grounding; never claim full semantic coverage.
 - REQUIRED: Report structural validation and semantic assessment separately. Neither measures improved LLM accuracy; that requires a separate task-based comparison.
+
+</completion_gate>
 
 ## ENTITY CONTRACT
 
@@ -124,6 +128,8 @@ Use nonempty strings for these fields, except `snapshot` may be `null`.
 
 ## CONNECTED EXAMPLE
 
+<example name="supported_claims">
+
 The JSON below is the value of `graph.knowledge`; insert it into the feature graph rather than creating another fenced block.
 
 Illustrative inspected fixture, not project evidence. Suppose `src/payments.py`, function `charge`, actually contains:
@@ -144,7 +150,11 @@ The guard supports an implementation observation; it does not establish who appr
 
 For another document owning the contract, reference `feature:payments#contract:charge-call` and add a document `references` edge to `feature:payments`; do not duplicate the entity. Test outcomes remain unknown until execution evidence is available.
 
+</example>
+
 ## UNRESOLVED EXAMPLE
+
+<example name="unresolved_claim">
 
 Use this JSON as the value of `graph.knowledge`.
 
@@ -154,10 +164,12 @@ Illustrative unresolved proposal. Use real domain content when authoring; this e
 {"schema_version":1,"entities":[{"id":"rule:payment-idempotency","type":"rule","label":"Payment idempotency","definition":"The treatment of repeated payment requests sharing a key.","aliases":[]}],"claims":[{"id":"claim:deduplicate-payment","subject":"rule:payment-idempotency","relation":null,"object":null,"statement":"Proposed: repeated requests with the same key create at most one charge.","kind":"hypothesis","status":"unresolved","evidence":[],"derived_from":[],"gap":"An authorized requirement must establish key scope and retention period."}]}
 ```
 
+</example>
+
 ## VALIDATION PROCEDURE
 
-1. After regenerating `.graph.json`, run `python ./scripts/validate_ontology.py <target_docs_dir>` from the skill directory. For targeted work, append repeated `--document <node_id>` options. The script is read-only and uses only the Python standard library.
-2. Resolve reported structural errors: JSON fields/version, IDs, reference resolution, relation endpoint types, statuses, and circular derivation. Unknown versions fail; never silently rewrite them. Features without knowledge are reported as skipped, not semantically complete. Knowledge blocks in ADRs fail validation; ADRs without them are accepted as evidence documents.
+1. Use the synchronized `.graph.json`; regenerate it only when required by [INDEX-RULES.md](INDEX-RULES.md#publication-and-validation). Run `python ./scripts/validate_ontology.py <target_docs_dir>` from the skill directory with the document selectors defined there. The script is read-only and uses only the Python standard library.
+2. Check reported structural errors: JSON fields/version, IDs, reference resolution, relation endpoint types, statuses, and circular derivation. Apply the shared [completion gate](INDEX-RULES.md#completion-gate) to introduced errors, preexisting failures, and unavailable checks. Unknown versions fail; never silently rewrite them. Features without knowledge are reported as skipped, not semantically complete. Knowledge blocks in ADRs fail validation; ADRs without them are accepted as evidence documents.
 3. Inspect cited evidence, including locators and available snapshots. Check whether it establishes the statement's kind, conditions, and scope. Reclassify unsupported claims and preserve contradictory evidence.
 4. Apply SEMANTIC COMPLETION GATE, including scoped coverage and unanswered questions. No structural validator can determine whether all material business concepts were extracted.
 5. Check that prose and digest preserve uncertainty and distinguish intended behavior from observed behavior. Report which checks actually ran.

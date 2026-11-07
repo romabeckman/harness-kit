@@ -59,6 +59,8 @@ REQUIRED: Reject any attempt to include the following content in this file.
 
 REQUIRED: Use the structure below when creating; preserve unaffected content when updating `docs/README.md`. Replace every `[placeholder]` with actual project content.
 
+<output_template target="docs/README.md">
+
 ```markdown
 # Project Documentation
 
@@ -81,5 +83,7 @@ If an exact path is supplied, read it directly. Otherwise use this order:
 2. **.graph.json** — macro relation graph index for 1-hop document lookup.
 3. Selected ADR or feature documents only when their design context is required.
 ```
+
+</output_template>
 
 > **Note:** The template above shows the minimum expected documents. Add new rows to the table and the reading list to reflect the actual documents present in `docs/`.

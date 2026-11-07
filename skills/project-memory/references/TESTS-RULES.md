@@ -18,6 +18,8 @@ PROHIBITED: Add a feature graph or `graph.knowledge` to this ADR. Record decisio
 
 ## PRE-GENERATION ANALYSIS
 
+<preconditions>
+
 REQUIRED: Answer every item below by inspecting the repository before writing a single line of the document. Each item maps directly to a template section.
 
 | Analysis item | Where to look | Feeds template section |
@@ -31,11 +33,15 @@ REQUIRED: Answer every item below by inspecting the repository before writing a 
 
 PROHIBITED: Inventing commands or coverage thresholds not found in the repository. Use only verified values.
 
+</preconditions>
+
 ---
 
 ## MANDATORY TEMPLATE
 
 REQUIRED: Use the structure below when creating; preserve unaffected content when updating `docs/adr/TESTS.md`. Replace every `[placeholder]` with actual project content — **never leave placeholder literals in the final file.**
+
+<output_template target="docs/adr/TESTS.md">
 
 ```markdown
 ---
@@ -96,6 +102,8 @@ PROHIBITED: [e.g., Tests that depend on execution order]
 - [**README.md**](../README.md): Main documentation index.
 - [**ARCHITECTURE.md**](./ARCHITECTURE.md): System architecture and patterns.
 ```
+
+</output_template>
 
 ---
 
