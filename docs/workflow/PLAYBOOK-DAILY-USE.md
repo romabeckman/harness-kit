@@ -3,7 +3,7 @@
 Practical routing guide for project skills and agents. Invoke only the smallest workflow that covers the task.
 
 > [!TIP]
-> For clear, bounded changes, go directly to Flow 3 and use existing project memory to guide development. Use Flow 2 for complex scenarios that need domain modeling or consequential scope decisions. The flow numbers organize this guide; they are not mandatory steps for every task.
+> Refinement in Flow 2 is optional. For clear, bounded changes, invoke `tdd-orchestrator` directly in Flow 3 and use existing project memory to guide development. For complex scenarios needing refinement, start with business refinement using `pbb-design`, then technical refinement using `scope-refinement`. The flow numbers organize this guide; they are not mandatory steps for every task.
 
 Commands below use the HarnessKit slash-command syntax. Supply the task context with the invocation. Exact execution rules remain in each skill's `SKILL.md`; agent names identify responsibility rather than additional mandatory invocations.
 
@@ -20,7 +20,8 @@ Commands below use the HarnessKit slash-command syntax. Supply the task context 
 | Need | Skill | Primary agent |
 | --- | --- | --- |
 | Initialize or update durable docs | `project-memory` | `software-architect` |
-| Refine complex scope, domain rules, or cross-domain dependencies | `scope-refinement` | `software-architect` |
+| Refine business problems, outcomes, personas, and backlog | `pbb-design` | main agent conducts business refinement |
+| Refine technical scope, domain models, or cross-domain dependencies | `scope-refinement` | `software-architect` |
 | Convert a prototype into UI structure | `read-ui-prototype` | specification targets `developer-frontend` |
 | Implement backend work | `tdd-orchestrator` | `developer-backend` |
 | Implement frontend work | `tdd-orchestrator` | `developer-frontend` |
@@ -83,15 +84,27 @@ The skill may write `docs/adr/**`, `docs/feature/**`, `docs/README.md`, `docs/.d
 
 Expect changed paths, material corrections, digest promotions/demotions, checks actually run, and explicit gaps. Equivalent documents and dates stay unchanged; synchronize indexes only when affected. Report partial evidence coverage separately from blocked validation.
 
-## Flow 2: refine scope
+## Flow 2: business and technical refinement (optional)
+
+Use this flow for complex scenarios where business intent, domain boundaries, interacting rules, or technical decisions need refinement. Developers may skip this flow and invoke `tdd-orchestrator` directly when the requirement and acceptance criteria are clear enough for implementation guided by project memory.
+
+### 2.1 Business refinement: PBB Design
+
+```text
+/harness-kit:pbb-design
+```
+
+Provide the product or feature scope, business context, intended outcomes, and known constraints. The skill organizes problems, expectations, personas, functionalities, and Product Backlog Items (PBIs). It keeps business refinement separate from architecture and implementation details.
+
+Review the selected PBIs, assumptions, and open questions before handing the scope to technical refinement. In interactive mode, the skill asks about decision-relevant gaps. In autonomous mode, generated answers remain provisional model assumptions rather than confirmed business facts.
+
+### 2.2 Technical refinement: Scope Refinement
 
 ```text
 /harness-kit:scope-refinement
 ```
 
-Recommended for complex scenarios: new or unclear domain boundaries, interacting business rules, cross-project dependencies, or architectural decisions that existing memory does not resolve. For a clear change within established patterns, proceed directly to Flow 3.
-
-When refinement is needed, provide project paths, domain, scope, business rules, and known constraints.
+Use the selected business scope and PBIs from the preceding step as input. Provide project paths, domain, business rules, constraints, and unresolved questions. Preserve the business intent and distinguish confirmed requirements from assumptions when deriving domain models, technical tasks, and test scenarios.
 
 Interactive mode collects inputs and performs the refinement interview and verification gates. Autonomous mode receives variables from the orchestrator and runs the interview using generated recommendations without human pauses. Inspect consequential assumptions in the resulting specifications before relying on them.
 
@@ -105,7 +118,7 @@ docs/specs/{domain}/
 └── 004-*-test-scenarios.md
 ```
 
-Once invoked, the skill runs its document phases sequentially. Before implementation, confirm that tactical tasks and test scenarios cover the selected outcome and constraints.
+Once invoked, the skill runs its document phases sequentially. Before proceeding to Flow 3, confirm that tactical tasks and test scenarios cover the selected business outcomes and constraints. Optional use of this flow does not waive the specification inputs required by the autonomous backlog loop.
 
 ## Flow 3: implement with TDD
 
