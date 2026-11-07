@@ -16,7 +16,25 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 
 ---
 
+Use routing arrays by role:
+
+- `entrypoints`: public or runtime entry files agents should inspect first.
+- `registration_files`: registries, factories, dependency injection, exports, or command maps changed when extending the feature.
+- `reference_files`: smallest representative implementations to copy as patterns.
+- `code_files`: remaining production files defining the feature.
+- `test_files`: test definitions for feature behavior and integration; listing a file does not prove execution or passing results.
+
+REQUIRED: Use project-relative paths, remove duplicates across arrays, and list only files that exist.
+REQUIRED: Use empty arrays when a routing role does not apply. Populate `knowledge` following ONTOLOGY-RULES.md when consequential claims apply; otherwise omit that property. Keep all fields in this single graph block.
+PROHIBITED: Copying these source paths into YAML `edges`, `.digest.md`, or `.graph.json`.
+REQUIRED: For ADR documents, omit the entire embedded `graph` block; source routing belongs only to feature documents.
+ALLOWED: `read` remains optional for ADR-to-ADR edges when no feature routing policy is required.
+
+---
+
 ## MANDATORY TEMPLATE
+
+<output_template target="docs/feature/**/*.md or docs/adr/**/*.md">
 
 ````markdown
 ---
@@ -39,27 +57,12 @@ updated: YYYY-MM-DD
 # [Document Title]
 [One sentence stating the purpose of this document.]
 
-Use routing arrays by role:
-
-- `entrypoints`: public or runtime entry files agents should inspect first.
-- `registration_files`: registries, factories, dependency injection, exports, or command maps changed when extending the feature.
-- `reference_files`: smallest representative implementations to copy as patterns.
-- `code_files`: remaining production files defining the feature.
-- `test_files`: test definitions for feature behavior and integration; listing a file does not prove execution or passing results.
-
-REQUIRED: Use project-relative paths, remove duplicates across arrays, and list only files that exist.
-REQUIRED: Use empty arrays when a routing role does not apply. Populate `knowledge` following ONTOLOGY-RULES.md when consequential claims apply; otherwise omit that property. Keep all fields in this single graph block.
-PROHIBITED: Copying these source paths into YAML `edges`, `.digest.md`, or `.graph.json`.
-REQUIRED: For ADR documents, omit the entire embedded `graph` block; source routing belongs only to feature documents.
-ALLOWED: `read` remains optional for ADR-to-ADR edges when no feature routing policy is required.
-
 ## OVERVIEW
 [Context limited to 2–3 sentences. State the main concept in the context of the project stack. No introductory filler.]
 
 
 ## FOLDER STRUCTURE
 [High-level architectural view: folders and layers only, not a file inventory. Show one representative entry per folder/layer — enough to convey the module's shape and where new code of each type belongs. PROHIBITED: enumerating every individual file already listed in the `code_files`/`test_files` arrays of the top ````graph` block — that duplicates content and wastes tokens. If a folder holds many similar files (e.g. multiple use cases, multiple adapters), collapse them into one annotated line (e.g. `use-cases/ # RunX, GetY, UpdateZ use cases`) instead of one line per file.]
-<folder_structure>
 ```
 src/module-name/
 ├── domain/                 # Core logic, invariants, domain-specific validations
@@ -68,7 +71,6 @@ src/module-name/
 └── infrastructure/
     └── adapters/            # Persistence or external integrations
 ```
-</folder_structure>
 
 ## [MAIN CONCEPTS / COMPONENTS]
 [Explain necessary concepts before "how-to". Omit this section if the reader needs no conceptual grounding.]
@@ -88,13 +90,13 @@ src/module-name/
 1. [Step 1]
 2. [Step 2]
 
-<code_example>
+```[language]
 # CORRECT: [Explanation of the correct pattern]
 correct_code()
 
 # WRONG: [Explanation of the anti-pattern]
 wrong_code()
-</code_example>
+```
 
 ## PARAMETERS / CONFIGURATIONS
 [Use a table if this section applies. Omit if there are no configurable parameters.]
@@ -112,10 +114,10 @@ PROHIBITED: [Anti-pattern] — [brief justification]
 ## TIPS
 [One actionable tip that saves time or avoids a common problem in this stack. Omit if there is nothing non-obvious to add.]
 
-<code_tip>
+```[language]
 // Practical example
 optimized_code()
-</code_tip>
+```
 
 <!-- Include DOCUMENT MAP only when it explains relationships beyond frontmatter and REFERENCES; otherwise omit it. -->
 ## DOCUMENT MAP
@@ -133,6 +135,8 @@ graph TD
 - [**ARCHITECTURE.md**](../adr/ARCHITECTURE.md or ./ARCHITECTURE.md): [One-line description of the relationship]
 - [**TESTS.md**](../adr/TESTS.md or ./TESTS.md): [One-line description of the relationship]
 ````
+
+</output_template>
 
 ---
 

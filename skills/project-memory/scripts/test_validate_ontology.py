@@ -29,7 +29,7 @@ class OntologyTests(unittest.TestCase):
         (self.docs / ".graph.json").write_text(json.dumps({"nodes": nodes}), encoding="utf-8")
         self.write("payments", [entity("capability:charge", "capability")], [claim()])
         self.write("rules", [entity("rule:positive", "rule")], [])
-        (self.docs / "feature/unannotated.md").write_text("# Unannotated\n", encoding="utf-8")
+        self.write_graph("unannotated", None)
 
     def write(self, name, entities, claims):
         data = dict(schema_version=1, entities=entities, claims=claims)
@@ -38,7 +38,9 @@ class OntologyTests(unittest.TestCase):
     def write_graph(self, name, data):
         graph = dict(node_id=f"feature:{name}", domain=name, implements=[], tested_by=[],
                      entrypoints=[], registration_files=[], reference_files=[],
-                     code_files=[], test_files=[], knowledge=data)
+                     code_files=[], test_files=[])
+        if data is not None:
+            graph["knowledge"] = data
         (self.docs / f"feature/{name}.md").write_text(
             f'---\nnode_id: "feature:{name}"\ndoc_type: feature\nedges: []\n---\n'
             + "```graph\n" + json.dumps(graph, separators=(',', ':')) + "\n```\n# Feature\n",

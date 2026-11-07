@@ -10,23 +10,34 @@ sys.path.insert(0, str(Path(__file__).parent))
 from generate_docs_graph import build_docs_graph
 
 
-def write_doc(path: Path, node_id: str, edges: str = "edges: []", doc_type: str = "adr") -> None:
+def write_doc(
+    path: Path,
+    node_id: str,
+    edges: str = "edges: []",
+    doc_type: str | None = None,
+    *,
+    include_micrograph: bool = True,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        "\n".join(
-            [
-                "---",
-                f"doc_type: {doc_type}",
-                "domain: test",
-                f'node_id: "{node_id}"',
-                "tags: [test, routing]",
-                edges,
-                "---",
-                f"# {node_id}",
-            ]
-        ),
-        encoding="utf-8",
-    )
+    doc_type = doc_type or node_id.split(":", 1)[0]
+    lines = [
+        "---",
+        f"doc_type: {doc_type}",
+        "domain: test",
+        f'node_id: "{node_id}"',
+        "tags: [test, routing]",
+        edges,
+        "---",
+    ]
+    if doc_type == "feature" and include_micrograph:
+        graph = dict(
+            node_id=node_id, domain="test", implements=[], tested_by=[],
+            entrypoints=[], registration_files=[], reference_files=[],
+            code_files=[], test_files=[],
+        )
+        lines.extend(["```graph", json.dumps(graph, separators=(",", ":")), "```"])
+    lines.append(f"# {node_id}")
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def append_micrograph(path: Path, graph_json: str) -> None:
@@ -187,7 +198,7 @@ class BuildDocsGraphTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             docs = Path(temp_dir) / "docs"
             feature = docs / "feature" / "runner.md"
-            write_doc(feature, "feature:runner", doc_type="feature")
+            write_doc(feature, "feature:runner", doc_type="feature", include_micrograph=False)
             write_doc(docs / "adr" / "architecture.md", "adr:architecture")
             write_doc(docs / "adr" / "tests.md", "adr:tests")
             append_micrograph(
@@ -208,11 +219,19 @@ class BuildDocsGraphTests(unittest.TestCase):
                 graph["edges"],
             )
 
+    def test_rejects_feature_without_micrograph(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            docs = Path(temp_dir) / "docs"
+            write_doc(docs / "feature" / "runner.md", "feature:runner", include_micrograph=False)
+
+            with self.assertRaisesRegex(ValueError, "Missing required feature micrograph"):
+                build_docs_graph(docs)
+
     def test_rejects_feature_micrograph_without_routing_fields(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             docs = Path(temp_dir) / "docs"
             feature = docs / "feature" / "runner.md"
-            write_doc(feature, "feature:runner", doc_type="feature")
+            write_doc(feature, "feature:runner", doc_type="feature", include_micrograph=False)
             append_micrograph(feature, '{"node_id":"feature:runner","domain":"test"}')
 
             with self.assertRaisesRegex(ValueError, "Missing micrograph field"):
@@ -222,7 +241,7 @@ class BuildDocsGraphTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             docs = Path(temp_dir) / "docs"
             feature = docs / "feature" / "runner.md"
-            write_doc(feature, "feature:runner", doc_type="feature")
+            write_doc(feature, "feature:runner", doc_type="feature", include_micrograph=False)
             append_micrograph(
                 feature,
                 '{"node_id":"feature:runner","domain":"test","implements":[],"tested_by":[],'

@@ -31,6 +31,8 @@ PROHIBITED: Add a feature graph or `graph.knowledge` to this ADR. Record decisio
 
 ## PRE-GENERATION ANALYSIS
 
+<preconditions>
+
 REQUIRED: Complete all three analyses by inspecting the repository before writing a single line of the document. Each analysis maps directly to a template section.
 
 | Analysis item | Where to look | Feeds template section |
@@ -39,11 +41,15 @@ REQUIRED: Complete all three analyses by inspecting the repository before writin
 | Patterns | Class/function definitions, naming conventions, DI, error handling, REQUIRED/FORBIDDEN constraints | `## LAYERS` and `## PATTERNS` |
 | Integrations | Registration logic (routes, services), external calls (DBs, APIs) | `## INTEGRATIONS` |
 
+</preconditions>
+
 ---
 
 ## MANDATORY TEMPLATE
 
 REQUIRED: Use the structure below when creating; preserve unaffected content when updating `docs/adr/ARCHITECTURE.md`. UPPERCASE section titles are mandatory and must not be renamed or removed.
+
+<output_template target="docs/adr/ARCHITECTURE.md">
 
 ````markdown
 ---
@@ -64,7 +70,6 @@ updated: YYYY-MM-DD
 
 ## FOLDER STRUCTURE
 [Directory tree from Structure Analysis. Show the most important structural folders. Use aligned comments to explain the purpose of each. Do not list every file — focus on the root structure of features/domains.]
-<folder_structure>
 ```
 [project_root]/
 ├── [config_folder]/              # [Purpose, e.g., Environment configuration]
@@ -74,7 +79,6 @@ updated: YYYY-MM-DD
 │       └── [layer_2]/            # [Layer responsibility within this domain]
 └── [shared_folder]/              # [Purpose, e.g., Generic utils and helpers]
 ```
-</folder_structure>
 
 ## LAYERS
 [List main architectural layers and their strict responsibilities.]
@@ -89,13 +93,13 @@ updated: YYYY-MM-DD
 ## PATTERNS
 [Code rules from Pattern Recognition. Use REQUIRED and FORBIDDEN prefixes.]
 
-<code_patterns>
+```[language]
 # REQUIRED: [Pattern name — e.g., Constructor dependency injection]
 [Code example demonstrating the correct pattern]
 
 # PROHIBITED: [Anti-pattern name — e.g., Global state usage]
 [Code example demonstrating what NOT to do]
-</code_patterns>
+```
 
 ## INTEGRATIONS
 | External Service / Component | Purpose | Connection / Authentication Method |
@@ -109,6 +113,8 @@ updated: YYYY-MM-DD
 - [**README.md**](../README.md): Main documentation index.
 - [**TESTS.md**](./TESTS.md): Testing strategies and commands.
 ````
+
+</output_template>
 
 ---
 
