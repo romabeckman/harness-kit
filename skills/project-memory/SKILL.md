@@ -21,7 +21,7 @@ Keep one working ledger: mode, authorized scope, questions, review budget, selec
 
 ## TOTAL CONTEXT BUDGET
 
-Generated or updated Markdown: at most **10,000 counted characters per file**. Normalize CRLF/CR to LF before counting Unicode characters. Exclude the YAML frontmatter at the start of the file and the entire fenced `graph` block directly after it, including their delimiters and the line endings of those delimiter lines. Count all remaining content, including whitespace, other JSON, and other fenced blocks. Do not exclude `graph` examples nested inside other fences or Mermaid diagrams.
+Generated or updated Markdown: at most **10,000 counted characters per file**. Normalize CRLF/CR to LF before counting Unicode characters. Exclude from the 10,000 character the YAML frontmatter at the start of the file and the entire fenced `graph` block directly after it, including their delimiters and the line endings of those delimiter lines. Count all remaining content, including whitespace, other JSON, and other fenced blocks. Do not exclude `graph` examples nested inside other fences or Mermaid diagrams.
 
 `docs/.digest.md` retains its separate limit: at most **3,000 characters and fewer than 60 lines**, counting the entire file.
 
