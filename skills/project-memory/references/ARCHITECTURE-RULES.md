@@ -11,7 +11,7 @@ PROHIBITED: Add a feature graph or `graph.knowledge` to this ADR. Record decisio
 | Field | Value |
 |---|---|
 | Target file | `docs/adr/ARCHITECTURE.md` |
-| Max size | 10,000 total characters maximum, including all content; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
+| Max size | 10,000 counted characters maximum; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
 | Content style | Compact, dense, and objective — no lengthy narrative explanations or verbose prose |
 | Agent action | Read the repository, apply the PRE-GENERATION ANALYSIS below, then create or update affected sections of the file using the MANDATORY TEMPLATE exactly as specified |
 
@@ -19,7 +19,7 @@ PROHIBITED: Add a feature graph or `graph.knowledge` to this ADR. Record decisio
 
 ## SIZE LIMIT & DECOMPOSITION RULES
 
-- REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget): at most 10,000 characters for the entire file, with no exclusions.
+- REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget): at most 10,000 counted characters per file.
 - REQUIRED: Text must be compact, objective, and dense. PROHIBITED: Long theoretical explanations, conversational filler, or verbose historical context.
 - When `docs/adr/ARCHITECTURE.md` approaches or reaches the 10,000-character limit, apply one or both of the following pathways:
   1. **Text Compacting:** Condense prose into concise bullet points, replace narrative with compact tables, and remove redundant explanations while preserving strict technical constraints.

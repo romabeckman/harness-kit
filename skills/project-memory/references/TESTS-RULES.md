@@ -11,7 +11,7 @@ PROHIBITED: Add a feature graph or `graph.knowledge` to this ADR. Record decisio
 | Field | Value |
 |---|---|
 | Target file | `docs/adr/TESTS.md` |
-| Max size | 10,000 total characters maximum, including all content; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
+| Max size | 10,000 counted characters maximum; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
 | Agent action | Analyze the repository, apply the PRE-GENERATION ANALYSIS below, then create or update affected sections of the file using the MANDATORY TEMPLATE exactly as specified |
 
 ---

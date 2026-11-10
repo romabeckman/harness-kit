@@ -147,6 +147,25 @@ class BuildDocsGraphTests(unittest.TestCase):
 
         self.assertIn("exact path", rules.lower())
 
+    def test_character_budget_excludes_frontmatter_and_feature_graph(self) -> None:
+        skill_dir = Path(__file__).parent.parent
+        skill = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Exclude the YAML frontmatter", skill)
+        self.assertIn("entire fenced `graph` block", skill)
+        self.assertIn("including their delimiters", skill)
+        self.assertIn("other JSON", skill)
+        self.assertIn("3,000 characters and fewer than 60 lines", skill)
+
+        references = skill_dir / "references"
+        for name in ("ARCHITECTURE-RULES.md", "DOCUMENT-TEMPLATE.md", "DOCUMENT-CONTRACT.md",
+                     "README-RULES.md", "TESTS-RULES.md", "ONTOLOGY-RULES.md"):
+            rules = (references / name).read_text(encoding="utf-8")
+            with self.subTest(reference=name):
+                self.assertNotIn("with no exclusions", rules)
+                self.assertNotIn("including all content", rules)
+                self.assertNotIn("Count the entire unified `graph` block toward", rules)
+                self.assertIn("TOTAL CONTEXT BUDGET", rules)
+
     def test_architecture_rules_defines_size_limit_and_decomposition(self) -> None:
         rules = (Path(__file__).parent.parent / "references" / "ARCHITECTURE-RULES.md").read_text(
             encoding="utf-8"
