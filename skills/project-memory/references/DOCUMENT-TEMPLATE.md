@@ -7,7 +7,7 @@ Use this template for any `docs/feature/*.md` or `docs/adr/*.md` file that is no
 ## RULES BEFORE WRITING
 
 - REQUIRED: Generate each `json` and `graph` payload on one physical line using compact JSON, without indentation or formatting line breaks. Keep the Markdown fences on separate lines.
-- REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget): at most 10,000 characters for the entire file, with no exclusions.
+- REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget): at most 10,000 counted characters per file.
 - REQUIRED: One document covers exactly **one** business domain, module, or architectural layer.
 - PROHIBITED: Mixing unrelated topics in a single file.
 - REQUIRED: Cross-reference complementary ADRs back to `ARCHITECTURE.md`; apply the shared total size limit.

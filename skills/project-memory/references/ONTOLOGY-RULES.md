@@ -10,7 +10,7 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 - REQUIRED: Serialize the knowledge JSON on one physical line without indentation or formatting line breaks. Keep Markdown fences on separate lines and preserve escaped newlines within string values.
 - REQUIRED: Store knowledge in the `knowledge` property of the existing fenced `graph` JSON block in the owning `docs/feature/**/*.md` document, directly after YAML. Use the nested shape `{"schema_version":1,"entities":[],"claims":[]}` and populate the arrays with relevant records; allow no additional fields inside `knowledge`. Omit the property when no consequential claims apply.
 - REQUIRED: Preserve existing graph routing fields beside `knowledge`. `generate_docs_graph.py` extracts document routing only; `validate_ontology.py` validates the nested knowledge. Never copy knowledge into the macro graph.
-- REQUIRED: Count the entire unified `graph` block toward the 10,000-character file limit. Record consequential knowledge only.
+- REQUIRED: Exclude the entire unified `graph` block from the 10,000-character count as specified in [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget). Record consequential knowledge only.
 - REQUIRED: Use local IDs `<type>:<slug>` for entities and `claim:<slug>` for claims. Resolve cross-document IDs as `<node_id>#<local_id>` through `.graph.json` and the target `graph.knowledge`.
 - REQUIRED: Give each concept one canonical owner. Reuse its qualified ID elsewhere; use aliases for synonyms within that domain. Never merge concepts solely because names match.
 - REQUIRED: Preserve IDs across renames. Reconcile affected references when ownership changes; do not silently delete referenced concepts.
@@ -33,7 +33,7 @@ Use a small domain vocabulary so AI consumers can identify rules, dependencies, 
 ## PRIORITY UNDER THE SIZE LIMIT
 
 - REQUIRED: Prioritize scoped knowledge in this order: (1) invariants whose violation causes incorrect behavior, security failures, or data loss; (2) public contracts and consequential dependencies; (3) governing decisions; (4) secondary metadata. Preserve applicable conditions and exceptions with each retained claim, regardless of priority.
-- REQUIRED: Apply this priority autonomously. Remove redundant wording and repeated facts before secondary detail; preserve evidence, uncertainty, canonical IDs, and referenced records. If essential knowledge still exceeds the file limit, split by coherent responsibility under TOTAL CONTEXT BUDGET and update references.
+- REQUIRED: Apply this priority autonomously. Remove redundant wording and repeated facts before secondary detail; preserve evidence, uncertainty, canonical IDs, and referenced records. If counted content still exceeds the file limit, split by coherent responsibility under TOTAL CONTEXT BUDGET and update references.
 - REQUIRED: Declare material coverage gaps in the feature prose and delivery summary; use claim `gap` for missing evidence about that claim. Never present omitted information as nonexistent or unknown evidence as confirmed. Apply SEMANTIC COMPLETION GATE to partial coverage too.
 - REQUIRED: Ask the user only when a missing business decision or conflicting requirements materially block the requested outcome; routine selection and compression do not require approval.
 
