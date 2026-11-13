@@ -28,9 +28,9 @@ When invocation and settings provide no timeout, the default is **3,600,000 ms (
 <folder_structure>
 ```
 sdk/src/settings/
-â”œâ”€â”€ SettingsSchema.ts     # Schema and types for Settings Map
-â”œâ”€â”€ DefaultSettings.ts    # Complete out-of-the-box configurations
-â””â”€â”€ HarnessSettings.ts    # Settings loader, merger, and resolver
+├── SettingsSchema.ts     # Schema and types for Settings Map
+├── DefaultSettings.ts    # Complete out-of-the-box configurations
+└── HarnessSettings.ts    # Settings loader, merger, and resolver
 ```
 </folder_structure>
 

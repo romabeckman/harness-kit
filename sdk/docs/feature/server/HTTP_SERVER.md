@@ -28,11 +28,11 @@ Use `HttpServer` as an inbound adapter over application use cases. Resolve proje
 
 ```text
 src/server/
-â”œâ”€â”€ domain/                  # Value types and errors
-â”œâ”€â”€ application/             # Ports and use cases
-â”œâ”€â”€ adapters/inbound/http/   # Routes, DTOs, mappers, and OpenAPI
-â”œâ”€â”€ adapters/outbound/       # Auth, locks, queue, jobs, and workers
-â””â”€â”€ HttpServer.ts            # Lifecycle and composition
+├── domain/                  # Value types and errors
+├── application/             # Ports and use cases
+├── adapters/inbound/http/   # Routes, DTOs, mappers, and OpenAPI
+├── adapters/outbound/       # Auth, locks, queue, jobs, and workers
+└── HttpServer.ts            # Lifecycle and composition
 ```
 
 </folder_structure>

@@ -30,11 +30,11 @@ Dependency cascade writes `BLOCKED` to both the affected backlog features and al
 <folder_structure>
 ```
 sdk/src/file-state/
-â”œâ”€â”€ FileStateManager.ts     # Implementation of state methods
-â”œâ”€â”€ types.ts                # Interfaces like DecisionEntry
-â””â”€â”€ parsers/
-    â”œâ”€â”€ BacklogParser.ts    # Strips markdown wrapping from IDs
-    â””â”€â”€ DevStateParser.ts   # Parses development state tables
+├── FileStateManager.ts     # Implementation of state methods
+├── types.ts                # Interfaces like DecisionEntry
+└── parsers/
+    ├── BacklogParser.ts    # Strips markdown wrapping from IDs
+    └── DevStateParser.ts   # Parses development state tables
 ```
 </folder_structure>
 

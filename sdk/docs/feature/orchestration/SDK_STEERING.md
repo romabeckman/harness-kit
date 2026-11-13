@@ -26,10 +26,10 @@ The steering module translates a free-text steering message into structured `Ste
 <folder_structure>
 ```
 sdk/src/orchestrator/
-â””â”€â”€ SteeringAnalyzer.ts   # LLM-based steering message classifier
+└── SteeringAnalyzer.ts   # LLM-based steering message classifier
 
 docs/product/
-â””â”€â”€ BOOTSTRAP-CONFIG.json # Persists steeringRules[]
+└── BOOTSTRAP-CONFIG.json # Persists steeringRules[]
 ```
 </folder_structure>
 

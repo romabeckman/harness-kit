@@ -26,17 +26,17 @@ Implements SDK orchestration as an importable library.
 <folder_structure>
 ```
 sdk/src/
-â”œâ”€â”€ index.ts                          # Public re-exports only
-â”œâ”€â”€ orchestrator/
-â”‚   â”œâ”€â”€ HarnessOrchestrator.ts        # State machine loop & session storage
-â”‚   â”œâ”€â”€ phases/                       # Chain-of-Responsibility handlers
-â”‚   â””â”€â”€ ReentryResolver.ts            # Ordered re-entry predicates
-â”œâ”€â”€ file-state/
-â”‚   â””â”€â”€ FileStateManager.ts           # IFileStateManager implementation
-â”œâ”€â”€ context-assembler/
-â”‚   â””â”€â”€ ContextAssembler.ts           # Per-phase payload builders
-â”œâ”€â”€ validation-gate/
-â”‚   â””â”€â”€ ValidationGate.ts             # Pure evaluate() function
+├── index.ts                          # Public re-exports only
+├── orchestrator/
+│   ├── HarnessOrchestrator.ts        # State machine loop & session storage
+│   ├── phases/                       # Chain-of-Responsibility handlers
+│   └── ReentryResolver.ts            # Ordered re-entry predicates
+├── file-state/
+│   └── FileStateManager.ts           # IFileStateManager implementation
+├── context-assembler/
+│   └── ContextAssembler.ts           # Per-phase payload builders
+└── validation-gate/
+    └── ValidationGate.ts             # Pure evaluate() function
 ```
 </folder_structure>
 
