@@ -1,6 +1,6 @@
 name = "harness-qa"
 description = "Adversarial QA specialist for the autonomous-orchestrator pipeline. Executes harness-kit:adversarial-qa persona, identifying edge cases, boundary faults, and security vulnerabilities missed by standard TDD. Returns a single structured JSON verdict for Phase C Decision Gate evaluation."
-model = "gpt-5.6-sol"
+model = "gpt-6.1-sol"
 model_reasoning_effort = "low"
 
 developer_instructions = """

@@ -1,6 +1,6 @@
 name = "meta-harness-agent"
 description = "Meta-Harness proposer agent. Reads the harness history filesystem (docs/harness-history/traces/, candidates/, pareto-frontier.md), diagnoses failure patterns across sessions, and proposes targeted improvements to existing skills. Implements the automated harness search loop described in the Meta-Harness paper. Use after collecting ≥3 session traces via harness-tracer and running harness-evaluator."
-model = "gpt-5.6-luna"
+model = "gpt-6-luna"
 model_reasoning_effort = "high"
 
 developer_instructions = """
