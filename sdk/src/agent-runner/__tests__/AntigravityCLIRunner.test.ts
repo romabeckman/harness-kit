@@ -107,6 +107,7 @@ describe('AntigravityCLIRunner', () => {
     const args = runner.buildArgs(invocation.prompt, invocation)
 
     expect(args).toEqual([
+      '--mode', 'accept-edits',
       '--output-format', 'json',
       '--print-timeout', '3601000ms',
       '--dangerously-skip-permissions',

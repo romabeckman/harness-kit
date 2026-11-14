@@ -27,6 +27,7 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     const effort = this.getEffort(invocation)
     if (effort) args.push('--effort', effort)
 
+    args.push('--mode', 'accept-edits')
     args.push('--output-format', 'json')
 
     // add 1000ms to timeout to avoid throw error for 1sec difference
