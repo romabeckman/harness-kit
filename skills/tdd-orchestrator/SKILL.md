@@ -8,13 +8,13 @@ description: Orchestrates development workflow using Test-Driven Development (TD
 ## Mode Detection — Resolve Before Anything Else
 
 ```
-IF invoked by autonomous-orchestrator:
+IF invoked by autonomous-orchestrator or explicitly requested to run in autonomous mode:
     mode = AUTONOMOUS
-    → Read ${featureId}, ${domain}, ${projectPaths}, and ${tasks} from runtime context
+    → Read ${featureId}, ${domain}, ${projectPaths}, and ${tasks} from runtime context (or prompt if standalone)
     → Skip all interactive prompts
     → Use docs/specs/${domain}/ as single source of truth
 
-IF invoked directly by human:
+OTHERWISE (default, when invoked directly by human):
     mode = INTERACTIVE
     → Follow prompts and manual verification gates normally
 ```
