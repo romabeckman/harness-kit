@@ -151,6 +151,7 @@ describe('T14 — HarnessOrchestrator TRANSITION + MEMORY', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -181,6 +182,7 @@ describe('T14 — HarnessOrchestrator TRANSITION + MEMORY', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -225,6 +227,7 @@ describe('T14 — HarnessOrchestrator TRANSITION + MEMORY', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -284,6 +287,7 @@ describe('T14 — HarnessOrchestrator TRANSITION + MEMORY', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })

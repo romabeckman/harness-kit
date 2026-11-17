@@ -7,6 +7,7 @@ import type {
 } from '../types'
 import { SessionIdGenerator } from '../SessionIdGenerator'
 import { TraceDirectoryScanner } from '../TraceDirectoryScanner'
+import type { HarnessSettings } from '../../settings/HarnessSettings'
 
 describe('DiagnoseService', () => {
   let mockLedger: ISessionLedger
@@ -14,6 +15,12 @@ describe('DiagnoseService', () => {
   let mockScanner: TraceDirectoryScanner
   let idGenerator: SessionIdGenerator
   let pendingSessions: DiagnoseSessionRecord[]
+  const settings = {
+    hasSettings: () => true,
+    resolve: (runner: string) => runner === 'claude-cli'
+      ? { model: 'claude-sonnet-5', effort: 'high' }
+      : runner === 'antigravity-cli' ? { model: 'gemini-3.8-flash', effort: 'low' } : {},
+  } as unknown as HarnessSettings
 
   beforeEach(() => {
     pendingSessions = [
@@ -106,6 +113,7 @@ describe('DiagnoseService', () => {
       ledger: mockLedger,
       agentAdapter: mockAdapter,
       idGenerator,
+      settings,
     })
 
     const result = await service.processNextBatch(3)
@@ -122,6 +130,7 @@ describe('DiagnoseService', () => {
       ledger: mockLedger,
       agentAdapter: mockAdapter,
       idGenerator,
+      settings,
     })
 
     await service.processNextBatch(2)
@@ -148,6 +157,7 @@ describe('DiagnoseService', () => {
       ledger: mockLedger,
       agentAdapter: mockAdapter,
       idGenerator,
+      settings,
     })
 
     const result = await service.processNextBatch(2)
@@ -161,6 +171,7 @@ describe('DiagnoseService', () => {
       ledger: mockLedger,
       agentAdapter: mockAdapter,
       idGenerator,
+      settings,
     })
 
     const mockOrchestrator: any = {
@@ -195,6 +206,7 @@ describe('DiagnoseService', () => {
       ledger: mockLedger,
       agentAdapter: mockAdapter,
       idGenerator,
+      settings,
     })
 
     const result = await service.processAllPendingInBatches(10)
@@ -224,6 +236,7 @@ describe('DiagnoseService', () => {
       ledger: mockLedger,
       agentAdapter: mockAdapter,
       idGenerator,
+      settings,
     })
 
     const result = await service.processAllPendingInBatches(10)

@@ -26,10 +26,12 @@ export class PlaywrightDriver implements QaDriver {
 
   async doctor(): Promise<{ available: boolean; reason?: string }> {
     try {
-      await this.loadPlaywright()
+      const playwright = await this.loadPlaywright()
+      const browser = await playwright.chromium.launch({ headless: true })
+      await browser.close()
       return { available: true }
-    } catch {
-      return { available: false, reason: 'Playwright is unavailable. Run rtk npm install, then rtk npx playwright install chromium.' }
+    } catch (error) {
+      return { available: false, reason: `Playwright browser is unavailable: ${error instanceof Error ? error.message : String(error)}. Run npm install, then npx playwright install chromium.` }
     }
   }
 
@@ -61,13 +63,20 @@ export class PlaywrightDriver implements QaDriver {
       let page: any
       let pageReady = false
       let pageErrors: string[] = []
+      let authenticationError: unknown
       try {
         if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
         pageErrors = []
         // browser.newPage creates a fresh context; closing the page disposes that context.
-        page = await browser.newPage({ ...this.pageOptions(), ...(context?.auth.basic ? { httpCredentials: { ...context.auth.basic, origin: new URL(target).origin } } : {}) })
+        page = await browser.newPage({ ...this.pageOptions(),
+          ...(context?.auth.mode === 'bearer' || context?.auth.mode === 'api-key' ? { serviceWorkers: 'block' } : {}),
+          ...(context?.auth.basic ? { httpCredentials: { ...context.auth.basic, origin: new URL(target).origin } } : {}),
+        })
         page.on?.('pageerror', (error: Error) => pageErrors.push(redactSecrets(error.message, context?.auth)))
-        await applyBrowserAuth(page, target, context)
+        await applyBrowserAuth(page, target, context, (error) => {
+          authenticationError = error
+          void page.close().catch(() => undefined)
+        })
         const initialResponse = await page.goto(target, { waitUntil: 'domcontentloaded', signal })
         pageReady = true
         assertHttpError(initialResponse)
@@ -80,7 +89,7 @@ export class PlaywrightDriver implements QaDriver {
         const observationsPath = join(evidenceDir, 'observations.json')
         writeFileSync(observationsPath, JSON.stringify(safeObservations, null, 2), 'utf8')
         const screenshotPath = join(evidenceDir, 'final.png')
-        await page.screenshot({ path: screenshotPath, fullPage: true })
+        await page.screenshot({ path: screenshotPath, fullPage: true, signal })
         if (!existsSync(screenshotPath) || statSync(screenshotPath).size === 0 || !existsSync(observationsPath)) {
           return { scenarioId: scenario.id, required: scenario.required, status: 'INCONCLUSIVE', reason: 'Verified browser evidence files are missing', evidence: [] }
         }
@@ -100,7 +109,8 @@ export class PlaywrightDriver implements QaDriver {
           evidence,
         }
       } catch (error) {
-        const reason = redactSecrets(error instanceof Error ? error.message : 'Browser execution failed', context?.auth)
+        const cause = authenticationError ?? error
+        const reason = redactSecrets(cause instanceof Error ? cause.message : 'Browser execution failed', context?.auth)
         const observedStatus = httpStatusFromError(error)
         const isHttpError = observedStatus !== undefined || isHttpNavigationError(error)
         if (signal?.aborted || !page || (!pageReady && !isHttpError)) {
@@ -130,7 +140,8 @@ export class PlaywrightDriver implements QaDriver {
       let observation: { type: string; passed: boolean; message: string }
       do {
         if (signal?.aborted) throw signal.reason ?? new Error('Browser assertion cancelled')
-        observation = await inspectAssertion(page, assertion)
+        observation = await inspectAssertion(page, assertion, Math.max(1, deadline - Date.now()), signal)
+        if (observation.passed && Date.now() > deadline) observation = { ...observation, passed: false, message: `Browser assertion exceeded ${ASSERTION_TIMEOUT_MS} ms deadline: ${observation.message}` }
         if (observation.passed || Date.now() >= deadline) break
         await delayWithSignal(Math.min(ASSERTION_POLL_MS, deadline - Date.now()), signal)
       } while (true)
@@ -148,38 +159,25 @@ export class PlaywrightDriver implements QaDriver {
       assertHttpError(response)
       return
     }
-    if (action.type === 'click' && action.selector) return page.locator(action.selector).click()
+    if (action.type === 'click' && action.selector) return page.locator(action.selector).click(signal ? { signal } : undefined)
     if (action.type === 'fill' && action.selector) {
       const value = action.valueFrom ? context?.auth.environment[action.valueFrom] : action.value
       if (value === undefined) throw new Error(`Configured QA form value ${action.valueFrom ?? '<literal>'} is unavailable`)
-      return page.locator(action.selector).fill(value)
+      return signal ? page.locator(action.selector).fill(value, { signal }) : page.locator(action.selector).fill(value)
     }
     if (action.type === 'press' && action.value) {
       const count = Math.min(action.count ?? 1, 500)
       for (let index = 0; index < count; index++) {
         if (signal?.aborted) throw signal.reason ?? new Error('Execution cancelled')
-        await page.keyboard.press(action.value)
+        if (signal) await page.keyboard.press(action.value, { signal })
+        else await page.keyboard.press(action.value)
       }
       return
     }
     if (action.type === 'wait') {
       const ms = Math.min(Number(action.value ?? 0), 30_000)
       if (ms <= 0) return
-      if (typeof page.waitForTimeout === 'function') {
-        return page.waitForTimeout(ms)
-      }
-      return new Promise<void>((resolve, reject) => {
-        if (signal?.aborted) return reject(signal.reason ?? new Error('Wait cancelled'))
-        const timer = setTimeout(() => {
-          signal?.removeEventListener('abort', onAbort)
-          resolve()
-        }, ms)
-        const onAbort = () => {
-          clearTimeout(timer)
-          reject(signal?.reason ?? new Error('Wait cancelled'))
-        }
-        signal?.addEventListener('abort', onAbort, { once: true })
-      })
+      return delayWithSignal(ms, signal)
     }
     if (action.type === 'waitForSelector' && action.selector) {
       if (typeof page.waitForSelector !== 'function') throw new Error('Playwright does not support waitForSelector')
@@ -256,7 +254,7 @@ function isUsableEvidenceFile(path: string): boolean {
   }
 }
 
-async function applyBrowserAuth(page: any, target: string, context?: QaDriverExecutionContext): Promise<void> {
+async function applyBrowserAuth(page: any, target: string, context: QaDriverExecutionContext | undefined, onError: (error: unknown) => void): Promise<void> {
   const auth = context?.auth
   if (!auth || auth.mode === 'none' || auth.mode === 'basic') return
   if (auth.cookie) {
@@ -267,27 +265,30 @@ async function applyBrowserAuth(page: any, target: string, context?: QaDriverExe
     return
   }
   const origin = new URL(target).origin
-  await page.route('**/*', (route: any) => {
-    const request = route.request()
-    const headers = { ...request.headers() }
-    if (new URL(request.url()).origin !== origin) {
-      for (const name of Object.keys(auth.headers)) {
-        for (const existing of Object.keys(headers)) if (existing.toLowerCase() === name.toLowerCase()) delete headers[existing]
-      }
-      return route.continue({ headers })
-    }
-    return route.continue({ headers: mergeAuthHeaders(headers, auth.headers) })
+  // Playwright route.continue header overrides survive redirects, and redirects skip its route handler.
+  // Chromium Fetch pauses every hop; continueRequest overrides apply only to that individual request.
+  const session = await page.context().newCDPSession(page)
+  const authNames = new Set(Object.keys(auth.headers).map((name) => name.toLowerCase()))
+  session.on('Fetch.requestPaused', (event: { requestId: string; request: { url: string; headers: Record<string, string> } }) => {
+    const headers = Object.fromEntries(Object.entries(event.request.headers).filter(([name]) => !authNames.has(name.toLowerCase())))
+    const scopedHeaders = new URL(event.request.url).origin === origin ? mergeAuthHeaders(headers, auth.headers) : headers
+    void session.send('Fetch.continueRequest', {
+      requestId: event.requestId,
+      headers: Object.entries(scopedHeaders).map(([name, value]) => ({ name, value })),
+    }).catch(onError)
   })
+  await session.send('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] })
 }
 
-async function inspectAssertion(page: any, assertion: NonNullable<QaScenario['assertions']>[number]): Promise<{ type: string; passed: boolean; message: string }> {
+async function inspectAssertion(page: any, assertion: NonNullable<QaScenario['assertions']>[number], timeout: number, signal?: AbortSignal): Promise<{ type: string; passed: boolean; message: string }> {
   const locator = assertion.selector ? page.locator(assertion.selector) : undefined
+  const options = { timeout, signal }
   if (assertion.type === 'visible' || assertion.type === 'hidden') {
-    const visible = await locator.isVisible()
+    const visible = await locator.isVisible(options)
     return { type: assertion.type, passed: visible === (assertion.type === 'visible'), message: `Expected ${assertion.selector} to be ${assertion.type}` }
   }
   if (assertion.type === 'text') {
-    const actual = (await locator.textContent()) ?? ''
+    const actual = (await locator.textContent(options)) ?? ''
     return { type: assertion.type, passed: actual.includes(assertion.value ?? ''), message: `Expected text ${JSON.stringify(assertion.value)} in ${assertion.selector}; observed ${JSON.stringify(actual)}` }
   }
   if (assertion.type === 'url') {
@@ -298,7 +299,7 @@ async function inspectAssertion(page: any, assertion: NonNullable<QaScenario['as
     const actual = await locator.count()
     return { type: assertion.type, passed: actual === assertion.count, message: `Expected ${assertion.selector} count ${assertion.count}; observed ${actual}` }
   }
-  const actual = await locator.getAttribute(assertion.attribute)
+  const actual = await locator.getAttribute(assertion.attribute, options)
   return { type: assertion.type, passed: actual === assertion.value, message: `Expected ${assertion.selector} attribute ${assertion.attribute}=${JSON.stringify(assertion.value)}; observed ${JSON.stringify(actual)}` }
 }
 

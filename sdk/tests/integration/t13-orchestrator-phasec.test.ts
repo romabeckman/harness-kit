@@ -89,6 +89,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -112,6 +113,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -135,6 +137,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -159,6 +162,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -180,6 +184,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -239,6 +244,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -267,6 +273,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -304,6 +311,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -351,6 +359,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
