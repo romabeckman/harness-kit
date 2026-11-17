@@ -7,6 +7,8 @@ import { QaRunStore } from './QaRunStore'
 import type { QaProgressListener } from '../progress'
 import { probeQaTarget, type QaTargetProbe } from './QaTargetProbe'
 import { QaAuthConfigStore } from '../auth/QaAuthConfigStore'
+import { redactSecrets } from '../engine/QaAuthRedaction'
+import type { QaResolvedAuth } from '../auth/types'
 
 export class QaService {
   readonly #store: QaRunStore
@@ -64,16 +66,19 @@ export class QaService {
     this.#store.saveRun(run)
     const availability = needsHttpProbe(executionPlan.profile) ? await this.#targetProbe(executionPlan.target, signal) : { available: true }
     await this.executeInto(run, executionPlan, executionPlan.scenarios, availability, signal, onProgress)
-    return this.finalize(run)
+    return this.finalize(run, executionPlan)
   }
 
   async continue(run: QaRun, plan: QaPlan, scenarios: QaPlan['scenarios'], signal?: AbortSignal, onProgress?: QaProgressListener): Promise<QaRun> {
     const executionPlan = plan.profile === 'cli' ? { ...plan, target: this.#store.resolveCliTarget(plan.target) } : plan
     run.planVersion = executionPlan.version
     run.target = executionPlan.target
+    delete run.verdict
+    delete run.completedAt
+    this.#store.saveRun(run)
     const availability = needsHttpProbe(executionPlan.profile) ? await this.#targetProbe(executionPlan.target, signal) : { available: true }
     await this.executeInto(run, executionPlan, scenarios, availability, signal, onProgress)
-    return this.finalize(run)
+    return this.finalize(run, executionPlan)
   }
 
   private async executeInto(run: QaRun, plan: QaPlan, scenarios: QaPlan['scenarios'], availability: { available: boolean; reason?: string }, signal?: AbortSignal, onProgress?: QaProgressListener): Promise<void> {
@@ -122,19 +127,30 @@ export class QaService {
     return this.executeDriver(driver, scenario, plan.target, this.#store.evidenceDir(run.id, scenario.id, evidenceSequence), signal, driver.startRun ? run.id : undefined)
   }
 
-  private finalize(run: QaRun): QaRun {
-    run.verdict = QaVerdictPolicy.evaluate(run.results)
+  private finalize(run: QaRun, plan: QaPlan): QaRun {
+    const results = plan.scenarios.map((scenario) => ({
+      ...(run.results.find((result) => result.scenarioId === scenario.id) ?? { status: 'INCONCLUSIVE' as const, evidence: [] }),
+      required: scenario.required,
+    }))
+    run.verdict = QaVerdictPolicy.evaluate(results)
     run.completedAt = new Date().toISOString()
     this.#store.saveRun(run)
     return run
   }
 
   private async executeDriver(driver: QaDriver, scenario: QaPlan['scenarios'][number], target: string, evidenceDir: string, signal?: AbortSignal, runId?: string) {
-    const auth = this.#auth?.resolve(scenario.authProfile ?? this.#authProfile) ?? { mode: 'none' as const, profile: 'none', headers: {}, environment: {} }
-    if (runId === undefined && auth.mode === 'none' && Object.keys(auth.environment).length === 0) {
-      return driver.execute(scenario, target, evidenceDir, signal)
+    let auth: QaResolvedAuth | undefined
+    try {
+      auth = this.#auth?.resolve(scenario.authProfile ?? this.#authProfile) ?? { mode: 'none' as const, profile: 'none', headers: {}, environment: {} }
+      if (runId === undefined && auth.mode === 'none' && Object.keys(auth.environment).length === 0) {
+        return await driver.execute(scenario, target, evidenceDir, signal)
+      }
+      return await driver.execute(scenario, target, evidenceDir, signal, { auth, ...(runId === undefined ? {} : { runId }) })
+    } catch (error) {
+      if (signal?.aborted) throw signal.reason ?? error
+      return { scenarioId: scenario.id, required: scenario.required, status: 'BLOCKED' as const,
+        reason: redactSecrets(error instanceof Error ? error.message : 'QA driver execution failed', auth), evidence: [] }
     }
-    return driver.execute(scenario, target, evidenceDir, signal, { auth, ...(runId === undefined ? {} : { runId }) })
   }
 
   async doctor(profile: QaPlan['profile']): Promise<{ available: boolean; reason?: string }> {

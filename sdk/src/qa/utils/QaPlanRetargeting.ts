@@ -7,7 +7,9 @@ export function retargetQaPlan(plan: QaPlan, target: string): QaPlan {
     target,
     scenarios: plan.scenarios.map((scenario) => ({
       ...scenario,
-      actions: scenario.actions?.map((action) => action.type === 'navigate' && action.value
+      request: scenario.request ? { ...scenario.request, path: isAbsoluteUrl(scenario.request.path)
+        ? retargetSameOriginUrl(scenario.request.path, plan.target, target) : scenario.request.path } : undefined,
+      actions: scenario.actions?.map((action) => (action.type === 'navigate' || action.type === 'waitForUrl') && action.value
         ? { ...action, value: retargetSameOriginUrl(action.value, plan.target, target) }
         : action),
       assertions: scenario.assertions?.map((assertion) => assertion.type === 'url' && assertion.value
@@ -15,6 +17,10 @@ export function retargetQaPlan(plan: QaPlan, target: string): QaPlan {
         : assertion),
     })),
   }
+}
+
+function isAbsoluteUrl(value: string): boolean {
+  try { new URL(value); return true } catch { return false }
 }
 
 function retargetSameOriginUrl(value: string, previousTarget: string, target: string): string {

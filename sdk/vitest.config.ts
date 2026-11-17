@@ -7,6 +7,7 @@ module.exports = defineConfig({
     exclude: ['tests/e2e/**', '.vscode/**', 'node_modules/**', 'dist/**'],
     globals: true,
     environment: 'node',
+    setupFiles: ['tests/helpers/isolated-settings.ts'],
   },
   resolve: {
     alias: {

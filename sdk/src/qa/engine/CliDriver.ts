@@ -78,6 +78,7 @@ function executeCommand(command: string, args: string[], cwd: string, signal?: A
     child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
     child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
     let settled = false
+    let stopReason: Error | undefined
     let escalation: ReturnType<typeof setTimeout> | undefined
     const deadline = setTimeout(() => stop(new Error(`CLI command exceeded ${MAX_EXECUTION_MS} ms deadline`)), MAX_EXECUTION_MS)
     const cleanup = () => {
@@ -93,14 +94,15 @@ function executeCommand(command: string, args: string[], cwd: string, signal?: A
     }
     const finish = (code: number | null) => {
       if (settled) return
+      if (stopReason) return fail(stopReason)
       if (signal?.aborted) return fail(signal.reason ?? new Error('CLI execution cancelled'))
       settled = true
       cleanup()
       resolveExecution({ code, stdout, stderr })
     }
     const stop = (reason: Error) => {
-      if (settled) return
-      child.once('close', () => fail(reason))
+      if (settled || stopReason) return
+      stopReason = reason
       try { child.kill() } catch { /* The process may have exited already. */ }
       if (settled) return
       escalation = setTimeout(() => { try { child.kill('SIGKILL') } catch { /* The process may have exited already. */ } }, 1_000)

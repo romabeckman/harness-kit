@@ -76,6 +76,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -102,6 +103,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -114,6 +116,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
       enableRefinement: true,
@@ -128,6 +131,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -142,6 +146,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
       enableRefinement: true,
@@ -189,6 +194,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -235,6 +241,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -263,6 +270,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -276,6 +284,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -296,6 +305,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -318,6 +328,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
         scope: 'test-scope',
         projectPaths: [tmpDir2],
         agentRunner: fake2,
+        skipDeploy: true,
         productDir: productDir2,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir2 })
@@ -345,6 +356,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fakeWithUsage,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -366,6 +378,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fakeWithUsage,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -393,6 +406,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fakeNoUsage,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -415,6 +429,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -439,6 +454,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'my-custom-original-project-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -455,6 +471,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: '',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -481,6 +498,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -515,6 +533,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'test-scope',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -562,6 +581,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       score: 0.85,
       reworks: 4,
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       cliCommand: CliCommand.INIT,
       complexity: Complexity.AUTO,
@@ -600,6 +620,7 @@ describe('T11 — HarnessOrchestrator BOOTSTRAP + PLANNING', () => {
       scope: 'Create a portfolio landing page',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })

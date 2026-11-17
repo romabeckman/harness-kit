@@ -37,6 +37,7 @@ describe('QA authentication engine security', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.clearAllMocks()
     rmSync(workspace, { recursive: true, force: true })
   })
@@ -169,6 +170,24 @@ describe('QA authentication engine security', () => {
     expect(child!.kill).toHaveBeenCalledOnce()
   })
 
+  it('preserves the deadline cause when a killed CLI process emits close', async () => {
+    vi.useFakeTimers()
+    let child: EventEmitter & { stdout: EventEmitter; stderr: EventEmitter; kill: ReturnType<typeof vi.fn> }
+    vi.mocked(spawn).mockImplementation((() => {
+      child = Object.assign(new EventEmitter(), {
+        stdout: new EventEmitter(), stderr: new EventEmitter(),
+        kill: vi.fn(() => { child.emit('close', null); return true }),
+      })
+      return child
+    }) as unknown as typeof spawn)
+
+    const execution = new CliDriver().execute(cliScenario(), workspace, workspace)
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(await execution).toMatchObject({ status: 'BLOCKED', reason: 'CLI command exceeded 30000 ms deadline' })
+    expect(child!.kill).toHaveBeenCalledOnce()
+  })
+
   it('scopes literal Basic browser credentials to the target origin', async () => {
     const page = browserPage()
     const newPage = vi.fn().mockResolvedValue(page)
@@ -191,8 +210,8 @@ describe('QA authentication engine security', () => {
     const result = await new PlaywrightDriver('web', loader).execute(browserScenario(), 'https://qa.test/app', workspace, undefined, { auth })
 
     expect(result.status).toBe('PASSED')
-    expect(page.route).toHaveBeenCalled()
-    expect(page.continueRoute).toHaveBeenCalledWith(expect.objectContaining({ headers: expect.objectContaining({ [header]: value }) }))
+    expect(page.session.send).toHaveBeenCalledWith('Fetch.enable', expect.any(Object))
+    expect(page.session.send).toHaveBeenCalledWith('Fetch.continueRequest', expect.objectContaining({ headers: expect.arrayContaining([{ name: header, value }]) }))
   })
 
   it('applies literal cookies through the browser context', async () => {
@@ -208,20 +227,16 @@ describe('QA authentication engine security', () => {
 
   it('removes configured credentials when a browser request redirects off origin', async () => {
     const page = browserPage()
-    let routeHandler: ((route: any) => Promise<void>) | undefined
-    page.route.mockImplementation(async (_pattern: string, handler: (route: any) => Promise<void>) => { routeHandler = handler })
     const loader = async () => ({ chromium: { launch: async () => ({ newPage: async () => page, close: async () => undefined }) } })
     const auth: QaDriverExecutionContext['auth'] = { mode: 'bearer', profile: 'local', headers: { Authorization: 'Bearer browser-secret' }, environment: {} }
 
     const result = await new PlaywrightDriver('web', loader).execute(browserScenario(), 'https://qa.test/app', workspace, undefined, { auth })
-    const sameOriginContinue = vi.fn()
-    const redirectedOriginContinue = vi.fn()
-    await routeHandler!({ request: () => ({ url: () => 'https://qa.test/api', headers: () => ({}) }), continue: sameOriginContinue })
-    await routeHandler!({ request: () => ({ url: () => 'https://evil.test/collect', headers: () => ({ Authorization: 'Bearer browser-secret', accept: 'text/html' }) }), continue: redirectedOriginContinue })
+    page.session.emit('Fetch.requestPaused', { requestId: 'same', request: { url: 'https://qa.test/api', headers: { accept: 'text/html' } } })
+    page.session.emit('Fetch.requestPaused', { requestId: 'redirect', request: { url: 'https://evil.test/collect', headers: { aUtHoRiZaTiOn: 'Bearer browser-secret', accept: 'text/html' } } })
 
     expect(result.status).toBe('PASSED')
-    expect(sameOriginContinue).toHaveBeenCalledWith({ headers: { Authorization: 'Bearer browser-secret' } })
-    expect(redirectedOriginContinue).toHaveBeenCalledWith({ headers: { accept: 'text/html' } })
+    expect(page.session.send).toHaveBeenCalledWith('Fetch.continueRequest', { requestId: 'same', headers: [{ name: 'accept', value: 'text/html' }, { name: 'Authorization', value: 'Bearer browser-secret' }] })
+    expect(page.session.send).toHaveBeenCalledWith('Fetch.continueRequest', { requestId: 'redirect', headers: [{ name: 'accept', value: 'text/html' }] })
   })
 
   it('redacts configured credentials from browser assertion results and evidence', async () => {
@@ -329,16 +344,18 @@ function browserScenario(): QaScenario {
 
 function browserPage(): any {
   const addCookies = vi.fn()
-  const continueRoute = vi.fn()
+  const session = Object.assign(new EventEmitter(), { send: vi.fn(async (method: string) => {
+    if (method === 'Fetch.enable') session.emit('Fetch.requestPaused', { requestId: 'initial', request: { url: 'https://qa.test/api', headers: {} } })
+  }) })
   const page: any = {
     addCookies,
-    continueRoute,
+    session,
+    close: vi.fn().mockResolvedValue(undefined),
     on: vi.fn(),
     goto: vi.fn(),
     locator: vi.fn(() => ({ isVisible: vi.fn().mockResolvedValue(true) })),
     screenshot: vi.fn(async ({ path }: { path: string }) => writeFileSync(path, 'image')),
-    context: vi.fn(() => ({ addCookies })),
-    route: vi.fn(async (_pattern: string, handler: (route: any) => Promise<void>) => handler({ request: () => ({ url: () => 'https://qa.test/api', headers: () => ({}) }), continue: continueRoute })),
+    context: vi.fn(() => ({ addCookies, newCDPSession: async () => session })),
   }
   return page
 }

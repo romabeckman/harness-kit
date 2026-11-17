@@ -5,7 +5,7 @@ stack: [Vitest 5.0.3, TypeScript 7.0.2, V8 coverage]
 node_id: "adr:tests"
 tags: [testing, vitest, unit-tests, e2e-tests, coverage]
 edges: []
-updated: "2026-11-06"
+updated: "2026-11-16"
 ---
 # Testing Protocol
 
@@ -33,6 +33,9 @@ PROHIBITED: Claim or enforce numeric coverage thresholds until a repository conf
 
 REQUIRED: Follow **Arrange, Act, Assert** and keep tests independent.
 REQUIRED: Mock agent SDKs, CLI subprocesses, network calls, clocks, and environment boundaries.
+ALLOWED: Dedicated runtime integration tests use loopback HTTP servers, installed headless browsers, and disposable evidence directories; never contact external APIs.
+REQUIRED: Default Vitest setup uses `tests/helpers/isolated-settings.ts` to give each test file temporary global settings. Tests asserting model selection must inject explicit settings rather than depend on personal configuration or changing defaults.
+REQUIRED: Orchestrator integration fixtures outside deployment coverage set `skipDeploy: true`; deployment unit tests mock process execution.
 REQUIRED: Use `tests/e2e/helpers/SandboxEnvironment.ts` for isolated E2E workspaces.
 REQUIRED: Use `tests/e2e/helpers/MockAgentCli.ts` instead of real agent execution.
 PROHIBITED: Depend on suite execution order or shared mutable state.
@@ -42,6 +45,7 @@ PROHIBITED: Call real external APIs from unit or integration tests.
 
 - **Framework and assertions:** `package.json` declares Vitest `5.0.3` with built-in `expect`.
 - **Mocks and stubs:** Vitest mocks plus `FakeAgentRunner` and `MockAgentCli` helpers.
+- **Browser runtime integration:** `tests/integration/qa-browser-runtime.test.ts` verifies real redirects, credential boundaries, assertion deadlines, and cancellation. Uses installed Chromium, or Chrome/Edge at standard Windows paths; skips when no supported executable exists. It never downloads browsers.
 - **Coverage:** `@vitest/coverage-v8` 5.0.3; no numeric gate configured.
 - **E2E configuration:** `vitest.e2e.config.ts`; include `tests/e2e/**/*.test.ts`, use 30-second test and hook timeouts.
 - **Release gate:** `prepublishOnly` runs build and default tests; no repository-local CI workflow exists.

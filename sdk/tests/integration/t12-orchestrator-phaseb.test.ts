@@ -90,6 +90,7 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
       scope: 'sdk_core',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -120,6 +121,7 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
       scope: 'sdk_core',
       projectPaths: [tmpDir],
       agentRunner: fake,
+      skipDeploy: true,
       productDir,
       complexity: Complexity.AUTO,
     }, { workingDir: tmpDir })
@@ -146,6 +148,7 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
@@ -187,6 +190,7 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
         scope: 'sdk_core',
         projectPaths: [tmpDir],
         agentRunner: fake,
+        skipDeploy: true,
         productDir,
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
