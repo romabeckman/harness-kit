@@ -41,14 +41,14 @@
     "eslint": "^10.14.0",
     "playwright": "1.64.0",
     "typescript": "^7.0.2",
-    "vitest": "5.0.3"
+    "vitest": "5.1.0",
+    "@vitest/coverage-v8": "5.1.0"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
     "@cursor/sdk": "^1.0.35",
     "@github/copilot-sdk": "^1.0.14",
     "@inquirer/prompts": "^8.7.3",
-    "@vitest/coverage-v8": "5.0.3",
     "cross-spawn": "^7.0.6",
     "present": "^1.0.0",
     "scripts": "^0.1.0"
@@ -58,6 +58,7 @@
     "minimatch": "^11.0.1"
   },
   "allowScripts": {
-    "koffi@3.2.1": true
+    "koffi@3.2.1": true,
+    "esbuild@0.28.2": true
   }
 }
