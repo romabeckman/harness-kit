@@ -205,6 +205,7 @@ describe('DiagnoseService', () => {
   })
 
   it('calls invokeMetaHarness with the session when all pending sessions finish', async () => {
+    pendingSessions[0].skill = 'harness-kit:tdd-orchestrator'
     mockAdapter.invokeMetaHarness = vi.fn().mockResolvedValue({ success: true, raw: 'Meta harness OK' })
 
     const service = new DiagnoseService({
@@ -219,7 +220,8 @@ describe('DiagnoseService', () => {
     expect(result.remaining).toBe(0)
     expect(mockAdapter.invokeMetaHarness).toHaveBeenCalledWith(
       expect.objectContaining({ sessionId: 'session-2026-08-15-001' }),
-      { model: 'claude-sonnet-5', effort: 'high' }
+      { model: 'claude-sonnet-5', effort: 'high' },
+      ['harness-kit:tdd-orchestrator'],
     )
   })
 

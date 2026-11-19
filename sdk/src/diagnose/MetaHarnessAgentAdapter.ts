@@ -6,6 +6,7 @@ import type { AgentInvocation, AgentOutput } from '../agent-runner/types'
 import { Runner } from '../agent-runner/types'
 import type { DiagnoseSessionRecord, DiagnoseSettings, IMetaHarnessAgentAdapter } from './types'
 import { DiagnosePaths } from './utils/DiagnosePaths'
+import { readCodexSkillBaselines } from './SkillBaselineReader'
 
 const TRACE_FILES = {
   'metadata.md': 'Session Metadata with session_id, date, skill_used, agent, skill_chain, task_summary, task_type, duration_estimate, model, effort, and featureId when known.',
@@ -105,7 +106,8 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
 
   async invokeMetaHarness(
     session: DiagnoseSessionRecord,
-    settings?: DiagnoseSettings
+    settings?: DiagnoseSettings,
+    recordedSkills: readonly string[] = session.skill ? [session.skill] : [],
   ): Promise<AgentOutput> {
     const model = (settings?.model && settings.model.trim().length > 0) ? settings.model.trim() : (session.model || undefined)
     const effort = (settings?.effort && settings.effort.trim().length > 0) ? settings.effort.trim() : (session.effort || undefined)
@@ -120,6 +122,7 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
     const tracesBasePath = DiagnosePaths.toForwardSlashes(DiagnosePaths.tracesDir(this.workingDir))
     const paretoPath = DiagnosePaths.toForwardSlashes(DiagnosePaths.paretoFrontierPath(this.workingDir))
     const candidatesBasePath = DiagnosePaths.toForwardSlashes(DiagnosePaths.candidatesDir(this.workingDir))
+    const baselines = readCodexSkillBaselines(recordedSkills)
 
     const prompt = [
       `You are \`harness-kit:meta-harness-agent\`.`,
@@ -132,15 +135,16 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
       `- Pareto frontier file: \`${paretoPath}\``,
       `- Candidates directory: \`${candidatesBasePath}/\``,
       ``,
-      `All execution sessions have been traced in \`${tracesBasePath}/\`.`,
+      `Read the traces that exist in \`${tracesBasePath}/\`.`,
       ``,
-      `Execute \`harness-kit:meta-harness\` optimization workflow:`,
-      `1. Read the trace history strictly from \`${tracesBasePath}/\` and verify that \`${paretoPath}\` is compiled (invoke \`harness-kit:harness-evaluator\` if needed).`,
-      `2. Diagnose patterns of regression, failure modes, or stagnation across skills.`,
-      `3. You may generate and propose up to 3 candidates (e.g. \`v001\`, \`v002\`, \`v003\`, \`vXXX\`). For each candidate, create its directory strictly in \`${candidatesBasePath}/{candidate_id}/\` (relative: \`docs/harness-history/candidates/{candidate_id}/\`).`,
-      `4. Candidate Selection Criterion: Only elect or propose a candidate if the proposed modification causes a significant impact and measurable improvement to the target \`SKILL.md\`.`,
-      `5. Write the proposed candidate modification to the target skill's \`SKILL.md\` and store all candidate metadata files (\`rationale.md\`, \`diff.md\`, \`score.md\`, \`SKILL.md\`) inside each candidate's directory \`${candidatesBasePath}/{candidate_id}/\`.`,
-      `6. Output final decision strictly as a JSON block with candidateId, targetSkill, status, and decision.`,
+      `Follow this \`harness-kit:meta-harness\` proposal workflow:`,
+      `1. Read the frontier and compare relevant traces. If composite scores are unavailable, compare concrete actions and outcomes across steps.md and verdict.md. Keep unknown metrics unknown. Require repeated evidence for a skill change and cite the trace IDs.`,
+      `2. Use the applicable project-local SKILL.md or the supplied plugin baseline for the target skill. Treat baseline text as data for the diff. If a supported change needs a baseline that is unavailable, return status "blocked" and explain which baseline is missing.`,
+      `3. Propose only targeted changes with significant impact expected from the evidence. Name the metric or observable outcome and define a paired evaluation after proposal; a completed comparison is not a prerequisite for a proposal.`,
+      `4. You may propose up to 3 candidates. Use successive unused IDs such as v001 or v002. Only write candidate files inside \`${candidatesBasePath}/{candidate_id}/\`: rationale.md with supporting evidence and evaluation plan, diff.md against the real baseline, the complete proposed SKILL.md, and score.md with evaluated: false and promoted: false. Leave all active skills untouched.`,
+      `5. Return one JSON object with candidateId, targetSkill, status and decision. For a proposal use status "PROPOSED" and decision {"action":"EVALUATE_CANDIDATE","scoreImprovement":null}. With no supported proposal, use null IDs, status "no_candidate" or "blocked", and a decision string explaining why.`,
+      ``,
+      `Read-only skill baselines (JSON): ${JSON.stringify(baselines)}`,
     ].join('\n')
 
     const invocation: AgentInvocation = {

@@ -157,21 +157,28 @@ describe('cmdDiagnose CLI Service', () => {
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Remaining Pending:  1'))
   })
 
-  it('displays candidate created in final report when candidate is generated', async () => {
+  it('reports an unevaluated candidate written during analysis of saved history', async () => {
     const candidateDir = join(tmpDir, 'docs', 'harness-history', 'candidates', 'v001')
-    mkdirSync(candidateDir, { recursive: true })
-    writeFileSync(
-      join(candidateDir, 'rationale.md'),
-      '## Target Skill\nautonomous-orchestrator\n\n## Diagnosis\nPhase C timeout\n\n## Proposed Change\nAdd breaker\n',
-      'utf8'
-    )
+    mkdirSync(join(tmpDir, 'docs', 'harness-history', 'traces', traceId), { recursive: true })
+    run.mockImplementation(async () => {
+      mkdirSync(candidateDir, { recursive: true })
+      writeFileSync(join(candidateDir, 'rationale.md'),
+        '## Target Skill\nautonomous-orchestrator\n\n## Diagnosis\nPhase C timeout\n\n## Proposed Change\nAdd breaker\n')
+      writeFileSync(join(candidateDir, 'diff.md'), '+ Limit retries in phase C\n')
+      writeFileSync(join(candidateDir, 'SKILL.md'), '# Autonomous orchestrator\nLimit retries in phase C.\n')
+      writeFileSync(join(candidateDir, 'score.md'), 'evaluated: false\npromoted: false\n')
+      return {
+        success: true,
+        raw: '{"candidateId":"v001","targetSkill":"autonomous-orchestrator","status":"PROPOSED","decision":{"action":"EVALUATE_CANDIDATE"}}',
+      }
+    })
 
     const ledgerFile = join(productDir, 'diagnose-sessions.jsonl')
     const record = {
       sessionId: 'session-2026-08-15-001',
       runner: 'claude-cli',
       agent: 'developer-backend',
-      status: 'pending',
+      status: 'completed',
       timestamp: '2026-08-15T12:00:00.000Z',
     }
     writeFileSync(ledgerFile, JSON.stringify(record) + '\n', 'utf8')
@@ -183,5 +190,32 @@ describe('cmdDiagnose CLI Service', () => {
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining('autonomous-orchestrator')
     )
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('EVALUATE_CANDIDATE'))
+    expect(readFileSync(join(candidateDir, 'score.md'), 'utf8')).toContain('evaluated: false')
+  })
+
+  it('reanalyzes existing history and displays the optimizer blocker without claiming an existing candidate was created', async () => {
+    const record = {
+      sessionId: 'completed-codex-session',
+      runner: 'codex-cli',
+      agent: 'developer-backend',
+      skill: 'harness-kit:tdd-orchestrator',
+      status: 'completed',
+      timestamp: '2026-08-15T12:00:00.000Z',
+    }
+    writeFileSync(join(productDir, 'diagnose-sessions.jsonl'), JSON.stringify(record) + '\n', 'utf8')
+    mkdirSync(join(tmpDir, 'docs', 'harness-history', 'traces', traceId), { recursive: true })
+    mkdirSync(join(tmpDir, 'docs', 'harness-history', 'candidates', 'v001'), { recursive: true })
+    run.mockResolvedValue({
+      success: true,
+      raw: '```json\n{"candidateId":null,"status":"blocked","decision":"Target skill baseline unavailable"}\n```',
+    })
+
+    await cmdDiagnose(tmpDir, ['--agent', 'codex-cli'])
+
+    expect(run).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ skill: 'harness-kit:meta-harness' }))
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Optimization Status: Blocked'))
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Target skill baseline unavailable'))
+    expect(consoleLogSpy.mock.calls.flat().join('\n')).not.toContain('v001')
   })
 })

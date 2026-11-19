@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import type { AgentOutput } from '../agent-runner/types'
 import { JsonExtractionProtocol } from '../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../json-extraction/types'
-import type { CandidateReportInfo } from './types'
+import type { CandidateReportInfo, DiagnoseReportData } from './types'
 import { DiagnosePaths } from './utils/DiagnosePaths'
 
 export class CandidateReader {
@@ -57,14 +57,7 @@ export class CandidateReader {
     output: AgentOutput,
     workingDir?: string
   ): CandidateReportInfo | null {
-    let data: any = (output as any).parsedJson
-
-    if (!data && output.raw) {
-      const outcome = JsonExtractionProtocol.extract(output.raw)
-      if (isExtractionResult(outcome) && outcome.data) {
-        data = outcome.data
-      }
-    }
+    const data: any = CandidateReader.readOutputData(output)
 
     if (data && typeof data === 'object' && (data.candidateId || data.candidate_id)) {
       const candidateId = String(data.candidateId ?? data.candidate_id ?? '')
@@ -96,6 +89,27 @@ export class CandidateReader {
     }
 
     return null
+  }
+
+  private static readOutputData(output: AgentOutput): unknown {
+    const parsedJson = (output as AgentOutput & { parsedJson?: unknown }).parsedJson
+    if (parsedJson) return parsedJson
+    const result = JsonExtractionProtocol.extract(output.raw)
+    return isExtractionResult(result) ? result.data : undefined
+  }
+
+  static resolveProposal(output: AgentOutput, workingDir: string): Pick<DiagnoseReportData, 'candidateCreated' | 'optimization'> {
+    if (output.success === false) {
+      return { candidateCreated: null, optimization: { status: 'failed', reason: 'The optimization runner failed.' } }
+    }
+    const data = CandidateReader.readOutputData(output)
+    if (data && typeof data === 'object' && 'status' in data && (data.status === 'blocked' || data.status === 'no_candidate')) {
+      const reason = 'decision' in data && typeof data.decision === 'string' && data.decision.trim()
+        ? data.decision.trim()
+        : 'The optimizer did not provide a reason.'
+      return { candidateCreated: null, optimization: { status: data.status, reason } }
+    }
+    return { candidateCreated: CandidateReader.resolveCandidate(output, workingDir) }
   }
 
   static readCandidateFromDisk(

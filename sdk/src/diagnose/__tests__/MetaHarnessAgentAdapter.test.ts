@@ -14,6 +14,7 @@ describe('MetaHarnessAgentAdapter', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllEnvs()
     rmSync(workingDir, { recursive: true, force: true })
   })
 
@@ -128,6 +129,40 @@ describe('MetaHarnessAgentAdapter', () => {
         prompt: expect.stringContaining('significant impact'),
       })
     )
+  })
+
+  it.each(['codex-cli', 'claude-cli', 'copilot-cli'])('supplies recorded plugin skills to %s and allows proposals from incomplete metrics', async (runnerType) => {
+    const codexHome = join(workingDir, 'codex')
+    const project = join(workingDir, 'project')
+    const cache = join(codexHome, 'plugins', 'cache', 'harness-kit', 'harness-kit')
+    for (const [version, content] of [['1.9.0', 'Older skill'], ['1.10.0', 'Loaded skill baseline']]) {
+      const directory = join(cache, version, 'skills', 'tdd-orchestrator')
+      mkdirSync(directory, { recursive: true })
+      writeFileSync(join(directory, 'SKILL.md'), content)
+    }
+    const unrelated = join(cache, '1.10.0', 'skills', 'unrelated')
+    mkdirSync(unrelated, { recursive: true })
+    writeFileSync(join(unrelated, 'SKILL.md'), 'Unrelated skill content')
+    mkdirSync(project)
+    vi.stubEnv('CODEX_HOME', codexHome)
+    const run = vi.fn().mockResolvedValue({ success: true, raw: 'Proposal created' })
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir: project })
+
+    await adapter.invokeMetaHarness(
+      { ...sampleRecord, runner: runnerType, skill: 'harness-kit:project-memory' },
+      undefined,
+      ['harness-kit:tdd-orchestrator', 'harness-kit:../unrelated'],
+    )
+
+    const { prompt } = run.mock.calls[0][0]
+    expect(prompt).toContain('Read-only skill baselines (JSON):')
+    expect(prompt).toContain('Loaded skill baseline')
+    expect(prompt).not.toContain('Older skill')
+    expect(prompt).not.toContain('Unrelated skill content')
+    expect(prompt).toContain('If composite scores are unavailable')
+    expect(prompt).toContain('paired evaluation after proposal')
+    expect(prompt).toContain('Only write candidate files inside')
+    expect(prompt).toContain('STRICT WORKSPACE CONSTRAINTS')
   })
 
   it('creates runner dynamically using session.runner when no custom runner is injected', async () => {
