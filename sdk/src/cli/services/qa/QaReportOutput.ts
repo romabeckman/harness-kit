@@ -1,3 +1,4 @@
+import { isAbsolute, relative, sep } from 'node:path'
 import type { QaFinalReport, QaPlan, QaRun, QaScenarioResult, QaScenarioStatus } from '../../../qa/types'
 import type { QaReportOutput } from './types'
 
@@ -6,18 +7,19 @@ export function renderQaReportOutput(
   plan: QaPlan,
   run: QaRun,
   report: QaFinalReport,
+  reportDirectory: string,
 ): string {
   if (format === 'json') return JSON.stringify(report, null, 2)
-  if (format === 'html') return renderHtml(plan, run, report)
+  if (format === 'html') return renderHtml(plan, run, report, reportDirectory)
   return renderMarkdown(plan, run)
 }
 
-function renderHtml(plan: QaPlan, run: QaRun, report: QaFinalReport): string {
+function renderHtml(plan: QaPlan, run: QaRun, report: QaFinalReport, reportDirectory: string): string {
   const scenarios = new Map(plan.scenarios.map((scenario) => [scenario.id, scenario]))
   const rows = run.results.map((result) => {
     const scenario = scenarios.get(result.scenarioId)
     const scenarioTitle = scenario?.description ?? result.scenarioId
-    return `<tr><td><code>${escapeHtml(result.scenarioId)}</code></td><td>${escapeHtml(scenarioTitle)}</td><td><span class="status ${result.status.toLowerCase()}">${result.status}</span></td><td>${escapeHtml(result.reason ?? '—')}</td><td>${renderEvidenceLinks(result, scenarioTitle)}</td></tr>`
+    return `<tr><td><code>${escapeHtml(result.scenarioId)}</code></td><td>${escapeHtml(scenarioTitle)}</td><td><span class="status ${result.status.toLowerCase()}">${result.status}</span></td><td>${escapeHtml(result.reason ?? '—')}</td><td>${renderEvidenceLinks(result, scenarioTitle, reportDirectory)}</td></tr>`
   }).join('\n')
   return `<!doctype html>
 <html lang="en">
@@ -120,20 +122,26 @@ ${rows}
 `
 }
 
-function renderEvidenceLinks(result: QaScenarioResult, scenarioTitle: string): string {
+function renderEvidenceLinks(result: QaScenarioResult, scenarioTitle: string, reportDirectory: string): string {
   if (result.evidence.length === 0) return '<span class="muted">None</span>'
   const evidence = result.evidence.map((item, index) => ({
     title: item.id || `Evidence ${index + 1}`,
     path: item.path,
-    url: evidenceHref(item.path),
+    url: evidenceHref(item.path, reportDirectory),
     kind: isImageEvidence(item.path) ? 'image' : 'document',
   }))
   const payload = escapeHtml(JSON.stringify(evidence))
   return '<a class="evidence-link" href="#evidence-modal" aria-haspopup="dialog" data-evidence-title="' + escapeHtml(`Evidence — ${scenarioTitle}`) + '" data-evidence="' + payload + '">' + (result.evidence.length === 1 ? 'View evidence' : `View evidence (${result.evidence.length})`) + '</a>'
 }
 
-function evidenceHref(path: string): string {
-  const normalized = path.replaceAll(String.fromCharCode(92), '/')
+function evidenceHref(path: string, reportDirectory: string): string {
+  let normalized = path.replaceAll(String.fromCharCode(92), '/')
+  if (normalized.startsWith('//') || normalized.split('/').includes('..')) return '#'
+  if (isAbsolute(path)) {
+    const reportRelative = relative(reportDirectory, path)
+    if (!reportRelative || isAbsolute(reportRelative) || reportRelative === '..' || reportRelative.startsWith(`..${sep}`)) return '#'
+    normalized = reportRelative.replaceAll(String.fromCharCode(92), '/')
+  }
   if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(normalized) || normalized.startsWith('//') || normalized.split('/').includes('..')) return '#'
   return normalized.split('/').map((segment) => encodeURIComponent(segment)).join('/')
 }
