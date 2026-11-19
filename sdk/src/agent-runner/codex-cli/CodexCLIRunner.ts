@@ -109,7 +109,7 @@ export class CodexCLIRunner extends AbstractCliRunner {
   ): Partial<AgentOutput> {
     let finalUsage: AgentOutput['usage'] | undefined
     let finalResult = ''
-    let isFinalError = false
+    let failure: string | undefined
     let sessionId: string | undefined = invocation.session?.id
 
     const lines = stdout.split('\n').filter(Boolean)
@@ -130,26 +130,23 @@ export class CodexCLIRunner extends AbstractCliRunner {
       const type = event.type as string | undefined
 
       if (type === 'error') {
-        isFinalError = true
+        failure ??= typeof event.message === 'string' ? event.message : raw
+      } else if (type === 'turn.failed') {
+        const error = event.error as { message?: unknown } | undefined
+        failure = typeof error?.message === 'string' ? error.message : raw
       }
 
       if (type === 'item.completed') {
         const item = event.item as Record<string, unknown> | undefined
-        if (item) {
-          if (item.type === 'error') {
-            isFinalError = true
-          }
-          if (item.type === 'agent_message' && typeof item.text === 'string') {
-            finalResult = item.text
-          } else if (typeof item.text === 'string') {
-            finalResult = item.text
-          }
+        // Codex also emits warnings as error items. They do not fail the turn.
+        if (item?.type !== 'error' && typeof item?.text === 'string') {
+          finalResult = item.text
         }
       }
 
       if (type === 'result' || type === 'turn.completed') {
         if (event.is_error === true || event.subtype === 'error') {
-          isFinalError = true
+          failure ??= typeof event.result === 'string' ? event.result : raw
         }
         if (typeof event.result === 'string') {
           finalResult = event.result
@@ -179,10 +176,10 @@ export class CodexCLIRunner extends AbstractCliRunner {
     const outputText = finalResult || stdout
 
     return {
-      success: !isFinalError,
+      success: failure === undefined,
       stdout: outputText,
       stderr,
-      raw: outputText,
+      raw: failure ?? outputText,
       usage: finalUsage,
       session: sessionId ? { id: sessionId } : undefined,
       artefacts: (() => {
