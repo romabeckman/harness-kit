@@ -96,7 +96,10 @@ export class DiagnoseService {
       const settings = this.resolveDiagnoseSettings(session.runner)
 
       try {
-        await this.agentAdapter.invoke(session, preComputedId, settings)
+        const output = await this.agentAdapter.invoke(session, preComputedId, settings)
+        if (output.success === false) {
+          throw new Error(`Runner failed to record trace ${preComputedId}`)
+        }
         completedStatuses[session.sessionId] = 'completed'
         sessionIds.push(session.sessionId)
         traceIds.push(preComputedId)

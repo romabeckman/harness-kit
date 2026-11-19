@@ -148,10 +148,15 @@ describe('DiagnoseService', () => {
     )
   })
 
-  it('leaves failed session as pending on agent error', async () => {
-    mockAdapter.invoke = vi.fn()
+  it.each(['rejects', 'returns a failure'])('leaves a session pending when the agent %s', async (failure) => {
+    const invoke = vi.fn<IMetaHarnessAgentAdapter['invoke']>()
       .mockResolvedValueOnce({ success: true, raw: 'OK' })
-      .mockRejectedValueOnce(new Error('Agent execution failed'))
+    if (failure === 'rejects') {
+      invoke.mockRejectedValueOnce(new Error('Agent execution failed'))
+    } else {
+      invoke.mockResolvedValueOnce({ success: false, raw: 'Agent execution failed' })
+    }
+    mockAdapter.invoke = invoke
 
     const service = new DiagnoseService({
       ledger: mockLedger,

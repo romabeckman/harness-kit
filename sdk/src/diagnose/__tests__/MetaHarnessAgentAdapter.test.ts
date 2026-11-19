@@ -1,9 +1,22 @@
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { MetaHarnessAgentAdapter } from '../MetaHarnessAgentAdapter'
 import type { DiagnoseSessionRecord } from '../types'
 import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 
 describe('MetaHarnessAgentAdapter', () => {
+  let workingDir: string
+
+  beforeEach(() => {
+    workingDir = mkdtempSync(join(tmpdir(), 'meta-harness-agent-'))
+  })
+
+  afterEach(() => {
+    rmSync(workingDir, { recursive: true, force: true })
+  })
+
   const sampleRecord: DiagnoseSessionRecord = {
     sessionId: 'session-original-123',
     runner: 'copilot-cli',
@@ -16,16 +29,25 @@ describe('MetaHarnessAgentAdapter', () => {
   }
 
   it('invokes runner inside the existing session with trace guidance, pre-computed ID, and multiple of 6 check', async () => {
+    const traceId = 'session-2026-08-15-001'
     const mockRunner = {
       type: 'copilot-cli',
-      run: vi.fn().mockResolvedValue({ success: true, raw: 'Trace recorded' }),
+      run: vi.fn(async () => {
+        const traceDir = join(workingDir, 'docs', 'harness-history', 'traces', traceId)
+        mkdirSync(traceDir, { recursive: true })
+        for (const file of ['metadata.md', 'input.md', 'steps.md', 'score.md', 'verdict.md']) {
+          writeFileSync(join(traceDir, file), '# Trace evidence\n', 'utf8')
+        }
+        return { success: true, raw: 'Trace recorded' }
+      }),
     }
 
     const adapter = new MetaHarnessAgentAdapter({
       agentRunner: mockRunner as any,
+      workingDir,
     })
 
-    const output = await adapter.invoke(sampleRecord, 'session-2026-08-15-001', {
+    const output = await adapter.invoke(sampleRecord, traceId, {
       model: 'gpt-6-luna',
       effort: 'xhigh',
     })
@@ -111,11 +133,11 @@ describe('MetaHarnessAgentAdapter', () => {
   it('creates runner dynamically using session.runner when no custom runner is injected', async () => {
     const mockRunner = {
       type: 'claude-cli',
-      run: vi.fn().mockResolvedValue({ success: true, raw: 'OK' }),
+      run: vi.fn().mockResolvedValue({ success: false, raw: 'Runner failed' }),
     }
     const createSpy = vi.spyOn(AgentRunnerFactory, 'create').mockReturnValue(mockRunner as any)
 
-    const adapter = new MetaHarnessAgentAdapter()
+    const adapter = new MetaHarnessAgentAdapter({ workingDir })
     await adapter.invoke(
       { ...sampleRecord, runner: 'claude-cli', sessionId: 'sess-abc-789' },
       'session-2026-08-15-002'
