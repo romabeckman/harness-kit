@@ -74,7 +74,9 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
   console.log(`  pending:  ${pending.length} session(s)`)
   console.log(`────────────────────────────────────────────────────────\n`)
 
-  if (pending.length === 0) {
+  const hasTraceHistory = pending.length === 0 && existsSync(DiagnosePaths.tracesDir(cwd))
+    && ledger.loadAll().some(record => record.status === 'completed')
+  if (pending.length === 0 && !hasTraceHistory) {
     console.log(`${AnsiHelpers.green('✓')} No pending diagnose sessions found in docs/product/diagnose-sessions.jsonl`)
     return
   }
@@ -109,14 +111,13 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
   })
 
   const batchSize = options.batchSize ?? 3
-  console.log(`${AnsiHelpers.blue('►')} Processing sessions in batches of ${batchSize}...\n`)
+  const action = hasTraceHistory ? 'Analyzing existing trace history...' : `Processing sessions in batches of ${batchSize}...`
+  console.log(`${AnsiHelpers.blue('►')} ${action}\n`)
 
-  let batchIndex = 1
   const result = await service.processAllPendingInBatches(batchSize, (batch) => {
     console.log(
       `${AnsiHelpers.green('✓')} Diagnose batch completed: ${batch.processed} processed, ${batch.remaining} remaining.`
     )
-    batchIndex++
     return true
   })
 

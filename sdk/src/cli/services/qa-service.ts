@@ -1,4 +1,4 @@
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import type { QaFinalReport, QaPlan, QaProfile, QaRun } from '../../qa/types'
 import { QaRunStore } from '../../qa/services/QaRunStore'
 import { QaTerminalView } from '../../qa/ui/QaTerminalView'
@@ -218,7 +218,7 @@ export async function cmdQa(cwd: string, args: string[], dependencies: QaCommand
     return
   }
   const report = orchestrator.executionSummary(plan, run)
-  const output = renderQaReportOutput(options.output, plan, run, report)
+  const output = renderQaReportOutput(options.output, plan, run, report, dirname(store.reportHtmlPath(run.id)))
   const outputPath = options.output === 'html'
     ? store.reportHtmlPath(run.id)
     : options.output === 'markdown'

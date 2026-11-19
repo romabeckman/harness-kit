@@ -65,6 +65,10 @@ export class DiagnoseReportRenderer {
       lines.push(`     • Mark promoted:     Set ${AnsiHelpers.green('promoted: true')} in ${AnsiHelpers.dim(candidatePath + '/score.md')}`)
       lines.push(`  4. Verify in Next Run:`)
       lines.push(`     • Run 'hrns run' to execute orchestration with the upgraded skill.`)
+    } else if (data.optimization) {
+      const status = { blocked: 'Blocked', no_candidate: 'No candidate', failed: 'Failed' }[data.optimization.status]
+      lines.push(`  Optimization Status: ${status}`)
+      lines.push(`  Reason: ${data.optimization.reason}`)
     } else {
       lines.push(`  Candidate Created:  ${AnsiHelpers.dim('None (No candidate proposed in this run)')}`)
     }

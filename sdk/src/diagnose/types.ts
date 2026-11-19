@@ -68,7 +68,7 @@ export interface ITraceDirectoryScanner {
 
 export interface IMetaHarnessAgentAdapter {
   invoke(session: DiagnoseSessionRecord, preComputedId: string, settings?: DiagnoseSettings): Promise<AgentOutput>
-  invokeMetaHarness?(session: DiagnoseSessionRecord, settings?: DiagnoseSettings): Promise<AgentOutput>
+  invokeMetaHarness?(session: DiagnoseSessionRecord, settings?: DiagnoseSettings, recordedSkills?: readonly string[]): Promise<AgentOutput>
 }
 
 export interface CandidateReportInfo {
@@ -87,6 +87,7 @@ export interface DiagnoseReportData {
   sessionIds: string[]
   traceIds?: string[]
   candidateCreated?: CandidateReportInfo | null
+  optimization?: { status: 'blocked' | 'no_candidate' | 'failed'; reason: string }
   agent?: string
   model?: string
   effort?: string

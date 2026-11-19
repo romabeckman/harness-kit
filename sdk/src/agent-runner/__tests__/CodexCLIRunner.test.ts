@@ -168,6 +168,41 @@ describe('CodexCLIRunner', () => {
     })
   })
 
+  it('should accept a completed turn after a non-fatal error item', async () => {
+    const mockOutputLines = [
+      '{"type":"item.completed","item":{"id":"item_0","type":"error","message":"Deprecation warning"}}\n',
+      '{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"Trace recorded"}}\n',
+      '{"type":"turn.completed","usage":{"input_tokens":150,"output_tokens":45}}\n',
+    ]
+
+    mockSpawn.mockReturnValue(new MockChildProcess(mockOutputLines) as any)
+    const runner = new CodexCLIRunner()
+
+    await expect(runner.run(invocation)).resolves.toMatchObject({
+      success: true,
+      raw: 'Trace recorded',
+    })
+  })
+
+  it.each([
+    { type: 'error', message: 'API request failed' },
+    { type: 'turn.failed', error: { message: 'API request failed' } },
+    { type: 'result', is_error: true, result: 'API request failed' },
+  ])('should report the actual error for $type after an agent message', async (event) => {
+    const mockOutputLines = [
+      '{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Trace recorded"}}\n',
+      `${JSON.stringify(event)}\n`,
+    ]
+
+    mockSpawn.mockReturnValue(new MockChildProcess(mockOutputLines) as any)
+    const runner = new CodexCLIRunner()
+
+    await expect(runner.run(invocation)).rejects.toMatchObject({
+      code: AgentRunnerErrorCode.API_ERROR,
+      message: 'codex agent returned an error: API request failed',
+    })
+  })
+
   it('should handle ENOENT error when codex CLI is not found', async () => {
     const mockError: NodeJS.ErrnoException = new Error('spawnSync ENOENT')
     mockError.code = 'ENOENT'

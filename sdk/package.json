@@ -1,6 +1,6 @@
 {
   "name": "@romabeckman/hrns",
-  "version": "0.9.7",
+  "version": "0.10.0",
   "description": "CLI and SDK for harness-kit autonomous TDD orchestration",
   "license": "MIT",
   "main": "dist/index.js",
@@ -25,7 +25,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node -e \"const fs=require('fs');const f='dist/cli/run.js';const c=fs.readFileSync(f,'utf8');if(!c.startsWith('#!/usr/bin/env node')){fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c);fs.chmodSync(f,'755')}\"",
+    "build": "tsc -p tsconfig.build.json && node -e \"const fs=require('fs');fs.cpSync('src/orchestrator/prompts','dist/orchestrator/prompts',{recursive:true});const f='dist/cli/run.js';const c=fs.readFileSync(f,'utf8');if(!c.startsWith('#!/usr/bin/env node')){fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c);fs.chmodSync(f,'755')}\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",

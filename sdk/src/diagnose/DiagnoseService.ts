@@ -73,6 +73,24 @@ export class DiagnoseService {
     return undefined
   }
 
+  private async proposeCandidate(
+    session: DiagnoseSessionRecord,
+    completed: readonly DiagnoseSessionRecord[]
+  ): Promise<Pick<DiagnoseReportData, 'candidateCreated' | 'optimization'>> {
+    if (!this.agentAdapter.invokeMetaHarness) {
+      return { candidateCreated: CandidateReader.resolveCandidate(undefined, this.workingDir) }
+    }
+    try {
+      const settings = this.resolveDiagnoseSettings(session.runner)
+      const skills = completed.flatMap(record => record.skill ? [record.skill] : [])
+      const output = await this.agentAdapter.invokeMetaHarness(session, settings, skills)
+      return CandidateReader.resolveProposal(output, this.workingDir)
+    } catch (err) {
+      console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
+      return { candidateCreated: null, optimization: { status: 'failed', reason: 'The optimization runner failed. See the error above.' } }
+    }
+  }
+
   async processNextBatch(batchSize = 3): Promise<BatchResult> {
     const pending = this.ledger.loadPending()
     if (pending.length === 0) {
@@ -96,7 +114,10 @@ export class DiagnoseService {
       const settings = this.resolveDiagnoseSettings(session.runner)
 
       try {
-        await this.agentAdapter.invoke(session, preComputedId, settings)
+        const output = await this.agentAdapter.invoke(session, preComputedId, settings)
+        if (output.success === false) {
+          throw new Error(`Runner failed to record trace ${preComputedId}`)
+        }
         completedStatuses[session.sessionId] = 'completed'
         sessionIds.push(session.sessionId)
         traceIds.push(preComputedId)
@@ -160,27 +181,16 @@ export class DiagnoseService {
       }
     }
 
-    let candidateCreated: CandidateReportInfo | null = null
-
-    if (totalProcessed > 0 && lastProcessedSession && this.agentAdapter.invokeMetaHarness) {
-      try {
-        const settings = this.resolveDiagnoseSettings(lastProcessedSession.runner)
-        const metaOutput = await this.agentAdapter.invokeMetaHarness(lastProcessedSession, settings)
-        candidateCreated = CandidateReader.resolveCandidate(metaOutput, this.workingDir)
-      } catch (err) {
-        console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
-        candidateCreated = CandidateReader.resolveCandidate(undefined, this.workingDir)
-      }
-    } else if (totalProcessed > 0) {
-      candidateCreated = CandidateReader.resolveCandidate(undefined, this.workingDir)
-    }
+    const completed = this.ledger.loadAll().filter(session => session.status === 'completed')
+    const proposalSession = totalProcessed > 0 ? lastProcessedSession : lastRemaining === 0 ? completed.at(-1) : undefined
+    const proposal = proposalSession ? await this.proposeCandidate(proposalSession, completed) : { candidateCreated: null }
 
     const report: DiagnoseReportData = {
       processedSessions: totalProcessed,
       remainingSessions: lastRemaining,
       sessionIds: allSessionIds,
       traceIds: allTraceIds,
-      candidateCreated,
+      ...proposal,
       agent: this.cliSettings?.agent,
       model: this.cliSettings?.model,
       effort: this.cliSettings?.effort,
@@ -191,7 +201,7 @@ export class DiagnoseService {
       remaining: lastRemaining,
       sessionIds: allSessionIds,
       traceIds: allTraceIds,
-      candidateCreated,
+      candidateCreated: proposal.candidateCreated,
       report,
     }
   }
@@ -254,32 +264,20 @@ export class DiagnoseService {
   ): Promise<BatchResult> {
     const record = await this.captureSession(orchestrator, context)
     const batchResult = await this.processNextBatch(1)
-    let candidateCreated: CandidateReportInfo | null = null
-
-    if (this.agentAdapter.invokeMetaHarness) {
-      try {
-        const settings = this.resolveDiagnoseSettings(record.runner)
-        const metaOutput = await this.agentAdapter.invokeMetaHarness(record, settings)
-        candidateCreated = CandidateReader.resolveCandidate(metaOutput, this.workingDir)
-      } catch (err) {
-        console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
-        candidateCreated = CandidateReader.resolveCandidate(undefined, this.workingDir)
-      }
-    } else {
-      candidateCreated = CandidateReader.resolveCandidate(undefined, this.workingDir)
-    }
+    const completed = this.ledger.loadAll().filter(session => session.status === 'completed')
+    const proposal = await this.proposeCandidate(record, completed)
 
     const report: DiagnoseReportData = {
       processedSessions: batchResult.processed,
       remainingSessions: batchResult.remaining,
       sessionIds: batchResult.sessionIds ?? [record.sessionId],
       traceIds: batchResult.traceIds,
-      candidateCreated,
+      ...proposal,
     }
 
     return {
       ...batchResult,
-      candidateCreated,
+      candidateCreated: proposal.candidateCreated,
       report,
     }
   }

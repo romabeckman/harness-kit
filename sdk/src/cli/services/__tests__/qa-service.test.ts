@@ -554,6 +554,25 @@ describe('QA CLI', () => {
     expect(log.mock.calls.at(-1)?.[0]).toContain('REPORT.html')
   })
 
+  it('links absolute run evidence relative to the HTML report and rejects unsafe paths', async () => {
+    const store = seedReportOutputRun(workspace)
+    const run = store.loadRun('output-run')
+    const evidenceDir = store.evidenceDir(run.id, '001-health', 1)
+    run.results[0].evidence = [
+      { id: 'image', path: join(evidenceDir, 'screen #1.png'), capturedAt: '', adapter: 'test' },
+      { id: 'outside', path: join(workspace, 'secret.txt'), capturedAt: '', adapter: 'test' },
+      { id: 'script', path: 'javascript:alert(1)', capturedAt: '', adapter: 'test' },
+      { id: 'traversal', path: '../secret.txt', capturedAt: '', adapter: 'test' },
+    ]
+    store.saveRun(run)
+
+    await cmdQa(workspace, ['report', '--run', run.id, '--output', 'html'], { runner: reportingRunner('HTML') })
+
+    const html = readFileSync(store.reportHtmlPath(run.id), 'utf8')
+    expect(html).toContain('&quot;url&quot;:&quot;evidence/001-health/screen%20%231.png&quot;')
+    expect(html.match(/&quot;url&quot;:&quot;#&quot;/g)).toHaveLength(3)
+  })
+
   it('renders organized Markdown for every scenario', async () => {
     seedReportOutputRun(workspace)
 

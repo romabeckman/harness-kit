@@ -21,16 +21,22 @@ describe('RefinementHandler', () => {
   let handler: RefinementHandler
   let mockContext: any
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     handler = new RefinementHandler()
+    const actualFs = await vi.importActual<typeof import('node:fs')>('node:fs')
 
     const questionsJson = JSON.stringify([
       { id: 1, question: 'Question 1?', recommendation: 'Rec 1', context: 'Ctx 1' },
     ])
 
     vi.mocked(existsSync).mockReturnValue(true)
-    vi.mocked(readFileSync).mockReturnValue(questionsJson)
+    vi.mocked(readFileSync).mockImplementation((path) => {
+      if (String(path).includes('orchestrator') && String(path).includes('prompts')) {
+        return actualFs.readFileSync(path, 'utf8')
+      }
+      return questionsJson
+    })
 
     mockContext = {
       workingDir: '/mock/dir',

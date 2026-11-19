@@ -148,10 +148,15 @@ describe('DiagnoseService', () => {
     )
   })
 
-  it('leaves failed session as pending on agent error', async () => {
-    mockAdapter.invoke = vi.fn()
+  it.each(['rejects', 'returns a failure'])('leaves a session pending when the agent %s', async (failure) => {
+    const invoke = vi.fn<IMetaHarnessAgentAdapter['invoke']>()
       .mockResolvedValueOnce({ success: true, raw: 'OK' })
-      .mockRejectedValueOnce(new Error('Agent execution failed'))
+    if (failure === 'rejects') {
+      invoke.mockRejectedValueOnce(new Error('Agent execution failed'))
+    } else {
+      invoke.mockResolvedValueOnce({ success: false, raw: 'Agent execution failed' })
+    }
+    mockAdapter.invoke = invoke
 
     const service = new DiagnoseService({
       ledger: mockLedger,
@@ -200,6 +205,7 @@ describe('DiagnoseService', () => {
   })
 
   it('calls invokeMetaHarness with the session when all pending sessions finish', async () => {
+    pendingSessions[0].skill = 'harness-kit:tdd-orchestrator'
     mockAdapter.invokeMetaHarness = vi.fn().mockResolvedValue({ success: true, raw: 'Meta harness OK' })
 
     const service = new DiagnoseService({
@@ -214,7 +220,8 @@ describe('DiagnoseService', () => {
     expect(result.remaining).toBe(0)
     expect(mockAdapter.invokeMetaHarness).toHaveBeenCalledWith(
       expect.objectContaining({ sessionId: 'session-2026-08-15-001' }),
-      { model: 'claude-sonnet-5', effort: 'high' }
+      { model: 'claude-sonnet-5', effort: 'high' },
+      ['harness-kit:tdd-orchestrator'],
     )
   })
 
