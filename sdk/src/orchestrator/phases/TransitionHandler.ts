@@ -18,6 +18,7 @@ export class TransitionHandler extends AbstractPhaseHandler {
     const maxReworks = config.completionCriteria.maxReworks
     const thresholdTL = config.scoreThresholdTL
     const thresholdAdv = config.scoreThresholdAdv
+    const reviewPolicyFailures = new Set(config.reviewPolicyBlockedFeatures)
     const violations: string[] = []
 
     for (const f of features) {
@@ -29,7 +30,7 @@ export class TransitionHandler extends AbstractPhaseHandler {
           violations.push(`${f.id}: scoreAdv ${f.scoreAdv} < threshold ${thresholdAdv}`)
         }
       }
-      if ((f.status === 'BLOCKED' || f.status === 'FAILED') && f.reworks < maxReworks) {
+      if ((f.status === 'BLOCKED' || f.status === 'FAILED') && f.reworks < maxReworks && !reviewPolicyFailures.has(f.id)) {
         violations.push(`${f.id}: status ${f.status} but reworks ${f.reworks} < maxReworks ${maxReworks}`)
       }
     }

@@ -17,7 +17,7 @@ export class ReviewFailureService {
     if ([techLead, adversarial].some(review => review.status === 'rejected'
       && review.reason instanceof AgentRunnerError
       && review.reason.code === AgentRunnerErrorCode.SAFETY_POLICY_BLOCKED)) {
-      this.blockReview()
+      this.failReview()
       return null
     }
     if (techLead.status === 'rejected') throw techLead.reason
@@ -27,7 +27,7 @@ export class ReviewFailureService {
 
   preservePolicyBlock(): boolean {
     if (!this.config.reviewPolicyBlockedFeatures?.includes(this.featureId)) return false
-    this.blockReview()
+    this.failReview()
     return true
   }
 
@@ -38,18 +38,18 @@ export class ReviewFailureService {
     this.context.fsm.saveBootstrapConfig(this.config)
   }
 
-  private blockReview(): void {
+  private failReview(): void {
     const { fsm } = this.context
     const blockedFeatures = new Set(this.config.reviewPolicyBlockedFeatures)
     blockedFeatures.add(this.featureId)
     this.config.reviewPolicyBlockedFeatures = [...blockedFeatures]
     fsm.saveBootstrapConfig(this.config)
 
-    const message = `Review for ${this.featureId} was blocked by the provider's cybersecurity safeguards. Manual review required. Continuing the workflow.`
-    process.stderr.write(`[phase_review] ${message}\n`)
+    const message = `Review for ${this.featureId} marked FAILED because the provider's cybersecurity safeguards refused the request (SAFETY_POLICY_BLOCKED). Manual review required. Continuing the workflow.`
+    process.stderr.write(`[phase_review] WARNING: ${message}\n`)
     fsm.appendDecision({ featureId: this.featureId, decision: message })
-    fsm.updateFeatureStatus(this.featureId, 'BLOCKED')
-    fsm.updateAllFeatureTasks(this.featureId, '-', 'BLOCKED')
+    fsm.updateFeatureStatus(this.featureId, 'FAILED')
+    fsm.updateAllFeatureTasks(this.featureId, '-', 'FAILED')
     clearFeatureDeveloperSessions(this.context)
   }
 }

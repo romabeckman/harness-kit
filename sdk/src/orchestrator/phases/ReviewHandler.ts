@@ -41,7 +41,10 @@ export class ReviewHandler extends AbstractPhaseHandler {
 
     // --skip-validation: bypass all agent calls and jump straight to Phase D
     if (context.config.skipValidation) {
-      if (reviewFailures.preservePolicyBlock()) return Phase.TRANSITION
+      if (reviewFailures.preservePolicyBlock()) {
+        this.clearTddOutput(context.workingDir, activeFeature.domain)
+        return Phase.TRANSITION
+      }
       process.stdout.write(`[phase_review] --skip-validation active — skipping review for feature ${activeFeature.id}\n`)
       clearFeatureDeveloperSessions(context)
       context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED')
@@ -68,7 +71,10 @@ export class ReviewHandler extends AbstractPhaseHandler {
     )
 
     const outputs = reviewFailures.resolveOutputs(await this.executeAgents(context, payload, config))
-    if (!outputs) return Phase.TRANSITION
+    if (!outputs) {
+      this.clearTddOutput(context.workingDir, activeFeature.domain)
+      return Phase.TRANSITION
+    }
 
     const [techLead, adversarial] = outputs
     const scores = this.extractScores(context, activeFeature.domain, techLead, adversarial)
@@ -90,6 +96,10 @@ export class ReviewHandler extends AbstractPhaseHandler {
       const p = join(specsDir, file)
       if (existsSync(p)) rmSync(p, { force: true })
     }
+  }
+
+  private clearTddOutput(workingDir: string, domain: string): void {
+    rmSync(join(getSpecsDir(workingDir, domain), 'TDD-OUTPUT.json'), { force: true })
   }
 
   private async executeAgents(context: Reviewontext, payload: ReviewPayload, config: BootstrapConfig) {
@@ -209,8 +219,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       result.reason
     )
 
-    const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
-    if (existsSync(tddOutputPath)) rmSync(tddOutputPath, { force: true })
+    this.clearTddOutput(context.workingDir, activeFeature.domain)
 
     // If verification needs rework, transition back to retry handler
     if (result.verdict === 'RETRY') {

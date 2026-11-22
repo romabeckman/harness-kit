@@ -230,8 +230,8 @@ describe('ReviewHandler', () => {
 
       expect(context.invokeAgent).toHaveBeenCalledTimes(2)
       expect(existsSync(join(workingDir, 'docs', 'specs', 'sdk_core', 'other-review-finished'))).toBe(true)
-      expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'BLOCKED')
-      expect(fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'BLOCKED')
+      expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'FAILED')
+      expect(fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'FAILED')
       expect(fsm.saveBootstrapConfig).toHaveBeenCalledWith(expect.objectContaining({
         reviewPolicyBlockedFeatures: ['F001'],
       }))
@@ -239,7 +239,9 @@ describe('ReviewHandler', () => {
         featureId: 'F001',
         decision: expect.stringContaining('cybersecurity safeguards'),
       }))
-      expect(warning).toHaveBeenCalledWith(expect.stringContaining('Manual review required'))
+      expect(warning).toHaveBeenCalledWith(expect.stringMatching(
+        /WARNING: Review for F001 marked FAILED.*Manual review required.*Continuing the workflow/
+      ))
       expect(fsm.incrementReworks).not.toHaveBeenCalled()
     } finally {
       warning.mockRestore()
@@ -266,7 +268,7 @@ describe('ReviewHandler', () => {
 
     await expect(handler.handle(Phase.REVIEW, context)).resolves.toBe(Phase.TRANSITION)
     expect(context.invokeAgent).not.toHaveBeenCalled()
-    expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'BLOCKED')
+    expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'FAILED')
   })
 
   it('invokes Tech Lead and Adversarial QA when complexity is LOW', async () => {
