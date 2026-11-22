@@ -110,19 +110,19 @@ For each required product file in `docs/product/`, if it does not already exist,
 
 ### State Transition Table
 
-> **Re-entry rule:** On crash/resume, first honor a valid persisted `BOOTSTRAP-CONFIG.json.currentPhase` other than `HALTED`. If absent, scan this table top-to-bottom and enter at the FIRST matching condition against current on-disk state. Persist `currentPhase` and `activeFeatureId` before every phase invocation.
+> **Re-entry rule:** On crash/resume, first honor a valid persisted `BOOTSTRAP-CONFIG.json.currentPhase` other than `HALTED`. If absent or invalid, scan this table top-to-bottom and enter at the FIRST matching condition against current on-disk state. Before re-entering `PHASE_C`, check the active feature. If terminal, finish any pending C6 updates for its saved verdict and go to `PHASE_D`. Otherwise, apply the Phase C gate and return to `PHASE_B` if it fails. Persist `currentPhase` and `activeFeatureId` before every phase invocation.
 
 | Current State | Condition | Next State | Actions |
 |---|---|---|---|
 | `BOOTSTRAP` | Scope confirmed, files initialized, refinement disabled or complete | `PHASE_A` | Select next `NOT_STARTED` feature; persist `activeFeatureId` |
 | `PHASE_A` | Any dependency `Status = BLOCKED` | `CASCADE_BLOCKED` | Set feature `BLOCKED`; log `DECISIONS.md`; skip to next |
-| `PHASE_A` | All `004-*-test-scenarios.md` present | `PHASE_B` | Append tasks to `DEVELOPMENT-STATE.md` |
-| `PHASE_B` | Pending tasks selected, `TDD-OUTPUT.json` absent | `PHASE_B (running)` | Invoke `tdd-orchestrator` once for all pending feature tasks; set them `IMPLEMENTATION / IN_PROGRESS` |
-| `PHASE_B (running)` | Valid `TDD-OUTPUT.json` generated | `PHASE_C` | Mark all pending feature tasks `COMPLETED`; carry `developerHandoff` into review context |
-| `PHASE_C` | Feature's Score A ≥ TL threshold AND Score B ≥ Adv threshold AND no HIGH/CRITICAL vulnerability AND not crashing | `PHASE_D` | Mark feature `COMPLETED` in `BACKLOG.md`; update scores |
-| `PHASE_C` | Any of the feature's scores below threshold OR HIGH/CRITICAL vuln AND `Reworks < ${maxReworks}` | `PHASE_B (RETRY)` | Increment `Reworks`; write `REWORK-LOG.md`; reset tasks `NOT_STARTED` |
-| `PHASE_C` | Gate fails, `Reworks ≥ ${maxReworks}`, and crash OR unresolved HIGH/CRITICAL vulnerability | `PHASE_D` | Mark feature `BLOCKED` in `BACKLOG.md` |
-| `PHASE_C` | Gate fails, `Reworks ≥ ${maxReworks}`, no crash, and no HIGH/CRITICAL vulnerability | `PHASE_D` | Mark feature `FAILED` in `BACKLOG.md` |
+| `PHASE_A` | Specs verified and tasks recorded per A3–A4 | `PHASE_B` | Preserve existing task statuses |
+| `PHASE_B` | No reusable handoff per B1 | `PHASE_B (running)` | Select tasks per B1 and invoke `tdd-orchestrator` |
+| `PHASE_B` or `PHASE_B (running)` | Reusable or fresh handoff passes B3 | `PHASE_C` | Complete task updates per B3 and pass `developerHandoff` to reviewers |
+| `PHASE_C` | C6 verdict is `PASS` | `PHASE_D` | Mark feature `COMPLETED` in `BACKLOG.md`; update scores |
+| `PHASE_C` | C6 verdict is `RETRY` | `PHASE_B (RETRY)` | Increment `Reworks`; write `REWORK-LOG.md`; reset tasks `NOT_STARTED` |
+| `PHASE_C` | C6 verdict is `BLOCK` | `PHASE_D` | Mark feature `BLOCKED` in `BACKLOG.md` |
+| `PHASE_C` | C6 verdict is `FAIL` | `PHASE_D` | Mark feature `FAILED` in `BACKLOG.md` |
 | `PHASE_D` | Executable features remain | `PHASE_A` | Increment `${completedCycles}`; select and persist next feature without running memory |
 | `PHASE_D` | No executable features remain | `PHASE_E` | Increment `${completedCycles}`; clear `activeFeatureId`; persist memory once for completed scope |
 | `PHASE_E` | Memory persisted or explicitly skipped | `DEPLOY` | Delegate deployment when authorized; otherwise record skip |
@@ -151,10 +151,10 @@ inputs:
   ${rules}        = "No additional rules provided"  // unless constraints exist
 ```
 
-**A3. Verify:** Wait for all `docs/specs/{domain}/004-*-test-scenarios.md` files to exist.
+**A3. Verify:** Require a non-empty `docs/specs/{domain}/004-*-test-scenarios.md` and a corresponding `003-*-tactical-design.md` for each project in `${projectPaths}` before proceeding to A4.
 
 **A4. Task breakdown:**  
-For each `docs/specs/{domain}/003-*-tactical-design.md` file (one per project in `${projectPaths}`) → locate `## Section 6 — Ordered Development Tasks` → parse the JSON array in the fenced code block immediately following → append one row per task to `DEVELOPMENT-STATE.md`:
+In each expected `003-*-tactical-design.md`, parse the fenced JSON array immediately after `## Section 6 — Ordered Development Tasks`. Require at least one task per file and a non-empty `id` and `title` for every task. After validating all files, add only rows missing from `DEVELOPMENT-STATE.md` by `Feature ID + Project + Task ID`. Preserve existing rows and statuses.
 
 ```
 Feature ID | Task ID | Project | Description | Domain | Current Phase: - | Status: NOT_STARTED
@@ -164,7 +164,7 @@ Feature ID | Task ID | Project | Description | Domain | Current Phase: - | Statu
 - `Description` = `title` field from JSON
 - `Project` = root folder name of the source project (e.g., `order-service`, `checkout-ui`)
 
-**Parsing rule:** extract JSON with the defensive protocol in §3. On parse failure → log error in `DECISIONS.md` and halt Phase A for that feature.
+If any required spec is missing, empty, or invalid, log the evidence in `DECISIONS.md` and keep the feature in Phase A.
 
 </phase>
 
@@ -174,11 +174,13 @@ Feature ID | Task ID | Project | Description | Domain | Current Phase: - | Statu
 
 ### Phase B — Delegation of Implementation
 
-**B1. Select all pending feature tasks and log state:**
+**B1. Select feature tasks and log state:**
+
+If the feature has no task rows, return to Phase A to recover them. On re-entry, if each task is `IN_PROGRESS` or `COMPLETED` and the saved handoff satisfies B3, apply B3 and skip dispatch. Otherwise require a fresh handoff. Select all pending tasks, including those left `IN_PROGRESS`. If all are already `COMPLETED`, select them all for re-verification.
 
 ```
-DEVELOPMENT-STATE.md[all pending feature tasks].Current Phase → IMPLEMENTATION
-DEVELOPMENT-STATE.md[all pending feature tasks].Status        → IN_PROGRESS
+DEVELOPMENT-STATE.md[selected feature tasks].Current Phase → IMPLEMENTATION
+DEVELOPMENT-STATE.md[selected feature tasks].Status        → IN_PROGRESS
 ```
 
 **B2. Delegate** → `harness-kit:tdd-orchestrator` via appropriate developer agent (Autonomous Mode):
@@ -188,7 +190,7 @@ inputs:
   ${featureId}    = feature ID (e.g., "F001")
   ${domain}       = Domain column value
   ${projectPaths} = paths from BOOTSTRAP
-  ${tasks}        = all pending task IDs and descriptions from DEVELOPMENT-STATE.md
+  ${tasks}        = selected task IDs and descriptions from DEVELOPMENT-STATE.md
   impl_spec       = docs/specs/{domain}/003-*-tactical-design.md
   test_spec       = docs/specs/{domain}/004-*-test-scenarios.md
   // IF RETRY: also pass docs/specs/{domain}/REWORK-LOG.md
@@ -204,7 +206,7 @@ inputs:
 
 ### Phase C — Validation & Decision Gate
 
-> **GATE:** Do NOT begin Phase C until **ALL tasks** for the feature in `DEVELOPMENT-STATE.md` have `Status = COMPLETED`. If any task is `IN_PROGRESS` or `NOT_STARTED` → remain in Phase B.
+> **GATE:** Begin Phase C only when the active feature has tasks in `DEVELOPMENT-STATE.md`, every task is `COMPLETED`, and `TDD-OUTPUT.json` satisfies B3. If any check fails, return to Phase B and apply B1.
 
 **C1. Load thresholds and criteria** (on entry or re-entry):
 
@@ -238,6 +240,8 @@ Read `docs/specs/${domain}/TL.json` (Score A) and `docs/specs/${domain}/QA.json`
 
 **C6. Verdict Gate & DECISIONS.md update:**
 
+Evaluate the gates below in order and apply the first match. Treat `isCrashing` as true if either reviewer reports it.
+
 <gate id="PASS">
 
 ```
@@ -256,14 +260,15 @@ IF feature's Score A >= ${scoreThresholdTL} AND Score B >= ${scoreThresholdAdv}
 <gate id="RETRY">
 
 ```
-IF (feature's Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRITICAL vuln)
-   AND Reworks < ${maxReworks}:
+IF PASS did not match AND Reworks < ${maxReworks}:
 ```
 
 1. `BACKLOG.md[feature].Reworks++` (for the active feature in backlog)
 2. Append to `docs/specs/{domain}/REWORK-LOG.md`:
    - `openPoints` from `the-grumpy-tech-lead`
    - `edgeCasesMissed` from `adversarial-qa`
+   - `vulnerabilities` from `adversarial-qa`, with severity and description
+   - Any reported crash and its evidence
 3. `DECISIONS.md` → `"Feature {ID} RETRY #{n} — TL: {A}, Adv: {B}. Reason: {top finding}."`
 4. **ATOMIC WRITE:** All feature tasks → `Current Phase: -`, `Status: NOT_STARTED`
 5. Delete stale `TDD-OUTPUT.json`
@@ -274,9 +279,8 @@ IF (feature's Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR
 <gate id="BLOCK">
 
 ```
-IF (feature's Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRITICAL vuln)
-   AND Reworks >= ${maxReworks}
-   AND (failure causes application crash OR a HIGH/CRITICAL vulnerability remains unresolved):
+IF PASS did not match AND Reworks >= ${maxReworks}
+   AND (isCrashing == true OR a HIGH/CRITICAL vulnerability remains unresolved):
 ```
 
 1. `BACKLOG.md[feature]` (the active feature in backlog) → `Status: BLOCKED`
@@ -290,9 +294,7 @@ IF (feature's Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR
 <gate id="FAIL">
 
 ```
-IF (feature's Score A < ${scoreThresholdTL} OR Score B < ${scoreThresholdAdv} OR HIGH/CRITICAL vuln)
-   AND Reworks >= ${maxReworks}
-   AND (failure does NOT cause a crash, has no HIGH/CRITICAL vulnerability, and development can continue):
+IF none of the preceding gates matched:
 ```
 
 1. `BACKLOG.md[feature]` (the active feature in backlog) → `Status: FAILED`

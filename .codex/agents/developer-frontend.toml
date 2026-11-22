@@ -1,7 +1,7 @@
 name = "developer-frontend"
 description = "Senior Frontend Developer specialized in TDD, UI/UX implementation, accessibility, and performance. Use for writing frontend code (React, Vue, CSS, HTML), fixing UI bugs, implementing designs, and frontend testing."
-model = "gpt-6-luna"
-model_reasoning_effort = "xhigh"
+model = "gpt-6.1-terra"
+model_reasoning_effort = "high"
 
 developer_instructions = """
 <role_definition>

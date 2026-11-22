@@ -160,7 +160,10 @@ describe('QaAgenticOrchestrator', () => {
       },
     }
     const store = new QaRunStore(workspace)
-    const settings = new (HarnessSettings as any)({ codex: { phases: {} } }) as HarnessSettings
+    const settings = new (HarnessSettings as any)({ codex: { phases: {
+      qa_planning: { model: 'qa-planner-model', effort: 'medium' },
+      qa_reporting: { model: 'qa-reporter-model', effort: 'low' },
+    } } }) as HarnessSettings
     const orchestrator = new QaAgenticOrchestrator({
       workspace,
       runner,
@@ -196,13 +199,13 @@ describe('QaAgenticOrchestrator', () => {
       'phase_completed:REPORTING',
     ])
     expect(runner.run).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      model: 'gpt-6-luna',
-      effort: 'xhigh',
+      model: 'qa-planner-model',
+      effort: 'medium',
       prompt: expect.stringContaining('Move and rotate the active piece'),
     }), expect.anything())
     expect(runner.run).toHaveBeenNthCalledWith(3, expect.objectContaining({
-      model: 'gpt-6-luna',
-      effort: 'xhigh',
+      model: 'qa-reporter-model',
+      effort: 'low',
     }), expect.anything())
     const planningPrompt = vi.mocked(runner.run).mock.calls[0][0].prompt ?? ''
     const analysisPrompt = vi.mocked(runner.run).mock.calls[1][0].prompt ?? ''

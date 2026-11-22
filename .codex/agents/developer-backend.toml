@@ -1,7 +1,7 @@
 name = "developer-backend"
 description = "Senior Backend Developer specialized in TDD, API design, database modeling, security, and performance. Use for writing backend code (APIs, services, workers), fixing server bugs, implementing business logic, and backend testing."
-model = "gpt-6-luna"
-model_reasoning_effort = "xhigh"
+model = "gpt-6.1-terra"
+model_reasoning_effort = "high"
 
 developer_instructions = """
 <role_definition>
