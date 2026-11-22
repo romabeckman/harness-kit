@@ -58,6 +58,7 @@ export interface BootstrapConfig {
   }
   currentPhase?: string
   activeFeatureId?: string | null
+  reviewPolicyBlockedFeatures?: string[]
   steeringRules?: SteeringRulesConfig
 }
 

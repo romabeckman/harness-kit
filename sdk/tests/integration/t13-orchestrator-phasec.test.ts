@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, appendFileSync, existsSync, readFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { HarnessOrchestrator } from '../../src/orchestrator/HarnessOrchestrator'
 import { FakeAgentRunner } from '../helpers/FakeAgentRunner'
 import { FileStateManager } from '../../src/file-state/FileStateManager'
 import { Complexity } from '../../src/orchestrator/types'
+import { AgentRunnerError, AgentRunnerErrorCode } from '../../src/agent-runner/AgentRunnerError'
 
 let tmpDir: string
 let productDir: string
@@ -78,6 +79,53 @@ afterEach(() => {
 })
 
 describe('T13 — HarnessOrchestrator REVIEW', () => {
+  it('marks a refused review as failed and reviews the next feature in the same domain', async () => {
+    setupFullRun()
+    appendFileSync(join(productDir, 'BACKLOG.md'),
+      '\n| F002 | Next feature | sdk_core | backend | 2 | F001 | 0 | - | - | NOT_STARTED |')
+    appendFileSync(join(productDir, 'DEVELOPMENT-STATE.md'),
+      '\n| F002 | T01 | sdk | next task | sdk_core | IMPLEMENTATION | NOT_STARTED |')
+
+    const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
+    const run = fake.run.bind(fake)
+    const runner = vi.spyOn(fake, 'run').mockImplementation(async (invocation, options) => {
+      if (invocation.phaseKey === 'review_adv' && fsm.loadBootstrapConfig().activeFeatureId === 'F001') {
+        throw new AgentRunnerError({
+          code: AgentRunnerErrorCode.SAFETY_POLICY_BLOCKED,
+          skill: invocation.skill ?? '',
+          phase: 'dispatch',
+          message: 'Provider blocked this request.',
+        })
+      }
+      return run(invocation, options)
+    })
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'sdk_core',
+      projectPaths: [tmpDir],
+      agentRunner: fake,
+      skipDeploy: true,
+      productDir,
+      complexity: Complexity.AUTO,
+    }, { workingDir: tmpDir })
+
+    await orchestrator.run()
+
+    expect(fsm.loadBacklog()).toEqual([
+      expect.objectContaining({ id: 'F001', status: 'FAILED', reworks: 0, scoreTL: null, scoreAdv: null }),
+      expect.objectContaining({ id: 'F002', status: 'COMPLETED', scoreTL: 0.85, scoreAdv: 0.85 }),
+    ])
+    expect(fsm.loadBootstrapConfig()).toMatchObject({
+      reviewPolicyBlockedFeatures: ['F001'],
+      cycleCounter: { completedCycles: 2 },
+    })
+    const decisions = readFileSync(join(productDir, 'DECISIONS.md'), 'utf8')
+    expect(decisions).toMatch(/F001.*marked FAILED.*SAFETY_POLICY_BLOCKED/)
+    expect(decisions).not.toContain('Violations:')
+    expect(runner.mock.calls.map(([invocation]) => invocation.phaseKey)).toEqual([
+      'review_tl', 'review_adv', 'implementation', 'review_tl', 'review_adv', 'memory',
+    ])
+  })
+
   describe('TS-F-01: PASS on first attempt', () => {
     it('feature COMPLETED with correct scores after PASS', async () => {
       setupFullRun()

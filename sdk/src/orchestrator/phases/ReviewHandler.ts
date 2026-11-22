@@ -20,6 +20,7 @@ import type { ReviewPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
+import { ReviewFailureService } from '../services/ReviewFailureService'
 
 type ValidationResult = ReturnType<typeof ValidationGate.evaluate>;
 
@@ -35,8 +36,15 @@ export class ReviewHandler extends AbstractPhaseHandler {
       throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
     }
 
+    const config = context.fsm.loadBootstrapConfig()
+    const reviewFailures = new ReviewFailureService(context, config, activeFeature.id)
+
     // --skip-validation: bypass all agent calls and jump straight to Phase D
     if (context.config.skipValidation) {
+      if (reviewFailures.preservePolicyBlock()) {
+        this.clearTddOutput(context.workingDir, activeFeature.domain)
+        return Phase.TRANSITION
+      }
       process.stdout.write(`[phase_review] --skip-validation active — skipping review for feature ${activeFeature.id}\n`)
       clearFeatureDeveloperSessions(context)
       context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED')
@@ -55,7 +63,6 @@ export class ReviewHandler extends AbstractPhaseHandler {
 
     this.cleanTemporaryFiles(context, activeFeature.domain)
 
-    const config = context.fsm.loadBootstrapConfig()
     const payload = ContextAssembler.buildReviewPayload(
       activeFeature,
       context.workingDir,
@@ -63,9 +70,14 @@ export class ReviewHandler extends AbstractPhaseHandler {
       config.steeringRules
     )
 
-    const [tlOutput, advOutput] = await this.executeAgents(context, payload, config)
+    const outputs = reviewFailures.resolveOutputs(await this.executeAgents(context, payload, config))
+    if (!outputs) {
+      this.clearTddOutput(context.workingDir, activeFeature.domain)
+      return Phase.TRANSITION
+    }
 
-    const scores = this.extractScores(context, activeFeature.domain, tlOutput, advOutput)
+    const [techLead, adversarial] = outputs
+    const scores = this.extractScores(context, activeFeature.domain, techLead, adversarial)
 
     const result = ValidationGate.evaluate(
       scores,
@@ -73,7 +85,9 @@ export class ReviewHandler extends AbstractPhaseHandler {
       config
     )
 
-    return this.processDecision(context, activeFeature, phase, result, scores)
+    const nextPhase = this.processDecision(context, activeFeature, phase, result, scores)
+    if (result.verdict === 'PASS') reviewFailures.clearPolicyBlock()
+    return nextPhase
   }
 
   private cleanTemporaryFiles(context: Reviewontext, domain: string): void {
@@ -82,6 +96,10 @@ export class ReviewHandler extends AbstractPhaseHandler {
       const p = join(specsDir, file)
       if (existsSync(p)) rmSync(p, { force: true })
     }
+  }
+
+  private clearTddOutput(workingDir: string, domain: string): void {
+    rmSync(join(getSpecsDir(workingDir, domain), 'TDD-OUTPUT.json'), { force: true })
   }
 
   private async executeAgents(context: Reviewontext, payload: ReviewPayload, config: BootstrapConfig) {
@@ -134,7 +152,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       return output
     })
 
-    return Promise.all([tlPromise, advPromise])
+    return Promise.allSettled([tlPromise, advPromise] as const)
   }
 
   private extractScores(context: Reviewontext, domain: string, tlOutput: any, advOutput: any) {
@@ -201,8 +219,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       result.reason
     )
 
-    const tddOutputPath = join(context.workingDir, 'docs', 'specs', activeFeature.domain, 'TDD-OUTPUT.json')
-    if (existsSync(tddOutputPath)) rmSync(tddOutputPath, { force: true })
+    this.clearTddOutput(context.workingDir, activeFeature.domain)
 
     // If verification needs rework, transition back to retry handler
     if (result.verdict === 'RETRY') {

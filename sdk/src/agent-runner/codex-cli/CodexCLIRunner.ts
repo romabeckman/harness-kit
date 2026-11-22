@@ -52,6 +52,7 @@ export class CodexCLIRunner extends AbstractCliRunner {
     } catch {
       return
     }
+    if (!event || typeof event !== 'object') return
 
     const type = event.type as string | undefined
 
@@ -92,14 +93,28 @@ export class CodexCLIRunner extends AbstractCliRunner {
     invocation: AgentInvocation,
   ): AgentRunnerError | null {
     if (parsed.success === false) {
+      const message = parsed.raw ?? ''
+      if (/\bcybersecurity\b/i.test(message) && /\brisk\b/i.test(message)) {
+        return new AgentRunnerError({
+          code: AgentRunnerErrorCode.SAFETY_POLICY_BLOCKED,
+          skill: invocation.skill ?? '',
+          phase: 'dispatch',
+          message: 'The provider blocked this request under its cybersecurity safeguards.',
+        })
+      }
       return new AgentRunnerError({
         code: AgentRunnerErrorCode.API_ERROR,
         skill: invocation.skill ?? '',
         phase: 'dispatch',
-        message: `${this.binaryName} agent returned an error: ${parsed.raw ?? ''}`,
+        message: `${this.binaryName} agent returned an error: ${message}`,
       })
     }
     return null
+  }
+
+  protected override checkFailedExit(stdout: string, stderr: string, invocation: AgentInvocation): AgentRunnerError | null {
+    const error = this.checkParsed(this.parseOutput(stdout, stderr, invocation), invocation)
+    return error?.code === AgentRunnerErrorCode.SAFETY_POLICY_BLOCKED ? error : null
   }
 
   protected parseOutput(
@@ -121,6 +136,7 @@ export class CodexCLIRunner extends AbstractCliRunner {
       } catch {
         continue
       }
+      if (!event || typeof event !== 'object') continue
 
       if (typeof event.session_id === 'string') sessionId = event.session_id
       else if (typeof event.sessionId === 'string') sessionId = event.sessionId

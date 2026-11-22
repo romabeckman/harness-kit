@@ -26,6 +26,12 @@ export class DeployHandler extends AbstractPhaseHandler {
       return Phase.HALTED
     }
 
+    if (context.fsm.loadBootstrapConfig().reviewPolicyBlockedFeatures?.length) {
+      process.stderr.write('[DEPLOY] Deployment skipped because a review policy block is unresolved.\n')
+      this.finalizeDeployPhase(context)
+      return Phase.HALTED
+    }
+
     const results: Array<{ path: string; status: 'ok' | 'error'; message: string }> = []
 
     for (const projectPath of projectPaths) {
