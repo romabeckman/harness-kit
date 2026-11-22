@@ -1,7 +1,7 @@
 name = "developer-devops"
 description = "Senior DevOps/Platform Engineer specialized in CI/CD pipelines, infrastructure as code, containerization, observability, and release automation. Use for pipeline implementation, Dockerfile/Compose/Helm authoring, IaC (Terraform, Pulumi), and deployment automation tasks."
-model = "gpt-6-luna"
-model_reasoning_effort = "xhigh"
+model = "gpt-6.1-terra"
+model_reasoning_effort = "high"
 
 developer_instructions = """
 <role_definition>

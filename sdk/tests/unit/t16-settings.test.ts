@@ -119,24 +119,24 @@ describe('T16 — HarnessSettings', () => {
     const settings = HarnessSettings.load(tmpDir)
 
     expect(settings.resolve('codex', 'planning')).toEqual({
-      model: 'gpt-6.1-sol',
+      model: 'gpt-6.2-sol',
       effort: 'medium',
     })
     expect(settings.resolve('codex', 'refinement_questions')).toEqual({
-      model: 'gpt-6.1-sol',
-      effort: 'low',
+      model: 'gpt-6.2-sol',
+      effort: 'medium',
     })
     expect(settings.resolve('codex', 'refinement_consolidation')).toEqual({
-      model: 'gpt-6.1-sol',
-      effort: 'low',
+      model: 'gpt-6.1-terra',
+      effort: 'medium',
     })
     expect(settings.resolve('codex', 'implementation')).toEqual({
-      model: 'gpt-6-luna',
-      effort: 'xhigh',
+      model: 'gpt-6.1-terra',
+      effort: 'high',
     })
     expect(settings.resolve('codex', 'qa_planning')).toEqual({
-      model: 'gpt-6-luna',
-      effort: 'xhigh',
+      model: 'gpt-6.1-terra',
+      effort: 'high',
     })
     expect(settings.resolve('codex', 'qa_reporting')).toEqual({
       model: 'gpt-6-luna',
@@ -164,8 +164,8 @@ describe('T16 — HarnessSettings', () => {
       effort: 'low',
     })
     expect(settings.resolve('copilot', 'diagnose')).toEqual({
-      model: 'gpt-6-luna',
-      effort: 'xhigh',
+      model: 'gpt-6.1-terra',
+      effort: 'high',
     })
   })
 })
