@@ -1,6 +1,7 @@
 import { AgentRunnerError, AgentRunnerErrorCode } from '../../agent-runner/AgentRunnerError'
 import type { AgentOutput } from '../../agent-runner/types'
 import type { BootstrapConfig } from '../../file-state/types'
+import { AnsiHelpers } from '../../ui/AnsiHelpers'
 import type { Reviewontext } from '../phases/AbstractPhaseHandler'
 import { clearFeatureDeveloperSessions } from '../utils/SessionHelpers'
 
@@ -45,9 +46,17 @@ export class ReviewFailureService {
     this.config.reviewPolicyBlockedFeatures = [...blockedFeatures]
     fsm.saveBootstrapConfig(this.config)
 
-    const message = `Review for ${this.featureId} marked FAILED because the provider's cybersecurity safeguards refused the request (SAFETY_POLICY_BLOCKED). Manual review required. Continuing the workflow.`
-    process.stderr.write(`[phase_review] WARNING: ${message}\n`)
-    fsm.appendDecision({ featureId: this.featureId, decision: message })
+    const heading = `X [phase_review] ${this.featureId} marked FAILED`
+    const reason = 'The provider declined the automated review under its cybersecurity safeguards (SAFETY_POLICY_BLOCKED).'
+    const displayHeading = process.stderr.isTTY ? AnsiHelpers.red(heading) : heading
+    process.stderr.write(
+      `\n${displayHeading}\n  ${reason}\n` +
+      '  Manual review required. The workflow continues with the next pending feature, if any.\n\n'
+    )
+    fsm.appendDecision({
+      featureId: this.featureId,
+      decision: `Review for ${this.featureId} marked FAILED. ${reason} Manual review required.`,
+    })
     fsm.updateFeatureStatus(this.featureId, 'FAILED')
     fsm.updateAllFeatureTasks(this.featureId, '-', 'FAILED')
     clearFeatureDeveloperSessions(this.context)

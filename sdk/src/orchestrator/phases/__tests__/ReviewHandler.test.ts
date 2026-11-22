@@ -240,7 +240,7 @@ describe('ReviewHandler', () => {
         decision: expect.stringContaining('cybersecurity safeguards'),
       }))
       expect(warning).toHaveBeenCalledWith(expect.stringMatching(
-        /WARNING: Review for F001 marked FAILED.*Manual review required.*Continuing the workflow/
+        /X \[phase_review\] F001 marked FAILED[^\n]*\n  .*SAFETY_POLICY_BLOCKED.*\n  Manual review required.*next pending feature/
       ))
       expect(fsm.incrementReworks).not.toHaveBeenCalled()
     } finally {
