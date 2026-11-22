@@ -203,8 +203,10 @@ describe('CodexCLIRunner', () => {
     })
   })
 
-  it.each([0, 1])('classifies a cybersecurity refusal with exit code %i', async exitCode => {
-    const message = 'This content was flagged for possible cybersecurity risk. If this seems wrong, try rephrasing your request.'
+  it.each([
+    [0, 'This content was flagged for possible cybersecurity risk. If this seems wrong, try rephrasing your request.'],
+    [1, 'The RISK evaluation triggered a Cybersecurity safeguard.'],
+  ])('classifies a cybersecurity refusal with exit code %i', async (exitCode, message) => {
     const events = [
       { type: 'error', message },
       { type: 'turn.failed', error: { message } },
@@ -217,6 +219,18 @@ describe('CodexCLIRunner', () => {
     })
     expect(mockSpawn).toHaveBeenCalledTimes(1)
   })
+
+  it.each(['Cybersecurity check unavailable', 'Risk evaluation unavailable'])(
+    'preserves the normal error when only one safety term is present: %s',
+    async message => {
+      const event = { type: 'turn.failed', error: { message } }
+      mockSpawn.mockReturnValue(new MockChildProcess([JSON.stringify(event) + '\n']) as any)
+
+      await expect(new CodexCLIRunner().run(invocation)).rejects.toMatchObject({
+        code: AgentRunnerErrorCode.API_ERROR,
+      })
+    },
+  )
 
   it('does not classify a provider message quoted in an agent response as a refusal', async () => {
     const text = 'This content was flagged for possible cybersecurity risk.'

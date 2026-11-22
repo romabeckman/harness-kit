@@ -93,7 +93,8 @@ export class CodexCLIRunner extends AbstractCliRunner {
     invocation: AgentInvocation,
   ): AgentRunnerError | null {
     if (parsed.success === false) {
-      if (parsed.raw?.startsWith('This content was flagged for possible cybersecurity risk.')) {
+      const message = parsed.raw ?? ''
+      if (/\bcybersecurity\b/i.test(message) && /\brisk\b/i.test(message)) {
         return new AgentRunnerError({
           code: AgentRunnerErrorCode.SAFETY_POLICY_BLOCKED,
           skill: invocation.skill ?? '',
@@ -105,7 +106,7 @@ export class CodexCLIRunner extends AbstractCliRunner {
         code: AgentRunnerErrorCode.API_ERROR,
         skill: invocation.skill ?? '',
         phase: 'dispatch',
-        message: `${this.binaryName} agent returned an error: ${parsed.raw ?? ''}`,
+        message: `${this.binaryName} agent returned an error: ${message}`,
       })
     }
     return null
