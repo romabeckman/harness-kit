@@ -62,6 +62,17 @@ describe('DeployHandler', () => {
     )
   })
 
+  it('skips deployment while a review policy block is unresolved', async () => {
+    mockContext.fsm.loadBootstrapConfig.mockReturnValue({
+      cycleCounter: { completedCycles: 1 },
+      reviewPolicyBlockedFeatures: ['F001'],
+    })
+
+    await expect(handler.handle(Phase.DEPLOY, mockContext)).resolves.toBe(Phase.HALTED)
+    expect(execFileSync).not.toHaveBeenCalled()
+    expect(mockContext.invokeAgent).not.toHaveBeenCalled()
+  })
+
   it('skips commit/push when there are no uncommitted changes', async () => {
     // git status --porcelain returns empty
     vi.mocked(execFileSync).mockReturnValue('' as any)

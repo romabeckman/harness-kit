@@ -132,6 +132,15 @@ export abstract class AbstractCliRunner implements IAgentRunner {
     return null
   }
 
+  /** Recognizes structured failures before the generic non-zero exit handling. */
+  protected checkFailedExit(
+    _stdout: string,
+    _stderr: string,
+    _invocation: AgentInvocation,
+  ): AgentRunnerError | null {
+    return null
+  }
+
   /**
    * Called for every complete stdout line while the process is still running,
    * before `parseOutput`. Override for real-time streaming feedback such as
@@ -289,6 +298,8 @@ export abstract class AbstractCliRunner implements IAgentRunner {
         clearTimer()
         AbstractCliRunner.activeKillFns.delete(killProcessGroup)
         if (code !== 0) {
+          const exitError = this.checkFailedExit(stdout, stderr, invocation)
+          if (exitError) { reject(exitError); return }
           const combined = (stderr + '\n' + stdout).trim()
           const isQuota = /rate.?limit|quota|overloaded/i.test(combined)
           const snippet = DebugContext.enabled ? combined : combined.slice(-1500)

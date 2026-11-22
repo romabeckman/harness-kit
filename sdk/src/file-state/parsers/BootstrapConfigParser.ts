@@ -35,6 +35,11 @@ export class BootstrapConfigParser {
     if (raw.activeFeatureId !== undefined) {
       result.activeFeatureId = raw.activeFeatureId
     }
+    if (Array.isArray(raw.reviewPolicyBlockedFeatures)) {
+      result.reviewPolicyBlockedFeatures = raw.reviewPolicyBlockedFeatures.filter(
+        (id: unknown): id is string => typeof id === 'string' && id.length > 0
+      )
+    }
     if (Array.isArray(raw.steeringRules)) {
       result.steeringRules = createDefaultSteeringRules()
       if (raw.steeringRules && Array.isArray(raw.steeringRules)) {

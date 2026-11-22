@@ -4,6 +4,7 @@ export enum AgentRunnerErrorCode {
   API_ERROR       = 'API_ERROR',      // 4xx semantic errors (except 429)
   NETWORK_ERROR   = 'NETWORK_ERROR',  // connection failures (ENOENT, ECONNREFUSED)
   QUOTA_EXCEEDED  = 'QUOTA_EXCEEDED', // 429 / rate-limit / quota exhaustion
+  SAFETY_POLICY_BLOCKED = 'SAFETY_POLICY_BLOCKED',
   UNKNOWN_ERROR   = 'UNKNOWN_ERROR',  // fallback for unrecognised errors
 }
 

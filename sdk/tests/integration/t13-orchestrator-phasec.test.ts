@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -6,6 +6,7 @@ import { HarnessOrchestrator } from '../../src/orchestrator/HarnessOrchestrator'
 import { FakeAgentRunner } from '../helpers/FakeAgentRunner'
 import { FileStateManager } from '../../src/file-state/FileStateManager'
 import { Complexity } from '../../src/orchestrator/types'
+import { AgentRunnerError, AgentRunnerErrorCode } from '../../src/agent-runner/AgentRunnerError'
 
 let tmpDir: string
 let productDir: string
@@ -78,6 +79,42 @@ afterEach(() => {
 })
 
 describe('T13 — HarnessOrchestrator REVIEW', () => {
+  it('persists a runner policy block and continues through transition and memory', async () => {
+    setupFullRun()
+    const run = fake.run.bind(fake)
+    const runner = vi.spyOn(fake, 'run').mockImplementation(async (invocation, options) => {
+      if (invocation.phaseKey === 'review_adv') {
+        throw new AgentRunnerError({
+          code: AgentRunnerErrorCode.SAFETY_POLICY_BLOCKED,
+          skill: invocation.skill ?? '',
+          phase: 'dispatch',
+          message: 'Provider blocked this request.',
+        })
+      }
+      return run(invocation, options)
+    })
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'sdk_core',
+      projectPaths: [tmpDir],
+      agentRunner: fake,
+      skipDeploy: true,
+      productDir,
+      complexity: Complexity.AUTO,
+    }, { workingDir: tmpDir })
+
+    await orchestrator.run()
+
+    const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
+    expect(fsm.loadBacklog()).toEqual([
+      expect.objectContaining({ id: 'F001', status: 'BLOCKED', reworks: 0, scoreTL: null, scoreAdv: null }),
+    ])
+    expect(fsm.loadBootstrapConfig()).toMatchObject({
+      reviewPolicyBlockedFeatures: ['F001'],
+      cycleCounter: { completedCycles: 1 },
+    })
+    expect(runner.mock.calls.map(([invocation]) => invocation.phaseKey)).toEqual(['review_tl', 'review_adv', 'memory'])
+  })
+
   describe('TS-F-01: PASS on first attempt', () => {
     it('feature COMPLETED with correct scores after PASS', async () => {
       setupFullRun()

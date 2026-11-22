@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { ReviewHandler } from '../ReviewHandler'
 import { Complexity, Phase } from '../../types'
 import type { Reviewontext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
 import type { Feature, BootstrapConfig } from '../../../file-state/types'
+import { AgentRunnerError, AgentRunnerErrorCode } from '../../../agent-runner/AgentRunnerError'
 
 function makeTempDir(): string {
   const dir = join(tmpdir(), `review-test-${Math.random().toString(36).slice(2)}`)
@@ -46,6 +47,7 @@ function makeFsm(feature: Feature = makeFeature(), config: BootstrapConfig = mak
   return {
     loadBacklog: vi.fn().mockReturnValue([feature]),
     loadBootstrapConfig: vi.fn().mockReturnValue(config),
+    saveBootstrapConfig: vi.fn(),
     updateTaskStatus: vi.fn(),
     appendDecision: vi.fn(),
     updateFeatureStatus: vi.fn(),
@@ -206,6 +208,67 @@ describe('ReviewHandler', () => {
     expect(qaCall.prompt).not.toContain('Read `developerNotes`')
   })
 
+  it.each(['review_tl', 'review_adv'])('blocks the feature when %s is refused and lets the other review settle', async blockedPhase => {
+    const fsm = makeFsm()
+    const context = makeContext(workingDir, fsm, async inv => {
+      if (inv.phaseKey === blockedPhase) {
+        throw new AgentRunnerError({
+          code: AgentRunnerErrorCode.SAFETY_POLICY_BLOCKED,
+          skill: inv.skill,
+          phase: 'dispatch',
+          message: 'Provider blocked this request.',
+        })
+      }
+      await new Promise<void>(resolve => setImmediate(resolve))
+      writeFileSync(join(workingDir, 'docs', 'specs', 'sdk_core', 'other-review-finished'), '')
+      return { success: true, raw: '{"score":1}' }
+    })
+    const warning = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+
+    try {
+      await expect(handler.handle(Phase.REVIEW, context)).resolves.toBe(Phase.TRANSITION)
+
+      expect(context.invokeAgent).toHaveBeenCalledTimes(2)
+      expect(existsSync(join(workingDir, 'docs', 'specs', 'sdk_core', 'other-review-finished'))).toBe(true)
+      expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'BLOCKED')
+      expect(fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'BLOCKED')
+      expect(fsm.saveBootstrapConfig).toHaveBeenCalledWith(expect.objectContaining({
+        reviewPolicyBlockedFeatures: ['F001'],
+      }))
+      expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({
+        featureId: 'F001',
+        decision: expect.stringContaining('cybersecurity safeguards'),
+      }))
+      expect(warning).toHaveBeenCalledWith(expect.stringContaining('Manual review required'))
+      expect(fsm.incrementReworks).not.toHaveBeenCalled()
+    } finally {
+      warning.mockRestore()
+    }
+  })
+
+  it('propagates unrelated review errors', async () => {
+    const fsm = makeFsm()
+    const error = new AgentRunnerError({
+      code: AgentRunnerErrorCode.API_ERROR,
+      skill: 'review',
+      phase: 'dispatch',
+      message: 'Service unavailable',
+    })
+    const context = makeContext(workingDir, fsm, async () => { throw error })
+
+    await expect(handler.handle(Phase.REVIEW, context)).rejects.toBe(error)
+    expect(fsm.updateFeatureStatus).not.toHaveBeenCalled()
+  })
+
+  it('keeps a prior provider block when validation is skipped', async () => {
+    const fsm = makeFsm(makeFeature(), makeConfig({ reviewPolicyBlockedFeatures: ['F001'] }))
+    const context = makeContext(workingDir, fsm, undefined, { skipValidation: true })
+
+    await expect(handler.handle(Phase.REVIEW, context)).resolves.toBe(Phase.TRANSITION)
+    expect(context.invokeAgent).not.toHaveBeenCalled()
+    expect(fsm.updateFeatureStatus).toHaveBeenCalledWith('F001', 'BLOCKED')
+  })
+
   it('invokes Tech Lead and Adversarial QA when complexity is LOW', async () => {
     const fsm = makeFsm()
     const specsDir = join(workingDir, 'docs', 'specs', 'sdk_core')
@@ -281,7 +344,7 @@ describe('ReviewHandler', () => {
   })
 
   it('clears developerSession on PASS verdict before transitioning', async () => {
-    const fsm = makeFsm()
+    const fsm = makeFsm(makeFeature(), makeConfig({ reviewPolicyBlockedFeatures: ['F001', 'F002'] }))
     const specsDir = join(workingDir, 'docs', 'specs', 'sdk_core')
 
     const context = makeContext(workingDir, fsm, async (inv: any) => {
@@ -306,6 +369,9 @@ describe('ReviewHandler', () => {
 
     expect(result).toBe(Phase.TRANSITION)
     expect(context.developerSession).toBeUndefined()
+    expect(fsm.saveBootstrapConfig).toHaveBeenCalledWith(expect.objectContaining({
+      reviewPolicyBlockedFeatures: ['F002'],
+    }))
   })
 
   it('captures and preserves sessions from invokeAgent output in developerSession array on RETRY', async () => {

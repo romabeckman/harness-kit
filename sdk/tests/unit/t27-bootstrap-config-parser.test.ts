@@ -2,6 +2,16 @@ import { describe, it, expect } from 'vitest'
 import { BootstrapConfigParser } from '../../src/file-state/parsers/BootstrapConfigParser'
 
 describe('T27 — BootstrapConfigParser', () => {
+  it('preserves review policy blocks across a reload', () => {
+    const config = BootstrapConfigParser.parse(JSON.stringify({
+      completionCriteria: { maxReworks: 2 },
+      cycleCounter: { completedCycles: 1 },
+      reviewPolicyBlockedFeatures: ['F001', null, 'F002'],
+    }))
+
+    expect(config.reviewPolicyBlockedFeatures).toEqual(['F001', 'F002'])
+  })
+
   it('TC-BCP-01: parses valid complete JSON correctly', () => {
     // Arrange
     const json = JSON.stringify({
