@@ -36,11 +36,11 @@ describe('DiagnoseReportRenderer', () => {
     expect(combined).toContain('PROPOSED')
     expect(combined).toContain('EVALUATE_CANDIDATE')
     expect(combined).toContain('Worst sessions diverged at phase C')
-    expect(combined).toContain('How to Apply Candidate v001')
+    expect(combined).toContain('Candidate Review v001')
     expect(combined).toContain('Review Changes')
     expect(combined).toContain('docs/harness-history/candidates/v001/diff.md')
-    expect(combined).toContain('skills/autonomous-orchestrator/SKILL.md')
-    expect(combined).toContain('promoted: true')
+    expect(combined).toContain('paired search and reserved tasks')
+    expect(combined).toContain('hrns candidate review v001 --auto')
   })
 
   it('renders report when no candidate was created', () => {

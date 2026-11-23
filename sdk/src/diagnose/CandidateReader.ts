@@ -1,23 +1,33 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import type { AgentOutput } from '../agent-runner/types'
 import { JsonExtractionProtocol } from '../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../json-extraction/types'
 import type { CandidateReportInfo, DiagnoseReportData } from './types'
+import { isCandidateId, isSkillName } from './types'
 import { DiagnosePaths } from './utils/DiagnosePaths'
 
 export class CandidateReader {
+  static listCandidateIds(workingDir: string): string[] {
+    const root = DiagnosePaths.candidatesDir(workingDir)
+    if (!existsSync(root)) return []
+    return readdirSync(root, { withFileTypes: true })
+      .filter(entry => entry.isDirectory() && isCandidateId(entry.name))
+      .map(entry => entry.name)
+  }
+
   static getCandidateStatus(
     workingDir: string,
     candidateId: string,
     targetSkill?: string
   ): 'PROMOTED' | 'APPLIED' | 'PROPOSED' {
+    if (!isCandidateId(candidateId)) return 'PROPOSED'
     const scorePath = DiagnosePaths.candidateScorePath(workingDir, candidateId)
     if (existsSync(scorePath)) {
       try {
         const scoreContent = readFileSync(scorePath, 'utf8')
-        if (/promoted:\s*true/i.test(scoreContent) || /status:\s*PROMOTED/i.test(scoreContent)) {
+        if (/^\s*(?:-\s*)?(?:promoted:\s*true|status:\s*PROMOTED)[ \t]*$/im.test(scoreContent)) {
           return 'PROMOTED'
         }
       } catch {
@@ -25,7 +35,7 @@ export class CandidateReader {
       }
     }
 
-    if (targetSkill && targetSkill !== 'unknown') {
+    if (isSkillName(targetSkill) && targetSkill !== 'unknown') {
       const candidateSkillPath = DiagnosePaths.candidateSkillPath(workingDir, candidateId)
       if (existsSync(candidateSkillPath)) {
         try {
@@ -60,7 +70,8 @@ export class CandidateReader {
     const data: any = CandidateReader.readOutputData(output)
 
     if (data && typeof data === 'object' && (data.candidateId || data.candidate_id)) {
-      const candidateId = String(data.candidateId ?? data.candidate_id ?? '')
+      const candidateId = data.candidateId ?? data.candidate_id
+      if (!isCandidateId(candidateId)) return null
       const targetSkill = String(data.targetSkill ?? data.target_skill ?? 'unknown')
       const status = data.status ? String(data.status) : 'PROPOSED'
       const action = data.decision?.action ? String(data.decision.action) : undefined
@@ -98,7 +109,11 @@ export class CandidateReader {
     return isExtractionResult(result) ? result.data : undefined
   }
 
-  static resolveProposal(output: AgentOutput, workingDir: string): Pick<DiagnoseReportData, 'candidateCreated' | 'optimization'> {
+  static resolveProposal(
+    output: AgentOutput,
+    workingDir: string,
+    existingCandidates: readonly string[] = [],
+  ): Pick<DiagnoseReportData, 'candidateCreated' | 'optimization'> {
     if (output.success === false) {
       return { candidateCreated: null, optimization: { status: 'failed', reason: 'The optimization runner failed.' } }
     }
@@ -109,7 +124,25 @@ export class CandidateReader {
         : 'The optimizer did not provide a reason.'
       return { candidateCreated: null, optimization: { status: data.status, reason } }
     }
-    return { candidateCreated: CandidateReader.resolveCandidate(output, workingDir) }
+    const candidate = CandidateReader.extractCandidateFromAgentOutput(output)
+    if (candidate?.status === 'PROPOSED' && candidate.action === 'EVALUATE_CANDIDATE'
+      && isSkillName(candidate.targetSkill) && candidate.targetSkill !== 'unknown'
+      && !existingCandidates.includes(candidate.candidateId)
+      && CandidateReader.listCandidateIds(workingDir).includes(candidate.candidateId)) {
+      const directory = DiagnosePaths.candidateDir(workingDir, candidate.candidateId)
+      const complete = ['rationale.md', 'diff.md', 'SKILL.md', 'score.md'].every(file => {
+        const path = join(directory, file)
+        return lstatSync(path, { throwIfNoEntry: false })?.isFile() && readFileSync(path, 'utf8').trim().length > 0
+      })
+      const saved = complete ? CandidateReader.readCandidateFromDisk(workingDir, candidate.candidateId) : null
+      if (saved?.targetSkill === candidate.targetSkill && saved.status === 'PROPOSED') {
+        return { candidateCreated: { ...saved, action: candidate.action } }
+      }
+    }
+    return {
+      candidateCreated: null,
+      optimization: { status: 'failed', reason: 'The optimizer did not return a valid decision for a new, complete candidate.' },
+    }
   }
 
   static readCandidateFromDisk(
@@ -124,10 +157,7 @@ export class CandidateReader {
     let targetId = candidateId
     if (!targetId) {
       try {
-        const entries = readdirSync(candidatesBaseDir, { withFileTypes: true })
-        const dirs = entries
-          .filter((e) => e.isDirectory())
-          .map((e) => e.name)
+        const dirs = CandidateReader.listCandidateIds(workingDir)
           .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
 
         if (dirs.length === 0) {
@@ -140,7 +170,7 @@ export class CandidateReader {
     }
 
     const candidateDir = DiagnosePaths.candidateDir(workingDir, targetId)
-    if (!existsSync(candidateDir)) {
+    if (!isCandidateId(targetId) || !lstatSync(candidateDir, { throwIfNoEntry: false })?.isDirectory()) {
       return null
     }
 

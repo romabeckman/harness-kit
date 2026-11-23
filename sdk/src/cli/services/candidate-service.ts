@@ -67,8 +67,6 @@ export async function cmdCandidate(cwd: string, args: string[]): Promise<void> {
     const isNonInteractive = runnerArgs.restArgs.includes('--non-interactive') ||
       runnerArgs.restArgs.includes('--auto') ||
       runnerArgs.restArgs.includes('-y')
-    const modelArg = runnerArgs.model
-    const effortArg = runnerArgs.effort
     const agentArg = runnerArgs.agentType
 
     const candidateIdArg = runnerArgs.restArgs.find((a) => !a.startsWith('-'))
@@ -93,20 +91,12 @@ export async function cmdCandidate(cwd: string, args: string[]): Promise<void> {
       ? candidateInfo.targetSkill
       : 'unknown'
 
-    const runnerType = await selectAgentRunner(agentArg, {
-      choices: isNonInteractive ? undefined : INTERACTIVE_CANDIDATE_RUNNER_CHOICES,
-    })
-
     if (isNonInteractive) {
-      console.log(`\n${AnsiHelpers.blue('►')} Applying candidate ${candidateId} autonomously using LLM (${runnerType})...\n`)
+      console.log(`\n${AnsiHelpers.blue('►')} Verifying and applying candidate ${candidateId}...\n`)
       const adapter = new MetaHarnessAgentAdapter({ workingDir: cwd })
-      const cliSettings = (modelArg || effortArg)
-        ? { model: modelArg ?? '', effort: effortArg ?? '' }
-        : undefined
-
-      const output = await adapter.invokeCandidatePromotion(candidateId, targetSkill, runnerType, cliSettings)
+      const output = await adapter.invokeCandidatePromotion(candidateId, targetSkill)
       if (output.success) {
-        console.log(`\n${AnsiHelpers.green('✔')} Candidate ${candidateId} successfully integrated into active skill by ${runnerType}.`)
+        console.log(`\n${AnsiHelpers.green('✔')} Candidate ${candidateId} promoted to the active skill.`)
       } else {
         const err = (output as any).error ?? output.raw
         console.error(`\n${AnsiHelpers.red('✗')} Candidate promotion encountered an error:`, err)
@@ -114,6 +104,7 @@ export async function cmdCandidate(cwd: string, args: string[]): Promise<void> {
       return
     }
 
+    const runnerType = await selectAgentRunner(agentArg, { choices: INTERACTIVE_CANDIDATE_RUNNER_CHOICES })
     // Default: Interactive review
     console.log(`\n── Launching AI Runner for Candidate ${candidateId} ─────────────────`)
     console.log(`  Target Skill: ${targetSkill}`)
@@ -123,7 +114,7 @@ export async function cmdCandidate(cwd: string, args: string[]): Promise<void> {
     const runnerCmd = CandidatePromotionService.buildRunnerCommand(runnerType, candidateId, targetSkill, cwd)
     console.log(`Running: ${AnsiHelpers.cyan(runnerCmd)}\n`)
 
-    const launched = CandidatePromotionService.launchInteractive(runnerType, candidateId, targetSkill, cwd)
+    const launched = await CandidatePromotionService.launchInteractive(runnerType, candidateId, targetSkill, cwd)
     if (!launched) {
       console.log(`\nTo run manually, copy and execute:`)
       console.log(`  ${AnsiHelpers.cyan(runnerCmd)}\n`)
@@ -135,5 +126,5 @@ export async function cmdCandidate(cwd: string, args: string[]): Promise<void> {
   console.log(`Usage:`)
   console.log(`  hrns candidate list                    # List all candidates`)
   console.log(`  hrns candidate review [id]             # Launch interactive AI runner session`)
-  console.log(`  hrns candidate review [id] --auto      # Apply candidate autonomously via LLM`)
+  console.log(`  hrns candidate review [id] --auto      # Approve and apply an evaluated candidate`)
 }

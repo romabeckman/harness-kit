@@ -45,6 +45,10 @@ export class DiagnosePaths {
     return join(workspacePath, 'docs', 'harness-history', 'candidates', candidateId, 'diff.md')
   }
 
+  static candidateEvaluationPath(workspacePath: string, candidateId: string): string {
+    return join(this.harnessHistoryDir(workspacePath), 'evaluations', `${candidateId}.json`)
+  }
+
   static paretoFrontierPath(workspacePath: string): string {
     return join(workspacePath, 'docs', 'harness-history', 'pareto-frontier.md')
   }

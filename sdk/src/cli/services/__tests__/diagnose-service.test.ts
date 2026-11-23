@@ -6,6 +6,7 @@ import { cmdDiagnose } from '../diagnose-service'
 
 import { AgentRunnerFactory } from '../../../agent-runner/AgentRunnerFactory'
 import type { IAgentRunner } from '../../../agent-runner/IAgentRunner'
+import { writeLegacyHistory, writeTrace } from '../../../diagnose/__tests__/fixtures'
 
 const prompts = vi.hoisted(() => ({ select: vi.fn() }))
 
@@ -35,11 +36,7 @@ describe('cmdDiagnose CLI Service', () => {
     mkdirSync(productDir, { recursive: true })
     run = vi.fn<IAgentRunner['run']>(({ session, workspacePath }) => {
       if (session && workspacePath) {
-        const traceDir = join(workspacePath, 'docs', 'harness-history', 'traces', traceId)
-        mkdirSync(traceDir, { recursive: true })
-        for (const file of traceFiles) {
-          writeFileSync(join(traceDir, file), '# Trace evidence\n', 'utf8')
-        }
+        writeTrace(workspacePath, traceId, session.id)
       }
       return Promise.resolve({ success: true, raw: 'Optimized' })
     })
@@ -108,7 +105,7 @@ describe('cmdDiagnose CLI Service', () => {
       session: { id: record.sessionId },
       model: 'gpt-6.1-terra',
       effort: 'low',
-      prompt: expect.stringContaining('Follow the trace recording instructions below'),
+      prompt: expect.stringContaining('harness-kit:harness-tracer'),
     }))
     const prompt = run.mock.calls[0][0].prompt as string
     expect(prompt).not.toContain('Invoke `harness-kit:harness-tracer`')
@@ -138,11 +135,7 @@ describe('cmdDiagnose CLI Service', () => {
     writeFileSync(ledgerFile, JSON.stringify(record) + '\n', 'utf8')
     run.mockImplementation(async () => {
       if (partial) {
-        const traceDir = join(tmpDir, 'docs', 'harness-history', 'traces', traceId)
-        mkdirSync(traceDir, { recursive: true })
-        for (const file of traceFiles) {
-          writeFileSync(join(traceDir, file), file === missingFile ? '' : '# Partial trace\n', 'utf8')
-        }
+        writeTrace(tmpDir, traceId, record.sessionId, missingFile)
       }
       return { success: true, raw: 'Trace not created' }
     })
@@ -159,7 +152,7 @@ describe('cmdDiagnose CLI Service', () => {
 
   it('reports an unevaluated candidate written during analysis of saved history', async () => {
     const candidateDir = join(tmpDir, 'docs', 'harness-history', 'candidates', 'v001')
-    mkdirSync(join(tmpDir, 'docs', 'harness-history', 'traces', traceId), { recursive: true })
+    writeLegacyHistory(tmpDir)
     run.mockImplementation(async () => {
       mkdirSync(candidateDir, { recursive: true })
       writeFileSync(join(candidateDir, 'rationale.md'),
@@ -204,7 +197,7 @@ describe('cmdDiagnose CLI Service', () => {
       timestamp: '2026-08-15T12:00:00.000Z',
     }
     writeFileSync(join(productDir, 'diagnose-sessions.jsonl'), JSON.stringify(record) + '\n', 'utf8')
-    mkdirSync(join(tmpDir, 'docs', 'harness-history', 'traces', traceId), { recursive: true })
+    writeLegacyHistory(tmpDir)
     mkdirSync(join(tmpDir, 'docs', 'harness-history', 'candidates', 'v001'), { recursive: true })
     run.mockResolvedValue({
       success: true,

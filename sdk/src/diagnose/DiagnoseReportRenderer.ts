@@ -45,7 +45,6 @@ export class DiagnoseReportRenderer {
       }
 
       const candidatePath = c.path || `docs/harness-history/candidates/${c.candidateId}`
-      const targetSkillPath = `skills/${c.targetSkill}/SKILL.md`
 
       const flags: string[] = []
       if (data.agent && data.agent.trim().length > 0) flags.push(`--agent ${data.agent.trim()}`)
@@ -53,16 +52,14 @@ export class DiagnoseReportRenderer {
       if (data.effort && data.effort.trim().length > 0) flags.push(`--effort ${data.effort.trim()}`)
       const flagSuffix = flags.length > 0 ? ` ${flags.join(' ')}` : ''
 
-      lines.push(`\n── How to Apply Candidate ${c.candidateId} ${'─'.repeat(Math.max(0, 30 - c.candidateId.length))}`)
+      lines.push(`\n── Candidate Review ${c.candidateId} ${'─'.repeat(Math.max(0, 30 - c.candidateId.length))}`)
       lines.push(`  1. Review Changes:`)
       lines.push(`     • Inspect diff:      ${AnsiHelpers.dim(candidatePath + '/diff.md')}`)
       lines.push(`     • Read rationale:    ${AnsiHelpers.dim(candidatePath + '/rationale.md')}`)
-      lines.push(`  2. Apply with your AI Runner (Recommended):`)
+      lines.push(`  2. Evaluate against the baseline on paired search and reserved tasks.`)
+      lines.push(`  3. Review after evaluation or use --auto to approve an evaluated candidate:`)
       lines.push(`     • Interactive:       ${AnsiHelpers.cyan('hrns candidate review ' + c.candidateId + flagSuffix)}`)
-      lines.push(`     • Autonomous LLM:    ${AnsiHelpers.cyan('hrns candidate review ' + c.candidateId + ' --auto' + flagSuffix)}`)
-      lines.push(`  3. Or Apply Manually:`)
-      lines.push(`     • Copy:              ${AnsiHelpers.dim(candidatePath + '/SKILL.md')} → ${AnsiHelpers.green(targetSkillPath)}`)
-      lines.push(`     • Mark promoted:     Set ${AnsiHelpers.green('promoted: true')} in ${AnsiHelpers.dim(candidatePath + '/score.md')}`)
+      lines.push(`     • Explicit approval: ${AnsiHelpers.cyan('hrns candidate review ' + c.candidateId + ' --auto')}`)
       lines.push(`  4. Verify in Next Run:`)
       lines.push(`     • Run 'hrns run' to execute orchestration with the upgraded skill.`)
     } else if (data.optimization) {

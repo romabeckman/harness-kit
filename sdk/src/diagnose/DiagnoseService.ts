@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type {
   CandidateReportInfo,
   DiagnoseReportData,
@@ -32,6 +33,7 @@ export interface BatchResult {
 
 export interface CaptureContext {
   runner: string
+  sessionId?: string
   agent?: string
   model?: string
   effort?: string
@@ -78,13 +80,14 @@ export class DiagnoseService {
     completed: readonly DiagnoseSessionRecord[]
   ): Promise<Pick<DiagnoseReportData, 'candidateCreated' | 'optimization'>> {
     if (!this.agentAdapter.invokeMetaHarness) {
-      return { candidateCreated: CandidateReader.resolveCandidate(undefined, this.workingDir) }
+      return { candidateCreated: null }
     }
     try {
       const settings = this.resolveDiagnoseSettings(session.runner)
       const skills = completed.flatMap(record => record.skill ? [record.skill] : [])
+      const existingCandidates = CandidateReader.listCandidateIds(this.workingDir)
       const output = await this.agentAdapter.invokeMetaHarness(session, settings, skills)
-      return CandidateReader.resolveProposal(output, this.workingDir)
+      return CandidateReader.resolveProposal(output, this.workingDir, existingCandidates)
     } catch (err) {
       console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
       return { candidateCreated: null, optimization: { status: 'failed', reason: 'The optimization runner failed. See the error above.' } }
@@ -98,29 +101,36 @@ export class DiagnoseService {
     }
 
     const batch = pending.slice(0, batchSize)
-    const dateOffsets: Record<string, number> = {}
+    const reservedTraceIds = new Set(this.ledger.loadAll().map(record => record.traceId))
     const sessionIds: string[] = []
     const traceIds: string[] = []
-    const completedStatuses: Record<string, 'completed'> = {}
+    const completedStatuses: Record<string, 'completed'> = Object.create(null)
     let processed = 0
 
-    for (let i = 0; i < batch.length; i++) {
-      const session = batch[i]
-      const date = session.timestamp ? session.timestamp.slice(0, 10) : new Date().toISOString().slice(0, 10)
-      const offset = dateOffsets[date] ?? 0
-      dateOffsets[date] = offset + 1
-
-      const preComputedId = this.idGenerator.generate(date, offset)
+    for (const session of batch) {
+      const recordedDate = session.timestamp?.slice(0, 10)
+      const date = recordedDate && /^\d{4}-\d{2}-\d{2}$/.test(recordedDate)
+        ? recordedDate
+        : new Date().toISOString().slice(0, 10)
       const settings = this.resolveDiagnoseSettings(session.runner)
 
       try {
-        const output = await this.agentAdapter.invoke(session, preComputedId, settings)
+        let traceId = session.traceId
+        if (!traceId) {
+          let offset = 0
+          do {
+            traceId = this.idGenerator.generate(date, offset++)
+          } while (reservedTraceIds.has(traceId))
+          reservedTraceIds.add(traceId)
+          this.ledger.append({ ...session, traceId })
+        }
+        const output = await this.agentAdapter.invoke(session, traceId, settings)
         if (output.success === false) {
-          throw new Error(`Runner failed to record trace ${preComputedId}`)
+          throw new Error(`Runner failed to record trace ${traceId}`)
         }
         completedStatuses[session.sessionId] = 'completed'
         sessionIds.push(session.sessionId)
-        traceIds.push(preComputedId)
+        traceIds.push(traceId)
         processed++
       } catch (err) {
         // Leave session as pending on failure so it can retry next time
@@ -148,16 +158,11 @@ export class DiagnoseService {
   ): Promise<BatchResult> {
     let totalProcessed = 0
     let lastRemaining = 0
-    let lastProcessedSession: DiagnoseSessionRecord | undefined
+    let lastProcessedSessionId: string | undefined
     const allSessionIds: string[] = []
     const allTraceIds: string[] = []
 
     while (true) {
-      const pending = this.ledger.loadPending()
-      if (pending.length > 0) {
-        lastProcessedSession = pending[0]
-      }
-
       const result = await this.processNextBatch(batchSize)
       if (result.processed === 0) {
         lastRemaining = result.remaining
@@ -166,6 +171,7 @@ export class DiagnoseService {
 
       totalProcessed += result.processed
       lastRemaining = result.remaining
+      lastProcessedSessionId = result.sessionIds?.[0]
       if (result.sessionIds) allSessionIds.push(...result.sessionIds)
       if (result.traceIds) allTraceIds.push(...result.traceIds)
 
@@ -182,7 +188,9 @@ export class DiagnoseService {
     }
 
     const completed = this.ledger.loadAll().filter(session => session.status === 'completed')
-    const proposalSession = totalProcessed > 0 ? lastProcessedSession : lastRemaining === 0 ? completed.at(-1) : undefined
+    const proposalSession = lastProcessedSessionId
+      ? completed.find(session => session.sessionId === lastProcessedSessionId)
+      : lastRemaining === 0 ? completed.at(-1) : undefined
     const proposal = proposalSession ? await this.proposeCandidate(proposalSession, completed) : { candidateCreated: null }
 
     const report: DiagnoseReportData = {
@@ -242,8 +250,7 @@ export class DiagnoseService {
 
     const snapshot: SessionSnapshot = sanitizeSessionSnapshot(rawSnapshot)
     const timestamp = new Date().toISOString()
-    const date = timestamp.slice(0, 10)
-    const sessionId = this.idGenerator.generate(date)
+    const sessionId = context.sessionId ?? `capture-${randomUUID()}`
 
     const record: DiagnoseSessionRecord = {
       sessionId,
@@ -262,15 +269,16 @@ export class DiagnoseService {
     orchestrator: any,
     context: CaptureContext
   ): Promise<BatchResult> {
-    const record = await this.captureSession(orchestrator, context)
+    await this.captureSession(orchestrator, context)
     const batchResult = await this.processNextBatch(1)
     const completed = this.ledger.loadAll().filter(session => session.status === 'completed')
-    const proposal = await this.proposeCandidate(record, completed)
+    const processed = completed.find(session => session.sessionId === batchResult.sessionIds?.[0])
+    const proposal = processed ? await this.proposeCandidate(processed, completed) : { candidateCreated: null }
 
     const report: DiagnoseReportData = {
       processedSessions: batchResult.processed,
       remainingSessions: batchResult.remaining,
-      sessionIds: batchResult.sessionIds ?? [record.sessionId],
+      sessionIds: batchResult.sessionIds ?? [],
       traceIds: batchResult.traceIds,
       ...proposal,
     }

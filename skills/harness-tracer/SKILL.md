@@ -59,13 +59,21 @@ Capture the session header. Ask yourself these questions and record the answers:
 - **session_id:** {session_id}
 - **date:** {YYYY-MM-DD HH:MM}
 - **skill_used:** {skill_name}
+- **skill_chain:** {ordered skill names, separated by ` → `}
+- **skill_versions:** {skill name and exact revision or content digest for each executed skill}
 - **agent:** {agent_name}
 - **featureId:** {featureId} (if applicable)
 - **task_summary:** {task_summary}
 - **task_type:** [feature | bugfix | refactor | review | architecture | documentation]
 - **duration_estimate:** [short (<15 min) | medium (15-60 min) | long (>60 min)]
 - **model:** [model used, if known]
+- **effort:** [reasoning setting, if known]
+- **budget:** [execution limit and unit, or `n/a` if unrestricted]
+- **benchmark_id:** [versioned task set, or `n/a` for ordinary sessions]
+- **task_id:** [case ID within the benchmark, if applicable]
 ```
+
+Use the versions that actually ran. Record `unknown` for unavailable values. A repository revision identifies a skill only when its executed contents match that revision. Use the same observed `skill_chain` in `metadata.md` and `steps.md`.
 
 ### Step 3 — Write `input.md`
 
@@ -86,7 +94,7 @@ Summarize the input received at the start of the session:
 
 ### Step 4 — Write `steps.md`
 
-Reconstruct the sequence of actions taken during the session. Be factual — record what happened, not what should have happened:
+Reconstruct the observed sequence. Reference accessible source evidence by file and line, command output, or tool event ID. Redact secrets and private data before copying or linking evidence. If the original evidence is unavailable, mark it `unknown`. Keep reserved evaluation cases, logs, and results outside proposer-readable history.
 
 ```markdown
 # Execution Steps
@@ -95,13 +103,9 @@ Reconstruct the sequence of actions taken during the session. Be factual — rec
 [List of skills invoked in order, e.g.: scope-refinement → tdd-orchestrator → project-memory → adversarial-qa]
 
 ## Action Sequence
-| # | Action | Tool Used | Outcome |
-|---|--------|-----------|---------|
-| 1 | [Read docs/adr/ARCHITECTURE.md] | Read | [success / not found] |
-| 2 | [Write failing test for X] | Write | [success] |
-| 3 | [Run tests] | Bash | [2 failing] |
-| 4 | [Implement X] | Edit | [success] |
-| 5 | [Run tests] | Bash | [all passing] |
+| # | Action | Tool Used | Outcome | Evidence |
+|---|--------|-----------|---------|----------|
+| 1 | [Run acceptance tests] | Shell | [2 failing] | [sanitized log and line range or tool event ID] |
 ...
 
 ## Deviations
@@ -110,16 +114,21 @@ Reconstruct the sequence of actions taken during the session. Be factual — rec
 
 ### Step 5 — Write `score.md`
 
-Calculate objective metrics by inspecting the action sequence:
+Record the final task outcome against the applicable acceptance criteria. Use `pass` or `fail` when the evidence establishes the result and `unknown` otherwise. Cite the acceptance check or the corresponding step and evidence. For each metric, use `n/a` when it does not apply, `unknown` when evidence is missing, and `0` only for an observed zero.
 
 ```markdown
 # Session Score
 
+## Task Outcome
+
+- **outcome:** [pass | fail | unknown]
+- **outcome_evidence:** [acceptance check and evidence reference, or reason the outcome is unknown]
+
 ## Raw Metrics
 - **tdd_cycles:** [count of RED→GREEN→REFACTOR full cycles completed]
-- **iterations_to_pass:** [how many test runs before all tests passed — 1 if first run passed]
-- **reworksCount:** [count of reworks during Phase C validation, or 0]
-- **grumpy_open_points:** [number of Open Points raised by the-grumpy-tech-lead, or 0 if not invoked]
+- **iterations_to_pass:** [test runs through the first passing run, including that run, or `n/a` if it never passed or tests did not apply]
+- **reworksCount:** [count of reworks if Phase C was performed, or `n/a`]
+- **grumpy_open_points:** [number of Open Points if the-grumpy-tech-lead reviewed, or `n/a`]
 - **context_docs_read:** [total number of docs/ files read during session]
 - **skill_chain_length:** [number of skills in the chain]
 - **deviations:** [count of steps skipped or repeated]
@@ -200,34 +209,27 @@ To analyze the accumulated history, run:
 ```markdown
 # Harness History — Configuration
 
-## Score Weights
-These weights are used by harness-evaluator to compute the composite score.
-Adjust based on what matters most for your project.
+## Primary Metric
 
-| Metric | Weight | Direction | Description |
-|--------|--------|-----------|-------------|
-| tdd_cycles | 0.25 | lower is better | Fewer cycles = harness guides more precisely |
-| iterations_to_pass | 0.20 | lower is better | Fewer runs = faster convergence |
-| reworksCount | 0.25 | lower is better | Fewer reworks = validation passed faster |
-| grumpy_open_points | 0.20 | higher is better | More points = deeper architectural review |
-| context_docs_read | 0.05 | moderate is better | Too low = missing context; too high = noise |
-| deviations | 0.05 | lower is better | Fewer deviations = harness is clearer |
+Use the verified task pass rate. Report unverified outcomes separately.
 
-## Composite Score Formula
-score = (1 / max(tdd_cycles, 1)) × 0.25
-      + (1 / max(iterations_to_pass, 1)) × 0.20
-      + (1 / max(reworksCount + 1, 1)) × 0.25
-      + (grumpy_open_points / 10) × 0.20
-      + (1 / (deviations + 1)) × 0.05
-      + context_score × 0.05
+## Process Score Weights
 
-context_score = 1.0 if 3 ≤ context_docs_read ≤ 8
-              = 0.5 if context_docs_read < 3 or 9 ≤ context_docs_read ≤ 12
-              = 0.0 if context_docs_read > 12
+Use the weighted mean of the normalized values when all configured inputs are available. A higher normalized value is better. Keep `grumpy_open_points` and `context_docs_read` as diagnostics.
+
+| Metric | Weight | Normalized value |
+|--------|--------|------------------|
+| tdd_cycles | 0.25 | `1 / (1 + tdd_cycles)` |
+| iterations_to_pass | 0.20 | `1 / iterations_to_pass` (positive counts only) |
+| reworksCount | 0.25 | `1 / (1 + reworksCount)` |
+| deviations | 0.05 | `1 / (1 + deviations)` |
+
+Review the weights for the project before an experiment and hold the formula fixed across both arms.
 
 ## Benchmark Task Set
-Skill chains will be compared across sessions with the same task_type.
-Minimum sessions before reliable comparison: 3 per skill_chain.
+
+Compare versions of skill chains within the same task type, model, and benchmark coverage when applicable.
+Minimum: 3 verified sessions per chain version in a comparable group.
 ```
 
 ### `docs/harness-history/pareto-frontier.md` (create if missing)

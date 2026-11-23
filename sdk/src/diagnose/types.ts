@@ -6,6 +6,14 @@ export function isSessionStatus(value: unknown): value is SessionStatus {
   return value === 'pending' || value === 'completed'
 }
 
+export function isCandidateId(value: unknown): value is string {
+  return typeof value === 'string' && /^v\d{3,}$/.test(value)
+}
+
+export function isSkillName(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-z][a-z0-9-]*$/.test(value)
+}
+
 export interface SessionSnapshot {
   runner: string
   model: string
@@ -33,6 +41,7 @@ export function sanitizeSessionSnapshot(raw: Record<string, any>): SessionSnapsh
 
 export interface DiagnoseSessionRecord {
   sessionId: string
+  traceId?: string
   runner: string
   agent: string
   skill?: string
