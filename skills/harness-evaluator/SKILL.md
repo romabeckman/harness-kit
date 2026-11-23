@@ -1,6 +1,6 @@
 ---
 name: harness-evaluator
-description: Harness performance evaluator. Reads all execution traces in docs/harness-history/traces/, computes composite scores per skill_chain, identifies the Pareto frontier of best harness configurations, and recommends the optimal chain for the next session. Run periodically or on demand to guide harness optimization.
+description: Harness performance evaluator. Scores recorded execution traces, compares skill chain versions within comparable task contexts, and reports Pareto frontiers and evidence for improvement.
 ---
 
 # Harness Evaluator — Performance Analyzer
@@ -11,7 +11,7 @@ You are a **harness performance analyst**. Your responsibility is to read the ac
 
 ## ROLE
 
-Aggregate session data from `docs/harness-history/traces/` and produce a ranked comparison of harness configurations (skill chains). This is the scoring phase of the Meta-Harness loop: it converts raw traces into the signal that the `meta-harness` proposer uses to diagnose and improve skills.
+Aggregate search and ordinary session traces from `docs/harness-history/traces/`. Use verified task outcomes as the primary comparison and process scores as supporting evidence. Keep reserved evaluation data out of the search report.
 
 ---
 
@@ -20,7 +20,7 @@ Aggregate session data from `docs/harness-history/traces/` and produce a ranked 
 1. **Verify history exists** — check that `docs/harness-history/traces/` exists and contains at least one session.
    - If empty or missing: inform the user and stop. Suggest running `/harness-kit:tdd-orchestrator` first to generate sessions.
 
-2. **Read `config.md`** — load score weights from `docs/harness-history/config.md`.
+2. **Read `config.md`** — load the process score formula and weights from `docs/harness-history/config.md`. Record its SHA-256 digest as `score_config` for this evaluation.
    - If missing: create it using the template in `harness-tracer/SKILL.md`, then proceed.
 
 3. **Count available sessions** — list all `session-*` directories under `traces/`.
@@ -36,63 +36,41 @@ Execute steps in order. Do not skip steps.
 
 For each `session-*/` directory in `docs/harness-history/traces/`:
 
-1. Read `metadata.md` → extract: `skill_used`, `agent`, `task_type`, `date`, `featureId`
-2. Read `score.md` → extract all raw metrics (including `reworksCount`)
-3. Read `verdict.md` → extract `Hypothesis` and `Recommended Change`
+1. Read `metadata.md` for session ID, ordered `skill_chain`, `skill_versions`, task type, benchmark and task IDs when applicable, model, effort, and budget. For legacy traces without `skill_chain`, use the ordered chain in `steps.md` under `## Skill Chain`. Keep unknown versions unknown.
+2. Read `score.md` for `outcome`, its evidence reference, and all raw metrics. Count a pass or failure only when the acceptance evidence supports it. For a legacy trace, use an explicit acceptance result in `steps.md` if available.
+3. Read `verdict.md` for hypotheses and recommended changes. Use these as diagnostic leads. Report incomplete traces and missing, malformed, or inapplicable data. Keep `unknown`, `n/a`, and numeric zero distinct.
 
-Store all data in memory as a table:
-```
-session_id | featureId | skill_chain | task_type | tdd_cycles | iterations_to_pass | reworksCount | grumpy_open_points | context_docs_read | deviations
-```
+### Step 2 — Group Comparable Sessions
 
-### Step 2 — Group by Skill Chain
+Partition by `task_type`, model, and benchmark ID where applicable. Keep different known effort settings and budgets in separate comparisons. Within each comparison, group by ordered `skill_chain` and actual `skill_versions`. For benchmark runs, compare identical task coverage and weight each task equally if it was run more than once.
 
-Group sessions by `skill_chain` value from `metadata.md`.
+Legacy or incomplete histories can still inform diagnosis. Report sessions with unverifiable chain versions, task type, model, or benchmark coverage as provisional. For legacy ordinary sessions without a benchmark ID, report the inferred ordinary context. Mark missing effort or budget as unknown and disclose it in the comparison.
 
 For each group, compute:
-- `n_sessions` — count of sessions
-- Mean and standard deviation of each metric
-- Flag groups with `n_sessions < 3` as **insufficient data**
+- Report total sessions and counts of verified passes, verified failures, and unknown outcomes.
+- Compute the verified pass rate and report its denominator. Flag groups with fewer than 3 verified sessions as **insufficient data**.
+- For each raw metric, compute mean and standard deviation over available values and report its sample count.
 
 ### Step 3 — Compute Composite Scores
 
-Apply the formula from `config.md` to each session's raw metrics.
-Compute per-group: `mean_score`, `best_score`, `worst_score`.
+Recompute each available process score from raw metrics using the current `config.md`, including for sessions that already have a saved score. If any required value is missing, invalid, or inapplicable, report that session's process score as unavailable. Treat a legacy zero for `iterations_to_pass` as unavailable. Honor existing formulas, but label process scores that reward review findings or other diagnostic counts as diagnostic only.
 
-Document the computation transparently:
-
-```
-Group: scope-refinement → tdd-orchestrator → project-memory → adversarial-qa
-  Sessions: 7
-  tdd_cycles:          mean=2.1, std=0.8
-  iterations_to_pass:  mean=1.4, std=0.6
-  reworksCount:        mean=0.4, std=0.2
-  grumpy_open_points:  mean=4.2, std=1.1
-  context_docs_read:   mean=5.1, std=1.0
-  deviations:          mean=0.3, std=0.5
-  ──────────────────────────────
-  mean_score: 0.74
-  best_score: 0.89  (session-2026-05-20-002)
-  worst_score: 0.51 (session-2026-05-18-001)
-```
+Report the process score's formula version, coverage, mean, range, and standard deviation where available. Avoid comparing process scores from different formulas or from different subsets of verified tasks.
 
 ### Step 4 — Identify Pareto Frontier
 
-Identify harness configurations that are **not dominated** by any other configuration. First normalize each metric according to its configured direction and target range. Configuration A dominates B when A is at least as good on every normalized metric and strictly better on at least one.
+Build a Pareto frontier inside each comparable context using verified pass rate as the primary objective. Add the mean process score as a secondary objective only when it measures process effort and covers the verified outcomes for every eligible configuration in that comparison. Configuration A dominates B when A is at least as good on every included objective and strictly better on at least one.
 
-Also compute:
-- **Best overall** — highest `mean_score`
-- **Most consistent** — lowest score standard deviation
-- **Most efficient** — best score per `skill_chain_length` (fewer skills = simpler)
+Recommend a chain version for the stated context only when the evidence distinguishes it. Report ties, unequal verification coverage, and single-configuration contexts explicitly. Keep the recommendation provisional if resolving unknown outcomes could change it.
 
 ### Step 5 — Write `score.md` for Each Session (backfill)
 
-For any session whose `score.md` has `[Leave blank]` in the Computed Score field, fill it in now:
+Backfill an empty or placeholder `Computed Score` block only when a process score can be computed. Preserve all previously filled blocks. Current report values always come from the recomputation in Step 3.
 
 ```markdown
 ## Computed Score
 - **composite_score:** {value}
-- **rank:** {N} of {total_sessions} sessions
+- **score_config:** sha256:{digest}
 - **computed_at:** {date}
 ```
 
@@ -104,39 +82,32 @@ Overwrite `docs/harness-history/pareto-frontier.md` with:
 # Pareto Frontier — Best Harness Candidates
 
 Last updated: {date}
-Total sessions analyzed: {N}
-Skill chains compared: {K}
+Score config: sha256:{digest}
+Sessions analyzed: {IDs and count}
 
-## Frontier
+## Frontier per Comparable Context
 
-| Rank | Skill Chain | Mean Score | Best Score | Sessions | Verdict |
-|------|-------------|------------|------------|----------|---------|
-| 1 | [chain] | 0.87 | 0.94 | 12 | ✅ Recommended |
-| 2 | [chain] | 0.81 | 0.89 | 7 | 🔶 Challenger |
-| 3 | [chain] | 0.72 | 0.85 | 5 | ⚠️ Insufficient data |
+[Task type, model, benchmark coverage, and any effort or budget differences]
+
+| Skill Chain and Versions | Pass Rate | Pass / Fail / Unknown | Mean Process Score and Coverage | Verdict |
+|--------------------------|-----------|-----------------------|---------------------------------|---------|
 
 ## Analysis Notes
 
-### Best Configuration
-**Skill chain:** [full chain]
-**Why it wins:** [specific metric where it excels]
+### Configuration Evidence
+**Skill chain:** [chain and versions, if supported]
+**Evidence:** [objective values and their denominators]
 **Known weakness:** [metric where it underperforms]
 
 ### Patterns Observed
 [Up to 5 bullet points describing cross-session patterns extracted from verdicts]
 
 ### Hypotheses for Improvement
-[Top 3 hypotheses extracted from session verdict.md files, ranked by frequency]
-1. [Most repeated hypothesis across sessions]
-2. [Second most repeated]
-3. [Third]
+[Hypotheses with supporting session IDs and evidence references]
 
 ## Recommendation
 
-For the next session, use:
-**`{best_skill_chain}`**
-
-Rationale: [one sentence]
+[Recommendation by context, or a provisional assessment]
 
 To run a meta-harness improvement cycle based on this data:
 `/harness-kit:meta-harness`
@@ -152,15 +123,14 @@ Harness Evaluator — Analysis Completed
 Sessions analyzed: {N}
 Configurations compared: {K}
 
-Best current configuration:
-  {best_skill_chain}
-  Average score: {mean_score} | Best score: {best_score}
+Recommendations by context:
+  {chain_versions_and_pass_rates_or_provisional_results}
 
 Points of attention:
   - {pattern_1}
   - {pattern_2}
 
-Most frequent hypotheses for improvement:
+Evidence-backed hypotheses for improvement:
   1. {hypothesis_1}
   2. {hypothesis_2}
 
@@ -177,13 +147,13 @@ Next step — automatic optimization cycle:
 
 ### ALWAYS
 - Read ALL sessions — do not sample.
-- Flag groups with fewer than 3 sessions as insufficient.
+- Flag groups with fewer than 3 verified sessions in their comparison context as insufficient.
 - Overwrite `pareto-frontier.md` with fresh data on every run.
-- Backfill `score.md` for sessions that were not yet scored.
-- Show the full computation transparently before the summary.
+- Backfill `score.md` only when the computed block is blank and a process score is available.
+- Show formula version, objectives, and sample sizes in the report.
 
 ### NEVER
 - Delete or modify session trace evidence (`metadata.md`, `input.md`, `steps.md`, `verdict.md`, or raw metrics). The only permitted trace edit is filling a previously blank `Computed Score` block in `score.md`.
 - Modify `candidates/` — that is `meta-harness` territory.
 - Invent metrics — only use values from actual `score.md` files.
-- Declare a winner with fewer than 3 sessions in that skill-chain group. If no group qualifies, report that no reliable winner exists and provide provisional comparisons only.
+- Declare a winner across incompatible contexts or in a comparison without sufficient verified evidence.
