@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { cmdCandidate } from '../candidate-service'
 import { AgentRunnerFactory } from '../../../agent-runner/AgentRunnerFactory'
+import { writeCandidate, writeEvaluatedCandidate } from '../../../diagnose/__tests__/fixtures'
 
 const prompts = vi.hoisted(() => ({ select: vi.fn() }))
 
@@ -53,43 +54,26 @@ describe('cmdCandidate CLI Service', () => {
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('PROPOSED'))
   })
 
-  it('executes autonomous LLM promotion with cmdCandidate review --auto', async () => {
-    const candidatesDir = join(tmpDir, 'docs', 'harness-history', 'candidates', 'v001')
-    mkdirSync(candidatesDir, { recursive: true })
-    writeFileSync(
-      join(candidatesDir, 'rationale.md'),
-      '## Target Skill\ntdd-orchestrator\n',
-      'utf8'
-    )
-
-    prompts.select.mockResolvedValueOnce('codex-cli')
+  it('applies the evaluated bytes with cmdCandidate review --auto', async () => {
+    const { activePath, candidate } = writeEvaluatedCandidate(tmpDir)
 
     await cmdCandidate(tmpDir, ['review', 'v001', '--auto'])
 
-    expect(prompts.select).toHaveBeenCalledWith(expect.objectContaining({
-      message: 'Select agent runner:',
-      default: 'claude-cli',
-    }))
-    expect(AgentRunnerFactory.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'codex-cli' }))
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Applying candidate v001 autonomously'))
+    expect(prompts.select).not.toHaveBeenCalled()
+    expect(AgentRunnerFactory.create).not.toHaveBeenCalled()
+    expect(readFileSync(activePath, 'utf8')).toBe(candidate)
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('promoted to the active skill'))
   })
 
-  it('executes autonomous LLM promotion with cmdCandidate review --auto and custom --agent', async () => {
-    const candidatesDir = join(tmpDir, 'docs', 'harness-history', 'candidates', 'v001')
-    mkdirSync(candidatesDir, { recursive: true })
-    writeFileSync(
-      join(candidatesDir, 'rationale.md'),
-      '## Target Skill\ntdd-orchestrator\n',
-      'utf8'
-    )
+  it('rejects --auto for a candidate without evaluation evidence', async () => {
+    writeCandidate(tmpDir)
 
     await cmdCandidate(tmpDir, ['review', 'v001', '--auto', '--agent', 'antigravity-cli'])
     expect(prompts.select).not.toHaveBeenCalled()
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('antigravity-cli'))
-    expect(AgentRunnerFactory.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'antigravity-cli',
-      })
+    expect(AgentRunnerFactory.create).not.toHaveBeenCalled()
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Candidate promotion encountered an error'),
+      expect.stringContaining('evaluation results are required'),
     )
   })
 

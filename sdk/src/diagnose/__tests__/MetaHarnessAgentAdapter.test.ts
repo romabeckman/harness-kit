@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MetaHarnessAgentAdapter } from '../MetaHarnessAgentAdapter'
 import type { DiagnoseSessionRecord } from '../types'
 import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
+import { writeEvaluatedCandidate, writeLegacyHistory, writeTrace } from './fixtures'
 
 describe('MetaHarnessAgentAdapter', () => {
   let workingDir: string
@@ -29,16 +30,27 @@ describe('MetaHarnessAgentAdapter', () => {
     timestamp: '2026-08-15T10:00:00.000Z',
   }
 
-  it('invokes runner inside the existing session with trace guidance, pre-computed ID, and multiple of 6 check', async () => {
+  it('rejects a trace without source identity or task outcome', async () => {
+    const traceId = 'session-2026-08-15-001'
+    const traceDir = join(workingDir, 'docs', 'harness-history', 'traces', traceId)
+    const run = vi.fn(async () => {
+      mkdirSync(traceDir, { recursive: true })
+      for (const file of ['metadata.md', 'input.md', 'steps.md', 'score.md', 'verdict.md']) {
+        writeFileSync(join(traceDir, file), '# Trace evidence\n', 'utf8')
+      }
+      return { success: true, raw: 'Trace recorded' }
+    })
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
+
+    await expect(adapter.invoke(sampleRecord, traceId)).rejects.toThrow('source_session_id')
+  })
+
+  it('invokes runner inside the existing session with trace guidance, pre-computed ID, and multiple of 5 check', async () => {
     const traceId = 'session-2026-08-15-001'
     const mockRunner = {
       type: 'copilot-cli',
       run: vi.fn(async () => {
-        const traceDir = join(workingDir, 'docs', 'harness-history', 'traces', traceId)
-        mkdirSync(traceDir, { recursive: true })
-        for (const file of ['metadata.md', 'input.md', 'steps.md', 'score.md', 'verdict.md']) {
-          writeFileSync(join(traceDir, file), '# Trace evidence\n', 'utf8')
-        }
+        writeTrace(workingDir, traceId, sampleRecord.sessionId)
         return { success: true, raw: 'Trace recorded' }
       }),
     }
@@ -70,7 +82,7 @@ describe('MetaHarnessAgentAdapter', () => {
     )
     expect(mockRunner.run).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: expect.stringContaining('multiple of 6'),
+        prompt: expect.stringContaining('multiple of 5'),
       })
     )
     expect(mockRunner.run).toHaveBeenCalledWith(
@@ -80,7 +92,37 @@ describe('MetaHarnessAgentAdapter', () => {
     )
   })
 
+  it('runs frontier evaluation after the fifth verified trace and skips duplicate recording on retry', async () => {
+    writeLegacyHistory(workingDir, 4)
+    const traceId = 'session-2026-08-15-005'
+    const run = vi.fn()
+      .mockImplementationOnce(async () => {
+        writeTrace(workingDir, traceId, sampleRecord.sessionId)
+        return { success: true, raw: 'Trace recorded' }
+      })
+      .mockResolvedValueOnce({ success: true, raw: 'Frontier updated' })
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
+
+    await adapter.invoke(sampleRecord, traceId)
+    await adapter.invoke(sampleRecord, traceId)
+
+    expect(run).toHaveBeenCalledTimes(2)
+    expect(run).toHaveBeenNthCalledWith(2, expect.objectContaining({ skill: 'harness-kit:harness-evaluator' }))
+  })
+
+  it('does not invoke the proposer with fewer than three complete traces', async () => {
+    writeLegacyHistory(workingDir, 2)
+    const run = vi.fn()
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
+
+    const output = await adapter.invokeMetaHarness(sampleRecord)
+
+    expect(JSON.parse(output.raw)).toMatchObject({ status: 'no_candidate' })
+    expect(run).not.toHaveBeenCalled()
+  })
+
   it('invokes harness-kit:meta-harness separately when invokeMetaHarness is called', async () => {
+    writeLegacyHistory(workingDir)
     const mockRunner = {
       type: 'claude-cli',
       run: vi.fn().mockResolvedValue({ success: true, raw: 'Proposal created' }),
@@ -88,7 +130,7 @@ describe('MetaHarnessAgentAdapter', () => {
 
     const adapter = new MetaHarnessAgentAdapter({
       agentRunner: mockRunner as any,
-      workingDir: '/workspace/custom-project',
+      workingDir,
     })
 
     const output = await adapter.invokeMetaHarness(
@@ -111,7 +153,7 @@ describe('MetaHarnessAgentAdapter', () => {
     )
     expect(mockRunner.run).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: expect.stringContaining('/workspace/custom-project/docs/harness-history/candidates'),
+        prompt: expect.stringContaining('/docs/harness-history/candidates'),
       })
     )
     expect(mockRunner.run).toHaveBeenCalledWith(
@@ -121,7 +163,7 @@ describe('MetaHarnessAgentAdapter', () => {
     )
     expect(mockRunner.run).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: expect.stringContaining('up to 3 candidates'),
+        prompt: expect.stringContaining('at most one candidate'),
       })
     )
     expect(mockRunner.run).toHaveBeenCalledWith(
@@ -144,6 +186,7 @@ describe('MetaHarnessAgentAdapter', () => {
     mkdirSync(unrelated, { recursive: true })
     writeFileSync(join(unrelated, 'SKILL.md'), 'Unrelated skill content')
     mkdirSync(project)
+    writeLegacyHistory(project)
     vi.stubEnv('CODEX_HOME', codexHome)
     const run = vi.fn().mockResolvedValue({ success: true, raw: 'Proposal created' })
     const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir: project })
@@ -155,7 +198,9 @@ describe('MetaHarnessAgentAdapter', () => {
     )
 
     const { prompt } = run.mock.calls[0][0]
-    expect(prompt).toContain('Read-only skill baselines (JSON):')
+    expect(prompt).toContain('Read-only active skill references (JSON):')
+    expect(prompt).toContain('"version":"1.10.0"')
+    expect(prompt).toContain('A current reference is not evidence of the version that ran')
     expect(prompt).toContain('Loaded skill baseline')
     expect(prompt).not.toContain('Older skill')
     expect(prompt).not.toContain('Unrelated skill content')
@@ -192,44 +237,16 @@ describe('MetaHarnessAgentAdapter', () => {
     createSpy.mockRestore()
   })
 
-  it('invokes autonomous candidate promotion with phaseKey diagnose and candidate metadata', async () => {
-    const mockRunner = {
-      type: 'claude-cli',
-      run: vi.fn().mockResolvedValue({
-        success: true,
-        raw: '{"candidateId":"v001","targetSkill":"tdd-orchestrator","status":"PROMOTED","promoted":true}',
-      }),
-    }
+  it('applies the exact evaluated candidate without invoking a model', async () => {
+    const { activePath, candidate, candidateId, targetSkill } = writeEvaluatedCandidate(workingDir)
+    const run = vi.fn()
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
 
-    const adapter = new MetaHarnessAgentAdapter({
-      agentRunner: mockRunner as any,
-      workingDir: '/workspace/project-root',
-    })
+    const output = await adapter.invokeCandidatePromotion(candidateId, targetSkill)
 
-    const output = await adapter.invokeCandidatePromotion(
-      'v001',
-      'tdd-orchestrator',
-      'claude-cli',
-      {
-        model: 'anthropic.claude-3-7-sonnet',
-        effort: 'high',
-      }
-    )
-
+    expect(run).not.toHaveBeenCalled()
     expect(output.success).toBe(true)
-    expect(mockRunner.run).toHaveBeenCalledWith(
-      expect.objectContaining({
-        agent: 'harness-kit:meta-harness-agent',
-        phaseKey: 'diagnose',
-        model: 'anthropic.claude-3-7-sonnet',
-        effort: 'high',
-        prompt: expect.stringContaining('candidate v001'),
-      })
-    )
-    expect(mockRunner.run).toHaveBeenCalledWith(
-      expect.objectContaining({
-        prompt: expect.stringContaining('/workspace/project-root/docs/harness-history/candidates/v001'),
-      })
-    )
+    expect(readFileSync(activePath, 'utf8')).toBe(candidate)
+    expect(JSON.parse(output.raw)).toMatchObject({ candidateId, targetSkill, status: 'PROMOTED' })
   })
 })

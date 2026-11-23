@@ -1,4 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { writeCandidate } from './fixtures'
 import { DiagnoseService } from '../DiagnoseService'
 import type {
   ISessionLedger,
@@ -15,6 +19,7 @@ describe('DiagnoseService', () => {
   let mockScanner: TraceDirectoryScanner
   let idGenerator: SessionIdGenerator
   let pendingSessions: DiagnoseSessionRecord[]
+  let workspace: string
   const settings = {
     hasSettings: () => true,
     resolve: (runner: string) => runner === 'claude-cli'
@@ -23,6 +28,7 @@ describe('DiagnoseService', () => {
   } as unknown as HarnessSettings
 
   beforeEach(() => {
+    workspace = mkdtempSync(join(tmpdir(), 'diagnose-service-'))
     pendingSessions = [
       {
         sessionId: 'session-2026-08-15-001',
@@ -87,7 +93,11 @@ describe('DiagnoseService', () => {
     ]
 
     mockLedger = {
-      append: vi.fn((record) => pendingSessions.push(record)),
+      append: vi.fn(record => {
+        const index = pendingSessions.findIndex(item => item.sessionId === record.sessionId)
+        if (index === -1) pendingSessions.push(record)
+        else pendingSessions[index] = record
+      }),
       loadAll: vi.fn(() => [...pendingSessions]),
       loadPending: vi.fn(() => pendingSessions.filter((s) => s.status === 'pending')),
       rewriteStatus: vi.fn((id, status) => {
@@ -107,6 +117,8 @@ describe('DiagnoseService', () => {
 
     idGenerator = new SessionIdGenerator(mockScanner)
   })
+
+  afterEach(() => rmSync(workspace, { recursive: true, force: true }))
 
   it('processes a single batch of 3 pending sessions and marks them completed', async () => {
     const service = new DiagnoseService({
@@ -169,6 +181,9 @@ describe('DiagnoseService', () => {
     expect(result.processed).toBe(1)
     expect(mockLedger.rewriteStatus).toHaveBeenCalledWith('session-2026-08-15-001', 'completed')
     expect(mockLedger.rewriteStatus).not.toHaveBeenCalledWith('session-2026-08-15-002', 'completed')
+    expect(mockLedger.loadPending()[0]).toMatchObject({
+      sessionId: 'session-2026-08-15-002', traceId: 'session-2026-08-15-002',
+    })
   })
 
   it('captures snapshot and appends pending session inline', async () => {
@@ -204,6 +219,40 @@ describe('DiagnoseService', () => {
     expect(mockLedger.append).toHaveBeenCalledWith(record)
   })
 
+  it('gives captures distinct source IDs before any trace has been created', async () => {
+    const service = new DiagnoseService({ ledger: mockLedger, agentAdapter: mockAdapter, idGenerator, settings })
+    const context = { runner: 'claude-cli' }
+
+    const first = await service.captureSession({}, context)
+    const second = await service.captureSession({}, context)
+
+    expect(first.sessionId).not.toBe(second.sessionId)
+  })
+
+  it('reuses the trace ID reserved for a retry', async () => {
+    const traceId = 'session-2026-08-15-005'
+    pendingSessions[0] = { ...pendingSessions[0], traceId }
+    const service = new DiagnoseService({ ledger: mockLedger, agentAdapter: mockAdapter, idGenerator, settings })
+
+    await service.processNextBatch(1)
+
+    expect(mockAdapter.invoke).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: pendingSessions[0].sessionId }), traceId, expect.anything(),
+    )
+  })
+
+  it('uses the processed session when an older pending entry precedes an inline capture', async () => {
+    const processed = pendingSessions[0]
+    mockAdapter.invokeMetaHarness = vi.fn().mockResolvedValue({ success: true, raw: 'No proposal' })
+    const service = new DiagnoseService({ ledger: mockLedger, agentAdapter: mockAdapter, idGenerator, settings })
+
+    await service.captureAndProcessInline({}, { runner: 'cursor-cli' })
+
+    expect(mockAdapter.invokeMetaHarness).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: processed.sessionId }), expect.anything(), [],
+    )
+  })
+
   it('calls invokeMetaHarness with the session when all pending sessions finish', async () => {
     pendingSessions[0].skill = 'harness-kit:tdd-orchestrator'
     mockAdapter.invokeMetaHarness = vi.fn().mockResolvedValue({ success: true, raw: 'Meta harness OK' })
@@ -226,7 +275,9 @@ describe('DiagnoseService', () => {
   })
 
   it('captures candidate info and includes report data in processAllPendingInBatches result', async () => {
-    mockAdapter.invokeMetaHarness = vi.fn().mockResolvedValue({
+    mockAdapter.invokeMetaHarness = vi.fn(async () => {
+      writeCandidate(workspace, 'v001', 'autonomous-orchestrator')
+      return {
       success: true,
       raw: 'Candidate created',
       parsedJson: {
@@ -237,6 +288,7 @@ describe('DiagnoseService', () => {
           action: 'EVALUATE_CANDIDATE',
         },
       },
+      }
     })
 
     const service = new DiagnoseService({
@@ -244,6 +296,7 @@ describe('DiagnoseService', () => {
       agentAdapter: mockAdapter,
       idGenerator,
       settings,
+      workingDir: workspace,
     })
 
     const result = await service.processAllPendingInBatches(10)
@@ -255,5 +308,21 @@ describe('DiagnoseService', () => {
     expect(result.report).toBeDefined()
     expect(result.report?.processedSessions).toBe(4)
     expect(result.report?.sessionIds).toHaveLength(4)
+  })
+
+  it('does not report a pre-existing candidate as newly created', async () => {
+    writeCandidate(workspace)
+    mockAdapter.invokeMetaHarness = vi.fn().mockResolvedValue({
+      success: true,
+      raw: '{"candidateId":"v001","targetSkill":"tdd-orchestrator","status":"PROPOSED","decision":{"action":"EVALUATE_CANDIDATE"}}',
+    })
+    const service = new DiagnoseService({
+      ledger: mockLedger, agentAdapter: mockAdapter, idGenerator, settings, workingDir: workspace,
+    })
+
+    const result = await service.processAllPendingInBatches()
+
+    expect(result.candidateCreated).toBeNull()
+    expect(result.report?.optimization?.status).toBe('failed')
   })
 })

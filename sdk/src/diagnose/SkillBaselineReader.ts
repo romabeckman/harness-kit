@@ -1,8 +1,17 @@
 import { lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { homedir } from 'node:os'
-import { join, relative } from 'node:path'
+import { basename, join, relative } from 'node:path'
 
-export function readCodexSkillBaselines(recordedSkills: readonly string[]): Record<string, string> {
+interface SkillReference {
+  source: 'workspace' | 'codex-cache'
+  path: string
+  version?: string
+  sha256: string
+  content: string
+}
+
+export function readActiveSkillReferences(recordedSkills: readonly string[], workspace: string): Record<string, SkillReference> {
   const skills = new Set<string>()
   for (const recorded of recordedSkills) {
     const match = /^(?:harness-kit:)?([a-z][a-z0-9-]*)$/.exec(recorded)
@@ -12,30 +21,42 @@ export function readCodexSkillBaselines(recordedSkills: readonly string[]): Reco
 
   const codexHome = process.env.CODEX_HOME?.trim() || join(homedir(), '.codex')
   const cache = join(codexHome, 'plugins', 'cache', 'harness-kit', 'harness-kit')
-  let root: string
+  let cachedRoot: string | undefined
   try {
     const versions = readdirSync(cache, { withFileTypes: true })
       .filter(entry => entry.isDirectory() && /^\d+\.\d+\.\d+$/.test(entry.name))
       .map(entry => entry.name)
       .sort((a, b) => b.localeCompare(a, 'en', { numeric: true }))
-    if (versions.length === 0) return {}
-    root = realpathSync(join(cache, versions[0]))
+    if (versions.length > 0) cachedRoot = realpathSync(join(cache, versions[0]))
   } catch {
-    return {}
+    // The workspace may provide the skill without a Codex cache.
   }
 
-  const baselines: Record<string, string> = {}
+  const references: Record<string, SkillReference> = {}
+  const workspaceRoot = realpathSync(workspace)
   for (const skill of skills) {
-    try {
-      const file = join(root, 'skills', skill, 'SKILL.md')
-      if (!lstatSync(file, { throwIfNoEntry: false })?.isFile()) continue
-      const target = realpathSync(file)
-      if (relative(root, target) !== join('skills', skill, 'SKILL.md')) continue
-      const content = readFileSync(target, 'utf8').trim()
-      if (content) baselines[`harness-kit:${skill}`] = content
-    } catch {
-      continue
+    for (const root of [workspaceRoot, cachedRoot]) {
+      if (!root) continue
+      try {
+        const path = join('skills', skill, 'SKILL.md')
+        const file = join(root, path)
+        if (!lstatSync(file, { throwIfNoEntry: false })?.isFile()) continue
+        if (relative(root, realpathSync(file)) !== path) continue
+        const bytes = readFileSync(file)
+        if (!bytes.toString('utf8').trim()) continue
+        const fromCache = root !== workspaceRoot
+        references[`harness-kit:${skill}`] = {
+          source: fromCache ? 'codex-cache' : 'workspace',
+          path: file,
+          ...(fromCache ? { version: basename(root) } : {}),
+          sha256: createHash('sha256').update(bytes).digest('hex'),
+          content: bytes.toString('utf8'),
+        }
+        break
+      } catch {
+        // An unavailable reference must stay unknown.
+      }
     }
   }
-  return baselines
+  return references
 }
