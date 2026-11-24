@@ -137,8 +137,10 @@ describe('ReviewHandler', () => {
   it.each([
     ['trigger_met', 0.95, true],
     ['guidance_contradicted', 0.95, true],
+    ['new_evidence', 0.95, true],
     [undefined, 0.95, false],
     ['trigger_met', 0.5, false],
+    ['new_evidence', 0.5, false],
   ] as const)('routes %s after a review scoring %s', async (reason, score, expectedCall) => {
     const feature = makeFeature()
     const roots = ['server', 'web']
@@ -148,7 +150,7 @@ describe('ReviewHandler', () => {
       metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 },
     }
     for (const root of roots) mkdirSync(join(workingDir, root))
-    const finding = { project: 'web', path: 'retry.test.ts', locator: 'preserves identity', summary: 'retry-identity trigger matched', review_reason: reason }
+    const finding = { project: 'web', path: 'retry.test.ts', locator: 'preserves identity', summary: reason === 'new_evidence' ? 'A retry test exposed duplicate trace creation before review.' : 'retry-identity trigger matched', review_reason: reason }
     writeFileSync(join(workingDir, 'web', finding.path), finding.locator)
     writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify(output))
     store.recordDevelopment(feature, output, roots.map(project => ({

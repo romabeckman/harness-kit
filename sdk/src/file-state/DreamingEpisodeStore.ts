@@ -5,7 +5,7 @@ import type { Feature, Task } from './types'
 import type { OrientationUse, TddOutput } from '../orchestrator/utils/PhaseFileUtils'
 
 export interface LearningFinding {
-  review_reason?: 'trigger_met' | 'guidance_contradicted'
+  review_reason?: 'trigger_met' | 'guidance_contradicted' | 'new_evidence'
   path: string
   locator: string
   summary: string
@@ -150,7 +150,7 @@ export class DreamingEpisodeStore {
         path: finding.path, locator: finding.locator.slice(0, 300), summary: finding.summary.slice(0, 1000),
         scenario_id: typeof finding.scenario_id === 'string' ? finding.scenario_id.slice(0, 100) : undefined,
       }
-      if (finding.review_reason === 'trigger_met' || finding.review_reason === 'guidance_contradicted') {
+      if (finding.review_reason === 'trigger_met' || finding.review_reason === 'guidance_contradicted' || finding.review_reason === 'new_evidence') {
         clean.review_reason = finding.review_reason
       }
       const findings = project.findings ??= []

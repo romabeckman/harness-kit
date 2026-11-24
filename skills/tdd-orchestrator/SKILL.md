@@ -177,7 +177,7 @@ Task is COMPLETE only when: 100% tests pass WITH verified output evidence
 
 <step id="5" name="Update Documentation">
 
-In INTERACTIVE mode, after final validation, check the task, trace and guidance decisions already in context. If the task met a known hypothesis review trigger or verified evidence contradicts a published orientation, invoke `project-dreaming` once for the owning project and feature before `project-memory`. Supply the hypothesis or orientation ID, matched condition, evidence locator and observed result. A normal pass or an expected `skip_when` is insufficient. Do not scan the learning queue to discover a trigger. Forward any grounded handoff with the ordinary documentation update. In AUTONOMOUS mode, carry the signal and locator in the developer handoff for independent review.
+In INTERACTIVE mode, after final validation, check the task, trace and guidance decisions already in context. If the task met a known hypothesis review trigger, verified evidence contradicts a published orientation, or a verifiable episode shows a test choice materially affected a regression, rework, or early detection, invoke `project-dreaming` once for the owning project and feature before `project-memory`. Supply the evidence locator and observed consequence, plus the hypothesis or orientation ID and matched condition when applicable. A normal pass or an expected `skip_when` is insufficient. Do not scan the learning queue to discover a trigger. Forward any grounded handoff with the ordinary documentation update. In AUTONOMOUS mode, carry the signal and locator in the developer handoff for independent review.
 
 INTERACTIVE mode only: when applicable, invoke `project-memory` to update:
 - OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs

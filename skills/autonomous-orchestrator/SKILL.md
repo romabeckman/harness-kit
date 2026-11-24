@@ -52,7 +52,7 @@ You do NOT write code, tests, or perform any sub-agent task.
 | `harness-kit:tdd-orchestrator` | Agent selected by the feature's `Agent` column: `developer-backend`, `developer-frontend`, `developer-qa`, or `developer-devops` (`developer-debugging` is diagnostic only) |
 | `harness-kit:adversarial-qa` | `harness-qa` |
 | `harness-kit:the-grumpy-tech-lead` | `harness-tech-lead` |
-| `harness-kit:project-dreaming` | `software-architect` (after Phase C PASS with a verified review trigger) |
+| `harness-kit:project-dreaming` | `software-architect` (after Phase C PASS with verified learning evidence) |
 | `harness-kit:project-memory` | `software-architect` (Phase E only) |
 
 </role>
@@ -253,7 +253,7 @@ IF feature's Score A >= ${scoreThresholdTL} AND Score B >= ${scoreThresholdAdv}
 1. `BACKLOG.md[feature]` (the active feature in backlog) → `Status: COMPLETED`, `Score (TL): A`, `Score (Adv): B`
 2. All feature tasks in `DEVELOPMENT-STATE.md` → `Current Phase: -`, `Status: COMPLETED`
 3. `DECISIONS.md` → `"Feature {ID} ACCEPTED — TL: {A}, Adv: {B}."`
-4. If accepted task or reviewer evidence confirms a known hypothesis review trigger or contradicts published guidance, delegate `project-dreaming` once per affected project with the feature, hypothesis or orientation ID, matched condition and evidence locator. Use the task handoff and reviewer evidence before clearing TDD output. An ordinary pass or expected exception needs no call. Stage any validated publish or withdrawal handoff for phase E under the [handoff contract](../project-dreaming/references/CONTRACTS.md#project-memory-handoff). Log unresolved learning work for retry and preserve the acceptance decision.
+4. If accepted task or reviewer evidence confirms a known hypothesis review trigger, contradicts published guidance, or verifies an episode where a test choice materially affected a regression, rework, or early detection, delegate `project-dreaming` once per affected project with the feature, evidence locator and observed consequence, plus the hypothesis or orientation ID and matched condition when applicable. Use the task handoff and reviewer evidence before clearing TDD output. An ordinary pass or expected exception needs no call. Stage any validated publish or withdrawal handoff for phase E under the [handoff contract](../project-dreaming/references/CONTRACTS.md#project-memory-handoff). Log unresolved learning work for retry and preserve the acceptance decision.
 5. Delete stale `TDD-OUTPUT.json` after review processing
 6. → Phase D
 

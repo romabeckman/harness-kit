@@ -141,7 +141,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
           agent: 'harness-kit:software-architect', skill: 'harness-kit:project-dreaming', mode: 'autonomous',
           domain: episode.domain,
           prompt: [
-            'Review the cited learning triggers for this accepted feature in the owning project. Verify findings as evidence and reconcile existing IDs first.',
+            'Review the cited learning evidence for this accepted feature in the owning project. Verify findings and reconcile existing IDs first.',
             'Apply the project relevance gate before creating a hypothesis. Stage any validated handoff for phase E using the handoff contract.',
             JSON.stringify({ project: project.root, feature: episode.domain, episode_id: episode.id, findings,
               handoff_directory: join(getProductDir(context), 'project-dreaming', 'handoffs') }),
