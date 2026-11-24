@@ -12,6 +12,7 @@ import { sanitizeSessionSnapshot } from './types'
 import type { SessionIdGenerator } from './SessionIdGenerator'
 import { CandidateReader } from './CandidateReader'
 import { HarnessSettings } from '../settings/HarnessSettings'
+import type { DreamingEpisodeStore } from '../file-state/DreamingEpisodeStore'
 
 export interface DiagnoseServiceOptions {
   ledger: ISessionLedger
@@ -20,6 +21,7 @@ export interface DiagnoseServiceOptions {
   settings?: HarnessSettings
   cliSettings?: DiagnoseSettings
   workingDir?: string
+  dreaming?: DreamingEpisodeStore
 }
 
 export interface BatchResult {
@@ -29,6 +31,7 @@ export interface BatchResult {
   traceIds?: string[]
   candidateCreated?: CandidateReportInfo | null
   report?: DiagnoseReportData
+  dreaming?: { processed: number; pending: number }
 }
 
 export interface CaptureContext {
@@ -47,6 +50,7 @@ export class DiagnoseService {
   private readonly settings: HarnessSettings
   private readonly cliSettings?: DiagnoseSettings
   private readonly workingDir: string
+  private readonly dreaming?: DreamingEpisodeStore
 
   constructor(options: DiagnoseServiceOptions) {
     this.ledger = options.ledger
@@ -55,6 +59,7 @@ export class DiagnoseService {
     this.settings = options.settings ?? HarnessSettings.load(options.workingDir)
     this.cliSettings = options.cliSettings
     this.workingDir = options.workingDir ?? process.cwd()
+    this.dreaming = options.dreaming
   }
 
   private resolveDiagnoseSettings(runnerType: string): DiagnoseSettings | undefined {
@@ -92,6 +97,40 @@ export class DiagnoseService {
       console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
       return { candidateCreated: null, optimization: { status: 'failed', reason: 'The optimization runner failed. See the error above.' } }
     }
+  }
+
+  private async processDreaming(completed: DiagnoseSessionRecord[]): Promise<BatchResult['dreaming']> {
+    if (!this.dreaming || !this.agentAdapter.invokeProjectDreaming) return undefined
+    const counts = { processed: 0, pending: 0 }
+    const episodes = this.dreaming.list().filter(episode => episode.closed)
+    for (const episode of episodes) {
+      for (const project of episode.projects) {
+        if (project.processed || (!project.findings?.length && !project.orientation_use?.some(item => item.test_ref))) continue
+        const related = episodes.find(item => item.previousAttemptId === episode.id && item.projects.some(owner => owner.root === project.root))
+        const sessions = completed.filter(record => record.traceId && episode.sourceSessions.includes(record.sessionId)
+          && (record.featureId === undefined || record.featureId === episode.featureId)
+          && (record.domain === undefined || record.domain === episode.domain))
+        if (!sessions.length) {
+          counts.pending++
+          continue
+        }
+        try {
+          const output = await this.agentAdapter.invokeProjectDreaming(
+            episode, project, sessions, related, this.resolveDiagnoseSettings(sessions[0].runner),
+          )
+          if (output.success === false) {
+            counts.pending++
+            continue
+          }
+          this.dreaming.markProcessed(episode.id, project.root)
+          counts.processed++
+        } catch (error) {
+          counts.pending++
+          console.warn(`[project-dreaming] Episode ${episode.id} remains pending:`, error)
+        }
+      }
+    }
+    return counts
   }
 
   async processNextBatch(batchSize = 3): Promise<BatchResult> {
@@ -188,6 +227,7 @@ export class DiagnoseService {
     }
 
     const completed = this.ledger.loadAll().filter(session => session.status === 'completed')
+    const dreaming = await this.processDreaming(completed)
     const proposalSession = lastProcessedSessionId
       ? completed.find(session => session.sessionId === lastProcessedSessionId)
       : lastRemaining === 0 ? completed.at(-1) : undefined
@@ -211,6 +251,7 @@ export class DiagnoseService {
       traceIds: allTraceIds,
       candidateCreated: proposal.candidateCreated,
       report,
+      ...(dreaming ? { dreaming } : {}),
     }
   }
 

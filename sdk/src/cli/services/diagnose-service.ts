@@ -12,6 +12,7 @@ import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 import { HarnessSettings } from '../../settings/HarnessSettings'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
 import { DebugContext } from '../DebugContext'
+import { DreamingEpisodeStore } from '../../file-state/DreamingEpisodeStore'
 
 import { parseStandardRunnerArgs } from '../utils/runner-args-parser'
 import { selectAgentRunner } from '../utils/agent-selection'
@@ -21,6 +22,7 @@ export interface DiagnoseCliOptions {
   model?: string
   effort?: string
   batchSize?: number
+  projectDreaming?: boolean
 }
 
 export function parseDiagnoseArgs(args: string[]): DiagnoseCliOptions {
@@ -57,6 +59,7 @@ export function parseDiagnoseArgs(args: string[]): DiagnoseCliOptions {
         result.batchSize = parsed
       }
     }
+    if (arg === '--project-dreaming' && (value === undefined || value === 'true')) result.projectDreaming = true
   }
 
   return result
@@ -108,6 +111,7 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
     settings,
     cliSettings,
     workingDir: cwd,
+    ...(options.projectDreaming ? { dreaming: new DreamingEpisodeStore(cwd, DiagnosePaths.productDir(cwd)) } : {}),
   })
 
   const batchSize = options.batchSize ?? 3
@@ -125,5 +129,8 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
     DiagnoseReportRenderer.render(result.report)
   } else {
     console.log(`\n${AnsiHelpers.green('✔')} All diagnose batches completed (${result.processed} total sessions processed).\n`)
+  }
+  if (result.dreaming) {
+    console.log(`Project Dreaming: ${result.dreaming.processed} processed, ${result.dreaming.pending} pending.`)
   }
 }

@@ -11,14 +11,14 @@ let tmpDir: string
 let productDir: string
 let fake: FakeAgentRunner
 
-function writeValidTddOutput(specDir: string, featureId = 'F001'): void {
+function writeValidTddOutput(specDir: string, featureId = 'F001', reworksCount = 0): void {
   writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({
     featureId,
     status: 'SUCCESS',
     metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 },
     modifiedFiles: [],
     developerHandoff: 'Ready for review.',
-    reworksCount: 0,
+    reworksCount,
   }))
 }
 
@@ -141,7 +141,7 @@ describe('T14 — HarnessOrchestrator TRANSITION + MEMORY', () => {
         if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
           writeValidTddOutput(specDir, String((inv.payload as { featureId?: string } | undefined)?.featureId
             ?? inv.prompt?.match(/Feature ID:\s*(F\d+)/i)?.[1]
-            ?? 'F001'))
+            ?? 'F001'), Number(inv.payload?.reworksCount ?? 0))
         }
         return origRun(inv)
       }

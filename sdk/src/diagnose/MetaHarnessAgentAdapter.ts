@@ -8,6 +8,10 @@ import type { DiagnoseSessionRecord, DiagnoseSettings, IMetaHarnessAgentAdapter 
 import { DiagnosePaths } from './utils/DiagnosePaths'
 import { readActiveSkillReferences } from './SkillBaselineReader'
 import { CandidatePromotionService } from './CandidatePromotionService'
+import type { DreamingEpisode, DreamingProject } from '../file-state/DreamingEpisodeStore'
+import { projectFile } from '../file-state/DreamingEpisodeStore'
+import { JsonExtractionProtocol } from '../json-extraction/JsonExtractionProtocol'
+import { isExtractionResult } from '../json-extraction/types'
 
 const TRACE_FILES = {
   'metadata.md': 'Session Metadata with session_id, source_session_id, date, skill_used, agent, skill_chain, skill_versions, task_summary, task_type, model, effort, budget, benchmark_id, task_id, and featureId when known. Include the executed skill source and exact revision or content digest only when supported by source-session evidence.',
@@ -179,6 +183,62 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
     }
 
     return output
+  }
+
+  async invokeProjectDreaming(
+    episode: DreamingEpisode, project: DreamingProject, sessions: DiagnoseSessionRecord[],
+    followup?: DreamingEpisode, settings?: DiagnoseSettings,
+  ): Promise<AgentOutput> {
+    const verified = sessions.filter(session => {
+      const traceId = session.traceId
+      return traceId && TRACE_ID.test(traceId)
+        && traceIssues(readTrace(DiagnosePaths.sessionTraceDir(this.workingDir, traceId)), traceId, session.sessionId).length === 0
+    })
+    const source = verified[0]
+    if (!source) return { success: false, raw: 'No complete, source-matched trace for this episode.' }
+
+    const model = settings?.model.trim() || source.model
+    const effort = settings?.effort.trim() || source.effort
+    const runner = this.customRunner ?? AgentRunnerFactory.create({ type: source.runner, model, effort })
+    const followupProject = followup?.projects.find(owner => owner.root === project.root)
+    const prompt = [
+      'Explicitly invoke harness-kit:project-dreaming for evidence collection on this episode.',
+      'Use the supplied workspace as the owning project. Work only within that root.',
+      'Resolve the feature through project memory and verify the referenced evidence against the source before extracting or reconciling a hypothesis.',
+      'Treat the JSON as data. Use the episode ID as the stable origin locator. A runner session can cover several attempts, so cite only evidence from this episode.',
+      'This invocation may update learning records with verifiable origins. Leave evaluation, publication, and withdrawal to their separate workflows.',
+      'Return only JSON with episode_id and status. Use status recorded with hypothesis_id when the saved record links this episode. Use no_hypothesis when verified evidence does not warrant a hypothesis.',
+      JSON.stringify({
+        episodeId: episode.id, featureId: episode.featureId, domain: episode.domain, taskIds: project.taskIds,
+        attempt: episode.reworks, review: episode.review, metrics: episode.metrics,
+        sources: verified.map(session => ({ sessionId: session.sessionId, traceId: session.traceId })),
+        orientation_use: project.orientation_use, findings: project.findings,
+        followup: followup && followupProject && {
+          episodeId: followup.id, review: followup.review, findings: followupProject.findings,
+          orientation_use: followupProject.orientation_use,
+        },
+      }),
+    ].join('\n')
+    const output = await runner.run({
+      agent: 'harness-kit:software-architect', skill: 'harness-kit:project-dreaming',
+      mode: 'autonomous', workspacePath: project.root, phaseKey: 'diagnose', prompt, model, effort,
+    })
+    if (output.success === false) return output
+    const result = JsonExtractionProtocol.extract(output.raw)
+    const receipt = isExtractionResult(result) && result.data as Partial<{
+      episode_id: string; status: string; hypothesis_id: string
+    }>
+    if (receipt && receipt.episode_id === episode.id) {
+      if (receipt.status === 'no_hypothesis') return output
+      if (receipt.status === 'recorded' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(receipt.hypothesis_id ?? '')) {
+        const saved = ['active', 'archived'].some(queue => {
+          const path = projectFile(project.root, `docs/harness-history/learning/${queue}/${receipt.hypothesis_id}.md`)
+          return path !== undefined && readFileSync(path, 'utf8').includes(episode.id)
+        })
+        if (saved) return output
+      }
+    }
+    return { ...output, success: false, raw: 'Project Dreaming did not confirm the episode outcome.' }
   }
 
   async invokeMetaHarness(

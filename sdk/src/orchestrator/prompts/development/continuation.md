@@ -6,6 +6,8 @@ Invoke the `harness-kit:tdd-orchestrator` skill before starting.
 Mode: autonomous
 </skill_context>
 
+{{redGuidance}}
+
 <react_workflow>
 - THOUGHT: Analyze the TDD cycle step (RED/GREEN/REFACTOR).
 - ACTION: Write code or execute tests in the terminal.
@@ -13,7 +15,7 @@ Mode: autonomous
 </react_workflow>
 
 <strict_rules>
-- For EACH item in `REWORK-LOG.md`, reproduce the issue with a new failing test before implementing the minimal fix
+- For each actionable item in `REWORK-LOG.md`, verify existing equivalent coverage or reproduce an uncovered regression with a failing test before implementing the minimal fix.
 - Run all tests (old + new) — all must pass
 - NEVER change correct tests to force passing
 - NEVER run package installation commands automatically — instruct the user instead

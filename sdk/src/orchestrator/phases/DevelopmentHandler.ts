@@ -11,7 +11,8 @@ import {
   formatProjectPathsList,
   formatTasksList,
 } from '../utils/PromptHelpers'
-import { getPlanningSource, getSpecsDir } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getSpecsDir, readCompletedTddOutput } from '../utils/PhaseFileUtils'
+import type { TddOutput } from '../utils/PhaseFileUtils'
 import type { Feature, Task } from '../../file-state/types'
 import type { DevelopmenPayload } from '../../context-assembler/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
@@ -28,26 +29,32 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
 
     const tddOutputPath = join(getSpecsDir(context.workingDir, activeFeature.domain), 'TDD-OUTPUT.json')
     const pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
+    const featureTasks = context.fsm.loadDevelopmentState().filter(task => task.featureId === activeFeature.id)
+    if (!featureTasks.length) throw new Error(`Development requires planned tasks for feature ${activeFeature.id}.`)
 
-    const shouldGoToReview = this.shouldGoToReview(activeFeature, tddOutputPath, context, pendingTasks)
-    if (shouldGoToReview) {
-      return Phase.REVIEW
+    let tasks = pendingTasks
+    if (!this.canResumeReview(activeFeature, tddOutputPath, context, pendingTasks)) {
+      if (!tasks.length) tasks = featureTasks
+      await this.executeChunk(activeFeature, tasks, tddOutputPath, context)
     }
-
-    await this.executeChunk(activeFeature, pendingTasks, tddOutputPath, context)
+    for (const task of tasks) {
+      context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
+    }
     return Phase.REVIEW
   }
 
-  private shouldGoToReview(activeFeature: Feature, tddOutputPath: string, context: Reviewontext, pendingTasks: Task[]): boolean {
-    if (existsSync(tddOutputPath)) {
-      if (pendingTasks.length > 0) {
-        for (const task of pendingTasks) {
-          context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
-        }
-      }
-      return true
+  private canResumeReview(feature: Feature, path: string, context: Reviewontext, pendingTasks: Task[]): boolean {
+    if (!existsSync(path)) return false
+    let output: TddOutput
+    try {
+      output = readCompletedTddOutput(path, feature.id, feature.reworks)
+    } catch {
+      return false
     }
-    return false
+    if (pendingTasks.length === 0) {
+      return context.fsm.loadDevelopmentState().every(task => task.featureId !== feature.id || task.status === 'COMPLETED')
+    }
+    return context.dreaming?.canResume(feature, output, pendingTasks) ?? false
   }
 
   private async executeChunk(activeFeature: Feature, chunkTasks: Task[], tddOutputPath: string, context: Reviewontext): Promise<void> {
@@ -88,6 +95,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       agent,
       mode: 'autonomous',
       prompt,
+      payload: { featureId: activeFeature.id, domain: activeFeature.domain, reworksCount: activeFeature.reworks },
       phaseKey: 'implementation',
       domain: activeFeature.domain,
       ...(developerSession ? { session: developerSession } : {}),
@@ -103,6 +111,9 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     }
 
     PhaseDecisionLogger.logDevelopmen(context.fsm, activeFeature, tddOutputPath)
+    if (output.success === false) throw new Error('Development agent failed before a verified TDD-OUTPUT.json was accepted.')
+    const handoff = readCompletedTddOutput(tddOutputPath, activeFeature.id, activeFeature.reworks)
+    context.dreaming?.recordDevelopment(activeFeature, handoff, chunkTasks, context.config.projectPaths, output.session?.id)
   }
 
   buildTddOrchestratorPrompt(payload: DevelopmenPayload, context: Reviewontext, agent: string, continuation: boolean = false): string {
@@ -128,6 +139,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     ].join('\n')
 
     return loadPrompt('development/initial', {
+      redGuidance: loadPrompt('development/red-guidance', {}),
       rulesSection: rulesSection,
       projectPathsList: projectPathsList,
       workingDir: workingDir,
@@ -167,6 +179,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const reworkSection = this.buildReworkSection(payload, context)
 
     return loadPrompt('development/rework', {
+      redGuidance: loadPrompt('development/red-guidance', {}),
       rulesSection: rulesSection,
       projectPathsList: projectPathsList,
       workingDir: workingDir,
@@ -197,6 +210,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     ].join('\n')
 
     return loadPrompt('development/continuation', {
+      redGuidance: loadPrompt('development/red-guidance', {}),
       featureId: payload.featureId,
       featureTitle: payload.featureTitle,
       label: planningSource.label,

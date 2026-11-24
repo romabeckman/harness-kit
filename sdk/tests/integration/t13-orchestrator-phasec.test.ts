@@ -12,14 +12,14 @@ let tmpDir: string
 let productDir: string
 let fake: FakeAgentRunner
 
-function writeValidTddOutput(specDir: string): void {
+function writeValidTddOutput(specDir: string, reworksCount = 0, featureId = 'F001'): void {
   writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({
-    featureId: 'F001',
+    featureId,
     status: 'SUCCESS',
     metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 },
     modifiedFiles: [],
     developerHandoff: 'Ready for review.',
-    reworksCount: 0,
+    reworksCount,
   }))
 }
 
@@ -64,7 +64,7 @@ function setupFullRun(options: {
 
   const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
   writeValidSpecs(specDir)
-  writeValidTddOutput(specDir)
+  writeValidTddOutput(specDir, reworks)
 }
 
 beforeEach(() => {
@@ -89,6 +89,9 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
     const fsm = new FileStateManager({ productDir, workingDir: tmpDir })
     const run = fake.run.bind(fake)
     const runner = vi.spyOn(fake, 'run').mockImplementation(async (invocation, options) => {
+      if (invocation.phaseKey === 'implementation') {
+        writeValidTddOutput(join(tmpDir, 'docs', 'specs', 'sdk_core'), Number(invocation.payload?.reworksCount), String(invocation.payload?.featureId))
+      }
       if (invocation.phaseKey === 'review_adv' && fsm.loadBootstrapConfig().activeFeatureId === 'F001') {
         throw new AgentRunnerError({
           code: AgentRunnerErrorCode.SAFETY_POLICY_BLOCKED,
@@ -278,7 +281,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
         }
         if ((inv.skill ?? '').endsWith('tdd-orchestrator')) {
           tddCallCount++
-          writeValidTddOutput(join(tmpDir, 'docs', 'specs', 'sdk_core'))
+          writeValidTddOutput(join(tmpDir, 'docs', 'specs', 'sdk_core'), Number(inv.payload?.reworksCount ?? 0))
         }
         return origRun(inv)
       }
@@ -374,7 +377,7 @@ describe('T13 — HarnessOrchestrator REVIEW', () => {
           if (!existsSync(tddOutputPath)) {
             tddOutputDeleted = true
           }
-          writeValidTddOutput(join(tmpDir, 'docs', 'specs', 'sdk_core'))
+          writeValidTddOutput(join(tmpDir, 'docs', 'specs', 'sdk_core'), Number(inv.payload?.reworksCount ?? 0))
         }
         return origRun(inv)
       }

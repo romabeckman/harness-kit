@@ -205,6 +205,7 @@ OPTIONS
   --model, -m <name>        Override model name (defaults to DefaultSettings.ts diagnose model)
   --effort, -e <level>      Override reasoning effort level (defaults to DefaultSettings.ts diagnose effort)
   --batch-size <number>     Number of pending sessions to process per batch (default: 3)
+  --project-dreaming        Extract hypotheses from eligible episodes after trace verification
   --debug                   Enable debug output
   --help, -h                Show this help message
 

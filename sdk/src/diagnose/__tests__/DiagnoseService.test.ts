@@ -12,6 +12,9 @@ import type {
 import { SessionIdGenerator } from '../SessionIdGenerator'
 import { TraceDirectoryScanner } from '../TraceDirectoryScanner'
 import type { HarnessSettings } from '../../settings/HarnessSettings'
+import { DreamingEpisodeStore } from '../../file-state/DreamingEpisodeStore'
+import type { Feature } from '../../file-state/types'
+import type { TddOutput } from '../../orchestrator/utils/PhaseFileUtils'
 
 describe('DiagnoseService', () => {
   let mockLedger: ISessionLedger
@@ -119,6 +122,47 @@ describe('DiagnoseService', () => {
   })
 
   afterEach(() => rmSync(workspace, { recursive: true, force: true }))
+
+  it('runs opted-in Dreaming after trace completion and retries a failed episode once', async () => {
+    const feature: Feature = {
+      id: 'F001', title: 'Recovery', domain: 'recovery', priority: 1, dependencies: [],
+      reworks: 0, scoreTL: null, scoreAdv: null, status: 'COMPLETED',
+    }
+    const output: TddOutput = {
+      featureId: feature.id, reworksCount: 0, status: 'SUCCESS', modifiedFiles: [],
+      metrics: { passed: 1, failed: 0, totalTests: 1, coverage: 100 },
+      orientation_use: [{
+        orientation_id: 'persisted-retry', revision: 1, feature: 'feature:recovery',
+        decision: 'covered', reason: 'Existing recovery scenario', test_ref: 'SC-01',
+      }],
+    }
+    const store = new DreamingEpisodeStore(workspace, join(workspace, 'docs', 'product'))
+    const session = pendingSessions[0]
+    pendingSessions = [session]
+    store.recordDevelopment(feature, output, [{
+      featureId: feature.id, taskId: 'T01', domain: feature.domain, project: '.',
+      description: 'Verify recovery', currentPhase: 'IMPLEMENTATION', status: 'IN_PROGRESS',
+    }], ['.'], session.sessionId)
+    store.recordReview(feature, output, 'PASS')
+    store.closeFeature(feature)
+
+    mockAdapter.invokeProjectDreaming = vi.fn()
+      .mockResolvedValueOnce({ raw: 'failed', success: false })
+      .mockResolvedValueOnce({ raw: 'evaluated episode evidence', success: true })
+    const options = { ledger: mockLedger, agentAdapter: mockAdapter, idGenerator, settings, workingDir: workspace }
+    await new DiagnoseService(options).processAllPendingInBatches()
+    expect(mockAdapter.invokeProjectDreaming).not.toHaveBeenCalled()
+
+    const service = new DiagnoseService({ ...options, dreaming: store })
+    expect((await service.processAllPendingInBatches()).dreaming).toEqual({ processed: 0, pending: 1 })
+    expect(mockAdapter.invokeProjectDreaming).toHaveBeenCalledWith(
+      expect.objectContaining({ featureId: feature.id }), expect.objectContaining({ root: workspace }),
+      [expect.objectContaining({ status: 'completed', traceId: expect.any(String) })], undefined, expect.any(Object),
+    )
+    expect((await service.processAllPendingInBatches()).dreaming).toEqual({ processed: 1, pending: 0 })
+    expect((await service.processAllPendingInBatches()).dreaming).toEqual({ processed: 0, pending: 0 })
+    expect(mockAdapter.invokeProjectDreaming).toHaveBeenCalledTimes(2)
+  })
 
   it('processes a single batch of 3 pending sessions and marks them completed', async () => {
     const service = new DiagnoseService({

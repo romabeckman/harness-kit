@@ -128,6 +128,8 @@ Use an orientation object for publish. For `withdraw`, omit `orientation`, send 
 
 Project Memory returns a receipt with the operation, destination, feature node, ID, revision, result (`written`, `already_current`, or `conflict`), and the checks performed. A conflict or unresolved evidence keeps the operation pending. A retry uses the original handoff and ID for the current pending transition. Check the decision history before sending a retry and discard any superseded request, including a publish superseded by withdrawal. A canonical entry with equal revision and different content is a conflict.
 
+To route a validated handoff through a future SDK MEMORY phase, place it in the orchestration workspace's `docs/product/project-dreaming/handoffs/<id>.json`. Wrap the object in an envelope with `status: "ready"`, the owning `project` path as configured in the SDK, and the complete object as `handoff`. The SDK records `applied` when it verifies the canonical result. Recheck the published or withdrawn entry before closing the learning record.
+
 ## TDD use
 
 The optional `orientation_use` array in a trace or structured TDD output uses this object shape:
@@ -137,10 +139,11 @@ The optional `orientation_use` array in a trace or structured TDD output uses th
   "orientation_id": "statement-export-page-boundary",
   "revision": 1,
   "feature": "feature:statement_export",
+  "project": "statements",
   "decision": "applied",
   "reason": "Added a tied sort key at the existing scenario's page boundary.",
   "test_ref": "scenario ID and/or project-relative test path with locator"
 }
 ```
 
-Decisions are `applied`, `covered`, `skipped`, and `needs_refinement`. Omit `test_ref` if there is no scenario or test to reference. An absent field means unknown; an observed empty array means the lookup found no guidance in scope. Keep actual test outcomes in execution evidence referenced by the associated trace step, or in the direct session with its command and observed result.
+Decisions are `applied`, `covered`, `skipped`, and `needs_refinement`. In a multi-project SDK workspace, use the task's project tag in `project` to scope the decision. The field can be omitted for a single project or direct sessions without a project tag. Omit `test_ref` if there is no scenario or test to reference. An absent array means unknown. An observed empty array means the lookup found no guidance in scope. Keep actual test outcomes in execution evidence referenced by the associated trace step, or in the direct session with its command and observed result.

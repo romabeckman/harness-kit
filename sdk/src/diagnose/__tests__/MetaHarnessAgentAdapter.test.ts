@@ -6,6 +6,7 @@ import { MetaHarnessAgentAdapter } from '../MetaHarnessAgentAdapter'
 import type { DiagnoseSessionRecord } from '../types'
 import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 import { writeEvaluatedCandidate, writeLegacyHistory, writeTrace } from './fixtures'
+import type { DreamingEpisode } from '../../file-state/DreamingEpisodeStore'
 
 describe('MetaHarnessAgentAdapter', () => {
   let workingDir: string
@@ -29,6 +30,28 @@ describe('MetaHarnessAgentAdapter', () => {
     status: 'pending',
     timestamp: '2026-08-15T10:00:00.000Z',
   }
+
+  it('requires a source-matched trace and a receipt for the same Dreaming episode', async () => {
+    const session = { ...sampleRecord, traceId: 'session-2026-08-15-001', status: 'completed' as const }
+    const project = { root: workingDir, taskIds: ['T01'] }
+    const episode: DreamingEpisode = {
+      id: 'episode-1', capturedAt: session.timestamp, featureId: 'F001', domain: 'retry',
+      reworks: 0, handoffDigest: 'digest', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 },
+      sourceSessions: [session.sessionId], projects: [project], review: 'PASS', closed: true,
+    }
+    const run = vi.fn().mockResolvedValue({ raw: 'Unconfirmed outcome', success: true })
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
+    writeTrace(workingDir, session.traceId, 'other-source')
+    expect((await adapter.invokeProjectDreaming(episode, project, [session])).success).toBe(false)
+    expect(run).not.toHaveBeenCalled()
+
+    writeTrace(workingDir, session.traceId, session.sessionId)
+    expect((await adapter.invokeProjectDreaming(episode, project, [session])).success).toBe(false)
+    expect(run).toHaveBeenCalledWith(expect.objectContaining({ skill: 'harness-kit:project-dreaming', workspacePath: workingDir }))
+
+    run.mockResolvedValue({ raw: JSON.stringify({ episode_id: episode.id, status: 'no_hypothesis' }), success: true })
+    expect((await adapter.invokeProjectDreaming(episode, project, [session])).success).toBe(true)
+  })
 
   it('rejects a trace without source identity or task outcome', async () => {
     const traceId = 'session-2026-08-15-001'

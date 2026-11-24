@@ -51,6 +51,8 @@ Write a raw JSON object to `{{specsDir}}/TL.json` and return the same raw object
   "architectureTip": "Single actionable sentence recommending an architectural improvement"
 }
 Note: openPoints may be an empty array [] when no issue meets the evaluation_principle bar. An empty array with a high score is a fully valid response.
+
+After forming your independent verdict, you may include an optional `learning_evidence` array for verified test coverage or contract findings. Each item has `project` (the owning project path as provided), `path` (project-relative inspected file), `locator` (exact heading, test title, or line range), `summary`, and optional `scenario_id`. Omit unverified claims. This evidence leaves the score and verdict rules unchanged.
 </expected_output>
 
 <spec_sources>

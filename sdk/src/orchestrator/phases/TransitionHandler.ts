@@ -52,6 +52,7 @@ export class TransitionHandler extends AbstractPhaseHandler {
     if (!terminalStatuses.some(status => status === activeFeature.status)) {
       throw new Error(`Illegal state: phase ${phase} requires a terminal active feature but ${activeFeature.id} is ${activeFeature.status}`)
     }
+    context.dreaming?.closeFeature(activeFeature)
 
     // Cascade block: only BLOCKED propagates to transitive dependents
     // FAILED is non-critical — dependents remain NOT_STARTED and can proceed

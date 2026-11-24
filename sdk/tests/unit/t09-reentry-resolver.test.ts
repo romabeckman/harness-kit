@@ -140,6 +140,16 @@ describe('T09 — ReentryResolver', () => {
   })
 
   describe('TS-U-43: All features terminal -> TRANSITION (final loop pass)', () => {
+    it.each([true, false])('resumes a terminal feature at transition with handoff present = %s', tddOutputPresent => {
+      const feature = { ...baseFeature, status: 'COMPLETED' as const }
+      const state = makeState({
+        features: [feature], activeFeature: feature,
+        config: { ...defaultConfig, currentPhase: Phase.REVIEW },
+        specFilesPresent: true, allTasksCompleted: true, tddOutputPresent,
+      })
+      expect(ReentryResolver.resolve(state)).toBe(Phase.TRANSITION)
+    })
+
     it('returns TRANSITION when no NOT_STARTED feature', () => {
       const features = [
         { ...baseFeature, id: 'F001', status: 'COMPLETED' as const },

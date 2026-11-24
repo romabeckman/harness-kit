@@ -3,6 +3,7 @@ import { join } from 'path'
 import type { IFileStateManager } from '../../file-state/FileStateManager'
 import type { OnDiskState } from '../types'
 import { ExtractedTask } from '../phases'
+import { readCompletedTddOutput } from '../utils/PhaseFileUtils'
 
 export class ProjectStateService {
   constructor(private readonly workingDir: string) { }
@@ -152,7 +153,15 @@ export class ProjectStateService {
     const tddOutputPath = domain
       ? join(this.workingDir, 'docs', 'specs', domain, 'TDD-OUTPUT.json')
       : ''
-    const tddOutputPresent = Boolean(activeFeature && tddOutputPath && existsSync(tddOutputPath))
+    let tddOutputPresent = false
+    if (activeFeature && tddOutputPath && existsSync(tddOutputPath)) {
+      try {
+        readCompletedTddOutput(tddOutputPath, activeFeature.id, activeFeature.reworks)
+        tddOutputPresent = true
+      } catch {
+        // Missing or invalid completion evidence sends re-entry through development.
+      }
+    }
 
     const allTasksCompleted =
       featureTasks.length > 0 && featureTasks.every(t => t.status === 'COMPLETED')

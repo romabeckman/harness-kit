@@ -15,7 +15,9 @@ import {
   buildDocsOrientationSection
 } from '../utils/PromptHelpers'
 import { clearFeatureDeveloperSessions } from '../utils/SessionHelpers'
-import { getPlanningSource, getSpecsDir } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getSpecsDir, readCompletedTddOutput } from '../utils/PhaseFileUtils'
+import type { TddOutput } from '../utils/PhaseFileUtils'
+import type { DreamingEpisode } from '../../file-state/DreamingEpisodeStore'
 import type { ReviewPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
@@ -42,10 +44,12 @@ export class ReviewHandler extends AbstractPhaseHandler {
     // --skip-validation: bypass all agent calls and jump straight to Phase D
     if (context.config.skipValidation) {
       if (reviewFailures.preservePolicyBlock()) {
+        this.recordReview(context, activeFeature, 'INTERRUPTED')
         this.clearTddOutput(context.workingDir, activeFeature.domain)
         return Phase.TRANSITION
       }
       process.stdout.write(`[phase_review] --skip-validation active — skipping review for feature ${activeFeature.id}\n`)
+      this.recordReview(context, activeFeature, 'SKIPPED')
       clearFeatureDeveloperSessions(context)
       context.fsm.updateFeatureStatus(activeFeature.id, 'COMPLETED')
       context.fsm.updateAllFeatureTasks(activeFeature.id, '-', 'COMPLETED')
@@ -53,6 +57,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
         featureId: activeFeature.id,
         decision: `REVIEW skipped by execution policy for feature ${activeFeature.id}.`,
       })
+      this.clearTddOutput(context.workingDir, activeFeature.domain)
       return Phase.TRANSITION
     }
 
@@ -70,14 +75,22 @@ export class ReviewHandler extends AbstractPhaseHandler {
       config.steeringRules
     )
 
-    const outputs = reviewFailures.resolveOutputs(await this.executeAgents(context, payload, config))
+    const results = await this.executeAgents(context, payload, config)
+    let outputs: ReturnType<ReviewFailureService['resolveOutputs']>
+    try {
+      outputs = reviewFailures.resolveOutputs(results)
+    } catch (error) {
+      this.recordReview(context, activeFeature, 'INTERRUPTED')
+      throw error
+    }
     if (!outputs) {
+      this.recordReview(context, activeFeature, 'INTERRUPTED')
       this.clearTddOutput(context.workingDir, activeFeature.domain)
       return Phase.TRANSITION
     }
 
     const [techLead, adversarial] = outputs
-    const scores = this.extractScores(context, activeFeature.domain, techLead, adversarial)
+    const { scores, evidence, hasReviewerResults } = this.extractScores(context, activeFeature.domain, techLead, adversarial)
 
     const result = ValidationGate.evaluate(
       scores,
@@ -85,6 +98,8 @@ export class ReviewHandler extends AbstractPhaseHandler {
       config
     )
 
+    const sessions = [techLead.session?.id, adversarial.session?.id].filter((id): id is string => !!id)
+    this.recordReview(context, activeFeature, hasReviewerResults ? result.verdict : 'INTERRUPTED', sessions, hasReviewerResults ? evidence : [])
     const nextPhase = this.processDecision(context, activeFeature, phase, result, scores)
     if (result.verdict === 'PASS') reviewFailures.clearPolicyBlock()
     return nextPhase
@@ -102,6 +117,20 @@ export class ReviewHandler extends AbstractPhaseHandler {
     rmSync(join(getSpecsDir(workingDir, domain), 'TDD-OUTPUT.json'), { force: true })
   }
 
+  private recordReview(
+    context: Reviewontext, feature: Feature, verdict: NonNullable<DreamingEpisode['review']>,
+    sessions?: string[], evidence?: unknown[],
+  ): void {
+    if (!context.dreaming) return
+    let output: TddOutput
+    try {
+      output = readCompletedTddOutput(join(getSpecsDir(context.workingDir, feature.domain), 'TDD-OUTPUT.json'), feature.id, feature.reworks)
+    } catch {
+      return
+    }
+    context.dreaming.recordReview(feature, output, verdict, sessions, evidence)
+  }
+
   private async executeAgents(context: Reviewontext, payload: ReviewPayload, config: BootstrapConfig) {
     const tlPrompt = this.buildTechLeadPrompt(payload, context, config)
     const advPrompt = this.buildAdversarialQAPrompt(payload, context, config)
@@ -117,6 +146,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       agent: tlAgent,
       mode: 'autonomous',
       prompt: tlPrompt,
+      payload: { featureId: payload.featureId, domain: payload.domain },
       phaseKey: 'review_tl',
       domain: payload.domain,
       ...(tlSession ? { session: tlSession } : {}),
@@ -137,6 +167,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
       agent: advAgent,
       mode: 'autonomous',
       prompt: advPrompt,
+      payload: { featureId: payload.featureId, domain: payload.domain },
       phaseKey: 'review_adv',
       domain: payload.domain,
       ...(advSession ? { session: advSession } : {}),
@@ -160,7 +191,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     const tlData = this.parseAgentOutput(join(specsDir, 'TL.json'), tlOutput, 'review_tl')
     const advData = this.parseAgentOutput(join(specsDir, 'QA.json'), advOutput, 'review_adv')
 
-    return {
+    const scores = {
       scoreTL: typeof tlData['score'] === 'number' ? tlData['score'] : (typeof tlData['scoreTL'] === 'number' ? tlData['scoreTL'] : 0),
       scoreAdv: typeof advData['score'] === 'number' ? advData['score'] : (typeof advData['scoreAdv'] === 'number' ? advData['scoreAdv'] : 0),
       hasHighCriticalVuln: advData['hasHighCriticalVuln'] === true,
@@ -172,6 +203,11 @@ export class ReviewHandler extends AbstractPhaseHandler {
       edgeCasesMissed: Array.isArray(advData['edgeCasesMissed']) ? advData['edgeCasesMissed'] : [],
       vulnerabilities: Array.isArray(advData['vulnerabilities']) ? advData['vulnerabilities'] : []
     }
+    const evidence = [tlData, advData].flatMap(data => Array.isArray(data.learning_evidence) ? data.learning_evidence : [])
+    const hasReviewerResults = tlOutput.success !== false && advOutput.success !== false
+      && (typeof tlData.score === 'number' || typeof tlData.scoreTL === 'number')
+      && (typeof advData.score === 'number' || typeof advData.scoreAdv === 'number')
+    return { scores, evidence, hasReviewerResults }
   }
 
   private parseAgentOutput(filePath: string, agentOutput: any, logPrefix: string): Record<string, unknown> {
@@ -219,11 +255,11 @@ export class ReviewHandler extends AbstractPhaseHandler {
       result.reason
     )
 
-    this.clearTddOutput(context.workingDir, activeFeature.domain)
-
     // If verification needs rework, transition back to retry handler
     if (result.verdict === 'RETRY') {
-      return this.handleRetry(context, activeFeature, scores)
+      const next = this.handleRetry(context, activeFeature, scores)
+      this.clearTddOutput(context.workingDir, activeFeature.domain)
+      return next
     }
 
     // Map validation gate verdicts to corresponding bootstrap statuses
@@ -234,8 +270,9 @@ export class ReviewHandler extends AbstractPhaseHandler {
     }
 
     activeFeature.status = statusMap[result.verdict] || activeFeature.status
-    context.fsm.updateFeatureStatus(activeFeature.id, activeFeature.status, { tl: scores.scoreTL, adv: scores.scoreAdv })
     context.fsm.updateAllFeatureTasks(activeFeature.id, '-', activeFeature.status)
+    context.fsm.updateFeatureStatus(activeFeature.id, activeFeature.status, { tl: scores.scoreTL, adv: scores.scoreAdv })
+    this.clearTddOutput(context.workingDir, activeFeature.domain)
 
     // Clear developer session upon exiting the dev/review cycle for this feature
     clearFeatureDeveloperSessions(context)

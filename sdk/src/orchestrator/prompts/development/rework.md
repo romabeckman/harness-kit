@@ -6,6 +6,8 @@ Invoke the `harness-kit:tdd-orchestrator` skill before starting.
 Mode: autonomous
 </skill_context>
 
+{{redGuidance}}
+
 <react_workflow>
 - THOUGHT: Analyze the TDD cycle step (RED/GREEN/REFACTOR).
 - ACTION: Write code or execute tests in the terminal.

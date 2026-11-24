@@ -10,6 +10,7 @@ import { AgentRunnerFactory } from '../agent-runner/AgentRunnerFactory'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../agent-runner/AgentRunnerError'
 import { TokenLedger } from '../telemetry/TokenLedger'
 import { JsonlSessionLedger } from '../diagnose/JsonlSessionLedger'
+import { DreamingEpisodeStore } from '../file-state/DreamingEpisodeStore'
 import { AnsiHelpers } from '../ui/AnsiHelpers'
 import {
   IPhaseHandler,
@@ -35,6 +36,7 @@ export class HarnessOrchestrator implements Reviewontext {
   readonly config: OrchestratorConfig
   readonly workingDir: string
   readonly fsm: IFileStateManager
+  readonly dreaming: DreamingEpisodeStore
   developerSession?: DeveloperSessionState[]
   state: OrchestratorState
   private readonly agentRunner: IAgentRunner
@@ -54,6 +56,7 @@ export class HarnessOrchestrator implements Reviewontext {
     this.workingDir = options.workingDir ?? process.cwd()
     this.settings = config.settings ?? HarnessSettings.load(this.workingDir)
     const productDir = config.productDir ?? join(this.workingDir, 'docs', 'product')
+    this.dreaming = new DreamingEpisodeStore(this.workingDir, productDir)
     this.fsm = new FileStateManager({
       productDir,
       workingDir: this.workingDir,

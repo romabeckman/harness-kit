@@ -1,4 +1,5 @@
 import type { AgentOutput } from '../agent-runner/types'
+import type { DreamingEpisode, DreamingProject } from '../file-state/DreamingEpisodeStore'
 
 export type SessionStatus = 'pending' | 'completed'
 
@@ -78,6 +79,10 @@ export interface ITraceDirectoryScanner {
 export interface IMetaHarnessAgentAdapter {
   invoke(session: DiagnoseSessionRecord, preComputedId: string, settings?: DiagnoseSettings): Promise<AgentOutput>
   invokeMetaHarness?(session: DiagnoseSessionRecord, settings?: DiagnoseSettings, recordedSkills?: readonly string[]): Promise<AgentOutput>
+  invokeProjectDreaming?(
+    episode: DreamingEpisode, project: DreamingProject, sessions: DiagnoseSessionRecord[],
+    followup?: DreamingEpisode, settings?: DiagnoseSettings,
+  ): Promise<AgentOutput>
 }
 
 export interface CandidateReportInfo {
