@@ -19,9 +19,11 @@ Keep one working ledger: mode, authorized scope, questions, review budget, selec
 - Honor read-only requests. Missing baselines, index maintenance, and consolidation do not override scope or authorize writes.
 - Preserve document/claim IDs across renames and retain uncertainty/evidence. Deduplicate IDs only after reconciling their references in Stage 4. A document's `updated` date never establishes that all claims were reverified.
 
+For a scoped Project Dreaming handoff, use the [RED orientation procedure](references/RED-ORIENTATION.md) within these stages. Ground the handoff from the supplied summary and reachable sources outside harness history. Store validated test-selection procedures in the owning feature's `## Orientações para o RED` section. Use the ontology for factual corrections.
+
 ## TOTAL CONTEXT BUDGET
 
-Generated or updated Markdown: at most **10,000 counted characters per file**. Normalize CRLF/CR to LF before counting Unicode characters. Exclude from the 10,000 character the YAML frontmatter at the start of the file and the entire fenced `graph` block directly after it, including their delimiters and the line endings of those delimiter lines. Count all remaining content, including whitespace, other JSON, and other fenced blocks. Do not exclude `graph` examples nested inside other fences or Mermaid diagrams.
+Generated or updated Markdown: at most **10,000 counted characters per file**. Normalize CRLF/CR to LF before counting Unicode characters. Exclude the YAML frontmatter at the start of the file and the entire fenced `graph` block directly after it, including their delimiters and the line endings of those delimiter lines. Count all remaining content, including whitespace, other JSON, and other fenced blocks. Do not exclude `graph` examples nested inside other fences or Mermaid diagrams.
 
 `docs/.digest.md` retains its separate limit: at most **3,000 characters and fewer than 60 lines**, counting the entire file.
 

@@ -31,6 +31,7 @@ Read before any canonical edit, including consolidation or digest demotion. Read
 ## Presentation
 
 - REQUIRED: Use standard Markdown and uppercase feature/ADR section headings; REFERENCES goes last. Follow the navigation template's own casing for `docs/README.md`; preserve the root README structure.
+- ALLOWED: A feature's published RED guidance uses the exact heading `## Orientações para o RED` before REFERENCES. Follow the [publication procedure](RED-ORIENTATION.md) for guided edits to this section.
 - REQUIRED: Serialize every generated JSON payload, including examples, on exactly one physical line with `json.dumps(data, ensure_ascii=False, separators=(',', ':'))`. Keep fences separate; preserve escaped newlines inside strings and never insert comments into JSON.
 - REQUIRED: Keep folder trees at folder/layer level with representative entries. Do not repeat the source inventory already owned by the feature graph.
 - ALLOWED: Add a Mermaid `graph TD` DOCUMENT MAP only when it explains more than existing edges and references. Omit it for a single edge; do not repeat the same relation three times without added value.

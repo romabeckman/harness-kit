@@ -14,6 +14,8 @@ The source of truth for exact behavior is each file under `skills/*/SKILL.md` an
 | Choose and invoke skills for daily work | [PLAYBOOK-DAILY-USE.md](PLAYBOOK-DAILY-USE.md) |
 | Run the sovereign skill-driven loop | [AUTONOMOUS-ORCHESTRATOR.md](AUTONOMOUS-ORCHESTRATOR.md) |
 | Record and improve harness behavior | [META-HARNESS.md](META-HARNESS.md) |
+| Learn which tests to select from a development episode | [Project Dreaming](PLAYBOOK-DAILY-USE.md#review-a-development-episode-between-tasks) |
+| Inspect the SDK diagnosis pilot | [Project Dreaming pilot](PROJECT-DREAMING-PILOT.md) |
 
 ## Skill groups
 
@@ -49,6 +51,7 @@ Runtime acceptance QA requires runner readiness, a command preview, and explicit
 | Skill | Use when | Primary output |
 | --- | --- | --- |
 | `harness-tracer` | Record one completed skill session | `docs/harness-history/traces/session-*/` |
+| `project-dreaming` | Review selected project episodes between tasks and reconcile independent evaluations | Reviewable hypotheses, publication or withdrawal handoffs, and archived decisions |
 | `harness-evaluator` | Score accumulated traces and compare skill chains | `docs/harness-history/pareto-frontier.md` |
 | `meta-harness` | Propose one evidence-backed skill improvement | `docs/harness-history/candidates/vNNN/` |
 
@@ -74,7 +77,7 @@ Runtime acceptance QA requires runner readiness, a command preview, and explicit
 - `pbb-design` defines business scope without designing architecture. Pass validated decisions, provisional assumptions, and open questions explicitly into technical refinement.
 - `scope-refinement` owns specification documents created during its four DDD phases.
 - `autonomous-orchestrator` owns product state and delegates technical work.
-- `harness-tracer`, `harness-evaluator`, and `meta-harness` own harness history.
+- `harness-tracer`, `harness-evaluator`, and `meta-harness` own traces and skill evaluation history. `project-dreaming` owns `docs/harness-history/learning/`. `tdd-orchestrator` reads published guidance from the routed feature and `project-memory` owns its canonical publication.
 - Human approval is required before a meta-harness candidate replaces an active skill.
 
 Project-memory consolidation maintains project knowledge. Meta-harness evaluates and proposes changes to skill instructions using session traces. Keep these responsibilities and evidence stores separate.

@@ -46,11 +46,26 @@ After macro orientation:
    - Evaluate each `optional[].description` against `${tasks}`, current requirements, and rework findings when present.
    - Read only optional documents whose condition applies.
 3. Resolve document paths through `.graph.json` `nodes[]`.
-4. Read only frontmatter and top `graph` block from the selected `docs/feature/*.md`.
+4. Start with frontmatter and the top `graph` block of the selected document under `docs/feature/`.
 5. Validate every routed path exists. If any path is stale or feature node is absent, use `rg --files` plus targeted `rg` searches, then continue with discovered paths.
 6. RED phase: read relevant `test_files` first.
 7. GREEN phase: read relevant files in this order: `entrypoints`, `registration_files`, `reference_files`, then `code_files`.
 8. Read full feature prose only when implementation needs design context not present in digest, graph, specs, or routed code.
+
+### Published guidance before RED
+
+In both modes, after routing to the affected feature and loading the applicable requirements, look only for its top-level `## Orientações para o RED` section outside fenced examples. Look in the owning project when a workspace contains several projects. No feature, section, or usable entry means the normal RED proceeds. The [published orientation contract](../project-dreaming/references/CONTRACTS.md#published-orientation) applies when the section exists. Flag malformed guidance with its document locator and proceed from the applicable specification. The feature document is the source for guidance. Leave learning history and candidate evaluation to explicitly invoked Project Dreaming.
+
+For each entry relevant to the selected tasks, check its condition, exception, current source support, and existing tests. For a supported, in-scope rule, equivalent coverage takes the `covered` branch. Use each entry only for a concrete test decision:
+
+- `applied` — materialize or adjust a test to cover the applicable scenario. In autonomous mode keep its original `004` scenario ID and respect the intent and task boundaries in `003` and `004`.
+- `covered` — point to equivalent coverage, run it, and reuse it. Check equivalence against the task, including state setup, instance boundary, and assertions where relevant.
+- `skipped` — continue with the applicable contract when the exception holds or the source is stale, missing, or contradicted. Record the source locator for later review when support has lapsed.
+- `needs_refinement` — for a material ambiguity requiring a business decision, ask in interactive mode. In autonomous mode return any required new or contradictory behavior to refinement with its task/scenario and source. Continue independent, specified work; keep unresolved work incomplete. Existing autonomous acceptance and failed-output gates still apply.
+
+Follow the usual RED requirement for new behavior and uncovered regressions. Reusing a test requires evidence that it checks the needed behavior. A currently green reused test is evidence of coverage, never a fabricated RED.
+
+Capture the observed decision before acting on it, including when it leads to refinement. Link it to test execution evidence when the test runs.
 
 Do not copy routing arrays into `.graph.json` or create another routing artifact.
 
@@ -87,7 +102,7 @@ Use the selected feature node's `related_docs` from `.graph.json`.
 
 REQUIRED: When `docs/specs/${domain}/REWORK-LOG.md` is present, apply these optimizations:
 1. Read `REWORK-LOG.md` FIRST — extract all findings before any other action
-2. Prioritize Step 1 (RED) — write NEW failing tests for each finding immediately
+2. Prioritize Step 1 (RED) after the scoped guidance check — confirm equivalent coverage or write failing tests for uncovered findings within the specified scope
 3. SKIP Step 5 (Update Documentation) until final validation passes
 4. SKIP Step 6 (Machine-Readable Output) until all tests pass — regenerate only at the end
 
@@ -110,7 +125,7 @@ INTERACTIVE → analyze requirement and identify what needs to be tested
 - Create test structure (unit / integration / functional)
 - Write tests following AAA pattern (Arrange, Act, Assert)
 - Include positive and negative scenarios
-- **REWORK (if `REWORK-LOG.md` present)**: translate each vulnerability and missed edge case from `REWORK-LOG.md` into new failing test cases to ensure regression protection
+- **REWORK (if `REWORK-LOG.md` present)**: verify regression coverage for each finding and write a failing test where it is missing
 - **IRON LAW: verify test FAILS before proceeding**
 
 </step>
@@ -152,6 +167,7 @@ IF any test fails:
 - Execute this final validation gate **before declaring any completion**
 - Run full test suite one last time — check for regressions
 - Provide concrete evidence (actual test command output)
+- When recording a trace, pass the observed guidance decisions and corresponding test evidence to `harness-tracer`. In a direct session without a trace, report the feature, guidance ID and revision, decision, scenario or test locator, and observed command/result so the next explicit Dreaming invocation can cite them.
 
 ```
 Task is COMPLETE only when: 100% tests pass WITH verified output evidence
@@ -194,7 +210,9 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 }
 ```
 
-`status` must be either `"SUCCESS"` or `"FAILED"`. Write `"SUCCESS"` only when the final test run has zero failures.
+`status` must be either `"SUCCESS"` or `"FAILED"`. Write `"SUCCESS"` only after the requested work is complete and the final test run has zero failures. If a required scenario is pending refinement, keep that task incomplete and report `"FAILED"` if writing an output.
+
+Preserve caller-required fields. The skill-driven `autonomous-orchestrator` expects `developerHandoff` of at most 500 characters. When the guidance lookup was observed, add the optional [`orientation_use` array](../project-dreaming/references/CONTRACTS.md#tdd-use). Preserve scenario IDs and reference verified execution evidence in the run/trace. Older reports without the field remain usable. Supply decisions to the trace while session evidence is available, since an autonomous review may later remove the transient TDD output.
 
 </step>
 

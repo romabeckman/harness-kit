@@ -134,7 +134,7 @@ Autonomous invocation requires the feature ID, domain, project paths, selected t
 
 Execution contract:
 
-1. RED: derive tests from the requirement in interactive mode, or from pre-specified scenarios in autonomous mode; prove they fail for the expected reason.
+1. RED: derive tests from the requirement in interactive mode, or from pre-specified scenarios in autonomous mode. Prove new tests fail for the expected reason and verify any reused coverage.
 2. GREEN: implement the smallest code that passes.
 3. REFACTOR: improve structure while keeping tests green.
 4. Validate: run required targeted and regression checks.
@@ -144,7 +144,20 @@ If tests fail unexpectedly, route diagnosis to `developer-debugging`. That agent
 
 Autonomous mode writes `docs/specs/{domain}/TDD-OUTPUT.json`. It does not emit interactive progress blocks.
 
+Both modes consult the selected feature's `## Orientações para o RED` before writing tests. Check applicability, current sources, and equivalent coverage. In autonomous mode the tactical design and existing scenario IDs still govern the work. The optional `orientation_use` field records decisions when observed.
+
 In the autonomous backlog loop, final project-memory synchronization belongs to the orchestrator's memory phase. Do not interpret a successful TDD output as proof that documentation or runtime acceptance checks are complete.
+
+### Review a development episode between tasks
+
+```text
+/harness-kit:project-dreaming
+Project: /path/to/owning/project
+Feature: feature:sdk_diagnose
+Evidence: src/diagnose/__tests__/DiagnoseService.test.ts, "reuses the trace ID reserved for a retry"
+```
+
+Provide an exact test locator and observed command/result for direct TDD, or pass a trace ID, a session/tool event, or a rework locator. The skill records a local hypothesis when the evidence supports a test decision. A separate evaluator compares paired runs. Project Memory publishes the verified procedure, and subsequent interactive or autonomous TDD runs discover it through the feature graph. Reinvoke Dreaming with the same hypothesis ID when a result arrives, publication needs a retry, or a source changes.
 
 ## Flow 4: review
 

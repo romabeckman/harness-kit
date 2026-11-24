@@ -24,7 +24,7 @@ Record the execution trace of the invoking skill session. This trace becomes par
 
 2. **Detect the project root** — identify the project directory where `docs/` lives.
 
-3. **Initialize history folder** — if `docs/harness-history/` does not exist, create the full structure:
+3. **Initialize trace history** — ensure the following paths exist. Initialize each missing item independently, because another skill may already have created the parent folder. Preserve existing contents:
    ```
    docs/harness-history/
      traces/             ← one folder per session
@@ -95,6 +95,8 @@ Summarize the input received at the start of the session:
 ### Step 4 — Write `steps.md`
 
 Reconstruct the observed sequence. Reference accessible source evidence by file and line, command output, or tool event ID. Redact secrets and private data before copying or linking evidence. If the original evidence is unavailable, mark it `unknown`. Keep reserved evaluation cases, logs, and results outside proposer-readable history.
+
+For a TDD session with an observed guidance lookup, add `## RED Orientation Use` in `steps.md` with a fenced JSON object containing the optional [`orientation_use` array](../project-dreaming/references/CONTRACTS.md#tdd-use). Link the relevant scenario or test to the observed result in the action sequence. Use session evidence or captured TDD output while available. Omit the section when use is unknown, including historical reconstructions with no evidence of the lookup. Legacy traces and the existing required files stay valid.
 
 ```markdown
 # Execution Steps

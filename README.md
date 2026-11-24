@@ -219,6 +219,7 @@ hrns run
 | **Quality Gates** | **[Adversarial QA](skills/adversarial-qa/SKILL.md)** (`adversarial-qa`) | Executes adversarial boundary and security testing, returning structured JSON verdicts. |
 | **Quality Gates** | **[QA Orchestrator](skills/qa-orchestrator/SKILL.md)** (`qa-orchestrator`) | Collects QA inputs, designs executable scenarios, runs `hrns qa`, and summarizes runtime evidence. |
 | **Optimization** | **[Harness Tracer](skills/harness-tracer/SKILL.md)** (`harness-tracer`) | Records structured execution traces to `docs/harness-history/traces/`. |
+| **Optimization** | **[Project Dreaming](skills/project-dreaming/SKILL.md)** (`project-dreaming`) | Reviews selected episodes between tasks and prepares independently verified RED guidance for a feature. |
 | **Optimization** | **[Harness Evaluator](skills/harness-evaluator/SKILL.md)** (`harness-evaluator`) | Computes composite quality scores and identifies Pareto frontier harness configurations. |
 | **Optimization** | **[Meta-Harness](skills/meta-harness/SKILL.md)** (`meta-harness`) | Diagnoses failure patterns across sessions and proposes targeted skill prompt improvements. |
 
