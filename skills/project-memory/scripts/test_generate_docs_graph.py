@@ -147,7 +147,7 @@ class BuildDocsGraphTests(unittest.TestCase):
 
         self.assertIn("exact path", rules.lower())
 
-    def test_character_budget_excludes_frontmatter_and_feature_graph(self) -> None:
+    def test_body_character_budget_excludes_frontmatter_and_feature_graph(self) -> None:
         skill_dir = Path(__file__).parent.parent
         skill = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("Exclude the YAML frontmatter", skill)
@@ -163,7 +163,6 @@ class BuildDocsGraphTests(unittest.TestCase):
             with self.subTest(reference=name):
                 self.assertNotIn("with no exclusions", rules)
                 self.assertNotIn("including all content", rules)
-                self.assertNotIn("Count the entire unified `graph` block toward", rules)
                 self.assertIn("TOTAL CONTEXT BUDGET", rules)
 
     def test_architecture_rules_defines_size_limit_and_decomposition(self) -> None:

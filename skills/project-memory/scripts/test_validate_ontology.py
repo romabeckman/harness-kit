@@ -55,6 +55,18 @@ class OntologyTests(unittest.TestCase):
     def test_unannotated_is_reported_without_semantic_success(self):
         self.assertEqual(Validator(self.docs).validate()["without_knowledge"], ["feature:unannotated"])
 
+    def test_feature_document_limit_counts_header_graph_and_body(self):
+        path = self.docs / "feature/unannotated.md"
+        original = path.read_text(encoding="utf-8")
+        content = original.replace('"domain":"unannotated"', '"domain":"' + "é" * 11_000 + '"')
+        content += "x" * (20_000 - len(content))
+
+        path.write_bytes(content.replace("\n", "\r\n").encode("utf-8"))
+        self.assertEqual(Validator(self.docs).validate(["feature:unannotated"])["documents_checked"], 1)
+        path.write_bytes(path.read_bytes() + b"x")
+        with self.assertRaisesRegex(ValueError, r"feature:unannotated.*20,001.*20,000.*splitting"):
+            Validator(self.docs).validate(["feature:unannotated"])
+
     def test_missing_target_and_wrong_relation_type_fail(self):
         for target in ("feature:rules#rule:missing", "capability:charge"):
             with self.subTest(target=target):
