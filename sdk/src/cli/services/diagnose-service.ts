@@ -66,7 +66,7 @@ export function parseDiagnoseArgs(args: string[]): DiagnoseCliOptions {
   return result
 }
 
-export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
+export async function cmdDiagnose(cwd: string, args: string[]): Promise<number> {
   const options = parseDiagnoseArgs(args)
   const ledgerPath = DiagnosePaths.ledgerPath(cwd)
 
@@ -82,7 +82,7 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
     && ledger.loadAll().some(record => record.status === 'completed' && isDiagnoseSession(record))
   if (pending.length === 0 && !hasTraceHistory) {
     console.log(`${AnsiHelpers.green('✓')} No pending diagnose sessions found in docs/product/diagnose-sessions.jsonl`)
-    return
+    return 0
   }
 
   options.agentType = await selectAgentRunner(options.agentType)
@@ -132,6 +132,14 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
     console.log(`\n${AnsiHelpers.green('✔')} All diagnose batches completed (${result.processed} total sessions processed).\n`)
   }
   if (result.dreaming) {
-    console.log(`Project Dreaming: ${result.dreaming.processed} processed, ${result.dreaming.pending} pending.`)
+    const { processed, pending } = result.dreaming
+    console.log(`Project Dreaming: ${processed} processed, ${pending} pending.`)
+    for (const detail of result.dreaming.pendingDetails ?? []) {
+      console.error(`  Pending episode ${detail.episodeId} (${detail.project}) - ${detail.reason}`)
+    }
+    if (processed === 0 && pending === 0) {
+      console.log('No unprocessed closed project episodes found.')
+    }
   }
+  return result.dreaming?.pending ? 1 : 0
 }

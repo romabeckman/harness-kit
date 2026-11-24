@@ -141,7 +141,7 @@ describe('DiagnoseService', () => {
       .toEqual(['session-2026-08-15-001', 'old-memory'])
   })
 
-  it('runs opted-in Dreaming after trace completion and retries a failed episode once', async () => {
+  it.each([true, false])('runs opted-in Dreaming with structured evidence = %s and retries a failed episode once', async hasOrientation => {
     const feature: Feature = {
       id: 'F001', title: 'Recovery', domain: 'recovery', priority: 1, dependencies: [],
       reworks: 0, scoreTL: null, scoreAdv: null, status: 'COMPLETED',
@@ -149,10 +149,10 @@ describe('DiagnoseService', () => {
     const output: TddOutput = {
       featureId: feature.id, reworksCount: 0, status: 'SUCCESS', modifiedFiles: [],
       metrics: { passed: 1, failed: 0, totalTests: 1, coverage: 100 },
-      orientation_use: [{
+      orientation_use: hasOrientation ? [{
         orientation_id: 'persisted-retry', revision: 1, feature: 'feature:recovery',
         decision: 'covered', reason: 'Existing recovery scenario', test_ref: 'SC-01',
-      }],
+      }] : [],
     }
     const store = new DreamingEpisodeStore(workspace, join(workspace, 'docs', 'product'))
     const session = pendingSessions[0]
@@ -172,7 +172,10 @@ describe('DiagnoseService', () => {
     expect(mockAdapter.invokeProjectDreaming).not.toHaveBeenCalled()
 
     const service = new DiagnoseService({ ...options, dreaming: store })
-    expect((await service.processAllPendingInBatches()).dreaming).toEqual({ processed: 0, pending: 1 })
+    expect((await service.processAllPendingInBatches()).dreaming).toEqual({
+      processed: 0, pending: 1,
+      pendingDetails: [{ episodeId: store.list()[0].id, project: workspace, reason: 'failed' }],
+    })
     expect(mockAdapter.invokeProjectDreaming).toHaveBeenCalledWith(
       expect.objectContaining({ featureId: feature.id }), expect.objectContaining({ root: workspace }),
       [expect.objectContaining({ status: 'completed', traceId: expect.any(String) })], undefined, expect.any(Object),

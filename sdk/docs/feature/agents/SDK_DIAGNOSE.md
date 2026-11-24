@@ -95,7 +95,7 @@ fs.writeFileSync('docs/product/diagnose-sessions.jsonl', JSON.stringify({ status
 
 ## PROCESS PROJECT DREAMING EPISODES
 
-Run `hrns diagnose --project-dreaming` from the orchestration workspace. The SDK processes closed feature attempts with test or review locators and complete source-matched traces. It passes each owning project's evidence to a separate skill invocation. A failed or unconfirmed invocation leaves the episode pending. Successful processing is recorded per attempt and project.
+Run `hrns diagnose --project-dreaming` from the orchestration workspace. The SDK processes closed feature attempts using complete traces matched to their source sessions. The skill reads the linked traces and any structured test or review evidence available for the owning project. Successful processing includes analysis that finds insufficient evidence for a hypothesis. If a missing trace or another blocker prevents analysis, the CLI identifies the pending episode, its project, and the reason, and exits with status 1.
 
 This invocation collects evidence and formulates or reconciles hypotheses. Independent evaluation stays in the Project Dreaming workflow. To use a future SDK MEMORY phase for a validated publication or withdrawal, place a JSON envelope in `docs/product/project-dreaming/handoffs/<id>.json`. Set `status` to `ready`, `project` to the configured owning project path, and `handoff` to the complete Project Memory handoff. Include directly verifiable sources outside harness history. MEMORY checks project routing, expected published revision, and sources. It marks the envelope `applied` after it verifies the intended canonical state. Conflicts and unresolved evidence stay pending.
 

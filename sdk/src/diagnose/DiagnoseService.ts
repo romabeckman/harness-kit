@@ -31,7 +31,11 @@ export interface BatchResult {
   traceIds?: string[]
   candidateCreated?: CandidateReportInfo | null
   report?: DiagnoseReportData
-  dreaming?: { processed: number; pending: number }
+  dreaming?: {
+    processed: number
+    pending: number
+    pendingDetails?: { episodeId: string; project: string; reason: string }[]
+  }
 }
 
 export interface CaptureContext {
@@ -101,17 +105,26 @@ export class DiagnoseService {
 
   private async processDreaming(completed: DiagnoseSessionRecord[]): Promise<BatchResult['dreaming']> {
     if (!this.dreaming || !this.agentAdapter.invokeProjectDreaming) return undefined
-    const counts = { processed: 0, pending: 0 }
+    const counts: NonNullable<BatchResult['dreaming']> = { processed: 0, pending: 0 }
+    const pendingDetails: NonNullable<typeof counts.pendingDetails> = []
     const episodes = this.dreaming.list().filter(episode => episode.closed)
     for (const episode of episodes) {
       for (const project of episode.projects) {
-        if (project.processed || (!project.findings?.length && !project.orientation_use?.some(item => item.test_ref))) continue
+        if (project.processed) continue
+        const markPending = (reason: string): void => {
+          counts.pending++
+          pendingDetails.push({
+            episodeId: episode.id,
+            project: project.root,
+            reason: reason.replaceAll('\u001b', '').replace(/\s+/g, ' ').trim().slice(0, 500) || 'The runner returned no error details.',
+          })
+        }
         const related = episodes.find(item => item.previousAttemptId === episode.id && item.projects.some(owner => owner.root === project.root))
         const sessions = completed.filter(record => record.traceId && episode.sourceSessions.includes(record.sessionId)
           && (record.featureId === undefined || record.featureId === episode.featureId)
           && (record.domain === undefined || record.domain === episode.domain))
         if (!sessions.length) {
-          counts.pending++
+          markPending('No completed eligible session with a trace is linked to this episode.')
           continue
         }
         try {
@@ -119,18 +132,17 @@ export class DiagnoseService {
             episode, project, sessions, related, this.resolveDiagnoseSettings(sessions[0].runner),
           )
           if (output.success === false) {
-            counts.pending++
+            markPending(output.raw)
             continue
           }
           this.dreaming.markProcessed(episode.id, project.root)
           counts.processed++
         } catch (error) {
-          counts.pending++
-          console.warn(`[project-dreaming] Episode ${episode.id} remains pending:`, error)
+          markPending(error instanceof Error ? error.message : String(error))
         }
       }
     }
-    return counts
+    return pendingDetails.length ? { ...counts, pendingDetails } : counts
   }
 
   async processNextBatch(batchSize = 3): Promise<BatchResult> {

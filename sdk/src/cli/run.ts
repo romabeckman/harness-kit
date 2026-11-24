@@ -64,7 +64,8 @@ async function main(): Promise<void> {
   if (cmd === 'diagnose') {
     const { cmdDiagnose } = await import('./services/diagnose-service.js')
     const diagnoseArgs = args.slice(1)
-    await cmdDiagnose(cwd, diagnoseArgs)
+    const exitCode = await cmdDiagnose(cwd, diagnoseArgs)
+    if (exitCode) process.exitCode = exitCode
     return
   }
 

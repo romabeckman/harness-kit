@@ -48,7 +48,22 @@ describe('MetaHarnessAgentAdapter', () => {
     writeTrace(workingDir, session.traceId, session.sessionId)
     expect((await adapter.invokeProjectDreaming(episode, project, [session])).success).toBe(false)
     expect(run).toHaveBeenCalledWith(expect.objectContaining({ skill: 'harness-kit:project-dreaming', workspacePath: workingDir }))
+    const prompt = run.mock.calls[0][0].prompt
+    expect(prompt).toContain(join(workingDir, 'docs', 'harness-history', 'traces', session.traceId))
+    expect(prompt).toContain('steps.md')
+    expect(prompt).toContain('verdict.md')
 
+    run.mockResolvedValue({
+      raw: JSON.stringify({ episode_id: episode.id, status: 'incomplete', reason: 'Unable to read the linked trace.' }),
+      success: true,
+    })
+    expect(await adapter.invokeProjectDreaming(episode, project, [session])).toMatchObject({
+      success: false, raw: 'Unable to read the linked trace.',
+    })
+    run.mockResolvedValue({ raw: JSON.stringify({ episode_id: episode.id, status: 'incomplete' }), success: true })
+    expect(await adapter.invokeProjectDreaming(episode, project, [session])).toMatchObject({
+      success: false, raw: 'The runner reported incomplete without a reason.',
+    })
     run.mockResolvedValue({ raw: JSON.stringify({ episode_id: episode.id, status: 'no_hypothesis' }), success: true })
     expect((await adapter.invokeProjectDreaming(episode, project, [session])).success).toBe(true)
   })
