@@ -5,6 +5,7 @@ import type { Feature, Task } from './types'
 import type { OrientationUse, TddOutput } from '../orchestrator/utils/PhaseFileUtils'
 
 export interface LearningFinding {
+  review_reason?: 'trigger_met' | 'guidance_contradicted'
   path: string
   locator: string
   summary: string
@@ -133,7 +134,7 @@ export class DreamingEpisodeStore {
   recordReview(
     feature: Feature, output: TddOutput, verdict: NonNullable<DreamingEpisode['review']>,
     sessions: string[] = [], evidence: readonly unknown[] = [],
-  ): void {
+  ): DreamingEpisode | undefined {
     const episode = this.find(feature, output)
     if (!episode) return
     episode.review = verdict
@@ -145,16 +146,20 @@ export class DreamingEpisodeStore {
         || typeof finding.summary !== 'string' || !finding.summary.trim()) continue
       const project = ownerOf(episode.projects, typeof finding.project === 'string' ? finding.project : undefined, this.workingDir)
       if (!project || !projectFile(project.root, finding.path)) continue
-      const clean = {
+      const clean: LearningFinding = {
         path: finding.path, locator: finding.locator.slice(0, 300), summary: finding.summary.slice(0, 1000),
         scenario_id: typeof finding.scenario_id === 'string' ? finding.scenario_id.slice(0, 100) : undefined,
       }
-      const findings = project.findings ??= []
-      if (!findings.some(item => item.path === clean.path && item.locator === clean.locator && item.summary === clean.summary)) {
-        findings.push(clean)
+      if (finding.review_reason === 'trigger_met' || finding.review_reason === 'guidance_contradicted') {
+        clean.review_reason = finding.review_reason
       }
+      const findings = project.findings ??= []
+      const existing = findings.find(item => item.path === clean.path && item.locator === clean.locator && item.summary === clean.summary)
+      if (!existing) findings.push(clean)
+      else if (clean.review_reason) existing.review_reason = clean.review_reason
     }
     this.save(episode)
+    return episode
   }
 
   closeFeature(feature: Feature): void {

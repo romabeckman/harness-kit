@@ -54,7 +54,7 @@ After macro orientation:
 
 ### Published guidance before RED
 
-In both modes, after routing to the affected feature and loading the applicable requirements, look only for its top-level `## RED guidance` section outside fenced examples. Also recognize the legacy heading `## Orientações para o RED`; treat both headings as duplicate sections if both exist. Look in the owning project when a workspace contains several projects. No feature, section, or usable entry means the normal RED proceeds. The [published orientation contract](../project-dreaming/references/CONTRACTS.md#published-orientation) applies when the section exists. Flag malformed guidance with its document locator and proceed from the applicable specification. The feature document is the source for guidance. Leave learning history and candidate evaluation to explicitly invoked Project Dreaming.
+In both modes, after routing to the affected feature and loading the applicable requirements, look only for its top-level `## RED guidance` section outside fenced examples. Also recognize the legacy heading `## Orientações para o RED`; treat both headings as duplicate sections if both exist. Look in the owning project when a workspace contains several projects. No feature, section, or usable entry means the normal RED proceeds. The [published orientation contract](../project-dreaming/references/CONTRACTS.md#published-orientation) applies when the section exists. Flag malformed guidance with its document locator and proceed from the applicable specification. The feature document is the source for guidance. Project Dreaming owns learning history and candidate evaluation.
 
 For each entry relevant to the selected tasks, check its condition, exception, current source support, and existing tests. For a supported, in-scope rule, equivalent coverage takes the `covered` branch. Use each entry only for a concrete test decision:
 
@@ -167,7 +167,7 @@ IF any test fails:
 - Execute this final validation gate **before declaring any completion**
 - Run full test suite one last time — check for regressions
 - Provide concrete evidence (actual test command output)
-- When recording a trace, pass the observed guidance decisions and corresponding test evidence to `harness-tracer`. In a direct session without a trace, report the feature, guidance ID and revision, decision, scenario or test locator, and observed command/result so the next explicit Dreaming invocation can cite them.
+- When recording a trace, pass the observed guidance decisions and corresponding test evidence to `harness-tracer`. In a direct session without a trace, report the feature, guidance ID and revision, decision, scenario or test locator, and observed command/result so a subsequent Dreaming review can cite them.
 
 ```
 Task is COMPLETE only when: 100% tests pass WITH verified output evidence
@@ -177,12 +177,16 @@ Task is COMPLETE only when: 100% tests pass WITH verified output evidence
 
 <step id="5" name="Update Documentation">
 
+In INTERACTIVE mode, after final validation, check the task, trace and guidance decisions already in context. If the task met a known hypothesis review trigger or verified evidence contradicts a published orientation, invoke `project-dreaming` once for the owning project and feature before `project-memory`. Supply the hypothesis or orientation ID, matched condition, evidence locator and observed result. A normal pass or an expected `skip_when` is insufficient. Do not scan the learning queue to discover a trigger. Forward any grounded handoff with the ordinary documentation update. In AUTONOMOUS mode, carry the signal and locator in the developer handoff for independent review.
+
 INTERACTIVE mode only: when applicable, invoke `project-memory` to update:
 - OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs
 - Input/Output schemas, descriptions, HTTP status codes
 - The `docs/feature/{FEATURE_NAME}.md` file must be updated whenever a feature is created or updated.
 
 > `project-memory` auto-creates baseline docs (`README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) if missing.
+
+If Dreaming supplied a publication or withdrawal handoff, return the receipt to Dreaming for verification and closure of that ID. An unresolved operation keeps its retry trigger.
 
 </step>
 
@@ -231,7 +235,7 @@ Preserve caller-required fields. The skill-driven `autonomous-orchestrator` expe
 - Run tests after every change
 - Fix production code — never alter correct tests to force passing
 - Execute the final validation step before declaring completion
-- Invoke `project-memory` for new or changes in the project
+- In interactive mode, invoke `project-memory` for project documentation updates
 
 **❌ Don't:**
 - Skip mandatory orientation context or baseline docs in `docs/adr/`

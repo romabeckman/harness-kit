@@ -157,7 +157,7 @@ Feature: feature:sdk_diagnose
 Evidence: src/diagnose/__tests__/DiagnoseService.test.ts, "reuses the trace ID reserved for a retry"
 ```
 
-Provide an exact test locator and observed command/result for direct TDD, or pass a trace ID, a session/tool event, or a rework locator. The skill records a local hypothesis when the evidence supports a test decision. A separate evaluator compares paired runs. Project Memory publishes the verified procedure, and subsequent interactive or autonomous TDD runs discover it through the feature graph. Reinvoke Dreaming with the same hypothesis ID when a result arrives, publication needs a retry, or a source changes.
+Provide an exact test locator and observed command/result for direct TDD, or pass a trace ID, a session/tool event, or a rework locator. Interactive TDD can request review after final validation. Autonomous review can request it after acceptance. Both require a known trigger met by the task or evidence contradicting published guidance. A new hypothesis requires a consequential gap in test selection and a concrete future opportunity to evaluate it in the project. A separate evaluator compares paired runs. Project Memory publishes the verified procedure, and subsequent interactive or autonomous TDD runs discover it through the feature graph. Reinvoke Dreaming with the same hypothesis ID when a result arrives, publication needs a retry, or a source changes.
 
 ## Flow 4: review
 

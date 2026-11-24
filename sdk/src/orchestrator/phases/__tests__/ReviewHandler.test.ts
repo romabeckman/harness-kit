@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { ReviewHandler } from '../ReviewHandler'
+import { DreamingEpisodeStore } from '../../../file-state/DreamingEpisodeStore'
+import type { TddOutput } from '../../utils/PhaseFileUtils'
 import { Complexity, Phase } from '../../types'
 import type { Reviewontext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
@@ -130,6 +132,44 @@ describe('ReviewHandler', () => {
     const context = makeContext(workingDir, fsm)
     const result = await handler.handle(Phase.PLANNING, context)
     expect(result).toBeNull()
+  })
+
+  it.each([
+    ['trigger_met', 0.95, true],
+    ['guidance_contradicted', 0.95, true],
+    [undefined, 0.95, false],
+    ['trigger_met', 0.5, false],
+  ] as const)('routes %s after a review scoring %s', async (reason, score, expectedCall) => {
+    const feature = makeFeature()
+    const roots = ['server', 'web']
+    const store = new DreamingEpisodeStore(workingDir, join(workingDir, 'docs/product'))
+    const output: TddOutput = {
+      featureId: feature.id, status: 'SUCCESS', reworksCount: 0, modifiedFiles: [],
+      metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 },
+    }
+    for (const root of roots) mkdirSync(join(workingDir, root))
+    const finding = { project: 'web', path: 'retry.test.ts', locator: 'preserves identity', summary: 'retry-identity trigger matched', review_reason: reason }
+    writeFileSync(join(workingDir, 'web', finding.path), finding.locator)
+    writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify(output))
+    store.recordDevelopment(feature, output, roots.map(project => ({
+      featureId: feature.id, domain: feature.domain, taskId: project, project,
+      description: 'Verify retries', status: 'IN_PROGRESS', currentPhase: 'IMPLEMENTATION',
+    })), roots)
+    const fsm = makeFsm(feature)
+    const context = makeContext(workingDir, fsm, async inv => {
+      if (inv.skill === 'harness-kit:project-dreaming') return { success: false, raw: 'Unavailable' }
+      return { raw: JSON.stringify({ score, learning_evidence: [finding] }) }
+    }, { projectPaths: roots })
+    const phase = await handler.handle(Phase.REVIEW, { ...context, dreaming: store })
+    const calls = vi.mocked(context.invokeAgent).mock.calls.filter(([inv]) => inv.skill === 'harness-kit:project-dreaming')
+    expect(calls).toHaveLength(expectedCall ? 1 : 0)
+    if (expectedCall) {
+      expect(JSON.parse(calls[0][0].prompt!.split('\n').at(-1)!)).toMatchObject({
+        project: join(workingDir, 'web'), findings: [expect.objectContaining({ review_reason: reason })],
+      })
+      expect(phase).toBe(Phase.TRANSITION)
+      expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({ decision: expect.stringContaining('Retry Project Dreaming') }))
+    }
   })
 
   it('clears developerSession and transitions when skipValidation is true', async () => {

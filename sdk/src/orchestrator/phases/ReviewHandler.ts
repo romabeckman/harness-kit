@@ -15,7 +15,7 @@ import {
   buildDocsOrientationSection
 } from '../utils/PromptHelpers'
 import { clearFeatureDeveloperSessions } from '../utils/SessionHelpers'
-import { getPlanningSource, getSpecsDir, readCompletedTddOutput } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getProductDir, getSpecsDir, readCompletedTddOutput } from '../utils/PhaseFileUtils'
 import type { TddOutput } from '../utils/PhaseFileUtils'
 import type { DreamingEpisode } from '../../file-state/DreamingEpisodeStore'
 import type { ReviewPayload } from '../../context-assembler/types'
@@ -99,9 +99,10 @@ export class ReviewHandler extends AbstractPhaseHandler {
     )
 
     const sessions = [techLead.session?.id, adversarial.session?.id].filter((id): id is string => !!id)
-    this.recordReview(context, activeFeature, hasReviewerResults ? result.verdict : 'INTERRUPTED', sessions, hasReviewerResults ? evidence : [])
+    const episode = this.recordReview(context, activeFeature, hasReviewerResults ? result.verdict : 'INTERRUPTED', sessions, hasReviewerResults ? evidence : [])
     const nextPhase = this.processDecision(context, activeFeature, phase, result, scores)
     if (result.verdict === 'PASS') reviewFailures.clearPolicyBlock()
+    if (episode?.review === 'PASS') await this.reviewLearningTriggers(context, episode)
     return nextPhase
   }
 
@@ -120,7 +121,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
   private recordReview(
     context: Reviewontext, feature: Feature, verdict: NonNullable<DreamingEpisode['review']>,
     sessions?: string[], evidence?: unknown[],
-  ): void {
+  ): DreamingEpisode | undefined {
     if (!context.dreaming) return
     let output: TddOutput
     try {
@@ -128,7 +129,30 @@ export class ReviewHandler extends AbstractPhaseHandler {
     } catch {
       return
     }
-    context.dreaming.recordReview(feature, output, verdict, sessions, evidence)
+    return context.dreaming.recordReview(feature, output, verdict, sessions, evidence)
+  }
+
+  private async reviewLearningTriggers(context: Reviewontext, episode: DreamingEpisode): Promise<void> {
+    for (const project of episode.projects) {
+      const findings = project.findings?.filter(item => item.review_reason)
+      if (!findings?.length) continue
+      try {
+        const result = await context.invokeAgent({
+          agent: 'harness-kit:software-architect', skill: 'harness-kit:project-dreaming', mode: 'autonomous',
+          domain: episode.domain,
+          prompt: [
+            'Review the cited learning triggers for this accepted feature in the owning project. Verify findings as evidence and reconcile existing IDs first.',
+            'Apply the project relevance gate before creating a hypothesis. Stage any validated handoff for phase E using the handoff contract.',
+            JSON.stringify({ project: project.root, feature: episode.domain, episode_id: episode.id, findings,
+              handoff_directory: join(getProductDir(context), 'project-dreaming', 'handoffs') }),
+          ].join('\n'),
+        })
+        if (result.success !== false) continue
+      } catch (error) {
+        console.warn('[project-dreaming] Post-acceptance review failed:', error)
+      }
+      context.fsm.appendDecision({ featureId: episode.featureId, decision: `Retry Project Dreaming for episode ${episode.id} in ${project.root}.` })
+    }
   }
 
   private async executeAgents(context: Reviewontext, payload: ReviewPayload, config: BootstrapConfig) {

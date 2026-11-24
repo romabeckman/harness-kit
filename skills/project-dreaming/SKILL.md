@@ -1,11 +1,11 @@
 ---
 name: project-dreaming
-description: Review selected development episodes between tasks to propose, evaluate, publish, or retire local guidance for the next RED. Invoke explicitly with the owning project directory and a feature or evidence locator.
+description: Review selected development episodes between tasks to propose, evaluate, publish, or retire local guidance for the next RED. Accept an operator request or a scoped post-task review from TDD or the autonomous orchestrator.
 ---
 
 # Project Dreaming
 
-Run this workflow only when the operator explicitly invokes Project Dreaming. Work one project and one feature at a time. Resolve the explicitly supplied project directory before reading or writing anything. Accept a feature node/path, trace or session ID, test locator, rework entry, or hypothesis ID. If the evidence points to several owners, resolve the scope before writing. Use [contracts](references/CONTRACTS.md) throughout, and load [paired evaluation](references/PAIRED-EVALUATION.md) when preparing or reconciling an evaluation.
+Run this workflow on an operator request or a scoped post-task review. Interactive TDD can request review after final validation. The autonomous orchestrator can request it after independent review accepts the feature. For either automatic call, require an observed match to a known review trigger or verifiable evidence contradicting published guidance. Use the trigger or guidance ID and the task evidence locator supplied by the caller. Work one project and one feature at a time. Resolve the explicitly supplied project directory before reading or writing anything. Accept a feature node/path, trace or session ID, test locator, rework entry, or hypothesis ID. If the evidence points to several owners, resolve the scope before writing. Use [contracts](references/CONTRACTS.md) throughout, and load [paired evaluation](references/PAIRED-EVALUATION.md) when preparing or reconciling an evaluation.
 
 ## 1. Select evidence
 
@@ -18,7 +18,9 @@ Run this workflow only when the operator explicitly invokes Project Dreaming. Wo
 
 Inspect active and archived records for the selected feature, including published rules in its document. Match the decision, condition, and exception to reuse an existing ID. Append new origins by stable locator; reprocessing the same origin is a no-op. Follow alias records to the canonical ID.
 
-Write the smallest test decision the evidence motivates. State when it changes test selection, the exception, prediction, refutation condition, and next trigger. Preserve what was observed and what remains to be tested. Write a new record only with a verifiable origin. A material revision preserves the old frozen text and requires a new evaluation before publishing altered guidance.
+Before opening a new ID, weigh the consequence for this project and the likelihood of another applicable task. Require both a specific test choice that existing guidance or coverage misses and a concrete future evaluation opportunity in this project. Give greatest weight to an observed material regression or costly rework, even from one episode. Repeated independent misses also count when their combined impact matters. A routine pass, a preference, or a duplicate observation alone does not qualify. If relevance is insufficient, report `no_hypothesis` with the reason and create no record. Apply this gate only to new IDs. Reconcile due triggers and counterevidence on existing IDs regardless of novelty.
+
+Write the smallest test decision the evidence motivates. State when it changes test selection, the exception, prediction, refutation condition, and next trigger. Preserve what was observed and what remains to be tested. For a new record, include the observed consequence in its origin evidence and name the future evaluation opportunity in its review trigger. A material revision preserves the old frozen text and requires a new evaluation before publishing altered guidance.
 
 ## 3. Prepare or reconcile an independent evaluation
 
@@ -28,7 +30,7 @@ Upsert the attempt by evaluation ID. Check its frozen revision, distinct task, c
 
 ## 4. Hand off publication or withdrawal
 
-For a validated revision, provide the [handoff](references/CONTRACTS.md#project-memory-handoff) inline to `project-memory`. Include the owner, exact procedure and evidence it can inspect within its read boundary. First check whether the same ID/revision and content already resolve by graph. After the handoff, reread the feature through the graph and verify the receipt, ID, revision, content, and references. Archive as `published` only after confirmation. A failed handoff leaves `validated` in the active queue with a publication retry trigger.
+For a validated revision, provide the [handoff](references/CONTRACTS.md#project-memory-handoff) to the caller for its next `project-memory` invocation. In an autonomous run, stage it for phase E using the existing handoff envelope. For a direct operator request, pass it inline to `project-memory`. Include the owner, exact procedure and evidence it can inspect within its read boundary. First check whether the same ID/revision and content already resolve by graph. After the handoff, reread the feature through the graph and verify the receipt, ID, revision, content, and references. Archive as `published` only after confirmation. A failed handoff leaves `validated` in the active queue with a publication retry trigger.
 
 On contract drift or credible counterevidence, recheck the current requirement and reconcile the same published ID. Use a withdrawal handoff for a rule that has lost support. A replacement rule needs a newly validated revision. Check that the withdrawn rule is absent through the same route before closing the transition. Preserve the original publication link, receipt, and reason in the archived record. If withdrawal is interrupted, keep a pending withdrawal with a retry trigger on that record and resolve it on re-entry.
 
@@ -36,4 +38,4 @@ On contract drift or credible counterevidence, recheck the current requirement a
 
 After incorporating results, revisit touched records and any due triggers in the selected feature. For a release review, assess the active records against their triggers and the current backlog. Age prompts inspection. Use the [state rules](references/CONTRACTS.md#states-and-reconciliation) to merge duplicates, archive terminal decisions, or remove unsupported abandoned drafts. Confirm record and feature revisions before mutations, and resolve interrupted transitions by ID.
 
-Report the project, feature, evidence inspected, IDs and dispositions, verified publication or withdrawal, and concrete next triggers. This explicit invocation runs between tasks. TDD uses the feature document independently during its own execution.
+Report the project, feature, evidence inspected, IDs and dispositions, verified publication or withdrawal, and concrete next triggers. A post-task review can return no handoff. Keep any unresolved evaluation or publication tied to its next trigger.
