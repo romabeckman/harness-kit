@@ -144,6 +144,24 @@ describe('MetaHarnessAgentAdapter', () => {
     expect(run).not.toHaveBeenCalled()
   })
 
+  it('limits SDK proposal evidence to eligible completed sessions', async () => {
+    const records = ['PLANNING', 'DEVELOPMENT', 'REVIEW'].map((phase, index) => {
+      const traceId = `session-2026-08-15-00${index + 1}`
+      const sessionId = `source-${index + 1}`
+      writeTrace(workingDir, traceId, sessionId)
+      return { ...sampleRecord, phase, traceId, sessionId, status: 'completed' as const }
+    })
+    writeTrace(workingDir, 'session-2026-08-15-004', 'source-bootstrap')
+    const run = vi.fn().mockResolvedValue({ success: true, raw: '{}' })
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
+    await adapter.invokeMetaHarness(records[0], undefined, [], records)
+    const prompt = run.mock.calls[0][0].prompt as string
+    expect(prompt).toContain('session-2026-08-15-001')
+    expect(prompt).toContain('session-2026-08-15-003')
+    expect(prompt).not.toContain('session-2026-08-15-004')
+    expect(prompt).toContain('Read and cite only the eligible trace IDs')
+  })
+
   it('invokes harness-kit:meta-harness separately when invokeMetaHarness is called', async () => {
     writeLegacyHistory(workingDir)
     const mockRunner = {

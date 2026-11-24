@@ -198,7 +198,8 @@ USAGE
 DESCRIPTION
   Run post-orchestration harness diagnosis and optimization using meta-harness-agent.
   Reads recorded sessions from docs/product/diagnose-sessions.jsonl, processes pending
-  sessions in batches of 3, and updates trace history and candidate improvements.
+  PLANNING, DEVELOPMENT, and REVIEW sessions in batches of 3, and updates trace history
+  and candidate improvements. Legacy sessions with unknown phases remain eligible.
 
 OPTIONS
   --agent, -a <type>        Specify agent runner; prompt opens when omitted (Claude CLI preselected)

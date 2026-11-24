@@ -8,6 +8,7 @@ import { DiagnoseService } from '../../diagnose/DiagnoseService'
 import { DiagnoseReportRenderer } from '../../diagnose/DiagnoseReportRenderer'
 import { DiagnosePaths } from '../../diagnose/utils/DiagnosePaths'
 import type { DiagnoseSettings } from '../../diagnose/types'
+import { isDiagnoseSession } from '../../diagnose/types'
 import { AgentRunnerFactory } from '../../agent-runner/AgentRunnerFactory'
 import { HarnessSettings } from '../../settings/HarnessSettings'
 import { AnsiHelpers } from '../../ui/AnsiHelpers'
@@ -70,7 +71,7 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
   const ledgerPath = DiagnosePaths.ledgerPath(cwd)
 
   const ledger = new JsonlSessionLedger(ledgerPath)
-  const pending = ledger.loadPending()
+  const pending = ledger.loadPending().filter(isDiagnoseSession)
 
   console.log(`\n── Harness Diagnose ────────────────────────────────────`)
   console.log(`  ledger:   docs/product/diagnose-sessions.jsonl`)
@@ -78,7 +79,7 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<void> {
   console.log(`────────────────────────────────────────────────────────\n`)
 
   const hasTraceHistory = pending.length === 0 && existsSync(DiagnosePaths.tracesDir(cwd))
-    && ledger.loadAll().some(record => record.status === 'completed')
+    && ledger.loadAll().some(record => record.status === 'completed' && isDiagnoseSession(record))
   if (pending.length === 0 && !hasTraceHistory) {
     console.log(`${AnsiHelpers.green('✓')} No pending diagnose sessions found in docs/product/diagnose-sessions.jsonl`)
     return

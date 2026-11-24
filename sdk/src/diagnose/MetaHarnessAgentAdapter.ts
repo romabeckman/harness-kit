@@ -12,6 +12,8 @@ import type { DreamingEpisode, DreamingProject } from '../file-state/DreamingEpi
 import { projectFile } from '../file-state/DreamingEpisodeStore'
 import { JsonExtractionProtocol } from '../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../json-extraction/types'
+import { JsonlSessionLedger } from './JsonlSessionLedger'
+import { isDiagnosePhase, isDiagnoseSession } from './types'
 
 const TRACE_FILES = {
   'metadata.md': 'Session Metadata with session_id, source_session_id, date, skill_used, agent, skill_chain, skill_versions, task_summary, task_type, model, effort, budget, benchmark_id, task_id, and featureId when known. Include the executed skill source and exact revision or content digest only when supported by source-session evidence.',
@@ -163,14 +165,23 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
       throw new Error(`Incomplete trace ${preComputedId}. Missing or invalid files or fields: ${issues.join(', ')}`)
     }
 
-    const complete = countCompleteTraces(DiagnosePaths.tracesDir(this.workingDir))
+    const history = new JsonlSessionLedger(DiagnosePaths.ledgerPath(this.workingDir)).loadAll()
+    const scoped = history.filter(record => isDiagnoseSession(record) && record.traceId
+      && (record.status === 'completed' || record.sessionId === session.sessionId))
+      .flatMap(record => {
+        const id = record.traceId!
+        return TRACE_ID.test(id) && traceIssues(readTrace(DiagnosePaths.sessionTraceDir(this.workingDir, id)), id, record.sessionId).length === 0 ? [id] : []
+      })
+    const eligibleTraces = [...new Set(scoped)]
+    const complete = session.phase === undefined && history.length === 0
+      ? countCompleteTraces(DiagnosePaths.tracesDir(this.workingDir)) : eligibleTraces.length
     if (complete > 0 && complete % 5 === 0) {
       try {
         const evaluation = await runner.run({
           agent: 'harness-kit:meta-harness-agent',
           skill: 'harness-kit:harness-evaluator',
           mode: 'autonomous',
-          prompt: `Refresh the trace frontier in ${paretoPath} using harness-kit:harness-evaluator. Stay within ${normalizedWorkingDir} and preserve raw traces. Exclude reserved evaluation data.`,
+          prompt: `Refresh the trace frontier in ${paretoPath} using harness-kit:harness-evaluator. Stay within ${normalizedWorkingDir} and preserve raw traces. Exclude reserved evaluation data.${history.length ? ` Use only these eligible trace IDs: ${JSON.stringify(eligibleTraces)}.` : ''}`,
           workspacePath: this.workingDir,
           model,
           effort,
@@ -245,8 +256,30 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
     session: DiagnoseSessionRecord,
     settings?: DiagnoseSettings,
     recordedSkills: readonly string[] = session.skill ? [session.skill] : [],
+    sessions?: readonly DiagnoseSessionRecord[],
   ): Promise<AgentOutput> {
-    if (countCompleteTraces(DiagnosePaths.tracesDir(this.workingDir)) < 3) {
+    const scopedTraces = sessions?.flatMap(record => {
+      const id = record.traceId
+      if (!id || !TRACE_ID.test(id)) return []
+      const files = readTrace(DiagnosePaths.sessionTraceDir(this.workingDir, id))
+      return traceIssues(files, id, record.sessionId).length === 0 ? [id] : []
+    })
+    if (scopedTraces && sessions?.some(record => record.phase === undefined)) {
+      const root = DiagnosePaths.tracesDir(this.workingDir)
+      const excludedIds = new Set(new JsonlSessionLedger(DiagnosePaths.ledgerPath(this.workingDir)).loadAll()
+        .filter(record => !isDiagnoseSession(record)).map(record => record.traceId))
+      if (lstatSync(root, { throwIfNoEntry: false })?.isDirectory()) {
+        for (const entry of readdirSync(root, { withFileTypes: true })) {
+          if (!entry.isDirectory() || !TRACE_ID.test(entry.name) || excludedIds.has(entry.name)) continue
+          const files = readTrace(join(root, entry.name))
+          const metadata = files.get('metadata.md') ?? ''
+          const phase = field(metadata, 'phase')
+          if (!field(metadata, 'source_session_id') && (!phase || isDiagnosePhase(phase))
+            && files.size === Object.keys(TRACE_FILES).length) scopedTraces.push(entry.name)
+        }
+      }
+    }
+    if ((scopedTraces ? new Set(scopedTraces).size : countCompleteTraces(DiagnosePaths.tracesDir(this.workingDir))) < 3) {
       return {
         success: true,
         raw: JSON.stringify({ status: 'no_candidate', decision: 'At least 3 complete traces are required.' }),
@@ -277,11 +310,15 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
       `- Traces directory: \`${tracesBasePath}/\``,
       `- Pareto frontier file: \`${paretoPath}\``,
       `- Candidates directory: \`${candidatesBasePath}/\``,
+      ...(scopedTraces ? [
+        `- Eligible trace IDs: ${JSON.stringify([...new Set(scopedTraces)])}`,
+        `- Read and cite only the eligible trace IDs. Exclude the frontier and historical search artifacts when their evidence includes other traces.`,
+      ] : []),
       ``,
       `Read relevant traces, candidate search artifacts and active skill references. Reserved evaluation data is out of scope. Use the frontier as an index when current and available.`,
       ``,
       `Follow this \`harness-kit:meta-harness\` proposal workflow:`,
-      `1. Read the frontier and compare relevant traces. If composite scores are unavailable, compare concrete actions and outcomes across steps.md and verdict.md. Keep unknown metrics unknown. Require repeated evidence for a skill change and cite the trace IDs.`,
+      `1. Compare relevant eligible traces. If composite scores are unavailable, compare concrete actions and outcomes across steps.md and verdict.md. Keep unknown metrics unknown. Require repeated evidence for a skill change and cite the trace IDs.`,
       `2. Compare historical skill versions only when matching execution evidence exists. Use the applicable project-local SKILL.md or the supplied current plugin reference for the diff. A current reference is not evidence of the version that ran. Record the baseline path and digest in rationale.md. If an applicable baseline is unavailable, return status "blocked".`,
       `3. Propose only targeted changes with significant impact expected from the evidence. Name the metric or observable outcome and define a paired evaluation after proposal. Plan the same cases, acceptance checks, baseline state, model, effort, budget, and formula within each pair. Keep confirmation cases reserved for the evaluator.`,
       `4. Propose at most one candidate and validate that its complete SKILL.md loads. Only write candidate files inside a new \`${candidatesBasePath}/{candidate_id}/\`: rationale.md with evidence and evaluation plan, diff.md against the baseline, SKILL.md, and score.md with evaluated: false and promoted: false. Preserve active skills and existing candidates.`,

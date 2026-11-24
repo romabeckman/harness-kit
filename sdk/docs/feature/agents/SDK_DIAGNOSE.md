@@ -26,6 +26,8 @@ Records execution traces, proposes skill changes from session evidence, and veri
 ## OVERVIEW
 The ledger at `docs/product/diagnose-sessions.jsonl` records the source session ID and the separately allocated trace ID. A retry reuses the assigned trace directory. The adapter validates the Markdown trace and refreshes the frontier after every five complete traces.
 
+The orchestrator records sessions from PLANNING, DEVELOPMENT, and REVIEW for diagnosis. Existing records with a different known phase remain in the ledger and are excluded from pending counts and processing. Older phase-less records remain eligible for compatibility and their phase is unknown. The proposer receives eligible trace IDs, including legacy traces without source identity when phase-less history exists.
+
 The runner reconstructs the original work and writes five Markdown files under `docs/harness-history/traces/<trace-id>/`. The SDK checks that the trace identifies its source session and includes the required metadata, task outcome, and evidence reference or gap. A recording failure leaves the session pending.
 
 `hrns diagnose` can analyze saved history once at least three complete traces exist. Local skill contents and versioned Codex cache entries are current references for the diff. Historical attribution depends on the version evidence in the recorded session. Each proposal produces at most one candidate, and the report verifies that its artifacts were created during that invocation.

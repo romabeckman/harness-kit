@@ -8,7 +8,7 @@ import type {
   ISessionLedger,
   SessionSnapshot,
 } from './types'
-import { sanitizeSessionSnapshot } from './types'
+import { isDiagnoseSession, sanitizeSessionSnapshot } from './types'
 import type { SessionIdGenerator } from './SessionIdGenerator'
 import { CandidateReader } from './CandidateReader'
 import { HarnessSettings } from '../settings/HarnessSettings'
@@ -91,7 +91,7 @@ export class DiagnoseService {
       const settings = this.resolveDiagnoseSettings(session.runner)
       const skills = completed.flatMap(record => record.skill ? [record.skill] : [])
       const existingCandidates = CandidateReader.listCandidateIds(this.workingDir)
-      const output = await this.agentAdapter.invokeMetaHarness(session, settings, skills)
+      const output = await this.agentAdapter.invokeMetaHarness(session, settings, skills, completed)
       return CandidateReader.resolveProposal(output, this.workingDir, existingCandidates)
     } catch (err) {
       console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
@@ -134,7 +134,7 @@ export class DiagnoseService {
   }
 
   async processNextBatch(batchSize = 3): Promise<BatchResult> {
-    const pending = this.ledger.loadPending()
+    const pending = this.ledger.loadPending().filter(isDiagnoseSession)
     if (pending.length === 0) {
       return { processed: 0, remaining: 0, sessionIds: [], traceIds: [] }
     }
@@ -187,7 +187,7 @@ export class DiagnoseService {
       }
     }
 
-    const remaining = this.ledger.loadPending().length
+    const remaining = this.ledger.loadPending().filter(isDiagnoseSession).length
     return { processed, remaining, sessionIds, traceIds }
   }
 
@@ -226,7 +226,7 @@ export class DiagnoseService {
       }
     }
 
-    const completed = this.ledger.loadAll().filter(session => session.status === 'completed')
+    const completed = this.ledger.loadAll().filter(session => session.status === 'completed' && isDiagnoseSession(session))
     const dreaming = await this.processDreaming(completed)
     const proposalSession = lastProcessedSessionId
       ? completed.find(session => session.sessionId === lastProcessedSessionId)
@@ -312,7 +312,7 @@ export class DiagnoseService {
   ): Promise<BatchResult> {
     await this.captureSession(orchestrator, context)
     const batchResult = await this.processNextBatch(1)
-    const completed = this.ledger.loadAll().filter(session => session.status === 'completed')
+    const completed = this.ledger.loadAll().filter(session => session.status === 'completed' && isDiagnoseSession(session))
     const processed = completed.find(session => session.sessionId === batchResult.sessionIds?.[0])
     const proposal = processed ? await this.proposeCandidate(processed, completed) : { candidateCreated: null }
 
