@@ -144,7 +144,7 @@ If tests fail unexpectedly, route diagnosis to `developer-debugging`. That agent
 
 Autonomous mode writes `docs/specs/{domain}/TDD-OUTPUT.json`. It does not emit interactive progress blocks.
 
-Both modes consult the selected feature's `## Orientações para o RED` before writing tests. Check applicability, current sources, and equivalent coverage. In autonomous mode the tactical design and existing scenario IDs still govern the work. The optional `orientation_use` field records decisions when observed.
+Both modes consult the selected feature's `## RED guidance` before writing tests. Check applicability, current sources, and equivalent coverage. In autonomous mode the tactical design and existing scenario IDs still govern the work. The optional `orientation_use` field records decisions when observed.
 
 In the autonomous backlog loop, final project-memory synchronization belongs to the orchestrator's memory phase. Do not interpret a successful TDD output as proof that documentation or runtime acceptance checks are complete.
 

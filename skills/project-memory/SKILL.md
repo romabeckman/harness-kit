@@ -19,7 +19,7 @@ Keep one working ledger: mode, authorized scope, questions, review budget, selec
 - Honor read-only requests. Missing baselines, index maintenance, and consolidation do not override scope or authorize writes.
 - Preserve document/claim IDs across renames and retain uncertainty/evidence. Deduplicate IDs only after reconciling their references in Stage 4. A document's `updated` date never establishes that all claims were reverified.
 
-For a scoped Project Dreaming handoff, use the [RED orientation procedure](references/RED-ORIENTATION.md) within these stages. Ground the handoff from the supplied summary and reachable sources outside harness history. Store validated test-selection procedures in the owning feature's `## Orientações para o RED` section. Use the ontology for factual corrections.
+For a scoped Project Dreaming handoff, use the [RED orientation procedure](references/RED-ORIENTATION.md) within these stages. Ground the handoff from the supplied summary and reachable sources outside harness history. Store validated test-selection procedures in the owning feature's `## RED guidance` section. Use the ontology for factual corrections.
 
 ## TOTAL CONTEXT BUDGET
 

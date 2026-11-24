@@ -29,7 +29,7 @@ describe('DreamingHandoffs', () => {
   function writeFeature(items: unknown[]): void {
     const text = [
       '---', `node_id: "${feature}"`, '---', '', '```graph', JSON.stringify({ node_id: feature }), '```',
-      '', '# Recovery', '', '## Orientações para o RED', '', '```json', JSON.stringify(items), '```',
+      '', '# Recovery', '', '## RED guidance', '', '```json', JSON.stringify(items), '```',
       '', '## REFERENCES',
     ].join('\n')
     writeFileSync(join(root, owner), text)
@@ -63,6 +63,14 @@ describe('DreamingHandoffs', () => {
     expect(registry.pending()).toEqual([])
     expect(status()).toBe('applied')
     expect(registry.pending()).toEqual([])
+  })
+
+  it('recognizes previously published guidance under the legacy heading', () => {
+    writeFeature([orientation])
+    const path = join(root, owner)
+    writeFileSync(path, readFileSync(path, 'utf8').replace('## RED guidance', '## Orientações para o RED'))
+    expect(registry.pending()).toEqual([])
+    expect(status()).toBe('applied')
   })
 
   it('keeps a published revision conflict for retry and does not dispatch it', () => {

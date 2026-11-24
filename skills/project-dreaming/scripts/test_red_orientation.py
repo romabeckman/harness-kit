@@ -21,7 +21,7 @@ class RedOrientationTest(unittest.TestCase):
             f'---\nnode_id: "{self.node}"\n---\n\n'
             f'```graph\n{{"node_id":"{self.node}"}}\n```\n\n'
             "# SDK Diagnose\n\n"
-            "~~~md\n## Orientações para o RED\n~~~\n\n"
+            "~~~md\n## RED guidance\n~~~\n\n"
             "## Existing contract\n\nCapture and retry have distinct semantics.\n"
         )
         self.feature.write_text(self.initial, encoding="utf-8")
@@ -57,6 +57,12 @@ class RedOrientationTest(unittest.TestCase):
 
     def test_missing_and_fenced_example_have_no_guidance(self):
         self.assertEqual(self.entries(), {})
+
+    def test_legacy_heading_is_read_and_duplicate_headings_conflict(self):
+        legacy = '## Orientações para o RED\n\n```json\n[]\n```\n'
+        self.assertEqual(guidance_section(legacy)[3], {})
+        with self.assertRaises(Conflict):
+            guidance_section(legacy + '\n## RED guidance\n')
 
     def test_publish_and_retry_same_id(self):
         self.assertEqual(apply_handoff(self.root, self.handoff)["result"], "written")
@@ -136,7 +142,7 @@ class RedOrientationTest(unittest.TestCase):
 
     def test_update_preserves_following_prose_and_other_entries(self):
         with self.feature.open("a", encoding="utf-8") as output:
-            output.write("\n## Orientações para o RED\n\n```json\n[]\n```\n\n## Keep\n\nOutside the section.\n")
+            output.write("\n## RED guidance\n\n```json\n[]\n```\n\n## Keep\n\nOutside the section.\n")
         apply_handoff(self.root, self.handoff)
         other = copy.deepcopy(self.handoff)
         other["hypothesis_id"] = other["orientation"]["id"] = "another-rule"

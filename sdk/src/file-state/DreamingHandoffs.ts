@@ -78,7 +78,7 @@ function readOrientations(content: string): Record<string, unknown>[] {
   for (const line of content.split(/\r?\n/)) {
     const marker = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line)
     if (!fence && /^ {0,3}#{1,2}[ \t]/.test(line)) {
-      active = line.trim().replace(/[ \t]+#+$/, '') === '## Orientações para o RED'
+      active = ['## RED guidance', '## Orientações para o RED'].includes(line.trim().replace(/[ \t]+#+$/, ''))
       if (active && seen) throw new Error('Duplicate RED orientation sections.')
       seen ||= active
       continue

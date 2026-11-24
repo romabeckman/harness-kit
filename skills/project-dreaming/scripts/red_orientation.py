@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "project-memory" / 
 from document_graph import graph_block, unique_object
 
 
-HEADING = "## Orientações para o RED"
+HEADING = "## RED guidance"
 
 
 class Conflict(ValueError):
@@ -92,7 +92,8 @@ def guidance_section(document):
         if fence is None and re.match(r"^ {0,3}#{1,2}[ \t]", line):
             headings.append((index, re.sub(r"[ \t]+#+$", "", line.strip())))
 
-    matches = [position for position, (_, heading) in enumerate(headings) if heading == HEADING]
+    matches = [position for position, (_, heading) in enumerate(headings)
+               if heading in (HEADING, "## Orientações para o RED")]
     if len(matches) > 1:
         raise Conflict("Duplicate RED orientation sections")
     if not matches:
@@ -212,6 +213,7 @@ def apply_handoff(project, handoff):
                     separator += newline
                 updated = before + separator + HEADING + newline + body + "".join(lines[end:])
             else:
+                lines[start - 1] = HEADING + newline
                 updated = "".join(lines[:start]) + body + "".join(lines[end:])
             if guidance_section(updated)[3] != orientations:
                 raise Conflict("Updated document would hide or change the published orientations")

@@ -23,9 +23,9 @@ review_trigger: "Next task changing pagination or the statement export ordering.
 
 Use these three headings:
 
-- `## Evidências de origem` contains one entry per stable locator with the source task/episode ID, source path or session ID, locator, snapshot/run when available, and what it supports. Give at least one verifiable origin for a candidate.
-- `## Avaliações` contains one `### <evaluation-id>` per attempt. Before results, record hypothesis revision, freeze date and immutable snapshot identifier/digest, frozen condition, action, exception, prediction, refutation and decision rule, and the opaque evaluation task-set ID. After verification, fill in baseline and variant results for each case, distinct task IDs, mode, comparison settings, verifier identities/checks, locators and decision rationale. Keep the original freeze visible. Update a repeated evaluation ID in place only for the same revision, frozen contract, and case set. Conflicting results require reconciliation or a separate attempt.
-- `## Desfecho` contains terminal disposition, reason, date and destination when applicable. For publication or withdrawal include the feature path/node, stable orientation ID, affected revision and verified receipt. For a validated revision awaiting publication record the retry trigger. For pending withdrawal record the expected published revision and retry trigger until verified. An alias contains its own original ID and a pointer to the canonical record.
+- `## Origin evidence` contains one entry per stable locator with the source task/episode ID, source path or session ID, locator, snapshot/run when available, and what it supports. Give at least one verifiable origin for a candidate.
+- `## Evaluations` contains one `### <evaluation-id>` per attempt. Before results, record hypothesis revision, freeze date and immutable snapshot identifier/digest, frozen condition, action, exception, prediction, refutation and decision rule, and the opaque evaluation task-set ID. After verification, fill in baseline and variant results for each case, distinct task IDs, mode, comparison settings, verifier identities/checks, locators and decision rationale. Keep the original freeze visible. Update a repeated evaluation ID in place only for the same revision, frozen contract, and case set. Conflicting results require reconciliation or a separate attempt.
+- `## Outcome` contains terminal disposition, reason, date and destination when applicable. For publication or withdrawal include the feature path/node, stable orientation ID, affected revision and verified receipt. For a validated revision awaiting publication record the retry trigger. For pending withdrawal record the expected published revision and retry trigger until verified. An alias contains its own original ID and a pointer to the canonical record.
 
 Increment `revision` for changes to conditions, action, exception, prediction, or refutation. Preserve evaluated snapshots and outcomes under their original revision. Reopen the same ID in `active/` when revising an archived decision, preserving its prior disposition in the record.
 
@@ -69,7 +69,7 @@ Before editing verify the read revision and file contents against disk. On concu
 
 ## Published orientation
 
-The owning feature can have one top-level `## Orientações para o RED` section. It contains a JSON array in a `json` fence. This is a procedure for test selection. Existing requirements and specs govern behavior. TDD reads only this portion of the selected feature's prose for orientation. Absence or an empty array means there is no guidance.
+The owning feature can have one top-level `## RED guidance` section. It contains a JSON array in a `json` fence. This is a procedure for test selection. Existing requirements and specs govern behavior. TDD reads only this portion of the selected feature's prose for orientation. Absence or an empty array means there is no guidance.
 
 ```json
 [

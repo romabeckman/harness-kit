@@ -117,7 +117,7 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
     const originalRun = fake.run.bind(fake)
     fake.run = async inv => {
       if (inv.skill?.endsWith('tdd-orchestrator')) {
-        expect(inv.prompt).toContain('## Orientações para o RED')
+        expect(inv.prompt).toContain('## RED guidance')
         writeValidTddOutput(specDir, { orientation_use: [orientation] })
         return { success: true, raw: '', session: { id: 'dev-recovery' } }
       }
