@@ -18,6 +18,7 @@ import { clearFeatureDeveloperSessions } from '../utils/SessionHelpers'
 import { getPlanningSource, getProductDir, getSpecsDir, readCompletedTddOutput } from '../utils/PhaseFileUtils'
 import type { TddOutput } from '../utils/PhaseFileUtils'
 import type { DreamingEpisode } from '../../file-state/DreamingEpisodeStore'
+import { buildDreamingPrompt, dreamingFingerprint, validateDreamingReceipt } from '../../file-state/DreamingAnalysis'
 import type { ReviewPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
 import type { ValidationScores } from '../../validation-gate/types'
@@ -134,24 +135,27 @@ export class ReviewHandler extends AbstractPhaseHandler {
 
   private async reviewLearningTriggers(context: Reviewontext, episode: DreamingEpisode): Promise<void> {
     for (const project of episode.projects) {
-      const findings = project.findings?.filter(item => item.review_reason)
-      if (!findings?.length) continue
+      const chain = context.dreaming!.learningChain(episode, project.root)
+      const fingerprint = dreamingFingerprint(chain.attempts)
+      let raw = ''
       try {
-        const result = await context.invokeAgent({
-          agent: 'harness-kit:software-architect', skill: 'harness-kit:project-dreaming', mode: 'autonomous',
-          domain: episode.domain,
-          prompt: [
-            'Review the cited learning evidence for this accepted feature in the owning project. Verify findings and reconcile existing IDs first.',
-            'Apply the project relevance gate before creating a hypothesis. Stage any validated handoff for phase E using the handoff contract.',
-            JSON.stringify({ project: project.root, feature: episode.domain, episode_id: episode.id, findings,
-              handoff_directory: join(getProductDir(context), 'project-dreaming', 'handoffs') }),
-          ].join('\n'),
-        })
-        if (result.success !== false) continue
+        if (chain.error) raw = JSON.stringify({ episode_id: episode.id, status: 'incomplete', reason: chain.error })
+        else {
+          const result = await context.invokeAgent({
+            agent: 'harness-kit:software-architect', skill: 'harness-kit:project-dreaming', mode: 'autonomous',
+            domain: episode.domain, workspacePath: project.root,
+            prompt: buildDreamingPrompt({ project: project.root, feature: episode.domain, episode_id: episode.id,
+              attempts: chain.attempts, handoff_directory: join(getProductDir(context), 'project-dreaming', 'handoffs') }, false),
+          })
+          raw = result.success === false ? JSON.stringify({ episode_id: episode.id, status: 'incomplete', reason: result.raw || 'Dreaming runner failed.' }) : result.raw
+        }
       } catch (error) {
         console.warn('[project-dreaming] Post-acceptance review failed:', error)
+        raw = JSON.stringify({ episode_id: episode.id, status: 'incomplete', reason: error instanceof Error ? error.message : String(error) })
       }
-      context.fsm.appendDecision({ featureId: episode.featureId, decision: `Retry Project Dreaming for episode ${episode.id} in ${project.root}.` })
+      const receipt = validateDreamingReceipt(raw, project.root, episode.id, chain.attempts.map(attempt => attempt.id))
+      context.dreaming!.recordAnalysis(episode.id, project.root, fingerprint, receipt)
+      if (receipt.status === 'incomplete') context.fsm.appendDecision({ featureId: episode.featureId, decision: `Retry Project Dreaming for episode ${episode.id} in ${project.root}: ${receipt.reason}` })
     }
   }
 

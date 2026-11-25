@@ -90,7 +90,7 @@ export interface IMetaHarnessAgentAdapter {
   invokeMetaHarness?(session: DiagnoseSessionRecord, settings?: DiagnoseSettings, recordedSkills?: readonly string[], sessions?: readonly DiagnoseSessionRecord[]): Promise<AgentOutput>
   invokeProjectDreaming?(
     episode: DreamingEpisode, project: DreamingProject, sessions: DiagnoseSessionRecord[],
-    followup?: DreamingEpisode, settings?: DiagnoseSettings,
+    followup?: DreamingEpisode, settings?: DiagnoseSettings, attempts?: DreamingEpisode[],
   ): Promise<AgentOutput>
 }
 

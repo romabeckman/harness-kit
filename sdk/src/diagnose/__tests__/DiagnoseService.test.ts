@@ -166,23 +166,43 @@ describe('DiagnoseService', () => {
 
     mockAdapter.invokeProjectDreaming = vi.fn()
       .mockResolvedValueOnce({ raw: 'failed', success: false })
-      .mockResolvedValueOnce({ raw: 'evaluated episode evidence', success: true })
+      .mockResolvedValueOnce({ raw: JSON.stringify({ episode_id: store.list()[0].id, project: workspace, feature: 'feature:recovery', inspected_episode_ids: [store.list()[0].id], status: 'no_hypothesis', reason: 'No distinct test decision.', evidence_refs: ['trace#tests'] }), success: true })
     const options = { ledger: mockLedger, agentAdapter: mockAdapter, idGenerator, settings, workingDir: workspace }
     await new DiagnoseService(options).processAllPendingInBatches()
     expect(mockAdapter.invokeProjectDreaming).not.toHaveBeenCalled()
 
     const service = new DiagnoseService({ ...options, dreaming: store })
-    expect((await service.processAllPendingInBatches()).dreaming).toEqual({
+    expect((await service.processAllPendingInBatches()).dreaming).toMatchObject({
       processed: 0, pending: 1,
       pendingDetails: [{ episodeId: store.list()[0].id, project: workspace, reason: 'failed' }],
     })
     expect(mockAdapter.invokeProjectDreaming).toHaveBeenCalledWith(
       expect.objectContaining({ featureId: feature.id }), expect.objectContaining({ root: workspace }),
-      [expect.objectContaining({ status: 'completed', traceId: expect.any(String) })], undefined, expect.any(Object),
+      [expect.objectContaining({ status: 'completed', traceId: expect.any(String) })], undefined, expect.any(Object), expect.any(Array),
     )
-    expect((await service.processAllPendingInBatches()).dreaming).toEqual({ processed: 1, pending: 0 })
-    expect((await service.processAllPendingInBatches()).dreaming).toEqual({ processed: 0, pending: 0 })
+    expect((await service.processAllPendingInBatches()).dreaming).toMatchObject({ processed: 1, pending: 0, noHypothesis: 1 })
+    expect(store.list()[0].projects[0].analysis?.receipt).toMatchObject({ status: 'no_hypothesis', reason: 'No distinct test decision.' })
+    expect((await service.processAllPendingInBatches()).dreaming).toMatchObject({ processed: 0, pending: 0 })
     expect(mockAdapter.invokeProjectDreaming).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports a legacy processed episode as unknown and allows explicit reanalysis', async () => {
+    const feature: Feature = { id: 'F001', title: 'Recovery', domain: 'recovery', priority: 1, dependencies: [], reworks: 0, scoreTL: null, scoreAdv: null, status: 'COMPLETED' }
+    const output: TddOutput = { featureId: feature.id, reworksCount: 0, status: 'SUCCESS', modifiedFiles: [], metrics: { passed: 1, failed: 0, totalTests: 1, coverage: 100 } }
+    const store = new DreamingEpisodeStore(workspace, join(workspace, 'docs/product'))
+    const session = pendingSessions[0]
+    pendingSessions = [session]
+    store.recordDevelopment(feature, output, [{ featureId: feature.id, taskId: 'T01', domain: feature.domain, project: '.', description: 'Recovery', currentPhase: 'IMPLEMENTATION', status: 'IN_PROGRESS' }], ['.'], session.sessionId)
+    store.recordReview(feature, output, 'PASS')
+    store.closeFeature(feature)
+    const episode = store.list()[0]
+    store.markProcessed(episode.id, workspace)
+    mockAdapter.invokeProjectDreaming = vi.fn().mockResolvedValue({ success: true, raw: JSON.stringify({ episode_id: episode.id, project: workspace, feature: 'feature:recovery', inspected_episode_ids: [episode.id], status: 'no_hypothesis', reason: 'Only routine coverage.', evidence_refs: ['trace#tests'] }) })
+    const options = { ledger: mockLedger, agentAdapter: mockAdapter, idGenerator, settings, workingDir: workspace, dreaming: store }
+    expect((await new DiagnoseService(options).processAllPendingInBatches()).dreaming).toMatchObject({ historicalUnknown: 1, processed: 0 })
+    expect(mockAdapter.invokeProjectDreaming).not.toHaveBeenCalled()
+    const target = { project: workspace, episodeId: episode.id }
+    expect((await new DiagnoseService({ ...options, dreamingTarget: target }).processAllPendingInBatches()).dreaming).toMatchObject({ processed: 1, noHypothesis: 1 })
   })
 
   it('processes a single batch of 3 pending sessions and marks them completed', async () => {

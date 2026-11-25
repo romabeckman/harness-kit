@@ -24,6 +24,8 @@ export interface DiagnoseCliOptions {
   effort?: string
   batchSize?: number
   projectDreaming?: boolean
+  dreamingProject?: string
+  dreamingEpisode?: string
 }
 
 export function parseDiagnoseArgs(args: string[]): DiagnoseCliOptions {
@@ -61,6 +63,8 @@ export function parseDiagnoseArgs(args: string[]): DiagnoseCliOptions {
       }
     }
     if (arg === '--project-dreaming' && (value === undefined || value === 'true')) result.projectDreaming = true
+    if (arg === '--dreaming-project') result.dreamingProject = nextArg()
+    if (arg === '--dreaming-episode') result.dreamingEpisode = nextArg()
   }
 
   return result
@@ -68,6 +72,11 @@ export function parseDiagnoseArgs(args: string[]): DiagnoseCliOptions {
 
 export async function cmdDiagnose(cwd: string, args: string[]): Promise<number> {
   const options = parseDiagnoseArgs(args)
+  if (Boolean(options.dreamingProject) !== Boolean(options.dreamingEpisode)) {
+    console.error('Use --dreaming-project and --dreaming-episode together.')
+    return 1
+  }
+  if (options.dreamingProject) options.projectDreaming = true
   const ledgerPath = DiagnosePaths.ledgerPath(cwd)
 
   const ledger = new JsonlSessionLedger(ledgerPath)
@@ -80,9 +89,11 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<number> 
 
   const hasTraceHistory = pending.length === 0 && existsSync(DiagnosePaths.tracesDir(cwd))
     && ledger.loadAll().some(record => record.status === 'completed' && isDiagnoseSession(record))
-  if (pending.length === 0 && !hasTraceHistory) {
+  const dreamingStore = options.projectDreaming ? new DreamingEpisodeStore(cwd, DiagnosePaths.productDir(cwd)) : undefined
+  if (pending.length === 0 && !hasTraceHistory && !dreamingStore?.list().some(episode => episode.closed)) {
+    if (options.projectDreaming) console.log('No eligible project episodes found.')
     console.log(`${AnsiHelpers.green('✓')} No pending diagnose sessions found in docs/product/diagnose-sessions.jsonl`)
-    return 0
+    return options.dreamingEpisode ? 1 : 0
   }
 
   options.agentType = await selectAgentRunner(options.agentType)
@@ -112,7 +123,8 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<number> 
     settings,
     cliSettings,
     workingDir: cwd,
-    ...(options.projectDreaming ? { dreaming: new DreamingEpisodeStore(cwd, DiagnosePaths.productDir(cwd)) } : {}),
+    ...(dreamingStore ? { dreaming: dreamingStore } : {}),
+    ...(options.dreamingProject && options.dreamingEpisode ? { dreamingTarget: { project: options.dreamingProject, episodeId: options.dreamingEpisode } } : {}),
   })
 
   const batchSize = options.batchSize ?? 3
@@ -134,12 +146,16 @@ export async function cmdDiagnose(cwd: string, args: string[]): Promise<number> 
   if (result.dreaming) {
     const { processed, pending } = result.dreaming
     console.log(`Project Dreaming: ${processed} processed, ${pending} pending.`)
+    console.log(`  Created: ${result.dreaming.created ?? 0}; updated: ${result.dreaming.updated ?? 0}; no hypothesis: ${result.dreaming.noHypothesis ?? 0}; historical outcome unknown: ${result.dreaming.historicalUnknown ?? 0}.`)
+    for (const detail of result.dreaming.decisions ?? []) {
+      console.log(`  Episode ${detail.episodeId} (${detail.project}): ${detail.status} - ${detail.reason}`)
+    }
     for (const detail of result.dreaming.pendingDetails ?? []) {
       console.error(`  Pending episode ${detail.episodeId} (${detail.project}) - ${detail.reason}`)
     }
-    if (processed === 0 && pending === 0) {
-      console.log('No unprocessed closed project episodes found.')
+    if (!result.dreaming.eligible) {
+      console.log('No eligible project episodes found.')
     }
   }
-  return result.dreaming?.pending ? 1 : 0
+  return result.dreaming?.pending || (options.dreamingEpisode && !result.dreaming?.eligible) ? 1 : 0
 }

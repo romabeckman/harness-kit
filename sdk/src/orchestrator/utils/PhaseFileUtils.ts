@@ -77,6 +77,7 @@ export interface TddOutput {
   developerHandoff?: string
   reworksCount: number
   orientation_use?: OrientationUse[]
+  learning_evidence?: { project?: string; path: string; locator: string; summary: string; scenario_id?: string }[]
 }
 
 const orientationDecisions = ['applied', 'covered', 'skipped', 'needs_refinement'] as const

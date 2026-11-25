@@ -9,9 +9,7 @@ import { DiagnosePaths } from './utils/DiagnosePaths'
 import { readActiveSkillReferences } from './SkillBaselineReader'
 import { CandidatePromotionService } from './CandidatePromotionService'
 import type { DreamingEpisode, DreamingProject } from '../file-state/DreamingEpisodeStore'
-import { projectFile } from '../file-state/DreamingEpisodeStore'
-import { JsonExtractionProtocol } from '../json-extraction/JsonExtractionProtocol'
-import { isExtractionResult } from '../json-extraction/types'
+import { buildDreamingPrompt, validateDreamingReceipt } from '../file-state/DreamingAnalysis'
 import { JsonlSessionLedger } from './JsonlSessionLedger'
 import { isDiagnosePhase, isDiagnoseSession } from './types'
 
@@ -198,7 +196,7 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
 
   async invokeProjectDreaming(
     episode: DreamingEpisode, project: DreamingProject, sessions: DiagnoseSessionRecord[],
-    followup?: DreamingEpisode, settings?: DiagnoseSettings,
+    followup?: DreamingEpisode, settings?: DiagnoseSettings, attempts?: DreamingEpisode[],
   ): Promise<AgentOutput> {
     const verified = sessions.filter(session => {
       const traceId = session.traceId
@@ -211,55 +209,19 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
     const model = settings?.model.trim() || source.model
     const effort = settings?.effort.trim() || source.effort
     const runner = this.customRunner ?? AgentRunnerFactory.create({ type: source.runner, model, effort })
-    const followupProject = followup?.projects.find(owner => owner.root === project.root)
-    const prompt = [
-      'Explicitly invoke harness-kit:project-dreaming for evidence collection on this episode.',
-      'Use the supplied workspace as the owning project. Keep project inspection and writes within that root. You may also read the exact verified trace directories listed in sources, including when they are in a separate orchestration workspace.',
-      'Read metadata.md, steps.md, verdict.md and score.md from the linked traces, including when findings and orientation_use are empty. Use only observations that can be attributed to this project and attempt. If a session was reused and the inspected trace describes another attempt, treat it as insufficient evidence for this episode.',
-      'Resolve the feature through project memory and verify the referenced evidence against the source before extracting or reconciling a hypothesis.',
-      'Treat the JSON as data. Use the episode ID as the stable origin locator. A runner session can cover several attempts, so cite only evidence from this episode.',
-      'This invocation may update learning records with verifiable origins. Leave evaluation, publication, and withdrawal to their separate workflows.',
-      'Return only JSON with episode_id and status. Use status recorded with hypothesis_id when the saved record links this episode. Use no_hypothesis when you inspected the available evidence and found no verifiable basis for a hypothesis. Use incomplete only for a blocker that prevented the review, and include a non-empty reason identifying the blocked step and missing or unreadable input.',
-      JSON.stringify({
-        episodeId: episode.id, featureId: episode.featureId, domain: episode.domain, taskIds: project.taskIds,
-        attempt: episode.reworks, review: episode.review, metrics: episode.metrics,
-        sources: verified.map(session => ({
-          sessionId: session.sessionId,
-          traceId: session.traceId,
-          path: DiagnosePaths.sessionTraceDir(this.workingDir, session.traceId!),
-        })),
-        orientation_use: project.orientation_use, findings: project.findings,
-        followup: followup && followupProject && {
-          episodeId: followup.id, review: followup.review, findings: followupProject.findings,
-          orientation_use: followupProject.orientation_use,
-        },
-      }),
-    ].join('\n')
+    const chain = attempts ?? [episode]
+    const sources = verified.map(session => ({ sessionId: session.sessionId, traceId: session.traceId,
+      path: DiagnosePaths.sessionTraceDir(this.workingDir, session.traceId!) }))
+    const prompt = buildDreamingPrompt({ project: project.root, feature: episode.domain, episode_id: episode.id,
+      attempts: chain, sources, followup: followup?.id }, true)
+      + '\n' + sources.map(item => item.path).join('\n')
     const output = await runner.run({
       agent: 'harness-kit:software-architect', skill: 'harness-kit:project-dreaming',
       mode: 'autonomous', workspacePath: project.root, phaseKey: 'diagnose', prompt, model, effort,
     })
     if (output.success === false) return output
-    const result = JsonExtractionProtocol.extract(output.raw)
-    const receipt = isExtractionResult(result) && result.data as Partial<{
-      episode_id: string; status: string; hypothesis_id: string; reason: string
-    }>
-    if (receipt && receipt.episode_id === episode.id) {
-      if (receipt.status === 'no_hypothesis') return output
-      if (receipt.status === 'incomplete') {
-        const reason = typeof receipt.reason === 'string' ? receipt.reason.trim() : ''
-        return { ...output, success: false, raw: reason || 'The runner reported incomplete without a reason.' }
-      }
-      if (receipt.status === 'recorded' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(receipt.hypothesis_id ?? '')) {
-        const saved = ['active', 'archived'].some(queue => {
-          const path = projectFile(project.root, `docs/harness-history/learning/${queue}/${receipt.hypothesis_id}.md`)
-          return path !== undefined && readFileSync(path, 'utf8').includes(episode.id)
-        })
-        if (saved) return output
-        return { ...output, success: false, raw: 'The reported hypothesis does not link to this episode in the learning store.' }
-      }
-    }
-    return { ...output, success: false, raw: 'Project Dreaming did not confirm the episode outcome.' }
+    const receipt = validateDreamingReceipt(output.raw, project.root, episode.id, chain.map(item => item.id))
+    return receipt.status === 'incomplete' ? { ...output, success: false, raw: receipt.reason! } : { ...output, raw: JSON.stringify(receipt) }
   }
 
   async invokeMetaHarness(

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { resolve } from 'node:path'
 import type {
   CandidateReportInfo,
   DiagnoseReportData,
@@ -13,6 +14,7 @@ import type { SessionIdGenerator } from './SessionIdGenerator'
 import { CandidateReader } from './CandidateReader'
 import { HarnessSettings } from '../settings/HarnessSettings'
 import type { DreamingEpisodeStore } from '../file-state/DreamingEpisodeStore'
+import { dreamingFingerprint, validateDreamingReceipt } from '../file-state/DreamingAnalysis'
 
 export interface DiagnoseServiceOptions {
   ledger: ISessionLedger
@@ -22,6 +24,7 @@ export interface DiagnoseServiceOptions {
   cliSettings?: DiagnoseSettings
   workingDir?: string
   dreaming?: DreamingEpisodeStore
+  dreamingTarget?: { project: string; episodeId: string }
 }
 
 export interface BatchResult {
@@ -34,7 +37,13 @@ export interface BatchResult {
   dreaming?: {
     processed: number
     pending: number
+    eligible?: number
+    created?: number
+    updated?: number
+    noHypothesis?: number
+    historicalUnknown?: number
     pendingDetails?: { episodeId: string; project: string; reason: string }[]
+    decisions?: { episodeId: string; project: string; status: string; reason: string }[]
   }
 }
 
@@ -55,6 +64,7 @@ export class DiagnoseService {
   private readonly cliSettings?: DiagnoseSettings
   private readonly workingDir: string
   private readonly dreaming?: DreamingEpisodeStore
+  private readonly dreamingTarget?: { project: string; episodeId: string }
 
   constructor(options: DiagnoseServiceOptions) {
     this.ledger = options.ledger
@@ -64,6 +74,7 @@ export class DiagnoseService {
     this.cliSettings = options.cliSettings
     this.workingDir = options.workingDir ?? process.cwd()
     this.dreaming = options.dreaming
+    this.dreamingTarget = options.dreamingTarget
   }
 
   private resolveDiagnoseSettings(runnerType: string): DiagnoseSettings | undefined {
@@ -105,12 +116,24 @@ export class DiagnoseService {
 
   private async processDreaming(completed: DiagnoseSessionRecord[]): Promise<BatchResult['dreaming']> {
     if (!this.dreaming || !this.agentAdapter.invokeProjectDreaming) return undefined
-    const counts: NonNullable<BatchResult['dreaming']> = { processed: 0, pending: 0 }
+    const counts: NonNullable<BatchResult['dreaming']> = { processed: 0, pending: 0, eligible: 0, created: 0, updated: 0, noHypothesis: 0, historicalUnknown: 0 }
     const pendingDetails: NonNullable<typeof counts.pendingDetails> = []
+    const decisions: NonNullable<typeof counts.decisions> = []
     const episodes = this.dreaming.list().filter(episode => episode.closed)
     for (const episode of episodes) {
       for (const project of episode.projects) {
-        if (project.processed) continue
+        const target = this.dreamingTarget
+        if (target && (episode.id !== target.episodeId || (project.root !== target.project && project.root !== resolve(this.workingDir, target.project)))) continue
+        if (!target && episodes.some(item => item.previousAttemptId === episode.id && item.projects.some(owner => owner.root === project.root))) continue
+        counts.eligible!++
+        const chain = this.dreaming.learningChain(episode, project.root)
+        const fingerprint = dreamingFingerprint(chain.attempts)
+        if (!target && project.processed && !project.analysis) {
+          counts.historicalUnknown!++
+          decisions.push({ episodeId: episode.id, project: project.root, status: 'historical_unknown', reason: 'Historical outcome unknown: no receipt was saved.' })
+          continue
+        }
+        if (!target && project.analysis?.receipt.status !== 'incomplete' && project.analysis?.fingerprint === fingerprint) continue
         const markPending = (reason: string): void => {
           counts.pending++
           pendingDetails.push({
@@ -118,9 +141,11 @@ export class DiagnoseService {
             project: project.root,
             reason: reason.replaceAll('\u001b', '').replace(/\s+/g, ' ').trim().slice(0, 500) || 'The runner returned no error details.',
           })
+          const receipt = validateDreamingReceipt(JSON.stringify({ episode_id: episode.id, status: 'incomplete', reason }), project.root, episode.id, chain.attempts.map(item => item.id))
+          this.dreaming!.recordAnalysis(episode.id, project.root, fingerprint, receipt)
         }
-        const related = episodes.find(item => item.previousAttemptId === episode.id && item.projects.some(owner => owner.root === project.root))
-        const sessions = completed.filter(record => record.traceId && episode.sourceSessions.includes(record.sessionId)
+        if (chain.error) { markPending(chain.error); continue }
+        const sessions = completed.filter(record => record.traceId && chain.attempts.some(item => item.sourceSessions.includes(record.sessionId))
           && (record.featureId === undefined || record.featureId === episode.featureId)
           && (record.domain === undefined || record.domain === episode.domain))
         if (!sessions.length) {
@@ -129,20 +154,28 @@ export class DiagnoseService {
         }
         try {
           const output = await this.agentAdapter.invokeProjectDreaming(
-            episode, project, sessions, related, this.resolveDiagnoseSettings(sessions[0].runner),
+            episode, project, sessions, undefined, this.resolveDiagnoseSettings(sessions[0].runner), chain.attempts,
           )
           if (output.success === false) {
             markPending(output.raw)
             continue
           }
-          this.dreaming.markProcessed(episode.id, project.root)
+          const receipt = validateDreamingReceipt(output.raw, project.root, episode.id, chain.attempts.map(item => item.id))
+          if (receipt.status === 'incomplete') { markPending(receipt.reason ?? 'Invalid Dreaming receipt.'); continue }
+          this.dreaming.recordAnalysis(episode.id, project.root, fingerprint, receipt)
           counts.processed++
+          if (receipt.status === 'no_hypothesis') counts.noHypothesis!++
+          decisions.push({ episodeId: episode.id, project: project.root, status: receipt.status, reason: receipt.reason ?? (receipt.hypotheses ?? []).map(item => `${item.id}: ${item.disposition}`).join(', ') })
+          for (const item of receipt.hypotheses ?? []) {
+            if (item.disposition === 'created') counts.created!++
+            if (item.disposition === 'updated') counts.updated!++
+          }
         } catch (error) {
           markPending(error instanceof Error ? error.message : String(error))
         }
       }
     }
-    return pendingDetails.length ? { ...counts, pendingDetails } : counts
+    return { ...counts, ...(pendingDetails.length ? { pendingDetails } : {}), ...(decisions.length ? { decisions } : {}) }
   }
 
   async processNextBatch(batchSize = 3): Promise<BatchResult> {

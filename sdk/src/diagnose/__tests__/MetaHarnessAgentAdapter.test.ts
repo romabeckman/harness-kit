@@ -65,6 +65,8 @@ describe('MetaHarnessAgentAdapter', () => {
       success: false, raw: 'The runner reported incomplete without a reason.',
     })
     run.mockResolvedValue({ raw: JSON.stringify({ episode_id: episode.id, status: 'no_hypothesis' }), success: true })
+    expect((await adapter.invokeProjectDreaming(episode, project, [session])).success).toBe(false)
+    run.mockResolvedValue({ raw: JSON.stringify({ episode_id: episode.id, project: workingDir, feature: 'feature:retry', inspected_episode_ids: [episode.id], status: 'no_hypothesis', reason: 'No distinct test decision.', evidence_refs: ['trace#tests'] }), success: true })
     expect((await adapter.invokeProjectDreaming(episode, project, [session])).success).toBe(true)
   })
 

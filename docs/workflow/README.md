@@ -15,7 +15,6 @@ The source of truth for exact behavior is each file under `skills/*/SKILL.md` an
 | Run the sovereign skill-driven loop | [AUTONOMOUS-ORCHESTRATOR.md](AUTONOMOUS-ORCHESTRATOR.md) |
 | Record and improve harness behavior | [META-HARNESS.md](META-HARNESS.md) |
 | Learn which tests to select from a development episode | [Project Dreaming](PLAYBOOK-DAILY-USE.md#review-a-development-episode-between-tasks) |
-| Inspect the SDK diagnosis pilot | [Project Dreaming pilot](PROJECT-DREAMING-PILOT.md) |
 
 ## Skill groups
 

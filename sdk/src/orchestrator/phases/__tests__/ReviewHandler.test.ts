@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { ReviewHandler } from '../ReviewHandler'
 import { DreamingEpisodeStore } from '../../../file-state/DreamingEpisodeStore'
 import type { TddOutput } from '../../utils/PhaseFileUtils'
 import { Complexity, Phase } from '../../types'
 import type { Reviewontext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
-import type { Feature, BootstrapConfig } from '../../../file-state/types'
+import type { Feature, BootstrapConfig, Task } from '../../../file-state/types'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../../../agent-runner/AgentRunnerError'
 
 function makeTempDir(): string {
@@ -138,7 +138,7 @@ describe('ReviewHandler', () => {
     ['trigger_met', 0.95, true],
     ['guidance_contradicted', 0.95, true],
     ['new_evidence', 0.95, true],
-    [undefined, 0.95, false],
+    [undefined, 0.95, true],
     ['trigger_met', 0.5, false],
     ['new_evidence', 0.5, false],
   ] as const)('routes %s after a review scoring %s', async (reason, score, expectedCall) => {
@@ -164,14 +164,46 @@ describe('ReviewHandler', () => {
     }, { projectPaths: roots })
     const phase = await handler.handle(Phase.REVIEW, { ...context, dreaming: store })
     const calls = vi.mocked(context.invokeAgent).mock.calls.filter(([inv]) => inv.skill === 'harness-kit:project-dreaming')
-    expect(calls).toHaveLength(expectedCall ? 1 : 0)
+    expect(calls).toHaveLength(expectedCall ? 2 : 0)
     if (expectedCall) {
-      expect(JSON.parse(calls[0][0].prompt!.split('\n').at(-1)!)).toMatchObject({
-        project: join(workingDir, 'web'), findings: [expect.objectContaining({ review_reason: reason })],
-      })
+      const web = calls.map(([inv]) => JSON.parse(inv.prompt!.split('\n').at(-1)!)).find(item => item.project === join(workingDir, 'web'))
+      expect(web.attempts[0].projects[0].findings).toEqual([expect.objectContaining(reason ? { review_reason: reason } : { locator: 'preserves identity' })])
+      expect(calls[0][0].prompt).toContain('Explicitly invoke harness-kit:project-dreaming')
       expect(phase).toBe(Phase.TRANSITION)
       expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({ decision: expect.stringContaining('Retry Project Dreaming') }))
     }
+  })
+
+  it('reviews retry evidence after a clean PASS and verifies the candidate in its owner', async () => {
+    const feature = makeFeature()
+    const root = join(workingDir, 'server')
+    mkdirSync(root)
+    writeFileSync(join(root, 'recovery.test.ts'), 'retains identity after restart')
+    const task: Task = { featureId: feature.id, domain: feature.domain, taskId: 'T01', project: 'server', description: 'Recovery', status: 'IN_PROGRESS', currentPhase: 'IMPLEMENTATION' }
+    const output: TddOutput = { featureId: feature.id, status: 'SUCCESS', reworksCount: 0, modifiedFiles: ['recovery.test.ts'], metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 } }
+    const store = new DreamingEpisodeStore(workingDir, join(workingDir, 'docs/product'))
+    store.recordDevelopment(feature, output, [task], ['server'], 'development-session')
+    store.recordReview(feature, output, 'RETRY', [], [{ project: 'server', path: 'recovery.test.ts', locator: 'retains identity after restart', summary: 'Recovery after restart' }])
+    const retry = store.list()[0]
+    const accepted = { ...feature, reworks: 1 }
+    const acceptedOutput = { ...output, reworksCount: 1 }
+    store.recordDevelopment(accepted, acceptedOutput, [task], ['server'], 'development-session')
+    writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify(acceptedOutput))
+    const context = makeContext(workingDir, makeFsm(accepted), async invocation => {
+      if (invocation.skill !== 'harness-kit:project-dreaming') return { raw: JSON.stringify({ score: 0.95 }) }
+      const data = JSON.parse(invocation.prompt!.split('\n').at(-1)!)
+      expect(data.attempts.map((item: { id: string }) => item.id)).toEqual([retry.id, data.episode_id])
+      expect(data.attempts[0].projects[0].findings[0].locator).toBe('retains identity after restart')
+      const folder = join(root, 'docs/harness-history/learning/active')
+      mkdirSync(folder, { recursive: true })
+      writeFileSync(join(folder, 'restart-identity.md'), `---\nid: restart-identity\nfeature_node_id: "feature:recovery"\napplies_when: recovery changes\nproposed_action: test restart\nskip_when: equivalent coverage exists\nprediction: finds lost identity\nrefutation: baseline finds it\nreview_trigger: next recovery change\n---\n## Origin evidence\n${retry.id}\n`)
+      return { raw: JSON.stringify({ episode_id: data.episode_id, project: root, feature: 'feature:recovery', inspected_episode_ids: [retry.id, data.episode_id], status: 'recorded', evidence_refs: ['recovery.test.ts#retains identity after restart'], hypotheses: [{ id: 'restart-identity', disposition: 'created', origin_episode_ids: [retry.id] }] }) }
+    }, { projectPaths: ['server'] })
+    vi.mocked(context.getActiveFeature).mockReturnValue(accepted)
+    expect(await handler.handle(Phase.REVIEW, { ...context, dreaming: store })).toBe(Phase.TRANSITION)
+    const terminal = store.list().find(item => item.reworks === 1)!
+    expect(terminal.projects[0].analysis?.receipt).toMatchObject({ status: 'recorded', hypotheses: [{ id: 'restart-identity', origin_episode_ids: [retry.id] }] })
+    expect(readFileSync(join(root, 'docs/harness-history/learning/active/restart-identity.md'), 'utf8')).toContain(retry.id)
   })
 
   it('clears developerSession and transitions when skipValidation is true', async () => {
