@@ -94,9 +94,9 @@ Use this flow for complex scenarios where business intent, domain boundaries, in
 /harness-kit:pbb-design
 ```
 
-Provide the product or feature scope, business context, intended outcomes, and known constraints. The skill organizes problems, expectations, personas, functionalities, and Product Backlog Items (PBIs). It keeps business refinement separate from architecture and implementation details.
+Provide the product or feature scope, business context, intended outcomes, and known constraints. The skill produces a Markdown backlog with `PBB-Contract: 2`, observable outcomes, commercial order, and evidence by Product Backlog Item (PBI).
 
-Review the selected PBIs, assumptions, and open questions before handing the scope to technical refinement. In interactive mode, the skill asks about decision-relevant gaps. In autonomous mode, generated answers remain provisional model assumptions rather than confirmed business facts.
+Use the traceability index to select PBIs and recover their sources and decisions before handing the scope to technical refinement. In interactive mode, the skill asks about decision-relevant gaps. Autonomous proposals remain provisional. Prior human answers, deferrals, and unknowns retain their original status.
 
 ### 2.2 Technical refinement: Scope Refinement
 

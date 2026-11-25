@@ -24,7 +24,7 @@ The source of truth for exact behavior is each file under `skills/*/SKILL.md` an
 | --- | --- | --- |
 | `project-memory` | Create, update, or consolidate evidence-backed project documentation | Canonical ADRs/features, navigation, digest, and routing graph; targeted root README edits |
 | `memory-context` | Retrieve organizational knowledge, cross-project relationships, or environment differences through Harness Memory MCP | Evidence-backed context and `.harness-kit/memory.toml` discovery cache |
-| `pbb-design` | Optionally refine business intent before technical design | Problems, expectations, personas, functionalities, and traceable PBIs |
+| `pbb-design` | Optionally refine business intent before technical design | Markdown backlog with `PBB-Contract: 2`, evidence, commercial order, and decisions by PBI |
 | `scope-refinement` | Optionally refine complex scope into DDD design and executable scenarios; required in the autonomous planning phase | `docs/specs/{domain}/001-*` through `004-*` |
 | `tdd-orchestrator` | Implement a clear interactive requirement or pre-specified autonomous scenarios through RED, GREEN, and REFACTOR | Code, tests, validation evidence, and autonomous `TDD-OUTPUT.json` |
 
@@ -80,6 +80,26 @@ Runtime acceptance QA requires runner readiness, a command preview, and explicit
 - Human approval is required before a meta-harness candidate replaces an active skill.
 
 Project-memory consolidation maintains project knowledge. Meta-harness evaluates and proposes changes to skill instructions using session traces. Keep these responsibilities and evidence stores separate.
+
+## From PBB to planning
+
+In the [PBB example](../../skills/pbb-design/references/output-contract.md#example),
+`PBI01` describes showing the level of classified courses in the list.
+`S01` supports the outcome and `Q01` confirms commercial rank 1.
+`PBI01` is ready for refinement. `PBI02` has confirmed rank 2, while
+`Q02` leaves the filter's behavior for unclassified courses deferred.
+
+The skill-driven Bootstrap can group `PBI01` into an operational feature
+such as `F001` and records the mapping for Planning. The feature has its own
+operational priority and dependencies. Planning uses the PBI's result and
+evidence, carries the decisions that affect the selected feature, and keeps the
+filter rule pending. Autonomous implementation still requires the `003` and
+`004` specifications.
+
+Resume an existing project with its current backlog. For a business backlog
+without the contract marker, use its section headings and keep unknowns
+explicit. An explicit upgrade uses available evidence and preserves the
+original until the revised document is checked.
 
 ## Readiness checklist
 

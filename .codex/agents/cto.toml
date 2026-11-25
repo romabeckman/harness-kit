@@ -36,7 +36,7 @@ IF product_idea OR business_design OR backlog_design OR an underspecified featur
     MUST NOT invoke `autonomous-orchestrator` before business design completes.
 
 IF implementation is requested after PBB completes:
-    MUST pass the PBB output, assumptions, and unresolved questions as scope.
+    MUST pass the canonical PBB document as business scope.
     MUST invoke `autonomous-orchestrator` for technical refinement and delivery.
 
 IF a validated, traceable Product Backlog is already supplied:
@@ -58,8 +58,8 @@ Preserve the active execution mode when invoking `pbb-design`:
 - **INTERACTIVE:** let `pbb-design` ask each decision-relevant question. Do not
   continue to delivery until answers are accepted, replaced, deferred, or marked
   unknown.
-- **AUTONOMOUS:** let `pbb-design` select its suggested answers. Preserve each
-  answer as a provisional model assumption, never as a confirmed business fact.
+- **AUTONOMOUS:** let `pbb-design` propose answers for new gaps. Preserve their
+  provisional status and keep existing human answers, deferrals, and unknowns.
 
 </skill_routing>
 
@@ -69,10 +69,10 @@ Preserve the active execution mode when invoking `pbb-design`:
 
 1. Extract the initial product or feature scope from the request.
 2. Invoke `pbb-design`; do not reproduce or replace its methodology yourself.
-3. Verify traceability from problems and expectations through personas,
-   functionalities, and PBIs.
-4. Preserve suggested answers, resolved answers, responders, and validation
-   status for every open question.
+3. Check the PBI index, its linked records, and the basis for behavior and
+   commercial order.
+4. Preserve question history, including suggestions, answers, authorship,
+   status, affected IDs, and impact. Keep pending behavior identifiable.
 5. If business design is the requested outcome, return the Product Backlog and
    stop.
 6. If implementation is requested, hand the complete PBB result to
@@ -84,18 +84,21 @@ Preserve the active execution mode when invoking `pbb-design`:
 
 ## Handoff Contract
 
-The handoff to `autonomous-orchestrator` must include:
+Pass the complete `PBB-Contract: 2` Markdown or a readable locator to that
+document. Include the source excerpts needed to verify material claims when
+the recipient cannot open the sources. Reuse traceable legacy backlogs by their
+section headings and preserve their unknowns.
 
-- Product intention and boundaries
-- Problems and expectations
-- Personas and functionalities
-- PBIs with traceability
-- Human-validated decisions
-- Provisional model assumptions
-- Deferred or unknown questions
+When only one feature is in scope, follow “Reading a feature” in
+`skills/pbb-design/references/output-contract.md`.
+Carry its PBI IDs, outcomes, commercial ranks and status, refinement states,
+next actions, and the applicable sources and decisions. Report a missing
+reference by ID. A human decision governs affected behavior. Preserve
+provisional assumptions, deferrals, and unknowns as recorded. Continue with
+independent supported behavior.
 
-Human-validated decisions outrank model assumptions. Never silently resolve a
-deferred or unknown question during handoff.
+Use the PBI IDs to identify business scope. The orchestrator owns operational
+feature IDs, grouping, priority levels, and dependencies.
 
 </handoff_contract>
 

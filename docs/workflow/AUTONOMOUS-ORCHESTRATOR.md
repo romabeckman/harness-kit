@@ -13,12 +13,12 @@
 > [!TIP]
 > The autonomous backlog loop is optional for developers. For clear, bounded work, invoke `tdd-orchestrator` directly with project memory. When business and technical refinement are needed, use `pbb-design` first, then `scope-refinement`, as described in the [Daily Use Playbook](PLAYBOOK-DAILY-USE.md#flow-2-business-and-technical-refinement-optional).
 
-When using the `cto` agent for a product idea or underspecified feature, it invokes `pbb-design` before delivery. A validated, traceable backlog may be reused; analysis-only requests do not start delivery. The handoff includes product boundaries, problems, expectations, personas, functionalities, PBIs, validated decisions, provisional assumptions, and deferred questions. PBB is not an automatic phase of a direct `autonomous-orchestrator` invocation.
+When using the `cto` agent for a product idea or underspecified feature, it invokes `pbb-design` before delivery. The CTO can reuse a traceable backlog and starts delivery when requested. The handoff carries the canonical business backlog with its evidence and decision history. To use PBB with a direct `autonomous-orchestrator` invocation, supply that backlog as scope.
 
 The skill collects required input at its initial gate and Bootstrap:
 
 1. Choose `resume` or `reset`.
-2. For `reset`, provide the project scope or PRD.
+2. For `reset`, provide the project scope or PRD if it was not already supplied.
 3. Provide project paths if they are not known.
 
 After required bootstrap input exists, the orchestrator continues without phase-by-phase questions. It stops when the backlog finishes, a critical blocker prevents progress, or the human interrupts execution.
@@ -69,6 +69,7 @@ The skill also mentions an optional `REFINEMENT` handler after BOOTSTRAP when en
 - Create product files from `skills/autonomous-orchestrator/models/` when missing.
 - Persist project paths, scope, `currentPhase`, `activeFeatureId`, and cycle count.
 - Build cohesive, independently testable features.
+- For `PBB-Contract: 2`, record feature-to-PBI mappings and the source path in `DECISIONS.md`. Preserve inline source in `docs/product/PBB.md` for resume. Keep commercial order and operational dependencies visible, and log PBIs waiting on a material business decision.
 - Load `scoreThresholdTL` and `scoreThresholdAdv` (default `0.70`) and `completionCriteria.maxReworks` (default `2`) from `BOOTSTRAP-CONFIG.json`.
 - Preserve supplied phase-scoped `steeringRules`. Keep feature scores and rework counts in `BACKLOG.md`; `DEVELOPMENT-STATE.md` tracks task-level progress.
 
@@ -76,6 +77,7 @@ The skill also mentions an optional `REFINEMENT` handler after BOOTSTRAP when en
 
 - Mark the feature `IN_PROGRESS`.
 - Delegate `scope-refinement` to `software-architect`.
+- For mapped features, pass the selected PBIs, evidence, and applicable decisions. Refine independent supported outcomes and carry any material clarifications with their PBI and question IDs.
 - Require `004-*-test-scenarios.md`.
 - Extract ordered task JSON from `003-*-tactical-design.md` into `DEVELOPMENT-STATE.md`.
 

@@ -12,13 +12,15 @@ description: Sovereign loop manager. Handles file initialization, feature lifecy
 > **What would you like to do?**
 >
 > - **`resume`** — continue from where the previous session stopped (`docs/product/` is preserved as-is)
-> - **`reset`** — discard current `docs/product/` and start a new cycle (scope will be collected next)
+> - **`reset`** — discard current `docs/product/` and start a new cycle
 
-**Step 0b — Scope collection (only when action is `reset`).** After the user picks `reset`, ASK for the scope as plain text:
+**Step 0b — Scope collection (only when action is `reset`).** Reuse scope
+already supplied by the user or CTO. If it is missing, ASK for it as plain text.
 
 > **Please describe the project scope or paste the PRD:**
 
-Store the text answer as `${scope}`.
+Store the supplied scope as `${scope}`. Read any supplied scope document under
+`docs/product/` before resetting that directory.
 
 ```
 IF user answered "resume" in Step 0a:
@@ -68,7 +70,7 @@ Execute steps in order. ASK each missing value ONCE, then never again.
 **1.1 Acquire inputs (if not already present):**
 
 ```
-IF BACKLOG.md missing or empty  → ASK for project scope/PRD. Store as ${scope}.
+IF BACKLOG.md missing or empty AND scope missing → ASK for project scope/PRD. Store as ${scope}.
 IF project paths unknown        → ASK for local paths of all involved projects. Store as ${projectPaths}.
 
 Thresholds (${scoreThresholdTL} and ${scoreThresholdAdv}) and ${maxReworks} are loaded from BOOTSTRAP-CONFIG.json (default 0.70 and 2, respectively).
@@ -82,6 +84,15 @@ Parse `${scope}` → generate initial `BACKLOG.md` table with columns:
 - `Agent`: `backend`, `frontend`, `qa`, or `devops`; infer from feature scope and project paths
 - `Reworks`: init `0` | Scores: init `-` | Status: init `NOT_STARTED`
 - **Granularity rule:** each row is one cohesive, independently testable functional module. Group related operations, tests, and supporting changes. Never create single-endpoint, single-file, test-only, or configuration-only features.
+
+When the scope contains `PBB-Contract: 2`, group PBIs by cohesive outcomes and
+identify the PBIs that affect each operational feature, including pending
+items that constrain its outcomes. Read `Delivery rank`
+with `Priority status` and keep that commercial context. Set operational
+priority and dependencies on their own evidence. Explain any conflict between
+commercial order and operational dependencies. Record pending outcomes
+with no plannable feature in the decision log.
+For unmarked scope, use the existing synthesis.
 
 **1.3 Create files (Initialize by copying templates):**
 
@@ -97,7 +108,17 @@ For each required product file in `docs/product/`, if it does not already exist,
 > `DEVELOPMENT-STATE.md` is task-level only. `Reworks`, `Score (TL)`, `Score (Adv)` are feature-level and live in `BACKLOG.md`.
 > `BOOTSTRAP-CONFIG.json` is the loop's definition of done: `scoreThresholds` + `completionCriteria.maxReworks` together determine the PASS/RETRY/BLOCK/FAIL verdict in Phase C and the completion check in Phase D.
 
+For `PBB-Contract: 2`, record the mapping from operational feature ID to PBI
+IDs and the source document path in `DECISIONS.md`. Record fully pending
+outcomes there with their PBI and question IDs. Use the existing source if
+it will remain readable on resume. If the input was inline or its path was
+removed by reset, persist that source as `docs/product/PBB.md` and record its
+path. Keep the operational backlog columns and values as defined above.
+
 **1.4 Persist runtime state:** Store `${projectPaths}`, set `${completedCycles} = 0`, `currentPhase = BOOTSTRAP`, and `activeFeatureId = null` in `BOOTSTRAP-CONFIG.json`. Preserve phase-scoped `steeringRules` when supplied.
+
+If the PBB scope has only pending outcomes, leave `activeFeatureId` empty and
+return the recorded clarifications before selecting a feature.
 
 **1.5 Optional refinement:** When refinement is enabled and `docs/product/REFINEMENT.md` is absent, run the interactive `REFINEMENT` handler once, persist its output, then continue to Phase A. Otherwise continue directly to Phase A.
 
@@ -112,6 +133,12 @@ For each required product file in `docs/product/`, if it does not already exist,
 ### State Transition Table
 
 > **Re-entry rule:** On crash/resume, first honor a valid persisted `BOOTSTRAP-CONFIG.json.currentPhase` other than `HALTED`. If absent or invalid, scan this table top-to-bottom and enter at the FIRST matching condition against current on-disk state. Before re-entering `PHASE_C`, check the active feature. If terminal, finish any pending C6 updates for its saved verdict and go to `PHASE_D`. Otherwise, apply the Phase C gate and return to `PHASE_B` if it fails. Persist `currentPhase` and `activeFeatureId` before every phase invocation.
+
+When a PBB decision changes, revisit affected feature mappings and relative
+ranks before selecting work. Recheck affected planning artifacts before
+using their tasks for implementation. Group newly plannable outcomes using
+the Bootstrap row rules and keep existing feature IDs. If only clarifications
+remain, report their PBI and question IDs.
 
 | Current State | Condition | Next State | Actions |
 |---|---|---|---|
@@ -144,9 +171,20 @@ DECISIONS.md → "Started planning for {ID}."
 
 **A2. Delegate** → `harness-kit:scope-refinement` via `software-architect` (Autonomous Mode):
 
+For a feature mapped to a `PBB-Contract: 2` source, recover its PBI IDs and
+source from `DECISIONS.md`, including on resume. Build the feature scope using
+[Reading a feature](../pbb-design/references/output-contract.md#reading-a-feature).
+Include the selected records, supporting evidence, and material decisions
+with their status and impact. Identify any ambiguous mapping or missing
+reference by ID in `DECISIONS.md` and resolve it before deriving affected
+tasks. Carry unresolved behavior as a clarification with its PBI and
+question ID. Plan independent, supported outcomes in the feature. If no
+supported outcome remains, keep it in planning and record the decision
+needed. For other features, use the existing feature scope.
+
 ```
 inputs:
-  ${scope}        = feature Title + Description from BACKLOG.md
+  ${scope}        = selected PBB scope when mapped, otherwise feature Title + Description from BACKLOG.md
   ${projectPaths} = paths from BOOTSTRAP
   ${domain}       = Domain column value for this feature
   ${rules}        = "No additional rules provided"  // unless constraints exist

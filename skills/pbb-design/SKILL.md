@@ -9,34 +9,25 @@ description: >
 
 <execution_mode>
 
-## Mode Detection — Resolve Before Anything Else
+## Mode Detection
 
-```text
-IF invoked by autonomous-orchestrator or an explicit autonomous runtime context:
-    mode = AUTONOMOUS
-    Skip all interactive prompts.
-    For each decision-relevant gap:
-        Generate a suggested answer and rationale.
-        Use the suggested answer as the resolved answer.
-        Set answered_by = "model".
-        Mark the answer as a provisional model assumption.
-    Continue through backlog generation without pausing.
+Use autonomous mode when invoked by `autonomous-orchestrator` or given an explicit
+autonomous runtime context. Otherwise use interactive mode.
 
-OTHERWISE:
-    mode = INTERACTIVE
-    For each decision-relevant gap:
-        Ask one question at a time.
-        Show the suggested answer and rationale.
-        Let the human accept, replace, defer, or mark the answer unknown.
-        Preserve the human answer exactly.
-        Set answered_by = "human" for accepted or replaced answers.
-    Do not finalize the backlog until all questions are answered, deferred, or
-    marked unknown.
-```
+- **Interactive.** Ask one material question at a time. Show its suggested
+  answer, rationale, and affected scope. Let the person accept, replace, defer,
+  or mark the answer unknown. Preserve their wording and the original
+  suggestion. Finalize after each question has one of these dispositions.
+- **Autonomous.** Continue without prompts. For each new material gap, record
+  the suggested answer and rationale and use the suggestion provisionally when
+  supported. Preserve an unresolved state when there is no grounded suggestion
+  or the sources conflict. A model suggestion never confirms a business
+  decision.
 
-In both modes, apply resolved answers to affected problems, expectations,
-personas, functionalities, and PBIs before final validation. Never present an
-autonomous answer as a confirmed business fact.
+In both modes, consult existing answers before asking or inferring. Preserve
+prior human answers, deferrals, and unknowns entry by entry. Apply an explicit
+human decision to the affected records even when it replaces a prior decision
+or contradicts the suggestion. Record which decision it revises.
 
 </execution_mode>
 
@@ -44,45 +35,19 @@ autonomous answer as a confirmed business fact.
 
 # PBB Design
 
-Transform an initial product or feature scope into a structured Product Backlog
-using Product Backlog Building (PBB).
-
-Discover and organize:
-
-1. Problems
-2. Expectations
-3. Personas
-4. Functionalities
-5. Product Backlog Items (PBIs)
-
-Do not design software architecture or implementation details.
+Transform an initial product or feature scope into a traceable Product Backlog
+using Product Backlog Building (PBB). Keep architecture and implementation
+details in technical refinement.
 
 </objective>
 
 <input>
 
 Use the supplied product or feature scope as the primary input. Use additional
-project context when available and relevant.
-
-Example:
-
-> Create an online programming course platform where users can browse courses
-> by category, view course details, and contact the company.
+project context and decision history when relevant. Keep each material claim
+tied to evidence or marked as unknown or provisional.
 
 </input>
-
-<principles>
-
-- Start from the problem, not from the solution.
-- Keep customer needs visible throughout refinement.
-- Identify who interacts with the product before defining backlog items.
-- Describe functionalities at a higher level than user stories.
-- Derive every PBI from a functionality.
-- Do not invent unsupported business rules.
-- Mark assumptions and open questions explicitly.
-- Keep business refinement separate from technical design.
-
-</principles>
 
 <process>
 
@@ -90,8 +55,10 @@ Example:
 
 ## 1. Understand the Product
 
-Extract the product name or temporary name, objective, boundaries, and relevant
-business context. Write a concise product intention.
+Extract the product name or temporary name, intention, included scope, and known
+boundaries. Catalogue the source sections or identifiable excerpts that support
+the records. A requested capability can be confirmed while its cause or benefit
+remains uncertain.
 
 </step>
 
@@ -99,14 +66,10 @@ business context. Write a concise product intention.
 
 ## 2. Identify Problems
 
-Describe undesirable situations that motivate the product or feature. Do not
-state solutions as problems.
-
-Bad: Need a dashboard.
-
-Good: Users cannot easily understand their current account status.
-
-Mark any problem that cannot be inferred safely as an assumption.
+Describe the concrete difficulty people encounter today and record its basis.
+For example, describe how users struggle to determine their account status.
+Use a grounded assumption or preserve the gap if the scope supplies only a
+solution.
 
 </step>
 
@@ -114,12 +77,8 @@ Mark any problem that cannot be inferred safely as an assumption.
 
 ## 3. Identify Expectations
 
-For each relevant problem, identify the desired user or business outcome.
-
-Example:
-
-- Problem: Users cannot find available courses efficiently.
-- Expectation: Users should quickly discover courses relevant to their interests.
+Link each expectation to the problem it addresses and record the observable
+change a person or the business expects. Use metrics only when supplied.
 
 </step>
 
@@ -127,15 +86,11 @@ Example:
 
 ## 4. Identify Personas
 
-Include only personas that interact with or are directly affected by the
-product. For each persona, describe:
-
-- Name or role
-- Primary goal
-- Relevant interactions
-- Relevant problems and expectations
-
-Avoid fictional demographic details that do not affect the backlog.
+Include personas that interact with or are directly affected by the product.
+Identify their role, what they do today, the difficulty they face, and what
+they want to do with the product. Link the associated problems and expectations.
+Ask about a missing activity when it changes a decision. Record grounded
+inferences as provisional and preserve other missing details as unknown.
 
 </step>
 
@@ -143,16 +98,10 @@ Avoid fictional demographic details that do not affect the backlog.
 
 ## 5. Identify Functionalities
 
-Discover the main interactions between personas and the product. Each
-functionality must represent recognizable user value, describe what the product
-enables, avoid implementation details, and group related PBIs.
-
-Prefer concise action-oriented names such as:
-
-- Browse courses
-- Enroll in course
-- Manage course catalog
-- Contact support
+Start from the persona's activity. Name each functionality as an action, such
+as “Browse courses.” Link the personas, problems, and expectations it addresses.
+State the specific benefit and its basis. Group PBIs that support the activity
+and identify which benefit each PBI enables if the functionality has several.
 
 </step>
 
@@ -160,19 +109,25 @@ Prefer concise action-oriented names such as:
 
 ## 6. Generate PBIs
 
-Break each functionality into small Product Backlog Items. Each PBI must deliver
-observable value, belong to a functionality, identify the relevant persona, be
-independently understandable, and avoid unnecessary implementation details.
+Walk through each functionality in the order the persona uses it. Split it into
+independently understandable actions with observable outcomes and benefits.
+Use a concise description or a user story. Record journey order where it
+matters. Parallel or alternative actions can have no journey position.
 
-When appropriate, express a PBI as:
+After decomposition, compare PBIs in the same scope for commercial delivery.
+Use the declared objective and available evidence of impact, frequency, or
+commitment. Explain the order in one sentence per item. Distinguish confirmed
+order, an evidence-based proposal, and pending order. Preserve justified ties.
+File position and journey position never determine delivery rank.
 
-```text
-As a <persona>
-I want <capability>
-So that <benefit>
-```
+In interactive mode, show the proposed order when a material choice remains.
+Prefer a comparative question that can settle multiple ranks. Use explicit
+ordering evidence already supplied.
 
-Do not force this format when another concise PBI description is clearer.
+Identify what can be refined now and what requires a decision. A priority gap
+alone can coexist with known behavior ready for refinement. When a behavior
+gap leaves an independent outcome with its own value, give that outcome its
+own PBI.
 
 </step>
 
@@ -180,39 +135,29 @@ Do not force this format when another concise PBI description is clearer.
 
 ## 7. Validate Traceability
 
-Verify this chain for every PBI:
-
-```text
-Problem / Expectation
-        ↓
-Persona
-        ↓
-Functionality
-        ↓
-PBI
-```
-
-Remove orphan PBIs.
+Verify each PBI's links to its functionality, persona, main problem, and main
+expectation. Check the source or decision behind each material claim and link
+any assumptions or questions that affect the PBI, including inherited ones.
+Derive the index from the PBI blocks and verify agreement in both directions.
 
 </step>
 
 <step id="8" name="identify-gaps">
 
-## 8. Identify Gaps
+## 8. Review Gaps and Apply Decisions
 
-Identify information that cannot safely be derived from the scope. Do not
-silently invent business rules, permissions, pricing rules, integrations,
-regulatory requirements, workflows, or technical constraints.
+Raise gaps during discovery before consolidating the affected decisions. Ask
+when the answer changes scope, behavior, benefit, or delivery order. Describe
+the affected behavior and records and ground each recommendation in the
+available evidence. If sources disagree, cite both and preserve the
+disagreement until a decision resolves it.
 
-Turn each decision-relevant gap into an open question. Add a suggested answer
-that is conservative, scope-preserving, and grounded in supplied information.
-Label the suggestion as an assumption requiring validation, never as a decided
-business rule.
-
-Resolve each question according to `<execution_mode>` before producing the final
-backlog. Keep deferred and unknown questions unresolved. In autonomous mode,
-select the suggested answer automatically and record it as a provisional model
-assumption.
+Apply the outcomes of the questions according to the execution mode. Recheck
+the affected outcomes, benefits, relative priorities, refinement states, and
+index links after a decision changes, even if it arrives late. Preserve work
+that is independent of a local gap. A documented question with its impact and
+affected items is a valid discovery result. Use an empty question history
+when the scope already supplies the necessary decisions.
 
 </step>
 
@@ -220,54 +165,24 @@ assumption.
 
 <output_format>
 
-Produce Markdown with these sections in this order:
+When preparing the final backlog, read the normative
+[PBB Markdown output contract](references/output-contract.md). Produce one
+canonical Markdown document using its nine sections, stable record IDs, and
+the `PBB-Contract: 2` marker. Discovery of questions can run without loading
+the reference example.
 
-1. `## 1. Product`
-2. `## 2. Problems`
-3. `## 3. Expectations`
-4. `## 4. Personas`
-5. `## 5. Functionalities`
-6. `## 6. Product Backlog`
-7. `## 7. Traceability`
-8. `## 8. Assumptions`
-9. `## 9. Open Questions`
-
-In `## 9. Open Questions`, use this format for every question:
-
-```markdown
-### Q01 — [Question]
-
-**Suggested answer:** [Recommended answer]
-
-**Rationale:** [Why this is the safest or most scope-preserving recommendation]
-
-**Resolved answer:** [Human answer, model-selected suggestion, or `Unresolved`]
-
-**Answered by:** [human | model | unresolved]
-
-**Status:** [Human validated | Provisional model assumption | Deferred | Unknown]
-```
-
-In interactive mode, retain the suggested answer even when the human replaces
-it. In autonomous mode, copy the suggested answer into `Resolved answer`, set
-`Answered by` to `model`, and set `Status` to `Provisional model assumption`.
-
-Do not fabricate questions to populate the section. If no decision-relevant gap
-exists, write `No open questions.`
+When reviewing an existing backlog, keep its IDs and decision history. Reuse
+legacy backlogs by their section headings. Convert a legacy document only
+when requested, using the available evidence and preserving unknowns.
+Validate the revised document before replacing the original.
 
 </output_format>
 
 <validation>
 
-- Every expectation addresses a problem.
-- Every persona connects to a relevant problem or expectation.
-- Every functionality connects a persona to recognizable product value.
-- Every PBI belongs to a functionality and traces to a user or product need.
-- Every suggested answer remains explicitly provisional.
-- Every resolved question identifies who answered it and its validation status.
-- Interactive mode never resolves a deferred or unknown question automatically.
-- Autonomous mode never pauses for answers or presents model assumptions as facts.
-- No architecture or implementation detail appears in the backlog.
+Before returning the document, run the checks in the output contract. Verify
+that a reader can recover the supported outcome, commercial order, and pending
+decisions for one PBI from its links.
 
 </validation>
 
