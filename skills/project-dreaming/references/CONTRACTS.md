@@ -29,7 +29,7 @@ Use these three headings:
 
 Increment `revision` for changes to conditions, action, exception, prediction, or refutation. Preserve evaluated snapshots and outcomes under their original revision. Reopen the same ID in `active/` when revising an archived decision, preserving its prior disposition in the record.
 
-Use this record for each paired attempt. Complete the freeze before the evaluator reports results.
+Use this record for each paired attempt. Complete the freeze before the evaluator reports results. Omit optional measurement fields and the cost column when no measurements are available, or mark them `unknown`.
 
 ```markdown
 ### <evaluation-id>
@@ -39,16 +39,16 @@ Use this record for each paired attempt. Complete the freeze before the evaluato
 - Frozen prediction, refutation and success criterion: <exact text or snapshot locator>
 - Origin task and reserved task set: <origin ID>, <opaque set ID>
 - Matched setup: <start snapshot>, <criteria/spec revision>, <mode>, <model>, <effort>, <budget>
-- Cost measurement: <common unit and capture method chosen before launch>
+- Cost measurement (optional): <common unit and capture method chosen before launch>
 - Verified by: <independent verifier identity and check locators>
 
-| Case ID | Baseline first delivery and RED | Variant first delivery and RED | Control result | Verifier evidence | Baseline and variant execution cost |
+| Case ID | Baseline first delivery and RED | Variant first delivery and RED | Control result | Verifier evidence | Baseline and variant execution cost (optional) |
 | --- | --- | --- | --- | --- | --- |
 | <distinct task> | <outcome and locator> | <outcome, decision and locator> | <result> | <check locator and, when applicable, starting snapshot, target failure and reproduction result or gap> | <value, unit and source for each arm, or unknown> |
 
 - Aggregate approvals, early detections and boundary misuse: <by arm over comparable cases>
-- Cost by arm: <execution, Dreaming preparation and reconciliation, total, and cost per verified first-pass approval>
-- Independent verification overhead: <value and unit or unknown>
+- Cost by arm (optional): <available execution, Dreaming preparation and reconciliation, total, and cost per verified first-pass approval>
+- Independent verification overhead (optional): <value and unit or unknown>
 - Decision and rationale: <validated, refuted or inconclusive and supporting evidence>
 - Next trigger: <concrete condition when the attempt remains open>
 ```
