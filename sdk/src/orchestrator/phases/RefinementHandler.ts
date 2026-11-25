@@ -1,26 +1,19 @@
 import { loadPrompt } from '../utils/PromptTemplate'
 import { join } from 'node:path'
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
+import { writeFileSync, mkdirSync, readFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProtocol'
 import { buildDocsOrientationSection, inlineOrReference } from '../utils/PromptHelpers'
 import { getProductDir } from '../utils/PhaseFileUtils'
+import { validatePbbContract, type RefinementEvidence } from '../utils/PbbContract'
 
 export interface RefinementQuestion {
   id: number
   question: string
   recommendation: string
   context: string
-}
-
-interface RefinementAnswer {
-  question: string
-  answer: string
-  recommendation?: string
-  context?: string
-  answeredBy: 'human'
-  status: 'Human validated'
+  category?: 'business' | 'setup'
 }
 
 export class RefinementHandler extends AbstractPhaseHandler {
@@ -39,13 +32,13 @@ export class RefinementHandler extends AbstractPhaseHandler {
 
     const scope = context.fsm.existScope() ? context.fsm.loadScope() : context.config.scope
 
-    // Step 1: Generate questions via the software architect
+    // Step 1: Generate questions via the CTO
     const questions = await this.generateQuestions(context, scope)
 
     // Step 2: Collect answers via inquirer prompts
     const qaPairs = await this.collectAnswers(questions)
 
-    // Step 3: Consolidate via the software architect
+    // Step 3: Consolidate via the CTO
     await this.consolidateRefinement(context, scope, qaPairs)
 
     return Phase.BOOTSTRAP
@@ -78,17 +71,18 @@ export class RefinementHandler extends AbstractPhaseHandler {
 
     const output = await context.invokeAgent({
       skill: 'harness-kit:pbb-design',
-      agent: 'harness-kit:software-architect',
+      agent: 'harness-kit:cto',
       mode: 'autonomous',
       prompt,
       phaseKey: 'refinement_questions',
     })
 
     const rawQuestions = this.parseQuestions(output?.raw || '')
-    if (rawQuestions.length > 0) {
+    const outcome = JsonExtractionProtocol.extract(output?.raw || '')
+    if ('data' in outcome && Array.isArray(outcome.data)) {
       this.saveQuestionsFile(context, rawQuestions)
+      return rawQuestions
     }
-
     return this.loadQuestionsFile(context)
   }
 
@@ -104,31 +98,42 @@ export class RefinementHandler extends AbstractPhaseHandler {
     const questionsPath = join(productDir, 'QUESTIONS.json')
 
     if (existsSync(questionsPath)) {
-      try {
-        const content = readFileSync(questionsPath, 'utf-8')
-        return this.parseQuestions(content)
-      } catch {
-        // Fallback if parsing file fails
-      }
+      const content = readFileSync(questionsPath, 'utf-8')
+      const outcome = JsonExtractionProtocol.extract(content)
+      if ('data' in outcome && Array.isArray(outcome.data)) return this.parseQuestions(content)
+      throw new Error('Invalid refinement questions file: expected a JSON array')
     }
-    return []
+    throw new Error('Refinement questions were not returned or saved')
   }
 
   private parseQuestions(raw: string): RefinementQuestion[] {
     const outcome = JsonExtractionProtocol.extract(raw)
     if ('data' in outcome && Array.isArray(outcome.data)) {
-      return outcome.data as RefinementQuestion[]
+      const questions = outcome.data as RefinementQuestion[]
+      const questionIds = new Set<number>()
+      for (const question of questions) {
+        if (!question || !Number.isSafeInteger(question.id) || question.id < 1 || questionIds.has(question.id)) {
+          throw new Error('Invalid or duplicate refinement question ID')
+        }
+        if (typeof question.question !== 'string' || typeof question.recommendation !== 'string' ||
+            typeof question.context !== 'string' ||
+            (question.category !== undefined && !['business', 'setup'].includes(question.category))) {
+          throw new Error(`Invalid refinement question ${question.id}`)
+        }
+        questionIds.add(question.id)
+      }
+      if (questions.filter(question => question.category === 'setup').length > 4 ||
+          questions.filter(question => question.category !== 'setup').length > 12) {
+        throw new Error('Too many refinement questions')
+      }
+      return questions
     }
     return []
   }
 
-  private async collectAnswers(questions: RefinementQuestion[]): Promise<RefinementAnswer[]> {
+  private async collectAnswers(questions: RefinementQuestion[]): Promise<RefinementEvidence[]> {
     const { input } = await import('@inquirer/prompts')
-    const qaPairs: RefinementAnswer[] = []
-
-    if (questions.length === 0) {
-      return qaPairs
-    }
+    const qaPairs: RefinementEvidence[] = []
 
     console.log('\n── REFINEMENT ──────────────────────────────────────────────')
     console.log(`  Validating ${questions.length} project refinement questions...\n`)
@@ -142,17 +147,22 @@ export class RefinementHandler extends AbstractPhaseHandler {
       console.log(`Recommended: ${q.recommendation}`)
 
       const answer = await input({
-        message: 'Your answer (Enter to accept recommendation):',
+        message: 'Your answer (Enter to accept, /defer or /unknown):',
         default: q.recommendation,
       })
 
+      const command = answer.trim().match(/^\/(defer|unknown)(?:\s+([\s\S]+))?$/i)
+      const unresolved = !!command
       qaPairs.push({
+        id: q.id,
         question: q.question,
         recommendation: q.recommendation,
         context: q.context,
-        answer: answer.trim() || q.recommendation,
-        answeredBy: 'human',
-        status: 'Human validated',
+        ...(q.category ? { category: q.category } : {}),
+        answer: unresolved ? 'Unresolved' : (answer.trim() || q.recommendation),
+        ...(command?.[2] ? { humanStatement: command[2] } : {}),
+        answeredBy: unresolved ? 'unresolved' : 'human',
+        status: unresolved ? (command![1].toLowerCase() === 'defer' ? 'Deferred' : 'Unknown') : 'Human validated',
       })
       console.log()
     }
@@ -164,6 +174,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
 
     if (additionalAnswer.trim()) {
       qaPairs.push({
+        id: Math.max(0, ...questions.map(question => question.id)) + 1,
         question: 'Any additional information?',
         answer: additionalAnswer.trim(),
         answeredBy: 'human',
@@ -180,10 +191,12 @@ export class RefinementHandler extends AbstractPhaseHandler {
   private async consolidateRefinement(
     context: Reviewontext,
     scope: string,
-    qaPairs: RefinementAnswer[]
+    qaPairs: RefinementEvidence[]
   ): Promise<void> {
     const productDir = getProductDir(context)
-    const refinementPath = join(productDir, 'REFINEMENT.md')
+    mkdirSync(productDir, { recursive: true })
+    const stagingDir = mkdtempSync(join(productDir, '.refinement-'))
+    const refinementPath = join(stagingDir, 'REFINEMENT.md')
     const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     const refinementEvidence = JSON.stringify(qaPairs, null, 2)
@@ -202,16 +215,22 @@ export class RefinementHandler extends AbstractPhaseHandler {
       refinementEvidence: refinementEvidence,
     })
 
-    const output = await context.invokeAgent({
-      skill: 'harness-kit:pbb-design',
-      agent: 'harness-kit:software-architect',
-      mode: 'autonomous',
-      prompt,
-      phaseKey: 'refinement_consolidation',
-    })
-
-    if (!context.fsm.existRefinement() && output?.raw?.trim()) {
-      context.fsm.saveRefinement(output.raw.trim())
+    try {
+      const output = await context.invokeAgent({
+        skill: 'harness-kit:pbb-design',
+        agent: 'harness-kit:cto',
+        mode: 'autonomous',
+        prompt,
+        phaseKey: 'refinement_consolidation',
+      })
+      const candidate = existsSync(refinementPath)
+        ? readFileSync(refinementPath, 'utf-8').trim()
+        : (output?.raw ?? '').trim()
+      const errors = validatePbbContract(candidate, qaPairs)
+      if (errors.length > 0) throw new Error(`Invalid refinement: ${errors.join('; ')}`)
+      context.fsm.saveRefinement(candidate)
+    } finally {
+      rmSync(stagingDir, { recursive: true, force: true })
     }
   }
 }

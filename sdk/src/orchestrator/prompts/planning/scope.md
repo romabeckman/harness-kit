@@ -17,6 +17,15 @@ Mode: autonomous
 - Route every refinement question and answer to each applicable `003-${PROJECT_NAME}-tactical-design.md`; use exact project names and include global decisions in every project.
 - Execute only the document phases required by <expected_outputs>; do not create artifacts that are not listed there.
 - When the selected planning source is REFINEMENT.md, map the target feature to its PBI, functionality, persona, and underlying need.
+- When the source contains PBB-Contract: 2, select the PBIs for the target feature.
+  Read their outcomes, delivery ranks, priority status, basis, and decision refs.
+  Carry each material decision with its ID, answer, author, status, and affected behavior.
+  Include supporting source excerpts when they cannot be reopened. Treat proposed
+  ranks as recommendations, and explain conflicts with operational dependencies.
+  Preserve deferred and unknown answers. Identify each unresolved material rule by
+  PBI and question ID and refine independent, supported behavior. Resolve ambiguous
+  mappings and missing reference IDs before deriving affected tasks. If the source
+  has no contract marker, use the existing heading-based mapping.
 - Treat human-validated decisions as authoritative and model answers as provisional assumptions.
 </workflow>
 

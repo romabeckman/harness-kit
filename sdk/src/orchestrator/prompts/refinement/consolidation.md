@@ -1,6 +1,6 @@
 <skill_context>
 Invoke the `harness-kit:pbb-design` skill before starting.
-Mode: autonomous consolidation using human-validated refinement evidence.
+Mode: autonomous consolidation preserving the provenance of each refinement answer.
 Produce the final PBB document at <output_file>.
 </skill_context>
 
@@ -35,6 +35,18 @@ Write the file with exactly this structure (Markdown):
 <rules>
 - CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally. After completing all required work, return only the final output explicitly required by the current prompt. If no final output is required, return exactly {}.
 - Invoke and follow the loaded pbb-design skill.
+- Read the pbb-design references/output-contract.md when producing the final document.
+- Use PBB-Contract: 2, the required record fields, IDs, typed references, enums,
+  traceability, source catalogue, and publication checks in that contract.
+- Translate numeric question IDs to Q IDs with at least two digits, including
+  additional manually supplied answers. Preserve the original question, suggestion,
+  rationale, answer, author, and status. Keep setup answers outside the business
+  question history and PBIs, and reserve their numeric IDs when assigning new Q IDs.
+- Apply human answers even when they replace a suggestion. Preserve deferred and
+  unknown answers as unresolved, including any humanStatement. An autonomous
+  consolidation never changes existing human authorship or resolves deferrals.
+- Mark only behavior dependent on a material unresolved rule as needing clarification.
+  A pending or proposed priority alone does not prevent refining supported behavior.
 - Base every item strictly on scope and <refinement_evidence>.
 - Human answers are authoritative. Recommendations remain supporting rationale.
 - Trace every PBI to a functionality, persona, and problem or expectation.
@@ -42,7 +54,7 @@ Write the file with exactly this structure (Markdown):
   answered-by value, and status from the evidence.
 - Mark any model-derived statement as a Provisional model assumption.
 - Do not include architecture or implementation details.
-- If no decision-relevant gap remains, write "No open questions."
+- Use "No open questions." only if no question history exists.
 - Treat Frontend Screens & Visualization as a complement to PBB, never as a replacement
   for problems, expectations, personas, functionalities, PBIs, or traceability.
 </rules>

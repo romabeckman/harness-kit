@@ -15,7 +15,7 @@ The orchestrator drives a feature through a fixed pipeline of phases. Each phase
                                  │
                                  ▼
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  REFINEMENT  ·  pbb-design skill (optional)                          │
+  │  REFINEMENT  ·  CTO + pbb-design skill (optional)                    │
   │  Builds PBB context → questions → answers → REFINEMENT.md            │
   └──────────────────────────────┬───────────────────────────────────────┘
                                  │
@@ -305,7 +305,9 @@ hrns help settings        # show help for hrns settings
 > `--model` overrides the default for **all** phases. For per-phase model tuning, use `settings.json` instead.
 
 > [!TIP]
-> `--mode thinking` uses LOW complexity and `--mode deep_thinking` forces HIGH complexity; both enable the interactive pre-planning Socratic questionnaire (`Phase.REFINEMENT`). Use `--refine` to enable it for other modes. The grumpy tech-lead agent analyzes your project scope, surfaces architectural trade-offs into `docs/product/QUESTIONS.json`, collects human-validated choices, and consolidates them into `docs/product/REFINEMENT.md` prior to Phase A planning.
+> `--mode thinking` uses LOW complexity and `--mode deep_thinking` forces HIGH complexity; both enable the interactive pre-planning questionnaire (`Phase.REFINEMENT`). Use `--refine` to enable it for other modes. PBB discovery records questions in `docs/product/QUESTIONS.json` and consolidates the answers in `docs/product/REFINEMENT.md` before Bootstrap. Press Enter to accept a recommendation, enter a different answer, or use `/defer` or `/unknown` to leave a decision unresolved. Append an explanation after either command when useful.
+
+The generated refinement uses `PBB-Contract: 2`. Each PBI links its outcome, evidence, commercial delivery rank, and decision history. Bootstrap groups PBIs into operational features such as `F001`, whose priority and dependencies guide execution. Planning carries material pending decisions into the selected feature while refining independent supported behavior. Existing refinement documents remain usable when resuming.
 
 > [!TIP]
 > `--skip-validation` is useful for CI speed-runs or when you want to iterate on Phase B output without paying the cost of two agent reviews. All features are marked **COMPLETED** with neutral scores (TL: 1, Adv: 1) and the run proceeds directly to Phase D (state check) and then Phase E (memory).

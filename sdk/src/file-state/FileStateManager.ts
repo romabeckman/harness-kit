@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync, renameSync, rmSync } from 'fs'
 import { join } from 'path'
 import { BacklogParser } from './parsers/BacklogParser'
 import { DevStateParser } from './parsers/DevStateParser'
@@ -104,7 +104,14 @@ export class FileStateManager implements IFileStateManager {
   saveRefinement(content: string): void {
     mkdirSync(this.productDir, { recursive: true })
     const path = join(this.productDir, 'REFINEMENT.md')
-    atomicWrite(path, content)
+    const temporaryDir = mkdtempSync(join(this.productDir, '.refinement-write-'))
+    try {
+      const temporaryPath = join(temporaryDir, 'REFINEMENT.md')
+      writeFileSync(temporaryPath, content, 'utf-8')
+      renameSync(temporaryPath, path)
+    } finally {
+      rmSync(temporaryDir, { recursive: true, force: true })
+    }
   }
 
   loadRefinement(): string {

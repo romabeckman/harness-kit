@@ -5,6 +5,8 @@ import { Phase } from '../../../src/orchestrator/types'
 import { input } from '@inquirer/prompts'
 
 import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { refinementForPrompt } from '../../fixtures/pbb-refinement'
 
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn(),
@@ -15,6 +17,8 @@ vi.mock('node:fs', () => ({
   writeFileSync: vi.fn(),
   readFileSync: vi.fn(),
   existsSync: vi.fn(),
+  mkdtempSync: vi.fn().mockReturnValue('/mock/staged'),
+  rmSync: vi.fn(),
 }))
 
 describe('RefinementHandler', () => {
@@ -30,7 +34,8 @@ describe('RefinementHandler', () => {
       { id: 1, question: 'Question 1?', recommendation: 'Rec 1', context: 'Ctx 1' },
     ])
 
-    vi.mocked(existsSync).mockReturnValue(true)
+    const contract = actualFs.readFileSync(resolve(__dirname, '../../../../skills/pbb-design/references/output-contract.md'), 'utf8')
+    vi.mocked(existsSync).mockImplementation(path => !String(path).includes('staged'))
     vi.mocked(readFileSync).mockImplementation((path) => {
       if (String(path).includes('orchestrator') && String(path).includes('prompts')) {
         return actualFs.readFileSync(path, 'utf8')
@@ -53,7 +58,7 @@ describe('RefinementHandler', () => {
             raw: questionsJson,
           }
         }
-        return { raw: 'consolidated' }
+        return { raw: refinementForPrompt(opts.prompt, contract) }
       }),
     }
   })
@@ -68,7 +73,7 @@ describe('RefinementHandler', () => {
     expect(nextPhase).toBe(Phase.BOOTSTRAP)
     expect(input).toHaveBeenCalledTimes(2)
     expect(input).toHaveBeenNthCalledWith(1, {
-      message: 'Your answer (Enter to accept recommendation):',
+      message: 'Your answer (Enter to accept, /defer or /unknown):',
       default: 'Rec 1',
     })
     expect(input).toHaveBeenNthCalledWith(2, {
@@ -79,7 +84,7 @@ describe('RefinementHandler', () => {
     // Verify consolidateRefinement received both Q&A pairs including the additional question
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
-        agent: 'harness-kit:software-architect',
+        agent: 'harness-kit:cto',
         skill: 'harness-kit:pbb-design',
         prompt: expect.stringContaining('Any additional information?'),
       })
@@ -96,7 +101,7 @@ describe('RefinementHandler', () => {
     expect(input).toHaveBeenCalledTimes(2)
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
-        agent: 'harness-kit:software-architect',
+        agent: 'harness-kit:cto',
         skill: 'harness-kit:pbb-design',
         prompt: expect.not.stringContaining('Any additional information?'),
       })

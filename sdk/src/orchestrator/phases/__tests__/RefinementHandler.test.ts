@@ -3,6 +3,7 @@ import { RefinementHandler } from '../RefinementHandler'
 import { Phase } from '../../types'
 import { ChainBuilder } from '../../ChainBuilder'
 import { FORCE_INLINE_MAX } from '../../utils/PromptHelpers'
+import { refinementForPrompt } from '../../../../tests/fixtures/pbb-refinement'
 
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn().mockImplementation(async ({ default: defVal }) => defVal ?? 'User specified answer'),
@@ -30,9 +31,11 @@ describe('RefinementHandler', () => {
         scope: 'Test scope text',
         productDir: '/test/dir/docs/product',
       },
-      invokeAgent: vi.fn().mockResolvedValue({
-        raw: '[{"id":1,"question":"Q1","recommendation":"R1","context":"C1"}]',
-      }),
+      invokeAgent: vi.fn().mockImplementation(async ({ phaseKey, prompt }) => ({
+        raw: phaseKey === 'refinement_questions'
+          ? '[{"id":1,"question":"Q1","recommendation":"R1","context":"C1"}]'
+          : refinementForPrompt(prompt),
+      })),
     }
 
     handler = new RefinementHandler()
@@ -70,9 +73,9 @@ describe('RefinementHandler', () => {
     const next = await handler.handle(Phase.REFINEMENT, mockContext)
     expect(next).toBe(Phase.BOOTSTRAP)
     expect(mockContext.invokeAgent).toHaveBeenCalledTimes(2)
-    expect(mockContext.invokeAgent.mock.calls[0][0].agent).toBe('harness-kit:software-architect')
+    expect(mockContext.invokeAgent.mock.calls[0][0].agent).toBe('harness-kit:cto')
     expect(mockContext.invokeAgent.mock.calls[0][0].skill).toBe('harness-kit:pbb-design')
-    expect(mockContext.invokeAgent.mock.calls[1][0].agent).toBe('harness-kit:software-architect')
+    expect(mockContext.invokeAgent.mock.calls[1][0].agent).toBe('harness-kit:cto')
     expect(mockContext.invokeAgent.mock.calls[1][0].skill).toBe('harness-kit:pbb-design')
     expect(mockContext.invokeAgent.mock.calls[0][0].phaseKey).toBe('refinement_questions')
     expect(mockContext.invokeAgent.mock.calls[1][0].phaseKey).toBe('refinement_consolidation')
