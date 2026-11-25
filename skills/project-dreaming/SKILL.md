@@ -27,7 +27,7 @@ Write the smallest test decision the evidence motivates. State when it changes t
 
 Freeze the hypothesis revision, prediction, refutation, and decision criteria before receiving results. If the evaluator has selected a distinct task set, mark the revision `in_evaluation`. Give the evaluator the frozen hypothesis and the paired-run contract. The evaluator owns reserved cases, execution and verification in a separate session. Read only the returned evidence summary and its accessible verification locators when reconciling results.
 
-Upsert the attempt by evaluation ID. Check its frozen revision, distinct task, comparability, both arms, controls, and verifier evidence before accepting its decision. A confirmed gain yields `validated`. Archive a refuted hypothesis with the counterexample. Keep inconclusive results active only with a concrete next trigger. A corrected hypothesis gets a new revision and a fresh evaluation.
+Upsert the attempt by evaluation ID. Check its frozen revision, distinct task, comparability, both arms, controls, and verifier evidence before accepting its decision. For a claimed RED gain on a known failure, verify the starting-state check and the arm's actual RED result. A confirmed gain yields `validated`. Archive a refuted hypothesis with the counterexample. Keep inconclusive results active only with a concrete next trigger. A corrected hypothesis gets a new revision and a fresh evaluation.
 
 ## 4. Hand off publication or withdrawal
 
