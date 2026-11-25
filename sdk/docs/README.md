@@ -6,6 +6,7 @@ Index of project technical documentation for **harness-kit SDK**. Use links belo
 
 | Document | Description | Reading |
 |---|---|---|
+| [**DIAGNOSE-GUIDE.md**](./DIAGNOSE-GUIDE.md) | Public guide to trace diagnosis and Project Dreaming episode analysis. | Recommended |
 | [**.digest.md**](./.digest.md) | Machine-readable project orientation. | **Mandatory** |
 | [**.graph.json**](./.graph.json) | Complete document list, tags, and relations. | **Mandatory** |
 | [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Project architecture baseline. | **Mandatory** |

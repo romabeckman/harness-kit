@@ -149,6 +149,7 @@ graph TD
 ```
 
 ## REFERENCES
+- [**Diagnose guide**](../../DIAGNOSE-GUIDE.md): Public guide to diagnosis modes, usage, and results.
 - [**SDK_CLI.md**](../cli/sdk_cli.md): `hrns diagnose` and `hrns candidate` commands.
 - [**SDK_AGENT_RUNNER.md**](SDK_AGENT_RUNNER.md): `AgentRunnerFactory` and `IAgentRunner` interface.
 - [**SDK_SETTINGS.md**](../orchestration/SDK_SETTINGS.md): `HarnessSettings` resolution for diagnose phase.
