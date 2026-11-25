@@ -278,5 +278,6 @@ Your support helps fund maintenance, documentation, research, and new features.
 * **License:** MIT License — see [LICENSE](LICENSE) for details.
 
 ### References
+* Anthropic. [The components of agent memory](https://www.anthropic.com/research/components-of-agent-memory).
 * Lee, Y., Nair, R., Zhang, Q., Khattab, O., Finn, C., & Lee, K. (2026). *Meta-Harness: End-to-End Optimization of Model Harnesses*. [arXiv:2603.28052](https://arxiv.org/abs/2603.28052).
 * Birgitta Böckeler (2026). [Harness engineering for coding agent users](https://martinfowler.com/articles/harness-engineering.html).

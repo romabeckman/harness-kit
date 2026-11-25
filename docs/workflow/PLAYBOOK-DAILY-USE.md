@@ -138,7 +138,7 @@ Execution contract:
 2. GREEN: implement the smallest code that passes.
 3. REFACTOR: improve structure while keeping tests green.
 4. Validate: run required targeted and regression checks.
-5. Document: in interactive mode, invoke `project-memory` when project behavior or structure changed.
+5. In interactive mode, review each worked project and feature with `project-dreaming` after final validation, then invoke `project-memory` when applicable. Forward validated handoffs and return publication or withdrawal receipts to Dreaming for verification.
 
 If tests fail unexpectedly, route diagnosis to `developer-debugging`. That agent proves root cause and hands off; it does not implement the final fix.
 
@@ -157,7 +157,7 @@ Feature: feature:sdk_diagnose
 Evidence: src/diagnose/__tests__/DiagnoseService.test.ts, "reuses the trace ID reserved for a retry"
 ```
 
-After final validation, review each worked project and feature once. Provide the session or episode ID, project-relative test and event locators, decisions, and command/results when available; include related rework attempts. A known trigger, review classification, observed impact, and scheduled future task help prioritize inspection but are not required. One verifiable episode can support zero, one, or several distinct falsifiable test-selection, ordering, or reuse hypotheses. Use `no_hypothesis` with inspected sources and a specific reason when evidence shows no testable decision; use `incomplete` when a necessary source or owner cannot be verified. Keep review limited to task sources and targeted feature/queue checks for deduplication. A separate evaluator compares paired runs on a distinct task. Only validated guidance goes to Project Memory; TDD uses it after publication is verified in the feature document. Reinvoke Dreaming with the same hypothesis ID when a result arrives, publication needs a retry, or new evidence changes the analysis.
+After final validation in interactive TDD, review each worked project and feature once; in the autonomous loop, review follows Phase C acceptance. Provide the session or episode ID, project-relative test and event locators, decisions, and command/results when available; include related rework attempts. A known trigger, review classification, observed impact, and scheduled future task help prioritize inspection but are not required. One verifiable episode can support zero, one, or several distinct falsifiable test-selection, ordering, or reuse hypotheses. Use `no_hypothesis` with inspected sources and a specific reason when evidence shows no testable decision; use `incomplete` when a necessary source or owner cannot be verified. Keep review limited to task sources and targeted feature/queue checks for deduplication. A separate evaluator compares paired runs on a distinct task. Only validated guidance goes to Project Memory; TDD uses it after publication is verified in the feature document. Reinvoke Dreaming with the same hypothesis ID when a result arrives, publication needs a retry, or new evidence changes the analysis.
 
 ## Flow 4: review
 

@@ -38,6 +38,7 @@ After required bootstrap input exists, the orchestrator continues without phase-
 | Unexpected test failure diagnosis | investigation workflow | `developer-debugging` |
 | Systemic technical review | `the-grumpy-tech-lead` | `harness-tech-lead` |
 | Adversarial validation | `adversarial-qa` | `harness-qa` |
+| Post-acceptance episode review | `project-dreaming` | `software-architect` |
 | Final project memory | `project-memory` | `software-architect` |
 
 The backlog `Agent` column selects the implementation specialist. `developer-debugging` is diagnostic only.
@@ -103,6 +104,8 @@ Verdicts:
 - `BLOCK`: budget exhausted with crash or unresolved HIGH/CRITICAL vulnerability. Persist `BLOCKED`.
 - `FAIL`: budget exhausted without crash or unresolved HIGH/CRITICAL vulnerability. Persist `FAILED`.
 
+After `PASS`, delegate `project-dreaming` once per owning project and feature, including first-pass deliveries. Supply the accepted episode, related attempts, and available project-scoped evidence locators. Verify its analysis receipt; log incomplete analysis for retry without changing the acceptance decision. Stage validated publication or withdrawal handoffs for Phase E.
+
 `RETRY`, `PASS`, `BLOCK`, and `FAIL` are gate verdicts. Persisted feature statuses are `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`, `BLOCKED`, and `FAILED`.
 
 ### PHASE D: STATE CHECK
@@ -118,6 +121,7 @@ A blocked feature may leave independent work executable. `HALTED` means the loop
 
 - Delegate `project-memory` once after no executable feature remains.
 - Document completed features and relevant architecture/test-strategy changes. Assess digest and graph synchronization; preserve equivalent content under the project-memory contract.
+- Apply ready Project Dreaming handoffs through the RED orientation procedure and record verified receipts; leave conflicts pending.
 - Keep harness history outside this skill's access.
 
 Project memory executes its six-stage workflow, including one bounded Dream-inspired consolidation pass and digest curation. Preserve evidence, IDs, uncertainty, and canonical ownership. Review scores and TDD process history remain in product records rather than feature documentation. Do not create extra ADRs during this phase without the human decision required by the orchestrator.
