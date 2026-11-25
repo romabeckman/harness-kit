@@ -52,7 +52,7 @@ You do NOT write code, tests, or perform any sub-agent task.
 | `harness-kit:tdd-orchestrator` | Agent selected by the feature's `Agent` column: `developer-backend`, `developer-frontend`, `developer-qa`, or `developer-devops` (`developer-debugging` is diagnostic only) |
 | `harness-kit:adversarial-qa` | `harness-qa` |
 | `harness-kit:the-grumpy-tech-lead` | `harness-tech-lead` |
-| `harness-kit:project-dreaming` | `software-architect` (after Phase C PASS with verified learning evidence) |
+| `harness-kit:project-dreaming` | `software-architect` (after Phase C PASS, once per owning project and feature) |
 | `harness-kit:project-memory` | `software-architect` (Phase E only) |
 
 </role>
@@ -197,7 +197,7 @@ inputs:
   // IF RETRY: also pass docs/specs/{domain}/REWORK-LOG.md
 ```
 
-**B3. Verify:** Wait for `docs/specs/{domain}/TDD-OUTPUT.json`. Require matching `featureId`, `status = "SUCCESS"`, zero failed tests, and a `developerHandoff` of at most 500 characters before marking all pending feature tasks `COMPLETED`. Missing, corrupt, mismatched, or failed output must not advance to Phase C; log the evidence and keep affected tasks non-complete. Pass `developerHandoff` to both Phase C reviewers as navigation context; reviewers must independently verify it.
+**B3. Verify:** Wait for `docs/specs/{domain}/TDD-OUTPUT.json`. Require matching `featureId`, `status = "SUCCESS"`, zero failed tests, and a `developerHandoff` of at most 500 characters before marking all pending feature tasks `COMPLETED`. Missing, corrupt, mismatched, or failed output must not advance to Phase C; log the evidence and keep affected tasks non-complete. Pass `developerHandoff` to both Phase C reviewers as navigation context; reviewers must independently verify it. Before transient output is removed, preserve the project, feature, tasks, attempt and session identifiers and available test, event, decision and result locators for learning review. Identify unavailable or ambiguous project ownership rather than assigning a source to the wrong project.
 
 </phase>
 
@@ -253,7 +253,7 @@ IF feature's Score A >= ${scoreThresholdTL} AND Score B >= ${scoreThresholdAdv}
 1. `BACKLOG.md[feature]` (the active feature in backlog) → `Status: COMPLETED`, `Score (TL): A`, `Score (Adv): B`
 2. All feature tasks in `DEVELOPMENT-STATE.md` → `Current Phase: -`, `Status: COMPLETED`
 3. `DECISIONS.md` → `"Feature {ID} ACCEPTED — TL: {A}, Adv: {B}."`
-4. If accepted task or reviewer evidence confirms a known hypothesis review trigger, contradicts published guidance, or verifies an episode where a test choice materially affected a regression, rework, or early detection, delegate `project-dreaming` once per affected project with the feature, evidence locator and observed consequence, plus the hypothesis or orientation ID and matched condition when applicable. Use the task handoff and reviewer evidence before clearing TDD output. An ordinary pass or expected exception needs no call. Stage any validated publish or withdrawal handoff for phase E under the [handoff contract](../project-dreaming/references/CONTRACTS.md#project-memory-handoff). Log unresolved learning work for retry and preserve the acceptance decision.
+4. Delegate `harness-kit:project-dreaming` once per owning project and feature, including first-pass deliveries and reviews without classified findings. Supply the terminal episode and related rework attempts in chronological order, filtered by project and feature, retaining the attempt of each signal. Supply preserved task, session, test and event locators as well as reviewer findings; `review_reason` and observed impact are optional prioritization context. Check for broken or cyclic links and ambiguous ownership; keep affected analysis pending rather than attributing evidence incorrectly. Request and verify the [analysis receipt](../project-dreaming/references/CONTRACTS.md#analysis-receipt) against records in the owning project. Persist the verified result; log an incomplete analysis and its required input for retry without changing the acceptance decision. Stage any validated publish or withdrawal handoff for phase E under the [handoff contract](../project-dreaming/references/CONTRACTS.md#project-memory-handoff).
 5. Delete stale `TDD-OUTPUT.json` after review processing
 6. → Phase D
 
@@ -273,7 +273,7 @@ IF PASS did not match AND Reworks < ${maxReworks}:
    - Any reported crash and its evidence
 3. `DECISIONS.md` → `"Feature {ID} RETRY #{n} — TL: {A}, Adv: {B}. Reason: {top finding}."`
 4. **ATOMIC WRITE:** All feature tasks → `Current Phase: -`, `Status: NOT_STARTED`
-5. Delete stale `TDD-OUTPUT.json`
+5. Preserve the attempt's project-scoped task, session, test and event locators and reviewer findings for the eventual terminal review; then delete stale `TDD-OUTPUT.json`.
 6. → Phase B
 
 </gate>
