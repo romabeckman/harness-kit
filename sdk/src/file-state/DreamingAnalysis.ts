@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { basename } from 'node:path'
+import { isAbsolute, resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 import { JsonExtractionProtocol } from '../json-extraction/JsonExtractionProtocol'
 import { isExtractionResult } from '../json-extraction/types'
@@ -22,6 +22,21 @@ export interface DreamingReceipt {
 const text = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.every(text)
 
+function identifiesProject(value: string, root: string): boolean {
+  const candidate = value.trim()
+  if (!candidate) return false
+  if (isAbsolute(candidate)) return resolve(candidate) === resolve(root)
+  const parts = candidate.replaceAll('\\', '/').split('/').filter(part => part && part !== '.')
+  if (!parts.length || parts.includes('..')) return false
+  const rootParts = resolve(root).replaceAll('\\', '/').split('/').filter(Boolean)
+  if (parts.length > rootParts.length) return false
+  const actual = rootParts.slice(-parts.length)
+  const insensitive = process.platform === 'win32'
+  return parts.every((part, index) => insensitive
+    ? part.toLowerCase() === actual[index].toLowerCase()
+    : part === actual[index])
+}
+
 export function dreamingFingerprint(attempts: DreamingEpisode[]): string {
   const inputs = attempts.map(attempt => ({ ...attempt, closed: undefined, projects: attempt.projects.map(({ analysis: _analysis, processed: _processed, ...project }) => {
     const paths = [...new Set([...(project.sources ?? []), ...(project.findings ?? []).map(item => item.path)])].sort()
@@ -39,6 +54,7 @@ export function buildDreamingPrompt(payload: Record<string, unknown>, collection
   return [
     'Explicitly invoke harness-kit:project-dreaming. Read and apply its contract for this project and feature.',
     'Inspect only the supplied task sources and related attempts in chronological order. Attribute each observation to its project and attempt; do not invent evidence. Classified findings are optional.',
+    'Treat sourceIssues as unresolved provenance. Do not guess the owner or use an ambiguous path as evidence. If an issue blocks necessary inspection, return incomplete and name its path and the required input; otherwise continue from independent verified sources.',
     'Find zero, one, or several distinct falsifiable choices of test selection, ordering, or reuse. One verifiable episode is sufficient, even without observed impact or a future ticket. Reconcile equivalent decisions and origins under existing IDs.',
     'Use only the owning project for learning records. Inspect cited test contents and distinguish observed facts from predictions. Read metadata.md, steps.md, verdict.md and score.md from supplied trace paths when present.',
     collectionOnly ? 'Only collect and reconcile hypotheses; do not evaluate, publish, or withdraw.' : 'Stage validated handoffs for the separate project-memory phase.',
@@ -62,7 +78,7 @@ export function validateDreamingReceipt(raw: string, root: string, episodeId: st
   const legacy = value.status === 'recorded' && text(value.hypothesis_id) && value.hypotheses === undefined
   const inspected = legacy ? [episodeId] : value.inspected_episode_ids
   if (!strings(inspected) || inspected.length === 0 || inspected.some(id => !allowedIds.includes(id)) || !inspected.includes(episodeId) || (!legacy && (inspected.length !== allowedIds.length || inspected.some((id, index) => id !== allowedIds[index])))) return incomplete('The receipt has invalid inspected episodes.')
-  if (!legacy && (!text(value.project) || (value.project !== root && value.project !== basename(root)) || !text(value.feature))) return incomplete('The receipt has an invalid project or feature.')
+  if (!legacy && (!text(value.project) || !identifiesProject(value.project, root) || !text(value.feature))) return incomplete('The receipt has an invalid project or feature.')
   if (value.status === 'no_hypothesis') {
     if (!text(value.reason) || !strings(value.evidence_refs) || value.evidence_refs.length === 0) return incomplete('A no_hypothesis receipt requires a reason and inspected sources.')
     return value as unknown as DreamingReceipt

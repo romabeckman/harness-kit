@@ -207,6 +207,8 @@ OPTIONS
   --effort, -e <level>      Override reasoning effort level (defaults to DefaultSettings.ts diagnose effort)
   --batch-size <number>     Number of pending sessions to process per batch (default: 3)
   --project-dreaming        Extract hypotheses from eligible episodes after trace verification
+  --dreaming-project <path> Owning project path for targeted episode reanalysis
+  --dreaming-episode <id>   Episode ID to reanalyze; requires --dreaming-project
   --debug                   Enable debug output
   --help, -h                Show this help message
 
@@ -215,6 +217,7 @@ EXAMPLES
   hrns diagnose --agent copilot-cli
   hrns diagnose --model gpt-6-luna --effort xhigh
   hrns diagnose --batch-size 5
+  hrns diagnose --dreaming-project packages/sdk --dreaming-episode <episode-id>
 `
 
 export const HELP_QA = `

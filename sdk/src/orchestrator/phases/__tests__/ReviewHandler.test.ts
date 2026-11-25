@@ -206,6 +206,30 @@ describe('ReviewHandler', () => {
     expect(readFileSync(join(root, 'docs/harness-history/learning/active/restart-identity.md'), 'utf8')).toContain(retry.id)
   })
 
+  it('extracts a first-pass test decision when reviewers provide no learning evidence', async () => {
+    const feature = makeFeature()
+    const root = join(workingDir, 'server')
+    mkdirSync(root)
+    writeFileSync(join(root, 'recovery.test.ts'), 'preserves identity in the same service instance')
+    const task: Task = { featureId: feature.id, domain: feature.domain, taskId: 'T01', project: 'server', description: 'Recovery', status: 'IN_PROGRESS', currentPhase: 'IMPLEMENTATION' }
+    const output: TddOutput = { featureId: feature.id, status: 'SUCCESS', reworksCount: 0, modifiedFiles: ['recovery.test.ts'], metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 } }
+    const store = new DreamingEpisodeStore(workingDir, join(workingDir, 'docs/product'))
+    store.recordDevelopment(feature, output, [task], ['server'], 'development-session')
+    writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify(output))
+    const context = makeContext(workingDir, makeFsm(feature), async invocation => {
+      if (invocation.skill !== 'harness-kit:project-dreaming') return { raw: JSON.stringify({ score: 0.95 }) }
+      const data = JSON.parse(invocation.prompt!.split('\n').at(-1)!)
+      expect(data.attempts[0].projects[0].sources).toEqual(['recovery.test.ts'])
+      const folder = join(root, 'docs/harness-history/learning/active')
+      mkdirSync(folder, { recursive: true })
+      writeFileSync(join(folder, 'restart-identity.md'), `---\nid: restart-identity\nfeature_node_id: "feature:recovery"\napplies_when: recovery changes\nproposed_action: test persisted recovery after restart\nskip_when: equivalent coverage exists\nprediction: finds lost identity\nrefutation: baseline finds it\nreview_trigger: next recovery change\n---\n## Origin evidence\n${data.episode_id}\n`)
+      return { raw: JSON.stringify({ episode_id: data.episode_id, project: root, feature: 'feature:recovery', inspected_episode_ids: [data.episode_id], status: 'recorded', evidence_refs: ['recovery.test.ts#recovery'], hypotheses: [{ id: 'restart-identity', disposition: 'created', origin_episode_ids: [data.episode_id] }] }) }
+    }, { projectPaths: ['server'] })
+    vi.mocked(context.getActiveFeature).mockReturnValue(feature)
+    expect(await handler.handle(Phase.REVIEW, { ...context, dreaming: store })).toBe(Phase.TRANSITION)
+    expect(store.list()[0].projects[0].analysis?.receipt).toMatchObject({ status: 'recorded', hypotheses: [{ id: 'restart-identity' }] })
+  })
+
   it('clears developerSession and transitions when skipValidation is true', async () => {
     const fsm = makeFsm()
     const context = makeContext(workingDir, fsm, undefined, { skipValidation: true })
