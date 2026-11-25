@@ -4,6 +4,19 @@ import json
 import re
 
 
+MAX_CANONICAL_DOCUMENT_CHARS = 20_000
+
+
+def validate_canonical_document_size(text, document_type):
+    size = len(text.replace("\r\n", "\n").replace("\r", "\n"))
+    if size > MAX_CANONICAL_DOCUMENT_CHARS:
+        raise ValueError(
+            f"{document_type} document has {size:,} characters. "
+            f"Maximum: {MAX_CANONICAL_DOCUMENT_CHARS:,}. "
+            "Consider compacting the text or splitting it into documents with distinct responsibilities."
+        )
+
+
 def unique_object(pairs):
     result = {}
     for key, value in pairs:

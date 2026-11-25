@@ -23,11 +23,15 @@ For a scoped Project Dreaming handoff, use the [RED orientation procedure](refer
 
 ## TOTAL CONTEXT BUDGET
 
-Generated or updated Markdown: at most **10,000 counted characters per file**. Normalize CRLF/CR to LF before counting Unicode characters. Exclude the YAML frontmatter at the start of the file and the entire fenced `graph` block directly after it, including their delimiters and the line endings of those delimiter lines. Count all remaining content, including whitespace, other JSON, and other fenced blocks. Do not exclude `graph` examples nested inside other fences or Mermaid diagrams.
+Normalize CRLF/CR to LF before counting Unicode characters.
 
-Each feature document has a **20,000-character maximum for the whole file**, including YAML frontmatter, the canonical `graph` block, the Markdown body, and all whitespace. Apply the same newline normalization. Fit the body within its 10,000-character budget first by removing repetition and tightening prose. If the complete document is likely to exceed 20,000 characters after that pass, propose a split by responsibility. Name the proposed owners and the routes, claims, and references that would move. Apply the split within the authorized scope and keep one canonical owner per record. If the split falls outside scope, report the proposal and leave validation unresolved.
+Generated or updated Markdown has a **20,000-character maximum for the whole file**, including YAML frontmatter, fenced blocks, and all whitespace. Use the separate limit below for `docs/.digest.md`.
 
-`docs/.digest.md` retains its separate limit: at most **3,000 characters and fewer than 60 lines**, counting the entire file.
+If a feature document would exceed the limit after removing repetition and tightening prose, split it into two or more feature documents by coherent responsibility within the authorized scope. Name the owners and reconcile the routes, claims, and references that move. Each resulting file must meet the same limit. Keep one canonical owner per record. If the split falls outside scope, report the proposal and leave validation unresolved. For ADRs, follow the [document contract](references/DOCUMENT-CONTRACT.md) and the [architecture decomposition rules](references/ARCHITECTURE-RULES.md#size-limit--decomposition-rules).
+
+`docs/.digest.md` has a separate limit of **5,000 characters and fewer than 60 lines**, counting the entire file.
+
+`docs/.graph.json` has no file size limit. Apply its structural and routing rules.
 
 Remove repetition first. Split only by coherent responsibility within authorized scope; preserve evidence, conditions, IDs, and references. Process one domain at a time. Retain claim IDs and source locators in working summaries; reopen grounding before relying on compressed or conflicting claims. When the review budget is exhausted, defer further inspection/consolidation with explicit gaps; finish only already-grounded edits and applicable validation.
 

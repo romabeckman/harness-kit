@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-from document_graph import graph_block, unique_object
+from document_graph import graph_block, unique_object, validate_canonical_document_size
 
 
 TYPES = {"capability", "rule", "contract", "decision"}
@@ -25,7 +25,6 @@ EVIDENCE_KINDS = {
     "request", "specification", "code", "configuration", "test_definition", "execution",
 }
 LOCAL_ID = re.compile(r"[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9_-]*\Z")
-MAX_FEATURE_DOCUMENT_CHARS = 20_000
 
 
 def require(condition, message):
@@ -78,13 +77,7 @@ class Validator:
         try:
             is_feature = self.paths[document].is_relative_to(self.docs / "feature")
             text = self.paths[document].read_text(encoding="utf-8")
-            if is_feature:
-                require(
-                    len(text) <= MAX_FEATURE_DOCUMENT_CHARS,
-                    f"Feature document has {len(text):,} characters. "
-                    f"Maximum: {MAX_FEATURE_DOCUMENT_CHARS:,}. "
-                    "Suggest splitting the feature into documents with distinct responsibilities.",
-                )
+            validate_canonical_document_size(text, "Feature" if is_feature else "ADR")
             data = knowledge_block(text)
             require(data is None or is_feature,
                     "graph.knowledge is allowed only in docs/feature documents")

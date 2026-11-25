@@ -147,30 +147,32 @@ class BuildDocsGraphTests(unittest.TestCase):
 
         self.assertIn("exact path", rules.lower())
 
-    def test_body_character_budget_excludes_frontmatter_and_feature_graph(self) -> None:
+    def test_document_budgets_cover_markdown_digest_and_graph(self) -> None:
         skill_dir = Path(__file__).parent.parent
         skill = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("Exclude the YAML frontmatter", skill)
-        self.assertIn("entire fenced `graph` block", skill)
-        self.assertIn("including their delimiters", skill)
-        self.assertIn("other JSON", skill)
-        self.assertIn("3,000 characters and fewer than 60 lines", skill)
+        self.assertIn("Generated or updated Markdown has a **20,000-character maximum for the whole file**", skill)
+        self.assertIn("including YAML frontmatter, fenced blocks, and all whitespace", skill)
+        self.assertIn("split it into two or more feature documents", skill)
+        self.assertIn("5,000 characters and fewer than 60 lines", skill)
+        self.assertIn("`docs/.graph.json` has no file size limit", skill)
 
         references = skill_dir / "references"
         for name in ("ARCHITECTURE-RULES.md", "DOCUMENT-TEMPLATE.md", "DOCUMENT-CONTRACT.md",
                      "README-RULES.md", "TESTS-RULES.md", "ONTOLOGY-RULES.md"):
             rules = (references / name).read_text(encoding="utf-8")
             with self.subTest(reference=name):
-                self.assertNotIn("with no exclusions", rules)
-                self.assertNotIn("including all content", rules)
                 self.assertIn("TOTAL CONTEXT BUDGET", rules)
+                self.assertNotIn("10,000", rules)
+
+        readme_rules = (references / "README-RULES.md").read_text(encoding="utf-8")
+        self.assertIn("20,000 characters for the whole file", readme_rules)
 
     def test_architecture_rules_defines_size_limit_and_decomposition(self) -> None:
         rules = (Path(__file__).parent.parent / "references" / "ARCHITECTURE-RULES.md").read_text(
             encoding="utf-8"
         )
 
-        self.assertIn("10,000", rules)
+        self.assertIn("20,000", rules)
         self.assertIn("docs/adr/", rules)
 
     def test_sorts_nodes_and_edges_for_stable_compact_output(self) -> None:

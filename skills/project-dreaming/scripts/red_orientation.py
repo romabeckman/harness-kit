@@ -11,7 +11,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "project-memory" / "scripts"))
-from document_graph import graph_block, unique_object
+from document_graph import graph_block, unique_object, validate_canonical_document_size
 
 
 HEADING = "## RED guidance"
@@ -217,13 +217,20 @@ def apply_handoff(project, handoff):
                 updated = "".join(lines[:start]) + body + "".join(lines[end:])
             if guidance_section(updated)[3] != orientations:
                 raise Conflict("Updated document would hide or change the published orientations")
+            validate_canonical_document_size(updated, "Feature")
             replace_document(path, original, updated)
             receipt["result"] = "written"
-        if (routed_destination(project, handoff) != path
-                or guidance_section(path.read_text(encoding="utf-8"))[3].get(orientation_id) != orientation):
+        if routed_destination(project, handoff) != path:
+            raise Conflict("Could not confirm canonical orientation after the operation")
+        published = path.read_text(encoding="utf-8")
+        validate_canonical_document_size(published, "Feature")
+        if guidance_section(published)[3].get(orientation_id) != orientation:
             raise Conflict("Could not confirm canonical orientation after the operation")
 
-    receipt["checks"] = ["feature route and node", "source locators", "published ID, revision and content"]
+    receipt["checks"] = [
+        "feature route and node", "source locators", "feature document size",
+        "published ID, revision and content",
+    ]
     return receipt
 
 

@@ -27,7 +27,7 @@ Every created or updated digest must contain `DOCUMENTATION INDEX`, `ROUTING`, a
 
 Required index pointer: "Required read `docs/.graph.json` for the complete document list, tags, and relations."
 
-- REQUIRED: Stay below 60 total lines and at most 3,000 characters, counting all content. Rank retained knowledge by consequence and future relevance; remove repetition before conditions or evidence locators.
+- REQUIRED: Apply the [digest limit](../SKILL.md#total-context-budget) of 5,000 characters and fewer than 60 lines, counting the entire file. Rank retained knowledge by consequence and future relevance. Remove repetition before conditions or evidence locators.
 - REQUIRED: Use plain relative document paths, optionally in backticks; no Markdown links, absolute paths, or `file://` URIs. Use feature document paths/qualified claim IDs to locate findings; do not copy implementation paths.
 - PROHIBITED: Enumerate all features/ADRs or reproduce ontology records. Store those details in their existing owners.
 - REQUIRED: Write only when selected content, routing, required structure, or a missing digest needs an authorized change. Missing support stays explicit; unavailable facts do not become invented baseline values.
@@ -45,7 +45,7 @@ Run these actions in order. Resolve script paths from this skill directory; pass
 3. **Reconcile project relationships when relevant.** Apply the contract below after generation, which preserves existing links. Do not rebuild indexes only to add an unchanged date or empty maintenance marker.
 4. **Validate ontology.** For changed ADRs/features, run `python scripts/validate_ontology.py <target_docs_dir> --document <node_id>`; repeat `--document` for each changed document. For a full review, omit the selectors. For a consolidation without edits, select the assessed feature IDs when checking their records. The validator follows qualified references and is read-only. An absent/unusable macro index is a validation gap, not permission to write in read-only mode.
 5. **Synchronize human navigation when affected.** On added/removed/renamed documents or changed navigation descriptions, read [README-RULES.md](README-RULES.md) and reconcile `docs/README.md` with actual files and valid graph nodes. In a full review, check the complete scoped index. Remove a row only when its file no longer exists; a stale graph alone does not establish deletion. Preserve the existing README when navigation is equivalent.
-6. **Check the final state.** Recheck modified files' size and JSON after synchronization, graph target resolution, affected links, README agreement, and digest selection/qualifications. Limit fixes to authorized scope; report unrelated failures. Report only checks actually run and never equate valid structure with verified evidence or improved LLM accuracy.
+6. **Check the final state.** Recheck applicable size limits and JSON after synchronization, graph target resolution, affected links, README agreement, and digest selection/qualifications. Limit fixes to authorized scope; report unrelated failures. Report only checks actually run and never equate valid structure with verified evidence or improved LLM accuracy.
 
 No-change runs perform the applicable read-only checks and stop. Do not bootstrap unrelated baselines, regenerate indexes, or update dates to manufacture an artifact. Honor the selected budget and report unassessed work rather than expanding into another cycle.
 
@@ -63,6 +63,7 @@ No-change runs perform the applicable read-only checks and stop. Do not bootstra
 
 ## Macro graph contract
 
+- REQUIRED: Validate `docs/.graph.json` against its structural and routing rules. The file has no size limit.
 - REQUIRED: Keep document `nodes[]` and `edges[]` compatible with the generator. Feature reading policy is represented as `related_docs.must_read` (target IDs) and `related_docs.optional` (`target`, `description` from `when`). Global edges contain only `source`, `target`, `relation`; do not copy `read` or `when` there.
 - REQUIRED: Generate compact JSON. Sort nodes by `id` and edges by `source`, `relation`, then `target`.
 - REQUIRED: Reject duplicate document IDs, unresolved targets, duplicate reading-policy targets, conflicting must/optional classification, invalid/missing optional `when`, or `when` exceeding 300 characters. Repair using inspected owners, never invented pages.

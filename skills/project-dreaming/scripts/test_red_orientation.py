@@ -72,6 +72,25 @@ class RedOrientationTest(unittest.TestCase):
         self.assertEqual(apply_handoff(self.root, self.handoff)["result"], "already_current")
         self.assertEqual(self.feature.read_bytes(), published)
 
+    def test_publish_checks_the_full_result_before_writing(self):
+        apply_handoff(self.root, self.handoff)
+        published_size = len(self.feature.read_text(encoding="utf-8"))
+        fitting = self.initial.replace("Capture and retry", "😀" * (20_000 - published_size) + "Capture and retry")
+        oversized = fitting.replace("Capture and retry", "😀Capture and retry").replace("\n", "\r\n").encode("utf-8")
+        self.feature.write_bytes(oversized)
+        with self.assertRaisesRegex(ValueError, "20,001.*20,000"):
+            apply_handoff(self.root, self.handoff)
+        self.assertEqual(self.feature.read_bytes(), oversized)
+
+        self.feature.write_bytes(fitting.replace("\n", "\r\n").encode("utf-8"))
+        self.assertEqual(apply_handoff(self.root, self.handoff)["result"], "written")
+        self.assertEqual(len(self.feature.read_text(encoding="utf-8")), 20_000)
+        published = self.feature.read_bytes()
+        self.feature.write_bytes(published.replace(b"Capture and retry", b"xCapture and retry", 1))
+        with self.assertRaisesRegex(ValueError, "20,001.*20,000"):
+            apply_handoff(self.root, self.handoff)
+        self.assertEqual(apply_handoff(self.root, self.withdraw(1))["result"], "written")
+
     def test_replace_compare_and_set_and_withdraw(self):
         apply_handoff(self.root, self.handoff)
         replacement = copy.deepcopy(self.handoff)

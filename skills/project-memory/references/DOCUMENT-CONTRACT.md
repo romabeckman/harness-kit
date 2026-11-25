@@ -16,7 +16,7 @@ Read before any canonical edit, including consolidation or digest demotion. Read
 
 - REQUIRED: Only `ARCHITECTURE.md` and `TESTS.md` are mandatory ADRs. Create additional ADRs only when requested or when decomposing `ARCHITECTURE.md` to satisfy its size limit. Compact other ADRs first; ask for a scope decision only if a new ADR is necessary.
 - REQUIRED: Keep specialized ADRs linked to architecture. Subfolders are allowed inside `docs/adr/` and `docs/feature/`; do not introduce other documentation trees through this skill.
-- REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) to each generated/updated Markdown file, using its specified exclusions.
+- REQUIRED: Apply the whole-file limits in [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) to each generated or updated Markdown file.
 
 ## Metadata and routing
 
