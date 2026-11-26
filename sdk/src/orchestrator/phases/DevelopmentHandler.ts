@@ -1,5 +1,6 @@
 import { loadPrompt } from '../utils/PromptTemplate'
-import { existsSync, rmSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs'
+import { existsSync, rmSync, readFileSync, writeFileSync, appendFileSync, renameSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { join, resolve } from 'node:path'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
@@ -11,7 +12,7 @@ import {
   formatProjectPathsList,
   formatTasksList,
 } from '../utils/PromptHelpers'
-import { getPlanningSource, getSpecsDir, readCompletedTddOutput } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getSpecsDir, readCompletedTddOutput, readTddOutput } from '../utils/PhaseFileUtils'
 import type { TddOutput } from '../utils/PhaseFileUtils'
 import type { Feature, Task } from '../../file-state/types'
 import type { DevelopmenPayload } from '../../context-assembler/types'
@@ -112,6 +113,23 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
 
     PhaseDecisionLogger.logDevelopmen(context.fsm, activeFeature, tddOutputPath)
     if (output.success === false) throw new Error('Development agent failed before a verified TDD-OUTPUT.json was accepted.')
+    const reported = readTddOutput(tddOutputPath)
+    if (reported.featureId === activeFeature.id && reported.reworksCount !== activeFeature.reworks) {
+      context.fsm.appendDecision({
+        featureId: activeFeature.id,
+        decision: 'Development: corrected TDD-OUTPUT.json reworksCount mismatch',
+        rationale: `TDD-OUTPUT.json reported ${reported.reworksCount}, expected ${activeFeature.reworks}.`,
+      })
+      const original = JSON.parse(readFileSync(tddOutputPath, 'utf8'))
+      original.reworksCount = activeFeature.reworks
+      const temporaryPath = `${tddOutputPath}.${randomUUID()}.tmp`
+      try {
+        writeFileSync(temporaryPath, JSON.stringify(original, null, 2) + '\n', 'utf8')
+        renameSync(temporaryPath, tddOutputPath)
+      } finally {
+        rmSync(temporaryPath, { force: true })
+      }
+    }
     const handoff = readCompletedTddOutput(tddOutputPath, activeFeature.id, activeFeature.reworks)
     context.dreaming?.recordDevelopment(activeFeature, handoff, chunkTasks, context.config.projectPaths, output.session?.id)
   }

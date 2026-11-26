@@ -45,6 +45,7 @@ Write `{{workingDir2}}/TDD-OUTPUT.json` upon completion:
   "reworksCount": {{reworks}}
 }
 ```
+`reworksCount` indicates the number of review-triggered corrections for this feature. Its value cannot be changed. Copy the exact value shown above into the output.
 Allowed status values are `SUCCESS` and `FAILED`. Use `SUCCESS` only when every required test passes and `metrics.failed` is 0.
 `developerHandoff` must summarize what was implemented and what reviewers should inspect; it must not exceed 500 characters.
 </expected_output>

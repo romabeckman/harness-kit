@@ -61,7 +61,7 @@ sdk/src/
 
 | Phase | Behavior |
 |---|---|
-| DEVELOPMENT | Initial and retry prompts route each task to its owning project's published RED guidance. A valid output must match the active feature and rework count and report success with zero failed tests. A pending refinement decision keeps the task incomplete. The episode preserves project-scoped task, session, changed-file and optional test-decision evidence; unresolvable or ambiguous paths are recorded as source issues. |
+| DEVELOPMENT | Initial and retry prompts route each task to its owning project's published RED guidance. When a fresh output for the active feature has a different rework count, Development records the discrepancy in decisions and corrects the count. A valid output must match the active feature and rework count and report success with zero failed tests. A pending refinement decision keeps the task incomplete. The episode preserves project-scoped task, session, changed-file and optional test-decision evidence; unresolvable or ambiguous paths are recorded as source issues. |
 | REVIEW | Reviewers form their verdict independently and may return project-relative `learning_evidence`. After PASS, Dreaming receives each owner's chronological attempt chain even without classified findings. The SDK verifies the receipt against project records and preserves incomplete analysis for retry without changing the feature verdict. |
 | TRANSITION | A terminal feature closes the current episode and its linked retry attempts. The same runner session can contribute to multiple attempts. |
 | MEMORY | Supplies ready publication or withdrawal handoffs to Project Memory. The SDK verifies the routed canonical result before acknowledging the handoff. |

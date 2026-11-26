@@ -250,6 +250,29 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).toContain('maximum 500 characters')
     })
 
+    it.each([[0, 1], [2, 0]])('corrects rework count %i from reported count %i and records the mismatch', async (expected, reported) => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      const feature = makeFeature({ reworks: expected })
+      const fsm = makeFsm()
+      const context = makeContext(workingDir, fsm, async () => {
+        writeFileSync(tddPath, JSON.stringify({
+          featureId: 'F001', status: 'SUCCESS',
+          metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 },
+          modifiedFiles: [], reworksCount: reported, extra: 'preserved',
+        }))
+        return { success: true }
+      })
+      context.getActiveFeature = vi.fn().mockReturnValue(feature)
+
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
+      expect(JSON.parse(readFileSync(tddPath, 'utf8'))).toMatchObject({ reworksCount: expected, extra: 'preserved' })
+      expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({
+        featureId: 'F001',
+        rationale: expect.stringContaining(`reported ${reported}, expected ${expected}`),
+      }))
+      expect(context.invokeAgent).toHaveBeenCalledOnce()
+    })
+
     it('keeps tasks incomplete when TDD output is absent', async () => {
       const fsm = makeFsm({ updateTaskStatus: vi.fn() })
       const context = makeContext(workingDir, fsm)
