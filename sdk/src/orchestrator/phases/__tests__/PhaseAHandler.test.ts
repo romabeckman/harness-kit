@@ -192,21 +192,29 @@ describe('PlanningHandler', () => {
 
         it('reloads latest scope from SCOPE.md via fsm.loadScope', async () => {
             mockFsm.existScope.mockReturnValue(true);
-            mockFsm.loadScope.mockReturnValue('updated scope from SCOPE.md');
-
-            await handler.handle(Phase.PLANNING, mockContext);
-
-            expect(mockContext.config.scope).toBe('updated scope from SCOPE.md');
-        });
-
-        it('references SCOPE.md when an always-inline scope exceeds FORCE_INLINE_MAX', async () => {
-            mockFsm.loadScope.mockReturnValue('a'.repeat(FORCE_INLINE_MAX + 1));
+            mockFsm.loadScope.mockReturnValue('updated business requirements');
 
             await handler.handle(Phase.PLANNING, mockContext);
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
-            expect(invokedPrompt).toContain('<scope_ref>');
-            expect(invokedPrompt).toContain(`Read file: \`${join(mockContext.workingDir, 'docs', 'product', 'SCOPE.md')}\``);
+            expect(mockContext.config.scope).toBe('updated business requirements');
+            expect(invokedPrompt).toContain(`<planning_source file="${join('docs', 'product', 'SCOPE.md')}">\n<scope>`);
+            expect(invokedPrompt).toContain('```markdown\nupdated business requirements');
+        });
+
+        it.each([
+            ['SCOPE.md', false],
+            ['REFINEMENT.md', true],
+        ])('identifies %s when the selected content exceeds FORCE_INLINE_MAX', async (fileName, isRefinement) => {
+            mockFsm.existRefinement.mockReturnValue(isRefinement);
+            mockFsm.loadScope.mockReturnValue('a'.repeat(FORCE_INLINE_MAX + 1));
+            mockFsm.loadRefinement.mockReturnValue('b'.repeat(FORCE_INLINE_MAX + 1));
+
+            await handler.handle(Phase.PLANNING, mockContext);
+
+            const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
+            expect(invokedPrompt).toContain(`<planning_source file="${join('docs', 'product', fileName)}">\n<scope_ref>`);
+            expect(invokedPrompt).toContain(`Read file: \`${join(mockContext.workingDir, 'docs', 'product', fileName)}\``);
             expect(invokedPrompt).not.toContain('<scope>\n```markdown');
         });
 
@@ -232,11 +240,20 @@ describe('PlanningHandler', () => {
 
             const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
             expect(mockContext.config.scope).toBe('# Refinement Content\n- Decision 1');
-            expect(invokedPrompt).toContain('<scope>');
+            expect(invokedPrompt).toContain(`<planning_source file="${join('docs', 'product', 'REFINEMENT.md')}">\n<scope>`);
             expect(invokedPrompt).toContain('# Refinement Content\n- Decision 1');
             expect(invokedPrompt).not.toContain('SCOPE.md');
             expect(invokedPrompt).not.toContain('<refinement_context>');
             expect(invokedPrompt).not.toContain('scope content must not be used');
+        });
+
+        it('identifies the selected file relative to the workspace when productDir is configured', async () => {
+            mockContext.config.productDir = join(mockContext.workingDir, 'planning', 'product files');
+
+            await handler.handle(Phase.PLANNING, mockContext);
+
+            const invokedPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string;
+            expect(invokedPrompt).toContain(`<planning_source file="${join('planning', 'product files', 'SCOPE.md')}">\n<scope>`);
         });
     });
 

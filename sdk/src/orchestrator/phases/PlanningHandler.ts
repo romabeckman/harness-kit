@@ -4,7 +4,7 @@ import { AbstractPhaseHandler, Reviewontext } from "./AbstractPhaseHandler";
 import { ContextAssembler } from "../../context-assembler/ContextAssembler";
 import type { Feature, Task } from "../../file-state/types";
 import type { PlanningPayload } from "../../context-assembler/types";
-import { join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 import {
   buildDocsOrientationSection,
@@ -104,8 +104,8 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const developerSession = context.getDeveloperSession?.(agent, undefined, Phase.PLANNING)
 
     const prompt = developerSession
-      ? this.buildFeatureScopeRefinementPrompt(payload, feature, context)
-      : this.buildScopeRefinementPrompt(payload, feature, context);
+      ? this.buildFeatureScopeRefinementPrompt(payload, feature, context, planningSource)
+      : this.buildScopeRefinementPrompt(payload, feature, context, planningSource);
 
     const output = await context.invokeAgent({
       skill: "harness-kit:scope-refinement",
@@ -127,7 +127,12 @@ export class PlanningHandler extends AbstractPhaseHandler {
     }
   }
 
-  buildScopeRefinementPrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
+  buildScopeRefinementPrompt(
+    payload: PlanningPayload,
+    feature: Feature,
+    context: Reviewontext,
+    planningSource = getPlanningSource(context),
+  ): string {
     const projectPathsList = formatProjectPathsList(payload.projectPaths)
     const rulesSection = formatRulesSection(payload.steeringRules)
 
@@ -147,8 +152,8 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const backlog = context.fsm.loadBacklog();
     const dependenciesText = formatFeatureDependencies(backlog, feature)
 
-    const planningSource = getPlanningSource(context)
-
+    const scopeDirectory = relative(context.workingDir, dirname(planningSource.path))
+    const scopeFilePath = join(scopeDirectory, planningSource.fileName)
     const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     return loadPrompt('planning/scope', {
@@ -158,6 +163,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       rulesSection: rulesSection,
       projectPathsList: projectPathsList,
       setupDecisionsSection: this.buildSetupDecisionsSection(planningSource, context),
+      scopeFilePath,
       scopeSection: inlineOrReference(
         'scope',
         payload.scope.trim(),
@@ -174,7 +180,12 @@ export class PlanningHandler extends AbstractPhaseHandler {
     });
   }
 
-  buildFeatureScopeRefinementPrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
+  buildFeatureScopeRefinementPrompt(
+    payload: PlanningPayload,
+    feature: Feature,
+    context: Reviewontext,
+    planningSource = getPlanningSource(context),
+  ): string {
     const complexity = context.config.complexity ?? Complexity.AUTO
     const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
     const contextMapFile = join(payload.workingDir, '002-context-map.md');
@@ -192,8 +203,6 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const dependenciesText = formatFeatureDependencies(backlog, feature)
     const rulesSection = formatRulesSection(payload.steeringRules)
     const projectPathsList = formatProjectPathsList(payload.projectPaths)
-    const planningSource = getPlanningSource(context)
-
     return loadPrompt('planning/continuation', {
       expectedOutputs: complexityPrompt.expectedOutputs,
       strictRules: complexityPrompt.strictRules,
