@@ -16,6 +16,11 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     return true
   }
 
+  override run(invocation: AgentInvocation, options?: { signal?: AbortSignal }): Promise<AgentOutput> {
+    // Use the default agent's toolset and skip retries for a name agy never receives.
+    return super.run({ ...invocation, agent: '' }, options)
+  }
+
   protected buildArgs(_prompt: string, invocation: AgentInvocation): string[] {
     const args: string[] = []
     const timeout = invocation.timeoutMs ?? DEFAULT_PHASE_TIMEOUT_MS
@@ -33,7 +38,6 @@ export class AntigravityCLIRunner extends AbstractCliRunner {
     // add 1000ms to timeout to avoid throw error for 1sec difference
     args.push('--print-timeout', `${timeout + 1000}ms`)
     args.push('--dangerously-skip-permissions')
-    if (invocation.agent) args.push('--agent', invocation.agent)
     if (invocation.session?.id) args.push('--conversation', invocation.session.id)
     return args
   }

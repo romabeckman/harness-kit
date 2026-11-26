@@ -197,7 +197,6 @@ export class RefinementHandler extends AbstractPhaseHandler {
       refinementEvidence: businessEvidence,
       setupIds: JSON.stringify(evidence.filter(entry => entry.category === 'setup').map(entry => entry.id)),
     })
-    let agentCompleted = false
     try {
       await context.invokeAgent({
         skill: 'harness-kit:pbb-design',
@@ -206,13 +205,9 @@ export class RefinementHandler extends AbstractPhaseHandler {
         prompt,
         phaseKey: 'refinement_consolidation',
       })
-      agentCompleted = true
     } finally {
-      if (agentCompleted || context.fsm.existRefinement()) {
-        const refinement = context.fsm.loadRefinement()
-        if (validatePbbContract(refinement, evidence).length > 0) {
-          context.fsm.saveRefinement(`# Refinement\n\n## Scope\n\n${scope.trim()}\n\n## Business answers\n\n\`\`\`json\n${businessEvidence}\n\`\`\`\n`)
-        }
+      if (!context.fsm.existRefinement()) {
+        context.fsm.saveRefinement(`# Refinement\n\n## Scope\n\n${scope.trim()}\n\n## Business answers\n\n\`\`\`json\n${businessEvidence}\n\`\`\`\n`)
       }
     }
   }

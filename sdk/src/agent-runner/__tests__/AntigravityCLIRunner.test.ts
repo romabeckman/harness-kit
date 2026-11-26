@@ -78,43 +78,33 @@ describe('AntigravityCLIRunner', () => {
     expect(runner.writePromptToStdin).toBe(true)
   })
 
-  it.each([0, 1])('retries an unknown namespaced agent with its local name (exit %i)', async (exitCode) => {
-    invocation = { ...invocation, agent: 'harness-kit:software-architect' }
-    mockSpawn
-      .mockImplementationOnce(() => new MockChildProcess([
-        JSON.stringify({ status: 'ERROR', response: '', error: 'unknown agent "harness-kit:software-architect"' }),
-      ], [
-        'error: unknown agent "harness-kit:software-architect" (available: software-architect)',
-      ], exitCode) as any)
-      .mockImplementationOnce(() => new MockChildProcess([
-        JSON.stringify({ status: 'SUCCESS', response: 'ok', conversation_id: 'native-session' }),
-      ]) as any)
+  it.each([0, 1])('propagates unknown-agent errors from the default agent without retrying (exit %i)', async (exitCode) => {
+    invocation = { ...invocation, agent: 'harness-kit:cto' }
+    const error = 'unknown agent "harness-kit:cto"'
+    mockSpawn.mockImplementation(() => new MockChildProcess([
+      JSON.stringify({ status: 'ERROR', response: '', error }),
+    ], [error], exitCode) as any)
 
-    const result = await new AntigravityCLIRunner().run(invocation)
-
-    expect(result.raw).toBe('ok')
-    expect(result.session).toEqual({ id: 'native-session' })
-    expect(mockSpawn).toHaveBeenCalledTimes(2)
-    expect(mockSpawn.mock.calls[0][1]).toContain('harness-kit:software-architect')
-    expect(mockSpawn.mock.calls[1][1]).toContain('software-architect')
-    expect(mockSpawn.mock.calls[1][1]).not.toContain('harness-kit:software-architect')
-    expect(invocation.agent).toBe('harness-kit:software-architect')
+    await expect(new AntigravityCLIRunner().run(invocation)).rejects.toThrow(error)
+    expect(mockSpawn).toHaveBeenCalledTimes(1)
+    expect(invocation.agent).toBe('harness-kit:cto')
   })
 
-  it('should build correct CLI arguments without -p prompt flag', () => {
-    const runner = new AntigravityCLIRunner()
-    // @ts-ignore - protected method access
-    const args = runner.buildArgs(invocation.prompt, invocation)
+  it.each(['cto', 'harness-kit:cto'])('runs the default agent when the invocation names %s', async (agent) => {
+    invocation = { ...invocation, agent }
+    mockSpawn.mockReturnValue(new MockChildProcess([
+      JSON.stringify({ status: 'SUCCESS', response: 'ok' }),
+    ]) as any)
 
-    expect(args).toEqual([
+    await new AntigravityCLIRunner().run(invocation)
+
+    expect(mockSpawn).toHaveBeenCalledTimes(1)
+    expect(mockSpawn.mock.calls[0][1]).toEqual([
       '--mode', 'accept-edits',
       '--output-format', 'json',
       '--print-timeout', '3601000ms',
       '--dangerously-skip-permissions',
-      '--agent', 'test-agent',
     ])
-    expect(args).not.toContain('-p')
-    expect(args).not.toContain('Hello Antigravity')
   })
 
   it('should correctly parse json output format from agy', async () => {
