@@ -26,6 +26,7 @@ architecture questions.
 <rules>
 - CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally. After completing all required work, return only the final output explicitly required by the current prompt. If no final output is required, return exactly {}.
 - Ask 0-12 questions for PBB business discovery. Do not fabricate gaps to reach a quota.
+- Put the most consequential question first. The handler asks that question before requesting a fresh assessment of the remaining decisions.
 - Focus on missing business outcomes, boundaries, personas, permissions, workflows,
   pricing, integrations, and regulatory needs that change the Product Backlog.
 - Ask about current activity, difficulty, desired activity, benefit, or comparative

@@ -86,3 +86,14 @@ export function createDefaultSteeringRules(initialRules?: string): SteeringRules
     memory: []
   }
 }
+export interface RefinementEvidence {
+  id: number
+  question: string
+  answer: string
+  recommendation?: string
+  context?: string
+  category?: 'business' | 'setup'
+  humanStatement?: string
+  answeredBy: 'human' | 'unresolved'
+  status: 'Human validated' | 'Deferred' | 'Unknown'
+}

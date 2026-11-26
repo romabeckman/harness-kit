@@ -27,6 +27,7 @@ Mode: autonomous
   mappings and missing reference IDs before deriving affected tasks. If the source
   has no contract marker, use the existing heading-based mapping.
 - Treat human-validated decisions as authoritative and model answers as provisional assumptions.
+- If <setup_decisions> is present, use each human-validated answer as an architectural constraint for applicable projects. An answer supersedes its recommendation. Keep deferred and unknown setup choices unresolved and identify affected designs.
 </workflow>
 
 {{*expectedOutputs}}
@@ -52,6 +53,7 @@ Mode: autonomous
 </project_paths>
 
 {{*scopeSection}}
+{{*setupDecisionsSection}}
 
 <target_feature>
 ID: {{id}}

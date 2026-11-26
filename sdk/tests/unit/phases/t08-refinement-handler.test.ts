@@ -10,6 +10,7 @@ import { refinementForPrompt } from '../../fixtures/pbb-refinement'
 
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn(),
+  editor: vi.fn(),
 }))
 
 vi.mock('node:fs', () => ({
@@ -49,13 +50,14 @@ describe('RefinementHandler', () => {
       fsm: {
         existRefinement: vi.fn().mockReturnValue(false),
         saveRefinement: vi.fn(),
+        saveRefinementEvidence: vi.fn(),
         existScope: vi.fn().mockReturnValue(false),
         loadScope: vi.fn().mockReturnValue('Test scope'),
       },
       invokeAgent: vi.fn().mockImplementation(async (opts: any) => {
-        if (opts.prompt.includes('raw JSON array')) {
+        if (opts.phaseKey === 'refinement_questions') {
           return {
-            raw: questionsJson,
+            raw: opts.prompt.includes('<follow_up>') ? '[]' : questionsJson,
           }
         }
         return { raw: refinementForPrompt(opts.prompt, contract) }
@@ -67,17 +69,18 @@ describe('RefinementHandler', () => {
     vi.mocked(input)
       .mockResolvedValueOnce('Answer 1') // For Question 1
       .mockResolvedValueOnce('Additional info text') // For "Any additional information?"
+      .mockResolvedValueOnce('') // Approve draft
 
     const nextPhase = await handler.handle(Phase.REFINEMENT, mockContext)
 
     expect(nextPhase).toBe(Phase.BOOTSTRAP)
-    expect(input).toHaveBeenCalledTimes(2)
+    expect(input).toHaveBeenCalledTimes(3)
     expect(input).toHaveBeenNthCalledWith(1, {
-      message: 'Your answer (Enter to accept, /defer or /unknown):',
+      message: ' Your answer (Enter to accept, /defer or /unknown):',
       default: 'Rec 1',
     })
     expect(input).toHaveBeenNthCalledWith(2, {
-      message: 'Any additional information?',
+      message: ' Any additional information?',
       default: '',
     })
 
@@ -95,10 +98,11 @@ describe('RefinementHandler', () => {
     vi.mocked(input)
       .mockResolvedValueOnce('Answer 1') // For Question 1
       .mockResolvedValueOnce('   ') // Blank answer for optional question
+      .mockResolvedValueOnce('') // Approve draft
 
     await handler.handle(Phase.REFINEMENT, mockContext)
 
-    expect(input).toHaveBeenCalledTimes(2)
+    expect(input).toHaveBeenCalledTimes(3)
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
         agent: 'harness-kit:cto',

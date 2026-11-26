@@ -3,9 +3,10 @@ import { join } from 'path'
 import { BacklogParser } from './parsers/BacklogParser'
 import { DevStateParser } from './parsers/DevStateParser'
 import { BootstrapConfigParser } from './parsers/BootstrapConfigParser'
-import type { Feature, Task, BootstrapConfig, FeatureStatus, TaskStatus, CurrentPhase, DecisionEntry } from './types'
+import type { Feature, Task, BootstrapConfig, FeatureStatus, TaskStatus, CurrentPhase, DecisionEntry, RefinementEvidence } from './types'
 import { createDefaultSteeringRules } from './types'
 import { OrchestratorConfig, Phase, Complexity } from '../orchestrator/types'
+import { JsonExtractionProtocol } from '../json-extraction/JsonExtractionProtocol'
 
 export interface IFileStateManager {
   // ─── Scope ───────────────────────────────────────────────────────────────
@@ -17,6 +18,8 @@ export interface IFileStateManager {
   saveRefinement(content: string): void
   loadRefinement(): string
   existRefinement(): boolean
+  saveRefinementEvidence(evidence: RefinementEvidence[]): void
+  loadSetupDecisions(): RefinementEvidence[]
 
   // ─── Bootstrap ──────────────────────────────────────────────────────────
   ensureProductFiles(config?: OrchestratorConfig): void
@@ -102,13 +105,33 @@ export class FileStateManager implements IFileStateManager {
   // ─── Refinement ──────────────────────────────────────────────────────────
 
   saveRefinement(content: string): void {
+    this.writeRefinementFile('REFINEMENT.md', content)
+  }
+
+  saveRefinementEvidence(evidence: RefinementEvidence[]): void {
+    this.writeRefinementFile('QUESTIONS.json', JSON.stringify(evidence, null, 2))
+  }
+
+  loadSetupDecisions(): RefinementEvidence[] {
+    const path = join(this.productDir, 'QUESTIONS.json')
+    if (!existsSync(path)) return []
+    const evidence = JsonExtractionProtocol.extract(readFileSync(path, 'utf-8'))
+    if (!('data' in evidence) || !Array.isArray(evidence.data)) return []
+    return evidence.data.filter((entry): entry is RefinementEvidence => entry?.category === 'setup' &&
+      Number.isSafeInteger(entry.id) && entry.id > 0 && typeof entry.question === 'string' &&
+      typeof entry.answer === 'string' && (
+        (entry.answeredBy === 'human' && entry.status === 'Human validated') ||
+        (entry.answeredBy === 'unresolved' && ['Deferred', 'Unknown'].includes(entry.status) && entry.answer === 'Unresolved')
+      ))
+  }
+
+  private writeRefinementFile(name: string, content: string): void {
     mkdirSync(this.productDir, { recursive: true })
-    const path = join(this.productDir, 'REFINEMENT.md')
     const temporaryDir = mkdtempSync(join(this.productDir, '.refinement-write-'))
     try {
-      const temporaryPath = join(temporaryDir, 'REFINEMENT.md')
+      const temporaryPath = join(temporaryDir, name)
       writeFileSync(temporaryPath, content, 'utf-8')
-      renameSync(temporaryPath, path)
+      renameSync(temporaryPath, join(this.productDir, name))
     } finally {
       rmSync(temporaryDir, { recursive: true, force: true })
     }

@@ -38,10 +38,30 @@ Write the file with exactly this structure (Markdown):
 - Read the pbb-design references/output-contract.md when producing the final document.
 - Use PBB-Contract: 2, the required record fields, IDs, typed references, enums,
   traceability, source catalogue, and publication checks in that contract.
+- For `Priority status: proposed`, record the ordering inference as an `Axx`
+  assumption or a provisional model `Qxx` decision. Cite that ID in
+  `Priority reason`, include it in `Decision refs` and Traceability, and list the
+  affected PBIs in `Affects`. Use the inference record's `Basis` to cite the
+  evidence behind the recommendation. When there is insufficient evidence to
+  propose an order, use `Priority status: pending` and `Delivery rank: null`,
+  and state what evidence is missing in `Priority reason`.
 - Translate numeric question IDs to Q IDs with at least two digits, including
   additional manually supplied answers. Preserve the original question, suggestion,
   rationale, answer, author, and status. Keep setup answers outside the business
-  question history and PBIs, and reserve their numeric IDs when assigning new Q IDs.
+  question history and PBIs. Reserve these numeric setup IDs when assigning new Q IDs: {{setupIds}}.
+- Only entries in <refinement_evidence> provide human decisions or deferrals.
+  Use the exact Q ID, answer, author, status and human statement when present.
+  Mark any newly introduced question as a Provisional model assumption.
+- In Suggested answer, Rationale, Resolved answer and Human statement, encode
+  text with line breaks, leading or trailing whitespace, or a literal `json:"`
+  prefix as `json:` followed by a JSON string (for example `json:"Line 1\nLine 2"`).
+  Keep the encoded field on one Markdown source line and preserve every character.
+- If <refinement_draft> is provided, revise it using the most recent correction
+  in <refinement_evidence>. Keep stable IDs, link the correction with Supersedes
+  when it replaces a decision, and update affected PBIs, priorities and traceability.
+- If <refinement_validation_errors> is provided, fix each reported issue. Use
+  <rejected_refinement_ref> when present and preserve valid records, IDs, and
+  human evidence. Write the complete corrected document to <output_file>.
 - Apply human answers even when they replace a suggestion. Preserve deferred and
   unknown answers as unresolved, including any humanStatement. An autonomous
   consolidation never changes existing human authorship or resolves deferrals.
@@ -69,6 +89,10 @@ screen-level interactions supported by the scope, PBIs, and answers. If none exi
 </optional_ui_prototype_analysis>
 
 {{*scopeSection}}
+
+{{*draftSection}}
+
+{{*validationSection}}
 
 <refinement_evidence>
 {{refinementEvidence}}

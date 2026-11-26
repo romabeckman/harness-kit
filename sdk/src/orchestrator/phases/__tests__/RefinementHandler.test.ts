@@ -4,9 +4,11 @@ import { Phase } from '../../types'
 import { ChainBuilder } from '../../ChainBuilder'
 import { FORCE_INLINE_MAX } from '../../utils/PromptHelpers'
 import { refinementForPrompt } from '../../../../tests/fixtures/pbb-refinement'
+import { FileStateManager } from '../../../file-state/FileStateManager'
 
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn().mockImplementation(async ({ default: defVal }) => defVal ?? 'User specified answer'),
+  editor: vi.fn(),
 }))
 
 describe('RefinementHandler', () => {
@@ -20,6 +22,7 @@ describe('RefinementHandler', () => {
       loadScope: vi.fn().mockReturnValue('Test scope text'),
       existRefinement: vi.fn().mockReturnValue(false),
       saveRefinement: vi.fn(),
+      saveRefinementEvidence: vi.fn(),
     }
 
     mockContext = {
@@ -33,7 +36,7 @@ describe('RefinementHandler', () => {
       },
       invokeAgent: vi.fn().mockImplementation(async ({ phaseKey, prompt }) => ({
         raw: phaseKey === 'refinement_questions'
-          ? '[{"id":1,"question":"Q1","recommendation":"R1","context":"C1"}]'
+          ? (prompt.includes('<follow_up>') ? '[]' : '[{"id":1,"question":"Q1","recommendation":"R1","context":"C1"}]')
           : refinementForPrompt(prompt),
       })),
     }
@@ -66,19 +69,21 @@ describe('RefinementHandler', () => {
     mockContext.config.productDir = productDir
 
     const savedContent: string[] = []
+    const state = new FileStateManager({ productDir })
+    mockFsm.saveRefinementEvidence = state.saveRefinementEvidence.bind(state)
     mockFsm.saveRefinement = vi.fn().mockImplementation((content: string) => {
       savedContent.push(content)
     })
 
     const next = await handler.handle(Phase.REFINEMENT, mockContext)
     expect(next).toBe(Phase.BOOTSTRAP)
-    expect(mockContext.invokeAgent).toHaveBeenCalledTimes(2)
+    expect(mockContext.invokeAgent).toHaveBeenCalledTimes(3)
     expect(mockContext.invokeAgent.mock.calls[0][0].agent).toBe('harness-kit:cto')
     expect(mockContext.invokeAgent.mock.calls[0][0].skill).toBe('harness-kit:pbb-design')
-    expect(mockContext.invokeAgent.mock.calls[1][0].agent).toBe('harness-kit:cto')
-    expect(mockContext.invokeAgent.mock.calls[1][0].skill).toBe('harness-kit:pbb-design')
+    expect(mockContext.invokeAgent.mock.calls[2][0].agent).toBe('harness-kit:cto')
+    expect(mockContext.invokeAgent.mock.calls[2][0].skill).toBe('harness-kit:pbb-design')
     expect(mockContext.invokeAgent.mock.calls[0][0].phaseKey).toBe('refinement_questions')
-    expect(mockContext.invokeAgent.mock.calls[1][0].phaseKey).toBe('refinement_consolidation')
+    expect(mockContext.invokeAgent.mock.calls[2][0].phaseKey).toBe('refinement_consolidation')
 
     const questionsPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string
     expect(questionsPrompt).toContain('Ask 0-12 questions')
@@ -86,7 +91,7 @@ describe('RefinementHandler', () => {
     expect(questionsPrompt).toContain('harness-kit:pbb-design')
     expect(questionsPrompt).toContain('CRITICAL: Do not narrate progress or emit interim status updates.')
 
-    const consolidationPrompt = mockContext.invokeAgent.mock.calls[1][0].prompt as string
+    const consolidationPrompt = mockContext.invokeAgent.mock.calls[2][0].prompt as string
     expect(consolidationPrompt).toContain('<skill_context>')
     expect(consolidationPrompt).toContain('harness-kit:pbb-design')
     expect(consolidationPrompt).toContain('CRITICAL: Do not narrate progress or emit interim status updates.')
@@ -157,7 +162,7 @@ describe('RefinementHandler', () => {
     await handler.handle(Phase.REFINEMENT, mockContext)
 
     const prompts = mockContext.invokeAgent.mock.calls.map((call: any[]) => call[0].prompt as string)
-    expect(prompts).toHaveLength(2)
+    expect(prompts).toHaveLength(3)
     for (const prompt of prompts) {
       expect(prompt).toContain('<scope_ref>')
       expect(prompt).toContain(`Read file: \`${join(mockContext.config.productDir, 'SCOPE.md')}\``)

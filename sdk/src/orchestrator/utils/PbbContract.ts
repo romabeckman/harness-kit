@@ -1,3 +1,7 @@
+import type { RefinementEvidence } from '../../file-state/types'
+
+export type { RefinementEvidence } from '../../file-state/types'
+
 const headings = [
   '1. Product', '2. Problems', '3. Expectations', '4. Personas',
   '5. Functionalities', '6. Product Backlog', '7. Traceability',
@@ -31,18 +35,6 @@ interface RecordBlock {
   fields: Map<string, string>
 }
 
-export interface RefinementEvidence {
-  id: number
-  question: string
-  answer: string
-  recommendation?: string
-  context?: string
-  category?: 'business' | 'setup'
-  humanStatement?: string
-  answeredBy: 'human' | 'unresolved'
-  status: 'Human validated' | 'Deferred' | 'Unknown'
-}
-
 function field(line: string): [string, string] | undefined {
   const match = line.match(/^(?:\*\*)?([^:*]+?)(?::\*\*|\*\*:|:)\s*(.*)$/)
   return match ? [match[1].trim(), match[2].trim()] : undefined
@@ -50,6 +42,22 @@ function field(line: string): [string, string] | undefined {
 
 function ids(value: string): string[] {
   return value.match(/\b(?:PBI|PR|EX|PE|FN|S|Q|A)\d{2,}\b/g) ?? []
+}
+
+const questionTextFields = ['Suggested answer', 'Rationale', 'Resolved answer', 'Human statement']
+
+function decodeQuestionText(block: RecordBlock, errors: string[]): void {
+  for (const key of questionTextFields) {
+    const value = block.fields.get(key)
+    if (!value?.startsWith('json:"')) continue
+    try {
+      const decoded: unknown = JSON.parse(value.slice(5))
+      if (typeof decoded !== 'string') throw new Error('Expected a JSON string')
+      block.fields.set(key, decoded)
+    } catch {
+      errors.push(`${block.id}: invalid JSON string in ${key}`)
+    }
+  }
 }
 
 export function validatePbbContract(markdown: string, evidence: RefinementEvidence[] = []): string[] {
@@ -113,11 +121,15 @@ export function validatePbbContract(markdown: string, evidence: RefinementEviden
   }
   const blocks = [...known.values()].filter(block => block.prefix !== 'S')
   for (const block of blocks) {
+    if (block.prefix === 'Q') decodeQuestionText(block, errors)
     for (const key of requiredFields[block.prefix]) {
       if (!block.fields.get(key)) errors.push(`${block.id}: missing ${key}`)
     }
     for (const [key, value] of block.fields) {
       const types = fieldTypes[key]
+      const pbiCitesEvidence = block.prefix === 'PBI' &&
+        (key === 'Priority reason' || (key === 'Benefit' && /^FN\d{2,}$/.test(value)))
+      if (!types && !pbiCitesEvidence) continue
       const references = ids(value)
       if (types) {
         const scalar = ['Functionality', 'Persona', 'Problem', 'Expectation'].includes(key)
@@ -136,13 +148,23 @@ export function validatePbbContract(markdown: string, evidence: RefinementEviden
     if (block.prefix === 'Q') validateQuestion(block, errors)
   }
 
+  const evidenceById = new Map(evidence.map(answer => [`Q${String(answer.id).padStart(2, '0')}`, answer]))
+  if (evidenceById.size !== evidence.length) errors.push('Duplicate question ID in refinement evidence')
+  const questions = blocks.filter(block => block.prefix === 'Q')
+  for (const question of questions) {
+    if (!evidenceById.has(question.id) && (question.fields.get('Answered by') !== 'model' || question.fields.has('Human statement'))) {
+      errors.push(`${question.id}: decision requires recorded refinement evidence`)
+    }
+  }
+
   const pbis = blocks.filter(block => block.prefix === 'PBI')
   for (const pbi of pbis) {
     const status = pbi.fields.get('Priority status')
     const references = ids(pbi.fields.get('Priority reason') ?? '')
     if (status === 'confirmed' && !references.some(id => {
       const source = known.get(id)
-      return source?.prefix === 'S' || (source?.prefix === 'Q' && source.fields.get('Answered by') === 'human' && source.fields.get('Status') === 'Human validated')
+      const answer = evidenceById.get(id)
+      return source?.prefix === 'S' || (source?.prefix === 'Q' && answer?.category !== 'setup' && answer?.status === 'Human validated')
     })) errors.push(`${pbi.id}: Priority reason requires a source or human decision`)
     if (status === 'proposed' && !references.some(id => ['A', 'Q'].includes(known.get(id)?.prefix ?? ''))) {
       errors.push(`${pbi.id}: Priority reason requires a referenced inference`)
@@ -173,17 +195,15 @@ export function validatePbbContract(markdown: string, evidence: RefinementEviden
     }
   }
   for (const row of dataRows) if (!pbis.some(pbi => pbi.id === row[0])) errors.push(`Unknown Traceability PBI ${row[0]}`)
-  const questions = blocks.filter(block => block.prefix === 'Q')
   const questionSection = (sections.get(headings[8]) ?? []).join('\n').trim()
   if (questions.length === 0 && questionSection !== 'No open questions.') errors.push('Open Questions has no valid history or empty marker')
   if (questions.length > 0 && questionSection.includes('No open questions.')) errors.push('Open Questions contains history and empty marker')
-  for (const answer of evidence.filter(entry => entry.category === 'setup')) {
-    const id = `Q${String(answer.id).padStart(2, '0')}`
-    if (known.has(id)) errors.push(`${id}: setup answer cannot be a business question`)
-  }
-  for (const answer of evidence.filter(entry => entry.category !== 'setup')) {
-    const id = `Q${String(answer.id).padStart(2, '0')}`
+  for (const [id, answer] of evidenceById) {
     const question = known.get(id)
+    if (answer.category === 'setup') {
+      if (question) errors.push(`${id}: setup answer cannot be a business question`)
+      continue
+    }
     if (!question || question.title !== answer.question) {
       errors.push(`${id}: missing original question`)
       continue
@@ -197,7 +217,9 @@ export function validatePbbContract(markdown: string, evidence: RefinementEviden
       'Human statement': answer.humanStatement,
     }
     for (const [key, value] of Object.entries(expected)) {
-      if (value !== undefined && question.fields.get(key) !== value) errors.push(`${id}: ${key} differs from refinement evidence`)
+      if ((value !== undefined || key === 'Human statement') && question.fields.get(key) !== value) {
+        errors.push(`${id}: ${key} differs from refinement evidence`)
+      }
     }
   }
   return errors

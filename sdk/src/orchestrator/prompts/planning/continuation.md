@@ -16,6 +16,7 @@ Mode: autonomous
 - Before writing any specification, run autonomous refinement: generate decision-changing questions and use each evidence-based recommendation as its answer.
 - Route every refinement question and answer to each applicable `003-${PROJECT_NAME}-tactical-design.md`; use exact project names and include global decisions in every project.
 - Execute only the document phases required by <expected_outputs>; do not create artifacts that are not listed there.
+- If <setup_decisions> is present, use each human-validated answer as an architectural constraint for applicable projects. An answer supersedes its recommendation. Keep deferred and unknown setup choices unresolved and identify affected designs.
 </workflow>
 
 {{*expectedOutputs}}
@@ -38,6 +39,7 @@ Projects:
 {{projectPathsList}}
 </context_anchors>
 {{*RefinementSection}}
+{{*setupDecisionsSection}}
 
 <rules>
 {{rulesSection}}

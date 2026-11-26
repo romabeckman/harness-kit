@@ -23,6 +23,7 @@ describe('PlanningHandler', () => {
             loadScope: vi.fn().mockReturnValue('test scope'),
             existRefinement: vi.fn().mockReturnValue(false),
             loadRefinement: vi.fn().mockReturnValue(''),
+            loadSetupDecisions: vi.fn().mockReturnValue([]),
         };
 
 

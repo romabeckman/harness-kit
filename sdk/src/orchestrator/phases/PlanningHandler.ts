@@ -14,7 +14,7 @@ import {
   formatFeatureDependencies,
   inlineOrReference,
 } from '../utils/PromptHelpers'
-import { getPlanningSource, getSpecsDir } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getSpecsDir, type PlanningSource } from '../utils/PhaseFileUtils'
 
 export class PlanningHandler extends AbstractPhaseHandler {
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
@@ -157,6 +157,7 @@ export class PlanningHandler extends AbstractPhaseHandler {
       orientationSection: orientationSection,
       rulesSection: rulesSection,
       projectPathsList: projectPathsList,
+      setupDecisionsSection: this.buildSetupDecisionsSection(planningSource, context),
       scopeSection: inlineOrReference(
         'scope',
         payload.scope.trim(),
@@ -207,12 +208,19 @@ export class PlanningHandler extends AbstractPhaseHandler {
         : [],
       rulesSection: rulesSection,
       projectPathsList2: projectPathsList,
+      setupDecisionsSection: this.buildSetupDecisionsSection(planningSource, context),
       id2: feature.id,
       featureTitle2: payload.featureTitle,
       domain: payload.domain,
       priority: feature.priority || 'No priority set',
       dependenciesText: dependenciesText,
     });
+  }
+
+  private buildSetupDecisionsSection(source: PlanningSource, context: Reviewontext): string[] {
+    if (!source.isRefinement) return []
+    const decisions = context.fsm.loadSetupDecisions()
+    return decisions.length ? ['<setup_decisions>', JSON.stringify(decisions, null, 2), '</setup_decisions>'] : []
   }
 
   buildFeaturePrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
