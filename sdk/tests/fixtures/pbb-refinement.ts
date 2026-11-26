@@ -1,5 +1,16 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import type { RefinementQuestion } from '../../src/orchestrator/phases/RefinementHandler'
+
+export function writeQuestionsForPrompt(prompt: string, questions: RefinementQuestion[]): void {
+  const path = prompt.match(/<output_path>([^\r\n]+)<\/output_path>/)![1].trim()
+  writeFileSync(path, JSON.stringify(questions), 'utf8')
+}
+
+export function writeRefinementForPrompt(prompt: string, content = refinementForPrompt(prompt)): void {
+  const path = prompt.match(/<output_file>\s*([^\r\n]+)\s*<\/output_file>/)![1].trim()
+  writeFileSync(path, content, 'utf8')
+}
 
 interface Evidence {
   id: number

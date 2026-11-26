@@ -1,7 +1,8 @@
 <skill_context>
 Invoke the `harness-kit:pbb-design` skill before starting.
 Mode: autonomous consolidation preserving the provenance of each refinement answer.
-Produce the final PBB document at <output_file>.
+Create `REFINEMENT.md` at the exact path in <output_file>. Write the complete
+PBB document to that file and omit the document from your response.
 </skill_context>
 
 <objective>
@@ -33,7 +34,7 @@ Write the file with exactly this structure (Markdown):
 </output_format>
 
 <rules>
-- CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally. After completing all required work, return only the final output explicitly required by the current prompt. If no final output is required, return exactly {}.
+- CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally.
 - Invoke and follow the loaded pbb-design skill.
 - Read the pbb-design references/output-contract.md when producing the final document.
 - Use PBB-Contract: 2, the required record fields, IDs, typed references, enums,
@@ -56,12 +57,6 @@ Write the file with exactly this structure (Markdown):
   text with line breaks, leading or trailing whitespace, or a literal `json:"`
   prefix as `json:` followed by a JSON string (for example `json:"Line 1\nLine 2"`).
   Keep the encoded field on one Markdown source line and preserve every character.
-- If <refinement_draft> is provided, revise it using the most recent correction
-  in <refinement_evidence>. Keep stable IDs, link the correction with Supersedes
-  when it replaces a decision, and update affected PBIs, priorities and traceability.
-- If <refinement_validation_errors> is provided, fix each reported issue. Use
-  <rejected_refinement_ref> when present and preserve valid records, IDs, and
-  human evidence. Write the complete corrected document to <output_file>.
 - Apply human answers even when they replace a suggestion. Preserve deferred and
   unknown answers as unresolved, including any humanStatement. An autonomous
   consolidation never changes existing human authorship or resolves deferrals.
@@ -89,10 +84,6 @@ screen-level interactions supported by the scope, PBIs, and answers. If none exi
 </optional_ui_prototype_analysis>
 
 {{*scopeSection}}
-
-{{*draftSection}}
-
-{{*validationSection}}
 
 <refinement_evidence>
 {{refinementEvidence}}

@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -6,7 +6,7 @@ import { RefinementHandler } from '../RefinementHandler'
 import { PlanningHandler } from '../PlanningHandler'
 import { Phase } from '../../types'
 import { FileStateManager } from '../../../file-state/FileStateManager'
-import { refinementForPrompt } from '../../../../tests/fixtures/pbb-refinement'
+import { refinementForPrompt, writeQuestionsForPrompt, writeRefinementForPrompt } from '../../../../tests/fixtures/pbb-refinement'
 
 const { input, editor } = vi.hoisted(() => ({ input: vi.fn(), editor: vi.fn() }))
 vi.mock('@inquirer/prompts', () => ({ input, editor }))
@@ -20,81 +20,55 @@ afterEach(() => {
   for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true })
 })
 
-function createContext(output: (path: string, prompt: string) => string) {
+function createContext(refinement: (prompt: string) => string = refinementForPrompt) {
   const workingDir = mkdtempSync(join(tmpdir(), 'pbb-refinement-'))
   directories.push(workingDir)
   const productDir = join(workingDir, 'product')
   const state = new FileStateManager({ productDir })
-  const saveRefinement = vi.fn()
+  vi.spyOn(state, 'saveRefinement')
   const invokeAgent = vi.fn().mockImplementation(async ({ phaseKey, prompt }) => {
-    if (phaseKey === 'refinement_questions') return { raw: '[]' }
-    const path = prompt.match(/<output_file>\s*([^\r\n]+)\s*<\/output_file>/)?.[1]
-    return { raw: output(path, prompt) }
+    if (phaseKey === 'refinement_questions') {
+      writeQuestionsForPrompt(prompt, [])
+    } else {
+      writeRefinementForPrompt(prompt, refinement(prompt))
+    }
   })
   return {
     workingDir,
     config: { enableRefinement: true, scope: 'Scope', projectPaths: [], productDir },
-    fsm: {
-      existRefinement: vi.fn().mockReturnValue(false), existScope: () => false, saveRefinement,
-      saveRefinementEvidence: state.saveRefinementEvidence.bind(state),
-    },
+    fsm: state,
     invokeAgent,
   }
 }
 
 describe('refinement publication', () => {
-  it('rejects an invented approval used to confirm the order of two PBIs', async () => {
+  it('advances to Bootstrap without publishing an invented approval', async () => {
     vi.mocked(input).mockResolvedValue('')
     const context = createContext(() => example)
-    context.invokeAgent.mockResolvedValueOnce({ raw: '[]' })
-    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never))
-      .rejects.toThrow(/Q01.*evidence/i)
-    expect(context.fsm.saveRefinement).not.toHaveBeenCalled()
+    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).resolves.toBe(Phase.BOOTSTRAP)
+    const refinement = readFileSync(join(context.config.productDir, 'REFINEMENT.md'), 'utf8')
+    expect(refinement).toContain('Scope')
+    expect(refinement).not.toContain('Human validated')
   })
 
-  it('repairs proposed priorities without reasking questions or publishing the rejected draft', async () => {
+  it('saves the scope and collected answers when the generated document is invalid', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.mocked(input).mockResolvedValue('').mockResolvedValueOnce('Keep both course views')
-    let rejectedDraft = ''
-    let initialPath = ''
-    const context = createContext((path, prompt) => {
-      const draft = refinementForPrompt(prompt)
-      if (!rejectedDraft) {
-        initialPath = path
-        rejectedDraft = draft
-          .replaceAll('Priority status: confirmed', 'Priority status: proposed')
-          .replaceAll('S01 establishes showing levels as the first release.', 'S01 suggests showing levels first.')
-        writeFileSync(path, rejectedDraft)
-        return '{}'
-      }
-
-      expect(context.fsm.saveRefinement).not.toHaveBeenCalled()
-      expect(path).not.toBe(initialPath)
-      expect(prompt).toContain('PBI01: Priority reason requires a referenced inference')
-      expect(prompt).toContain('PBI02: Priority reason requires a referenced inference')
-      expect(prompt).toContain('"answer": "Keep both course views"')
-      const rejectedPath = prompt.match(/<rejected_refinement_ref>\s*Read file: `([^`]+)`/)?.[1]
-      expect(readFileSync(rejectedPath!, 'utf8')).toBe(rejectedDraft)
-      return draft
-        .replaceAll('Priority status: confirmed', 'Priority status: proposed')
-        .replaceAll('S01 establishes showing levels as the first release.', 'A01 proposes showing levels first to reduce individual page visits.')
-        .replaceAll('Decision refs: []', 'Decision refs: [A01]')
-        .replaceAll('| EX01 | [] |', '| EX01 | A01 |')
-        .replace('## 8. Assumptions\n[]', [
-          '## 8. Assumptions', '### A01 — Prefer showing levels first',
-          'Statement: Showing levels first may reduce individual page visits.', 'Basis: [S01]',
-          'Affects: [PBI01, PBI02]', 'Validation: Confirm delivery order with the catalogue team.',
-        ].join('\n'))
-    })
-    context.invokeAgent.mockResolvedValueOnce({ raw: JSON.stringify([
+    const context = createContext(prompt => refinementForPrompt(prompt)
+      .replaceAll('Priority status: confirmed', 'Priority status: proposed'))
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, [
       { id: 1, question: 'Which views are in scope?', recommendation: 'Show one view', context: 'Scope' },
-    ]) })
+    ]))
 
     await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).resolves.toBe(Phase.BOOTSTRAP)
 
-    expect(input).toHaveBeenCalledTimes(3)
-    expect(context.invokeAgent.mock.calls.filter(([invocation]) => invocation.phaseKey === 'refinement_consolidation')).toHaveLength(2)
-    expect(context.fsm.saveRefinement).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Priority reason: A01'))
+    expect(input).toHaveBeenCalledTimes(2)
+    expect(context.invokeAgent.mock.calls.filter(([invocation]) => invocation.phaseKey === 'refinement_consolidation')).toHaveLength(1)
+    const refinement = readFileSync(join(context.config.productDir, 'REFINEMENT.md'), 'utf8')
+    expect(refinement).toContain('Scope')
+    expect(refinement).toContain('Which views are in scope?')
+    expect(refinement).toContain('Keep both course views')
+    expect(refinement).not.toContain('Priority status: proposed')
   })
 
   it.each([
@@ -104,69 +78,58 @@ describe('refinement publication', () => {
     const multiline = answer.includes('\n')
     vi.mocked(input).mockResolvedValue('').mockResolvedValueOnce(multiline ? '/edit' : answer)
     vi.mocked(editor).mockResolvedValue(answer)
-    const context = createContext((_path, prompt) => refinementForPrompt(prompt)
+    const context = createContext(prompt => refinementForPrompt(prompt)
       .replace(/^Resolved answer: .*$/m, () => `Resolved answer: ${serialized}`))
-    context.invokeAgent.mockResolvedValueOnce({ raw: JSON.stringify([
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, [
       { id: 1, question: 'What applies?', recommendation: 'Default', context: 'Scope' },
-    ]) })
+    ]))
     await new RefinementHandler().handle(Phase.REFINEMENT, context as never)
     expect(editor).toHaveBeenCalledTimes(multiline ? 1 : 0)
-    expect(context.fsm.saveRefinement).toHaveBeenCalledWith(expect.stringContaining(`Resolved answer: ${serialized}`))
+    expect(context.fsm.loadRefinement()).toContain(`Resolved answer: ${serialized}`)
   })
 
-  it('recomputes pending questions and publishes only after the corrected draft is displayed and approved', async () => {
+  it('recomputes pending questions and publishes the refinement before advancing directly to Bootstrap', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
-    const context = createContext((_path, prompt) => {
-      const draft = refinementForPrompt(prompt)
+    const context = createContext(prompt =>
+      refinementForPrompt(prompt)
         .replace(/### PBI02 — [\s\S]*?(?=## 7\. Traceability)/, '')
         .replace(/^\| PBI02 .*\n/m, '')
-      return draft.includes('List the existing level labels')
-        ? draft.replace('Outcome: The learner sees the level in the list for each course that has one.', 'Outcome: List the existing level labels.')
-        : draft
-    })
+    )
     const questions = [
       { id: 1, question: 'Keep filtering?', recommendation: 'Yes', context: 'Scope' },
       { id: 2, question: 'Which filters should be supported?', recommendation: 'Level', context: 'Behavior' },
     ]
-    context.invokeAgent.mockResolvedValueOnce({ raw: JSON.stringify(questions) })
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => {
+      writeQuestionsForPrompt(prompt, questions)
+      return { raw: '[]' }
+    })
       .mockImplementationOnce(async ({ prompt }) => {
         expect(prompt).toContain('Remove filtering')
         expect(prompt).toContain(questions[1].question)
-        return { raw: '[]' }
+        writeQuestionsForPrompt(prompt, [])
       })
-    vi.mocked(input).mockResolvedValue('')
+    vi.mocked(input).mockRejectedValue(new Error('Unexpected prompt after refinement questions'))
       .mockResolvedValueOnce('Remove filtering')
       .mockResolvedValueOnce('')
-      .mockImplementationOnce(async () => {
-        expect(log.mock.calls.map(args => args.join(' ')).join('\n')).toContain('Delivery rank: 1')
-        expect(context.fsm.saveRefinement).not.toHaveBeenCalled()
-        return 'List the existing level labels'
-      })
-      .mockImplementationOnce(async () => {
-        expect(context.fsm.saveRefinement).not.toHaveBeenCalled()
-        return ''
-      })
 
-    await new RefinementHandler().handle(Phase.REFINEMENT, context as never)
+    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).resolves.toBe(Phase.BOOTSTRAP)
 
+    expect(input).toHaveBeenCalledTimes(2)
     expect(log.mock.calls.map(args => args.join(' ')).join('\n')).not.toContain(questions[1].question)
-    const drafts = context.invokeAgent.mock.calls.filter(([args]) => args.phaseKey === 'refinement_consolidation')
-    expect(drafts).toHaveLength(2)
-    expect(drafts[1][0].prompt).toContain('List the existing level labels')
-    expect(drafts[1][0].prompt).toContain('<refinement_draft>')
-    expect(context.fsm.saveRefinement).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Outcome: List the existing level labels.'))
-    expect(context.fsm.saveRefinement.mock.calls[0][0]).not.toContain('### PBI02')
+    expect(context.invokeAgent.mock.calls.filter(([args]) => args.phaseKey === 'refinement_consolidation')).toHaveLength(1)
+    const refinement = readFileSync(join(context.config.productDir, 'REFINEMENT.md'), 'utf8')
+    expect(refinement).toContain('Resolved answer: Remove filtering')
+    expect(refinement).not.toContain('### PBI02')
   })
 
   it.each([false, true])('carries the recorded setup choice into Planning after re-entry (session=%s)', async reuseSession => {
     vi.mocked(input).mockResolvedValue('').mockResolvedValueOnce('Use Fastify')
-    const context = createContext((_path, prompt) => refinementForPrompt(prompt))
-    context.invokeAgent.mockResolvedValueOnce({ raw: JSON.stringify([
+    const context = createContext()
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, [
       { id: 5, question: 'Which web framework?', recommendation: 'Express', context: 'Setup', category: 'setup' },
-    ]) })
-    const state = new FileStateManager({ productDir: context.config.productDir })
-    await new RefinementHandler().handle(Phase.REFINEMENT, { ...context, fsm: state } as never)
-    expect(state.loadRefinement()).not.toContain('Use Fastify')
+    ]))
+    await new RefinementHandler().handle(Phase.REFINEMENT, context as never)
+    expect(context.fsm.loadRefinement()).not.toContain('Use Fastify')
 
     const resumedState = new FileStateManager({ productDir: context.config.productDir })
     const feature = { id: 'F001', title: 'Levels', domain: 'courses', dependencies: [], status: 'IN_PROGRESS' }
@@ -198,13 +161,13 @@ describe('refinement publication', () => {
     vi.mocked(input).mockResolvedValueOnce('').mockResolvedValueOnce('Different rule')
       .mockResolvedValueOnce('/defer').mockResolvedValueOnce('/unknown').mockResolvedValueOnce('Additional context')
       .mockResolvedValue('')
-    const context = createContext((_path, prompt) => refinementForPrompt(prompt))
+    const context = createContext()
     const questions = [1, 2, 3, 4].map(id => ({
       id, question: `Question ${id}?`, recommendation: `Recommendation ${id}`, context: `Context ${id}`,
     }))
-    context.invokeAgent.mockResolvedValueOnce({ raw: JSON.stringify(questions) })
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, questions))
     for (const question of questions.slice(1)) {
-      context.invokeAgent.mockResolvedValueOnce({ raw: JSON.stringify([question]) })
+      context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, [question]))
     }
     await new RefinementHandler().handle(Phase.REFINEMENT, context as never)
     const prompt = context.invokeAgent.mock.calls.find(([args]) => args.phaseKey === 'refinement_consolidation')![0].prompt as string
@@ -216,69 +179,91 @@ describe('refinement publication', () => {
       { id: 4, answer: 'Unresolved', answeredBy: 'unresolved', status: 'Unknown' },
       { id: 5, answer: 'Additional context', answeredBy: 'human', status: 'Human validated' },
     ])
-    expect(context.fsm.saveRefinement).toHaveBeenCalledWith(refinementForPrompt(prompt).trim())
+    expect(context.fsm.loadRefinement()).toBe(refinementForPrompt(prompt).trim())
   })
 
-  it('accepts a valid staged file when the agent returns no document', async () => {
+  it('accepts the valid file written directly to the final path without rewriting it', async () => {
     vi.mocked(input).mockResolvedValue('')
     let candidate = ''
-    const context = createContext((path, prompt) => { candidate = refinementForPrompt(prompt); writeFileSync(path, candidate); return '{}' })
+    const context = createContext(prompt => {
+      const path = join(context.config.productDir, 'REFINEMENT.md')
+      expect(prompt.match(/<output_file>\n([^\n]+)\n<\/output_file>/)?.[1]).toBe(path)
+      expect(readFileSync(join(context.config.productDir, 'QUESTIONS.json'), 'utf8')).toBe('[]')
+      candidate = refinementForPrompt(prompt)
+      return candidate
+    })
     await new RefinementHandler().handle(Phase.REFINEMENT, context as never)
-    expect(context.fsm.saveRefinement).toHaveBeenCalledWith(candidate.trim())
+    expect(context.fsm.saveRefinement).not.toHaveBeenCalled()
+    expect(readFileSync(join(context.config.productDir, 'REFINEMENT.md'), 'utf8')).toBe(candidate)
   })
 
   it('rejects duplicate numeric question IDs instead of conflating decisions', async () => {
-    const context = createContext((_path, prompt) => refinementForPrompt(prompt))
-    context.invokeAgent.mockResolvedValueOnce({ raw: JSON.stringify([
+    const context = createContext()
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, [
       { id: 1, question: 'First?', recommendation: 'A', context: 'C' },
       { id: 1, question: 'Second?', recommendation: 'B', context: 'C' },
-    ]) })
+    ]))
     await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).rejects.toThrow(/question.*id/i)
     expect(context.fsm.saveRefinement).not.toHaveBeenCalled()
   })
 
   it('keeps setup responses outside business question records', async () => {
     vi.mocked(input).mockResolvedValue('').mockResolvedValueOnce('Use the current framework')
-    const context = createContext((_path, prompt) => refinementForPrompt(prompt))
-    context.invokeAgent.mockResolvedValueOnce({ raw: JSON.stringify([
+    const context = createContext()
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, [
       { id: 5, question: 'Framework?', recommendation: 'Existing', context: 'Setup', category: 'setup' },
-    ]) })
+    ]))
     await new RefinementHandler().handle(Phase.REFINEMENT, context as never)
     const prompt = context.invokeAgent.mock.calls.find(([args]) => args.phaseKey === 'refinement_consolidation')![0].prompt as string
     expect(prompt).toContain('numeric setup IDs when assigning new Q IDs: [5]')
     expect(prompt).not.toContain('Use the current framework')
-    expect(context.fsm.saveRefinement.mock.calls[0][0]).not.toContain('### Q05')
+    expect(context.fsm.loadRefinement()).not.toContain('### Q05')
   })
 
   it('replaces a stale questions file when discovery returns an empty array', async () => {
     vi.mocked(input).mockResolvedValue('')
-    const context = createContext((_path, prompt) => refinementForPrompt(prompt))
-    context.invokeAgent.mockResolvedValueOnce({ raw: '[]' })
+    const context = createContext()
     await new RefinementHandler().handle(Phase.REFINEMENT, context as never)
     expect(JSON.parse(readFileSync(join(context.config.productDir, 'QUESTIONS.json'), 'utf8'))).toEqual([])
   })
 
-  it('leaves the canonical refinement unpublished if the user exits during draft review', async () => {
-    vi.mocked(input).mockResolvedValueOnce('').mockRejectedValueOnce(new Error('Review cancelled'))
-    const context = createContext((_path, prompt) => refinementForPrompt(prompt))
-    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).rejects.toThrow('Review cancelled')
+  it('leaves the canonical refinement unpublished if the user exits during discovery', async () => {
+    vi.mocked(input).mockRejectedValueOnce(new Error('Discovery cancelled'))
+    const context = createContext()
+    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).rejects.toThrow('Discovery cancelled')
     expect(context.fsm.saveRefinement).not.toHaveBeenCalled()
   })
 
   it.each(['', '{}', example.replace('Functionality: FN01', 'Functionality: FN99')])(
-    'rejects invalid returned content without publishing', async raw => {
+    'continues with the scope when the agent writes an invalid document', async content => {
       vi.mocked(input).mockResolvedValue('')
-      const context = createContext(() => raw)
-      await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).rejects.toThrow(/invalid.*refinement/i)
-      expect(context.fsm.saveRefinement).not.toHaveBeenCalled()
+      const context = createContext(() => content)
+      await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).resolves.toBe(Phase.BOOTSTRAP)
+      expect(context.fsm.saveRefinement).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Scope'))
     },
   )
 
-  it('rejects a partial staged file even when the agent returns valid content', async () => {
+  it('ignores returned Markdown when the agent does not write REFINEMENT.md', async () => {
     vi.mocked(input).mockResolvedValue('')
-    const context = createContext(path => { writeFileSync(path, '{}'); return example })
-    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).rejects.toThrow(/invalid.*refinement/i)
-    expect(context.invokeAgent.mock.calls.filter(([invocation]) => invocation.phaseKey === 'refinement_consolidation')).toHaveLength(2)
-    expect(context.fsm.saveRefinement).not.toHaveBeenCalled()
+    const context = createContext()
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, []))
+      .mockImplementationOnce(async ({ prompt }) => ({ raw: refinementForPrompt(prompt) }))
+    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).resolves.toBe(Phase.BOOTSTRAP)
+    expect(context.fsm.saveRefinement).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('## Scope'))
+  })
+
+  it('keeps incomplete Markdown out of the final file when consolidation fails after writing', async () => {
+    vi.mocked(input).mockResolvedValue('')
+    const context = createContext()
+    const failure = new Error('Agent stopped')
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, []))
+      .mockImplementationOnce(async ({ prompt }) => {
+        writeRefinementForPrompt(prompt, '# Incomplete refinement')
+        throw failure
+      })
+
+    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).rejects.toBe(failure)
+
+    expect(context.fsm.loadRefinement()).toContain('## Business answers')
   })
 })

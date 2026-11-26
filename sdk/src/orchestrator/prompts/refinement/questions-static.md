@@ -24,7 +24,7 @@ architecture questions.
 </project_setup_questions>
 
 <rules>
-- CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally. After completing all required work, return only the final output explicitly required by the current prompt. If no final output is required, return exactly {}.
+- CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally.
 - Ask 0-12 questions for PBB business discovery. Do not fabricate gaps to reach a quota.
 - Put the most consequential question first. The handler asks that question before requesting a fresh assessment of the remaining decisions.
 - Focus on missing business outcomes, boundaries, personas, permissions, workflows,
@@ -49,7 +49,7 @@ For each question, provide:
 </question_requirements>
 
 <output_format>
-Return ONLY one raw JSON array, with no Markdown fences or prose, matching this schema:
+Write one JSON array to the questions file, with no Markdown fences or prose, matching this schema:
 [
   { "id": 1, "question": "...", "recommendation": "...", "context": "...", "category": "business" }
 ]

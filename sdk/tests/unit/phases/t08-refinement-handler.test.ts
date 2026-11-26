@@ -1,80 +1,60 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { RefinementHandler } from '../../../src/orchestrator/phases/RefinementHandler'
 import { Phase } from '../../../src/orchestrator/types'
+import { FileStateManager } from '../../../src/file-state/FileStateManager'
 // @ts-ignore
 import { input } from '@inquirer/prompts'
 
-import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { refinementForPrompt } from '../../fixtures/pbb-refinement'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { writeQuestionsForPrompt, writeRefinementForPrompt } from '../../fixtures/pbb-refinement'
 
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn(),
   editor: vi.fn(),
 }))
 
-vi.mock('node:fs', () => ({
-  mkdirSync: vi.fn(),
-  writeFileSync: vi.fn(),
-  readFileSync: vi.fn(),
-  existsSync: vi.fn(),
-  mkdtempSync: vi.fn().mockReturnValue('/mock/staged'),
-  rmSync: vi.fn(),
-}))
-
 describe('RefinementHandler', () => {
   let handler: RefinementHandler
   let mockContext: any
+  let workingDir: string
 
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks()
     handler = new RefinementHandler()
-    const actualFs = await vi.importActual<typeof import('node:fs')>('node:fs')
-
-    const questionsJson = JSON.stringify([
+    workingDir = mkdtempSync(join(tmpdir(), 'refinement-answers-'))
+    const questions = [
       { id: 1, question: 'Question 1?', recommendation: 'Rec 1', context: 'Ctx 1' },
-    ])
-
-    const contract = actualFs.readFileSync(resolve(__dirname, '../../../../skills/pbb-design/references/output-contract.md'), 'utf8')
-    vi.mocked(existsSync).mockImplementation(path => !String(path).includes('staged'))
-    vi.mocked(readFileSync).mockImplementation((path) => {
-      if (String(path).includes('orchestrator') && String(path).includes('prompts')) {
-        return actualFs.readFileSync(path, 'utf8')
-      }
-      return questionsJson
-    })
+    ]
 
     mockContext = {
-      workingDir: '/mock/dir',
+      workingDir,
       config: { enableRefinement: true, scope: 'Test scope' },
-      fsm: {
-        existRefinement: vi.fn().mockReturnValue(false),
-        saveRefinement: vi.fn(),
-        saveRefinementEvidence: vi.fn(),
-        existScope: vi.fn().mockReturnValue(false),
-        loadScope: vi.fn().mockReturnValue('Test scope'),
-      },
-      invokeAgent: vi.fn().mockImplementation(async (opts: any) => {
-        if (opts.phaseKey === 'refinement_questions') {
-          return {
-            raw: opts.prompt.includes('<follow_up>') ? '[]' : questionsJson,
-          }
+      fsm: new FileStateManager({ productDir: join(workingDir, 'docs', 'product') }),
+      invokeAgent: vi.fn().mockImplementation(async ({ phaseKey, prompt }) => {
+        if (phaseKey === 'refinement_questions') {
+          writeQuestionsForPrompt(prompt, prompt.includes('<follow_up>') ? [] : questions)
+        } else {
+          writeRefinementForPrompt(prompt)
         }
-        return { raw: refinementForPrompt(opts.prompt, contract) }
       }),
     }
+  })
+
+  afterEach(() => {
+    rmSync(workingDir, { recursive: true, force: true })
   })
 
   it('should ask generated questions and the optional "Any additional information?" question at the end', async () => {
     vi.mocked(input)
       .mockResolvedValueOnce('Answer 1') // For Question 1
       .mockResolvedValueOnce('Additional info text') // For "Any additional information?"
-      .mockResolvedValueOnce('') // Approve draft
 
     const nextPhase = await handler.handle(Phase.REFINEMENT, mockContext)
 
     expect(nextPhase).toBe(Phase.BOOTSTRAP)
-    expect(input).toHaveBeenCalledTimes(3)
+    expect(input).toHaveBeenCalledTimes(2)
     expect(input).toHaveBeenNthCalledWith(1, {
       message: ' Your answer (Enter to accept, /defer or /unknown):',
       default: 'Rec 1',
@@ -98,11 +78,10 @@ describe('RefinementHandler', () => {
     vi.mocked(input)
       .mockResolvedValueOnce('Answer 1') // For Question 1
       .mockResolvedValueOnce('   ') // Blank answer for optional question
-      .mockResolvedValueOnce('') // Approve draft
 
     await handler.handle(Phase.REFINEMENT, mockContext)
 
-    expect(input).toHaveBeenCalledTimes(3)
+    expect(input).toHaveBeenCalledTimes(2)
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
         agent: 'harness-kit:cto',

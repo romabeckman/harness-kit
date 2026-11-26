@@ -1,6 +1,6 @@
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FileStateManager } from '../FileStateManager'
 
@@ -25,6 +25,7 @@ describe('refinement atomic publication', () => {
     rename.mockImplementationOnce(() => { throw Object.assign(new Error('locked'), { code: 'EPERM' }) })
 
     expect(() => new FileStateManager({ productDir }).saveRefinement('candidate')).toThrow('locked')
+    expect(dirname(rename.mock.calls[0][0])).toBe(productDir)
     expect(readFileSync(path, 'utf8')).toBe('previous valid refinement')
     expect(readdirSync(productDir)).toEqual(['REFINEMENT.md'])
   })

@@ -3,7 +3,7 @@ import { RefinementHandler } from '../RefinementHandler'
 import { Phase } from '../../types'
 import { ChainBuilder } from '../../ChainBuilder'
 import { FORCE_INLINE_MAX } from '../../utils/PromptHelpers'
-import { refinementForPrompt } from '../../../../tests/fixtures/pbb-refinement'
+import { writeQuestionsForPrompt, writeRefinementForPrompt } from '../../../../tests/fixtures/pbb-refinement'
 import { FileStateManager } from '../../../file-state/FileStateManager'
 
 vi.mock('@inquirer/prompts', () => ({
@@ -34,12 +34,18 @@ describe('RefinementHandler', () => {
         scope: 'Test scope text',
         productDir: '/test/dir/docs/product',
       },
-      invokeAgent: vi.fn().mockImplementation(async ({ phaseKey, prompt }) => ({
-        raw: phaseKey === 'refinement_questions'
-          ? (prompt.includes('<follow_up>') ? '[]' : '[{"id":1,"question":"Q1","recommendation":"R1","context":"C1"}]')
-          : refinementForPrompt(prompt),
-      })),
+      invokeAgent: vi.fn().mockImplementation(async ({ phaseKey, prompt }) => {
+        if (phaseKey === 'refinement_questions') {
+          const questions = prompt.includes('<follow_up>') ? [] : [
+            { id: 1, question: 'Q1', recommendation: 'R1', context: 'C1' },
+          ]
+          writeQuestionsForPrompt(prompt, questions)
+        } else {
+          writeRefinementForPrompt(prompt)
+        }
+      }),
     }
+    mockFsm.loadRefinement = () => new FileStateManager({ productDir: mockContext.config.productDir }).loadRefinement()
 
     handler = new RefinementHandler()
   })
@@ -68,12 +74,8 @@ describe('RefinementHandler', () => {
     mockContext.workingDir = tmpDir
     mockContext.config.productDir = productDir
 
-    const savedContent: string[] = []
     const state = new FileStateManager({ productDir })
     mockFsm.saveRefinementEvidence = state.saveRefinementEvidence.bind(state)
-    mockFsm.saveRefinement = vi.fn().mockImplementation((content: string) => {
-      savedContent.push(content)
-    })
 
     const next = await handler.handle(Phase.REFINEMENT, mockContext)
     expect(next).toBe(Phase.BOOTSTRAP)
@@ -86,12 +88,14 @@ describe('RefinementHandler', () => {
     expect(mockContext.invokeAgent.mock.calls[2][0].phaseKey).toBe('refinement_consolidation')
 
     const questionsPrompt = mockContext.invokeAgent.mock.calls[0][0].prompt as string
+    expect(questionsPrompt).toContain('Create `QUESTIONS.json` at the exact path in <output_path>')
     expect(questionsPrompt).toContain('Ask 0-12 questions')
     expect(questionsPrompt).toContain('<skill_context>')
     expect(questionsPrompt).toContain('harness-kit:pbb-design')
     expect(questionsPrompt).toContain('CRITICAL: Do not narrate progress or emit interim status updates.')
 
     const consolidationPrompt = mockContext.invokeAgent.mock.calls[2][0].prompt as string
+    expect(consolidationPrompt).toContain('Create `REFINEMENT.md` at the exact path in <output_file>')
     expect(consolidationPrompt).toContain('<skill_context>')
     expect(consolidationPrompt).toContain('harness-kit:pbb-design')
     expect(consolidationPrompt).toContain('CRITICAL: Do not narrate progress or emit interim status updates.')

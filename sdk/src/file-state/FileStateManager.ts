@@ -1,5 +1,6 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync, renameSync, rmSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'fs'
 import { join } from 'path'
+import { randomUUID } from 'node:crypto'
 import { BacklogParser } from './parsers/BacklogParser'
 import { DevStateParser } from './parsers/DevStateParser'
 import { BootstrapConfigParser } from './parsers/BootstrapConfigParser'
@@ -127,13 +128,13 @@ export class FileStateManager implements IFileStateManager {
 
   private writeRefinementFile(name: string, content: string): void {
     mkdirSync(this.productDir, { recursive: true })
-    const temporaryDir = mkdtempSync(join(this.productDir, '.refinement-write-'))
+    const path = join(this.productDir, name)
+    const temporaryPath = `${path}.${randomUUID()}.tmp`
     try {
-      const temporaryPath = join(temporaryDir, name)
       writeFileSync(temporaryPath, content, 'utf-8')
-      renameSync(temporaryPath, join(this.productDir, name))
+      renameSync(temporaryPath, path)
     } finally {
-      rmSync(temporaryDir, { recursive: true, force: true })
+      rmSync(temporaryPath, { force: true })
     }
   }
 

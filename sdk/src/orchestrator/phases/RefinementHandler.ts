@@ -1,6 +1,6 @@
 import { loadPrompt } from '../utils/PromptTemplate'
-import { join } from 'node:path'
-import { mkdirSync, readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import { mkdirSync, readFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { stripVTControlCharacters } from 'node:util'
 import { Phase } from '../types'
 import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
@@ -34,19 +34,9 @@ export class RefinementHandler extends AbstractPhaseHandler {
     const scope = context.fsm.existScope() ? context.fsm.loadScope() : context.config.scope
 
     const evidence = await this.discover(context, scope)
-    let draft = ''
-    while (true) {
-      draft = await this.consolidateRefinement(context, scope, evidence, draft)
-      console.log(`\n── REFINEMENT DRAFT ────────────────────────────────────────\n\n${stripVTControlCharacters(draft)}\n`)
-      const message = 'Enter to publish this draft, or describe a correction:'
-      const correction = await this.readAnswer(message)
-      if (!correction.trim()) break
-      this.recordComment(evidence, 'What should change in the previous draft?', correction)
-    }
-
     if (!context.fsm.existRefinement()) {
       context.fsm.saveRefinementEvidence(evidence)
-      context.fsm.saveRefinement(draft)
+      await this.consolidateRefinement(context, scope, evidence)
     }
 
     return Phase.BOOTSTRAP
@@ -90,17 +80,15 @@ export class RefinementHandler extends AbstractPhaseHandler {
         remainingBusiness: 12 - evidence.filter(entry => entry.category !== 'setup').length,
       }) : ''
 
-      const output = await context.invokeAgent({
+      await context.invokeAgent({
         skill: 'harness-kit:pbb-design',
         agent: 'harness-kit:cto',
         mode: 'autonomous',
         prompt: `${staticPrompt}\n\n${dynamicPrompt}${followUp ? `\n\n${followUp}` : ''}`,
         phaseKey: 'refinement_questions',
       })
-      const questions = this.parseQuestions(output?.raw ?? '') ?? (
-        existsSync(questionsPath) ? this.parseQuestions(readFileSync(questionsPath, 'utf-8')) : undefined
-      )
-      if (!questions) throw new Error('Refinement questions were not returned or saved as a JSON array')
+      const questions = existsSync(questionsPath) ? this.parseQuestions(readFileSync(questionsPath, 'utf-8')) : undefined
+      if (!questions) throw new Error('Refinement questions must be saved as a JSON array in QUESTIONS.json')
       if (followUp && questions.length > 1) throw new Error('Expected at most one follow-up refinement question')
       const setup = [...evidence, ...questions].filter(entry => entry.category === 'setup').length
       if (setup > 4 || evidence.length + questions.length - setup > 12) {
@@ -112,8 +100,8 @@ export class RefinementHandler extends AbstractPhaseHandler {
     }
   }
 
-  private parseQuestions(raw: string): RefinementQuestion[] | undefined {
-    const outcome = JsonExtractionProtocol.extract(raw)
+  private parseQuestions(contents: string): RefinementQuestion[] | undefined {
+    const outcome = JsonExtractionProtocol.extract(contents)
     if (!('data' in outcome) || !Array.isArray(outcome.data)) return undefined
     const questions = outcome.data as RefinementQuestion[]
     const questionIds = new Set<number>()
@@ -190,63 +178,42 @@ export class RefinementHandler extends AbstractPhaseHandler {
   private async consolidateRefinement(
     context: Reviewontext,
     scope: string,
-    qaPairs: RefinementEvidence[],
-    previousDraft: string,
-  ): Promise<string> {
-    const productDir = getProductDir(context)
-    mkdirSync(productDir, { recursive: true })
-    const stagingDir = mkdtempSync(join(productDir, '.refinement-'))
-    const initialPath = join(stagingDir, 'REFINEMENT.md')
+    evidence: RefinementEvidence[],
+  ): Promise<void> {
+    const productDir = resolve(getProductDir(context))
+    const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
+    const businessEvidence = JSON.stringify(evidence.filter(entry => entry.category !== 'setup'), null, 2)
+    const prompt = loadPrompt('refinement/consolidation', {
+      orientationSection,
+      refinementPath: join(productDir, 'REFINEMENT.md'),
+      scopeSection: inlineOrReference(
+        'scope',
+        scope.trim(),
+        join(productDir, 'SCOPE.md'),
+        'markdown',
+        'always',
+        context.config.agentRunner,
+      ),
+      refinementEvidence: businessEvidence,
+      setupIds: JSON.stringify(evidence.filter(entry => entry.category === 'setup').map(entry => entry.id)),
+    })
+    let agentCompleted = false
     try {
-      const orientationSection = buildDocsOrientationSection(context.config.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
-      const values = {
-        orientationSection,
-        scopeSection: inlineOrReference(
-          'scope',
-          scope.trim(),
-          join(productDir, 'SCOPE.md'),
-          'markdown',
-          'always',
-          context.config.agentRunner,
-        ),
-        refinementEvidence: JSON.stringify(qaPairs.filter(entry => entry.category !== 'setup'), null, 2),
-        setupIds: JSON.stringify(qaPairs.filter(entry => entry.category === 'setup').map(entry => entry.id)),
-        draftSection: previousDraft ? ['<refinement_draft>', previousDraft, '</refinement_draft>'] : [],
-      }
-
-      let errors: string[] = []
-      let rejectedDraft = ''
-      for (const refinementPath of [initialPath, join(stagingDir, 'REFINEMENT-RETRY.md')]) {
-        const prompt = loadPrompt('refinement/consolidation', {
-          ...values,
-          refinementPath,
-          validationSection: errors.length ? [
-            '<refinement_validation_errors>',
-            ...errors.map(error => `- ${error}`),
-            '</refinement_validation_errors>',
-            ...inlineOrReference('rejected_refinement', rejectedDraft, initialPath),
-          ] : [],
-        })
-        const output = await context.invokeAgent({
-          skill: 'harness-kit:pbb-design',
-          agent: 'harness-kit:cto',
-          mode: 'autonomous',
-          prompt,
-          phaseKey: 'refinement_consolidation',
-        })
-        const staged = existsSync(refinementPath)
-        const candidate = (staged ? readFileSync(refinementPath, 'utf-8') : output?.raw ?? '').trim()
-        errors = validatePbbContract(candidate, qaPairs)
-        if (errors.length === 0) return candidate
-
-        if (refinementPath === initialPath) {
-          rejectedDraft = candidate
-          if (!staged && rejectedDraft) writeFileSync(initialPath, rejectedDraft, 'utf-8')
+      await context.invokeAgent({
+        skill: 'harness-kit:pbb-design',
+        agent: 'harness-kit:cto',
+        mode: 'autonomous',
+        prompt,
+        phaseKey: 'refinement_consolidation',
+      })
+      agentCompleted = true
+    } finally {
+      if (agentCompleted || context.fsm.existRefinement()) {
+        const refinement = context.fsm.loadRefinement()
+        if (validatePbbContract(refinement, evidence).length > 0) {
+          context.fsm.saveRefinement(`# Refinement\n\n## Scope\n\n${scope.trim()}\n\n## Business answers\n\n\`\`\`json\n${businessEvidence}\n\`\`\`\n`)
         }
       }
-      throw new Error(`Invalid refinement: ${errors.join('; ')}`)
-    } finally {
-      rmSync(stagingDir, { recursive: true, force: true })
     }
   }
 }
