@@ -14,18 +14,9 @@ Mode: autonomous
 
 <workflow>
 - The `file` attribute of <planning_source> identifies the source by its local path. Resolve relative paths from the workspace root. Use the inline <scope> content when present. If <scope_ref> is present, read the referenced file before refinement.
-- Before writing any specification, run autonomous refinement: generate decision-changing questions and use each evidence-based recommendation as its answer.
+- Before writing any specification, run autonomous refinement: focus on remaining technical decisions. Record evidence-based recommendations as provisional answers. Preserve recorded business decisions and keep deferred or unknown business decisions unresolved.
 - Route every refinement question and answer to each applicable `003-${PROJECT_NAME}-tactical-design.md`; use exact project names and include global decisions in every project.
 - Execute only the document phases required by <expected_outputs>; do not create artifacts that are not listed there.
-- When the file identified by <planning_source> is named `REFINEMENT.md`, map the target feature to its PBI, functionality, persona, and underlying need.
-  - If the refinement contains `PBB-Contract: 2`, select the PBIs for the target feature. Read their outcomes, delivery ranks, priority status, basis, and decision refs.
-    Carry each material decision with its ID, answer, author, status, and affected behavior.
-    Include supporting source excerpts when they cannot be reopened. Treat proposed
-    ranks as recommendations, and explain conflicts with operational dependencies.
-    Preserve deferred and unknown answers. Identify each unresolved material rule by
-    PBI and question ID and refine independent, supported behavior. Resolve ambiguous
-    mappings and missing reference IDs before deriving affected tasks.
-  - If the refinement has no contract marker, use the existing heading-based mapping.
 - Treat human-validated decisions as authoritative and model answers as provisional assumptions.
 - If <setup_decisions> is present, use each human-validated answer as an architectural constraint for applicable projects. An answer supersedes its recommendation. Keep deferred and unknown setup choices unresolved and identify affected designs.
 </workflow>
@@ -44,6 +35,7 @@ Mode: autonomous
 <inputs>
 
 {{*orientationSection}}
+{{*contextAnchors}}
 <rules>
 {{rulesSection}}
 </rules>
@@ -55,6 +47,7 @@ Mode: autonomous
 <planning_source file="{{scopeFilePath}}">
 {{*scopeSection}}
 </planning_source>
+{{*refinementSection}}
 {{*setupDecisionsSection}}
 
 <target_feature>

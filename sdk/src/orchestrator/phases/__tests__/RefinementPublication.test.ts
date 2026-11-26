@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +6,7 @@ import { RefinementHandler } from '../RefinementHandler'
 import { PlanningHandler } from '../PlanningHandler'
 import { Phase } from '../../types'
 import { FileStateManager } from '../../../file-state/FileStateManager'
+import * as pbbContract from '../../utils/PbbContract'
 import { refinementForPrompt, writeQuestionsForPrompt, writeRefinementForPrompt } from '../../../../tests/fixtures/pbb-refinement'
 
 const { input, editor } = vi.hoisted(() => ({ input: vi.fn(), editor: vi.fn() }))
@@ -63,12 +64,64 @@ describe('refinement publication', () => {
     await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).resolves.toBe(Phase.BOOTSTRAP)
 
     expect(input).toHaveBeenCalledTimes(2)
-    expect(context.invokeAgent.mock.calls.filter(([invocation]) => invocation.phaseKey === 'refinement_consolidation')).toHaveLength(1)
+    expect(context.invokeAgent.mock.calls.filter(([invocation]) => invocation.phaseKey === 'refinement_consolidation')).toHaveLength(2)
     const refinement = readFileSync(join(context.config.productDir, 'REFINEMENT.md'), 'utf8')
     expect(refinement).toContain('Scope')
     expect(refinement).toContain('Which views are in scope?')
     expect(refinement).toContain('Keep both course views')
     expect(refinement).not.toContain('Priority status: proposed')
+  })
+
+  it('repairs a divergent draft once and publishes the corrected decisions before Bootstrap', async () => {
+    vi.mocked(input).mockResolvedValue('').mockResolvedValueOnce('Keep both views')
+    let corrected = ''
+    const context = createContext(prompt => {
+      expect(context.fsm.existRefinement()).toBe(false)
+      const candidate = refinementForPrompt(prompt)
+      if (prompt.includes('<validation_issues>')) {
+        expect(prompt).toContain('Q01: Resolved answer differs from refinement evidence')
+        expect(prompt).toContain('"answer": "Keep both views"')
+        corrected = candidate
+        return candidate
+      }
+      return candidate.replace('Resolved answer: Keep both views', 'Resolved answer: Use one view')
+    })
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, [
+      { id: 1, question: 'Which views are in scope?', recommendation: 'Use one view', context: 'Scope' },
+    ]))
+
+    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).resolves.toBe(Phase.BOOTSTRAP)
+
+    const consolidation = context.invokeAgent.mock.calls.filter(([args]) => args.phaseKey === 'refinement_consolidation')
+    expect(consolidation).toHaveLength(2)
+    expect(corrected).toContain('Resolved answer: Keep both views')
+    expect(context.fsm.loadRefinement()).toBe(corrected.trim())
+  })
+
+  it('preserves the recorded scope and continues when the correction agent fails', async () => {
+    vi.mocked(input).mockResolvedValue('')
+    const context = createContext(prompt => {
+      if (prompt.includes('<validation_issues>')) throw new Error('Correction failed')
+      return '# Incomplete refinement'
+    })
+
+    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).resolves.toBe(Phase.BOOTSTRAP)
+    expect(context.invokeAgent.mock.calls.filter(([args]) => args.phaseKey === 'refinement_consolidation')).toHaveLength(2)
+    expect(context.fsm.loadRefinement()).toContain('## Business answers')
+  })
+
+  it('continues with the recorded scope when the validator throws', async () => {
+    vi.mocked(input).mockResolvedValue('')
+    vi.spyOn(pbbContract, 'validatePbbContract').mockImplementation(() => {
+      throw new Error('Validation failed')
+    })
+    const context = createContext()
+
+    await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).resolves.toBe(Phase.BOOTSTRAP)
+    const consolidation = context.invokeAgent.mock.calls.filter(([args]) => args.phaseKey === 'refinement_consolidation')
+    expect(consolidation).toHaveLength(2)
+    expect(consolidation[1][0].prompt).toContain('Check the full draft against the PBB contract and recorded evidence.')
+    expect(context.fsm.loadRefinement()).toContain('## Business answers')
   })
 
   it.each([
@@ -182,18 +235,22 @@ describe('refinement publication', () => {
     expect(context.fsm.loadRefinement()).toBe(refinementForPrompt(prompt).trim())
   })
 
-  it('accepts the valid file written directly to the final path without rewriting it', async () => {
+  it('publishes a valid draft as written and cleans up its staging file', async () => {
     vi.mocked(input).mockResolvedValue('')
     let candidate = ''
+    let draftPath = ''
     const context = createContext(prompt => {
       const path = join(context.config.productDir, 'REFINEMENT.md')
-      expect(prompt.match(/<output_file>\n([^\n]+)\n<\/output_file>/)?.[1]).toBe(path)
+      draftPath = prompt.match(/<output_file>\n([^\n]+)\n<\/output_file>/)![1]
+      expect(draftPath).not.toBe(path)
+      expect(existsSync(path)).toBe(false)
       expect(readFileSync(join(context.config.productDir, 'QUESTIONS.json'), 'utf8')).toBe('[]')
       candidate = refinementForPrompt(prompt)
       return candidate
     })
     await new RefinementHandler().handle(Phase.REFINEMENT, context as never)
-    expect(context.fsm.saveRefinement).not.toHaveBeenCalled()
+    expect(context.fsm.saveRefinement).toHaveBeenCalledExactlyOnceWith(candidate)
+    expect(existsSync(draftPath)).toBe(false)
     expect(readFileSync(join(context.config.productDir, 'REFINEMENT.md'), 'utf8')).toBe(candidate)
   })
 

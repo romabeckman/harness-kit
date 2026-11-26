@@ -133,9 +133,30 @@ export class PlanningHandler extends AbstractPhaseHandler {
     context: Reviewontext,
     planningSource = getPlanningSource(context),
   ): string {
-    const projectPathsList = formatProjectPathsList(payload.projectPaths)
-    const rulesSection = formatRulesSection(payload.steeringRules)
+    return this.buildPlanningPrompt(payload, feature, context, planningSource)
+  }
 
+  buildFeatureScopeRefinementPrompt(
+    payload: PlanningPayload,
+    feature: Feature,
+    context: Reviewontext,
+    planningSource = getPlanningSource(context),
+  ): string {
+    const contextAnchors = loadPrompt('planning/continuation', {
+      id: feature.id,
+      featureTitle: payload.featureTitle,
+      workingDir: payload.workingDir,
+    }).split('\n')
+    return this.buildPlanningPrompt(payload, feature, context, planningSource, contextAnchors)
+  }
+
+  private buildPlanningPrompt(
+    payload: PlanningPayload,
+    feature: Feature,
+    context: Reviewontext,
+    planningSource: PlanningSource,
+    contextAnchors: string[] = [],
+  ): string {
     const complexity = context.config.complexity ?? Complexity.AUTO
     const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
     const contextMapFile = join(payload.workingDir, '002-context-map.md');
@@ -154,14 +175,20 @@ export class PlanningHandler extends AbstractPhaseHandler {
 
     const scopeDirectory = relative(context.workingDir, dirname(planningSource.path))
     const scopeFilePath = join(scopeDirectory, planningSource.fileName)
-    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
+    const orientationSection = contextAnchors.length > 0
+      ? []
+      : buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
 
     return loadPrompt('planning/scope', {
       expectedOutputs: complexityPrompt.expectedOutputs,
       strictRules: complexityPrompt.strictRules,
-      orientationSection: orientationSection,
-      rulesSection: rulesSection,
-      projectPathsList: projectPathsList,
+      orientationSection,
+      contextAnchors,
+      rulesSection: formatRulesSection(payload.steeringRules),
+      projectPathsList: formatProjectPathsList(payload.projectPaths),
+      refinementSection: planningSource.isRefinement
+        ? loadPrompt('planning/refinement-rules', {}).split('\n')
+        : [],
       setupDecisionsSection: this.buildSetupDecisionsSection(planningSource, context),
       scopeFilePath,
       scopeSection: inlineOrReference(
@@ -174,52 +201,6 @@ export class PlanningHandler extends AbstractPhaseHandler {
       ),
       id: feature.id,
       featureTitle: payload.featureTitle,
-      domain: payload.domain,
-      priority: feature.priority || 'No priority set',
-      dependenciesText: dependenciesText,
-    });
-  }
-
-  buildFeatureScopeRefinementPrompt(
-    payload: PlanningPayload,
-    feature: Feature,
-    context: Reviewontext,
-    planningSource = getPlanningSource(context),
-  ): string {
-    const complexity = context.config.complexity ?? Complexity.AUTO
-    const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
-    const contextMapFile = join(payload.workingDir, '002-context-map.md');
-    const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
-    const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
-    const complexityPrompt = buildComplexityRules(complexity, {
-      outputDirectory: payload.workingDir,
-      problemSpaceFile,
-      contextMapFile,
-      tacticalDesignFile,
-      testScenariosFile,
-    })
-
-    const backlog = context.fsm.loadBacklog();
-    const dependenciesText = formatFeatureDependencies(backlog, feature)
-    const rulesSection = formatRulesSection(payload.steeringRules)
-    const projectPathsList = formatProjectPathsList(payload.projectPaths)
-    return loadPrompt('planning/continuation', {
-      expectedOutputs: complexityPrompt.expectedOutputs,
-      strictRules: complexityPrompt.strictRules,
-      id: feature.id,
-      featureTitle: payload.featureTitle,
-      label: planningSource.label,
-      path: planningSource.path,
-      workingDir: payload.workingDir,
-      projectPathsList: projectPathsList,
-      RefinementSection: planningSource.isRefinement
-        ? loadPrompt('planning/refinement-rules', {}).split('\n')
-        : [],
-      rulesSection: rulesSection,
-      projectPathsList2: projectPathsList,
-      setupDecisionsSection: this.buildSetupDecisionsSection(planningSource, context),
-      id2: feature.id,
-      featureTitle2: payload.featureTitle,
       domain: payload.domain,
       priority: feature.priority || 'No priority set',
       dependenciesText: dependenciesText,

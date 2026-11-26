@@ -2,7 +2,7 @@
 You are a software architect defining the implementation backlog from validated business context. Generate a `BACKLOG.md` table with all cohesive product features.
 
 # OBJECTIVE
-Parse the project scope below and generate the `BACKLOG.md` table. Write it to: `{{backlogPath}}`
+Use the supplied business context to generate the `BACKLOG.md` table at `{{backlogPath}}`. Read the referenced file when the context is given by reference.
 
 # OUTPUT FORMAT
 Table columns (exact):
@@ -18,6 +18,7 @@ Table columns (exact):
 - Reworks: 0 | Score (TL) & Score (Adv): - | Status: NOT_STARTED
 - Output ONLY the markdown table, no additional text.
 - Preserve human-validated decisions. Treat provisional model assumptions as assumptions.
+- When the context provides scope and recorded business answers, use both to derive the supported features and preserve the status of each decision.
 - When scope contains PBB-Contract: 2, group the PBIs into cohesive features and
   preserve an unambiguous feature-to-PBI mapping in Title, for example [PBI01, PBI02],
   within its existing length limit. If IDs do not fit, ensure the feature can be
