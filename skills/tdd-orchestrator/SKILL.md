@@ -177,18 +177,19 @@ Task is COMPLETE only when: 100% tests pass WITH verified output evidence
 
 <step id="5" name="Update Documentation">
 
-In INTERACTIVE mode, after final validation and before `project-memory`, invoke `harness-kit:project-dreaming` once for each owning project and feature worked on, including a first-pass success with no classified signal. Supply the session ID, available task and attempt identifiers, and locators for test decisions, tests, relevant rework, commands and results. Include tests written, corrected, or discarded in favor of equivalent coverage when available. An observed consequence, known trigger, hypothesis or orientation ID can help prioritize inspection but is not required. Scope inspection to the task and related attempts; use targeted feature and learning-record lookups for deduplication or counterevidence, not a history-wide scan. Request the [analysis receipt](../project-dreaming/references/CONTRACTS.md#analysis-receipt); keep `incomplete` work pending with its reason and required input without changing the engineering outcome. Forward any validated handoff with the ordinary documentation update.
+### INTERACTIVE
 
-In AUTONOMOUS mode, preserve the project, feature, task, attempt and session identifiers and available test, decision and execution locators for independent review, even when there is no highlighted learning signal. Do not substitute an unverified summary for source evidence. Include an observed signal and consequence when available.
+After Step 4 passes, execute this sequence in order. The Dreaming review is required even when the first attempt succeeds, there is no classified signal, or no documentation update is needed.
 
-INTERACTIVE mode only: when applicable, invoke `project-memory` to update:
-- OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs
-- Input/Output schemas, descriptions, HTTP status codes
-- The `docs/feature/{FEATURE_NAME}.md` file must be updated whenever a feature is created or updated.
+1. **Prepare the review scope.** Identify each owning project and feature worked on. For each pair, collect the session ID, available task and attempt IDs, and locators for test decisions, tests, relevant rework, commands, and results. Include tests written, corrected, or discarded in favor of equivalent coverage when available. Use any observed consequence, known trigger, hypothesis ID, or orientation ID to prioritize inspection.
+2. **Run `project-dreaming` once per project and feature.** Pass the collected evidence and limit inspection to the task and related attempts. Use targeted feature and learning-record lookups for deduplication or counterevidence. Request and verify the [analysis receipt](../project-dreaming/references/CONTRACTS.md#analysis-receipt) before proceeding to `project-memory`.
+3. **Resolve the review status.** A verified `recorded` or `no_hypothesis` receipt completes the review. Keep `incomplete` analysis pending with its reason and required input or action. Follow the receipt contract when the receipt is missing or invalid. Preserve the engineering outcome established in Step 4 and continue with any applicable documentation updates.
+4. **Run `project-memory` when documentation needs updating or Dreaming supplied a validated handoff.** Update `docs/feature/{FEATURE_NAME}.md` whenever a feature is created or updated. Update OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs, input and output schemas, descriptions, and HTTP status codes as applicable. Forward any validated publication or withdrawal handoff with the documentation update. `project-memory` creates missing baseline docs (`README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`).
+5. **Verify any publication or withdrawal.** Return the `project-memory` receipt to Dreaming so it can verify the operation and close the corresponding ID. Preserve the retry trigger for any unresolved operation.
 
-> `project-memory` auto-creates baseline docs (`README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) if missing.
+### AUTONOMOUS
 
-If Dreaming supplied a publication or withdrawal handoff, return the receipt to Dreaming for verification and closure of that ID. An unresolved operation keeps its retry trigger.
+Preserve the project, feature, task, attempt, and session identifiers and available test, decision, and execution locators for independent review. Preserve this evidence for every attempt, including those without a highlighted learning signal. Include an observed signal and consequence when available. Cite the underlying sources so the reviewer can verify the evidence independently. Continue to Step 6.
 
 </step>
 
