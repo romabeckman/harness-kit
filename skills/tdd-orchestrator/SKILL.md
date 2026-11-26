@@ -179,13 +179,16 @@ Task is COMPLETE only when: 100% tests pass WITH verified output evidence
 
 ### INTERACTIVE
 
-After Step 4 passes, execute this sequence in order. The Dreaming review is required even when the first attempt succeeds, there is no classified signal, or no documentation update is needed.
+After Step 4 passes, delegate the entire interactive Step 5 to a single subagent with access to the owning project directories and the `project-dreaming` and `project-memory` skill instructions. Give it this sequence, the task scope, the session and attempt identifiers, and the available evidence from Step 4. The TDD orchestrator waits for the subagent's report before closing the workflow. If delegation is unavailable or fails, report Step 5 as pending with the reason and the action needed to resume. Preserve the verified engineering outcome from Step 4.
+
+The subagent executes the following sequence in order. The Dreaming review is required even when the first attempt succeeds, there is no classified signal, or no documentation update is needed.
 
 1. **Prepare the review scope.** Identify each owning project and feature worked on. For each pair, collect the session ID, available task and attempt IDs, and locators for test decisions, tests, relevant rework, commands, and results. Include tests written, corrected, or discarded in favor of equivalent coverage when available. Use any observed consequence, known trigger, hypothesis ID, or orientation ID to prioritize inspection.
-2. **Run `project-dreaming` once per project and feature.** Pass the collected evidence and limit inspection to the task and related attempts. Use targeted feature and learning-record lookups for deduplication or counterevidence. Request and verify the [analysis receipt](../project-dreaming/references/CONTRACTS.md#analysis-receipt) before proceeding to `project-memory`.
+2. **Run `project-dreaming` once per project and feature.** Supply the collected evidence and limit inspection to the task and related attempts. Use targeted feature and learning-record lookups for deduplication or counterevidence. Request and verify the [analysis receipt](../project-dreaming/references/CONTRACTS.md#analysis-receipt) before proceeding to `project-memory`.
 3. **Resolve the review status.** A verified `recorded` or `no_hypothesis` receipt completes the review. Keep `incomplete` analysis pending with its reason and required input or action. Follow the receipt contract when the receipt is missing or invalid. Preserve the engineering outcome established in Step 4 and continue with any applicable documentation updates.
 4. **Run `project-memory` when documentation needs updating or Dreaming supplied a validated handoff.** Update `docs/feature/{FEATURE_NAME}.md` whenever a feature is created or updated. Update OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs, input and output schemas, descriptions, and HTTP status codes as applicable. Forward any validated publication or withdrawal handoff with the documentation update. `project-memory` creates missing baseline docs (`README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`).
 5. **Verify any publication or withdrawal.** Return the `project-memory` receipt to Dreaming so it can verify the operation and close the corresponding ID. Preserve the retry trigger for any unresolved operation.
+6. **Report back to the TDD orchestrator.** Return the analysis receipt for each project and feature, the documentation changes, the outcome of any publication or withdrawal, and any pending item with its reason and the action needed to resume.
 
 ### AUTONOMOUS
 
@@ -238,7 +241,7 @@ Preserve caller-required fields. The skill-driven `autonomous-orchestrator` expe
 - Run tests after every change
 - Fix production code — never alter correct tests to force passing
 - Execute the final validation step before declaring completion
-- In interactive mode, invoke `project-memory` for project documentation updates
+- In interactive mode, delegate Step 5 to a subagent and wait for its report
 
 **❌ Don't:**
 - Skip mandatory orientation context or baseline docs in `docs/adr/`
@@ -297,8 +300,8 @@ In INTERACTIVE mode, emit a status block at each step. In AUTONOMOUS mode, keep 
 📋 Step 4: Final Validation (tdd-orchestrator)
 ✅ [test output evidence] All tests passed — claim verified
 
-📋 Step 5: Updating Documentation (project-memory)
-✅ API contracts updated
+📋 Step 5: Review and Documentation (subagent)
+✅ Dreaming receipt verified; API contracts updated
 
 📋 Step 6: Machine-Readable Output
 ✅ JSON report generated
