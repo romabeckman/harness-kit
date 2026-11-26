@@ -208,7 +208,7 @@ export class RefinementHandler extends AbstractPhaseHandler {
         refinementEvidence: businessEvidence,
         setupIds: JSON.stringify(evidence.filter(entry => entry.category === 'setup').map(entry => entry.id)),
       })
-      await context.invokeAgent({ ...invocation, prompt })
+      const consolidation = await context.invokeAgent({ ...invocation, prompt })
       const draft = this.readDraft(refinementPath, evidence)
       if (!draft) return
       if (draft.issues.length === 0) {
@@ -221,7 +221,12 @@ export class RefinementHandler extends AbstractPhaseHandler {
       })
       
       try {
-        await context.invokeAgent({ ...invocation, prompt: `${prompt}\n\n${correction}` })
+        const session = consolidation?.session
+        await context.invokeAgent({
+          ...invocation,
+          prompt: `${prompt}\n\n${correction}`,
+          ...(session ? { session } : {}),
+        })
         const corrected = this.readDraft(refinementPath, evidence)
         if (corrected && corrected.issues.length === 0) {
           publication = corrected.content

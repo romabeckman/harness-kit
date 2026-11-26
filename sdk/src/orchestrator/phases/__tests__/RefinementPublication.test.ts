@@ -6,6 +6,7 @@ import { RefinementHandler } from '../RefinementHandler'
 import { PlanningHandler } from '../PlanningHandler'
 import { Phase } from '../../types'
 import { FileStateManager } from '../../../file-state/FileStateManager'
+import type { AgentSession } from '../../../agent-runner/types'
 import * as pbbContract from '../../utils/PbbContract'
 import { refinementForPrompt, writeQuestionsForPrompt, writeRefinementForPrompt } from '../../../../tests/fixtures/pbb-refinement'
 
@@ -21,7 +22,7 @@ afterEach(() => {
   for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true })
 })
 
-function createContext(refinement: (prompt: string) => string = refinementForPrompt) {
+function createContext(refinement: (prompt: string) => string = refinementForPrompt, session?: AgentSession) {
   const workingDir = mkdtempSync(join(tmpdir(), 'pbb-refinement-'))
   directories.push(workingDir)
   const productDir = join(workingDir, 'product')
@@ -32,6 +33,7 @@ function createContext(refinement: (prompt: string) => string = refinementForPro
       writeQuestionsForPrompt(prompt, [])
     } else {
       writeRefinementForPrompt(prompt, refinement(prompt))
+      return session ? { session } : undefined
     }
   })
   return {
@@ -72,7 +74,10 @@ describe('refinement publication', () => {
     expect(refinement).not.toContain('Priority status: proposed')
   })
 
-  it('repairs a divergent draft once and publishes the corrected decisions before Bootstrap', async () => {
+  it.each([
+    { session: { id: 'consolidation-session' } },
+    { session: undefined },
+  ])('repairs a divergent draft and preserves decisions with consolidation session $session', async ({ session }) => {
     vi.mocked(input).mockResolvedValue('').mockResolvedValueOnce('Keep both views')
     let corrected = ''
     const context = createContext(prompt => {
@@ -85,15 +90,26 @@ describe('refinement publication', () => {
         return candidate
       }
       return candidate.replace('Resolved answer: Keep both views', 'Resolved answer: Use one view')
+    }, session)
+    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => {
+      writeQuestionsForPrompt(prompt, [
+        { id: 1, question: 'Which views are in scope?', recommendation: 'Use one view', context: 'Scope' },
+      ])
+      return { session: { id: 'discovery-session' } }
     })
-    context.invokeAgent.mockImplementationOnce(async ({ prompt }) => writeQuestionsForPrompt(prompt, [
-      { id: 1, question: 'Which views are in scope?', recommendation: 'Use one view', context: 'Scope' },
-    ]))
 
     await expect(new RefinementHandler().handle(Phase.REFINEMENT, context as never)).resolves.toBe(Phase.BOOTSTRAP)
 
     const consolidation = context.invokeAgent.mock.calls.filter(([args]) => args.phaseKey === 'refinement_consolidation')
     expect(consolidation).toHaveLength(2)
+    for (const [invocation] of context.invokeAgent.mock.calls.slice(0, -1)) {
+      expect(invocation).not.toHaveProperty('session')
+    }
+    if (session) {
+      expect(consolidation[1][0].session).toEqual(session)
+    } else {
+      expect(consolidation[1][0]).not.toHaveProperty('session')
+    }
     expect(corrected).toContain('Resolved answer: Keep both views')
     expect(context.fsm.loadRefinement()).toBe(corrected.trim())
   })
