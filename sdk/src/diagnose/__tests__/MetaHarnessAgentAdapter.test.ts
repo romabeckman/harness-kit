@@ -83,6 +83,59 @@ describe('MetaHarnessAgentAdapter', () => {
     expect(await adapter.invokeProjectDreaming(episode, project, [session])).toMatchObject({ success: true, raw })
   })
 
+  it('reuses a source-matched trace with metadata in a Markdown table', async () => {
+    const traceId = 'session-2026-08-15-001'
+    writeTrace(workingDir, traceId, sampleRecord.sessionId)
+    const path = join(workingDir, 'docs/harness-history/traces', traceId, 'metadata.md')
+    const original = readFileSync(path, 'utf8')
+    const rows = original.split('\n').map(line => line.replace(/^- \*\*(.+?):\*\* (.*)$/, '| $1 | $2 |'))
+    writeFileSync(path, ['# Session Metadata', '| Field | Value |', '|---|---|', ...rows].join('\n'))
+    const run = vi.fn()
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
+    expect((await adapter.invoke(sampleRecord, traceId)).success).toBe(true)
+    expect(run).not.toHaveBeenCalled()
+    expect(readFileSync(path, 'utf8')).toContain('| source_session_id | session-original-123 |')
+  })
+
+  it.each(['same', 'conflicting'])('rejects %s duplicate source identity across formats without invoking the runner', async duplicate => {
+    const traceId = 'session-2026-08-15-001'
+    writeTrace(workingDir, traceId, sampleRecord.sessionId)
+    const path = join(workingDir, 'docs/harness-history/traces', traceId, 'metadata.md')
+    writeFileSync(path, readFileSync(path, 'utf8') + `\n| source_session_id | ${duplicate === 'same' ? sampleRecord.sessionId : 'different-session'} |\n`)
+    const run = vi.fn()
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
+    await expect(adapter.invoke(sampleRecord, traceId)).rejects.toThrow()
+    expect(run).not.toHaveBeenCalled()
+  })
+
+  it('does not count ambiguous identities as legacy traces', async () => {
+    const traceId = 'session-2026-08-15-001'
+    writeTrace(workingDir, traceId, sampleRecord.sessionId)
+    const path = join(workingDir, 'docs/harness-history/traces', traceId, 'metadata.md')
+    writeFileSync(path, readFileSync(path, 'utf8') + '\n| source_session_id | other-source |\n')
+    writeLegacyHistory(workingDir, 2)
+    // Restore the ambiguous trace after the legacy fixture creates its IDs.
+    writeTrace(workingDir, traceId, sampleRecord.sessionId)
+    writeFileSync(path, readFileSync(path, 'utf8') + '\n| source_session_id | other-source |\n')
+    const run = vi.fn()
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
+    expect(JSON.parse((await adapter.invokeMetaHarness(sampleRecord)).raw)).toMatchObject({ status: 'no_candidate' })
+    expect(run).not.toHaveBeenCalled()
+  })
+
+  it('accepts outcome fields in a table while ignoring fenced examples', async () => {
+    const traceId = 'session-2026-08-15-001'
+    writeTrace(workingDir, traceId, sampleRecord.sessionId)
+    const dir = join(workingDir, 'docs/harness-history/traces', traceId)
+    const metadata = join(dir, 'metadata.md')
+    writeFileSync(metadata, readFileSync(metadata, 'utf8') + '\n```markdown\n- **source_session_id:** other-session\n```\n')
+    writeFileSync(join(dir, 'score.md'), '| Field | Value |\n|---|---|\n| outcome | unknown |\n| outcome_evidence | Not observed |\n')
+    const run = vi.fn()
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
+    expect((await adapter.invoke(sampleRecord, traceId)).success).toBe(true)
+    expect(run).not.toHaveBeenCalled()
+  })
+
   it('rejects a trace without source identity or task outcome', async () => {
     const traceId = 'session-2026-08-15-001'
     const traceDir = join(workingDir, 'docs', 'harness-history', 'traces', traceId)

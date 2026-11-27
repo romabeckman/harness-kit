@@ -35,9 +35,28 @@ function readTrace(directory: string): Map<string, string> {
   return files
 }
 
+function fieldValues(content: string, key: string): string[] {
+  const values: string[] = []
+  let fence: string | undefined
+  for (const line of content.split(/\r?\n/)) {
+    const marker = line.match(/^\s{0,3}(`{3,}|~{3,})/)
+    if (marker) {
+      if (!fence) fence = marker[1][0]
+      else if (marker[1][0] === fence) fence = undefined
+      continue
+    }
+    if (fence) continue
+    const list = line.match(new RegExp(`^[ \\t]*(?:-[ \\t]*)?(?:\\*\\*)?${key}:(?:\\*\\*)?[ \\t]*(\\S[^\\r\\n]*)$`))
+    const table = line.match(new RegExp(`^[ \\t]*\\|[ \\t]*(?:\\*\\*|\\x60)?${key}(?:\\*\\*|\\x60)?[ \\t]*\\|[ \\t]*([^|]*?)[ \\t]*\\|`))
+    const value = (list?.[1] ?? table?.[1])?.trim().replace(/^`(.*)`$/, '$1')
+    if (value !== undefined) values.push(value)
+  }
+  return values
+}
+
 function field(content: string, key: string): string | undefined {
-  const match = content.match(new RegExp(`^[ \\t]*(?:-[ \\t]*)?(?:\\*\\*)?${key}:(?:\\*\\*)?[ \\t]*(\\S[^\\r\\n]*)$`, 'm'))
-  return match?.[1].trim().replace(/^`(.*)`$/, '$1')
+  const values = fieldValues(content, key)
+  return values.length === 1 && values[0] ? values[0] : undefined
 }
 
 function traceIssues(files: Map<string, string>, traceId: string, sourceId: string): string[] {
@@ -70,7 +89,7 @@ function countCompleteTraces(root: string): number {
     const source = field(trace.get('metadata.md') ?? '', 'source_session_id')
     return source
       ? traceIssues(trace, entry.name, source).length === 0
-      : trace.size === Object.keys(TRACE_FILES).length
+      : fieldValues(trace.get('metadata.md') ?? '', 'source_session_id').length === 0 && trace.size === Object.keys(TRACE_FILES).length
   }).length
 }
 
@@ -110,7 +129,9 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
     const sessionTracePath = DiagnosePaths.toForwardSlashes(traceDir)
     const paretoPath = DiagnosePaths.toForwardSlashes(DiagnosePaths.paretoFrontierPath(this.workingDir))
     const before = readTrace(traceDir)
-    const recordedSource = field(before.get('metadata.md') ?? '', 'source_session_id')
+    const recordedSources = fieldValues(before.get('metadata.md') ?? '', 'source_session_id')
+    if (recordedSources.length > 1) throw new Error(`Trace ${preComputedId} has duplicate source session identities`)
+    const recordedSource = recordedSources[0]
     if (recordedSource && recordedSource !== session.sessionId) {
       throw new Error(`Trace ${preComputedId} belongs to a different source session`)
     }
@@ -131,6 +152,7 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
       `   - Target directory: ${sessionTracePath}/`,
       `   - Use pre-computed session_id: ${preComputedId}`,
       `   - Record source_session_id: ${session.sessionId}`,
+      `   - Write metadata.md and score.md fields exactly once using Markdown list entries, for example: - **session_id:** ${preComputedId}. Do not use tables for these fields.`,
       `   - Session date: ${session.timestamp || 'unknown'}`,
       `   - Skill: ${session.skill ?? 'unknown'}`,
       `   - Agent: ${session.agent}`,
@@ -247,7 +269,7 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
           const files = readTrace(join(root, entry.name))
           const metadata = files.get('metadata.md') ?? ''
           const phase = field(metadata, 'phase')
-          if (!field(metadata, 'source_session_id') && (!phase || isDiagnosePhase(phase))
+          if (fieldValues(metadata, 'source_session_id').length === 0 && (!phase || isDiagnosePhase(phase))
             && files.size === Object.keys(TRACE_FILES).length) scopedTraces.push(entry.name)
         }
       }
