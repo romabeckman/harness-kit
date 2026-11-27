@@ -145,6 +145,17 @@ describe('DevelopmentHandler', () => {
     mkdirSync(join(workingDir, 'docs', 'specs', 'sdk_core'), { recursive: true })
   })
 
+  it('sends failed TDD output to review and keeps tasks incomplete', async () => {
+    const path = join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json')
+    const fsm = makeFsm()
+    const context = makeContext(workingDir, fsm, async () => {
+      writeFileSync(path, JSON.stringify({ featureId: 'F001', status: 'FAILED', metrics: { totalTests: 46, passed: 46, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0, developerHandoff: 'T04 needs refinement' }))
+      return { success: true, raw: '' }
+    })
+    expect(await handler.handle(Phase.DEVELOPMENT, context)).toBe(Phase.REVIEW)
+    expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+    expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({ decision: expect.stringContaining('FAILED') }))
+  })
   describe('handle — delegates to next handler when phase is not DEVELOPMENT', () => {
     it('returns null when no next handler is set and phase is PLANNING', async () => {
       const fsm = makeFsm()
@@ -204,7 +215,7 @@ describe('DevelopmentHandler', () => {
       const fsm = makeFsm({ updateTaskStatus: vi.fn() })
       const context = makeContext(workingDir, fsm)
 
-      await expect(handler.handle(Phase.DEVELOPMENT, context)).rejects.toThrow('TDD-OUTPUT')
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
       expect(context.invokeAgent).toHaveBeenCalledOnce()
       expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
     })
@@ -215,7 +226,7 @@ describe('DevelopmentHandler', () => {
       const fsm = makeFsm({ updateTaskStatus: vi.fn() })
       const context = makeContext(workingDir, fsm)
 
-      await expect(handler.handle(Phase.DEVELOPMENT, context)).rejects.toThrow('TDD-OUTPUT')
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
       expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
       expect(context.invokeAgent).toHaveBeenCalledOnce()
     })
@@ -304,7 +315,7 @@ describe('DevelopmentHandler', () => {
       const fsm = makeFsm({ updateTaskStatus: vi.fn() })
       const context = makeContext(workingDir, fsm)
 
-      await expect(handler.handle(Phase.DEVELOPMENT, context)).rejects.toThrow('TDD-OUTPUT')
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
       expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
     })
 
@@ -319,7 +330,7 @@ describe('DevelopmentHandler', () => {
         }))
         return { success: true }
       })
-      await expect(handler.handle(Phase.DEVELOPMENT, context)).rejects.toThrow('TDD-OUTPUT')
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
       expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
     })
 
@@ -338,7 +349,7 @@ describe('DevelopmentHandler', () => {
         }))
         return { success: true }
       })
-      await expect(handler.handle(Phase.DEVELOPMENT, context)).rejects.toThrow('SC-01')
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
       expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
     })
 

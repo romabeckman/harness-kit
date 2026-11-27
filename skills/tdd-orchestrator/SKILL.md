@@ -103,7 +103,7 @@ Use the selected feature node's `related_docs` from `.graph.json`.
 REQUIRED: When `docs/specs/${domain}/REWORK-LOG.md` is present, apply these optimizations:
 1. Read `REWORK-LOG.md` FIRST — extract all findings before any other action
 2. Prioritize Step 1 (RED) after the scoped guidance check — confirm equivalent coverage or write failing tests for uncovered findings within the specified scope
-3. SKIP Step 5 (Update Documentation) until final validation passes
+3. In INTERACTIVE mode, run Step 5 automatically after final validation passes; in AUTONOMOUS mode, skip Step 5 entirely
 4. SKIP Step 6 (Machine-Readable Output) until all tests pass — regenerate only at the end
 
 </retry_fast_path>
@@ -179,7 +179,7 @@ Task is COMPLETE only when: 100% tests pass WITH verified output evidence
 
 ### INTERACTIVE
 
-After Step 4 passes, delegate the entire interactive Step 5 to a single subagent with access to the owning project directories and the `project-dreaming` and `project-memory` skill instructions. Give it this sequence, the task scope, the session and attempt identifiers, and the available evidence from Step 4. The TDD orchestrator waits for the subagent's report before closing the workflow. If delegation is unavailable or fails, report Step 5 as pending with the reason and the action needed to resume. Preserve the verified engineering outcome from Step 4.
+After Step 4 passes, automatically execute this step without asking the user for permission or confirmation. Delegate the entire interactive Step 5 to a single subagent with access to the owning project directories and the `project-dreaming` and `project-memory` skill instructions. Give it this sequence, the task scope, the session and attempt identifiers, and the available evidence from Step 4. The TDD orchestrator waits for the subagent's report before closing the workflow. If delegation is unavailable or fails, report Step 5 as pending with the reason and the action needed to resume. Preserve the verified engineering outcome from Step 4.
 
 The subagent executes the following sequence in order. The Dreaming review is required even when the first attempt succeeds, there is no classified signal, or no documentation update is needed.
 
@@ -192,7 +192,7 @@ The subagent executes the following sequence in order. The Dreaming review is re
 
 ### AUTONOMOUS
 
-Preserve the project, feature, task, attempt, and session identifiers and available test, decision, and execution locators for independent review. Preserve this evidence for every attempt, including those without a highlighted learning signal. Include an observed signal and consequence when available. Cite the underlying sources so the reviewer can verify the evidence independently. Continue to Step 6.
+Skip this entire step and continue to Step 6. Do not delegate or run the interactive Dreaming and documentation sequence here; the autonomous orchestrator handles its own review and documentation phases.
 
 </step>
 
@@ -222,6 +222,8 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 
 `status` must be either `"SUCCESS"` or `"FAILED"`. Write `"SUCCESS"` only after the requested work is complete and the final test run has zero failures. If a required scenario is pending refinement, keep that task incomplete and report `"FAILED"` if writing an output.
 
+Preserve the project, feature, task, attempt, and session identifiers and available test, decision, and execution locators for independent review. Preserve this evidence for every attempt, including those without a highlighted learning signal. Include an observed signal and consequence when available. Cite the underlying sources so the reviewer can verify the evidence independently.
+
 Preserve caller-required fields. The skill-driven `autonomous-orchestrator` expects `developerHandoff` of at most 500 characters. When the guidance lookup was observed, add the optional [`orientation_use` array](../project-dreaming/references/CONTRACTS.md#tdd-use). Preserve scenario IDs and project-scoped test or event locators and reference verified execution evidence in the run/trace, including for tests without a guidance decision. Record the session and attempt while that evidence is available, since autonomous review may later remove the transient TDD output. Older reports without these optional details remain usable; missing evidence must not be invented.
 
 </step>
@@ -241,7 +243,7 @@ Preserve caller-required fields. The skill-driven `autonomous-orchestrator` expe
 - Run tests after every change
 - Fix production code — never alter correct tests to force passing
 - Execute the final validation step before declaring completion
-- In interactive mode, delegate Step 5 to a subagent and wait for its report
+- In interactive mode, automatically delegate Step 5 to a subagent after final validation and wait for its report; in autonomous mode, skip Step 5
 
 **❌ Don't:**
 - Skip mandatory orientation context or baseline docs in `docs/adr/`

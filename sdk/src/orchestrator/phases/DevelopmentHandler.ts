@@ -38,8 +38,13 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       if (!tasks.length) tasks = featureTasks
       await this.executeChunk(activeFeature, tasks, tddOutputPath, context)
     }
-    for (const task of tasks) {
-      context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
+    try {
+      readCompletedTddOutput(tddOutputPath, activeFeature.id, activeFeature.reworks)
+      for (const task of tasks) {
+        context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
+      }
+    } catch {
+      // Review owns the disposition of incomplete or invalid TDD results.
     }
     return Phase.REVIEW
   }
@@ -113,7 +118,13 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
 
     PhaseDecisionLogger.logDevelopmen(context.fsm, activeFeature, tddOutputPath)
     if (output.success === false) throw new Error('Development agent failed before a verified TDD-OUTPUT.json was accepted.')
-    const reported = readTddOutput(tddOutputPath)
+    let reported: TddOutput
+    try {
+      reported = readTddOutput(tddOutputPath)
+    } catch (error) {
+      context.fsm.appendDecision({ featureId: activeFeature.id, decision: 'Development: TDD output requires review', rationale: String(error) })
+      return
+    }
     if (reported.featureId === activeFeature.id && reported.reworksCount !== activeFeature.reworks) {
       const original = JSON.parse(readFileSync(tddOutputPath, 'utf8'))
       original.reworksCount = activeFeature.reworks
@@ -129,9 +140,16 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
         decision: 'Development: corrected TDD-OUTPUT.json reworksCount mismatch',
         rationale: `TDD-OUTPUT.json reported ${reported.reworksCount}, expected ${activeFeature.reworks}.`,
       })
+      reported.reworksCount = activeFeature.reworks
     }
-    const handoff = readCompletedTddOutput(tddOutputPath, activeFeature.id, activeFeature.reworks)
-    context.dreaming?.recordDevelopment(activeFeature, handoff, chunkTasks, context.config.projectPaths, output.session?.id)
+    try {
+      readCompletedTddOutput(tddOutputPath, activeFeature.id, activeFeature.reworks)
+    } catch (error) {
+      context.fsm.appendDecision({ featureId: activeFeature.id, decision: 'Development: TDD output requires review', rationale: String(error) })
+    }
+    if (reported.featureId === activeFeature.id) {
+      context.dreaming?.recordDevelopment(activeFeature, reported, chunkTasks, context.config.projectPaths, output.session?.id)
+    }
   }
 
   buildTddOrchestratorPrompt(payload: DevelopmenPayload, context: Reviewontext, agent: string, continuation: boolean = false): string {

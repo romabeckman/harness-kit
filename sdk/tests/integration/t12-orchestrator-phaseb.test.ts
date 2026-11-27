@@ -181,7 +181,7 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
   })
 
   describe('TS-F-10: completed development advances to review', () => {
-    it('run() stops before review when tdd-orchestrator does not create TDD-OUTPUT.json', async () => {
+    it('reviews and retries when tdd-orchestrator does not create TDD-OUTPUT.json', async () => {
       setupProductFiles()
       const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
       writeValidSpecs(specDir)
@@ -200,10 +200,10 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
         complexity: Complexity.AUTO,
       }, { workingDir: tmpDir })
 
-      await expect(orchestrator.run()).rejects.toThrow('TDD-OUTPUT')
+      await orchestrator.run()
 
-      expect(fake.getInvocationsForSkill('tdd-orchestrator')).toHaveLength(1)
-      expect(fake.getInvocationsForSkill('the-grumpy-tech-lead')).toHaveLength(0)
+      expect(fake.getInvocationsForSkill('tdd-orchestrator').length).toBeGreaterThan(1)
+      expect(fake.getInvocationsForSkill('the-grumpy-tech-lead').length).toBeGreaterThan(0)
     })
   })
 

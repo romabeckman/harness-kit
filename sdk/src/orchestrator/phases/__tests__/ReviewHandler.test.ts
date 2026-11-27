@@ -125,6 +125,34 @@ describe('ReviewHandler', () => {
     handler = new ReviewHandler()
     workingDir = makeTempDir()
     mkdirSync(join(workingDir, 'docs', 'specs', 'sdk_core'), { recursive: true })
+    writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }))
+  })
+
+  it('sends failed TDD output back for rework even when both reviewers approve', async () => {
+    const path = join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json')
+    writeFileSync(path, JSON.stringify({ featureId: 'F001', status: 'FAILED', metrics: { totalTests: 46, passed: 46, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0, developerHandoff: 'T04 needs refinement' }))
+    const fsm = makeFsm()
+    const context = makeContext(workingDir, fsm, async () => ({ raw: JSON.stringify({ score: 0.95 }) }))
+    expect(await handler.handle(Phase.REVIEW, context)).toBe(Phase.DEVELOPMENT)
+    expect(fsm.writeReworkLog).toHaveBeenCalledWith('sdk_core', expect.stringContaining('T04 needs refinement'))
+    expect(fsm.updateAllFeatureTasks).not.toHaveBeenCalledWith('F001', '-', 'COMPLETED')
+  })
+  it.each(['missing', 'malformed', 'wrong feature', 'failed tests', 'counts', 'handoff', 'refinement'])('reviews and retries %s TDD output even when validation is skipped', async kind => {
+    const path = join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json')
+    const report: any = { featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }
+    if (kind === 'wrong feature') report.featureId = 'F999'
+    if (kind === 'failed tests') report.metrics.failed = 1
+    if (kind === 'counts') report.metrics.passed = 0
+    if (kind === 'handoff') report.developerHandoff = 'x'.repeat(501)
+    if (kind === 'refinement') report.orientation_use = [{ orientation_id: 'rule', revision: 1, feature: 'feature:test', decision: 'needs_refinement', reason: 'Ambiguous', test_ref: 'SC-01' }]
+    if (kind === 'missing') { const { unlinkSync } = await import('node:fs'); unlinkSync(path) }
+    else writeFileSync(path, kind === 'malformed' ? '{' : JSON.stringify(report))
+    const fsm = makeFsm()
+    const context = makeContext(workingDir, fsm, async () => ({ raw: JSON.stringify({ score: 0.95 }) }), { skipValidation: true })
+    expect(await handler.handle(Phase.REVIEW, context)).toBe(Phase.DEVELOPMENT)
+    expect(context.invokeAgent).toHaveBeenCalledTimes(2)
+    expect(fsm.writeReworkLog).toHaveBeenCalledWith('sdk_core', expect.stringContaining('TDD output requires correction'))
+    expect(fsm.updateAllFeatureTasks).not.toHaveBeenCalledWith('F001', '-', 'COMPLETED')
   })
 
   it('delegates when phase is not REVIEW', async () => {

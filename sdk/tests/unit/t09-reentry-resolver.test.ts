@@ -112,7 +112,7 @@ describe('T09 — ReentryResolver', () => {
     expect(ReentryResolver.resolve(state)).toBe(Phase.DEVELOPMENT)
   })
 
-  it('does not honor a persisted REVIEW phase without a valid TDD handoff', () => {
+  it('resumes a persisted REVIEW phase without a valid TDD handoff', () => {
     const state = makeState({
       config: { ...defaultConfig, currentPhase: Phase.REVIEW },
       specFilesPresent: true,
@@ -121,7 +121,7 @@ describe('T09 — ReentryResolver', () => {
       tasks: [{ ...baseTask, status: 'COMPLETED' }],
       activeFeature: { ...baseFeature, status: 'IN_PROGRESS' },
     })
-    expect(ReentryResolver.resolve(state)).toBe(Phase.DEVELOPMENT)
+    expect(ReentryResolver.resolve(state)).toBe(Phase.REVIEW)
   })
 
   describe('TS-U-42: Feature COMPLETED, more NOT_STARTED features -> TRANSITION', () => {

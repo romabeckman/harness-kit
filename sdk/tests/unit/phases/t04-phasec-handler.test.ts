@@ -34,6 +34,8 @@ describe('ReviewHandler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     handler = new ReviewHandler()
+    vi.mocked(existsSync).mockReturnValue(true)
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }))
 
     mockActiveFeature = { id: 'F001', domain: 'cli', reworks: 0 }
     mockConfig = {
@@ -66,6 +68,7 @@ describe('ReviewHandler', () => {
   it('deve aprovar (PASS) com os JSONs reais do TL e QA', async () => {
     vi.mocked(existsSync).mockReturnValue(true)
     vi.mocked(readFileSync).mockImplementation((path) => {
+      if (String(path).endsWith('TDD-OUTPUT.json')) return JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 })
       if (String(path).includes('orchestrator') && String(path).includes('prompts')) return actualReadFileSync(path, 'utf8')
       if (path.toString().endsWith('TL.json')) return JSON.stringify(mockTL)
       if (path.toString().endsWith('QA.json')) return JSON.stringify(mockQA)
@@ -86,6 +89,7 @@ describe('ReviewHandler', () => {
   it('passes validation thresholds and current output contracts to both review prompts', async () => {
     vi.mocked(existsSync).mockReturnValue(true)
     vi.mocked(readFileSync).mockImplementation((path) => {
+      if (String(path).endsWith('TDD-OUTPUT.json')) return JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 })
       if (String(path).includes('orchestrator') && String(path).includes('prompts')) return actualReadFileSync(path, 'utf8')
       if (path.toString().endsWith('TL.json')) return JSON.stringify(mockTL)
       if (path.toString().endsWith('QA.json')) return JSON.stringify(mockQA)
@@ -110,6 +114,7 @@ describe('ReviewHandler', () => {
 
     const failedQA = { ...mockQA, score: 0.6, vulnerabilities: [{ type: 'AUTH_BYPASS', severity: 'CRITICAL', description: 'Missing auth check' }] }
     vi.mocked(readFileSync).mockImplementation((path) => {
+      if (String(path).endsWith('TDD-OUTPUT.json')) return JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 })
       if (String(path).includes('orchestrator') && String(path).includes('prompts')) return actualReadFileSync(path, 'utf8')
       if (path.toString().endsWith('TL.json')) return JSON.stringify(mockTL)
       if (path.toString().endsWith('QA.json')) return JSON.stringify(failedQA)
@@ -138,6 +143,7 @@ describe('ReviewHandler', () => {
     const emptyTL = { featureId: 'F001', score: 0.5, openPoints: [], architectureTip: undefined }
     const emptyQA = { featureId: 'F001', score: 0.5, passedAdversarial: false, vulnerabilities: [], edgeCasesMissed: [] }
     vi.mocked(readFileSync).mockImplementation((path) => {
+      if (String(path).endsWith('TDD-OUTPUT.json')) return JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 })
       if (String(path).includes('orchestrator') && String(path).includes('prompts')) return actualReadFileSync(path, 'utf8')
       if (path.toString().endsWith('TL.json')) return JSON.stringify(emptyTL)
       if (path.toString().endsWith('QA.json')) return JSON.stringify(emptyQA)
@@ -185,6 +191,7 @@ describe('ReviewHandler', () => {
 
     vi.mocked(existsSync).mockReturnValue(true)
     vi.mocked(readFileSync).mockImplementation((path) => {
+      if (String(path).endsWith('TDD-OUTPUT.json')) return JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 })
       if (String(path).includes('orchestrator') && String(path).includes('prompts')) return actualReadFileSync(path, 'utf8')
       if (path.toString().endsWith('TL.json')) return JSON.stringify(complexTL)
       if (path.toString().endsWith('QA.json')) return JSON.stringify(complexQA)
@@ -207,6 +214,7 @@ describe('ReviewHandler', () => {
     vi.mocked(existsSync).mockReturnValue(true)
     vi.mocked(rmSync).mockImplementation((path) => { removedFiles.push(path.toString()) })
     vi.mocked(readFileSync).mockImplementation((path) => {
+      if (String(path).endsWith('TDD-OUTPUT.json')) return JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 })
       if (String(path).includes('orchestrator') && String(path).includes('prompts')) return actualReadFileSync(path, 'utf8')
       if (path.toString().endsWith('TL.json')) return JSON.stringify(mockTL)
       if (path.toString().endsWith('QA.json')) return JSON.stringify(mockQA)
@@ -238,6 +246,7 @@ describe('ReviewHandler', () => {
 
     vi.mocked(existsSync).mockReturnValue(true)
     vi.mocked(readFileSync).mockImplementation((path) => {
+      if (String(path).endsWith('TDD-OUTPUT.json')) return JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 })
       if (String(path).includes('orchestrator') && String(path).includes('prompts')) return actualReadFileSync(path, 'utf8')
       if (path.toString().endsWith('TL.json')) return JSON.stringify(malformedTL)
       if (path.toString().endsWith('QA.json')) return JSON.stringify(malformedQA)

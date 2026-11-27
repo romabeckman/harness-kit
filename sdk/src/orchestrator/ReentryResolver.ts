@@ -28,9 +28,8 @@ export class ReentryResolver {
         if (terminalFeature && (persistedPhase === Phase.DEVELOPMENT || persistedPhase === Phase.REVIEW)) {
           return Phase.TRANSITION
         }
-        // A persisted REVIEW marker is only trustworthy when the completion
-        // evidence is still present and valid on disk.
-        if (!staleInitialPhase && (persistedPhase !== Phase.REVIEW || (state.tddOutputPresent && state.allTasksCompleted))) {
+        // REVIEW also handles invalid or absent TDD results; do not repeat development on resume.
+        if (!staleInitialPhase) {
           return persistedPhase
         }
       }

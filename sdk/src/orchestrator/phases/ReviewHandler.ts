@@ -15,12 +15,13 @@ import {
   buildDocsOrientationSection
 } from '../utils/PromptHelpers'
 import { clearFeatureDeveloperSessions } from '../utils/SessionHelpers'
-import { getPlanningSource, getProductDir, getSpecsDir, readCompletedTddOutput } from '../utils/PhaseFileUtils'
+import { getPlanningSource, getProductDir, getSpecsDir, readCompletedTddOutput, readTddOutput } from '../utils/PhaseFileUtils'
 import type { TddOutput } from '../utils/PhaseFileUtils'
 import type { DreamingEpisode } from '../../file-state/DreamingEpisodeStore'
 import { buildDreamingPrompt, dreamingFingerprint, validateDreamingReceipt } from '../../file-state/DreamingAnalysis'
 import type { ReviewPayload } from '../../context-assembler/types'
 import type { BootstrapConfig, Feature, FeatureStatus } from '../../file-state/types'
+import { Verdict } from '../../validation-gate/types'
 import type { ValidationScores } from '../../validation-gate/types'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
 import { ReviewFailureService } from '../services/ReviewFailureService'
@@ -42,8 +43,20 @@ export class ReviewHandler extends AbstractPhaseHandler {
     const config = context.fsm.loadBootstrapConfig()
     const reviewFailures = new ReviewFailureService(context, config, activeFeature.id)
 
-    // --skip-validation: bypass all agent calls and jump straight to Phase D
-    if (context.config.skipValidation) {
+    const tddPath = join(getSpecsDir(context.workingDir, activeFeature.domain), 'TDD-OUTPUT.json')
+    let tddProblem: string | undefined
+    try {
+      readCompletedTddOutput(tddPath, activeFeature.id, activeFeature.reworks)
+    } catch (error) {
+      tddProblem = error instanceof Error ? error.message : String(error)
+      try {
+        const report = JSON.parse(readFileSync(tddPath, 'utf8'))
+        if (report.featureId === activeFeature.id && report.reworksCount === activeFeature.reworks && typeof report.developerHandoff === 'string') tddProblem += `; ${report.developerHandoff}`
+      } catch { /* retain the validation error */ }
+    }
+
+    // An incomplete TDD result must be reviewed even when validation is normally skipped.
+    if (context.config.skipValidation && !tddProblem) {
       if (reviewFailures.preservePolicyBlock()) {
         this.recordReview(context, activeFeature, 'INTERRUPTED')
         this.clearTddOutput(context.workingDir, activeFeature.domain)
@@ -76,7 +89,12 @@ export class ReviewHandler extends AbstractPhaseHandler {
       config.steeringRules
     )
 
-    const results = await this.executeAgents(context, payload, config)
+    try {
+      const report = readTddOutput(tddPath)
+      if (report.featureId !== activeFeature.id || report.reworksCount !== activeFeature.reworks) payload.tddSummary = undefined
+    } catch { payload.tddSummary = undefined }
+
+    const results = await this.executeAgents(context, payload, config, tddProblem)
     let outputs: ReturnType<ReviewFailureService['resolveOutputs']>
     try {
       outputs = reviewFailures.resolveOutputs(results)
@@ -93,11 +111,16 @@ export class ReviewHandler extends AbstractPhaseHandler {
     const [techLead, adversarial] = outputs
     const { scores, evidence, hasReviewerResults } = this.extractScores(context, activeFeature.domain, techLead, adversarial)
 
-    const result = ValidationGate.evaluate(
+    let result = ValidationGate.evaluate(
       scores,
       activeFeature.reworks,
       config
     )
+    if (tddProblem && result.verdict === Verdict.PASS) {
+      const exhausted = activeFeature.reworks >= config.completionCriteria.maxReworks
+      result = { verdict: exhausted ? Verdict.FAIL : Verdict.RETRY, reason: `TDD output requires correction: ${tddProblem}` }
+    }
+    if (tddProblem) scores.openPoints = [...(scores.openPoints ?? []), `TDD output requires correction: ${tddProblem}`]
 
     const sessions = [techLead.session?.id, adversarial.session?.id].filter((id): id is string => !!id)
     const episode = this.recordReview(context, activeFeature, hasReviewerResults ? result.verdict : 'INTERRUPTED', sessions, hasReviewerResults ? evidence : [])
@@ -126,7 +149,8 @@ export class ReviewHandler extends AbstractPhaseHandler {
     if (!context.dreaming) return
     let output: TddOutput
     try {
-      output = readCompletedTddOutput(join(getSpecsDir(context.workingDir, feature.domain), 'TDD-OUTPUT.json'), feature.id, feature.reworks)
+      output = readTddOutput(join(getSpecsDir(context.workingDir, feature.domain), 'TDD-OUTPUT.json'))
+      if (output.featureId !== feature.id || output.reworksCount !== feature.reworks) return
     } catch {
       return
     }
@@ -159,9 +183,10 @@ export class ReviewHandler extends AbstractPhaseHandler {
     }
   }
 
-  private async executeAgents(context: Reviewontext, payload: ReviewPayload, config: BootstrapConfig) {
-    const tlPrompt = this.buildTechLeadPrompt(payload, context, config)
-    const advPrompt = this.buildAdversarialQAPrompt(payload, context, config)
+  private async executeAgents(context: Reviewontext, payload: ReviewPayload, config: BootstrapConfig, tddProblem?: string) {
+    const tddNotice = tddProblem ? `\n\nTDD output requires review and correction: ${tddProblem}` : ''
+    const tlPrompt = this.buildTechLeadPrompt(payload, context, config) + tddNotice
+    const advPrompt = this.buildAdversarialQAPrompt(payload, context, config) + tddNotice
 
     const tlAgent = 'harness-kit:harness-tech-lead'
     const advAgent = 'harness-kit:harness-qa'
