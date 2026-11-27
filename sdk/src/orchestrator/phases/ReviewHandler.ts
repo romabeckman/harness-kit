@@ -75,6 +75,7 @@ export class ReviewHandler extends AbstractPhaseHandler {
     this.reports.cleanReviewReports(context.workingDir, activeFeature.domain)
 
     const results = await this.executeAgents(context, payload, config, handoffNotice)
+    this.reports.saveDebugCopies(context.workingDir, activeFeature.domain)
     let outputs: ReturnType<ReviewFailureService['resolveOutputs']>
     try {
       outputs = reviewFailures.resolveOutputs(results)

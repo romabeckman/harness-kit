@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { DebugContext } from '../../../cli/DebugContext'
 import { ReviewHandler } from '../ReviewHandler'
 import { DreamingEpisodeStore } from '../../../file-state/DreamingEpisodeStore'
 import type { TddOutput } from '../../utils/PhaseFileUtils'
@@ -126,6 +127,49 @@ describe('ReviewHandler', () => {
     workingDir = makeTempDir()
     mkdirSync(join(workingDir, 'docs', 'specs', 'sdk_core'), { recursive: true })
     writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }))
+  })
+
+  afterEach(() => DebugContext.reset())
+
+  it.each([true, false])('preserves fresh review reports only when debug is %s', async debug => {
+    if (debug) DebugContext.enable()
+    const specs = join(workingDir, 'docs', 'specs', 'sdk_core')
+    const reports = { TL: '{ "score": 0.95, "attempt": 1 }\n', QA: '{ "score": 0.96, "attempt": 1 }\n' }
+    const context = makeContext(workingDir, makeFsm(), async inv => {
+      const kind = inv.phaseKey === 'review_tl' ? 'TL' : 'QA'
+      writeFileSync(join(specs, `${kind}.json`), reports[kind])
+      return { success: true, raw: reports[kind] }
+    })
+    await handler.handle(Phase.REVIEW, context)
+    await handler.handle(Phase.REVIEW, context)
+    const directory = join(specs, '.debug')
+    expect(existsSync(directory)).toBe(debug)
+    if (debug) {
+      const files = readdirSync(directory)
+      expect(files).toHaveLength(4)
+      for (const kind of ['TL', 'QA'] as const) {
+        const copies = files.filter(file => new RegExp(`^${kind}-\\d{4}-\\d{2}-\\d{2}T[\\d-]+Z-[\\da-f-]{36}\\.json$`).test(file))
+        expect(copies).toHaveLength(2)
+        for (const file of copies) expect(readFileSync(join(directory, file), 'utf8')).toBe(reports[kind])
+      }
+    }
+  })
+
+  it('preserves a report even if the other reviewer fails', async () => {
+    DebugContext.enable()
+    const specs = join(workingDir, 'docs', 'specs', 'sdk_core')
+    const context = makeContext(workingDir, makeFsm(), async inv => {
+      if (inv.phaseKey === 'review_tl') {
+        writeFileSync(join(specs, 'TL.json'), 'partial report')
+        return { success: true, raw: '{}' }
+      }
+      throw new Error('review failed')
+    })
+    await handler.handle(Phase.REVIEW, context).catch(() => undefined)
+    const files = readdirSync(join(specs, '.debug'))
+    expect(files).toHaveLength(1)
+    expect(files[0]).toMatch(/^TL-.*\.json$/)
+    expect(readFileSync(join(specs, '.debug', files[0]), 'utf8')).toBe('partial report')
   })
 
   it('accepts independent approval even when a legacy TDD output reported failure', async () => {

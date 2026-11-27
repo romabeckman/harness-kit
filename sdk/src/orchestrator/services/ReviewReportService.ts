@@ -5,8 +5,14 @@ import { JsonExtractionProtocol } from '../../json-extraction/JsonExtractionProt
 import { isExtractionResult, type ExtractionOutcome } from '../../json-extraction/types'
 import type { ValidationScores } from '../../validation-gate/types'
 import { getSpecsDir } from '../utils/PhaseFileUtils'
+import { saveDebugReportCopy } from '../utils/DebugReportCopy'
 
 export class ReviewReportService {
+  saveDebugCopies(workingDir: string, domain: string): void {
+    const specsDir = getSpecsDir(workingDir, domain)
+    for (const file of ['TL.json', 'QA.json']) saveDebugReportCopy(join(specsDir, file))
+  }
+
   cleanReviewReports(workingDir: string, domain: string): void {
     const specsDir = getSpecsDir(workingDir, domain)
     for (const file of ['TL.json', 'QA.json']) {

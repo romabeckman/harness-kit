@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { DebugContext } from '../../cli/DebugContext'
+import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { saveDebugReportCopy } from '../utils/DebugReportCopy'
 import type { Feature, Task } from '../../file-state/types'
 import type { Reviewontext } from '../phases/AbstractPhaseHandler'
 import { getSpecsDir, readCompletedTddOutput, readTddOutput, type TddOutput } from '../utils/PhaseFileUtils'
@@ -28,16 +28,7 @@ export class TddOutputService {
   }
 
   saveDebugCopy(): void {
-    if (!DebugContext.enabled || !existsSync(this.path)) return
-    try {
-      const directory = join(dirname(this.path), '.debug')
-      mkdirSync(directory, { recursive: true })
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      const filename = `TDD-OUTPUT-${timestamp}-${randomUUID()}.json`
-      copyFileSync(this.path, join(directory, filename), constants.COPYFILE_EXCL)
-    } catch (error) {
-      console.warn('[debug] Could not preserve TDD-OUTPUT.json:', error)
-    }
+    saveDebugReportCopy(this.path)
   }
 
   unavailableNotice(): string {
