@@ -117,7 +117,7 @@ export function readTddOutput(tddOutputPath: string): TddOutput {
   let data: unknown
   try {
     const raw = readFileSync(tddOutputPath, 'utf-8')
-    data = JSON.parse(raw)
+    data = JSON.parse(raw.replace(/^\uFEFF/, ''))
   } catch (err: any) {
     throw new Error(`Failed to parse TDD-OUTPUT.json: ${err.message}`)
   }

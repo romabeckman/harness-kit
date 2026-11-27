@@ -99,6 +99,12 @@ describe('PhaseFileUtils', () => {
   // ─── readTddOutput ────────────────────────────────────────────────────────
 
   describe('readTddOutput', () => {
+    it('reads a UTF-8 BOM-prefixed report', () => {
+      const path = join(tmpDir, 'TDD-OUTPUT.json')
+      const output = { featureId: 'F001', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }
+      writeFileSync(path, '\uFEFF' + JSON.stringify(output), 'utf8')
+      expect(readCompletedTddOutput(path, 'F001', 0)).toEqual(output)
+    })
     it('preserves a valid refinement decision beside malformed entries', () => {
       const path = join(tmpDir, 'TDD-OUTPUT.json')
       writeFileSync(path, JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 }, modifiedFiles: [], reworksCount: 0, orientation_use: [{ orientation_id: 'decision', revision: 1, feature: 'feature:core', decision: 'needs_refinement', reason: 'Business decision required' }, { invalid: true }] }))

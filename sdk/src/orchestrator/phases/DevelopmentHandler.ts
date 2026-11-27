@@ -94,6 +94,8 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       phaseKey: 'implementation',
       domain: activeFeature.domain,
       ...(developerSession ? { session: developerSession } : {}),
+    }).finally(() => {
+      if (clearedPreviousReport) tddOutput.saveDebugCopy()
     })
 
     if (output.session) {

@@ -113,7 +113,7 @@ hrns run --reset
 | `--skip-validation` | boolean | No | Skip Review phase (Phase C) | false |
 | `--skip-memory` | boolean | No | Skip Memory phase (Phase E) | false |
 | `--skip-deploy` | boolean | No | Skip Deploy phase | false |
-| `--debug` | boolean | No | Enable debug output to stderr | false |
+| `--debug` | boolean | No | Enable debug output to stderr and preserve the fresh Development report in `docs/specs/{domain}/.debug/TDD-OUTPUT.json` before normalization | false |
 
 ## BEST PRACTICES
 REQUIRED: Skip the reset wizard by providing at least one of `--scope`, `--path`, `--score`, or `--reworks`.

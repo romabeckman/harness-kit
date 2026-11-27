@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdirSync, writeFileSync, existsSync, readFileSync, rmSync, renameSync } from 'node:fs'
 import { DevelopmentHandler } from '../DevelopmentHandler'
+import { DebugContext } from '../../../cli/DebugContext'
 import { Complexity, Phase } from '../../types'
 import type { Reviewontext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
@@ -145,6 +146,37 @@ describe('DevelopmentHandler', () => {
     mkdirSync(join(workingDir, 'docs', 'specs', 'sdk_core'), { recursive: true })
   })
 
+  afterEach(() => DebugContext.reset())
+
+  it.each([true, false])('preserves the exact development report only when debug is %s', async debug => {
+    if (debug) DebugContext.enable()
+    const report = Buffer.from('\uFEFF{ malformed report', 'utf8')
+    const path = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+    const snapshot = join(workingDir, 'docs', 'specs', 'sdk_core', '.debug', 'TDD-OUTPUT.json')
+    const context = makeContext(workingDir, makeFsm(), async () => {
+      writeFileSync(path, report)
+      return { success: true }
+    })
+
+    await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
+    expect(existsSync(snapshot)).toBe(debug)
+    if (debug) expect(readFileSync(snapshot)).toEqual(report)
+  })
+
+  it('continues to review when the debug snapshot cannot be written', async () => {
+    DebugContext.enable()
+    const specs = join(workingDir, 'docs', 'specs', 'sdk_core')
+    writeFileSync(join(specs, '.debug'), 'not a directory')
+    const report = JSON.stringify({ featureId: 'F001', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 })
+    const context = makeContext(workingDir, makeFsm(), async () => {
+      writeFileSync(join(specs, 'TDD-OUTPUT.json'), report)
+      return { success: true }
+    })
+
+    await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
+    expect(readFileSync(join(specs, 'TDD-OUTPUT.json'), 'utf8')).toBe(report)
+  })
+
   it('sends failed TDD output to review and keeps tasks incomplete', async () => {
     const path = join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json')
     const fsm = makeFsm()
@@ -233,6 +265,18 @@ describe('DevelopmentHandler', () => {
   })
 
   describe('handle — chunk execution', () => {
+    it('records a Dreaming episode from a BOM-prefixed report while correcting the rework count', async () => {
+      const path = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      const fsm = makeFsm()
+      const context = makeContext(workingDir, fsm, async () => {
+        writeFileSync(path, '\uFEFF' + JSON.stringify({ featureId: 'F001', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 1 }))
+        return { success: true, session: { id: 'session-1' } }
+      })
+      const dreaming = { recordDevelopment: vi.fn() }
+      await expect(handler.handle(Phase.DEVELOPMENT, { ...context, dreaming: dreaming as any })).resolves.toBe(Phase.REVIEW)
+      expect(JSON.parse(readFileSync(path, 'utf8')).reworksCount).toBe(0)
+      expect(dreaming.recordDevelopment).toHaveBeenCalledWith(expect.objectContaining({ id: 'F001' }), expect.objectContaining({ reworksCount: 0 }), expect.any(Array), expect.any(Array), 'session-1')
+    })
     it('returns REVIEW after agent runs with percentage coverage', async () => {
       const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
 

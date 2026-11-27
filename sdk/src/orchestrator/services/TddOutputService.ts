@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { DebugContext } from '../../cli/DebugContext'
 import type { Feature, Task } from '../../file-state/types'
 import type { Reviewontext } from '../phases/AbstractPhaseHandler'
 import { getSpecsDir, readCompletedTddOutput, readTddOutput, type TddOutput } from '../utils/PhaseFileUtils'
@@ -24,6 +25,17 @@ export class TddOutputService {
 
   readCompleted(): TddOutput {
     return readCompletedTddOutput(this.path, this.feature.id, this.feature.reworks)
+  }
+
+  saveDebugCopy(): void {
+    if (!DebugContext.enabled || !existsSync(this.path)) return
+    try {
+      const directory = join(dirname(this.path), '.debug')
+      mkdirSync(directory, { recursive: true })
+      copyFileSync(this.path, join(directory, 'TDD-OUTPUT.json'))
+    } catch (error) {
+      console.warn('[debug] Could not preserve TDD-OUTPUT.json:', error)
+    }
   }
 
   unavailableNotice(): string {
@@ -78,7 +90,7 @@ export class TddOutputService {
     ))
     if (!correctReworks && !removeStatus) return
 
-    const original = JSON.parse(readFileSync(this.path, 'utf8'))
+    const original = JSON.parse(readFileSync(this.path, 'utf8').replace(/^\uFEFF/, ''))
     original.reworksCount = this.feature.reworks
     if (removeStatus) delete original.status
     const temporaryPath = `${this.path}.${randomUUID()}.tmp`
