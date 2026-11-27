@@ -50,7 +50,7 @@ Keep source under `src/`, test suites under `tests/`, and documentation under `d
 ### SUPPORTING MODULES
 
 | Project history erasure | Discover and safely delete agent-generated runtime history for Claude Code, Codex, Copilot, Antigravity, and OpenCode via `hrns erase`. | [SDK_PROJECT_HISTORY_ERASURE.md](../feature/agents/SDK_PROJECT_HISTORY_ERASURE.md) |
-| HTTP server | Expose non-interactive orchestration, settings, telemetry, reports, and health endpoints. | [HTTP_SERVER.md](../feature/server/HTTP_SERVER.md) |
+| HTTP server (beta) | Expose non-interactive orchestration, settings, telemetry, reports, and health endpoints. | [HTTP_SERVER.md](../feature/server/HTTP_SERVER.md) |
 | Terminal UI | Render banners, progress, and ANSI output. | [SDK_TERMINAL_UI.md](../feature/terminal/SDK_TERMINAL_UI.md) |
 | Package | Define public exports and npm build output. | [SDK_PACKAGE.md](../feature/package/SDK_PACKAGE.md) |
 | QA tester | Plan, validate, execute, and report runtime acceptance scenarios. | [QA_TESTER.md](../feature/qa/QA_TESTER.md) |

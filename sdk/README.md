@@ -532,6 +532,8 @@ Every CLI-based agent runner uses vendor-specific flags that **disable interacti
 
 When running the SDK as an HTTP daemon (`hrns serve`), apply these configurations:
 
+> **Beta:** The HTTP server is currently in beta. Its APIs and behavior may change.
+
 ```bash
 # REQUIRED: Enable authentication (default is NoAuth — no authentication)
 AUTH_MODE=jwt                          # Options: basic, bearer, jwt, hmac

@@ -1,5 +1,7 @@
 ﻿# Harness SDK HTTP Server
 
+> **Beta:** The HTTP server is currently in beta. Its APIs and behavior may change.
+
 This directory (`src/server/`) contains the headless, non-interactive HTTP daemon capability for `@romabeckman/hrns`. It allows external clients, CI/CD runners, and Docker containers to trigger and monitor autonomous TDD orchestration loops via RESTful APIs.
 
 ---

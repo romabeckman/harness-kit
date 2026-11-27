@@ -16,7 +16,7 @@ Index of project technical documentation for **harness-kit SDK**. Use links belo
 | [**STEERING.md**](./adr/STEERING.md) | Runtime steering and rollback decisions. | Optional |
 | [**TELEMETRY.md**](./adr/TELEMETRY.md) | Token ledger and cost reporting decisions. | Optional |
 | [**E2E_TESTING_SUITE.md**](./feature/qa/E2E_TESTING_SUITE.md) | Isolated end-to-end test suite guide. | Optional |
-| [**HTTP_SERVER.md**](./feature/server/HTTP_SERVER.md) | HTTP daemon adapter guide. | Optional |
+| [**HTTP_SERVER.md**](./feature/server/HTTP_SERVER.md) | HTTP daemon adapter guide (beta). | Optional |
 | [**SDK_AGENT_RUNNER.md**](./feature/agents/SDK_AGENT_RUNNER.md) | Agent runner adapters and session handling. | Optional |
 | [**SDK_CLI.md**](./feature/cli/sdk_cli.md) | CLI commands and run options. | Optional |
 | [**SDK_CORE.md**](./feature/orchestration/SDK_CORE.md) | Orchestrator lifecycle and phase invariants. | Optional |
