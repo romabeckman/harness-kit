@@ -36,9 +36,13 @@ export class ResumeOrchestratorJobUseCase {
       throw new HttpServerError(400, 'JOB_NOT_RESUMABLE', `Job '${jobId}' is not stopped or failed.`)
     }
 
-    if (overrides && (Object.keys(overrides).some(key => key !== 'steeringMessage') ||
+    if (overrides !== undefined && (!overrides || typeof overrides !== 'object' || Array.isArray(overrides) ||
+      Object.keys(overrides).some(key => key !== 'steeringMessage') ||
       (overrides.steeringMessage !== undefined && typeof overrides.steeringMessage !== 'string'))) {
       throw new HttpServerError(400, 'INVALID_RESUME_OVERRIDE', 'Only steeringMessage can be changed when resuming a job.')
+    }
+    if (previousJob.error?.code === 'REFINEMENT_REQUIRED' && !overrides?.steeringMessage?.trim()) {
+      throw new HttpServerError(400, 'REFINEMENT_DECISION_REQUIRED', 'Provide the pending business decision in steeringMessage to resume this job.')
     }
 
     const newJobId = randomUUID()

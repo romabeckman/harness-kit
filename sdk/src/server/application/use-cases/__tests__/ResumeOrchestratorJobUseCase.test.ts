@@ -66,4 +66,19 @@ describe('ResumeOrchestratorJobUseCase', () => {
       request: { idempotencyKey: 'id', scope: 'task', project: 'backend', agent: 'claude-cli' }, createdAt: new Date().toISOString() })
     await expect(useCase.execute('complete')).rejects.toMatchObject({ code: 'JOB_NOT_RESUMABLE' })
   })
+
+  it('requires a new steering decision when an earlier attempt was blocked by refinement', async () => {
+    await jobStore.save({ jobId: 'needs-decision', resumeFromJobId: 'first-attempt', status: 'failed', workspacePath: '/tmp/backend',
+      request: { idempotencyKey: 'id', scope: 'task', project: 'backend', agent: 'claude-cli', steeringMessage: 'older decision' },
+      error: { code: 'REFINEMENT_REQUIRED', message: 'Choose an approval policy.' }, createdAt: new Date().toISOString() })
+
+    await expect(useCase.execute('needs-decision')).rejects.toMatchObject({ statusCode: 400, code: 'REFINEMENT_DECISION_REQUIRED' })
+    await expect(useCase.execute('needs-decision', { steeringMessage: '   ' })).rejects.toMatchObject({ code: 'REFINEMENT_DECISION_REQUIRED' })
+    expect(jobQueue.size).toBe(0)
+
+    const result = await useCase.execute('needs-decision', { steeringMessage: 'Require manual approval.' })
+    expect(await jobStore.findById(result.jobId)).toMatchObject({
+      resumeFromJobId: 'first-attempt', request: { action: 'resume', steeringMessage: 'Require manual approval.' },
+    })
+  })
 })

@@ -44,28 +44,47 @@ PORT=8080 HOST=127.0.0.1 node dist/server/index.js
 
 ### 3. Running with Docker
 
-Build and run using the production multi-stage `Dockerfile` with the pre-cloning `entrypoint.sh` script:
+From the SDK directory containing `Dockerfile`, build the image with Docker installed and running:
 
 ```bash
-# 1. Build the Docker image
 docker build -t hrns-server:latest .
+```
 
-# 2. Run container with environment variables & Git authorization
+Create a local directory for the project repositories and set a GitHub token with access to the repository. Replace the example repository URL and branch with your own. The token is used for HTTPS authentication during clone, fetch, and push.
+
+```bash
+mkdir -p ./workspaces
+export GIT_TOKEN='your-github-token'
+```
+
+Start the container and mount the workspace directory so repositories, failed job worktrees, and job artifacts persist across container recreation. The `backend` alias identifies the project in API requests.
+
+```bash
 docker run -d \
-  -p 3000:3000 \
-  -v /path/to/workspaces:/workspaces \
+  --name hrns-daemon \
+  -p 127.0.0.1:3000:3000 \
+  -v "$(pwd)/workspaces:/workspaces" \
   -e PORT=3000 \
   -e HOST=0.0.0.0 \
+  -e ALLOWED_WORKSPACES=/workspaces \
   -e GIT_COMMIT_AUTHOR_NAME="HRNS Bot" \
   -e GIT_COMMIT_AUTHOR_EMAIL="bot@company.com" \
-  -e GIT_TOKEN="ghp_xxxxxxxxxxxx" \
-  -e PROJECT_MAPPINGS='{"backend":{"path":"/workspaces/backend","gitUrl":"git@github.com:org/backend.git"}}' \
-  --name hrns-daemon \
+  -e GIT_TOKEN \
+  -e PROJECT_MAPPINGS='{"backend":{"path":"/workspaces/backend","gitUrl":"https://github.com/org/backend.git","baseBranch":"main"}}' \
   hrns-server:latest
-
-# 3. View entrypoint bootstrap logs
-docker logs -f hrns-daemon
 ```
+
+The entrypoint clones the mapped repository on startup. If it already exists at the mapped path, the entrypoint fetches the base branch and resets the checkout to its remote state. Use a dedicated workspace for this container.
+
+Check startup logs and the health endpoint:
+
+```bash
+docker logs -f hrns-daemon
+# In another terminal
+curl http://localhost:3000/health
+```
+
+The image starts the HTTP server and includes Git. To execute orchestration jobs, provision the selected agent runner, its credentials, and the Harness Kit skills in the container environment. See the API examples below for submitting and monitoring jobs. The example binds the published port to localhost and uses the default unauthenticated mode. Configure `AUTH_MODE` when clients need authenticated access.
 
 ---
 
@@ -166,6 +185,8 @@ In HTTP daemon execution mode:
    - Pushes branch to remote origin (`git push origin <branch>`).
 3. **Resume**: Failed jobs keep their worktree and branch. Resume uses that state; successful jobs remove the worktree.
 
+Before deployment, the server archives the job's diagnostic session ledger and Project Dreaming episode and handoff JSON files when they exist. The archive stays under `<workspace>/.harness-kit/job-artifacts/<jobId>/` for manual inspection after worktree cleanup. If archival fails, the job reports `ARTIFACT_ARCHIVE_FAILED`, keeps the worktree, and can be resumed after the archive location is corrected.
+
 ---
 
 ## API Endpoints
@@ -206,15 +227,21 @@ curl -X POST http://localhost:3000/orchestrator/run \
 
 ### Resuming a Stopped or Failed Job (`POST /orchestrator/jobs/:id/resume`)
 
-If a job stops or fails, you can resume execution from the exact phase it stopped by calling:
+If a job stops or fails, the server uses the persisted state to resume it.
 
 ```bash
 curl -X POST http://localhost:3000/orchestrator/jobs/job-123-abc/resume \
   -H "Content-Type: application/json" \
   -d '{
-    "steeringMessage": "try adjusting test thresholds"
+    "steeringMessage": "Require manual approval for orders over $500."
   }'
 ```
+
+The resume request accepts only `steeringMessage`. When job status reports `REFINEMENT_REQUIRED`, provide a non-blank new `steeringMessage` containing the decision requested in the error. An absent or blank decision returns `400` with `REFINEMENT_DECISION_REQUIRED`. The resumed job uses the original preserved worktree and branch.
+
+When project memory fails or times out, the job reports `MEMORY_FAILED` and retains the worktree for a retry before deployment. During a running job, the status response may include a `progress.phase` such as `DEVELOPMENT`, `REVIEW`, `PROJECT_DREAMING`, `MEMORY`, or `DEPLOY`.
+
+The server passes Project Dreaming a deadline of at most 120 seconds, subject to the runner honoring cancellation. Provision `harness-kit:project-dreaming` for the selected runner in the deployment environment.
 
 ### Cleaning Old Jobs & Stale Worktrees (`DELETE /orchestrator/jobs/clean`)
 

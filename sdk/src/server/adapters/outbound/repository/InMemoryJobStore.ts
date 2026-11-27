@@ -74,6 +74,7 @@ export class InMemoryJobStore implements JobStoreRepository {
       !job.completedAt
     ) {
       job.completedAt = now
+      delete job.progress
     }
 
     if (error) {
@@ -81,6 +82,11 @@ export class InMemoryJobStore implements JobStoreRepository {
     }
 
     this.jobs.set(jobId, job)
+  }
+
+  async updateProgress(jobId: string, progress: NonNullable<OrchestrationJob['progress']>): Promise<void> {
+    const job = this.jobs.get(jobId)
+    if (job?.status === 'running') job.progress = { ...progress }
   }
 
   async listActive(): Promise<OrchestrationJob[]> {
