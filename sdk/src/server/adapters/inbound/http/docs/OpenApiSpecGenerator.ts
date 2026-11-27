@@ -947,7 +947,7 @@ export class OpenApiSpecGenerator {
               mode: { type: 'string', enum: ['fast'], default: 'fast', description: 'Execution mode is fixed to fast; interactive refinement and phase overrides are forbidden in HTTP mode' },
               action: { type: 'string', enum: ['reset', 'resume'], description: 'Execution action strategy (always "reset" on /orchestrator/run)' },
               reworks: { type: 'integer', default: 2, description: 'Maximum rework attempts (default 2)' },
-              score: { type: 'number', description: 'Minimum review score threshold' },
+              score: { type: 'number', minimum: 0.1, maximum: 1, default: 0.7, description: 'Minimum review score threshold' },
               steeringMessage: { type: 'string', description: 'Optional initial steering guidance message' },
               model: { type: 'string', description: 'Optional LLM model override string' },
               effort: { type: 'string', description: 'Optional effort/reasoning intensity level' },
