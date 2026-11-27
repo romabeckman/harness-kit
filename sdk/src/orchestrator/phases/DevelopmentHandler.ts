@@ -115,11 +115,6 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     if (output.success === false) throw new Error('Development agent failed before a verified TDD-OUTPUT.json was accepted.')
     const reported = readTddOutput(tddOutputPath)
     if (reported.featureId === activeFeature.id && reported.reworksCount !== activeFeature.reworks) {
-      context.fsm.appendDecision({
-        featureId: activeFeature.id,
-        decision: 'Development: corrected TDD-OUTPUT.json reworksCount mismatch',
-        rationale: `TDD-OUTPUT.json reported ${reported.reworksCount}, expected ${activeFeature.reworks}.`,
-      })
       const original = JSON.parse(readFileSync(tddOutputPath, 'utf8'))
       original.reworksCount = activeFeature.reworks
       const temporaryPath = `${tddOutputPath}.${randomUUID()}.tmp`
@@ -129,6 +124,11 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       } finally {
         rmSync(temporaryPath, { force: true })
       }
+      context.fsm.appendDecision({
+        featureId: activeFeature.id,
+        decision: 'Development: corrected TDD-OUTPUT.json reworksCount mismatch',
+        rationale: `TDD-OUTPUT.json reported ${reported.reworksCount}, expected ${activeFeature.reworks}.`,
+      })
     }
     const handoff = readCompletedTddOutput(tddOutputPath, activeFeature.id, activeFeature.reworks)
     context.dreaming?.recordDevelopment(activeFeature, handoff, chunkTasks, context.config.projectPaths, output.session?.id)

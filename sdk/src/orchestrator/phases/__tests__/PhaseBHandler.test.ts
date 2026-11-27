@@ -1,12 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, writeFileSync, existsSync, readFileSync, rmSync, renameSync } from 'node:fs'
 import { DevelopmentHandler } from '../DevelopmentHandler'
 import { Complexity, Phase } from '../../types'
 import type { Reviewontext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
 import type { Feature, Task, BootstrapConfig } from '../../../file-state/types'
+
+vi.mock('node:fs', async importOriginal => {
+  const fs = await importOriginal<typeof import('node:fs')>()
+  return { ...fs, renameSync: vi.fn(fs.renameSync) }
+})
 
 // Use a real temp dir per test so fs logic runs end-to-end on real files
 function makeTempDir(): string {
@@ -271,6 +276,28 @@ describe('DevelopmentHandler', () => {
         rationale: expect.stringContaining(`reported ${reported}, expected ${expected}`),
       }))
       expect(context.invokeAgent).toHaveBeenCalledOnce()
+    })
+
+    it('does not record a completed rework count correction when replacing TDD output fails', async () => {
+      const tddPath = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
+      const fsm = makeFsm()
+      const context = makeContext(workingDir, fsm, async () => {
+        writeFileSync(tddPath, JSON.stringify({
+          featureId: 'F001', status: 'SUCCESS',
+          metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 },
+          modifiedFiles: [], reworksCount: 1,
+        }))
+        return { success: true }
+      })
+      vi.mocked(renameSync).mockImplementationOnce(() => {
+        throw new Error('Unable to replace TDD output')
+      })
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).rejects.toThrow('Unable to replace TDD output')
+      expect(JSON.parse(readFileSync(tddPath, 'utf8'))).toMatchObject({ reworksCount: 1 })
+      expect(fsm.appendDecision).not.toHaveBeenCalledWith(expect.objectContaining({
+        decision: 'Development: corrected TDD-OUTPUT.json reworksCount mismatch',
+      }))
+      expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
     })
 
     it('keeps tasks incomplete when TDD output is absent', async () => {
