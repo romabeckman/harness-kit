@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { mkdirSync, writeFileSync, existsSync, readFileSync, rmSync, renameSync } from 'node:fs'
+import { mkdirSync, writeFileSync, existsSync, readFileSync, readdirSync, rmSync, renameSync } from 'node:fs'
 import { DevelopmentHandler } from '../DevelopmentHandler'
 import { DebugContext } from '../../../cli/DebugContext'
 import { Complexity, Phase } from '../../types'
@@ -152,15 +152,36 @@ describe('DevelopmentHandler', () => {
     if (debug) DebugContext.enable()
     const report = Buffer.from('\uFEFF{ malformed report', 'utf8')
     const path = join(workingDir, 'docs', 'specs', 'sdk_core', 'TDD-OUTPUT.json')
-    const snapshot = join(workingDir, 'docs', 'specs', 'sdk_core', '.debug', 'TDD-OUTPUT.json')
+    const snapshotDir = join(workingDir, 'docs', 'specs', 'sdk_core', '.debug')
     const context = makeContext(workingDir, makeFsm(), async () => {
       writeFileSync(path, report)
       return { success: true }
     })
 
     await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
-    expect(existsSync(snapshot)).toBe(debug)
-    if (debug) expect(readFileSync(snapshot)).toEqual(report)
+    expect(existsSync(snapshotDir)).toBe(debug)
+    if (debug) {
+      const files = readdirSync(snapshotDir)
+      expect(files).toHaveLength(1)
+      expect(files[0]).toMatch(/^TDD-OUTPUT-.*\.json$/)
+      expect(readFileSync(join(snapshotDir, files[0]))).toEqual(report)
+    }
+  })
+
+  it('keeps a distinct debug copy for each development attempt', async () => {
+    DebugContext.enable()
+    const specs = join(workingDir, 'docs', 'specs', 'sdk_core')
+    const reports = ['first attempt', 'second attempt']
+    const context = makeContext(workingDir, makeFsm(), async () => {
+      writeFileSync(join(specs, 'TDD-OUTPUT.json'), reports.shift()!)
+      return { success: true }
+    })
+    await handler.handle(Phase.DEVELOPMENT, context)
+    await handler.handle(Phase.DEVELOPMENT, context)
+    const directory = join(specs, '.debug')
+    const files = readdirSync(directory)
+    expect(files).toHaveLength(2)
+    expect(files.map(file => readFileSync(join(directory, file), 'utf8')).sort()).toEqual(['first attempt', 'second attempt'])
   })
 
   it('continues to review when the debug snapshot cannot be written', async () => {

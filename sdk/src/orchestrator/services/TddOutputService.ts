@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { DebugContext } from '../../cli/DebugContext'
 import type { Feature, Task } from '../../file-state/types'
@@ -32,7 +32,9 @@ export class TddOutputService {
     try {
       const directory = join(dirname(this.path), '.debug')
       mkdirSync(directory, { recursive: true })
-      copyFileSync(this.path, join(directory, 'TDD-OUTPUT.json'))
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const filename = `TDD-OUTPUT-${timestamp}-${randomUUID()}.json`
+      copyFileSync(this.path, join(directory, filename), constants.COPYFILE_EXCL)
     } catch (error) {
       console.warn('[debug] Could not preserve TDD-OUTPUT.json:', error)
     }
