@@ -1,4 +1,4 @@
-# Harness SDK HTTP Server
+﻿# Harness SDK HTTP Server
 
 This directory (`src/server/`) contains the headless, non-interactive HTTP daemon capability for `@romabeckman/hrns`. It allows external clients, CI/CD runners, and Docker containers to trigger and monitor autonomous TDD orchestration loops via RESTful APIs.
 
@@ -131,6 +131,25 @@ docker compose down
 
 ---
 
+## Workspace paths and project mappings
+
+`PROJECT_MAPPINGS` registers each project alias and its workspace path. When a request sends `"project": "cms"`, the server resolves that alias to its configured path. If `ALLOWED_WORKSPACES` contains paths, the project path must equal one of them or be inside it; otherwise the run is rejected with `WORKSPACE_NOT_ALLOWED`. An empty or unset `ALLOWED_WORKSPACES` does not apply this restriction.
+
+For a server running directly on Windows, for example:
+
+```env
+ALLOWED_WORKSPACES=C:/Projects/example-app
+PROJECT_MAPPINGS={"cms":{"path":"C:/Projects/example-app","baseBranch":"main"}}
+```
+
+A parent directory such as `C:/Projects` can also allow projects inside it. For Docker, use paths visible inside the container in both variables, and mount the host directory there. For example, if the CMS directory is mounted at `/workspaces/cms`, use:
+
+```env
+ALLOWED_WORKSPACES=/workspaces/cms
+PROJECT_MAPPINGS={"cms":{"path":"/workspaces/cms","baseBranch":"main"}}
+```
+
+---
 ## Authentication & Security Options
 
 Authentication is optional and configurable via the `AUTH_MODE` environment variable.
@@ -271,7 +290,7 @@ curl -X DELETE http://localhost:3000/orchestrator/jobs/clean \
 
 ## Non-Interactive Invariants
 
-> ⚠️ **Important Execution Constraints:**
+> âš ï¸ **Important Execution Constraints:**
 > - Refinement parameters (`refine` and `enableRefinement`) are **forbidden** in HTTP mode, including `false`. The server returns `HTTP 400 Bad Request`.
 > - Execution mode is fixed to **fast**. Omit `mode` or send `"fast"`; every other value returns `HTTP 400 Bad Request`. Validation and memory remain enabled; `skipValidation` and `skipMemory` overrides return `HTTP 400 Bad Request`.
 > - Parameter `project` is required and must contain at least 1 project identifier.
