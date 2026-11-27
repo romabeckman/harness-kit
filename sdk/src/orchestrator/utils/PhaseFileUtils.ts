@@ -66,7 +66,6 @@ export interface TddOutputSummary {
 
 export interface TddOutput {
   featureId: string
-  status: 'SUCCESS' | 'FAILED'
   metrics: {
     totalTests: number
     passed: number
@@ -139,7 +138,7 @@ export function readTddOutput(tddOutputPath: string): TddOutput {
 
   if (
     typeof candidate.featureId !== 'string'
-    || (candidate.status !== 'SUCCESS' && candidate.status !== 'FAILED')
+    || (candidate.status !== undefined && candidate.status !== 'SUCCESS' && candidate.status !== 'FAILED')
     || !validMetrics
     || !Array.isArray(candidate.modifiedFiles)
     || !candidate.modifiedFiles.every(file => typeof file === 'string')
@@ -173,8 +172,12 @@ export function readCompletedTddOutput(path: string, featureId: string, reworks:
   if (refinement) {
     throw new Error(`TDD-OUTPUT.json requires refinement for ${refinement.test_ref || refinement.orientation_id}: ${refinement.reason}`)
   }
-  if (output.status !== 'SUCCESS' || output.metrics.failed !== 0) {
-    throw new Error('TDD-OUTPUT.json must report SUCCESS with zero failed tests before review.')
+  // Legacy failed reports may be incomplete even when the tests they ran passed.
+  if ('status' in output && output.status === 'FAILED') {
+    throw new Error('The legacy TDD report indicates that execution was incomplete.')
+  }
+  if (output.metrics.failed !== 0) {
+    throw new Error('TDD-OUTPUT.json must report zero failed tests for task completion.')
   }
   const { passed, totalTests } = output.metrics
   if (!Number.isInteger(totalTests) || totalTests < 0 || passed !== totalTests ||
@@ -196,7 +199,7 @@ export function summarizeTddOutput(tddOutputPath: string): TddOutputSummary {
       : 'no modified files listed'
 
     return {
-      status: output.status,
+      status: ('status' in output && output.status === 'FAILED') || metrics.failed !== 0 ? 'FAILED' : 'REPORTED',
       rationale: `${metricStr}. ${files}. Reworks: ${output.reworksCount}.`,
     }
   } catch (err: any) {

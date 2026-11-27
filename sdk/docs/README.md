@@ -12,6 +12,7 @@ Index of project technical documentation for **harness-kit SDK**. Use links belo
 | [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Project architecture baseline. | **Mandatory** |
 | [**TESTS.md**](./adr/TESTS.md) | Testing tools and strategy baseline. | **Mandatory** |
 | [**AGENT-RUNNERS.md**](./adr/AGENT-RUNNERS.md) | Runner registration and adapter decisions. | Optional |
+| [**AGENT-SESSIONS.md**](./adr/AGENT-SESSIONS.md) | Agent session reuse and lifecycle. | Optional |
 | [**STATE-PERSISTENCE.md**](./adr/STATE-PERSISTENCE.md) | Product state persistence decisions. | Optional |
 | [**STEERING.md**](./adr/STEERING.md) | Runtime steering and rollback decisions. | Optional |
 | [**TELEMETRY.md**](./adr/TELEMETRY.md) | Token ledger and cost reporting decisions. | Optional |

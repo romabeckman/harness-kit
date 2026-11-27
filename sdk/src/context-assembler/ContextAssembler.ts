@@ -83,18 +83,21 @@ export class ContextAssembler {
       totalReworks: feature.reworks || 0,
       specsContent: loadDomainSpecsContent(specsDir),
     }
+    const tddOutputPath = join(specsDir, 'TDD-OUTPUT.json')
     try {
-      const tddOutput = readTddOutput(join(specsDir, 'TDD-OUTPUT.json'))
-      payload.developerHandoff = tddOutput.developerHandoff
-      payload.tddSummary = {
-        status: tddOutput.status,
-        metrics: tddOutput.metrics,
-        modifiedFiles: tddOutput.modifiedFiles,
-        reworksCount: tddOutput.reworksCount,
-        developerHandoff: tddOutput.developerHandoff,
+      const tddOutput = readTddOutput(tddOutputPath)
+      if (tddOutput.featureId === feature.id && tddOutput.reworksCount === payload.totalReworks) {
+        const handoff = tddOutput.developerHandoff
+        payload.developerHandoff = handoff && handoff.length <= 500 ? handoff : undefined
+        payload.tddSummary = {
+          metrics: tddOutput.metrics,
+          modifiedFiles: tddOutput.modifiedFiles,
+          reworksCount: tddOutput.reworksCount,
+          developerHandoff: payload.developerHandoff,
+        }
       }
     } catch {
-      // Development validation owns transition safety. Keep payload construction tolerant for direct callers.
+      // Review can proceed with specs and code when this handoff is unavailable.
     }
     const flattened = this.flattenRules(Phase.REVIEW, steeringRules)
     if (flattened) {

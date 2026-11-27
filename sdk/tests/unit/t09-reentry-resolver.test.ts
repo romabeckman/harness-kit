@@ -101,7 +101,7 @@ describe('T09 — ReentryResolver', () => {
     })
   })
 
-  it('returns DEVELOPMENT when tasks are complete but the TDD handoff is absent or invalid', () => {
+  it('returns REVIEW when tasks are complete and the TDD handoff is absent or invalid', () => {
     const state = makeState({
       specFilesPresent: true,
       tddOutputPresent: false,
@@ -109,7 +109,7 @@ describe('T09 — ReentryResolver', () => {
       tasks: [{ ...baseTask, status: 'COMPLETED' }],
       activeFeature: { ...baseFeature, status: 'IN_PROGRESS' },
     })
-    expect(ReentryResolver.resolve(state)).toBe(Phase.DEVELOPMENT)
+    expect(ReentryResolver.resolve(state)).toBe(Phase.REVIEW)
   })
 
   it('resumes a persisted REVIEW phase without a valid TDD handoff', () => {

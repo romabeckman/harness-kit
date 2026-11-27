@@ -194,8 +194,8 @@ describe('Settings Use Cases (Local Project Mode & Mandatory Identifier Rule)', 
 
       const result = await updateUseCase.execute(flatPayload)
       expect(result.project).toBe('backend')
-      expect(result.settings['antigravity']?.phases?.bootstrap?.model).toBe('gemini-3.8-flash')
-      expect(result.settings['antigravity']?.phases?.planning?.model).toBe('gemini-3.8-flash')
+      expect(result.settings['antigravity']?.phases?.bootstrap).toEqual({ model: 'gemini-4-neon', effort: 'medium' })
+      expect(result.settings['antigravity']?.phases?.planning).toEqual({ model: 'gemini-4-neon', effort: 'high' })
     })
 
     it('supports piped string in phases array (e.g. ["bootstrap|planning"])', async () => {

@@ -147,7 +147,7 @@ describe('DiagnoseService', () => {
       reworks: 0, scoreTL: null, scoreAdv: null, status: 'COMPLETED',
     }
     const output: TddOutput = {
-      featureId: feature.id, reworksCount: 0, status: 'SUCCESS', modifiedFiles: [],
+      featureId: feature.id, reworksCount: 0, modifiedFiles: [],
       metrics: { passed: 1, failed: 0, totalTests: 1, coverage: 100 },
       orientation_use: hasOrientation ? [{
         orientation_id: 'persisted-retry', revision: 1, feature: 'feature:recovery',
@@ -188,7 +188,7 @@ describe('DiagnoseService', () => {
 
   it('reports a legacy processed episode as unknown and allows explicit reanalysis', async () => {
     const feature: Feature = { id: 'F001', title: 'Recovery', domain: 'recovery', priority: 1, dependencies: [], reworks: 0, scoreTL: null, scoreAdv: null, status: 'COMPLETED' }
-    const output: TddOutput = { featureId: feature.id, reworksCount: 0, status: 'SUCCESS', modifiedFiles: [], metrics: { passed: 1, failed: 0, totalTests: 1, coverage: 100 } }
+    const output: TddOutput = { featureId: feature.id, reworksCount: 0, modifiedFiles: [], metrics: { passed: 1, failed: 0, totalTests: 1, coverage: 100 } }
     const store = new DreamingEpisodeStore(workspace, join(workspace, 'docs/product'))
     const session = pendingSessions[0]
     pendingSessions = [session]

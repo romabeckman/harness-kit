@@ -125,21 +125,24 @@ describe('ReviewHandler', () => {
     handler = new ReviewHandler()
     workingDir = makeTempDir()
     mkdirSync(join(workingDir, 'docs', 'specs', 'sdk_core'), { recursive: true })
-    writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }))
+    writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }))
   })
 
-  it('sends failed TDD output back for rework even when both reviewers approve', async () => {
+  it('accepts independent approval even when a legacy TDD output reported failure', async () => {
     const path = join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json')
     writeFileSync(path, JSON.stringify({ featureId: 'F001', status: 'FAILED', metrics: { totalTests: 46, passed: 46, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0, developerHandoff: 'T04 needs refinement' }))
     const fsm = makeFsm()
     const context = makeContext(workingDir, fsm, async () => ({ raw: JSON.stringify({ score: 0.95 }) }))
-    expect(await handler.handle(Phase.REVIEW, context)).toBe(Phase.DEVELOPMENT)
-    expect(fsm.writeReworkLog).toHaveBeenCalledWith('sdk_core', expect.stringContaining('T04 needs refinement'))
-    expect(fsm.updateAllFeatureTasks).not.toHaveBeenCalledWith('F001', '-', 'COMPLETED')
+    expect(await handler.handle(Phase.REVIEW, context)).toBe(Phase.TRANSITION)
+    for (const [invocation] of vi.mocked(context.invokeAgent).mock.calls) {
+      expect(invocation.prompt).not.toMatch(/Status: FAILED|TDD-OUTPUT\.json|TDD output requires review and correction/)
+    }
+    expect(fsm.writeReworkLog).not.toHaveBeenCalled()
+    expect(fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
   })
-  it.each(['missing', 'malformed', 'wrong feature', 'failed tests', 'counts', 'handoff', 'refinement'])('reviews and retries %s TDD output even when validation is skipped', async kind => {
+  it.each(['missing', 'malformed', 'wrong feature', 'failed tests', 'counts', 'handoff', 'refinement'])('allows independent review with %s TDD output', async kind => {
     const path = join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json')
-    const report: any = { featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }
+    const report: any = { featureId: 'F001', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }
     if (kind === 'wrong feature') report.featureId = 'F999'
     if (kind === 'failed tests') report.metrics.failed = 1
     if (kind === 'counts') report.metrics.passed = 0
@@ -148,11 +151,16 @@ describe('ReviewHandler', () => {
     if (kind === 'missing') { const { unlinkSync } = await import('node:fs'); unlinkSync(path) }
     else writeFileSync(path, kind === 'malformed' ? '{' : JSON.stringify(report))
     const fsm = makeFsm()
-    const context = makeContext(workingDir, fsm, async () => ({ raw: JSON.stringify({ score: 0.95 }) }), { skipValidation: true })
-    expect(await handler.handle(Phase.REVIEW, context)).toBe(Phase.DEVELOPMENT)
+    const context = makeContext(workingDir, fsm, async () => ({ raw: JSON.stringify({ score: 0.95 }) }))
+    expect(await handler.handle(Phase.REVIEW, context)).toBe(Phase.TRANSITION)
     expect(context.invokeAgent).toHaveBeenCalledTimes(2)
-    expect(fsm.writeReworkLog).toHaveBeenCalledWith('sdk_core', expect.stringContaining('TDD output requires correction'))
-    expect(fsm.updateAllFeatureTasks).not.toHaveBeenCalledWith('F001', '-', 'COMPLETED')
+    if (kind === 'missing' || kind === 'malformed') {
+      for (const [invocation] of vi.mocked(context.invokeAgent).mock.calls) {
+        expect(invocation.prompt).toContain(kind === 'missing' ? 'TDD-OUTPUT.json was not generated' : 'TDD-OUTPUT.json could not be read')
+      }
+    }
+    expect(fsm.writeReworkLog).not.toHaveBeenCalled()
+    expect(fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
   })
 
   it('delegates when phase is not REVIEW', async () => {
@@ -160,6 +168,16 @@ describe('ReviewHandler', () => {
     const context = makeContext(workingDir, fsm)
     const result = await handler.handle(Phase.PLANNING, context)
     expect(result).toBeNull()
+  })
+
+  it('returns to development when reviewers find issues and no handoff exists', async () => {
+    const { unlinkSync } = await import('node:fs')
+    unlinkSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'))
+    const fsm = makeFsm()
+    const context = makeContext(workingDir, fsm, async () => ({ raw: JSON.stringify({ score: 0.1, openPoints: ['Fix the failing scenario'] }) }))
+
+    await expect(handler.handle(Phase.REVIEW, context)).resolves.toBe(Phase.DEVELOPMENT)
+    expect(fsm.writeReworkLog).toHaveBeenCalledWith('sdk_core', expect.stringContaining('Fix the failing scenario'))
   })
 
   it.each([
@@ -174,7 +192,7 @@ describe('ReviewHandler', () => {
     const roots = ['server', 'web']
     const store = new DreamingEpisodeStore(workingDir, join(workingDir, 'docs/product'))
     const output: TddOutput = {
-      featureId: feature.id, status: 'SUCCESS', reworksCount: 0, modifiedFiles: [],
+      featureId: feature.id, reworksCount: 0, modifiedFiles: [],
       metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 },
     }
     for (const root of roots) mkdirSync(join(workingDir, root))
@@ -208,7 +226,7 @@ describe('ReviewHandler', () => {
     mkdirSync(root)
     writeFileSync(join(root, 'recovery.test.ts'), 'retains identity after restart')
     const task: Task = { featureId: feature.id, domain: feature.domain, taskId: 'T01', project: 'server', description: 'Recovery', status: 'IN_PROGRESS', currentPhase: 'IMPLEMENTATION' }
-    const output: TddOutput = { featureId: feature.id, status: 'SUCCESS', reworksCount: 0, modifiedFiles: ['recovery.test.ts'], metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 } }
+    const output: TddOutput = { featureId: feature.id, reworksCount: 0, modifiedFiles: ['recovery.test.ts'], metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 } }
     const store = new DreamingEpisodeStore(workingDir, join(workingDir, 'docs/product'))
     store.recordDevelopment(feature, output, [task], ['server'], 'development-session')
     store.recordReview(feature, output, 'RETRY', [], [{ project: 'server', path: 'recovery.test.ts', locator: 'retains identity after restart', summary: 'Recovery after restart' }])
@@ -240,7 +258,7 @@ describe('ReviewHandler', () => {
     mkdirSync(root)
     writeFileSync(join(root, 'recovery.test.ts'), 'preserves identity in the same service instance')
     const task: Task = { featureId: feature.id, domain: feature.domain, taskId: 'T01', project: 'server', description: 'Recovery', status: 'IN_PROGRESS', currentPhase: 'IMPLEMENTATION' }
-    const output: TddOutput = { featureId: feature.id, status: 'SUCCESS', reworksCount: 0, modifiedFiles: ['recovery.test.ts'], metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 } }
+    const output: TddOutput = { featureId: feature.id, reworksCount: 0, modifiedFiles: ['recovery.test.ts'], metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 } }
     const store = new DreamingEpisodeStore(workingDir, join(workingDir, 'docs/product'))
     store.recordDevelopment(feature, output, [task], ['server'], 'development-session')
     writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify(output))
@@ -325,7 +343,8 @@ describe('ReviewHandler', () => {
     expect(qaCall.prompt).toContain('navigation context only')
     expect(tlCall.prompt).toContain('<tdd_summary>')
     expect(qaCall.prompt).toContain('<tdd_summary>')
-    expect(tlCall.prompt).toContain('Status: SUCCESS')
+    expect(tlCall.prompt).not.toContain('Status: SUCCESS')
+    expect(qaCall.prompt).not.toContain('Status: SUCCESS')
     expect(tlCall.prompt).toContain('Tests: 2 total, 2 passed, 0 failed')
     expect(tlCall.prompt).toContain('Modified files: src/example.ts')
     expect(tlCall.prompt).toContain('<specification_provenance>')

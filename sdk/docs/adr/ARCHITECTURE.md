@@ -64,7 +64,7 @@ REQUIRED: Register runner strategies with `AgentRunnerRegistry`; instantiate the
 REQUIRED: Propagate `AbortSignal` into child processes and SDK requests.
 REQUIRED: Mutate persistent state through `IFileStateManager` using atomic temporary-file replacement.
 REQUIRED: Validate changes in order: `rtk npm install`, lint, build, typecheck, then tests.
-REQUIRED: Track and isolate agent sessions across phases using `DeveloperSessionState` with mandatory `phase` tag; resume Development and Review sessions on retries and clear all sessions on feature transition.
+REQUIRED: Track agent sessions across phases as described in [AGENT-SESSIONS.md](./AGENT-SESSIONS.md).
 REQUIRED: Select the outer agent runner explicitly for QA; keep QA phase decisions independent of provider-specific sub-agents.
 
 ### PROHIBITED

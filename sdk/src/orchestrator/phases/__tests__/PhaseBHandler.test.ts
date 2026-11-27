@@ -261,6 +261,7 @@ describe('DevelopmentHandler', () => {
       expect(result).toBe(Phase.REVIEW)
       expect(context.invokeAgent).toHaveBeenCalledTimes(1)
       expect(fsm.updateTaskStatus).toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+      expect(JSON.parse(readFileSync(tddPath, 'utf8'))).not.toHaveProperty('status')
       const invokeCall = (context.invokeAgent as any).mock.calls[0][0]
       expect(invokeCall.prompt).toContain('"developerHandoff"')
       expect(invokeCall.prompt).toContain('maximum 500 characters')
@@ -303,7 +304,7 @@ describe('DevelopmentHandler', () => {
       vi.mocked(renameSync).mockImplementationOnce(() => {
         throw new Error('Unable to replace TDD output')
       })
-      await expect(handler.handle(Phase.DEVELOPMENT, context)).rejects.toThrow('Unable to replace TDD output')
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
       expect(JSON.parse(readFileSync(tddPath, 'utf8'))).toMatchObject({ reworksCount: 1 })
       expect(fsm.appendDecision).not.toHaveBeenCalledWith(expect.objectContaining({
         decision: 'Development: corrected TDD-OUTPUT.json reworksCount mismatch',
@@ -316,6 +317,23 @@ describe('DevelopmentHandler', () => {
       const context = makeContext(workingDir, fsm)
 
       await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
+      expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
+    })
+
+    it('resumes review without invoking development when all tasks are already complete and the report is missing', async () => {
+      const fsm = makeFsm({ loadDevelopmentState: vi.fn().mockReturnValue([makeTask({ status: 'COMPLETED' })]) })
+      const context = makeContext(workingDir, fsm)
+
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
+      expect(context.invokeAgent).not.toHaveBeenCalled()
+    })
+
+    it('advances to review when the development runner returns an unsuccessful result without a report', async () => {
+      const fsm = makeFsm()
+      const context = makeContext(workingDir, fsm, async () => ({ success: false, raw: '' }))
+
+      await expect(handler.handle(Phase.DEVELOPMENT, context)).resolves.toBe(Phase.REVIEW)
+      expect(context.invokeAgent).toHaveBeenCalledOnce()
       expect(fsm.updateTaskStatus).not.toHaveBeenCalledWith('F001', 'T01', '-', 'COMPLETED')
     })
 
@@ -389,7 +407,7 @@ describe('DevelopmentHandler', () => {
       expect(invokeCall.prompt).toContain('<development_specifications>')
       expect(invokeCall.prompt).toContain('<tasks>')
       expect(invokeCall.prompt).toContain('[T01] [sdk] Do something')
-      expect(invokeCall.prompt).toContain('"status": "SUCCESS"')
+      expect(invokeCall.prompt.match(/<expected_output>([\s\S]*?)<\/expected_output>/)?.[1]).not.toMatch(/\bstatus\b/i)
       expect(invokeCall.prompt).toContain('"developerHandoff"')
       expect(invokeCall.prompt).toContain('maximum 500 characters')
       expect(invokeCall.prompt).not.toContain('"SUCCESS" | "FAILED"')

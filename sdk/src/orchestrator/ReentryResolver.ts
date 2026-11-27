@@ -9,8 +9,8 @@ import type { OnDiskState } from './types'
  * 1. No product files → BOOTSTRAP
  * 2. Active feature dependency is BLOCKED → CASCADE_BLOCKED
  * 3. Active feature in terminal status (COMPLETED/BLOCKED/FAILED) → TRANSITION
- * 4. Valid TDD-OUTPUT present AND all tasks COMPLETED → REVIEW
- * 5. Ready spec files without a valid handoff → DEVELOPMENT
+ * 4. All active feature tasks COMPLETED → REVIEW
+ * 5. Ready spec files with unfinished tasks → DEVELOPMENT
  * 6. No active feature or feature NOT_STARTED with no specs → PLANNING
  * 7. Fallback → BOOTSTRAP
  */
@@ -52,13 +52,13 @@ export class ReentryResolver {
     // 3. A terminal feature still needs TRANSITION even when old specs and output remain.
     if (terminalFeature) return Phase.TRANSITION
 
-    // 4. A valid TDD handoff AND all tasks COMPLETED → REVIEW
-    if (state.tddOutputPresent && state.allTasksCompleted) {
+    // 4. Completed tasks are ready for review even when the handoff is unavailable.
+    if (state.allTasksCompleted) {
       return Phase.REVIEW
     }
 
-    // 5. Ready specs without a valid completed handoff → DEVELOPMENT
-    if (state.specFilesPresent && (!state.allTasksCompleted || !state.tddOutputPresent)) {
+    // 5. Ready specs with unfinished tasks → DEVELOPMENT
+    if (state.specFilesPresent) {
       return Phase.DEVELOPMENT
     }
 

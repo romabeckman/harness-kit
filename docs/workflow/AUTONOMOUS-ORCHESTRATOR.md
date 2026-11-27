@@ -87,7 +87,7 @@ This planning contract still applies inside the autonomous loop even though refi
 
 - Mark all pending feature tasks `IN_PROGRESS`.
 - Delegate all pending tasks together through `tdd-orchestrator`.
-- In the SDK, record `TDD-OUTPUT.json` validation problems in `DECISIONS.md` and send the attempt to review. Missing, corrupt, mismatched, or failed output keeps affected tasks non-complete. A completed output must match the feature and rework attempt, report `SUCCESS` and zero failed tests, and have a `developerHandoff` of at most 500 characters.
+- In the SDK, Development must generate `TDD-OUTPUT.json`. The SDK records handoff problems in `DECISIONS.md` and sends the attempt to Review with the available evidence. A matching, verified report can complete tasks during Development. Otherwise Review determines their outcome.
 - Route unexpected test failures through `developer-debugging` before a fix attempt.
 
 ### PHASE C: REVIEW
@@ -97,7 +97,7 @@ This planning contract still applies inside the autonomous loop even though refi
 - Compare scores with `scoreThresholdTL` and `scoreThresholdAdv`.
 - Treat demonstrated HIGH/CRITICAL vulnerabilities and crashes as gate failures regardless of score.
 
-The SDK reviews incomplete attempts as well as completed ones. An invalid TDD output prevents acceptance, including when validation skipping is configured; review requests rework while budget remains or records a terminal verdict when exhausted. Pass a matching developer handoff as navigation context; both reviewers verify it independently. Review reports live under `docs/specs/{domain}/`; if report files are unavailable or corrupt, the skill attempts JSON extraction from reviewer output. That fallback still needs valid evidence for the active feature.
+The SDK reviews incomplete attempts as well as completed ones. Reviewers receive matching test and file facts or a notice that the development report is unavailable. They independently verify the work and their verdict determines acceptance or rework. Review reports live under `docs/specs/{domain}/`. If those files are unavailable or corrupt, the SDK attempts JSON extraction from reviewer output.
 
 Verdicts:
 

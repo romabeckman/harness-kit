@@ -235,7 +235,7 @@ inputs:
   // IF RETRY: also pass docs/specs/{domain}/REWORK-LOG.md
 ```
 
-**B3. Verify:** Wait for `docs/specs/{domain}/TDD-OUTPUT.json`. Require matching `featureId`, `status = "SUCCESS"`, zero failed tests, and a `developerHandoff` of at most 500 characters before marking all pending feature tasks `COMPLETED`. Missing, corrupt, mismatched, or failed output must not advance to Phase C; log the evidence and keep affected tasks non-complete. Pass `developerHandoff` to both Phase C reviewers as navigation context; reviewers must independently verify it. Before transient output is removed, preserve the project, feature, tasks, attempt and session identifiers and available test, event, decision and result locators for learning review. Identify unavailable or ambiguous project ownership rather than assigning a source to the wrong project.
+**B3. Verify:** Wait for `docs/specs/{domain}/TDD-OUTPUT.json`. Before marking pending tasks `COMPLETED`, require a matching `featureId` and `reworksCount`, a non-negative integer `metrics.totalTests` equal to `metrics.passed`, zero failed tests, no `needs_refinement` decisions, and a `developerHandoff` of at most 500 characters. Earlier reports that explicitly record incomplete execution still prevent task completion. Missing, corrupt, mismatched, or incomplete output keeps affected tasks incomplete and prevents advancing to Phase C. Pass the factual `developerHandoff` to both Phase C reviewers as navigation context for independent verification. Before removing transient output, preserve the project, feature, tasks, attempt and session identifiers and available test, event, decision and result locators for learning review. Record unavailable or ambiguous project ownership.
 
 </phase>
 

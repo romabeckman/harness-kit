@@ -1,107 +1,113 @@
+
 import type { HarnessSettingsMap } from "./SettingsSchema";
 
-/** Default per-invocation timeout (ms) used when neither config nor harness.config.json define one. */
+/** Default per-invocation timeout (ms). */
 export const DEFAULT_PHASE_TIMEOUT_MS = 3_600_000; // 60 minutes
 export const DEFAULT_WAIT_TIMEOUT_MS = 60_000; // 60 seconds
 
 /**
- * Model versions verified against official catalogs on 2026-11-03:
+ * Model catalogs checked on 2026-11-27:
  * https://platform.claude.com/docs/en/models/overview
- * https://ai.google.dev/gemini-api/docs/models
- * https://developers.openai.com/codex/models
+ * https://antigravity.google/docs/models
+ * https://developers.openai.com/api/docs/models
  * https://docs.github.com/en/copilot/reference/ai-models/supported-models
  * https://cursor.com/docs/models-and-pricing
- * Keep each phase's model line and effort when updating versions.
+ *
+ * Model allocation strategy:
+ * - Low-cost models for operational and implementation tasks.
+ * - Balanced models for planning, review and critical analysis.
+ * - Reasoning effort proportional to phase complexity.
+ * - Premium models excluded from default settings.
  */
 export const DEFAULT_SETTINGS: HarnessSettingsMap = {
   claude: {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: "claude-haiku-5-5", effort: "high" },
-      planning: { model: "claude-opus-5-5", effort: "medium" },
-      refinement_questions: { model: "claude-sonnet-5-5", effort: "low" },
-      refinement_consolidation: { model: "claude-sonnet-5-5", effort: "low" },
+      bootstrap: { model: "claude-sonnet-5-5", effort: "medium" },
+      planning: { model: "claude-sonnet-5-5", effort: "high" },
+      refinement_questions: { model: "claude-haiku-5-5", effort: "high" },
+      refinement_consolidation: { model: "claude-sonnet-5-5", effort: "high" },
       implementation: { model: "claude-haiku-5-5", effort: "high" },
-      review_tl: { model: "claude-opus-5-5", effort: "low" },
-      review_adv: { model: "claude-opus-5-5", effort: "low" },
+      review_tl: { model: "claude-haiku-5-5", effort: "high" },
+      review_adv: { model: "claude-sonnet-5-5", effort: "medium" },
       memory: { model: "claude-haiku-5-5", effort: "high" },
-      deploy_message: { model: "claude-haiku-5-5", effort: "medium" },
-      diagnose: { model: "claude-haiku-5-5", effort: "high" },
+      deploy_message: { model: "claude-haiku-5-5", effort: "high" },
+      diagnose: { model: "claude-sonnet-5-5", effort: "medium" },
       qa_planning: { model: "claude-haiku-5-5", effort: "high" },
-      qa_analysis: { model: "claude-haiku-5-5", effort: "high" },
-      qa_reporting: { model: "claude-haiku-5-5", effort: "medium" },
+      qa_analysis: { model: "claude-sonnet-5-5", effort: "medium" },
+      qa_reporting: { model: "claude-haiku-5-5", effort: "high" },
     },
   },
   antigravity: {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: "gemini-3.8-flash", effort: "medium" },
-      planning: { model: "gemini-3.8-flash", effort: "high" },
-      refinement_questions: { model: "gemini-3.8-flash", effort: "low" },
-      refinement_consolidation: { model: "gemini-3.8-flash", effort: "low" },
-      implementation: { model: "gemini-3.8-flash", effort: "medium" },
-      review_tl: { model: "gemini-3.8-flash", effort: "low" },
-      review_adv: { model: "gemini-3.8-flash", effort: "low" },
-      memory: { model: "gemini-3.8-flash", effort: "low" },
-      deploy_message: { model: "gemini-3.8-flash", effort: "low" },
-      diagnose: { model: "gemini-3.8-flash", effort: "low" },
-      qa_planning: { model: "gemini-3.8-flash", effort: "medium" },
-      qa_analysis: { model: "gemini-3.8-flash", effort: "medium" },
-      qa_reporting: { model: "gemini-3.8-flash", effort: "low" },
+      bootstrap: { model: "gemini-4-neon", effort: "medium" },
+      planning: { model: "gemini-4-neon", effort: "high" },
+      refinement_questions: { model: "gemini-4-hydrogen", effort: "medium" },
+      refinement_consolidation: { model: "gemini-4-hydrogen", effort: "high" },
+      implementation: { model: "gemini-4-hydrogen", effort: "high" },
+      review_tl: { model: "gemini-4-neon", effort: "medium" },
+      review_adv: { model: "gemini-4-neon", effort: "high" },
+      memory: { model: "gemini-4-hydrogen", effort: "medium" },
+      deploy_message: { model: "gemini-4-hydrogen", effort: "low" },
+      diagnose: { model: "gemini-4-neon", effort: "medium" },
+      qa_planning: { model: "gemini-4-hydrogen", effort: "high" },
+      qa_analysis: { model: "gemini-4-neon", effort: "medium" },
+      qa_reporting: { model: "gemini-4-hydrogen", effort: "low" },
     },
   },
   copilot: {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: "gpt-6.2-sol", effort: "low" },
-      planning: { model: "gpt-6.2-sol", effort: "medium" },
-      refinement_questions: { model: "gpt-6.2-sol", effort: "medium" },
+      bootstrap: { model: "gpt-6.1-terra", effort: "medium" },
+      planning: { model: "gpt-6.1-terra", effort: "high" },
+      refinement_questions: { model: "gpt-6.1-terra", effort: "high" },
       refinement_consolidation: { model: "gpt-6.1-terra", effort: "medium" },
       implementation: { model: "gpt-6.1-terra", effort: "high" },
-      review_tl: { model: "gpt-6.2-sol", effort: "low" },
-      review_adv: { model: "gpt-6.2-sol", effort: "low" },
-      memory: { model: "gpt-6.1-terra", effort: "medium" },
-      deploy_message: { model: "gpt-6-luna", effort: "xhigh" },
-      diagnose: { model: "gpt-6.1-terra", effort: "high" },
+      review_tl: { model: "gpt-6.2-sol", effort: "medium" },
+      review_adv: { model: "gpt-6.2-sol", effort: "medium" },
+      memory: { model: "gpt-6-luna", effort: "xhigh" },
+      deploy_message: { model: "gpt-6-luna", effort: "high" },
+      diagnose: { model: "gpt-6.2-sol", effort: "medium" },
       qa_planning: { model: "gpt-6.1-terra", effort: "high" },
       qa_analysis: { model: "gpt-6.1-terra", effort: "high" },
-      qa_reporting: { model: "gpt-6-luna", effort: "xhigh" },
+      qa_reporting: { model: "gpt-6-luna", effort: "high" },
     },
   },
   cursor: {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: "claude-haiku-5-5", effort: "high" },
-      planning: { model: "claude-opus-5-5", effort: "medium" },
-      refinement_questions: { model: "claude-sonnet-5-5", effort: "low" },
-      refinement_consolidation: { model: "claude-sonnet-5-5", effort: "low" },
+      bootstrap: { model: "claude-sonnet-5-5", effort: "medium" },
+      planning: { model: "claude-sonnet-5-5", effort: "high" },
+      refinement_questions: { model: "claude-haiku-5-5", effort: "high" },
+      refinement_consolidation: { model: "claude-sonnet-5-5", effort: "high" },
       implementation: { model: "claude-haiku-5-5", effort: "high" },
-      review_tl: { model: "claude-opus-5-5", effort: "low" },
-      review_adv: { model: "claude-opus-5-5", effort: "low" },
+      review_tl: { model: "claude-haiku-5-5", effort: "high" },
+      review_adv: { model: "claude-sonnet-5-5", effort: "medium" },
       memory: { model: "claude-haiku-5-5", effort: "high" },
-      deploy_message: { model: "claude-haiku-5-5", effort: "medium" },
-      diagnose: { model: "claude-haiku-5-5", effort: "high" },
+      deploy_message: { model: "claude-haiku-5-5", effort: "high" },
+      diagnose: { model: "claude-sonnet-5-5", effort: "medium" },
       qa_planning: { model: "claude-haiku-5-5", effort: "high" },
-      qa_analysis: { model: "claude-haiku-5-5", effort: "high" },
-      qa_reporting: { model: "claude-haiku-5-5", effort: "medium" },
+      qa_analysis: { model: "claude-sonnet-5-5", effort: "medium" },
+      qa_reporting: { model: "claude-haiku-5-5", effort: "high" },
     },
   },
   codex: {
     timeoutMs: DEFAULT_PHASE_TIMEOUT_MS,
     phases: {
-      bootstrap: { model: "gpt-6.2-sol", effort: "low" },
-      planning: { model: "gpt-6.2-sol", effort: "medium" },
-      refinement_questions: { model: "gpt-6.2-sol", effort: "medium" },
+      bootstrap: { model: "gpt-6.1-terra", effort: "medium" },
+      planning: { model: "gpt-6.1-terra", effort: "high" },
+      refinement_questions: { model: "gpt-6.1-terra", effort: "high" },
       refinement_consolidation: { model: "gpt-6.1-terra", effort: "medium" },
       implementation: { model: "gpt-6.1-terra", effort: "high" },
-      review_tl: { model: "gpt-6.2-sol", effort: "low" },
-      review_adv: { model: "gpt-6.2-sol", effort: "low" },
-      memory: { model: "gpt-6.1-terra", effort: "medium" },
-      deploy_message: { model: "gpt-6-luna", effort: "xhigh" },
-      diagnose: { model: "gpt-6.1-terra", effort: "high" },
+      review_tl: { model: "gpt-6.2-sol", effort: "medium" },
+      review_adv: { model: "gpt-6.2-sol", effort: "medium" },
+      memory: { model: "gpt-6-luna", effort: "xhigh" },
+      deploy_message: { model: "gpt-6-luna", effort: "high" },
+      diagnose: { model: "gpt-6.2-sol", effort: "medium" },
       qa_planning: { model: "gpt-6.1-terra", effort: "high" },
       qa_analysis: { model: "gpt-6.1-terra", effort: "high" },
-      qa_reporting: { model: "gpt-6-luna", effort: "xhigh" },
+      qa_reporting: { model: "gpt-6-luna", effort: "high" },
     },
   },
 };

@@ -20,7 +20,7 @@ describe('DreamingEpisodeStore', () => {
     description: 'Verify recovery', status: 'IN_PROGRESS', currentPhase: 'IMPLEMENTATION',
   }
   const output: TddOutput = {
-    featureId: feature.id, reworksCount: 0, status: 'SUCCESS', modifiedFiles: ['retry.test.ts'],
+    featureId: feature.id, reworksCount: 0, modifiedFiles: ['retry.test.ts'],
     metrics: { passed: 1, totalTests: 1, failed: 0, coverage: 100 },
     orientation_use: [{
       orientation_id: 'persisted-retry', revision: 1, feature: 'feature:recovery', project: 'sdk',

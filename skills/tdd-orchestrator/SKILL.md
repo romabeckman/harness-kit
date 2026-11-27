@@ -205,7 +205,6 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 ```json
 {
   "featureId": "string",
-  "status": "SUCCESS",
   "metrics": {
     "totalTests": 0,
     "passed": 0,
@@ -220,7 +219,7 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 }
 ```
 
-`status` must be either `"SUCCESS"` or `"FAILED"`. Write `"SUCCESS"` only after the requested work is complete and the final test run has zero failures. If a required scenario is pending refinement, keep that task incomplete and report `"FAILED"` if writing an output.
+Report the actual counts from the final test run. If work remains incomplete and the report would show zero failed tests, write it only to record an applicable `needs_refinement` decision. Otherwise record the blocker in the session. Keep any affected tasks incomplete and identify their scenarios and missing decisions.
 
 Preserve the project, feature, task, attempt, and session identifiers and available test, decision, and execution locators for independent review. Preserve this evidence for every attempt, including those without a highlighted learning signal. Include an observed signal and consequence when available. Cite the underlying sources so the reviewer can verify the evidence independently.
 

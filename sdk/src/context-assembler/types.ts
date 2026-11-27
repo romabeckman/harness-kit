@@ -43,7 +43,6 @@ export interface ReviewPayload extends ContextPayload {
   projectPaths: string[]
   developerHandoff?: string
   tddSummary?: {
-    status: 'SUCCESS' | 'FAILED'
     metrics: {
       totalTests: number
       passed: number

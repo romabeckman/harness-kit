@@ -56,7 +56,7 @@ After forming your independent verdict, you may include an optional `learning_ev
 </expected_output>
 
 <spec_sources>
-- Development log: `{{specsDir2}}/TDD-OUTPUT.json` or `git status -s` to list all modified files in each project.
+- Use `git status -s` to list all modified files in each project.
 {{*tddSummary}}
 {{*specificationProvenance}}
 <development_handoff>
