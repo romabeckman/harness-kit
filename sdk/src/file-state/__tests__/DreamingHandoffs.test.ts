@@ -65,6 +65,16 @@ describe('DreamingHandoffs', () => {
     expect(registry.pending()).toEqual([])
   })
 
+  it('keeps conflicting publication and withdrawal pending', () => {
+    const withdrawal = join(queue, 'withdraw.json')
+    writeFileSync(withdrawal, JSON.stringify({ status: 'ready', project: '.', handoff: {
+      ...handoff, operation: 'withdraw', orientation: undefined, expected_published_revision: 1,
+    } }))
+    expect(registry.pending()).toEqual([])
+    expect(status()).toBe('ready')
+    expect(JSON.parse(readFileSync(withdrawal, 'utf8')).status).toBe('ready')
+  })
+
   it('recognizes previously published guidance under the legacy heading', () => {
     writeFeature([orientation])
     const path = join(root, owner)

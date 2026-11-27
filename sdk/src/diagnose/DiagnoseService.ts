@@ -208,7 +208,7 @@ export class DiagnoseService {
           reservedTraceIds.add(traceId)
           this.ledger.append({ ...session, traceId })
         }
-        const output = await this.agentAdapter.invoke(session, traceId, settings)
+        const output = await this.agentAdapter.invoke(session, traceId, settings, [...traceIds])
         if (output.success === false) {
           throw new Error(`Runner failed to record trace ${traceId}`)
         }

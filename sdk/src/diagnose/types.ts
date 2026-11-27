@@ -86,7 +86,7 @@ export interface ITraceDirectoryScanner {
 }
 
 export interface IMetaHarnessAgentAdapter {
-  invoke(session: DiagnoseSessionRecord, preComputedId: string, settings?: DiagnoseSettings): Promise<AgentOutput>
+  invoke(session: DiagnoseSessionRecord, preComputedId: string, settings?: DiagnoseSettings, verifiedBatchTraceIds?: readonly string[]): Promise<AgentOutput>
   invokeMetaHarness?(session: DiagnoseSessionRecord, settings?: DiagnoseSettings, recordedSkills?: readonly string[], sessions?: readonly DiagnoseSessionRecord[]): Promise<AgentOutput>
   invokeProjectDreaming?(
     episode: DreamingEpisode, project: DreamingProject, sessions: DiagnoseSessionRecord[],

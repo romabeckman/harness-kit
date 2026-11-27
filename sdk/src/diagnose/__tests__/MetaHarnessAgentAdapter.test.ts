@@ -70,6 +70,19 @@ describe('MetaHarnessAgentAdapter', () => {
     expect((await adapter.invokeProjectDreaming(episode, project, [session])).success).toBe(true)
   })
 
+  it('preserves a valid legacy Dreaming receipt for downstream verification', async () => {
+    const session = { ...sampleRecord, traceId: 'session-2026-08-15-001', status: 'completed' as const }
+    const project = { root: workingDir, taskIds: ['T01'] }
+    const episode: DreamingEpisode = { id: 'episode-1', capturedAt: session.timestamp, featureId: 'F001', domain: 'retry', reworks: 0, handoffDigest: 'digest', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 }, sourceSessions: [session.sessionId], projects: [project], review: 'PASS', closed: true }
+    writeTrace(workingDir, session.traceId, session.sessionId)
+    const dir = join(workingDir, 'docs', 'harness-history', 'learning', 'active')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'legacy.md'), '## Origin evidence\nepisode-1\n')
+    const raw = JSON.stringify({ episode_id: episode.id, status: 'recorded', hypothesis_id: 'legacy' })
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run: vi.fn().mockResolvedValue({ success: true, raw }) }, workingDir })
+    expect(await adapter.invokeProjectDreaming(episode, project, [session])).toMatchObject({ success: true, raw })
+  })
+
   it('rejects a trace without source identity or task outcome', async () => {
     const traceId = 'session-2026-08-15-001'
     const traceDir = join(workingDir, 'docs', 'harness-history', 'traces', traceId)
@@ -148,6 +161,21 @@ describe('MetaHarnessAgentAdapter', () => {
 
     expect(run).toHaveBeenCalledTimes(2)
     expect(run).toHaveBeenNthCalledWith(2, expect.objectContaining({ skill: 'harness-kit:harness-evaluator' }))
+  })
+
+  it('evaluates when the fifth verified trace is reached within a batch', async () => {
+    const records = Array.from({ length: 6 }, (_, i) => ({ ...sampleRecord, phase: 'DEVELOPMENT', sessionId: `source-${i + 1}`, traceId: `session-2026-08-15-00${i + 1}`, status: (i < 3 ? 'completed' : 'pending') as 'completed' | 'pending' }))
+    const ledgerDir = join(workingDir, 'docs', 'product')
+    mkdirSync(ledgerDir, { recursive: true })
+    writeFileSync(join(ledgerDir, 'diagnose-sessions.jsonl'), records.map(record => JSON.stringify(record)).join('\n'))
+    for (const record of records.slice(0, 4)) writeTrace(workingDir, record.traceId, record.sessionId)
+    const run = vi.fn(async (invocation: any) => {
+      if (invocation.skill !== 'harness-kit:harness-evaluator') writeTrace(workingDir, records[4].traceId, records[4].sessionId)
+      return { success: true, raw: 'ok' }
+    })
+    const adapter = new MetaHarnessAgentAdapter({ agentRunner: { run }, workingDir })
+    await adapter.invoke(records[4], records[4].traceId, undefined, [records[3].traceId])
+    expect(run.mock.calls.filter(([call]) => call.skill === 'harness-kit:harness-evaluator')).toHaveLength(1)
   })
 
   it('does not invoke the proposer with fewer than three complete traces', async () => {

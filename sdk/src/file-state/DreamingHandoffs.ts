@@ -127,6 +127,16 @@ export class DreamingHandoffs {
       return []
     }
     const roots = new Set((this.roots.length ? this.roots : ['.']).map(root => resolve(this.workingDir, root)))
+    const keys = new Map<string, number>()
+    for (const name of names.filter(name => name.endsWith('.json'))) {
+      try {
+        const envelope = JSON.parse(readFileSync(join(this.directory, name), 'utf8'))
+        if (envelope.status !== 'ready' || !hasText(envelope.project) || !isHandoff(envelope.handoff)) continue
+        const handoff: Handoff = envelope.handoff
+        const key = JSON.stringify([resolve(this.workingDir, envelope.project), handoff.feature_node_id, handoff.destination, handoff.hypothesis_id])
+        keys.set(key, (keys.get(key) ?? 0) + 1)
+      } catch { /* Invalid envelopes are reported below. */ }
+    }
     return names.filter(name => name.endsWith('.json')).flatMap(name => {
       try {
         const file = join(this.directory, name)
@@ -137,6 +147,8 @@ export class DreamingHandoffs {
         const project = resolve(this.workingDir, envelope.project)
         const handoff: Handoff = envelope.handoff
         if (!roots.has(project)) throw new Error('Unknown owning project.')
+        const key = JSON.stringify([project, handoff.feature_node_id, handoff.destination, handoff.hypothesis_id])
+        if ((keys.get(key) ?? 0) > 1) throw new Error('Conflicting pending handoffs for the same orientation.')
         const sources = [...handoff.evidence.sources, ...((handoff.orientation?.sources as unknown[]) ?? [])]
         if (!sources.every(source => sourceMatches(project, source))) throw new Error('Unresolved handoff evidence.')
         const entry = { file, original, project, handoff }

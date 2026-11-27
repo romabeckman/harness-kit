@@ -235,13 +235,15 @@ describe('DiagnoseService', () => {
       1,
       expect.objectContaining({ sessionId: 'session-2026-08-15-001' }),
       'session-2026-08-15-001',
-      { model: 'claude-sonnet-5', effort: 'high' }
+      { model: 'claude-sonnet-5', effort: 'high' },
+      []
     )
     expect(mockAdapter.invoke).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ sessionId: 'session-2026-08-15-002' }),
       'session-2026-08-15-002',
-      { model: 'gemini-3.8-flash', effort: 'low' }
+      { model: 'gemini-3.8-flash', effort: 'low' },
+      ['session-2026-08-15-001']
     )
   })
 
@@ -322,7 +324,7 @@ describe('DiagnoseService', () => {
     await service.processNextBatch(1)
 
     expect(mockAdapter.invoke).toHaveBeenCalledWith(
-      expect.objectContaining({ sessionId: pendingSessions[0].sessionId }), traceId, expect.anything(),
+      expect.objectContaining({ sessionId: pendingSessions[0].sessionId }), traceId, expect.anything(), [],
     )
   })
 

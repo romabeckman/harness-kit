@@ -6,6 +6,7 @@ import {
   listSpecFiles,
   listDocFiles,
   readTddOutput,
+  readCompletedTddOutput,
   summarizeTddOutput,
   getProductDir,
   getPlanningSource,
@@ -98,6 +99,12 @@ describe('PhaseFileUtils', () => {
   // ─── readTddOutput ────────────────────────────────────────────────────────
 
   describe('readTddOutput', () => {
+    it('preserves a valid refinement decision beside malformed entries', () => {
+      const path = join(tmpDir, 'TDD-OUTPUT.json')
+      writeFileSync(path, JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 }, modifiedFiles: [], reworksCount: 0, orientation_use: [{ orientation_id: 'decision', revision: 1, feature: 'feature:core', decision: 'needs_refinement', reason: 'Business decision required' }, { invalid: true }] }))
+      expect(() => readCompletedTddOutput(path, 'F001', 0)).toThrow('requires refinement')
+    })
+
     it('throws when file does not exist', () => {
       expect(() => readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))).toThrow('not found')
     })

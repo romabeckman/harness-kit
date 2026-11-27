@@ -152,8 +152,9 @@ export function readTddOutput(tddOutputPath: string): TddOutput {
 
   const { orientation_use: orientationUse, ...output } = candidate
   if (orientationUse !== undefined) {
-    if (Array.isArray(orientationUse) && orientationUse.every(isOrientationUse)) {
-      output.orientation_use = orientationUse.map(({ orientation_id, revision, feature, decision, reason, test_ref, project }) => ({
+    if (Array.isArray(orientationUse)) {
+      if (!orientationUse.every(isOrientationUse)) console.warn('[TDD-OUTPUT] Invalid optional orientation_use entries ignored.')
+      output.orientation_use = orientationUse.filter(isOrientationUse).map(({ orientation_id, revision, feature, decision, reason, test_ref, project }) => ({
         orientation_id, revision, feature, decision, reason, test_ref, project,
       }))
     } else {

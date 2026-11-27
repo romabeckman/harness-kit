@@ -91,7 +91,8 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
   async invoke(
     session: DiagnoseSessionRecord,
     preComputedId: string,
-    settings?: DiagnoseSettings
+    settings?: DiagnoseSettings,
+    verifiedBatchTraceIds: readonly string[] = [],
   ): Promise<AgentOutput> {
     if (!TRACE_ID.test(preComputedId)) throw new Error('Invalid trace ID.')
     const model = (settings?.model && settings.model.trim().length > 0) ? settings.model.trim() : (session.model || undefined)
@@ -165,7 +166,7 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
 
     const history = new JsonlSessionLedger(DiagnosePaths.ledgerPath(this.workingDir)).loadAll()
     const scoped = history.filter(record => isDiagnoseSession(record) && record.traceId
-      && (record.status === 'completed' || record.sessionId === session.sessionId))
+      && (record.status === 'completed' || record.sessionId === session.sessionId || verifiedBatchTraceIds.includes(record.traceId!)))
       .flatMap(record => {
         const id = record.traceId!
         return TRACE_ID.test(id) && traceIssues(readTrace(DiagnosePaths.sessionTraceDir(this.workingDir, id)), id, record.sessionId).length === 0 ? [id] : []
@@ -221,7 +222,7 @@ export class MetaHarnessAgentAdapter implements IMetaHarnessAgentAdapter {
     })
     if (output.success === false) return output
     const receipt = validateDreamingReceipt(output.raw, project.root, episode.id, chain.map(item => item.id))
-    return receipt.status === 'incomplete' ? { ...output, success: false, raw: receipt.reason! } : { ...output, raw: JSON.stringify(receipt) }
+    return receipt.status === 'incomplete' ? { ...output, success: false, raw: receipt.reason! } : output
   }
 
   async invokeMetaHarness(
