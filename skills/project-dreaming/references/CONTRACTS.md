@@ -2,7 +2,7 @@
 
 ## Hypothesis record
 
-Use one UTF-8 Markdown file per hypothesis under `docs/harness-history/learning/active/<id>.md` or `archived/<id>.md` in the owning project. The project directory and feature node ID qualify each ID across a workspace. Choose a stable lowercase kebab-case ID unique within that project. Keep the ID across revisions and moves. Keep evidence paths project-relative and pair each with a specific test title, heading, range, or execution locator. For a session-only source give the session ID and event locator. Include a revision, digest, or run ID when available.
+Use one UTF-8 Markdown file per hypothesis under `docs/harness-history/learning/active/<id>.md` or `archived/<id>.md` in the owning project. The project identifier and feature node ID qualify each ID across a workspace. Record project paths relative to the orchestration workspace (use `.` for its root), or use a configured project tag or stable identifier when a relative path cannot identify the project. Never persist or report an absolute path, including drive letters, home directories, UNC paths, or machine-specific prefixes, in any field, quoted evidence, command, error, receipt, handoff, or evaluation artifact. Resolve paths internally as needed; use project-relative paths for files within the owning project and workspace-relative paths for cross-project references. Choose a stable lowercase kebab-case ID unique within that project. Keep the ID across revisions and moves. Keep evidence paths project-relative and pair each with a specific test title, heading, range, or execution locator. For a session-only source give the session ID and event locator. Include a revision, digest, or run ID when available.
 
 ```yaml
 ---
@@ -162,7 +162,7 @@ Use an orientation object for publish. For `withdraw`, omit `orientation`, send 
 
 Project Memory returns a receipt with the operation, destination, feature node, ID, revision, result (`written`, `already_current`, or `conflict`), and the checks performed. A successful receipt requires that the canonical result meets the [20,000-character file limit](../../project-memory/SKILL.md#total-context-budget). A conflict or unresolved evidence keeps the operation pending. A retry uses the original handoff and ID for the current pending transition. Check the decision history before sending a retry and discard any superseded request, including a publish superseded by withdrawal. A canonical entry with equal revision and different content is a conflict.
 
-To route a validated handoff through a future SDK MEMORY phase, place it in the orchestration workspace's `docs/product/project-dreaming/handoffs/<id>.json`. Wrap the object in an envelope with `status: "ready"`, the owning `project` path as configured in the SDK, and the complete object as `handoff`. The SDK records `applied` when it verifies the canonical result. Recheck the published or withdrawn entry before closing the learning record.
+To route a validated handoff through a future SDK MEMORY phase, place it in the orchestration workspace's `docs/product/project-dreaming/handoffs/<id>.json`. Wrap the object in an envelope with `status: "ready"`, the owning `project` identifier or workspace-relative path as configured in the SDK, and the complete object as `handoff`. The SDK records `applied` when it verifies the canonical result. Recheck the published or withdrawn entry before closing the learning record.
 
 ## TDD use
 
