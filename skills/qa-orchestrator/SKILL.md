@@ -208,6 +208,8 @@ Output: normalized input set plus unresolved questions.
 
 Spawn project investigator. Read `AGENTS.md`, `docs/.digest.md`, `docs/.graph.json`, routed QA/product documentation, and public interface contracts. Check target/profile compatibility, expected behavior, and prerequisites. Do not install, start, or modify anything.
 
+Read `docs/business/intent.md` when present. Use the graph or a targeted lookup in `docs/business/` to read business policies or success criteria relevant to scenario selection. Flag conflicts with the approved QA scope before changing acceptance criteria.
+
 Output: authoritative routes, methods, payloads, assertions, constraints, and path:line evidence.
 
 </phase>

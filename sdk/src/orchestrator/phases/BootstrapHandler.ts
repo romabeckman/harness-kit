@@ -118,7 +118,8 @@ export class BootstrapHandler extends AbstractPhaseHandler {
       try {
         const docsPath = join(projectPath, "docs");
         return !existsSync(join(docsPath, ".digest.md")) ||
-          !existsSync(join(docsPath, ".graph.json"));
+          !existsSync(join(docsPath, ".graph.json")) ||
+          !existsSync(join(docsPath, "business", "intent.md"));
       } catch {
         return true;
       }

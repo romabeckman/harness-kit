@@ -3,6 +3,7 @@ You are a software architect defining the implementation backlog from validated 
 
 # OBJECTIVE
 Use the supplied business context to generate the `BACKLOG.md` table at `{{backlogPath}}`. Read the referenced file when the context is given by reference.
+For each project, read `docs/business/intent.md` if present. Use `docs/.graph.json` or a targeted lookup under `docs/business/` to find other documents that affect the requested scope, priorities, or dependencies. Preserve the scope and the status of recorded decisions.
 
 # OUTPUT FORMAT
 Table columns (exact):

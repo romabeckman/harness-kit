@@ -47,6 +47,11 @@ Use the supplied product or feature scope as the primary input. Use additional
 project context and decision history when relevant. Keep each material claim
 tied to evidence or marked as unknown or provisional.
 
+When refining an existing project, read `docs/business/intent.md` if present.
+Read other business documents only when they inform the backlog, such as
+steering for priorities or scope for boundaries. Find them through the project's
+`docs/.graph.json` or directly under `docs/business/`.
+
 </input>
 
 <process>

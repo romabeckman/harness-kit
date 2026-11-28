@@ -86,12 +86,14 @@ describe('BootstrapHandler', () => {
     const firstUndocumentedProject = join(root, 'undocumented-first')
     const secondUndocumentedProject = join(root, 'undocumented-second')
     const events: string[] = []
-    mkdirSync(join(documentedProject, 'docs'), { recursive: true })
+    mkdirSync(join(documentedProject, 'docs', 'business'), { recursive: true })
     writeFileSync(join(documentedProject, 'docs', '.digest.md'), '# Digest')
     writeFileSync(join(documentedProject, 'docs', '.graph.json'), '{"nodes":[],"edges":[]}')
+    writeFileSync(join(documentedProject, 'docs', 'business', 'intent.md'), '# Business Intent')
     mkdirSync(firstUndocumentedProject, { recursive: true })
     mkdirSync(join(secondUndocumentedProject, 'docs'), { recursive: true })
     writeFileSync(join(secondUndocumentedProject, 'docs', '.digest.md'), '# Digest')
+    writeFileSync(join(secondUndocumentedProject, 'docs', '.graph.json'), '{"nodes":[],"edges":[]}')
     const context: any = {
       workingDir: root,
       config: {
@@ -134,7 +136,12 @@ describe('BootstrapHandler', () => {
       expect(memoryCalls[0][0].prompt).toContain(secondUndocumentedProject)
       expect(memoryCalls[0][0].prompt).toContain('docs/.digest.md')
       expect(memoryCalls[0][0].prompt).toContain('docs/.graph.json')
+      expect(memoryCalls[0][0].prompt).toContain('docs/business/intent.md')
       expect(memoryCalls[0][0].prompt).toContain('docs/adr/ARCHITECTURE.md')
+      const missingProjects = memoryCalls[0][0].prompt.split('<projects_missing_docs>')[1]
+      expect(missingProjects).toContain(firstUndocumentedProject)
+      expect(missingProjects).toContain(secondUndocumentedProject)
+      expect(missingProjects).not.toContain(documentedProject)
       expect(memoryCalls[0][0].prompt).toContain('<scope_ref>')
       expect(memoryCalls[0][0].prompt).toContain(
         `Read file: \`${join(root, 'state', 'docs', 'product', 'SCOPE.md')}\``,
@@ -158,9 +165,10 @@ describe('BootstrapHandler', () => {
 
   it('does not invoke project-memory when every project already has docs', async () => {
     const project = mkdtempSync(join(tmpdir(), 'bootstrap-existing-docs-'))
-    mkdirSync(join(project, 'docs'))
+    mkdirSync(join(project, 'docs', 'business'), { recursive: true })
     writeFileSync(join(project, 'docs', '.digest.md'), '# Digest')
     writeFileSync(join(project, 'docs', '.graph.json'), '{"nodes":[],"edges":[]}')
+    writeFileSync(join(project, 'docs', 'business', 'intent.md'), '# Business Intent')
     const context: any = {
       workingDir: project,
       config: {

@@ -39,9 +39,10 @@ describe('T17 — Orchestrator Settings Overrides', () => {
         }
       }
     }))
-    mkdirSync(join(tmpDir, 'docs'), { recursive: true })
+    mkdirSync(join(tmpDir, 'docs', 'business'), { recursive: true })
     writeFileSync(join(tmpDir, 'docs', '.digest.md'), '# Digest')
     writeFileSync(join(tmpDir, 'docs', '.graph.json'), '{"nodes":[],"edges":[]}')
+    writeFileSync(join(tmpDir, 'docs', 'business', 'intent.md'), '# Business Intent')
 
     const settings = HarnessSettings.load(tmpDir)
 

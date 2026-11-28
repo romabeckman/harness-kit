@@ -77,6 +77,8 @@ Thresholds (${scoreThresholdTL} and ${scoreThresholdAdv}) and ${maxReworks} are 
 ```
 
 **1.2 Synthesize backlog:**  
+For each selected project, read `docs/business/intent.md` when present. Read other business documents only when they affect backlog boundaries, priorities, or project dependencies. Locate them through `docs/.graph.json` or directly under `docs/business/` if routing is missing. Preserve the requested scope and surface material conflicts before treating them as backlog decisions.
+
 Parse `${scope}` → generate initial `BACKLOG.md` table with columns:  
 `ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status`
 
@@ -401,7 +403,8 @@ inputs:
     - Key decisions logged in DECISIONS.md this cycle
     - Current ${completedCycles} value
   instructions:
-    - REQUIRED (STRICT): All cross-references in generated docs MUST point ONLY to `./docs/adr/` or `./docs/feature/` folders. NO other folder paths are permitted. Validate every reference before finalizing.
+    - REQUIRED: Validate references against Project Memory's document contract. In each project's generated documents, REFERENCES links resolve only to managed Markdown under docs/adr/, docs/business/, or docs/feature/.
+    - REQUIRED: Apply Project Memory's business rules within the documentation scope. Create missing docs/business/intent.md and update relevant business documents when the cycle establishes a supported business decision.
     - REQUIRED: In each target project, document completed features under `docs/feature/*.md` (create if missing, update matching topic documents if present), following `./references/DOCUMENT-TEMPLATE.md` strictly; never prefix filenames with feature IDs
     - REQUIRED: `FOLDER STRUCTURE` section → reflect the module's current relevant structure, incorporating paths added or modified this cycle (do not drop paths documented in prior cycles)
     - REQUIRED: Keep all content direct and minimal — enough for a future LLM to orient itself in the codebase without re-reading source files

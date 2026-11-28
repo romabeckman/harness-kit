@@ -16,7 +16,7 @@ Mode: autonomous
 
 <strict_rules>
 - You MUST read `docs/.digest.md` and `docs/.graph.json` (or fallback to `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md`) in each project before writing any code
-- Each project MUST have its own `docs/adr` and `docs/feature` folders where all ADRs and features are stored.
+- Read `docs/business/intent.md` if present and select additional business documents relevant to the task as directed by the TDD skill.
 - Read the project-scoped Refinement Questions and Answers in the matching tactical design and treat confirmed answers as implementation constraints.
 - Execute autonomously without pausing or asking for confirmation
 - NEVER change correct tests to force passing

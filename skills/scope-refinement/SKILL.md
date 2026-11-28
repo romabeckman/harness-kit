@@ -101,13 +101,14 @@ IF empty → ${rules} = "No additional rules provided"
 Before Phase 1, load orientation once for each `${projectPaths}` entry:
 
 1. Read `docs/.digest.md` and `docs/.graph.json` when present.
+   - Read `docs/business/intent.md` when present for project purpose and objectives. Use `business` nodes in the graph to find other business documents that affect the scope, such as steering, rules, or project relations. If the graph is missing or stale, look for relevant files in `docs/business/` directly.
 2. Select only nodes matching `${scope}` and `${domain}` by ID, title, path, or tags; include their one-hop edges.
 3. For each selected feature node:
    - Resolve and read every `related_docs.must_read` document.
    - Evaluate `related_docs.optional[].description` against `${scope}`, `${domain}`, and `${rules}`.
    - Read only optional documents whose condition applies.
 4. For selected feature nodes, extract only frontmatter and top `graph` block.
-5. Build `${orientation}` with project path, digest summary, selected nodes, required documents, selected optional documents, document paths, and selected feature micrographs.
+5. Build `${orientation}` with project path, digest summary, selected nodes, required documents, selected optional documents, document paths, and selected feature micrographs. Include a concise business summary with source paths and flag any material conflict with the requested scope for the refinement interview.
 6. Validate routed paths before Phases 3–4. Mark stale paths in `${orientation}`; do not create another routing artifact.
 
 Pass `${orientation}` to every phase agent. Agents must not reread global indexes when valid orientation is supplied. If orientation is absent, invalid, or stale, agents use their documented fallback.
