@@ -94,6 +94,7 @@ export class ContextAssembler {
           modifiedFiles: tddOutput.modifiedFiles,
           reworksCount: tddOutput.reworksCount,
           developerHandoff: payload.developerHandoff,
+          refinementRequests: tddOutput.orientation_use?.filter(entry => entry.decision === 'needs_refinement'),
         }
       }
     } catch {

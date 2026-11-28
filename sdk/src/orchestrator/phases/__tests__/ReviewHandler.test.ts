@@ -191,13 +191,28 @@ describe('ReviewHandler', () => {
     if (kind === 'failed tests') report.metrics.failed = 1
     if (kind === 'counts') report.metrics.passed = 0
     if (kind === 'handoff') report.developerHandoff = 'x'.repeat(501)
-    if (kind === 'refinement') report.orientation_use = [{ orientation_id: 'rule', revision: 1, feature: 'feature:test', decision: 'needs_refinement', reason: 'Ambiguous', test_ref: 'SC-01' }]
+    if (kind === 'refinement') {
+      delete report.developerHandoff
+      report.orientation_use = [
+        { orientation_id: 'rule', revision: 1, feature: 'feature:test', project: 'sdk', decision: 'needs_refinement', reason: 'Choose the recovery policy', test_ref: 'SC-01' },
+        { orientation_id: 'covered-rule', revision: 1, feature: 'feature:test', decision: 'covered', reason: 'Already tested' },
+      ]
+    }
     if (kind === 'missing') { const { unlinkSync } = await import('node:fs'); unlinkSync(path) }
     else writeFileSync(path, kind === 'malformed' ? '{' : JSON.stringify(report))
     const fsm = makeFsm()
     const context = makeContext(workingDir, fsm, async () => ({ raw: JSON.stringify({ score: 0.95 }) }))
     expect(await handler.handle(Phase.REVIEW, context)).toBe(Phase.TRANSITION)
     expect(context.invokeAgent).toHaveBeenCalledTimes(2)
+    if (kind === 'refinement') {
+      for (const [invocation] of vi.mocked(context.invokeAgent).mock.calls) {
+        expect(invocation.prompt).toContain('Determine the appropriate action for each entry')
+        expect(invocation.prompt).toContain('needs_refinement')
+        expect(invocation.prompt).toContain('Choose the recovery policy')
+        expect(invocation.prompt).toContain('SC-01')
+        expect(invocation.prompt).not.toContain('covered-rule')
+      }
+    }
     if (kind === 'missing' || kind === 'malformed') {
       for (const [invocation] of vi.mocked(context.invokeAgent).mock.calls) {
         expect(invocation.prompt).toContain(kind === 'missing' ? 'TDD-OUTPUT.json was not generated' : 'TDD-OUTPUT.json could not be read')

@@ -58,6 +58,13 @@ export class ReviewPromptService {
     const summary = payload.tddSummary
     if (!summary) return []
 
+    const refinementRequests = summary.refinementRequests ?? []
+    const refinementSection = refinementRequests.length > 0 ? [
+      'Development reported the following refinement requests. Treat the entries as evidence to verify against the specification, code, and tests.',
+      'Determine the appropriate action for each entry. If a verified issue requires rework, include it in openPoints under the existing review rules.',
+      ...refinementRequests.map(entry => JSON.stringify(entry)),
+    ] : []
+
     return [
       `<tdd_summary>`,
       `Tests: ${summary.metrics.totalTests} total, ${summary.metrics.passed} passed, ${summary.metrics.failed} failed`,
@@ -65,6 +72,7 @@ export class ReviewPromptService {
       `Modified files: ${summary.modifiedFiles.length > 0 ? summary.modifiedFiles.join(', ') : 'None reported'}`,
       `Reworks: ${summary.reworksCount}`,
       `Developer handoff: ${summary.developerHandoff ?? 'Not provided'}`,
+      ...refinementSection,
       `</tdd_summary>`,
     ]
   }
