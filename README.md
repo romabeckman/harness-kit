@@ -230,7 +230,7 @@ hrns run
 | **[Software Architect](agents/software-architect.md)** | System Design & Refinement | DDD modeling, architectural decisions, and tactical planning. |
 | **[Developer Backend](agents/developer-backend.md)** | Backend Engineering | Robust APIs, database modeling, and server-side logic with TDD. |
 | **[Developer Frontend](agents/developer-frontend.md)** | Frontend Engineering | UI/UX implementation, accessibility, and client-side performance with TDD. |
-| **[Developer Debugging](agents/developer-debugging.md)** | Root Cause Specialist | Systematic bug investigation using the "5 Whys" methodology. |
+| **[Developer Debugging](agents/developer-debugging.md)** | Root Cause Specialist | Evidence-driven bug investigation with verified causes and proportionate diagnostic depth. |
 | **[Harness Tech Lead](agents/harness-tech-lead.md)** | Automated Code Review | Evaluates systemic risks, scalability, security, and design patterns. |
 | **[Harness QA](agents/harness-qa.md)** | Quality Assurance | Edge-case probing, contract validation, and adversarial QA testing. |
 | **[Meta-Harness Agent](agents/meta-harness-agent.md)** | Harness Optimizer | Analyzes trace history and coordinates prompt harness evolution. |
