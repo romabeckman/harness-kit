@@ -129,7 +129,6 @@ updated: YYYY-MM-DD
 
 ## REFERENCES
 
-- [**README.md**](../README.md): Main documentation index.
 - [**TESTS.md**](./TESTS.md): Testing strategies and commands.
 ````
 

@@ -33,6 +33,7 @@ Read before any canonical edit, including consolidation or digest demotion. Read
 ## Presentation
 
 - REQUIRED: Use standard Markdown and uppercase feature/ADR section headings; REFERENCES goes last. Follow the navigation template's own casing for `docs/README.md`; preserve the root README structure.
+- REQUIRED: In `## REFERENCES` of generated or updated ADR, business, and feature documents, link only to existing Markdown documents within the same project's `docs/adr/`, `docs/business/`, or `docs/feature/`. Use relative links and verify each resolved target. If no managed document applies, state that briefly. Inspecting source code, configuration, or other evidence for grounding does not make it eligible for this section.
 - ALLOWED: A feature's published RED guidance uses the exact heading `## RED guidance` before REFERENCES. Follow the [publication procedure](RED-ORIENTATION.md) for guided edits to this section.
 - REQUIRED: Serialize every generated JSON payload, including examples, on exactly one physical line with `json.dumps(data, ensure_ascii=False, separators=(',', ':'))`. Keep fences separate; preserve escaped newlines inside strings and never insert comments into JSON.
 - REQUIRED: Keep folder trees at folder/layer level with representative entries. Do not repeat the source inventory already owned by the feature graph.

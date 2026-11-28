@@ -1,6 +1,6 @@
 # Project Documentation
 
-Index of project technical documentation for **harness-kit SDK**. Use links below to navigate the documents and graph.
+Index of project documentation for **harness-kit SDK**. Use links below to navigate the documents and graph.
 
 ## Documentation Index
 
@@ -11,6 +11,7 @@ Index of project technical documentation for **harness-kit SDK**. Use links belo
 | [**.graph.json**](./.graph.json) | Complete document list, tags, and relations. | **Mandatory** |
 | [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Project architecture baseline. | **Mandatory** |
 | [**TESTS.md**](./adr/TESTS.md) | Testing tools and strategy baseline. | **Mandatory** |
+| [**intent.md**](./business/intent.md) | SDK purpose, business objectives, and decision guidance. | **Mandatory** |
 | [**AGENT-RUNNERS.md**](./adr/AGENT-RUNNERS.md) | Runner registration and adapter decisions. | Optional |
 | [**AGENT-SESSIONS.md**](./adr/AGENT-SESSIONS.md) | Agent session reuse and lifecycle. | Optional |
 | [**STATE-PERSISTENCE.md**](./adr/STATE-PERSISTENCE.md) | Product state persistence decisions. | Optional |
@@ -37,4 +38,5 @@ If an exact path is supplied, read it directly. Otherwise use this order:
 1. **.digest.md** for fast project orientation.
 2. **.graph.json** for document routing and one-hop relations.
 3. **ARCHITECTURE.md** and **TESTS.md** for baseline decisions.
-4. Selected ADR or feature documents for task-specific context.
+4. **intent.md** for the SDK's purpose and business objectives.
+5. Selected ADR or feature documents for task-specific context.

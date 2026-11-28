@@ -33,7 +33,7 @@ Use the title `# Business Intent` and the shared template below. In `## PURPOSE`
 ## Scope and creation
 
 - REQUIRED: Create `docs/business/intent.md` when initializing or updating project memory within authorized scope.
-- REQUIRED: Ground statements in an explicit user statement or inspected project evidence. Cite sources using relative links. Distinguish stated intent from inference and mark unknown goals or measures as unresolved; never invent stakeholders, metrics, approval, or strategy.
+- REQUIRED: Ground statements in an explicit user statement or inspected project evidence. For `## REFERENCES`, use only relative links to managed documents in `docs/adr/`, `docs/business/`, or `docs/feature/`, as defined in the [document contract](DOCUMENT-CONTRACT.md#presentation). Distinguish stated intent from inference and mark unknown goals or measures as unresolved; never invent stakeholders, metrics, approval, or strategy.
 - REQUIRED: Keep every business document concise, precise, and focused on its purpose. State the relevant facts, decisions, and constraints directly. Use specific names and terms, and keep the qualifiers needed for accuracy. Omit filler, unnecessary narrative, repeated explanations, and background that does not inform a decision or help the reader understand the topic. Use short paragraphs, lists, or tables where they make the information easier to scan. Treat the character limit as a ceiling and use only the space the topic needs.
 - ALLOWED: Add business document types as needs emerge. Extend the catalog with their purpose and status and retain the shared template. Give each business topic a clear owner and link to existing material when topics overlap.
 - REQUIRED: Apply the 20,000-character whole-file limit after normalizing line endings. Remove repetition first; split by coherent business responsibility when authorized, preserving sources and links. If a needed split is out of scope, report it as unresolved.
@@ -62,7 +62,7 @@ Use the same base for every business document. Give each document a title, purpo
 [Unresolved information that materially affects this topic; omit if none.]
 
 ## REFERENCES
-- [Source description](relative/path)
+- [Managed document and its relevance](relative/path/to/managed-document.md)
 ```
 
 </output_template>

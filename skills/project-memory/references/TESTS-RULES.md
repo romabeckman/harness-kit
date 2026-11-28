@@ -97,7 +97,6 @@ PROHIBITED: [e.g., Tests that depend on execution order]
 
 ## REFERENCES
 
-- [**README.md**](../README.md): Main documentation index.
 - [**ARCHITECTURE.md**](./ARCHITECTURE.md): System architecture and patterns.
 ```
 
