@@ -2,10 +2,21 @@
 
 `autonomous-orchestrator` is the skill-driven sovereign loop. It manages product state and delegates every technical task to specialist agents. It does not write application code or tests itself.
 
+This guide describes the plugin skill used in an AI coding tool. The `hrns run` CLI has its own execution modes and deployment flags; see its [Daily Use Playbook](../../sdk/docs/PLAYBOOK-DAILY-USE.md) for those controls.
+
 ## Invoke
 
 ```text
 /harness-kit:autonomous-orchestrator
+```
+
+Include the desired outcome, acceptance criteria, project paths, and restrictions with the invocation. For example:
+
+```text
+Project: ./store
+Scope: guests can add and remove cart items, with totals updated after each action.
+Acceptance: removing the last item shows an empty-cart message; regression tests pass.
+Restrictions: preserve the checkout API; do not commit, push, or deploy.
 ```
 
 ## Initial input gate
@@ -18,7 +29,7 @@ When using the `cto` agent for a product idea or underspecified feature, it invo
 The skill collects required input at its initial gate and Bootstrap:
 
 1. Choose `resume` or `reset`.
-2. For `reset`, provide the project scope or PRD if it was not already supplied.
+2. For `reset`, provide the project scope or product requirements document (PRD) if it was not already supplied.
 3. Provide project paths if they are not known.
 
 After required bootstrap input exists, the orchestrator continues without phase-by-phase questions. It stops when the backlog finishes, a critical blocker prevents progress, or the human interrupts execution.
@@ -105,6 +116,8 @@ Verdicts:
 - `RETRY`: gate failed while rework budget remains. Write `REWORK-LOG.md`, reset tasks, return to development.
 - `BLOCK`: budget exhausted with crash or unresolved HIGH/CRITICAL vulnerability. Persist `BLOCKED`.
 - `FAIL`: budget exhausted without crash or unresolved HIGH/CRITICAL vulnerability. Persist `FAILED`.
+
+The `PASS` requirements above describe the plugin workflow. In SDK runs, the review gate decides from reviewer scores, HIGH/CRITICAL vulnerability findings, and crashes; a missing or invalid `TDD-OUTPUT.json` is reported to reviewers but is not a separate acceptance gate. Reviewers independently verify the available work and evidence.
 
 After `PASS`, delegate `project-dreaming` once per owning project and feature, including first-pass deliveries. Supply the accepted episode, related attempts, and available project-scoped evidence locators. Verify its analysis receipt; log incomplete analysis for retry without changing the acceptance decision. Stage validated publication or withdrawal handoffs for Phase E.
 

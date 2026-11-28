@@ -2,6 +2,8 @@
 
 Practical recipes for the `hrns` CLI. Read the [SDK README](../README.md) first for installation, runner setup, and complete command reference.
 
+Run these commands from the orchestration workspace where `docs/product/` is stored. For a single project, this can be its repository root. Multiline examples use Bash continuation (`\`); in PowerShell, enter the command on one line or use PowerShell's backtick continuation.
+
 ## Safety first
 
 `hrns run` includes a DEPLOY phase. Unless `--skip-deploy` is present, that phase runs `git add --all`, creates a commit, and runs `git push` in every configured project path.
@@ -19,8 +21,8 @@ The CLI runner may use unattended permission flags. Steering text guides the mod
 
 | Setting | Default | Notes |
 | --- | --- | --- |
-| Runner | `claude-cli` | Override with `--agent` |
-| Interactive mode choice | `fast` | Pass `--mode` to avoid the mode prompt |
+| Runner selector choice | `claude-cli` | Omit `--agent` to select interactively, or pass it to choose directly |
+| Interactive mode choice | `thinking` | Pass `--mode` to avoid the mode prompt |
 | Acceptance scores | `0.70` | Both values use `[0.00, 1.00]` |
 | Maximum reworks | `2` | Applies before final `FAILED` or `BLOCKED` verdict |
 | Phase timeout | 1 hour | Configurable in settings |
@@ -31,8 +33,8 @@ The CLI runner may use unattended permission flags. Steering text guides the mod
 | Mode | Complexity | Review | Refinement | Memory | Deploy |
 | --- | --- | --- | --- | --- | --- |
 | `quick` | LOW | skipped | no | enabled | enabled |
-| `fast` | LOW | adversarial QA only | no | enabled | enabled |
-| `thinking` / `default` | AUTO | tech lead + QA | yes | enabled | enabled |
+| `fast` | LOW | tech lead + QA | no | enabled | enabled |
+| `thinking` / `default` | LOW | tech lead + QA | yes | enabled | enabled |
 | `deep_thinking` / `slow` | HIGH | tech lead + QA | yes | enabled | enabled |
 
 `--complexity LOW|HIGH|AUTO` overrides planning complexity, but it does not change a mode's skip behavior. `--skip-validation`, `--skip-memory`, and `--skip-deploy` add independent skips.
@@ -54,7 +56,7 @@ This command:
 
 1. Deletes and recreates `docs/product/` for a new cycle.
 2. Persists scope and project paths.
-3. Lets planning evaluate AUTO complexity and select the output documents.
+3. Uses LOW-complexity planning; add `--complexity AUTO` to let planning select complexity from the scope and project paths.
 4. Runs both review agents.
 5. Updates project memory.
 6. Stops without staging, committing, or pushing.
@@ -101,7 +103,7 @@ This steering rule is not a security boundary. For a hard guarantee, make `templ
 
 ## Scenario 4 — Quick proof of concept
 
-Fast mode retains adversarial QA and memory while simplifying planning:
+Fast mode retains technical review, adversarial QA, and memory while simplifying planning:
 
 ```bash
 hrns run \
@@ -211,7 +213,7 @@ Also inspect `BACKLOG.md` and `DECISIONS.md`. A final `HALTED` state does not pr
 
 ## Diagnose and optimize sessions
 
-Each successful agent invocation appends a pending record to `docs/product/diagnose-sessions.jsonl`.
+Successful planning, development, and review agent invocations are recorded for diagnosis in `docs/product/diagnose-sessions.jsonl`; other phase invocations are not diagnosis inputs.
 
 ```bash
 hrns diagnose
@@ -223,7 +225,7 @@ Diagnosis processes all pending records in batches of `3` by default. Override b
 hrns diagnose --batch-size 6
 ```
 
-The diagnosis adapter asks `harness-evaluator` to update the Pareto report when trace count is a positive multiple of `6`. After pending sessions are processed, it invokes meta-harness candidate proposal. The meta-harness skill requires at least `3` traces.
+The diagnosis adapter asks `harness-evaluator` to update the Pareto report when the count of complete, eligible traces is a positive multiple of `5`. After pending sessions are processed, it attempts meta-harness candidate proposal when at least `3` complete, eligible traces are available.
 
 Review candidates:
 
@@ -232,13 +234,13 @@ hrns candidate list
 hrns candidate review v001
 ```
 
-Autonomous application is also available:
+Non-interactive approval and application of an evaluated candidate is also available:
 
 ```bash
 hrns candidate review v001 --auto
 ```
 
-Inspect `rationale.md`, `diff.md`, and candidate `SKILL.md` before using `--auto` when change control matters.
+Using `--auto` authorizes application; it does not evaluate the candidate. Inspect `rationale.md`, `diff.md`, candidate `SKILL.md`, and the independent evaluation results first. The SDK verifies the evaluated baseline and candidate versions before promotion.
 
 ## Supported runners
 
@@ -297,13 +299,13 @@ Model and effort support depend on the runner. Use `.harness-kit/settings.json` 
 | Review retries | `TL.json`, `QA.json`, and `REWORK-LOG.md` |
 | Dependents become blocked | A dependency received `BLOCKED` and cascade propagated |
 | Diagnosis reports no pending sessions | `diagnose-sessions.jsonl` has no pending records |
-| Candidate is not created | Fewer than `3` traces, stale/missing frontier, or no significant evidence-backed improvement |
+| Candidate is not created | Fewer than `3` complete, eligible traces, an unavailable skill baseline, or no significant evidence-backed improvement. A current frontier is used as an index when available; its absence alone does not block SDK proposal. |
 | Deploy rejects a project after sensitive-file check | Add the file to `.gitignore`, review the unstaged changes, then rerun only when authorized |
 
 ## Further reading
 
 - [README — installation, commands, flags, and runners](../README.md)
 - [AGENTS.md — SDK development rules](../AGENTS.md)
-- [Steering internals](./feature/sdk_steering.md)
-- [CLI internals](./feature/sdk_cli.md)
+- [Steering internals](./feature/orchestration/SDK_STEERING.md)
+- [CLI internals](./feature/cli/sdk_cli.md)
 - [State persistence](./adr/STATE-PERSISTENCE.md)

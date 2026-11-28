@@ -1,6 +1,8 @@
 # Playbook — Daily QA
 
-Use this playbook to validate a completed change as a human would, independently from development. Read the [SDK README](../README.md) for installation and the [QA Tester feature document](./feature/QA_TESTER.md) for the implementation boundary.
+Use this playbook to validate a completed change as a human would, independently from development. Read the [SDK README](../README.md) for installation and the [QA Tester feature document](./feature/qa/QA_TESTER.md) for the implementation boundary.
+
+Run the examples from the project you want to test, or select it with `--project`. Install and authenticate your runner first; use `--agent <runner>` to choose it directly, or omit the option to select interactively.
 
 ## Daily operating rule
 
@@ -10,7 +12,7 @@ Plan the acceptance condition first, run it against the application a user would
 LLM planning -> plan validation/preflight -> curl/Playwright execution -> optional adaptive analysis -> optional LLM reporting
 ```
 
-`hrns qa run` accepts an open scope or optional detailed scenarios. The planner inspects the project, generates initial scenarios, and selects executable actions for the configured profile. Post-execution adaptive analysis is disabled by default. It does not start the target application; start it first and provide its reachable URL. `hrns qa` is an alias for `hrns qa run`.
+`hrns qa run` accepts an open scope or optional detailed scenarios. The planner inspects the project, generates initial scenarios, and selects executable actions for the configured profile. Post-execution adaptive analysis is disabled by default. It does not start the target application; start it first and provide its reachable URL. `hrns qa` defaults to the `run` action, but only the form without an explicit action, scope, or scenarios offers saved plans to resume.
 
 ## Agentic daily flow
 
@@ -50,11 +52,13 @@ Select a format explicitly with `hrns qa report --run <qa-run-id> --output <form
 | `markdown` | Overwrites `REPORT.md` with every scenario grouped by status. |
 | `send-to-developer` | Overwrites `DEVELOPER-SCOPE.md` through the LLM using only `FAILED` and `BLOCKED` scenarios. |
 
-Omit `--output` to select the format after the `Select the QA run to report` prompt. Format selection defaults to `json`. During report regeneration, JSON, HTML, and Markdown use stored results directly; only `send-to-developer` invokes the LLM.
+Omit `--output` to select the format interactively. If `--run` is also omitted, first select a completed run. Format selection defaults to `json`. During report regeneration, JSON, HTML, and Markdown use stored results directly; only `send-to-developer` invokes the LLM.
 
 ## Opt into adaptive analysis
 
 Adaptive analysis is disabled by default because it may create a new saved plan version and execute additional scenarios. Use `--analysis` on `hrns qa run`, or choose **resume with analysis** in the saved-plan selector. Plain **resume** executes only the saved scenarios. For example, `1.json` can produce `2.json` only when analysis is enabled and a material coverage gap is found.
+
+To open the saved-plan selector, use `hrns qa` without an explicit `run` action, scope, or scenarios. If you pass `--analysis`, resumed execution includes analysis even when you choose **resume**.
 
 ## Send a failed run to development
 
@@ -62,10 +66,12 @@ Use the completed QA run ID to create a focused development correction scope:
 
 ```bash
 # CORRECT: generate scope from only FAILED and BLOCKED scenarios
-hrns run --reset --run <qa-run-id>
+hrns run --reset --run <qa-run-id> --skip-deploy
 ```
 
 The command loads the run and its stored plan. It includes each actionable scenario's definition, observed reason, and evidence paths. It rejects incomplete runs, runs without failed or blocked scenarios, and `--run` combined with `--scope`. Keep the original run directory unchanged; rerun QA after the fix to create new evidence.
+
+Run it from the project containing that QA run. `--reset` replaces existing state under `docs/product/`; preserve any state you still need. `--skip-deploy` lets you review changes before the development CLI stages, commits, or pushes them.
 
 ## Exploratory saved-plan sweep
 
@@ -92,7 +98,7 @@ Select the authentication mode and profile name, then choose `env` or `insecure`
 
 ## Run against protected targets
 
-Add optional `.harness-kit/auth.json` with named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. The form defaults to `env` storage (reference only). Selecting `insecure` shows a warning, requires confirmation, and stores the entered credential directly in `auth.json`. The file is ignored by Git but is not encrypted; protect it, use disposable least-privilege credentials, and never use production credentials.
+Add optional `.harness-kit/auth.json` with named `none`, `basic`, `bearer`, `api-key`, or `cookie` profiles. The form defaults to `env` storage (reference only). Selecting `insecure` shows a warning, requires confirmation, and stores the entered credential directly in `auth.json`. Verify that the file is excluded by the tested project's `.gitignore`; the helper does not add that rule. The file is not encrypted; protect it, use disposable least-privilege credentials, and never use production credentials.
 
 ```json
 { "schemaVersion": 1, "defaultProfile": "qa-user", "profiles": { "qa-user": { "mode": "bearer", "token": { "source": "env", "name": "QA_USER_TOKEN" } } } }
@@ -105,7 +111,7 @@ hrns qa run --auth qa-user --scope "Validate protected orders" --target http://1
 hrns qa exploratory --auth qa-user --target http://127.0.0.1:3000
 ```
 
-Omit `--auth` to use `defaultProfile`; interactive execution offers configured profiles. Resolved credentials are used only at execution time and are not copied into plans, prompts, reports, execution memory, or persisted evidence. `insecure` literals are the intentional exception in `auth.json` itself; do not copy them elsewhere.
+Omit `--auth` to use `defaultProfile`; interactive execution offers configured profiles. Harness Kit does not insert resolved credentials into plans, prompts, reports, or execution memory. Saved HTTP, MCP, and CLI evidence is redacted. Browser screenshots may capture credentials or other sensitive data displayed by the application; review them before sharing. `insecure` literals are stored intentionally in `auth.json` itself; do not copy them elsewhere.
 
 ### Authentication-aware planning
 
@@ -146,9 +152,11 @@ The `hrns qa auth` form does not infer arbitrary CLI variable names. Add mapping
 
 API validation uses a system `curl` executable. Interface and web-game validation use Playwright with Chromium.
 
+For a source installation of Harness Kit, run the setup commands in `harness-kit/sdk`, then return to the tested project. Playwright must be installed where the Harness Kit browser engine can load it.
+
 ```bash
-rtk npm install
-rtk npx playwright install chromium
+npm install
+npx playwright install chromium
 
 # Browser readiness is checked during the QA run; there is no separate QA doctor command.
 ```
@@ -164,11 +172,13 @@ The API profile executes generated HTTP scenarios through real `curl`; request m
 hrns qa run --report --scope "A health check returns HTTP 200" --target http://127.0.0.1:3000 --profile api
 ```
 
-To regenerate the report later, optionally selecting the LLM model and reasoning effort:
+To regenerate a readable report later from the saved results:
 
 ```bash
-hrns qa report --run <qa-run-id> --model <model> --effort high
+hrns qa report --run <qa-run-id> --output markdown
 ```
+
+JSON, HTML, and Markdown regeneration use stored results. Model and effort overrides apply to the LLM-generated correction scope when you select `--output send-to-developer`.
 
 Repeat `--scenario` for mandatory cases, such as valid, invalid, boundary, and authorization behavior.
 
@@ -180,7 +190,7 @@ For a browser interface, validate the visible user path: navigate, click the con
 hrns qa run --report --scope "A guest can complete checkout" --scenario "A valid card completes payment" --target http://127.0.0.1:3000 --profile web
 ```
 
-The planner maps the scope and scenarios to browser actions. Provide selectors or observable outcomes in scenarios when the path needs precision. Supported actions are `navigate`, `click`, `fill`, `press`, and `wait`; each action should map to an observable human step. Do not claim UI coverage merely because the page opened.
+The planner maps the scope and scenarios to browser actions. Provide selectors or observable outcomes in scenarios when the path needs precision. Supported actions are `navigate`, `click`, `fill`, `press`, `wait`, `waitForSelector`, `waitForUrl`, and `resize`; each action should map to an observable human step or test setup. Do not claim UI coverage merely because the page opened.
 
 Example action sequence for a checkout:
 
@@ -227,7 +237,7 @@ Every run is stored under the target project's `docs/qa/runs/<qa-run-id>/` direc
 1. Run `hrns qa report --run <qa-run-id>` and identify the first failed or blocked scenario.
 2. Inspect response, screenshot, observation, and error evidence and verify the target is the intended version.
 3. For `BLOCKED`, confirm the target server, URL, Chromium, and authentication capability. Add an explicit CLI environment mapping when required; authenticated WebSocket scenarios remain unsupported.
-4. Run `hrns run --reset --run <qa-run-id>` to send only actionable results to development. Do not combine it with `--scope`.
+4. After resolving environment-only blockers, run `hrns run --reset --run <qa-run-id> --skip-deploy` when actionable results need code changes. Do not combine it with `--scope`; preserve existing product state before resetting it.
 5. Preserve the run directory. Create a new QA run after a fix; do not overwrite failed evidence.
 
 ## End-of-day handoff
@@ -247,5 +257,5 @@ If the verdict is not `PASS`, describe the user action that failed and link the 
 ## Further reading
 
 - [README — QA command reference](../README.md)
-- [QA Tester — architecture, drivers, and current limits](./feature/QA_TESTER.md)
+- [QA Tester — architecture, drivers, and current limits](./feature/qa/QA_TESTER.md)
 - [Daily Use Playbook — orchestration workflows](./PLAYBOOK-DAILY-USE.md)

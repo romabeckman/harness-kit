@@ -2,6 +2,8 @@
 
 User guide for HarnessKit skills and specialist agents.
 
+A skill provides instructions for a task; an agent carries out a specialist role. These guides explain how to invoke them in your AI coding tool with the HarnessKit plugin installed. For terminal commands beginning with `hrns`, use the separate [CLI Daily Use Playbook](../../sdk/docs/PLAYBOOK-DAILY-USE.md).
+
 The source of truth for exact behavior is each file under `skills/*/SKILL.md` and `agents/*.md`.
 
 > [!TIP]
@@ -23,7 +25,6 @@ The source of truth for exact behavior is each file under `skills/*/SKILL.md` an
 | Skill | Use when | Primary output |
 | --- | --- | --- |
 | `project-memory` | Create, update, or consolidate evidence-backed project documentation | Canonical ADRs/features, navigation, digest, and routing graph; targeted root README edits |
-| `memory-context` | Retrieve organizational knowledge, cross-project relationships, or environment differences through Harness Memory MCP | Evidence-backed context and `.harness-kit/memory.toml` discovery cache |
 | `pbb-design` | Optionally refine business intent before technical design | Markdown backlog with `PBB-Contract: 2`, evidence, commercial order, and decisions by PBI |
 | `scope-refinement` | Optionally refine complex scope into DDD design and executable scenarios; required in the autonomous planning phase | `docs/specs/{domain}/001-*` through `004-*` |
 | `tdd-orchestrator` | Implement a clear interactive requirement or pre-specified autonomous scenarios through RED, GREEN, and REFACTOR | Code, tests, validation evidence, and autonomous `TDD-OUTPUT.json` |
@@ -72,7 +73,6 @@ Runtime acceptance QA requires runner readiness, a command preview, and explicit
 ## Core artifact boundaries
 
 - `project-memory` owns durable project documents and their derived indexes. Its Dream-inspired consolidation reconciles selected evidence and curates the digest during an invocation; it does not retrain models or schedule background work. It must not touch `docs/harness-history/` or manage `docs/specs/` and `docs/workflow/`.
-- `memory-context` uses `.harness-kit/memory.toml` as discovery hints, not authority for current facts. Confirm project identities and current snapshots through the live MCP before relying on cached state.
 - `pbb-design` defines business scope without designing architecture. Pass validated decisions, provisional assumptions, and open questions explicitly into technical refinement.
 - `scope-refinement` owns specification documents created during its four DDD phases.
 - `autonomous-orchestrator` owns product state and delegates technical work.

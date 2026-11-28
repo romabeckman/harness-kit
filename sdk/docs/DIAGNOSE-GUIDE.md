@@ -16,6 +16,8 @@ When at least three complete traces are available, the flow can also ask Meta-Ha
 
 Add `--project-dreaming` to examine closed development episodes and their linked rework attempts. The SDK gathers evidence for each owning project, including eligible traces, cited tests, and review signals. The goal is to identify a concrete decision about how to select, order, or reuse tests and record a hypothesis that can be evaluated on another task.
 
+An episode is a saved record of development work and its review. A hypothesis proposes a test-selection improvement to evaluate; it is not yet an instruction for future work.
+
 The result can be:
 
 - `recorded`: one or more hypotheses were created, updated, or reconciled, and the SDK verified the records before saving the receipt.
@@ -40,6 +42,8 @@ Process pending sessions and traces:
 ```sh
 hrns diagnose --agent <runner>
 ```
+
+Replace `<runner>` with your installed runner, such as `codex-cli` or `claude-cli`. Batches contain three sessions by default; use `--batch-size <number>` to change their size, for example `hrns diagnose --batch-size 6 --agent codex-cli`.
 
 Process sessions and also analyze eligible Project Dreaming episodes:
 

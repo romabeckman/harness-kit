@@ -7,6 +7,8 @@ Practical routing guide for project skills and agents. Invoke only the smallest 
 
 Commands below use the HarnessKit slash-command syntax. Supply the task context with the invocation. Exact execution rules remain in each skill's `SKILL.md`; agent names identify responsibility rather than additional mandatory invocations.
 
+For interactive use, enter these commands in your AI coding tool with the HarnessKit plugin installed. You can review results and clarify the next request between invocations. Commands beginning with `hrns` belong in a terminal and are covered by the separate [CLI playbook](../../sdk/docs/PLAYBOOK-DAILY-USE.md).
+
 ## Before starting
 
 - Identify project path, domain, desired outcome, acceptance criteria, and constraints.
@@ -120,6 +122,16 @@ docs/specs/{domain}/
 
 Once invoked, the skill runs its document phases sequentially. Before proceeding to Flow 3, confirm that tactical tasks and test scenarios cover the selected business outcomes and constraints. Optional use of this flow does not waive the specification inputs required by the autonomous backlog loop.
 
+For a supplied UI prototype, invoke `read-ui-prototype` with the screens or frames and the intended user journey:
+
+```text
+/harness-kit:read-ui-prototype
+Describe the attached checkout screens for frontend implementation.
+Include visible controls, states, and interactions; identify missing information.
+```
+
+It produces a specification for `developer-frontend`; implementation follows in Flow 3.
+
 ## Flow 3: implement with TDD
 
 ```text
@@ -193,7 +205,7 @@ Use when acceptance criteria need execution against a running application's supp
 
 The skill checks runner readiness, previews commands through its safety wrapper, and requires explicit confirmation before execution. Use the runner matching the controlling environment, such as `codex-cli` for Codex; do not silently switch providers. Keep credential values out of prompts and command arguments.
 
-Use `qa run` for a new execution, `qa report --run <run-id>` to regenerate an existing run's report, and `qa exploratory` to execute saved plans. Let the skill construct and confirm the exact command. Report runtime verdicts with evidence and coverage gaps.
+Use `hrns qa run` for a new execution, `hrns qa report --run <run-id>` to regenerate an existing run's report, and `hrns qa exploratory` to execute saved plans. Let the skill construct and confirm the exact command. Report runtime verdicts with evidence and coverage gaps.
 
 ## Flow 5: autonomous backlog
 

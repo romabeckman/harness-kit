@@ -12,7 +12,7 @@ A QA run follows five stages:
 2. **Validation** — Harness Kit checks the plan, target, action limits, and execution engines.
 3. **Execution** — deterministic drivers perform HTTP calls, browser actions, CLI commands, MCP calls, or WebSocket exchanges.
 4. **Optional analysis** — when enabled, the agent performs one bounded evidence pass and may append scenarios. It cannot change executed scenarios; appended scenarios run once before reporting.
-5. **Reporting** — Harness Kit reconciles the agent's description with runtime evidence and saves the report.
+5. **Optional reporting** — with `--report`, Harness Kit reconciles the agent's description with runtime evidence and saves the report. Without it, state and evidence are saved and a report can be generated later with `hrns qa report`.
 
 The agent plans tests. Optional analysis checks coverage after execution. Drivers perform the actions. Source code or agent prose alone cannot prove that a scenario passed.
 
@@ -29,20 +29,26 @@ flowchart TD
     EXECUTE["EXECUTE<br/>Drivers collect evidence"]
     ANALYZE["OPTIONAL ANALYZE<br/>Check results and coverage"]
     APPENDED["EXECUTE APPENDED<br/>Run new validated scenarios once"]
-    REPORT["REPORT<br/>Persist report and evidence"]
+    REPORT["OPTIONAL REPORT<br/>Generate report with --report"]
     VERDICT["VERDICT<br/>PASS · FAIL · BLOCKED · INCONCLUSIVE"]
     LEARN["UPDATE MEMORY<br/>Save verified setup hints"]
 
-    INPUT --> MEMORY --> PLAN --> VALIDATE --> EXECUTE --> REPORT --> VERDICT --> LEARN
-    EXECUTE -. "--analysis" .-> ANALYZE --> REPORT
-    ANALYZE -. append validated scenarios once .-> APPENDED --> REPORT
+    INPUT --> MEMORY --> PLAN --> VALIDATE --> EXECUTE
+    EXECUTE -->|"--report without --analysis"| REPORT --> VERDICT --> LEARN
+    EXECUTE -. "without --report or --analysis" .-> VERDICT
+    EXECUTE -. "--analysis" .-> ANALYZE
+    ANALYZE -->|"no additions, --report"| REPORT
+    ANALYZE -. "no additions, without --report" .-> VERDICT
+    ANALYZE -. append validated scenarios once .-> APPENDED
+    APPENDED -->|"--report"| REPORT
+    APPENDED -. "without --report" .-> VERDICT
 ```
 
-The reporting phase still runs when the target is unavailable or adaptive analysis fails. Cancellation propagates immediately, preserves already written run state, and closes only runtimes created by Harness Kit.
+When `--report` is enabled, the reporting phase still runs when the target is unavailable or adaptive analysis fails. Without `--report`, execution saves state and evidence and skips reporting, including after optional analysis. Cancellation propagates immediately, preserves already written run state, and closes only runtimes created by Harness Kit.
 
 ## Execution prerequisites
 
-Install the project dependencies before running QA. `playwright` is a local development dependency, so this step installs its CLI into the project's `node_modules`:
+Install Harness Kit and authenticate your selected runner before running QA. For a source installation, run the following setup commands in `harness-kit/sdk`, then return to the project you want to test. `playwright` is an SDK development dependency; a production-only dependency installation may omit the package needed by the browser engine:
 
 ```text
 npm install
@@ -72,9 +78,9 @@ For automation or repeatable commands, provide values directly. Post-execution a
 hrns qa run --scope "Validate the checkout flow" --target http://localhost:3000 --profile web
 ```
 
-`hrns qa` is an alias for `hrns qa run`.
+`hrns qa` defaults to the `run` action. The saved-plan selector is offered only when the action is omitted and no new `--scope` or `--scenario` is supplied; an explicit `hrns qa run` starts the new-run flow.
 
-When saved plans exist and no analysis flag is present, the interactive selector offers **resume**, **resume with analysis**, or **new**. Choose **resume with analysis** to inspect execution evidence and append and execute material missing scenarios. Plain **resume** executes only saved scenarios.
+When saved plans exist and no analysis flag is present, the interactive selector offers **resume**, **resume with analysis**, or **new**. Choose **resume with analysis** to inspect execution evidence and append and execute material missing scenarios. Plain **resume** executes only saved scenarios unless `--analysis` was supplied on the command.
 
 ## Writing a useful scope
 
@@ -104,6 +110,8 @@ hrns qa run \
 ```
 
 The planner may add scenarios for important functional, negative, boundary, security, accessibility, or resilience gaps.
+
+The multiline example uses Bash continuation (`\`). In PowerShell, enter it on one line or use PowerShell's backtick continuation.
 
 ## Commands
 
@@ -142,10 +150,12 @@ Example: `hrns qa report --run <run-id> --output html`. If `--output` is omitted
 ### Start development correction from a QA run
 
 ```text
-hrns run --reset --run <qa-run-id>
+hrns run --reset --run <qa-run-id> --skip-deploy
 ```
 
 This loads a completed QA run and its stored plan, then generates the development scope from only `FAILED` and `BLOCKED` scenarios. It preserves scenario definitions, observed reasons, and evidence paths for the developer. The command rejects an incomplete run, a run with no actionable scenarios, or a combination of `--run` and `--scope`.
+
+Run it from the project holding the QA results. `--reset` replaces product state under `docs/product/`; preserve any state you need first. `--skip-deploy` skips the development CLI's automatic staging, commit, and push phase so you can review the changes.
 
 ### Run every saved plan
 
@@ -164,10 +174,11 @@ This command selects the latest version of every saved plan, validates and execu
 | `--target <value>` | Set the application URL, WebSocket URL, or CLI working directory. |
 | `--profile <profile>` | Select an execution profile. |
 | `--project <path>` | Select the project to inspect and test. Defaults to the current directory. |
-| `--agent <runner>` | Override the agent runner. Defaults to `claude-cli`. |
+| `--agent <runner>` | Select the runner directly. If omitted, the CLI offers an interactive selector with `claude-cli` as its default choice. |
 | `--model <model>` | Override the model used by QA phases. |
 | `--effort <level>` | Override reasoning effort used by QA phases. |
 | `--analysis` | Enable post-execution evidence analysis; material missing scenarios may be appended and executed before reporting. Disabled by default. |
+| `--report` | Generate and display the report during `hrns qa run`. Disabled by default; state and evidence are saved without it. |
 | `--auth <profile>` | Select a named profile from optional `.harness-kit/auth.json`; valid for `run` and `exploratory`. |
 | `--output <format>` | For `hrns qa report`, write `json`, `html`, `markdown`, or `send-to-developer`. |
 | `--debug` | Show runner arguments, prompts, sessions, and complete errors. |
@@ -226,7 +237,7 @@ Use `authProfile: "none"` for guest, login, or other anonymous coverage. Keep th
 hrns qa run --auth admin --scope "Validate the protected admin area" --target http://127.0.0.1:3000 --profile web
 ```
 
-Authentication values are resolved immediately before execution. Resolved values are never copied to plans, prompts, reports, execution memory, or persisted evidence. Curl sends its request configuration through stdin (`--config -`), so credentials do not appear in the curl process arguments. Curl request/response evidence, MCP response evidence, and CLI arguments/stdout/stderr are redacted both by credential field and by the exact resolved value; non-sensitive request body fields remain auditable. Review screenshots and application-specific output before sharing because an application can render secrets that are unrelated to the selected profile.
+Authentication values are resolved immediately before execution. Harness Kit does not insert resolved values into plans, prompts, reports, or execution memory. Curl sends its request configuration through stdin (`--config -`), so credentials do not appear in the curl process arguments. Curl request/response evidence, MCP response evidence, and CLI arguments/stdout/stderr are redacted both by credential field and by the exact resolved value; non-sensitive request body fields remain auditable. Browser screenshots are saved without image redaction and can capture credentials or other sensitive data displayed by the application, including values from the selected profile. Review screenshots and application-specific output before sharing.
 
 ### Engine authentication boundaries
 
@@ -261,7 +272,7 @@ When no target is supplied, Harness Kit can serve a root `index.html` through a 
 
 ## Reading progress and verdicts
 
-The terminal shows runtime preparation, each phase, every scenario, and the final report. Scenario failures include their immediate reason.
+The terminal shows runtime preparation, each phase, and every scenario. Add `--report` to also generate and display the final report during execution. Scenario failures include their immediate reason.
 
 | Scenario state | Meaning |
 | --- | --- |
@@ -283,6 +294,8 @@ An adaptive-analysis warning does not discard completed execution. Harness Kit r
 
 Harness Kit stores artifacts inside the tested project:
 
+The tree below lists possible artifacts. State and evidence are saved during execution. `--report` creates `report.json` and `REPORT.md`; `hrns qa report --output <format>` creates or overwrites the selected report format. `REPORT.html` and `DEVELOPER-SCOPE.md` are not created by every run.
+
 ```text
 docs/qa/
   plans/<plan-id>/
@@ -303,7 +316,7 @@ docs/qa/
 
 `REPORT.md` is the readable per-run report containing every scenario grouped by status. `REPORT.html` provides a styled table with one evidence link per scenario; its modal previews images, scrolls long documents, and exposes a direct link for every evidence item. `report.json` is the structured equivalent. `DEVELOPER-SCOPE.md` is an LLM-generated scope containing only `FAILED` and `BLOCKED` scenarios. Exploratory `report.json` aggregates plan versions, run IDs, effective targets, scenario results, totals, validation errors, and the global verdict. Evidence remains in each referenced run directory.
 
-Harness Kit removes common credential fields and exact resolved authentication values from persisted Curl/MCP/CLI evidence. Curl's request configuration is transient stdin, not a command-line argument. Browser screenshots and application-generated fields can still contain unrelated secrets; review artifacts before sharing.
+Harness Kit removes common credential fields and exact resolved authentication values from persisted Curl/MCP/CLI evidence. Curl's request configuration is transient stdin, not a command-line argument. Browser screenshots can still contain credentials and other sensitive data displayed by the application; review screenshots and application-generated fields before sharing.
 
 ## Execution memory
 
@@ -374,6 +387,6 @@ Current scope does not support chaining a value from one API response into a lat
 
 ## Related documentation
 
-- [`docs/feature/QA_TESTER.md`](./feature/QA_TESTER.md) — implementation contract and engineering boundaries.
+- [`docs/feature/qa/QA_TESTER.md`](./feature/qa/QA_TESTER.md) — implementation contract and engineering boundaries.
 - [`docs/adr/ARCHITECTURE.md`](./adr/ARCHITECTURE.md) — SDK architecture and dependency boundaries.
 - [`docs/adr/TESTS.md`](./adr/TESTS.md) — repository test strategy and validation commands.

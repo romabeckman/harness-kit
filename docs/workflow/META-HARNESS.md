@@ -2,6 +2,8 @@
 
 The meta-harness loop improves skill instructions from recorded execution evidence. Three skills own the evidence lifecycle; `meta-harness-agent` routes between them.
 
+A trace records what happened in a completed session. A skill chain is the sequence of skills used for a task. A candidate is a proposed change to one skill's instructions. Invoke the slash commands below in your coding tool with the HarnessKit plugin installed.
+
 ## Components
 
 | Skill | Responsibility | Output |
@@ -35,7 +37,8 @@ flowchart LR
     C --> F[meta-harness]
     E --> F
     F --> G[Candidate vNNN]
-    G -->|Explicit human approval| H[Active skill]
+    G --> V[Comparable evaluation and saved results]
+    V -->|Improvement verified and explicit human approval| H[Active skill]
 ```
 
 ## Record a trace
@@ -71,6 +74,8 @@ The evaluator:
 - Backfills only blank computed-score blocks in trace `score.md` files.
 - Updates `pareto-frontier.md`.
 - Treats groups below `3` sessions as insufficient evidence.
+
+The Pareto frontier shows configurations with useful trade-offs across the measured criteria. It does not necessarily identify one configuration that is best for every task.
 
 The evaluator may run with fewer than `3` total sessions, but its comparison is provisional. It must not declare a reliable winner from an undersized group.
 
