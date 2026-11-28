@@ -36,7 +36,5 @@ export function cmdReport(cwd: string, args: string[] = []): void {
   const renderer = new ReportRenderer()
   renderer.render(report)
 
-  // Ledger still handles its own detailed printing if we want to delegate, but our renderer
-  // also prints a summary. For full compatibility, we can also print the ledger's detailed report.
-  ledger.printReport()
+
 }

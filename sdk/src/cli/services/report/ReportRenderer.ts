@@ -1,3 +1,4 @@
+import { printTokenReport } from '../../../telemetry/TokenReportRenderer'
 import type { ProductReport } from './types'
 import { AnsiHelpers } from '../../../ui/AnsiHelpers'
 
@@ -13,15 +14,8 @@ export class ReportRenderer {
       this.renderDecisions(report.decisionSummary)
     }
     
-    // Always render token report if we have it (or let TokenLedger print it)
     console.log(AnsiHelpers.cyan('\n--- TOKEN REPORT ---'))
-    // Since we need to just print it, and the original cmdReport used ledger.printReport(),
-    // we can either format it here or rely on the caller to print the ledger.
-    // For now, we print a basic summary if the caller delegates it to us.
-    console.log(`Input Tokens: ${report.tokenReport.totals.inputTokens}`)
-    console.log(`Output Tokens: ${report.tokenReport.totals.outputTokens}`)
-    console.log(`Cache Read: ${report.tokenReport.totals.cacheReadTokens}`)
-    console.log(`Cost: $${report.tokenReport.totals.costUsd.toFixed(4)}\n`)
+    printTokenReport(report.tokenReport)
   }
 
   private renderConfig(config: ProductReport['configSnapshot']): void {

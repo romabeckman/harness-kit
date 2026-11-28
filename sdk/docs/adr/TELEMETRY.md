@@ -7,7 +7,7 @@ tags: [telemetry, ledger, tokens, costs]
 edges:
   - relation: references
     target: "adr:architecture"
-updated: "2026-09-25"
+updated: "2026-11-28"
 ---
 # Telemetry and Ledger
 Tracks token consumption, execution costs, and quota limits across agent run cycles.
@@ -38,7 +38,7 @@ sdk/
 ### Steps
 1. Capture agent invocation output containing `usage` metadata.
 2. Call `ledger.record(skill, agent, usage)` to append a canonical audit event to `tokens.jsonl`.
-3. Invoke `ledger.printReport()` to view cost and savings summaries in the terminal.
+3. Invoke `ledger.printReport()` to view token usage and estimated cache savings in the terminal.
 
 <code_example>
 # CORRECT: Log token usage and cost metrics to the ledger
@@ -49,6 +49,12 @@ if (output.usage) {
 # WRONG: Discard agent execution usage details without updating the ledger
 const output = await runner.run(invocation) // Ignores token tracking metadata
 </code_example>
+
+## CACHE SAVINGS REPORT
+The terminal report aggregates the entire ledger. Savings are estimates weighted by cached token count for each record, using model-family reference rates; unknown model rates contribute zero. Gemini Neon and Hydrogen use $2.85 and $1.425 per million cache-read tokens, respectively. Gemini Carbon and Argon use $1.90 before December 1, 2026, and $3.80 thereafter, based on the record timestamp. Other models use the existing estimated tier rates. Reported savings exclude cache storage and other charges. The terminal does not display invocation cost.
+
+## CACHE INPUT SHARE
+The percentage divides total cached input by total input across records. Codex CLI reports cached input inside input tokens; Claude CLI and Claude SDK report uncached input, cache writes, and cache reads separately. The report omits the percentage if any nonempty record has an unsupported runner, if counts are invalid or negative, if cached input exceeds total input, or if total input is zero. Gemini runner accounting is not yet used for this percentage. Raw ledger values are preserved.
 
 ## PARAMETERS / CONFIGURATIONS
 | Name | Type | Required | Description | Default |

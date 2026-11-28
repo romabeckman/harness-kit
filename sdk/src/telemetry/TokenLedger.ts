@@ -1,3 +1,4 @@
+import { printTokenReport } from './TokenReportRenderer'
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import type { TokenUsage } from '../agent-runner/types'
@@ -283,58 +284,6 @@ export class TokenLedger {
   }
 
   printReport(): void {
-    const { entries, totals, bySkill } = this.report()
-    const fmt = (n: number) => n.toLocaleString('en-US').padStart(8)
-    const usd = (n: number) => `$${n.toFixed(4)}`
-
-    // collect unique models and efforts seen across entries
-    const models = [...new Set(entries.map(e => e.model).filter(Boolean))]
-    const efforts = [...new Set(entries.map(e => e.effort).filter(e => e && e !== 'default'))]
-
-    // Estimated USD saved per cached input token, averaged by model tier.
-    // These tier averages are indicative, not provider billing rates.
-    const RATE_EXTRA_LARGE = 3.7 / 1_000_000
-    const RATE_LARGE = 2.1 / 1_000_000
-    const RATE_MEDIUM = 0.9 / 1_000_000
-    const RATE_FAST = 0.2 / 1_000_000
-
-    const modelRate = (model: string): number => {
-      const m = model.toLowerCase()
-      if (/flash.?lite|haiku|gpt-.*-(?:mini|nano|luna)\b/.test(m)) return RATE_FAST
-      if (/gpt-.*-terra\b/.test(m)) return RATE_MEDIUM
-      if (/gpt-.*-sol\b|sonnet|gemini-.*pro/.test(m)) return RATE_LARGE
-      if (/fable|mythos|opus|gpt-.*-astra\b|gpt-5\.5|gpt-4o|gpt-4\.1(?!-(?:mini|nano))|\bo3\b/.test(m)) return RATE_EXTRA_LARGE
-      if (/gpt-5(?:\.1)?(?:\b|-)|gpt-3\.5|claude-2|gemini-.*flash/.test(m)) return RATE_MEDIUM
-      // Unrecognized models use the large tier.
-      return RATE_LARGE
-    }
-
-    // Sum per entry so each model contributes according to its cached tokens.
-    const cacheSaved = entries.reduce(
-      (sum, entry) => sum + entry.cacheReadTokens * modelRate(entry.model),
-      0,
-    )
-
-    console.log('\nharness-kit-sdk — token report')
-    if (models.length) console.log(`  model:  ${models.join(', ')}`)
-    if (efforts.length) console.log(`  effort: ${efforts.join(', ')}`)
-    console.log('─'.repeat(68))
-    console.log(`${'skill'.padEnd(28)} ${'input'.padStart(8)} ${'output'.padStart(8)} ${'cache_r'.padStart(8)}  cost`)
-    console.log('─'.repeat(68))
-
-    for (const [skill, u] of Object.entries(bySkill)) {
-      console.log(
-        `${skill.padEnd(28)} ${fmt(u.inputTokens)} ${fmt(u.outputTokens)} ${fmt(u.cacheReadTokens)}  ${usd(u.costUsd)}`
-      )
-    }
-
-    console.log('─'.repeat(68))
-    console.log(
-      `${'TOTAL'.padEnd(28)} ${fmt(totals.inputTokens)} ${fmt(totals.outputTokens)} ${fmt(totals.cacheReadTokens)}  ${usd(totals.costUsd)}`
-    )
-    if (totals.cacheReadTokens > 0) console.log(`  cache_read saved ~${usd(cacheSaved)}`)
-
-    console.log('  * Note: cache savings use estimated rates; costs come from recorded usage.')
-    console.log()
+    printTokenReport(this.report())
   }
 }

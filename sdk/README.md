@@ -469,22 +469,20 @@ Only the fields you specify are overridden — everything else falls back to def
 
 After each run, `docs/product/tokens.jsonl` is written with one entry per agent invocation. Call `tokenReport()` or use `hrns report` to print a summary:
 
-```
+```text
 harness-kit-sdk — token report
-  model:  anthropic.claude-4-6-sonnet, anthropic.claude-4-5-haiku
+  model:  Gemini Hydrogen
 ────────────────────────────────────────────────────────────────────
-skill                           input   output  cache_r  cost
+skill                             input     output cache read
 ────────────────────────────────────────────────────────────────────
-harness-kit:autonomous-orchestrator:bootstrap        5      586   81,124  $0.2267
-scope-refinement                2,759   14,806  793,672  $2.9909
-tdd-orchestrator                1,274   16,776 1,962,417  $2.8600
-the-grumpy-tech-lead               57    3,372  287,236  $0.5543
-adversarial-qa                     57    3,323  323,149  $0.3755
-project-memory                     13    4,684  240,743  $0.7567
+planning                        125.000     18.000      1,40M
 ────────────────────────────────────────────────────────────────────
-TOTAL                           4,165   43,547 3,688,341  $7.7640
-  cache_read saved ~$11.0650
+TOTAL                           125.000     18.000      1,40M
+  With cache, you saved approximately $1.9950
+  * Estimated savings based on average rates per model family.
 ```
+
+Values of at least one million tokens are abbreviated using `M`. Cache savings are an estimate based on reference model rates and include the full ledger history. When all nonempty records use supported input accounting (Codex CLI, Claude CLI, or Claude SDK), the report also shows the percentage of input served from cache. Unsupported runners, including Gemini, or invalid token counts suppress that percentage.
 
 ---
 

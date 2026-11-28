@@ -9,7 +9,7 @@ edges:
     target: "adr:architecture"
   - relation: tested_by
     target: "adr:tests"
-updated: 2026-09-26
+updated: 2026-11-28
 ---
 
 ```graph
@@ -21,6 +21,9 @@ Provides ANSI-based terminal rendering utilities for the CLI orchestrator.
 
 ## OVERVIEW
 The terminal UI module handles visual representation in the CLI, including startup banners, animated spinners, and progress bars. It leverages ANSI escape sequences to provide a rich CLI experience.
+
+## TOKEN REPORT
+The shared token report renders usage by skill and cumulative totals for input, output, and cache reads. Counts of one million or more use two decimal places and the `M` suffix, for example `1,40M`; smaller counts are shown exactly. Model names are grouped by family without versions. It displays estimated cache savings and omits invocation cost. When input accounting is known for all nonempty records, it also shows the percentage of input served from cache, weighted by input tokens. Currently supported runners are Codex CLI, Claude CLI, and Claude SDK; unsupported runners (including Gemini) or invalid data suppress the percentage. `hrns report` uses the same renderer.
 
 ## FOLDER STRUCTURE
 <folder_structure>

@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { TokenLedger } from '../TokenLedger'
+import { formatTokens } from '../TokenReportRenderer'
 import type { TokenUsage } from '../../agent-runner/types'
 
 function makeUsage(overrides: Partial<TokenUsage> = {}): TokenUsage {
@@ -152,7 +153,7 @@ describe('TokenLedger', () => {
 
       ledger.printReport()
 
-      expect(consoleSpy.mock.calls.flat().join('\n')).toContain(`cache_read saved ~${saved}`)
+      expect(consoleSpy.mock.calls.flat().join('\n')).toContain(`With cache, you saved approximately ${saved}`)
       consoleSpy.mockRestore()
     })
 
@@ -164,7 +165,7 @@ describe('TokenLedger', () => {
 
       ledger.printReport()
 
-      expect(consoleSpy.mock.calls.flat().join('\n')).toContain('cache_read saved ~$2.1200')
+      expect(consoleSpy.mock.calls.flat().join('\n')).toContain('With cache, you saved approximately $2.1200')
       consoleSpy.mockRestore()
     })
 
@@ -205,7 +206,7 @@ describe('TokenLedger', () => {
 
       ledger.printReport()
 
-      expect(consoleSpy.mock.calls.flat().join('\n')).toContain('claude-opus-4-8, claude-haiku-4-5')
+      expect(consoleSpy.mock.calls.flat().join('\n')).toContain('Claude Opus, Claude Haiku')
       consoleSpy.mockRestore()
     })
 
@@ -215,7 +216,7 @@ describe('TokenLedger', () => {
 
       ledger.printReport()
 
-      expect(consoleSpy.mock.calls.flat().join('\n')).not.toContain('cache_read saved')
+      expect(consoleSpy.mock.calls.flat().join('\n')).not.toContain('With cache, you saved')
       consoleSpy.mockRestore()
     })
 
@@ -226,7 +227,7 @@ describe('TokenLedger', () => {
       ledger.printReport()
 
       const calls = consoleSpy.mock.calls.flat().join('\n')
-      expect(calls).not.toContain('cache_read saved')
+      expect(calls).not.toContain('With cache, you saved')
       consoleSpy.mockRestore()
     })
 
@@ -237,8 +238,81 @@ describe('TokenLedger', () => {
       ledger.printReport()
 
       const calls = consoleSpy.mock.calls.flat().join('\n')
-      expect(calls).toContain('cache_read saved')
+      expect(calls).toContain('With cache, you saved')
       consoleSpy.mockRestore()
+    })
+  })
+
+  describe('terminal presentation', () => {
+    it.each([[0, '0'], [1250, '1.250'], [999999, '999.999'], [1000000, '1,00M'], [1400000, '1,40M'], [12345678, '12,35M']])('formats %s tokens as %s', (value, expected) => {
+      expect(formatTokens(value as number)).toBe(expected)
+    })
+
+    it.each([
+      ['codex-cli', 1000, 0, 800, '80%'],
+      ['claude-cli', 150, 50, 800, '80%'],
+      ['claude-sdk', 150, 50, 800, '80%'],
+      ['codex-cli', 1000, 0, 0, '0%'],
+    ])('shows the cache input share for %s', (runner, inputTokens, cacheCreationTokens, cacheReadTokens, expected) => {
+      const ledger = new TokenLedger(ledgerPath)
+      ledger.record('planning', 'agent', { ...makeUsage({ inputTokens, cacheCreationTokens, cacheReadTokens }), runner })
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      ledger.printReport()
+      expect(spy.mock.calls.flat().join('\n')).toContain(`${expected} of input tokens were served from cache.`)
+      spy.mockRestore()
+    })
+
+    it('weights mixed runners by total input rather than averaging percentages', () => {
+      const ledger = new TokenLedger(ledgerPath)
+      ledger.record('planning', 'agent', { ...makeUsage({ inputTokens: 1000, cacheCreationTokens: 0, cacheReadTokens: 800 }), runner: 'codex-cli' })
+      ledger.record('planning', 'agent', { ...makeUsage({ inputTokens: 9000, cacheCreationTokens: 0, cacheReadTokens: 0 }), runner: 'claude-cli' })
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      ledger.printReport()
+      expect(spy.mock.calls.flat().join('\n')).toContain('8% of input tokens were served from cache.')
+      spy.mockRestore()
+    })
+
+    it.each([
+      ['codex-cli', 0, 0],
+      ['codex-cli', 100, 200],
+      ['unknown', 100, 80],
+    ])('does not invent a percentage for invalid or unknown accounting: %s', (runner, inputTokens, cacheReadTokens) => {
+      const ledger = new TokenLedger(ledgerPath)
+      ledger.record('planning', 'agent', { ...makeUsage({ inputTokens, cacheCreationTokens: 0, cacheReadTokens }), runner })
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      ledger.printReport()
+      expect(spy.mock.calls.flat().join('\n')).not.toContain('of input tokens were served from cache.')
+      spy.mockRestore()
+    })
+
+    it('formats millions without changing recorded counts or showing costs', () => {
+      const ledger = new TokenLedger(ledgerPath)
+      ledger.record('planning', 'agent', makeUsage({ inputTokens: 1_400_000, outputTokens: 999_999, cacheReadTokens: 0, costUsd: 99 }))
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      ledger.printReport()
+      const text = spy.mock.calls.flat().join('\n')
+      expect(text).toContain('1,40M')
+      expect(text).toContain('999.999')
+      expect(text).not.toMatch(/cost|\$99/i)
+      expect(ledger.report().totals.inputTokens).toBe(1_400_000)
+      spy.mockRestore()
+    })
+
+    it.each([
+      ['gemini-4-neon', 'Gemini Neon', '$2.8500'],
+      ['google/gemini-4-hydrogen', 'Gemini Hydrogen', '$1.4250'],
+      ['gemini-4-carbon', 'Gemini Carbon', '$1.9000'],
+      ['gemini-4-argon', 'Gemini Argon', '$1.9000'],
+    ])('recognizes %s and its average cache savings', (model, family, saved) => {
+      const ledger = new TokenLedger(ledgerPath)
+      ledger.record('planning', 'agent', { ...makeUsage({ model, cacheReadTokens: 1_000_000 }), timestamp: '2026-11-28T12:00:00Z' })
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      ledger.printReport()
+      const text = spy.mock.calls.flat().join('\n')
+      expect(text).toContain(family)
+      expect(text).not.toContain(model)
+      expect(text).toContain(`With cache, you saved approximately ${saved}`)
+      spy.mockRestore()
     })
   })
 
