@@ -2,6 +2,25 @@
 
 Defines the analysis framework and strict rules for generating and maintaining `docs/adr/ARCHITECTURE.md`.
 
+## DOCUMENT CATALOG
+
+Paths are relative to `docs/adr/`. The two required documents form the architecture and testing baseline. Keep each ADR focused on one technical responsibility and grounded in project evidence.
+
+ALLOWED: Within an authorized documentation update, create a suggested ADR without a separate request when you identify a new, evidence-backed rule or decision that needs a dedicated document. Update the existing document if it already owns the topic. Suggested ADRs may also be created on request or when decomposing `ARCHITECTURE.md` under the size rules below.
+
+| Document | Status | Purpose |
+|---|---|---|
+| `ARCHITECTURE.md` | Required | Records the system structure, layer responsibilities, design patterns, and integrations. |
+| `TESTS.md` | Required | Records the test strategy, configured test commands, and applicable coverage rules. |
+| `OBSERVABILITY.md` | Suggested | Records logging, metrics, tracing, and alerting decisions. |
+| `SECURITY.md` | Suggested | Records trust boundaries, access controls, and how sensitive data and secrets are handled. |
+| `DATABASE.md` | Suggested | Records data ownership, persistence decisions, and migration rules. |
+| `API-DESIGN.md` | Suggested | Records API contracts, versioning, compatibility, and error conventions. |
+| `DEPLOYMENT.md` | Suggested | Records deployment environments, release controls, and rollback procedures. |
+| `RESILIENCE.md` | Suggested | Records how the system handles failures, including timeouts, retries, and recovery. |
+
+Use [TESTS-RULES.md](TESTS-RULES.md) for `TESTS.md` and the [standard document template](DOCUMENT-TEMPLATE.md) for complementary ADRs.
+
 ---
 
 ## EXPECTED OUTPUT

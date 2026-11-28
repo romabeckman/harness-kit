@@ -62,7 +62,7 @@ class Validator:
                     string(node.get("path")), "Invalid document graph node")
             require(node["id"] not in self.paths, f"Duplicate document ID: {node['id']}")
             path = (self.project / node["path"]).resolve()
-            allowed = any(path.is_relative_to(self.docs / folder) for folder in ("adr", "feature"))
+            allowed = any(path.is_relative_to(self.docs / folder) for folder in ("adr", "feature", "business"))
             require(allowed and path.suffix == ".md" and path.is_file(),
                     f"Invalid document path: {node['path']}")
             self.paths[node["id"]] = path
@@ -75,8 +75,12 @@ class Validator:
             return
         require(document in self.paths, f"Unknown document ID: {document}")
         try:
-            is_feature = self.paths[document].is_relative_to(self.docs / "feature")
-            text = self.paths[document].read_text(encoding="utf-8")
+            path = self.paths[document]
+            if path.is_relative_to(self.docs / "business"):
+                self.records[document] = {}
+                return
+            is_feature = path.is_relative_to(self.docs / "feature")
+            text = path.read_text(encoding="utf-8")
             validate_canonical_document_size(text, "Feature" if is_feature else "ADR")
             data = knowledge_block(text)
             require(data is None or is_feature,

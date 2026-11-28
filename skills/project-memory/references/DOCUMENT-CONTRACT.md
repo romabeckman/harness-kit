@@ -10,12 +10,14 @@ Read before any canonical edit, including consolidation or digest demotion. Read
 | `docs/adr/TESTS.md` | [TESTS-RULES.md](TESTS-RULES.md) | Actual test strategy, configuration, and commands |
 | Other `docs/adr/**/*.md` | [DOCUMENT-TEMPLATE.md](DOCUMENT-TEMPLATE.md) | One architectural decision or technical responsibility |
 | `docs/feature/**/*.md` | [DOCUMENT-TEMPLATE.md](DOCUMENT-TEMPLATE.md); [ONTOLOGY-RULES.md](ONTOLOGY-RULES.md) for consequential knowledge | One feature/domain; canonical concepts and claims |
+| `docs/business/**/*.md` | [BUSINESS-RULES.md](BUSINESS-RULES.md) | Business purpose, goals, and other supported business topics. Macro graph entries only. |
 | `docs/README.md` | [README-RULES.md](README-RULES.md) | Navigation only; exact template casing; no YAML frontmatter, technical explanations, or REFERENCES section |
 | `docs/.digest.md`, `docs/.graph.json` | [INDEX-RULES.md](INDEX-RULES.md) | Derived orientation and routing; no independent claim ownership |
 | Root `README.md` | Existing structure | Targeted minimal edits; keep technical detail in owning docs |
 
-- REQUIRED: Only `ARCHITECTURE.md` and `TESTS.md` are mandatory ADRs. Create additional ADRs only when requested or when decomposing `ARCHITECTURE.md` to satisfy its size limit. Compact other ADRs first; ask for a scope decision only if a new ADR is necessary.
-- REQUIRED: Keep specialized ADRs linked to architecture. Subfolders are allowed inside `docs/adr/` and `docs/feature/`; do not introduce other documentation trees through this skill.
+- REQUIRED: Only `ARCHITECTURE.md` and `TESTS.md` are mandatory ADRs. Follow the [architecture catalog](ARCHITECTURE-RULES.md#document-catalog) for when to create additional ADRs, including a suggested ADR for an evidence-backed rule or decision within authorized scope. Compact existing ADRs before proposing a size-driven split beyond that scope.
+- REQUIRED: Keep specialized ADRs linked to architecture. Subfolders are allowed inside `docs/adr/`, `docs/feature/`, and `docs/business/`; do not introduce other documentation trees through this skill.
+- REQUIRED: `docs/business/intent.md` is the only mandatory business document; apply the business reference to create other business documents when justified.
 - REQUIRED: Apply the whole-file limits in [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) to each generated or updated Markdown file.
 
 ## Metadata and routing

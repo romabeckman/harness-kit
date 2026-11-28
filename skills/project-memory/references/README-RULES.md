@@ -51,13 +51,13 @@ REQUIRED: Reject any attempt to include the following content in this file.
    - Foundational baseline ADRs next (Architecture, Tests).
    - Specific domain/feature documents after.
 
-5. **Index updates:** REQUIRED: Add every new `docs/adr/` or `docs/feature/` document to the table. PROHIBITED: Removing entries unless the corresponding file has been deleted.
+5. **Index updates:** REQUIRED: Add every new `docs/adr/`, `docs/feature/`, or `docs/business/` document to the table. List `business/intent.md` as mandatory and other business documents as optional. Use direct links to the files. PROHIBITED: Removing entries unless the corresponding file has been deleted.
 
 ---
 
 ## MANDATORY TEMPLATE
 
-REQUIRED: Use the structure below when creating; preserve unaffected content when updating `docs/README.md`. Replace every `[placeholder]` with actual project content.
+REQUIRED: Use the structure below when creating; preserve unaffected content when updating `docs/README.md`. Replace every `[placeholder]` with actual project content. In a narrowly scoped task, omit links to missing unrelated baselines and report those gaps; do not create broken links or expand the authorized scope to fill them.
 
 <output_template target="docs/README.md">
 

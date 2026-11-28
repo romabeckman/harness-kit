@@ -46,20 +46,32 @@ def append_micrograph(path: Path, graph_json: str) -> None:
 
 
 class BuildDocsGraphTests(unittest.TestCase):
-    def test_indexes_only_adr_and_feature_documents(self) -> None:
+    def test_indexes_only_adr_feature_and_business_documents(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             docs = Path(temp_dir) / "docs"
             write_doc(docs / "adr" / "architecture.md", "adr:architecture")
-            write_doc(docs / "feature" / "runner.md", "feature:runner")
+            write_doc(
+                docs / "feature" / "runner.md", "feature:runner",
+                'edges: [{relation: references, target: "business:intent", read: must}]',
+            )
+            intent = docs / "business" / "intent.md"
+            intent.parent.mkdir()
+            intent.write_text("# Business Intent\n", encoding="utf-8")
             write_doc(docs / "specs" / "billing" / "design.md", "spec:billing")
             write_doc(docs / "PLAYBOOK.md", "doc:playbook")
 
             graph = build_docs_graph(docs)
 
             self.assertEqual(
-                ["adr:architecture", "feature:runner"],
+                ["adr:architecture", "business:intent", "feature:runner"],
                 [node["id"] for node in graph["nodes"]],
             )
+            self.assertEqual(
+                {"id": "business:intent", "type": "business", "title": "Business Intent",
+                 "path": "docs/business/intent.md", "tags": []},
+                graph["nodes"][1],
+            )
+            self.assertEqual(["business:intent"], graph["nodes"][2]["related_docs"]["must_read"])
 
     def test_development_consumers_define_micrograph_fast_paths(self) -> None:
         repository = Path(__file__).parents[3]
@@ -344,8 +356,23 @@ class BuildDocsGraphTests(unittest.TestCase):
                 doc_type="feature",
             )
 
-            with self.assertRaisesRegex(ValueError, "Invalid feature frontmatter edge"):
+            with self.assertRaisesRegex(ValueError, "Invalid edge target"):
                 build_docs_graph(docs)
+
+    def test_rejects_invalid_adr_and_business_edges(self) -> None:
+        cases = (
+            ("adr", 'edges: [{relation: unknown, target: "adr:architecture"}]',
+             "Invalid edge relation"),
+            ("business", "edges: [{relation: references}]", "Invalid edge target"),
+        )
+        for doc_type, edges, error in cases:
+            with self.subTest(doc_type=doc_type), tempfile.TemporaryDirectory() as temp_dir:
+                docs = Path(temp_dir) / "docs"
+                write_doc(docs / "adr" / "architecture.md", "adr:architecture")
+                write_doc(docs / doc_type / "policy.md", f"{doc_type}:policy", edges)
+
+                with self.assertRaisesRegex(ValueError, error):
+                    build_docs_graph(docs)
 
     def test_rejects_invalid_feature_read_value(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

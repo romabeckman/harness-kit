@@ -23,6 +23,7 @@ ROUTING_FIELDS = (
 )
 MICROGRAPH_FIELDS = ("node_id", "domain", "implements", "tested_by", *ROUTING_FIELDS)
 PROJECT_RELATIONS = {"depends_on", "provides_to"}
+DOCUMENT_RELATIONS = {"implements", "depends_on", "tested_by", "references", "child_of"}
 
 
 def validate_feature_micrograph(data, node_id: str, file_path: Path, base_dir: Path):
@@ -86,7 +87,9 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
         title = frontmatter["title"]
 
     doc_type = frontmatter.get("doc_type")
-    if "feature/" in rel_path:
+    if file_path.relative_to(base_dir).parts[1:2] == ("business",):
+        doc_type = "business"
+    elif "feature/" in rel_path:
         doc_type = "feature"
     elif not doc_type:
         if "adr/" in rel_path:
@@ -117,28 +120,26 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
     # 1. Processar edges do YAML frontmatter
     fm_edges = frontmatter.get("edges", [])
 
+    if not isinstance(fm_edges, list):
+        raise ValueError(f"Frontmatter 'edges' must be an array in {file_path}")
+    for edge in fm_edges:
+        if not isinstance(edge, dict):
+            raise ValueError(f"Invalid frontmatter edge in {file_path}")
+        target = edge.get("target")
+        if not isinstance(target, str) or not target.strip():
+            raise ValueError(f"Invalid edge target in {file_path}")
+        relation = edge.get("relation")
+        if not isinstance(relation, str) or relation not in DOCUMENT_RELATIONS:
+            raise ValueError(f"Invalid edge relation {relation!r} in {file_path}")
+        edges.append({"source": node_id, "target": target, "relation": relation})
+
     if doc_type == "feature":
         must_read = []
         optional_docs = []
         seen_routing_targets = {}
 
-        if not isinstance(fm_edges, list):
-            raise ValueError(f"Feature frontmatter 'edges' must be an array in {file_path}")
-
         for edge in fm_edges:
-            if not isinstance(edge, dict) or "target" not in edge:
-                raise ValueError(f"Invalid feature frontmatter edge in {file_path}")
-
             target = edge["target"]
-            if not isinstance(target, str) or not target.strip():
-                raise ValueError(f"Invalid edge target in {file_path}")
-
-            relation = edge.get("relation", "references")
-            edges.append({
-                "source": node_id,
-                "target": target,
-                "relation": relation
-            })
 
             has_read = "read" in edge
             has_when = "when" in edge
@@ -191,22 +192,13 @@ def parse_markdown_file(file_path: Path, base_dir: Path):
             "must_read": must_read,
             "optional": optional_docs
         }
-    else:
-        # Non-feature nodes: omit related_docs
-        if isinstance(fm_edges, list):
-            for edge in fm_edges:
-                if isinstance(edge, dict) and "target" in edge:
-                    edges.append({
-                        "source": node_id,
-                        "target": edge["target"],
-                        "relation": edge.get("relation", "references")
-                    })
-
     # Read the same fenced graph used by the ontology validator.
     try:
         gb_data = graph_block(content)
     except ValueError as error:
         raise ValueError(f"Invalid micrograph in {file_path}: {error}") from error
+    if doc_type == "business" and gb_data is not None:
+        raise ValueError(f"Business documents cannot contain a micrograph: {file_path}")
     if doc_type == "feature":
         if gb_data is None:
             raise ValueError(f"Missing required feature micrograph in {file_path}")
@@ -228,7 +220,7 @@ def build_docs_graph(docs_dir: Path):
     node_ids = set()
     node_paths = {}
 
-    for allowed_dir in (docs_dir / "adr", docs_dir / "feature"):
+    for allowed_dir in (docs_dir / "adr", docs_dir / "feature", docs_dir / "business"):
         if not allowed_dir.exists():
             continue
         for root, _, files in os.walk(allowed_dir):
