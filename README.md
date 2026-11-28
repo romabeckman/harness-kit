@@ -210,7 +210,7 @@ hrns run
 | Category | Skill | Core Function |
 | --- | --- | --- |
 | **Foundation** | **[Project Memory](skills/project-memory/SKILL.md)** (`project-memory`) | Creates and maintains persistent technical documentation (`docs/adr/`, `.digest.md`, `.graph.json`). The agent's long-term memory. |
-| **Foundation** | **[PBB Design](skills/pbb-design/SKILL.md)** (`pbb-design`) | Transforms initial scope into a traceable Product Backlog, resolving open questions interactively or through provisional autonomous assumptions. |
+| **Foundation** | **[PBB Design](skills/pbb-design/SKILL.md)** (`pbb-design`) | Turns initial scope into a `PBB-Contract: 2` Markdown backlog with evidence, commercial order, and decisions by PBI. |
 | **Foundation** | **[Scope Refinement](skills/scope-refinement/SKILL.md)** (`scope-refinement`) | DDD orchestrator. Maps Bounded Contexts, Aggregates, and Given-When-Then test scenarios before implementation. |
 | **Foundation** | **[TDD Orchestrator](skills/tdd-orchestrator/SKILL.md)** (`tdd-orchestrator`) | Enforces RED → GREEN → REFACTOR. Coordinates test-first implementation and quality gates. |
 | **Orchestration** | **[Autonomous Orchestrator](skills/autonomous-orchestrator/SKILL.md)** (`autonomous-orchestrator`) | Sovereign loop manager. Fully automates execution across planning, TDD, validation, and auto-tuning phases. |
@@ -219,6 +219,7 @@ hrns run
 | **Quality Gates** | **[Adversarial QA](skills/adversarial-qa/SKILL.md)** (`adversarial-qa`) | Executes adversarial boundary and security testing, returning structured JSON verdicts. |
 | **Quality Gates** | **[QA Orchestrator](skills/qa-orchestrator/SKILL.md)** (`qa-orchestrator`) | Collects QA inputs, designs executable scenarios, runs `hrns qa`, and summarizes runtime evidence. |
 | **Optimization** | **[Harness Tracer](skills/harness-tracer/SKILL.md)** (`harness-tracer`) | Records structured execution traces to `docs/harness-history/traces/`. |
+| **Optimization** | **[Project Dreaming](skills/project-dreaming/SKILL.md)** (`project-dreaming`) | Reviews selected episodes between tasks and prepares independently verified RED guidance for a feature. |
 | **Optimization** | **[Harness Evaluator](skills/harness-evaluator/SKILL.md)** (`harness-evaluator`) | Computes composite quality scores and identifies Pareto frontier harness configurations. |
 | **Optimization** | **[Meta-Harness](skills/meta-harness/SKILL.md)** (`meta-harness`) | Diagnoses failure patterns across sessions and proposes targeted skill prompt improvements. |
 
@@ -277,5 +278,6 @@ Your support helps fund maintenance, documentation, research, and new features.
 * **License:** MIT License — see [LICENSE](LICENSE) for details.
 
 ### References
+* Anthropic. [The components of agent memory](https://www.anthropic.com/research/components-of-agent-memory).
 * Lee, Y., Nair, R., Zhang, Q., Khattab, O., Finn, C., & Lee, K. (2026). *Meta-Harness: End-to-End Optimization of Model Harnesses*. [arXiv:2603.28052](https://arxiv.org/abs/2603.28052).
 * Birgitta Böckeler (2026). [Harness engineering for coding agent users](https://martinfowler.com/articles/harness-engineering.html).

@@ -31,6 +31,7 @@ Default `${scoreThresholdTL}` = **0.70** (configured during BOOTSTRAP, stored in
 ## Process
 1. Review the developed code.
 2. Read the project's architecture decisions in `docs/adr/ARCHITECTURE.md` and testing strategy in `docs/adr/TESTS.md` (if they exist) to ensure the implementation aligns with established decisions and standards.
+   Read `docs/business/intent.md` when present and select relevant business documents through `docs/.graph.json` or `docs/business/` to assess alignment with the project's objectives and adopted business decisions.
 3. Review the project code and identify points related to the development.
 4. Mentally simulate the execution of this code in a stressed production environment (high load, network failures, etc.).
 5. Identify common beginner blind spots (trusting input, forgetting pagination, ignoring timeouts, etc.).

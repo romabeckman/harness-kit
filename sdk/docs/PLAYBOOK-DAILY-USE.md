@@ -293,7 +293,7 @@ Model and effort support depend on the runner. Use `.harness-kit/settings.json` 
 | --- | --- |
 | Scope or paths missing on resume | `SCOPE.md` and `BOOTSTRAP-CONFIG.json.projectPaths` |
 | Planning repeats | Required `004-*-test-scenarios.md` and ordered task JSON in tactical design |
-| Development does not advance | Matching `TDD-OUTPUT.json`, `SUCCESS`, zero failed tests |
+| TDD handoff unavailable | Review records the issue and uses the specs, code changes, and tests independently |
 | Review retries | `TL.json`, `QA.json`, and `REWORK-LOG.md` |
 | Dependents become blocked | A dependency received `BLOCKED` and cascade propagated |
 | Diagnosis reports no pending sessions | `diagnose-sessions.jsonl` has no pending records |

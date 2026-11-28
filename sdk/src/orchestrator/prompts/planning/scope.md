@@ -1,5 +1,5 @@
 ## Objective
-Perform scope refinement STRICTLY for the <target_feature>. Use the <scope> ONLY for system alignment and contextual awareness. Do NOT refine or generate specifications for the entire background context.
+Perform scope refinement strictly for the <target_feature>, using <planning_source> as the business context.
 
 <skill_context>
 Invoke the `harness-kit:scope-refinement` skill before starting.
@@ -13,17 +13,18 @@ Mode: autonomous
 </react_workflow>
 
 <workflow>
-- Before writing any specification, run autonomous refinement: generate decision-changing questions and use each evidence-based recommendation as its answer.
+- The `file` attribute of <planning_source> identifies the source by its local path. Resolve relative paths from the workspace root. Use the inline <scope> content when present. If <scope_ref> is present, read the referenced file before refinement.
+- Before writing any specification, run autonomous refinement: focus on remaining technical decisions. Record evidence-based recommendations as provisional answers. Preserve recorded business decisions and keep deferred or unknown business decisions unresolved.
 - Route every refinement question and answer to each applicable `003-${PROJECT_NAME}-tactical-design.md`; use exact project names and include global decisions in every project.
 - Execute only the document phases required by <expected_outputs>; do not create artifacts that are not listed there.
-- When the selected planning source is REFINEMENT.md, map the target feature to its PBI, functionality, persona, and underlying need.
 - Treat human-validated decisions as authoritative and model answers as provisional assumptions.
+- If <setup_decisions> is present, use each human-validated answer as an architectural constraint for applicable projects. An answer supersedes its recommendation. Keep deferred and unknown setup choices unresolved and identify affected designs.
 </workflow>
 
 {{*expectedOutputs}}
 
 <strict_rules>
-- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features present in the <scope>.
+- CRITICAL: Confine all refinement, tasks, and scenarios exclusively to the <target_feature>. Ignore other features in <planning_source>.
 - DEPENDENCY RULE: If the <target_feature> has dependencies, acknowledge them as assumptions or interfaces in your design, but DO NOT design, spec, or generate tasks for the dependencies themselves.
 - PROJECT NAME RULE: For phases 3 and 4, generate one tactical design and test scenarios file for each project listed in <project_paths>, replacing ${PROJECT_NAME} with the corresponding project name linked to that project path.
 {{*strictRules}}
@@ -34,6 +35,7 @@ Mode: autonomous
 <inputs>
 
 {{*orientationSection}}
+{{*contextAnchors}}
 <rules>
 {{rulesSection}}
 </rules>
@@ -42,7 +44,11 @@ Mode: autonomous
 {{projectPathsList}}
 </project_paths>
 
+<planning_source file="{{scopeFilePath}}">
 {{*scopeSection}}
+</planning_source>
+{{*refinementSection}}
+{{*setupDecisionsSection}}
 
 <target_feature>
 ID: {{id}}

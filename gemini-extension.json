@@ -1,7 +1,7 @@
 {
   "name": "harness-kit",
   "description": "Core skills library: TDD orchestration, meta-harness automation, debugging, collaboration patterns, and proven techniques for software engineering",
-  "version": "1.7.5",
+  "version": "1.8.0",
   "contextFileName": "GEMINI.md",
   "author": "romabeckman",
   "license": "MIT",
@@ -22,6 +22,7 @@
     "harness-tracer",
     "meta-harness",
     "pbb-design",
+    "project-dreaming",
     "project-memory",
     "scope-refinement",
     "tdd-orchestrator",

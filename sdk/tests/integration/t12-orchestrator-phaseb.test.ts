@@ -21,7 +21,7 @@ function writeValidSpecs(specDir: string): void {
   writeFileSync(join(specDir, '004-sdk_core-test-scenarios.md'), '# Test Scenarios\n\n- SDK core succeeds.')
 }
 
-function writeValidTddOutput(specDir: string): void {
+function writeValidTddOutput(specDir: string, extra: Record<string, unknown> = {}): void {
   writeFileSync(join(specDir, 'TDD-OUTPUT.json'), JSON.stringify({
     featureId: 'F001',
     status: 'SUCCESS',
@@ -29,6 +29,7 @@ function writeValidTddOutput(specDir: string): void {
     modifiedFiles: [],
     developerHandoff: 'Ready for review.',
     reworksCount: 0,
+    ...extra,
   }))
 }
 
@@ -101,6 +102,52 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
     expect(tddCalls.length).toBeGreaterThanOrEqual(1)
   })
 
+  it('keeps project-owned development and review evidence after transition removes the handoff', async () => {
+    setupProductFiles()
+    const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
+    const owner = join(tmpDir, 'sdk')
+    mkdirSync(owner)
+    writeFileSync(join(owner, 'retry.test.ts'), '// retained identity')
+    writeValidSpecs(specDir)
+    const orientation = {
+      orientation_id: 'persisted-retry', revision: 1, feature: 'feature:sdk_core',
+      project: 'sdk', decision: 'covered', reason: 'Equivalent recovery test', test_ref: 'SC-01',
+    }
+    const finding = { path: 'retry.test.ts', project: 'sdk', locator: 'retained identity', summary: 'Confirmed coverage' }
+    const originalRun = fake.run.bind(fake)
+    fake.run = async inv => {
+      if (inv.skill?.endsWith('tdd-orchestrator')) {
+        expect(inv.prompt).toContain('## RED guidance')
+        writeValidTddOutput(specDir, { orientation_use: [orientation] })
+        return { success: true, raw: '', session: { id: 'dev-recovery' } }
+      }
+      if (inv.skill?.endsWith('the-grumpy-tech-lead')) {
+        expect(inv.prompt).not.toContain(orientation.reason)
+        return {
+          success: true, session: { id: 'review-recovery' },
+          raw: JSON.stringify({ scoreTL: 0.90, learning_evidence: [finding] }),
+        }
+      }
+      return originalRun(inv)
+    }
+    fake.setResponse('adversarial-qa', { raw: JSON.stringify({ scoreAdv: 0.90 }) })
+    fake.setResponse('project-memory', { raw: 'done' })
+    const orchestrator = new HarnessOrchestrator({
+      scope: 'sdk_core', projectPaths: [owner], agentRunner: fake, skipDeploy: true,
+      productDir, complexity: Complexity.AUTO,
+    }, { workingDir: tmpDir })
+
+    await orchestrator.run()
+    expect(existsSync(join(specDir, 'TDD-OUTPUT.json'))).toBe(false)
+    expect(orchestrator.dreaming.list()).toEqual([expect.objectContaining({
+      closed: true, review: 'PASS', sourceSessions: ['dev-recovery', 'review-recovery'],
+      projects: [expect.objectContaining({
+        root: owner, taskIds: ['T01', 'T02'], orientation_use: [orientation],
+        findings: [expect.objectContaining({ path: finding.path, locator: finding.locator })],
+      })],
+    })])
+  })
+
   it('Phase B payload uses correct skill tdd-orchestrator', async () => {
     setupProductFiles()
     const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
@@ -134,7 +181,7 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
   })
 
   describe('TS-F-10: completed development advances to review', () => {
-    it('run() advances when tdd-orchestrator does NOT create TDD-OUTPUT.json', async () => {
+    it('reviews without rerunning development when tdd-orchestrator does not create TDD-OUTPUT.json', async () => {
       setupProductFiles()
       const specDir = join(tmpDir, 'docs', 'specs', 'sdk_core')
       writeValidSpecs(specDir)
@@ -157,6 +204,8 @@ describe('T12 — HarnessOrchestrator DEVELOPMENT', () => {
 
       expect(fake.getInvocationsForSkill('tdd-orchestrator')).toHaveLength(1)
       expect(fake.getInvocationsForSkill('the-grumpy-tech-lead')).toHaveLength(1)
+      expect(fake.getInvocationsForSkill('the-grumpy-tech-lead')[0].prompt).toContain('TDD-OUTPUT.json was not generated')
+      expect(orchestrator.fsm.loadBacklog()[0].status).toBe('COMPLETED')
     })
   })
 

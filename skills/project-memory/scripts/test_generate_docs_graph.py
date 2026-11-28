@@ -46,20 +46,32 @@ def append_micrograph(path: Path, graph_json: str) -> None:
 
 
 class BuildDocsGraphTests(unittest.TestCase):
-    def test_indexes_only_adr_and_feature_documents(self) -> None:
+    def test_indexes_only_adr_feature_and_business_documents(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             docs = Path(temp_dir) / "docs"
             write_doc(docs / "adr" / "architecture.md", "adr:architecture")
-            write_doc(docs / "feature" / "runner.md", "feature:runner")
+            write_doc(
+                docs / "feature" / "runner.md", "feature:runner",
+                'edges: [{relation: references, target: "business:intent", read: must}]',
+            )
+            intent = docs / "business" / "intent.md"
+            intent.parent.mkdir()
+            intent.write_text("# Business Intent\n", encoding="utf-8")
             write_doc(docs / "specs" / "billing" / "design.md", "spec:billing")
             write_doc(docs / "PLAYBOOK.md", "doc:playbook")
 
             graph = build_docs_graph(docs)
 
             self.assertEqual(
-                ["adr:architecture", "feature:runner"],
+                ["adr:architecture", "business:intent", "feature:runner"],
                 [node["id"] for node in graph["nodes"]],
             )
+            self.assertEqual(
+                {"id": "business:intent", "type": "business", "title": "Business Intent",
+                 "path": "docs/business/intent.md", "tags": []},
+                graph["nodes"][1],
+            )
+            self.assertEqual(["business:intent"], graph["nodes"][2]["related_docs"]["must_read"])
 
     def test_development_consumers_define_micrograph_fast_paths(self) -> None:
         repository = Path(__file__).parents[3]
@@ -147,31 +159,32 @@ class BuildDocsGraphTests(unittest.TestCase):
 
         self.assertIn("exact path", rules.lower())
 
-    def test_character_budget_excludes_frontmatter_and_feature_graph(self) -> None:
+    def test_document_budgets_cover_markdown_digest_and_graph(self) -> None:
         skill_dir = Path(__file__).parent.parent
         skill = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("Exclude the YAML frontmatter", skill)
-        self.assertIn("entire fenced `graph` block", skill)
-        self.assertIn("including their delimiters", skill)
-        self.assertIn("other JSON", skill)
-        self.assertIn("3,000 characters and fewer than 60 lines", skill)
+        self.assertIn("Generated or updated Markdown has a **20,000-character maximum for the whole file**", skill)
+        self.assertIn("including YAML frontmatter, fenced blocks, and all whitespace", skill)
+        self.assertIn("split it into two or more feature documents", skill)
+        self.assertIn("5,000 characters and fewer than 60 lines", skill)
+        self.assertIn("`docs/.graph.json` has no file size limit", skill)
 
         references = skill_dir / "references"
         for name in ("ARCHITECTURE-RULES.md", "DOCUMENT-TEMPLATE.md", "DOCUMENT-CONTRACT.md",
                      "README-RULES.md", "TESTS-RULES.md", "ONTOLOGY-RULES.md"):
             rules = (references / name).read_text(encoding="utf-8")
             with self.subTest(reference=name):
-                self.assertNotIn("with no exclusions", rules)
-                self.assertNotIn("including all content", rules)
-                self.assertNotIn("Count the entire unified `graph` block toward", rules)
                 self.assertIn("TOTAL CONTEXT BUDGET", rules)
+                self.assertNotIn("10,000", rules)
+
+        readme_rules = (references / "README-RULES.md").read_text(encoding="utf-8")
+        self.assertIn("20,000 characters for the whole file", readme_rules)
 
     def test_architecture_rules_defines_size_limit_and_decomposition(self) -> None:
         rules = (Path(__file__).parent.parent / "references" / "ARCHITECTURE-RULES.md").read_text(
             encoding="utf-8"
         )
 
-        self.assertIn("10,000", rules)
+        self.assertIn("20,000", rules)
         self.assertIn("docs/adr/", rules)
 
     def test_sorts_nodes_and_edges_for_stable_compact_output(self) -> None:
@@ -343,8 +356,23 @@ class BuildDocsGraphTests(unittest.TestCase):
                 doc_type="feature",
             )
 
-            with self.assertRaisesRegex(ValueError, "Invalid feature frontmatter edge"):
+            with self.assertRaisesRegex(ValueError, "Invalid edge target"):
                 build_docs_graph(docs)
+
+    def test_rejects_invalid_adr_and_business_edges(self) -> None:
+        cases = (
+            ("adr", 'edges: [{relation: unknown, target: "adr:architecture"}]',
+             "Invalid edge relation"),
+            ("business", "edges: [{relation: references}]", "Invalid edge target"),
+        )
+        for doc_type, edges, error in cases:
+            with self.subTest(doc_type=doc_type), tempfile.TemporaryDirectory() as temp_dir:
+                docs = Path(temp_dir) / "docs"
+                write_doc(docs / "adr" / "architecture.md", "adr:architecture")
+                write_doc(docs / doc_type / "policy.md", f"{doc_type}:policy", edges)
+
+                with self.assertRaisesRegex(ValueError, error):
+                    build_docs_graph(docs)
 
     def test_rejects_invalid_feature_read_value(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

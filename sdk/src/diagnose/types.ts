@@ -1,6 +1,16 @@
 import type { AgentOutput } from '../agent-runner/types'
+import type { DreamingEpisode, DreamingProject } from '../file-state/DreamingEpisodeStore'
 
 export type SessionStatus = 'pending' | 'completed'
+
+export function isDiagnosePhase(phase: string | undefined): boolean {
+  return phase === 'PLANNING' || phase === 'DEVELOPMENT' || phase === 'REVIEW'
+}
+
+// Earlier SDK versions and explicit inline captures did not record a phase.
+export function isDiagnoseSession(session: DiagnoseSessionRecord): boolean {
+  return session.phase === undefined || isDiagnosePhase(session.phase)
+}
 
 export function isSessionStatus(value: unknown): value is SessionStatus {
   return value === 'pending' || value === 'completed'
@@ -76,8 +86,12 @@ export interface ITraceDirectoryScanner {
 }
 
 export interface IMetaHarnessAgentAdapter {
-  invoke(session: DiagnoseSessionRecord, preComputedId: string, settings?: DiagnoseSettings): Promise<AgentOutput>
-  invokeMetaHarness?(session: DiagnoseSessionRecord, settings?: DiagnoseSettings, recordedSkills?: readonly string[]): Promise<AgentOutput>
+  invoke(session: DiagnoseSessionRecord, preComputedId: string, settings?: DiagnoseSettings, verifiedBatchTraceIds?: readonly string[]): Promise<AgentOutput>
+  invokeMetaHarness?(session: DiagnoseSessionRecord, settings?: DiagnoseSettings, recordedSkills?: readonly string[], sessions?: readonly DiagnoseSessionRecord[]): Promise<AgentOutput>
+  invokeProjectDreaming?(
+    episode: DreamingEpisode, project: DreamingProject, sessions: DiagnoseSessionRecord[],
+    followup?: DreamingEpisode, settings?: DiagnoseSettings, attempts?: DreamingEpisode[],
+  ): Promise<AgentOutput>
 }
 
 export interface CandidateReportInfo {

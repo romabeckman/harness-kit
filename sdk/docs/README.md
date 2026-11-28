@@ -1,21 +1,24 @@
 # Project Documentation
 
-Index of project technical documentation for **harness-kit SDK**. Use links below to navigate the documents and graph.
+Index of project documentation for **harness-kit SDK**. Use links below to navigate the documents and graph.
 
 ## Documentation Index
 
 | Document | Description | Reading |
 |---|---|---|
+| [**DIAGNOSE-GUIDE.md**](./DIAGNOSE-GUIDE.md) | Public guide to trace diagnosis and Project Dreaming episode analysis. | Recommended |
 | [**.digest.md**](./.digest.md) | Machine-readable project orientation. | **Mandatory** |
 | [**.graph.json**](./.graph.json) | Complete document list, tags, and relations. | **Mandatory** |
 | [**ARCHITECTURE.md**](./adr/ARCHITECTURE.md) | Project architecture baseline. | **Mandatory** |
 | [**TESTS.md**](./adr/TESTS.md) | Testing tools and strategy baseline. | **Mandatory** |
+| [**intent.md**](./business/intent.md) | SDK purpose, business objectives, and decision guidance. | **Mandatory** |
 | [**AGENT-RUNNERS.md**](./adr/AGENT-RUNNERS.md) | Runner registration and adapter decisions. | Optional |
+| [**AGENT-SESSIONS.md**](./adr/AGENT-SESSIONS.md) | Agent session reuse and lifecycle. | Optional |
 | [**STATE-PERSISTENCE.md**](./adr/STATE-PERSISTENCE.md) | Product state persistence decisions. | Optional |
 | [**STEERING.md**](./adr/STEERING.md) | Runtime steering and rollback decisions. | Optional |
 | [**TELEMETRY.md**](./adr/TELEMETRY.md) | Token ledger and cost reporting decisions. | Optional |
 | [**E2E_TESTING_SUITE.md**](./feature/qa/E2E_TESTING_SUITE.md) | Isolated end-to-end test suite guide. | Optional |
-| [**HTTP_SERVER.md**](./feature/server/HTTP_SERVER.md) | HTTP daemon adapter guide. | Optional |
+| [**HTTP_SERVER.md**](./feature/server/HTTP_SERVER.md) | HTTP daemon adapter guide (beta). | Optional |
 | [**SDK_AGENT_RUNNER.md**](./feature/agents/SDK_AGENT_RUNNER.md) | Agent runner adapters and session handling. | Optional |
 | [**SDK_CLI.md**](./feature/cli/sdk_cli.md) | CLI commands and run options. | Optional |
 | [**SDK_CORE.md**](./feature/orchestration/SDK_CORE.md) | Orchestrator lifecycle and phase invariants. | Optional |
@@ -35,4 +38,5 @@ If an exact path is supplied, read it directly. Otherwise use this order:
 1. **.digest.md** for fast project orientation.
 2. **.graph.json** for document routing and one-hop relations.
 3. **ARCHITECTURE.md** and **TESTS.md** for baseline decisions.
-4. Selected ADR or feature documents for task-specific context.
+4. **intent.md** for the SDK's purpose and business objectives.
+5. Selected ADR or feature documents for task-specific context.

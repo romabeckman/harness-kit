@@ -94,9 +94,9 @@ Use this flow for complex scenarios where business intent, domain boundaries, in
 /harness-kit:pbb-design
 ```
 
-Provide the product or feature scope, business context, intended outcomes, and known constraints. The skill organizes problems, expectations, personas, functionalities, and Product Backlog Items (PBIs). It keeps business refinement separate from architecture and implementation details.
+Provide the product or feature scope, business context, intended outcomes, and known constraints. The skill produces a Markdown backlog with `PBB-Contract: 2`, observable outcomes, commercial order, and evidence by Product Backlog Item (PBI).
 
-Review the selected PBIs, assumptions, and open questions before handing the scope to technical refinement. In interactive mode, the skill asks about decision-relevant gaps. In autonomous mode, generated answers remain provisional model assumptions rather than confirmed business facts.
+Use the traceability index to select PBIs and recover their sources and decisions before handing the scope to technical refinement. In interactive mode, the skill asks about decision-relevant gaps. Autonomous proposals remain provisional. Prior human answers, deferrals, and unknowns retain their original status.
 
 ### 2.2 Technical refinement: Scope Refinement
 
@@ -134,17 +134,30 @@ Autonomous invocation requires the feature ID, domain, project paths, selected t
 
 Execution contract:
 
-1. RED: derive tests from the requirement in interactive mode, or from pre-specified scenarios in autonomous mode; prove they fail for the expected reason.
+1. RED: derive tests from the requirement in interactive mode, or from pre-specified scenarios in autonomous mode. Prove new tests fail for the expected reason and verify any reused coverage.
 2. GREEN: implement the smallest code that passes.
 3. REFACTOR: improve structure while keeping tests green.
 4. Validate: run required targeted and regression checks.
-5. Document: in interactive mode, invoke `project-memory` when project behavior or structure changed.
+5. In interactive mode, review each worked project and feature with `project-dreaming` after final validation, then invoke `project-memory` when applicable. Forward validated handoffs and return publication or withdrawal receipts to Dreaming for verification.
 
 If tests fail unexpectedly, route diagnosis to `developer-debugging`. That agent proves root cause and hands off; it does not implement the final fix.
 
 Autonomous mode writes `docs/specs/{domain}/TDD-OUTPUT.json`. It does not emit interactive progress blocks.
 
+Both modes consult the selected feature's `## RED guidance` before writing tests. Check applicability, current sources, and equivalent coverage. In autonomous mode the tactical design and existing scenario IDs still govern the work. The optional `orientation_use` field records decisions when observed.
+
 In the autonomous backlog loop, final project-memory synchronization belongs to the orchestrator's memory phase. Do not interpret a successful TDD output as proof that documentation or runtime acceptance checks are complete.
+
+### Review a development episode between tasks
+
+```text
+/harness-kit:project-dreaming
+Project: /path/to/owning/project
+Feature: feature:sdk_diagnose
+Evidence: src/diagnose/__tests__/DiagnoseService.test.ts, "reuses the trace ID reserved for a retry"
+```
+
+After final validation in interactive TDD, review each worked project and feature once; in the autonomous loop, review follows Phase C acceptance. Provide the session or episode ID, project-relative test and event locators, decisions, and command/results when available; include related rework attempts. A known trigger, review classification, observed impact, and scheduled future task help prioritize inspection but are not required. One verifiable episode can support zero, one, or several distinct falsifiable test-selection, ordering, or reuse hypotheses. Use `no_hypothesis` with inspected sources and a specific reason when evidence shows no testable decision; use `incomplete` when a necessary source or owner cannot be verified. Keep review limited to task sources and targeted feature/queue checks for deduplication. A separate evaluator compares paired runs on a distinct task. Only validated guidance goes to Project Memory; TDD uses it after publication is verified in the feature document. Reinvoke Dreaming with the same hypothesis ID when a result arrives, publication needs a retry, or new evidence changes the analysis.
 
 ## Flow 4: review
 

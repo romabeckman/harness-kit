@@ -12,13 +12,15 @@ description: Sovereign loop manager. Handles file initialization, feature lifecy
 > **What would you like to do?**
 >
 > - **`resume`** — continue from where the previous session stopped (`docs/product/` is preserved as-is)
-> - **`reset`** — discard current `docs/product/` and start a new cycle (scope will be collected next)
+> - **`reset`** — discard current `docs/product/` and start a new cycle
 
-**Step 0b — Scope collection (only when action is `reset`).** After the user picks `reset`, ASK for the scope as plain text:
+**Step 0b — Scope collection (only when action is `reset`).** Reuse scope
+already supplied by the user or CTO. If it is missing, ASK for it as plain text.
 
 > **Please describe the project scope or paste the PRD:**
 
-Store the text answer as `${scope}`.
+Store the supplied scope as `${scope}`. Read any supplied scope document under
+`docs/product/` before resetting that directory.
 
 ```
 IF user answered "resume" in Step 0a:
@@ -52,6 +54,7 @@ You do NOT write code, tests, or perform any sub-agent task.
 | `harness-kit:tdd-orchestrator` | Agent selected by the feature's `Agent` column: `developer-backend`, `developer-frontend`, `developer-qa`, or `developer-devops` (`developer-debugging` is diagnostic only) |
 | `harness-kit:adversarial-qa` | `harness-qa` |
 | `harness-kit:the-grumpy-tech-lead` | `harness-tech-lead` |
+| `harness-kit:project-dreaming` | `software-architect` (after Phase C PASS, once per owning project and feature) |
 | `harness-kit:project-memory` | `software-architect` (Phase E only) |
 
 </role>
@@ -67,13 +70,15 @@ Execute steps in order. ASK each missing value ONCE, then never again.
 **1.1 Acquire inputs (if not already present):**
 
 ```
-IF BACKLOG.md missing or empty  → ASK for project scope/PRD. Store as ${scope}.
+IF BACKLOG.md missing or empty AND scope missing → ASK for project scope/PRD. Store as ${scope}.
 IF project paths unknown        → ASK for local paths of all involved projects. Store as ${projectPaths}.
 
 Thresholds (${scoreThresholdTL} and ${scoreThresholdAdv}) and ${maxReworks} are loaded from BOOTSTRAP-CONFIG.json (default 0.70 and 2, respectively).
 ```
 
 **1.2 Synthesize backlog:**  
+For each selected project, read `docs/business/intent.md` when present. Read other business documents only when they affect backlog boundaries, priorities, or project dependencies. Locate them through `docs/.graph.json` or directly under `docs/business/` if routing is missing. Preserve the requested scope and surface material conflicts before treating them as backlog decisions.
+
 Parse `${scope}` → generate initial `BACKLOG.md` table with columns:  
 `ID | Title | Domain | Agent | Priority | Dependencies | Reworks | Score (TL) | Score (Adv) | Status`
 
@@ -81,6 +86,15 @@ Parse `${scope}` → generate initial `BACKLOG.md` table with columns:
 - `Agent`: `backend`, `frontend`, `qa`, or `devops`; infer from feature scope and project paths
 - `Reworks`: init `0` | Scores: init `-` | Status: init `NOT_STARTED`
 - **Granularity rule:** each row is one cohesive, independently testable functional module. Group related operations, tests, and supporting changes. Never create single-endpoint, single-file, test-only, or configuration-only features.
+
+When the scope contains `PBB-Contract: 2`, group PBIs by cohesive outcomes and
+identify the PBIs that affect each operational feature, including pending
+items that constrain its outcomes. Read `Delivery rank`
+with `Priority status` and keep that commercial context. Set operational
+priority and dependencies on their own evidence. Explain any conflict between
+commercial order and operational dependencies. Record pending outcomes
+with no plannable feature in the decision log.
+For unmarked scope, use the existing synthesis.
 
 **1.3 Create files (Initialize by copying templates):**
 
@@ -96,7 +110,17 @@ For each required product file in `docs/product/`, if it does not already exist,
 > `DEVELOPMENT-STATE.md` is task-level only. `Reworks`, `Score (TL)`, `Score (Adv)` are feature-level and live in `BACKLOG.md`.
 > `BOOTSTRAP-CONFIG.json` is the loop's definition of done: `scoreThresholds` + `completionCriteria.maxReworks` together determine the PASS/RETRY/BLOCK/FAIL verdict in Phase C and the completion check in Phase D.
 
+For `PBB-Contract: 2`, record the mapping from operational feature ID to PBI
+IDs and the source document path in `DECISIONS.md`. Record fully pending
+outcomes there with their PBI and question IDs. Use the existing source if
+it will remain readable on resume. If the input was inline or its path was
+removed by reset, persist that source as `docs/product/PBB.md` and record its
+path. Keep the operational backlog columns and values as defined above.
+
 **1.4 Persist runtime state:** Store `${projectPaths}`, set `${completedCycles} = 0`, `currentPhase = BOOTSTRAP`, and `activeFeatureId = null` in `BOOTSTRAP-CONFIG.json`. Preserve phase-scoped `steeringRules` when supplied.
+
+If the PBB scope has only pending outcomes, leave `activeFeatureId` empty and
+return the recorded clarifications before selecting a feature.
 
 **1.5 Optional refinement:** When refinement is enabled and `docs/product/REFINEMENT.md` is absent, run the interactive `REFINEMENT` handler once, persist its output, then continue to Phase A. Otherwise continue directly to Phase A.
 
@@ -111,6 +135,12 @@ For each required product file in `docs/product/`, if it does not already exist,
 ### State Transition Table
 
 > **Re-entry rule:** On crash/resume, first honor a valid persisted `BOOTSTRAP-CONFIG.json.currentPhase` other than `HALTED`. If absent or invalid, scan this table top-to-bottom and enter at the FIRST matching condition against current on-disk state. Before re-entering `PHASE_C`, check the active feature. If terminal, finish any pending C6 updates for its saved verdict and go to `PHASE_D`. Otherwise, apply the Phase C gate and return to `PHASE_B` if it fails. Persist `currentPhase` and `activeFeatureId` before every phase invocation.
+
+When a PBB decision changes, revisit affected feature mappings and relative
+ranks before selecting work. Recheck affected planning artifacts before
+using their tasks for implementation. Group newly plannable outcomes using
+the Bootstrap row rules and keep existing feature IDs. If only clarifications
+remain, report their PBI and question IDs.
 
 | Current State | Condition | Next State | Actions |
 |---|---|---|---|
@@ -143,9 +173,20 @@ DECISIONS.md → "Started planning for {ID}."
 
 **A2. Delegate** → `harness-kit:scope-refinement` via `software-architect` (Autonomous Mode):
 
+For a feature mapped to a `PBB-Contract: 2` source, recover its PBI IDs and
+source from `DECISIONS.md`, including on resume. Build the feature scope using
+[Reading a feature](../pbb-design/references/output-contract.md#reading-a-feature).
+Include the selected records, supporting evidence, and material decisions
+with their status and impact. Identify any ambiguous mapping or missing
+reference by ID in `DECISIONS.md` and resolve it before deriving affected
+tasks. Carry unresolved behavior as a clarification with its PBI and
+question ID. Plan independent, supported outcomes in the feature. If no
+supported outcome remains, keep it in planning and record the decision
+needed. For other features, use the existing feature scope.
+
 ```
 inputs:
-  ${scope}        = feature Title + Description from BACKLOG.md
+  ${scope}        = selected PBB scope when mapped, otherwise feature Title + Description from BACKLOG.md
   ${projectPaths} = paths from BOOTSTRAP
   ${domain}       = Domain column value for this feature
   ${rules}        = "No additional rules provided"  // unless constraints exist
@@ -196,7 +237,7 @@ inputs:
   // IF RETRY: also pass docs/specs/{domain}/REWORK-LOG.md
 ```
 
-**B3. Verify:** Wait for `docs/specs/{domain}/TDD-OUTPUT.json`. Require matching `featureId`, `status = "SUCCESS"`, zero failed tests, and a `developerHandoff` of at most 500 characters before marking all pending feature tasks `COMPLETED`. Missing, corrupt, mismatched, or failed output must not advance to Phase C; log the evidence and keep affected tasks non-complete. Pass `developerHandoff` to both Phase C reviewers as navigation context; reviewers must independently verify it.
+**B3. Verify:** Wait for `docs/specs/{domain}/TDD-OUTPUT.json`. Before marking pending tasks `COMPLETED`, require a matching `featureId` and `reworksCount`, a non-negative integer `metrics.totalTests` equal to `metrics.passed`, zero failed tests, no `needs_refinement` decisions, and a `developerHandoff` of at most 500 characters. Earlier reports that explicitly record incomplete execution still prevent task completion. Missing, corrupt, mismatched, or incomplete output keeps affected tasks incomplete and prevents advancing to Phase C. Pass the factual `developerHandoff` to both Phase C reviewers as navigation context for independent verification. Before removing transient output, preserve the project, feature, tasks, attempt and session identifiers and available test, event, decision and result locators for learning review. Record unavailable or ambiguous project ownership.
 
 </phase>
 
@@ -252,8 +293,9 @@ IF feature's Score A >= ${scoreThresholdTL} AND Score B >= ${scoreThresholdAdv}
 1. `BACKLOG.md[feature]` (the active feature in backlog) → `Status: COMPLETED`, `Score (TL): A`, `Score (Adv): B`
 2. All feature tasks in `DEVELOPMENT-STATE.md` → `Current Phase: -`, `Status: COMPLETED`
 3. `DECISIONS.md` → `"Feature {ID} ACCEPTED — TL: {A}, Adv: {B}."`
-4. Delete stale `TDD-OUTPUT.json` after review processing
-5. → Phase D
+4. Delegate `harness-kit:project-dreaming` once per owning project and feature, including first-pass deliveries and reviews without classified findings. Supply the terminal episode and related rework attempts in chronological order, filtered by project and feature, retaining the attempt of each signal. Supply preserved task, session, test and event locators as well as reviewer findings; `review_reason` and observed impact are optional prioritization context. Check for broken or cyclic links and ambiguous ownership; keep affected analysis pending rather than attributing evidence incorrectly. Request and verify the [analysis receipt](../project-dreaming/references/CONTRACTS.md#analysis-receipt) against records in the owning project. Persist the verified result; log an incomplete analysis and its required input for retry without changing the acceptance decision. Stage any validated publish or withdrawal handoff for phase E under the [handoff contract](../project-dreaming/references/CONTRACTS.md#project-memory-handoff).
+5. Delete stale `TDD-OUTPUT.json` after review processing
+6. → Phase D
 
 </gate>
 
@@ -271,7 +313,7 @@ IF PASS did not match AND Reworks < ${maxReworks}:
    - Any reported crash and its evidence
 3. `DECISIONS.md` → `"Feature {ID} RETRY #{n} — TL: {A}, Adv: {B}. Reason: {top finding}."`
 4. **ATOMIC WRITE:** All feature tasks → `Current Phase: -`, `Status: NOT_STARTED`
-5. Delete stale `TDD-OUTPUT.json`
+5. Preserve the attempt's project-scoped task, session, test and event locators and reviewer findings for the eventual terminal review; then delete stale `TDD-OUTPUT.json`.
 6. → Phase B
 
 </gate>
@@ -357,10 +399,12 @@ inputs:
     - Feature IDs processed (COMPLETED, BLOCKED, FAILED, or RETRY'd)
     - For each COMPLETED feature: ${domain}, scope description (Title + Description from BACKLOG.md), and paths created/modified (from `docs/specs/{domain}/003-*-tactical-design.md` or `TDD-OUTPUT.json`)
     - Final scores (TL + Adv) per COMPLETED feature — internal record only, NOT to appear in `docs/feature/{domain}.md`
+    - Ready Project Dreaming handoffs for each owning project, when present. Apply and verify each through the RED orientation procedure, recording confirmed receipts and leaving conflicts pending.
     - Key decisions logged in DECISIONS.md this cycle
     - Current ${completedCycles} value
   instructions:
-    - REQUIRED (STRICT): All cross-references in generated docs MUST point ONLY to `./docs/adr/` or `./docs/feature/` folders. NO other folder paths are permitted. Validate every reference before finalizing.
+    - REQUIRED: Validate references against Project Memory's document contract. In each project's generated documents, REFERENCES links resolve only to managed Markdown under docs/adr/, docs/business/, or docs/feature/.
+    - REQUIRED: Apply Project Memory's business rules within the documentation scope. Create missing docs/business/intent.md and update relevant business documents when the cycle establishes a supported business decision.
     - REQUIRED: In each target project, document completed features under `docs/feature/*.md` (create if missing, update matching topic documents if present), following `./references/DOCUMENT-TEMPLATE.md` strictly; never prefix filenames with feature IDs
     - REQUIRED: `FOLDER STRUCTURE` section → reflect the module's current relevant structure, incorporating paths added or modified this cycle (do not drop paths documented in prior cycles)
     - REQUIRED: Keep all content direct and minimal — enough for a future LLM to orient itself in the codebase without re-reading source files

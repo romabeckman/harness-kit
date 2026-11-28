@@ -7,4 +7,6 @@
 {{*scopeSection}}
 </dynamic_context>
 
-Write the final JSON array to the file at <output_path> above.
+Create `QUESTIONS.json` at the exact path in <output_path> and write the final
+JSON array to that file. Omit the array from your response. Write `[]` to the
+file if there are no questions.

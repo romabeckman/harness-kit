@@ -1,61 +1,49 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { RefinementHandler } from '../../../src/orchestrator/phases/RefinementHandler'
 import { Phase } from '../../../src/orchestrator/types'
+import { FileStateManager } from '../../../src/file-state/FileStateManager'
 // @ts-ignore
 import { input } from '@inquirer/prompts'
 
-import { existsSync, readFileSync } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { writeQuestionsForPrompt, writeRefinementForPrompt } from '../../fixtures/pbb-refinement'
 
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn(),
-}))
-
-vi.mock('node:fs', () => ({
-  mkdirSync: vi.fn(),
-  writeFileSync: vi.fn(),
-  readFileSync: vi.fn(),
-  existsSync: vi.fn(),
+  editor: vi.fn(),
 }))
 
 describe('RefinementHandler', () => {
   let handler: RefinementHandler
   let mockContext: any
+  let workingDir: string
 
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks()
     handler = new RefinementHandler()
-    const actualFs = await vi.importActual<typeof import('node:fs')>('node:fs')
-
-    const questionsJson = JSON.stringify([
+    workingDir = mkdtempSync(join(tmpdir(), 'refinement-answers-'))
+    const questions = [
       { id: 1, question: 'Question 1?', recommendation: 'Rec 1', context: 'Ctx 1' },
-    ])
-
-    vi.mocked(existsSync).mockReturnValue(true)
-    vi.mocked(readFileSync).mockImplementation((path) => {
-      if (String(path).includes('orchestrator') && String(path).includes('prompts')) {
-        return actualFs.readFileSync(path, 'utf8')
-      }
-      return questionsJson
-    })
+    ]
 
     mockContext = {
-      workingDir: '/mock/dir',
+      workingDir,
       config: { enableRefinement: true, scope: 'Test scope' },
-      fsm: {
-        existRefinement: vi.fn().mockReturnValue(false),
-        saveRefinement: vi.fn(),
-        existScope: vi.fn().mockReturnValue(false),
-        loadScope: vi.fn().mockReturnValue('Test scope'),
-      },
-      invokeAgent: vi.fn().mockImplementation(async (opts: any) => {
-        if (opts.prompt.includes('raw JSON array')) {
-          return {
-            raw: questionsJson,
-          }
+      fsm: new FileStateManager({ productDir: join(workingDir, 'docs', 'product') }),
+      invokeAgent: vi.fn().mockImplementation(async ({ phaseKey, prompt }) => {
+        if (phaseKey === 'refinement_questions') {
+          writeQuestionsForPrompt(prompt, prompt.includes('<follow_up>') ? [] : questions)
+        } else {
+          writeRefinementForPrompt(prompt)
         }
-        return { raw: 'consolidated' }
       }),
     }
+  })
+
+  afterEach(() => {
+    rmSync(workingDir, { recursive: true, force: true })
   })
 
   it('should ask generated questions and the optional "Any additional information?" question at the end', async () => {
@@ -68,18 +56,18 @@ describe('RefinementHandler', () => {
     expect(nextPhase).toBe(Phase.BOOTSTRAP)
     expect(input).toHaveBeenCalledTimes(2)
     expect(input).toHaveBeenNthCalledWith(1, {
-      message: 'Your answer (Enter to accept recommendation):',
+      message: ' Your answer (Enter to accept, /defer or /unknown):',
       default: 'Rec 1',
     })
     expect(input).toHaveBeenNthCalledWith(2, {
-      message: 'Any additional information?',
+      message: ' Any additional information?',
       default: '',
     })
 
     // Verify consolidateRefinement received both Q&A pairs including the additional question
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
-        agent: 'harness-kit:software-architect',
+        agent: 'harness-kit:cto',
         skill: 'harness-kit:pbb-design',
         prompt: expect.stringContaining('Any additional information?'),
       })
@@ -96,7 +84,7 @@ describe('RefinementHandler', () => {
     expect(input).toHaveBeenCalledTimes(2)
     expect(mockContext.invokeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
-        agent: 'harness-kit:software-architect',
+        agent: 'harness-kit:cto',
         skill: 'harness-kit:pbb-design',
         prompt: expect.not.stringContaining('Any additional information?'),
       })

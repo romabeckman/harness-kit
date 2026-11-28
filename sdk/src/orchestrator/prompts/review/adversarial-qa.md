@@ -54,10 +54,12 @@ Write a raw JSON object to `{{specsDir}}/QA.json` and return the same raw object
 }
 Allowed severity values: LOW, MEDIUM, HIGH, CRITICAL. Use a concise uppercase vulnerability type.
 Note: vulnerabilities and edgeCasesMissed may be empty arrays when nothing meets the evaluation_principle bar. In that case passedAdversarial should be true and hasHighCriticalVuln false.
+
+After forming your independent verdict, you may include an optional `learning_evidence` array for verified test choices, coverage, or contract findings. Each item has `project` (the owning project path as provided), `path` (project-relative inspected file), `locator` (exact heading, test title, or line range), `summary`, and optional `scenario_id`. A test choice may be useful even without an observed failure or measurable impact. Optionally set `review_reason` to `trigger_met`, `guidance_contradicted`, or `new_evidence` when supported; include the relevant ID and observed consequence when known. Check the cited source and distinguish facts from predictions. Omit unverified claims. This evidence leaves the score and verdict rules unchanged; Project Dreaming also inspects task sources when this array is absent.
 </expected_output>
 
 <spec_sources>
-- Development log: `{{specsDir2}}/TDD-OUTPUT.json` or `git status -s` to list all modified files in each project.
+- Use `git status -s` to list all modified files in each project.
 {{*tddSummary}}
 {{*specificationProvenance}}
 <development_handoff>

@@ -101,7 +101,7 @@ describe('T09 — ReentryResolver', () => {
     })
   })
 
-  it('returns DEVELOPMENT when tasks are complete but the TDD handoff is absent or invalid', () => {
+  it('returns REVIEW when tasks are complete and the TDD handoff is absent or invalid', () => {
     const state = makeState({
       specFilesPresent: true,
       tddOutputPresent: false,
@@ -109,10 +109,10 @@ describe('T09 — ReentryResolver', () => {
       tasks: [{ ...baseTask, status: 'COMPLETED' }],
       activeFeature: { ...baseFeature, status: 'IN_PROGRESS' },
     })
-    expect(ReentryResolver.resolve(state)).toBe(Phase.DEVELOPMENT)
+    expect(ReentryResolver.resolve(state)).toBe(Phase.REVIEW)
   })
 
-  it('does not honor a persisted REVIEW phase without a valid TDD handoff', () => {
+  it('resumes a persisted REVIEW phase without a valid TDD handoff', () => {
     const state = makeState({
       config: { ...defaultConfig, currentPhase: Phase.REVIEW },
       specFilesPresent: true,
@@ -121,7 +121,7 @@ describe('T09 — ReentryResolver', () => {
       tasks: [{ ...baseTask, status: 'COMPLETED' }],
       activeFeature: { ...baseFeature, status: 'IN_PROGRESS' },
     })
-    expect(ReentryResolver.resolve(state)).toBe(Phase.DEVELOPMENT)
+    expect(ReentryResolver.resolve(state)).toBe(Phase.REVIEW)
   })
 
   describe('TS-U-42: Feature COMPLETED, more NOT_STARTED features -> TRANSITION', () => {
@@ -140,6 +140,16 @@ describe('T09 — ReentryResolver', () => {
   })
 
   describe('TS-U-43: All features terminal -> TRANSITION (final loop pass)', () => {
+    it.each([true, false])('resumes a terminal feature at transition with handoff present = %s', tddOutputPresent => {
+      const feature = { ...baseFeature, status: 'COMPLETED' as const }
+      const state = makeState({
+        features: [feature], activeFeature: feature,
+        config: { ...defaultConfig, currentPhase: Phase.REVIEW },
+        specFilesPresent: true, allTasksCompleted: true, tddOutputPresent,
+      })
+      expect(ReentryResolver.resolve(state)).toBe(Phase.TRANSITION)
+    })
+
     it('returns TRANSITION when no NOT_STARTED feature', () => {
       const features = [
         { ...baseFeature, id: 'F001', status: 'COMPLETED' as const },

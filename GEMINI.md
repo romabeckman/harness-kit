@@ -26,6 +26,7 @@ This document references the core skills and supporting documentation for the ha
 @./skills/pbb-design/SKILL.md
 
 ### Project Memory
+@./skills/project-dreaming/SKILL.md
 @./skills/project-memory/SKILL.md
 @./skills/project-memory/references/ARCHITECTURE-RULES.md
 @./skills/project-memory/references/DOCUMENT-TEMPLATE.md

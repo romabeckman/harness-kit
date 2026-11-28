@@ -2,6 +2,25 @@
 
 Defines the analysis framework and strict rules for generating and maintaining `docs/adr/ARCHITECTURE.md`.
 
+## DOCUMENT CATALOG
+
+Paths are relative to `docs/adr/`. The two required documents form the architecture and testing baseline. Keep each ADR focused on one technical responsibility and grounded in project evidence.
+
+ALLOWED: Within an authorized documentation update, create a suggested ADR without a separate request when you identify a new, evidence-backed rule or decision that needs a dedicated document. Update the existing document if it already owns the topic. Suggested ADRs may also be created on request or when decomposing `ARCHITECTURE.md` under the size rules below.
+
+| Document | Status | Purpose |
+|---|---|---|
+| `ARCHITECTURE.md` | Required | Records the system structure, layer responsibilities, design patterns, and integrations. |
+| `TESTS.md` | Required | Records the test strategy, configured test commands, and applicable coverage rules. |
+| `OBSERVABILITY.md` | Suggested | Records logging, metrics, tracing, and alerting decisions. |
+| `SECURITY.md` | Suggested | Records trust boundaries, access controls, and how sensitive data and secrets are handled. |
+| `DATABASE.md` | Suggested | Records data ownership, persistence decisions, and migration rules. |
+| `API-DESIGN.md` | Suggested | Records API contracts, versioning, compatibility, and error conventions. |
+| `DEPLOYMENT.md` | Suggested | Records deployment environments, release controls, and rollback procedures. |
+| `RESILIENCE.md` | Suggested | Records how the system handles failures, including timeouts, retries, and recovery. |
+
+Use [TESTS-RULES.md](TESTS-RULES.md) for `TESTS.md` and the [standard document template](DOCUMENT-TEMPLATE.md) for complementary ADRs.
+
 ---
 
 ## EXPECTED OUTPUT
@@ -11,7 +30,7 @@ PROHIBITED: Add a feature graph or `graph.knowledge` to this ADR. Record decisio
 | Field | Value |
 |---|---|
 | Target file | `docs/adr/ARCHITECTURE.md` |
-| Max size | 10,000 counted characters maximum; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
+| Max size | 20,000 characters for the whole file. See [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget). |
 | Content style | Compact, dense, and objective — no lengthy narrative explanations or verbose prose |
 | Agent action | Read the repository, apply the PRE-GENERATION ANALYSIS below, then create or update affected sections of the file using the MANDATORY TEMPLATE exactly as specified |
 
@@ -19,12 +38,12 @@ PROHIBITED: Add a feature graph or `graph.knowledge` to this ADR. Record decisio
 
 ## SIZE LIMIT & DECOMPOSITION RULES
 
-- REQUIRED: Apply [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget): at most 10,000 counted characters per file.
+- REQUIRED: Apply the 20,000-character whole-file limit in [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget).
 - REQUIRED: Text must be compact, objective, and dense. PROHIBITED: Long theoretical explanations, conversational filler, or verbose historical context.
-- When `docs/adr/ARCHITECTURE.md` approaches or reaches the 10,000-character limit, apply one or both of the following pathways:
+- When `docs/adr/ARCHITECTURE.md` approaches or reaches the 20,000-character limit, apply one or both of the following pathways:
   1. **Text Compacting:** Condense prose into concise bullet points, replace narrative with compact tables, and remove redundant explanations while preserving strict technical constraints.
   2. **Decomposition into Complementary ADRs (`docs/adr/`):** Split deep or specialized architectural domains into separate complementary ADR documents inside `docs/adr/` (e.g., `docs/adr/SECURITY.md`, `docs/adr/OBSERVABILITY.md`, `docs/adr/TELEMETRY.md`, `docs/adr/DATABASE.md`, `docs/adr/API-DESIGN.md`).
-     - REQUIRED: Each complementary ADR document must also strictly observe the **10,000 character limit** and follow `./DOCUMENT-TEMPLATE.md`.
+     - REQUIRED: Each complementary ADR must meet the 20,000-character whole-file limit and follow `./DOCUMENT-TEMPLATE.md`.
      - REQUIRED: Retain only a high-level summary or reference row in `docs/adr/ARCHITECTURE.md` and register the edge in frontmatter (`edges: [{relation: references, target: "adr:<slug>"}]`) and `## REFERENCES`.
 
 ---
@@ -110,7 +129,6 @@ updated: YYYY-MM-DD
 
 ## REFERENCES
 
-- [**README.md**](../README.md): Main documentation index.
 - [**TESTS.md**](./TESTS.md): Testing strategies and commands.
 ````
 

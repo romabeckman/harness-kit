@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { resolve } from 'node:path'
 import type {
   CandidateReportInfo,
   DiagnoseReportData,
@@ -8,10 +9,12 @@ import type {
   ISessionLedger,
   SessionSnapshot,
 } from './types'
-import { sanitizeSessionSnapshot } from './types'
+import { isDiagnoseSession, sanitizeSessionSnapshot } from './types'
 import type { SessionIdGenerator } from './SessionIdGenerator'
 import { CandidateReader } from './CandidateReader'
 import { HarnessSettings } from '../settings/HarnessSettings'
+import type { DreamingEpisodeStore } from '../file-state/DreamingEpisodeStore'
+import { dreamingFingerprint, validateDreamingReceipt } from '../file-state/DreamingAnalysis'
 
 export interface DiagnoseServiceOptions {
   ledger: ISessionLedger
@@ -20,6 +23,8 @@ export interface DiagnoseServiceOptions {
   settings?: HarnessSettings
   cliSettings?: DiagnoseSettings
   workingDir?: string
+  dreaming?: DreamingEpisodeStore
+  dreamingTarget?: { project: string; episodeId: string }
 }
 
 export interface BatchResult {
@@ -29,6 +34,17 @@ export interface BatchResult {
   traceIds?: string[]
   candidateCreated?: CandidateReportInfo | null
   report?: DiagnoseReportData
+  dreaming?: {
+    processed: number
+    pending: number
+    eligible?: number
+    created?: number
+    updated?: number
+    noHypothesis?: number
+    historicalUnknown?: number
+    pendingDetails?: { episodeId: string; project: string; reason: string }[]
+    decisions?: { episodeId: string; project: string; status: string; reason: string }[]
+  }
 }
 
 export interface CaptureContext {
@@ -47,6 +63,8 @@ export class DiagnoseService {
   private readonly settings: HarnessSettings
   private readonly cliSettings?: DiagnoseSettings
   private readonly workingDir: string
+  private readonly dreaming?: DreamingEpisodeStore
+  private readonly dreamingTarget?: { project: string; episodeId: string }
 
   constructor(options: DiagnoseServiceOptions) {
     this.ledger = options.ledger
@@ -55,6 +73,8 @@ export class DiagnoseService {
     this.settings = options.settings ?? HarnessSettings.load(options.workingDir)
     this.cliSettings = options.cliSettings
     this.workingDir = options.workingDir ?? process.cwd()
+    this.dreaming = options.dreaming
+    this.dreamingTarget = options.dreamingTarget
   }
 
   private resolveDiagnoseSettings(runnerType: string): DiagnoseSettings | undefined {
@@ -86,7 +106,7 @@ export class DiagnoseService {
       const settings = this.resolveDiagnoseSettings(session.runner)
       const skills = completed.flatMap(record => record.skill ? [record.skill] : [])
       const existingCandidates = CandidateReader.listCandidateIds(this.workingDir)
-      const output = await this.agentAdapter.invokeMetaHarness(session, settings, skills)
+      const output = await this.agentAdapter.invokeMetaHarness(session, settings, skills, completed)
       return CandidateReader.resolveProposal(output, this.workingDir, existingCandidates)
     } catch (err) {
       console.error('[DiagnoseService] Error invoking meta-harness proposal:', err)
@@ -94,8 +114,72 @@ export class DiagnoseService {
     }
   }
 
+  private async processDreaming(completed: DiagnoseSessionRecord[]): Promise<BatchResult['dreaming']> {
+    if (!this.dreaming || !this.agentAdapter.invokeProjectDreaming) return undefined
+    const counts: NonNullable<BatchResult['dreaming']> = { processed: 0, pending: 0, eligible: 0, created: 0, updated: 0, noHypothesis: 0, historicalUnknown: 0 }
+    const pendingDetails: NonNullable<typeof counts.pendingDetails> = []
+    const decisions: NonNullable<typeof counts.decisions> = []
+    const episodes = this.dreaming.list().filter(episode => episode.closed)
+    for (const episode of episodes) {
+      for (const project of episode.projects) {
+        const target = this.dreamingTarget
+        if (target && (episode.id !== target.episodeId || (project.root !== target.project && project.root !== resolve(this.workingDir, target.project)))) continue
+        if (!target && episodes.some(item => item.previousAttemptId === episode.id && item.projects.some(owner => owner.root === project.root))) continue
+        counts.eligible!++
+        const chain = this.dreaming.learningChain(episode, project.root)
+        const fingerprint = dreamingFingerprint(chain.attempts)
+        if (!target && project.processed && !project.analysis) {
+          counts.historicalUnknown!++
+          decisions.push({ episodeId: episode.id, project: project.root, status: 'historical_unknown', reason: 'Historical outcome unknown: no receipt was saved.' })
+          continue
+        }
+        if (!target && project.analysis?.receipt.status !== 'incomplete' && project.analysis?.fingerprint === fingerprint) continue
+        const markPending = (reason: string): void => {
+          counts.pending++
+          pendingDetails.push({
+            episodeId: episode.id,
+            project: project.root,
+            reason: reason.replaceAll('\u001b', '').replace(/\s+/g, ' ').trim().slice(0, 500) || 'The runner returned no error details.',
+          })
+          const receipt = validateDreamingReceipt(JSON.stringify({ episode_id: episode.id, status: 'incomplete', reason }), project.root, episode.id, chain.attempts.map(item => item.id))
+          this.dreaming!.recordAnalysis(episode.id, project.root, fingerprint, receipt)
+        }
+        if (chain.error) { markPending(chain.error); continue }
+        const sessions = completed.filter(record => record.traceId && chain.attempts.some(item => item.sourceSessions.includes(record.sessionId))
+          && (record.featureId === undefined || record.featureId === episode.featureId)
+          && (record.domain === undefined || record.domain === episode.domain))
+        if (!sessions.length) {
+          markPending('No completed eligible session with a trace is linked to this episode.')
+          continue
+        }
+        try {
+          const output = await this.agentAdapter.invokeProjectDreaming(
+            episode, project, sessions, undefined, this.resolveDiagnoseSettings(sessions[0].runner), chain.attempts,
+          )
+          if (output.success === false) {
+            markPending(output.raw)
+            continue
+          }
+          const receipt = validateDreamingReceipt(output.raw, project.root, episode.id, chain.attempts.map(item => item.id))
+          if (receipt.status === 'incomplete') { markPending(receipt.reason ?? 'Invalid Dreaming receipt.'); continue }
+          this.dreaming.recordAnalysis(episode.id, project.root, fingerprint, receipt)
+          counts.processed++
+          if (receipt.status === 'no_hypothesis') counts.noHypothesis!++
+          decisions.push({ episodeId: episode.id, project: project.root, status: receipt.status, reason: receipt.reason ?? (receipt.hypotheses ?? []).map(item => `${item.id}: ${item.disposition}`).join(', ') })
+          for (const item of receipt.hypotheses ?? []) {
+            if (item.disposition === 'created') counts.created!++
+            if (item.disposition === 'updated') counts.updated!++
+          }
+        } catch (error) {
+          markPending(error instanceof Error ? error.message : String(error))
+        }
+      }
+    }
+    return { ...counts, ...(pendingDetails.length ? { pendingDetails } : {}), ...(decisions.length ? { decisions } : {}) }
+  }
+
   async processNextBatch(batchSize = 3): Promise<BatchResult> {
-    const pending = this.ledger.loadPending()
+    const pending = this.ledger.loadPending().filter(isDiagnoseSession)
     if (pending.length === 0) {
       return { processed: 0, remaining: 0, sessionIds: [], traceIds: [] }
     }
@@ -124,7 +208,7 @@ export class DiagnoseService {
           reservedTraceIds.add(traceId)
           this.ledger.append({ ...session, traceId })
         }
-        const output = await this.agentAdapter.invoke(session, traceId, settings)
+        const output = await this.agentAdapter.invoke(session, traceId, settings, [...traceIds])
         if (output.success === false) {
           throw new Error(`Runner failed to record trace ${traceId}`)
         }
@@ -148,7 +232,7 @@ export class DiagnoseService {
       }
     }
 
-    const remaining = this.ledger.loadPending().length
+    const remaining = this.ledger.loadPending().filter(isDiagnoseSession).length
     return { processed, remaining, sessionIds, traceIds }
   }
 
@@ -187,7 +271,8 @@ export class DiagnoseService {
       }
     }
 
-    const completed = this.ledger.loadAll().filter(session => session.status === 'completed')
+    const completed = this.ledger.loadAll().filter(session => session.status === 'completed' && isDiagnoseSession(session))
+    const dreaming = await this.processDreaming(completed)
     const proposalSession = lastProcessedSessionId
       ? completed.find(session => session.sessionId === lastProcessedSessionId)
       : lastRemaining === 0 ? completed.at(-1) : undefined
@@ -211,6 +296,7 @@ export class DiagnoseService {
       traceIds: allTraceIds,
       candidateCreated: proposal.candidateCreated,
       report,
+      ...(dreaming ? { dreaming } : {}),
     }
   }
 
@@ -271,7 +357,7 @@ export class DiagnoseService {
   ): Promise<BatchResult> {
     await this.captureSession(orchestrator, context)
     const batchResult = await this.processNextBatch(1)
-    const completed = this.ledger.loadAll().filter(session => session.status === 'completed')
+    const completed = this.ledger.loadAll().filter(session => session.status === 'completed' && isDiagnoseSession(session))
     const processed = completed.find(session => session.sessionId === batchResult.sessionIds?.[0])
     const proposal = processed ? await this.proposeCandidate(processed, completed) : { candidateCreated: null }
 

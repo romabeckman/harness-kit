@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { cmdDiagnose } from '../diagnose-service'
+import { cmdDiagnose, parseDiagnoseArgs } from '../diagnose-service'
 
 import { AgentRunnerFactory } from '../../../agent-runner/AgentRunnerFactory'
 import type { IAgentRunner } from '../../../agent-runner/IAgentRunner'
@@ -57,6 +57,13 @@ describe('cmdDiagnose CLI Service', () => {
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining('No pending diagnose sessions found')
     )
+  })
+
+  it('accepts a targeted episode and reports an empty Dreaming workspace separately', async () => {
+    expect(parseDiagnoseArgs(['--project-dreaming', '--dreaming-project', 'sdk', '--dreaming-episode', 'ep-1']))
+      .toMatchObject({ projectDreaming: true, dreamingProject: 'sdk', dreamingEpisode: 'ep-1' })
+    await cmdDiagnose(tmpDir, ['--project-dreaming'])
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('No eligible project episodes'))
   })
 
   it('prompts for an agent when pending sessions need diagnosis and --agent is absent', async () => {

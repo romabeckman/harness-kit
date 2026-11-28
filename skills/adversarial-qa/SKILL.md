@@ -27,6 +27,7 @@ Default `${scoreThresholdAdv}` = **0.70** (configured during BOOTSTRAP, stored i
    - `002-context-map.md` — bounded contexts, integration patterns
    - `003-{PROJECT_NAME}-tactical-design.md` — project-scoped refinement questions and answers, tactical decisions, ordered tasks
    - `004-{PROJECT_NAME}-test-scenarios.md` — acceptance criteria, boundary values, security scenarios, and edge cases per project
+   - In each owning project, read `docs/business/intent.md` when present and consult business documents relevant to the acceptance criteria. Use `docs/.graph.json` or look directly under `docs/business/`. Flag material discrepancies with the specification for clarification.
 2. Analyze the newly implemented code.
 3. Evaluate edge cases derived from the spec documents (e.g., boundary values from Value Object validation scenarios, security scenarios from section 3.3, concurrent access from integration tests).
 4. Calculate a QA `score` (0.00 to 1.00). Score < threshold means failure.

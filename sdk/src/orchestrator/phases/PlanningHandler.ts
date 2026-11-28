@@ -1,22 +1,18 @@
 import { loadPrompt } from '../utils/PromptTemplate'
-import { Complexity, Phase } from "../types";
-import { AbstractPhaseHandler, Reviewontext } from "./AbstractPhaseHandler";
-import { ContextAssembler } from "../../context-assembler/ContextAssembler";
-import type { Feature, Task } from "../../file-state/types";
-import type { PlanningPayload } from "../../context-assembler/types";
-import { join } from "node:path";
+import { Phase } from '../types'
+import { AbstractPhaseHandler, type Reviewontext } from './AbstractPhaseHandler'
+import { ContextAssembler } from '../../context-assembler/ContextAssembler'
+import type { Feature } from '../../file-state/types'
+import type { PlanningPayload } from '../../context-assembler/types'
+import { join } from 'node:path'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
-import {
-  buildDocsOrientationSection,
-  formatRulesSection,
-  formatProjectPathsList,
-  buildComplexityRules,
-  formatFeatureDependencies,
-  inlineOrReference,
-} from '../utils/PromptHelpers'
+import { PlanningPromptService } from '../services/PlanningPromptService'
+import { buildDocsOrientationSection, formatProjectPathsList } from '../utils/PromptHelpers'
 import { getPlanningSource, getSpecsDir } from '../utils/PhaseFileUtils'
 
 export class PlanningHandler extends AbstractPhaseHandler {
+  private readonly prompts = new PlanningPromptService()
+
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.PLANNING) {
       return super.handle(phase, context);
@@ -52,12 +48,20 @@ export class PlanningHandler extends AbstractPhaseHandler {
       await this.runScopeRefinement(activeFeature, context);
     }
 
-    await this.ensureTasksAppended(
-      activeFeature,
-      context,
-      phase,
-      existingFeatureTasks.length > 0 ? existingFeatureTasks : undefined,
-    );
+    const plannedTasks = existingFeatureTasks.length > 0 ? existingFeatureTasks : context.fsm.loadDevelopmentState()
+      .filter(task => task.featureId === activeFeature.id)
+    if (plannedTasks.length === 0 && !this.appendExtractedTasks(activeFeature, context)) {
+      await this.recoverTasksViaAgent(activeFeature, context)
+
+      const recovered = context.fsm.loadDevelopmentState()
+        .some(task => task.featureId === activeFeature.id)
+      if (!recovered) {
+        throw new Error(
+          `${phase} failed: no tasks extracted for feature ${activeFeature.id} (domain '${activeFeature.domain}'). ` +
+          `Verify that docs/specs/${activeFeature.domain}/003-*-tactical-design.md contains a valid JSON array with objects having 'title'.`,
+        )
+      }
+    }
 
     const specsDir = getSpecsDir(context.workingDir, activeFeature.domain)
     const taskCount = context.fsm.loadDevelopmentState()
@@ -104,8 +108,8 @@ export class PlanningHandler extends AbstractPhaseHandler {
     const developerSession = context.getDeveloperSession?.(agent, undefined, Phase.PLANNING)
 
     const prompt = developerSession
-      ? this.buildFeatureScopeRefinementPrompt(payload, feature, context)
-      : this.buildScopeRefinementPrompt(payload, feature, context);
+      ? this.buildFeatureScopeRefinementPrompt(payload, feature, context, planningSource)
+      : this.buildScopeRefinementPrompt(payload, feature, context, planningSource);
 
     const output = await context.invokeAgent({
       skill: "harness-kit:scope-refinement",
@@ -127,127 +131,36 @@ export class PlanningHandler extends AbstractPhaseHandler {
     }
   }
 
-  buildScopeRefinementPrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
-    const projectPathsList = formatProjectPathsList(payload.projectPaths)
-    const rulesSection = formatRulesSection(payload.steeringRules)
-
-    const complexity = context.config.complexity ?? Complexity.AUTO
-    const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
-    const contextMapFile = join(payload.workingDir, '002-context-map.md');
-    const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
-    const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
-    const complexityPrompt = buildComplexityRules(complexity, {
-      outputDirectory: payload.workingDir,
-      problemSpaceFile,
-      contextMapFile,
-      tacticalDesignFile,
-      testScenariosFile,
-    })
-
-    const backlog = context.fsm.loadBacklog();
-    const dependenciesText = formatFeatureDependencies(backlog, feature)
-
-    const planningSource = getPlanningSource(context)
-
-    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
-
-    return loadPrompt('planning/scope', {
-      expectedOutputs: complexityPrompt.expectedOutputs,
-      strictRules: complexityPrompt.strictRules,
-      orientationSection: orientationSection,
-      rulesSection: rulesSection,
-      projectPathsList: projectPathsList,
-      scopeSection: inlineOrReference(
-        'scope',
-        payload.scope.trim(),
-        planningSource.path,
-        'markdown',
-        'always',
-        context.config.agentRunner,
-      ),
-      id: feature.id,
-      featureTitle: payload.featureTitle,
-      domain: payload.domain,
-      priority: feature.priority || 'No priority set',
-      dependenciesText: dependenciesText,
-    });
+  buildScopeRefinementPrompt(
+    payload: PlanningPayload,
+    feature: Feature,
+    context: Reviewontext,
+    planningSource = getPlanningSource(context),
+  ): string {
+    return this.prompts.buildPlanningPrompt(payload, feature, context, planningSource)
   }
 
-  buildFeatureScopeRefinementPrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
-    const complexity = context.config.complexity ?? Complexity.AUTO
-    const problemSpaceFile = join(payload.workingDir, '001-problem-space.md');
-    const contextMapFile = join(payload.workingDir, '002-context-map.md');
-    const tacticalDesignFile = join(payload.workingDir, `003-\${PROJECT_NAME}-tactical-design.md`);
-    const testScenariosFile = join(payload.workingDir, `004-\${PROJECT_NAME}-test-scenarios.md`);
-    const complexityPrompt = buildComplexityRules(complexity, {
-      outputDirectory: payload.workingDir,
-      problemSpaceFile,
-      contextMapFile,
-      tacticalDesignFile,
-      testScenariosFile,
-    })
-
-    const backlog = context.fsm.loadBacklog();
-    const dependenciesText = formatFeatureDependencies(backlog, feature)
-    const rulesSection = formatRulesSection(payload.steeringRules)
-    const projectPathsList = formatProjectPathsList(payload.projectPaths)
-    const planningSource = getPlanningSource(context)
-
-    return loadPrompt('planning/continuation', {
-      expectedOutputs: complexityPrompt.expectedOutputs,
-      strictRules: complexityPrompt.strictRules,
+  buildFeatureScopeRefinementPrompt(
+    payload: PlanningPayload,
+    feature: Feature,
+    context: Reviewontext,
+    planningSource = getPlanningSource(context),
+  ): string {
+    const contextAnchors = loadPrompt('planning/continuation', {
       id: feature.id,
       featureTitle: payload.featureTitle,
-      label: planningSource.label,
-      path: planningSource.path,
       workingDir: payload.workingDir,
-      projectPathsList: projectPathsList,
-      RefinementSection: planningSource.isRefinement
-        ? loadPrompt('planning/refinement-rules', {}).split('\n')
-        : [],
-      rulesSection: rulesSection,
-      projectPathsList2: projectPathsList,
-      id2: feature.id,
-      featureTitle2: payload.featureTitle,
-      domain: payload.domain,
-      priority: feature.priority || 'No priority set',
-      dependenciesText: dependenciesText,
-    });
+    }).split('\n')
+    return this.prompts.buildPlanningPrompt(payload, feature, context, planningSource, contextAnchors)
   }
 
   buildFeaturePrompt(payload: PlanningPayload, feature: Feature, context: Reviewontext): string {
     return this.buildFeatureScopeRefinementPrompt(payload, feature, context);
   }
 
-  private async ensureTasksAppended(
-    feature: Feature,
-    context: Reviewontext,
-    phase: Phase,
-    initialTasks?: Task[],
-  ): Promise<void> {
-    const existing = initialTasks ?? context.fsm
-      .loadDevelopmentState()
-      .filter((t) => t.featureId === feature.id);
-
-    if (existing.length > 0) return;
-
-    let extracted = context.extractTasksFromTacticalDesign(feature.domain);
-
-    if (extracted.length === 0) {
-      await this.recoverTasksViaAgent(feature, context);
-
-      const recovered = context.fsm
-        .loadDevelopmentState()
-        .filter((t) => t.featureId === feature.id);
-
-      if (recovered.length === 0) {
-        throw new Error(
-          `${phase} failed: no tasks extracted for feature ${feature.id} (domain '${feature.domain}'). ` +
-          `Verify that docs/specs/${feature.domain}/003-*-tactical-design.md contains a valid JSON array with objects having 'title'.`,
-        );
-      }
-      return;
-    }
+  private appendExtractedTasks(feature: Feature, context: Reviewontext): boolean {
+    const extracted = context.extractTasksFromTacticalDesign(feature.domain)
+    if (extracted.length === 0) return false
 
     context.fsm.appendTasks(
       extracted.map((t) => ({
@@ -259,7 +172,8 @@ export class PlanningHandler extends AbstractPhaseHandler {
         currentPhase: "-" as const,
         status: "NOT_STARTED" as const,
       })),
-    );
+    )
+    return true
   }
 
   private async recoverTasksViaAgent(

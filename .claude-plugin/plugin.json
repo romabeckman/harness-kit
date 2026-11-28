@@ -1,26 +1,26 @@
 {
-    "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
-    "name": "harness-kit",
-    "version": "1.7.5",
-    "description": "A suite of expert AI agents and skills implementing Harness Engineering — autonomous TDD/DDD orchestration, phase-isolated agents, adversarial QA, critical code review, and persistent project memory for disciplined, high-quality software engineering workflows.",
-    "author": {
-        "name": "Romario Beckman",
-        "url": "https://github.com/romabeckman/harness-kit"
-    },
-    "homepage": "https://github.com/romabeckman/harness-kit",
-    "repository": "https://github.com/romabeckman/harness-kit",
-    "license": "MIT",
-    "keywords": [
-        "agents",
-        "tdd",
-        "ddd",
-        "code-review",
-        "software-engineering",
-        "harness",
-        "ai-workflow",
-        "claude",
-        "skills",
-        "autonomous",
-        "orchestrator"
-    ]
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "harness-kit",
+  "version": "1.8.0",
+  "description": "A suite of expert AI agents and skills implementing Harness Engineering — autonomous TDD/DDD orchestration, phase-isolated agents, adversarial QA, critical code review, and persistent project memory for disciplined, high-quality software engineering workflows.",
+  "author": {
+    "name": "Romario Beckman",
+    "url": "https://github.com/romabeckman/harness-kit"
+  },
+  "homepage": "https://github.com/romabeckman/harness-kit",
+  "repository": "https://github.com/romabeckman/harness-kit",
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "tdd",
+    "ddd",
+    "code-review",
+    "software-engineering",
+    "harness",
+    "ai-workflow",
+    "claude",
+    "skills",
+    "autonomous",
+    "orchestrator"
+  ]
 }

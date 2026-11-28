@@ -11,7 +11,7 @@ Defines strict rules for generating and maintaining `docs/README.md`.
 | Field | Value |
 |---|---|
 | Target file | `docs/README.md` (root of the `docs/` folder) |
-| Max size | 10,000 counted characters maximum; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
+| Max size | 20,000 characters for the whole file. See [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget). |
 | Agent action | Create or update affected sections of `docs/README.md` using the MANDATORY TEMPLATE exactly as specified. |
 | When to update | REQUIRED: Every time a document is added, removed, or renamed in `docs/`, update `docs/README.md` in the same operation. |
 
@@ -51,13 +51,13 @@ REQUIRED: Reject any attempt to include the following content in this file.
    - Foundational baseline ADRs next (Architecture, Tests).
    - Specific domain/feature documents after.
 
-5. **Index updates:** REQUIRED: Add every new `docs/adr/` or `docs/feature/` document to the table. PROHIBITED: Removing entries unless the corresponding file has been deleted.
+5. **Index updates:** REQUIRED: Add every new `docs/adr/`, `docs/feature/`, or `docs/business/` document to the table. List `business/intent.md` as mandatory and other business documents as optional. Use direct links to the files. PROHIBITED: Removing entries unless the corresponding file has been deleted.
 
 ---
 
 ## MANDATORY TEMPLATE
 
-REQUIRED: Use the structure below when creating; preserve unaffected content when updating `docs/README.md`. Replace every `[placeholder]` with actual project content.
+REQUIRED: Use the structure below when creating; preserve unaffected content when updating `docs/README.md`. Replace every `[placeholder]` with actual project content. In a narrowly scoped task, omit links to missing unrelated baselines and report those gaps; do not create broken links or expand the authorized scope to fill them.
 
 <output_template target="docs/README.md">
 

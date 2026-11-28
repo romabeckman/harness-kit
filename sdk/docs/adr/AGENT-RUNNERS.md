@@ -51,7 +51,7 @@ src/agent-runner/
 ### CursorCLIRunner (`cursor-cli`)
 - Executes `agent --print --force --output-format stream-json`, resumes with `--resume <session.id>`, and extracts `session_id`.
 ### KiroCLIRunner (`kiro-cli`)
-- Executes `kiro-cli chat --no-interactive --trust-all-tools`; parses result events and does not resume sessions.
+- Executes `kiro-cli chat --no-interactive --trust-all-tools` and accepts `--resume-id` when a session is supplied. Its parser returns that supplied identifier.
 ### OpenCodeCLIRunner (`opencode-cli`)
 - Executes the `opencode run` subcommand with prompts on stdin.
 - Maps model, effort (via `--variant`), agent, session, and workspace values to supported CLI flags; ignores additional-directory values because the installed OpenCode contract has no equivalent flag.

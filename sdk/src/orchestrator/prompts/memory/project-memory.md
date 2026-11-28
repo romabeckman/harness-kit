@@ -1,6 +1,6 @@
 ## Objective
 Persist development memory for the current development scope. Organize documents by topic; avoid redundant or repetitive text.
-Each project must have its own `docs/adr` and `docs/feature` folders where all ADRs and features are stored.
+Keep each project's architecture, feature, and business documents in its own documentation folders.
 
 <skill_context>
 Invoke the `harness-kit:project-memory` skill before starting.
@@ -11,23 +11,24 @@ Mode: autonomous
 
 ## Workflow
 1. Execute autonomously without pausing or asking for confirmation.
-2. Invoke the `harness-kit:project-memory` skill and read `./references/DOCUMENT-TEMPLATE.md` before writing anything.
+2. Follow the `harness-kit:project-memory` document contract and the reference for each document type before writing.
 3. Read `{{backlogFile}}` to identify completed features and their `Domain` values, then read the corresponding specification sources at `{{specsPattern}}`. Update feature documentation inside each target project, not inside the specification directory.
 4. If an existing document already covers this feature's changes, fixes, updates or improvements, update that file. Otherwise, create a new one.
 5. If architectural changes were introduced (new layers, patterns, integrations, test strategy changes), update the corresponding `docs/adr/*.md` file following its own rules file.
-6. Update `docs/.digest.md` and `docs/.graph.json` at the end of the operation.
+6. Read `docs/business/intent.md` when present and create it if missing within scope. Update relevant business documents when the cycle establishes a supported business decision. Apply Project Memory's business rules.
+7. Synchronize affected documentation indexes, including `docs/README.md`, `docs/.digest.md`, and `docs/.graph.json`, as applicable.
 
 ## File Organization
-- Each project listed in `<project_paths>` must have its own `docs/adr/` and `docs/feature/` folders. Create or modify topic documents only in those folders; root documentation indexes such as `README.md`, `docs/README.md`, `docs/.digest.md`, and `docs/.graph.json` may also be updated.
+- For each project listed in `<project_paths>`, create or modify topic documents under `docs/adr/`, `docs/feature/`, or `docs/business/`. Apply Project Memory's scope rules to index and README updates.
 - Specification docs (SDD) live at `{{specsPattern2}}`, grouped by the `Domain` column from BACKLOG.md.
 - Feature docs live directly under `docs/feature/*.md`. Preserve an existing project naming convention; otherwise default to a stable domain-based filename such as `docs/feature/<domain>.md`. Never prefix filenames with feature IDs such as F001 or F002.
 
 ## Content Rules
-- Follow `./references/DOCUMENT-TEMPLATE.md` strictly for structure and formatting.
+- Use the Project Memory template for the document type.
 - Write for a future LLM with no access to source files: state what the feature does, why it exists, key decisions, constraints — never how it was implemented step-by-step.
 - AVOID code snippets. Only include one when prose cannot convey it (public interface signature, fixed schema, non-obvious config key), and keep it to a few lines. Never paste full functions, classes, or file contents — reference the file path instead.
 - The `FOLDER STRUCTURE` section must reflect the module's current relevant structure, adding this cycle's paths without dropping paths from prior cycles.
-- Cross-references between topic documents must target files under the project's `docs/adr/` or `docs/feature/` folders and use a correct relative path from the source document. Validate every reference before finalizing.
+- References must use relative links to existing Markdown under the same project's `docs/adr/`, `docs/feature/`, or `docs/business/`. Validate each link before finalizing.
 
 ## Prohibited
 - NEVER include TDD/validation/score details in feature docs — those belong in DECISIONS.md only.

@@ -198,13 +198,17 @@ USAGE
 DESCRIPTION
   Run post-orchestration harness diagnosis and optimization using meta-harness-agent.
   Reads recorded sessions from docs/product/diagnose-sessions.jsonl, processes pending
-  sessions in batches of 3, and updates trace history and candidate improvements.
+  PLANNING, DEVELOPMENT, and REVIEW sessions in batches of 3, and updates trace history
+  and candidate improvements. Legacy sessions with unknown phases remain eligible.
 
 OPTIONS
   --agent, -a <type>        Specify agent runner; prompt opens when omitted (Claude CLI preselected)
   --model, -m <name>        Override model name (defaults to DefaultSettings.ts diagnose model)
   --effort, -e <level>      Override reasoning effort level (defaults to DefaultSettings.ts diagnose effort)
   --batch-size <number>     Number of pending sessions to process per batch (default: 3)
+  --project-dreaming        Extract hypotheses from eligible episodes after trace verification
+  --dreaming-project <path> Owning project path for targeted episode reanalysis
+  --dreaming-episode <id>   Episode ID to reanalyze; requires --dreaming-project
   --debug                   Enable debug output
   --help, -h                Show this help message
 
@@ -213,6 +217,7 @@ EXAMPLES
   hrns diagnose --agent copilot-cli
   hrns diagnose --model gpt-6-luna --effort xhigh
   hrns diagnose --batch-size 5
+  hrns diagnose --dreaming-project packages/sdk --dreaming-episode <episode-id>
 `
 
 export const HELP_QA = `

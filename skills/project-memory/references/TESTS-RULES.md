@@ -11,7 +11,7 @@ PROHIBITED: Add a feature graph or `graph.knowledge` to this ADR. Record decisio
 | Field | Value |
 |---|---|
 | Target file | `docs/adr/TESTS.md` |
-| Max size | 10,000 counted characters maximum; see [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget) |
+| Max size | 20,000 characters for the whole file. See [TOTAL CONTEXT BUDGET](../SKILL.md#total-context-budget). |
 | Agent action | Analyze the repository, apply the PRE-GENERATION ANALYSIS below, then create or update affected sections of the file using the MANDATORY TEMPLATE exactly as specified |
 
 ---
@@ -50,9 +50,7 @@ domain: testing
 stack: [list of testing frameworks]
 node_id: "adr:tests"
 tags: [testing, unit-tests, e2e-tests, coverage]
-edges:
-  - relation: references
-    target: "adr:architecture"
+edges: []
 updated: YYYY-MM-DD
 ---
 # Testing Protocol
@@ -95,11 +93,10 @@ PROHIBITED: [e.g., Tests that depend on execution order]
 - **Flaky tests:** [How to identify and report]
 - **Debug mode:** [Command or flag to run tests with verbose/debug output]
 
-<!-- DOCUMENT MAP: omitted — this baseline ADR has exactly 1 edge. The ## REFERENCES section below carries the relation. Add a DOCUMENT MAP only when it explains relationships beyond existing references. -->
+<!-- ARCHITECTURE.md owns the graph edge between the baseline ADRs. Keep the Markdown link below for readers. -->
 
 ## REFERENCES
 
-- [**README.md**](../README.md): Main documentation index.
 - [**ARCHITECTURE.md**](./ARCHITECTURE.md): System architecture and patterns.
 ```
 

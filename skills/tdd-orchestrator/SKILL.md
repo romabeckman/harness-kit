@@ -33,8 +33,9 @@ OTHERWISE (default, when invoked directly by human):
 |---|---|
 | `docs/.digest.md` | Executive summary of architecture pattern, layers, test framework, run commands, coverage thresholds |
 | `docs/.graph.json` | Complete relation graph index for 1-hop document lookup and dependency traversal |
+| `docs/business/intent.md` (if present) | Project purpose and business objectives used to check task alignment |
 
-*Note: If `docs/.digest.md` is present and provides complete stack/test commands, proceed directly. Fall back to reading full baseline documents below if `.digest.md` is missing or deeper technical context is required.*
+Read the intent in each owning project even when the digest covers the technical baseline. Use graph nodes of type `business` to select additional documents only when they affect the task, rules, or acceptance criteria. If the graph is missing or stale, look for relevant files directly under `docs/business/`. Business context informs the task; send material conflicts with the applicable specification to refinement. Fall back to the full ADRs below if the digest is missing or deeper technical context is required.
 
 ### Feature micrograph routing
 
@@ -46,11 +47,26 @@ After macro orientation:
    - Evaluate each `optional[].description` against `${tasks}`, current requirements, and rework findings when present.
    - Read only optional documents whose condition applies.
 3. Resolve document paths through `.graph.json` `nodes[]`.
-4. Read only frontmatter and top `graph` block from the selected `docs/feature/*.md`.
+4. Start with frontmatter and the top `graph` block of the selected document under `docs/feature/`.
 5. Validate every routed path exists. If any path is stale or feature node is absent, use `rg --files` plus targeted `rg` searches, then continue with discovered paths.
 6. RED phase: read relevant `test_files` first.
 7. GREEN phase: read relevant files in this order: `entrypoints`, `registration_files`, `reference_files`, then `code_files`.
 8. Read full feature prose only when implementation needs design context not present in digest, graph, specs, or routed code.
+
+### Published guidance before RED
+
+In both modes, after routing to the affected feature and loading the applicable requirements, look only for its top-level `## RED guidance` section outside fenced examples. Also recognize the legacy heading `## Orientações para o RED`; treat both headings as duplicate sections if both exist. Look in the owning project when a workspace contains several projects. No feature, section, or usable entry means the normal RED proceeds. The [published orientation contract](../project-dreaming/references/CONTRACTS.md#published-orientation) applies when the section exists. Flag malformed guidance with its document locator and proceed from the applicable specification. The feature document is the source for guidance. Project Dreaming owns learning history and candidate evaluation.
+
+For each entry relevant to the selected tasks, check its condition, exception, current source support, and existing tests. For a supported, in-scope rule, equivalent coverage takes the `covered` branch. Use each entry only for a concrete test decision:
+
+- `applied` — materialize or adjust a test to cover the applicable scenario. In autonomous mode keep its original `004` scenario ID and respect the intent and task boundaries in `003` and `004`.
+- `covered` — point to equivalent coverage, run it, and reuse it. Check equivalence against the task, including state setup, instance boundary, and assertions where relevant.
+- `skipped` — continue with the applicable contract when the exception holds or the source is stale, missing, or contradicted. Record the source locator for later review when support has lapsed.
+- `needs_refinement` — for a material ambiguity requiring a business decision, ask in interactive mode. In autonomous mode return any required new or contradictory behavior to refinement with its task/scenario and source. Continue independent, specified work; keep unresolved work incomplete. Existing autonomous acceptance and failed-output gates still apply.
+
+Follow the usual RED requirement for new behavior and uncovered regressions. Reusing a test requires evidence that it checks the needed behavior. A currently green reused test is evidence of coverage, never a fabricated RED.
+
+Capture the observed decision before acting on it, including when it leads to refinement. Link it to test execution evidence when the test runs.
 
 Do not copy routing arrays into `.graph.json` or create another routing artifact.
 
@@ -87,8 +103,8 @@ Use the selected feature node's `related_docs` from `.graph.json`.
 
 REQUIRED: When `docs/specs/${domain}/REWORK-LOG.md` is present, apply these optimizations:
 1. Read `REWORK-LOG.md` FIRST — extract all findings before any other action
-2. Prioritize Step 1 (RED) — write NEW failing tests for each finding immediately
-3. SKIP Step 5 (Update Documentation) until final validation passes
+2. Prioritize Step 1 (RED) after the scoped guidance check — confirm equivalent coverage or write failing tests for uncovered findings within the specified scope
+3. In INTERACTIVE mode, run Step 5 automatically after final validation passes; in AUTONOMOUS mode, skip Step 5 entirely
 4. SKIP Step 6 (Machine-Readable Output) until all tests pass — regenerate only at the end
 
 </retry_fast_path>
@@ -110,7 +126,7 @@ INTERACTIVE → analyze requirement and identify what needs to be tested
 - Create test structure (unit / integration / functional)
 - Write tests following AAA pattern (Arrange, Act, Assert)
 - Include positive and negative scenarios
-- **REWORK (if `REWORK-LOG.md` present)**: translate each vulnerability and missed edge case from `REWORK-LOG.md` into new failing test cases to ensure regression protection
+- **REWORK (if `REWORK-LOG.md` present)**: verify regression coverage for each finding and write a failing test where it is missing
 - **IRON LAW: verify test FAILS before proceeding**
 
 </step>
@@ -152,6 +168,7 @@ IF any test fails:
 - Execute this final validation gate **before declaring any completion**
 - Run full test suite one last time — check for regressions
 - Provide concrete evidence (actual test command output)
+- When recording a trace, pass the observed guidance decisions and corresponding test evidence to `harness-tracer`. In a direct session without a trace, report the feature, guidance ID and revision, decision, scenario or test locator, and observed command/result so a subsequent Dreaming review can cite them.
 
 ```
 Task is COMPLETE only when: 100% tests pass WITH verified output evidence
@@ -161,12 +178,22 @@ Task is COMPLETE only when: 100% tests pass WITH verified output evidence
 
 <step id="5" name="Update Documentation">
 
-INTERACTIVE mode only: when applicable, invoke `project-memory` to update:
-- OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs
-- Input/Output schemas, descriptions, HTTP status codes
-- The `docs/feature/{FEATURE_NAME}.md` file must be updated whenever a feature is created or updated.
+### INTERACTIVE
 
-> `project-memory` auto-creates baseline docs (`README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`) if missing.
+After Step 4 passes, automatically execute this step without asking the user for permission or confirmation. Delegate the entire interactive Step 5 to a single subagent with access to the owning project directories and the `project-dreaming` and `project-memory` skill instructions. Give it this sequence, the task scope, the session and attempt identifiers, and the available evidence from Step 4. The TDD orchestrator waits for the subagent's report before closing the workflow. If delegation is unavailable or fails, report Step 5 as pending with the reason and the action needed to resume. Preserve the verified engineering outcome from Step 4.
+
+The subagent executes the following sequence in order. The Dreaming review is required even when the first attempt succeeds, there is no classified signal, or no documentation update is needed.
+
+1. **Prepare the review scope.** Identify each owning project and feature worked on. For each pair, collect the session ID, available task and attempt IDs, and locators for test decisions, tests, relevant rework, commands, and results. Include tests written, corrected, or discarded in favor of equivalent coverage when available. Use any observed consequence, known trigger, hypothesis ID, or orientation ID to prioritize inspection.
+2. **Run `project-dreaming` once per project and feature.** Supply the collected evidence and limit inspection to the task and related attempts. Use targeted feature and learning-record lookups for deduplication or counterevidence. Request and verify the [analysis receipt](../project-dreaming/references/CONTRACTS.md#analysis-receipt) before proceeding to `project-memory`.
+3. **Resolve the review status.** A verified `recorded` or `no_hypothesis` receipt completes the review. Keep `incomplete` analysis pending with its reason and required input or action. Follow the receipt contract when the receipt is missing or invalid. Preserve the engineering outcome established in Step 4 and continue with any applicable documentation updates.
+4. **Run `project-memory` when documentation needs updating or Dreaming supplied a validated handoff.** Update `docs/feature/{FEATURE_NAME}.md` whenever a feature is created or updated. Update OpenAPI/Swagger specs, GraphQL schemas, internal endpoint docs, input and output schemas, descriptions, and HTTP status codes as applicable. Forward any validated publication or withdrawal handoff with the documentation update. `project-memory` creates missing baseline docs (`docs/README.md`, `docs/adr/ARCHITECTURE.md`, `docs/adr/TESTS.md`, `docs/business/intent.md`) within authorized scope.
+5. **Verify any publication or withdrawal.** Return the `project-memory` receipt to Dreaming so it can verify the operation and close the corresponding ID. Preserve the retry trigger for any unresolved operation.
+6. **Report back to the TDD orchestrator.** Return the analysis receipt for each project and feature, the documentation changes, the outcome of any publication or withdrawal, and any pending item with its reason and the action needed to resume.
+
+### AUTONOMOUS
+
+Skip this entire step and continue to Step 6. Do not delegate or run the interactive Dreaming and documentation sequence here; the autonomous orchestrator handles its own review and documentation phases.
 
 </step>
 
@@ -179,7 +206,6 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 ```json
 {
   "featureId": "string",
-  "status": "SUCCESS",
   "metrics": {
     "totalTests": 0,
     "passed": 0,
@@ -194,7 +220,11 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 }
 ```
 
-`status` must be either `"SUCCESS"` or `"FAILED"`. Write `"SUCCESS"` only when the final test run has zero failures.
+Report the actual counts from the final test run. If work remains incomplete and the report would show zero failed tests, write it only to record an applicable `needs_refinement` decision. Otherwise record the blocker in the session. Keep any affected tasks incomplete and identify their scenarios and missing decisions.
+
+Preserve the project, feature, task, attempt, and session identifiers and available test, decision, and execution locators for independent review. Preserve this evidence for every attempt, including those without a highlighted learning signal. Include an observed signal and consequence when available. Cite the underlying sources so the reviewer can verify the evidence independently.
+
+Preserve caller-required fields. The skill-driven `autonomous-orchestrator` expects `developerHandoff` of at most 500 characters. When the guidance lookup was observed, add the optional [`orientation_use` array](../project-dreaming/references/CONTRACTS.md#tdd-use). Preserve scenario IDs and project-scoped test or event locators and reference verified execution evidence in the run/trace, including for tests without a guidance decision. Record the session and attempt while that evidence is available, since autonomous review may later remove the transient TDD output. Older reports without these optional details remain usable; missing evidence must not be invented.
 
 </step>
 
@@ -213,7 +243,7 @@ In the case of AUTONOMOUS, save the structured JSON in `docs/specs/${domain}/TDD
 - Run tests after every change
 - Fix production code — never alter correct tests to force passing
 - Execute the final validation step before declaring completion
-- Invoke `project-memory` for new or changes in the project
+- In interactive mode, automatically delegate Step 5 to a subagent after final validation and wait for its report; in autonomous mode, skip Step 5
 
 **❌ Don't:**
 - Skip mandatory orientation context or baseline docs in `docs/adr/`
@@ -272,8 +302,8 @@ In INTERACTIVE mode, emit a status block at each step. In AUTONOMOUS mode, keep 
 📋 Step 4: Final Validation (tdd-orchestrator)
 ✅ [test output evidence] All tests passed — claim verified
 
-📋 Step 5: Updating Documentation (project-memory)
-✅ API contracts updated
+📋 Step 5: Review and Documentation (subagent)
+✅ Dreaming receipt verified; API contracts updated
 
 📋 Step 6: Machine-Readable Output
 ✅ JSON report generated

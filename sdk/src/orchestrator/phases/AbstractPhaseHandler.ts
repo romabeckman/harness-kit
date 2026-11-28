@@ -3,6 +3,7 @@ import type { OrchestratorConfig, OrchestratorState } from '../types'
 import type { IFileStateManager } from '../../file-state/FileStateManager'
 import type { Feature } from '../../file-state/types'
 import type { AgentInvocation, AgentOutput, AgentSession } from '../../agent-runner/types'
+import type { DreamingEpisodeStore } from '../../file-state/DreamingEpisodeStore'
 
 export interface ExtractedTask {
   taskId: string
@@ -21,6 +22,7 @@ export interface Reviewontext {
   readonly config: OrchestratorConfig
   readonly workingDir: string
   readonly fsm: IFileStateManager
+  readonly dreaming?: DreamingEpisodeStore
   developerSession?: DeveloperSessionState[] | DeveloperSessionState
   getDeveloperSession?(agent: string, featureId?: string, phase?: Phase): AgentSession | undefined
   setDeveloperSession?(sessionState: DeveloperSessionState): void

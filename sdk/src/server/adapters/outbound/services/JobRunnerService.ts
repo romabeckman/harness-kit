@@ -1,5 +1,5 @@
-import { existsSync, rmSync, copyFileSync, mkdirSync, readFileSync, appendFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, rmSync, copyFileSync, mkdirSync, readFileSync, appendFileSync, realpathSync } from 'node:fs'
+import { basename, isAbsolute, join, relative, sep } from 'node:path'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import type { JobStoreRepository } from '../repository/JobStoreRepository'
@@ -13,6 +13,10 @@ import { DtoMappers } from '../../inbound/http/mappers/DtoMappers'
 import { HarnessOrchestrator } from '../../../../orchestrator/HarnessOrchestrator'
 import { FileStateManager } from '../../../../file-state/FileStateManager'
 import { findSensitiveGitPaths } from '../../../../orchestrator/utils/GitSensitiveFiles'
+import { getSpecsDir, readTddOutput } from '../../../../orchestrator/utils/PhaseFileUtils'
+import { archiveJobArtifacts } from './JobArtifactArchive'
+import { JobExecutionError, JobExecutionRunner } from './JobExecutionRunner'
+import { AsyncWorkerPool } from './AsyncWorkerPool'
 
 const execFileAsync = promisify(execFile)
 
@@ -35,8 +39,6 @@ async function execGit(
     }
   }
 }
-
-import { AsyncWorkerPool } from './AsyncWorkerPool'
 
 export interface JobRunnerServiceOptions {
   jobStore: JobStoreRepository
@@ -149,7 +151,9 @@ export class JobRunnerService {
             })
           : new NullAgentRunner())
 
-      orchestratorConfig.agentRunner = runner
+      const onProgress = async (phase: string) => this.jobStore.updateProgress?.(job.jobId, { phase })
+      const executionRunner = new JobExecutionRunner(runner, onProgress)
+      orchestratorConfig.agentRunner = executionRunner
 
       const orchestrator = new HarnessOrchestrator(orchestratorConfig, {
         workingDir: effectivePath,
@@ -159,14 +163,29 @@ export class JobRunnerService {
         orchestrator.applySteeringActions([{ type: 'add_rule', rule: job.request.steeringMessage.trim() }])
       }
 
-      await orchestrator.run()
+      try {
+        await orchestrator.run()
+      } catch (error) {
+        if (error instanceof JobExecutionError) throw error
+        throw this.refinementFailure(orchestrator, effectivePath) ?? error
+      }
+      // The core can return after a timeout with the phase still resumable on disk.
+      if (executionRunner.memoryFailure) throw executionRunner.memoryFailure
 
       const features = orchestrator.fsm.loadBacklog()
       if (features.length === 0 || features.some(feature => feature.status !== 'COMPLETED')) {
-        throw new Error('Orchestration halted before all features completed. Resume this job from its preserved worktree.')
+        throw this.refinementFailure(orchestrator, effectivePath)
+          ?? new Error('Orchestration halted before all features completed. Resume this job from its preserved worktree.')
       }
 
-      // Commit and push completed changes before cleaning up worktree
+      if (createdWorktreePath) {
+        try {
+          await archiveJobArtifacts(createdWorktreePath, job.workspacePath, job.jobId)
+        } catch (cause) {
+          throw new JobExecutionError('ARTIFACT_ARCHIVE_FAILED', 'Could not archive job diagnostics. Check the workspace archive and resume this job.', { cause })
+        }
+      }
+      await onProgress('DEPLOY')
       await this.finalizeGitCommitPush(effectivePath, gitPrep.branch, job.request.scope, job.jobId)
 
       await this.jobStore.updateStatus(job.jobId, 'completed')
@@ -187,6 +206,26 @@ export class JobRunnerService {
       }
       await this.lockManager.releaseLock(job.workspacePath, job.jobId)
       this.jobQueue.notifyLockReleased(job.workspacePath)
+    }
+  }
+
+  private refinementFailure(orchestrator: HarnessOrchestrator, workspace: string): JobExecutionError | undefined {
+    try {
+      const feature = orchestrator.getActiveFeature()
+      if (!feature || basename(feature.domain) !== feature.domain) return
+      const root = realpathSync(workspace)
+      const path = realpathSync(join(getSpecsDir(root, feature.domain), 'TDD-OUTPUT.json'))
+      const location = relative(root, path)
+      if (isAbsolute(location) || location.startsWith(`..${sep}`) || location === '..') return
+      const output = readTddOutput(path)
+      if (output.featureId !== feature.id || output.reworksCount !== feature.reworks) return
+      const pending = output.orientation_use?.filter(entry => entry.decision === 'needs_refinement') ?? []
+      if (pending.length === 0) return
+      const decisions = pending.map(entry => `${entry.test_ref || entry.orientation_id}: ${entry.reason}`).join(' | ')
+      return new JobExecutionError('REFINEMENT_REQUIRED',
+        `Development requires a decision for ${feature.id}. Resume with the decision in steeringMessage. ${decisions.slice(0, 2000)}`)
+    } catch {
+      return undefined
     }
   }
 

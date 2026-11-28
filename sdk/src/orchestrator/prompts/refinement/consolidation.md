@@ -1,7 +1,8 @@
 <skill_context>
 Invoke the `harness-kit:pbb-design` skill before starting.
-Mode: autonomous consolidation using human-validated refinement evidence.
-Produce the final PBB document at <output_file>.
+Mode: autonomous consolidation preserving the provenance of each refinement answer.
+Create `REFINEMENT.md` at the exact path in <output_file>. Write the complete
+PBB document to that file and omit the document from your response.
 </skill_context>
 
 <objective>
@@ -33,8 +34,34 @@ Write the file with exactly this structure (Markdown):
 </output_format>
 
 <rules>
-- CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally. After completing all required work, return only the final output explicitly required by the current prompt. If no final output is required, return exactly {}.
+- CRITICAL: Do not narrate progress or emit interim status updates. Use tools and internal reasoning normally.
 - Invoke and follow the loaded pbb-design skill.
+- Read the pbb-design references/output-contract.md when producing the final document.
+- Use PBB-Contract: 2, the required record fields, IDs, typed references, enums,
+  traceability, source catalogue, and publication checks in that contract.
+- For `Priority status: proposed`, record the ordering inference as an `Axx`
+  assumption or a provisional model `Qxx` decision. Cite that ID in
+  `Priority reason`, include it in `Decision refs` and Traceability, and list the
+  affected PBIs in `Affects`. Use the inference record's `Basis` to cite the
+  evidence behind the recommendation. When there is insufficient evidence to
+  propose an order, use `Priority status: pending` and `Delivery rank: null`,
+  and state what evidence is missing in `Priority reason`.
+- Translate numeric question IDs to Q IDs with at least two digits, including
+  additional manually supplied answers. Preserve the original question, suggestion,
+  rationale, answer, author, and status. Keep setup answers outside the business
+  question history and PBIs. Reserve these numeric setup IDs when assigning new Q IDs: {{setupIds}}.
+- Only entries in <refinement_evidence> provide human decisions or deferrals.
+  Use the exact Q ID, answer, author, status and human statement when present.
+  Mark any newly introduced question as a Provisional model assumption.
+- In Suggested answer, Rationale, Resolved answer and Human statement, encode
+  text with line breaks, leading or trailing whitespace, or a literal `json:"`
+  prefix as `json:` followed by a JSON string (for example `json:"Line 1\nLine 2"`).
+  Keep the encoded field on one Markdown source line and preserve every character.
+- Apply human answers even when they replace a suggestion. Preserve deferred and
+  unknown answers as unresolved, including any humanStatement. An autonomous
+  consolidation never changes existing human authorship or resolves deferrals.
+- Mark only behavior dependent on a material unresolved rule as needing clarification.
+  A pending or proposed priority alone does not prevent refining supported behavior.
 - Base every item strictly on scope and <refinement_evidence>.
 - Human answers are authoritative. Recommendations remain supporting rationale.
 - Trace every PBI to a functionality, persona, and problem or expectation.
@@ -42,7 +69,7 @@ Write the file with exactly this structure (Markdown):
   answered-by value, and status from the evidence.
 - Mark any model-derived statement as a Provisional model assumption.
 - Do not include architecture or implementation details.
-- If no decision-relevant gap remains, write "No open questions."
+- Use "No open questions." only if no question history exists.
 - Treat Frontend Screens & Visualization as a complement to PBB, never as a replacement
   for problems, expectations, personas, functionalities, PBIs, or traceability.
 </rules>

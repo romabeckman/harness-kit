@@ -1,22 +1,16 @@
-import { loadPrompt } from '../utils/PromptTemplate'
-import { existsSync, rmSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
-import { Phase } from '../types'
-import { AbstractPhaseHandler, Reviewontext } from './AbstractPhaseHandler'
 import { ContextAssembler } from '../../context-assembler/ContextAssembler'
-import {
-  inlineOrReference,
-  buildDocsOrientationSection,
-  formatRulesSection,
-  formatProjectPathsList,
-  formatTasksList,
-} from '../utils/PromptHelpers'
-import { getPlanningSource, getSpecsDir } from '../utils/PhaseFileUtils'
-import type { Feature, Task } from '../../file-state/types'
 import type { DevelopmenPayload } from '../../context-assembler/types'
+import type { Feature, Task } from '../../file-state/types'
+import { DevelopmentPromptService } from '../services/DevelopmentPromptService'
 import { PhaseDecisionLogger } from '../services/PhaseDecisionLogger'
+import { TddOutputService } from '../services/TddOutputService'
+import { Phase } from '../types'
+import type { TddOutput } from '../utils/PhaseFileUtils'
+import { AbstractPhaseHandler, type Reviewontext } from './AbstractPhaseHandler'
 
 export class DevelopmentHandler extends AbstractPhaseHandler {
+  private readonly prompts = new DevelopmentPromptService()
+
   async handle(phase: Phase, context: Reviewontext): Promise<Phase | null> {
     if (phase !== Phase.DEVELOPMENT) {
       return super.handle(phase, context)
@@ -26,35 +20,43 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
     const activeFeature = context.getActiveFeature(features)
     if (!activeFeature) throw new Error(`Illegal state: phase ${phase} requires an active feature but none is set`)
 
-    const tddOutputPath = join(getSpecsDir(context.workingDir, activeFeature.domain), 'TDD-OUTPUT.json')
+    const tddOutput = new TddOutputService(context.workingDir, activeFeature)
     const pendingTasks = context.fsm.getPendingTasks(activeFeature.id)
+    const featureTasks = context.fsm.loadDevelopmentState().filter(task => task.featureId === activeFeature.id)
+    if (!featureTasks.length) throw new Error(`Development requires planned tasks for feature ${activeFeature.id}.`)
 
-    const shouldGoToReview = this.shouldGoToReview(activeFeature, tddOutputPath, context, pendingTasks)
-    if (shouldGoToReview) {
-      return Phase.REVIEW
+    let tasks = pendingTasks
+    if (!this.canResumeReview(activeFeature, tddOutput, context, pendingTasks)) {
+      if (!tasks.length) tasks = featureTasks
+      const canCompleteTasks = await this.executeDevelopment(activeFeature, tasks, tddOutput, context)
+      if (!canCompleteTasks) return Phase.REVIEW
     }
-
-    await this.executeChunk(activeFeature, pendingTasks, tddOutputPath, context)
+    try {
+      tddOutput.readCompleted()
+      for (const task of tasks) {
+        context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
+      }
+    } catch {
+      // Review owns the disposition of incomplete or invalid TDD results.
+    }
     return Phase.REVIEW
   }
 
-  private shouldGoToReview(activeFeature: Feature, tddOutputPath: string, context: Reviewontext, pendingTasks: Task[]): boolean {
-    if (existsSync(tddOutputPath)) {
-      if (pendingTasks.length > 0) {
-        for (const task of pendingTasks) {
-          context.fsm.updateTaskStatus(activeFeature.id, task.taskId, '-', 'COMPLETED')
-        }
-      }
-      return true
+  private canResumeReview(feature: Feature, tddOutput: TddOutputService, context: Reviewontext, pendingTasks: Task[]): boolean {
+    if (pendingTasks.length === 0) {
+      return context.fsm.loadDevelopmentState().every(task => task.featureId !== feature.id || task.status === 'COMPLETED')
     }
-    return false
+    let output: TddOutput
+    try {
+      output = tddOutput.readCompleted()
+    } catch {
+      return false
+    }
+    return context.dreaming?.canResume(feature, output, pendingTasks) ?? false
   }
 
-  private async executeChunk(activeFeature: Feature, chunkTasks: Task[], tddOutputPath: string, context: Reviewontext): Promise<void> {
-    // Delete any stale tdd-output before invoking agent to ensure it runs
-    if (existsSync(tddOutputPath)) {
-      rmSync(tddOutputPath)
-    }
+  private async executeDevelopment(activeFeature: Feature, chunkTasks: Task[], tddOutput: TddOutputService, context: Reviewontext): Promise<boolean> {
+    const clearedPreviousReport = tddOutput.clear(context)
 
     // Mark current chunk tasks as IN_PROGRESS
     for (const task of chunkTasks) {
@@ -88,9 +90,12 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       agent,
       mode: 'autonomous',
       prompt,
+      payload: { featureId: activeFeature.id, domain: activeFeature.domain, reworksCount: activeFeature.reworks },
       phaseKey: 'implementation',
       domain: activeFeature.domain,
       ...(developerSession ? { session: developerSession } : {}),
+    }).finally(() => {
+      if (clearedPreviousReport) tddOutput.saveDebugCopy()
     })
 
     if (output.session) {
@@ -102,7 +107,14 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
       })
     }
 
-    PhaseDecisionLogger.logDevelopmen(context.fsm, activeFeature, tddOutputPath)
+    if (clearedPreviousReport) {
+      PhaseDecisionLogger.logDevelopmen(context.fsm, activeFeature, tddOutput.path)
+      tddOutput.recordDevelopment(context, chunkTasks, output.session?.id)
+    }
+    if (output.success === false) {
+      context.fsm.appendDecision({ featureId: activeFeature.id, decision: 'Development agent reported an unsuccessful execution' })
+    }
+    return clearedPreviousReport && output.success !== false
   }
 
   buildTddOrchestratorPrompt(payload: DevelopmenPayload, context: Reviewontext, agent: string, continuation: boolean = false): string {
@@ -113,33 +125,7 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
   }
 
   buildDevelopmentPrompt(payload: DevelopmenPayload, context: Reviewontext, _agent?: string): string {
-    const projectPathsList = formatProjectPathsList(payload.projectPaths)
-    const tasksList = formatTasksList(payload.tasks)
-    const rulesSection = formatRulesSection(payload.steeringRules)
-
-    const workingDir = getSpecsDir(context.workingDir, payload.domain)
-    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
-
-    const tasksSection = [
-      `<tasks>`,
-      tasksList,
-      `</tasks>`,
-      ``,
-    ].join('\n')
-
-    return loadPrompt('development/initial', {
-      rulesSection: rulesSection,
-      projectPathsList: projectPathsList,
-      workingDir: workingDir,
-      featureId: payload.featureId,
-      reworks: payload.reworks,
-      specsSection: this.buildSpecsSection(payload, context.workingDir, context.config.agentRunner),
-      orientationSection: orientationSection,
-      featureId2: payload.featureId,
-      featureTitle: payload.featureTitle,
-      domain: payload.domain,
-      tasksSection: tasksSection,
-    })
+    return this.prompts.buildDevelopmentPrompt(payload, context)
   }
 
   buildReworkPrompt(payload: DevelopmenPayload, context: Reviewontext, options: { continuation: boolean }, agent?: string): string {
@@ -150,101 +136,10 @@ export class DevelopmentHandler extends AbstractPhaseHandler {
   }
 
   buildStandaloneReworkPrompt(payload: DevelopmenPayload, context: Reviewontext, _agent?: string): string {
-    const projectPathsList = formatProjectPathsList(payload.projectPaths)
-    const tasksList = formatTasksList(payload.tasks)
-    const rulesSection = formatRulesSection(payload.steeringRules)
-
-    const workingDir = getSpecsDir(context.workingDir, payload.domain)
-    const orientationSection = buildDocsOrientationSection(payload.projectPaths, context.workingDir, undefined, undefined, context.config.agentRunner)
-
-    const tasksSection = [
-      `<tasks>`,
-      tasksList,
-      `</tasks>`,
-      ``,
-    ].join('\n')
-
-    const reworkSection = this.buildReworkSection(payload, context)
-
-    return loadPrompt('development/rework', {
-      rulesSection: rulesSection,
-      projectPathsList: projectPathsList,
-      workingDir: workingDir,
-      featureId: payload.featureId,
-      reworks: payload.reworks,
-      specsSection: this.buildSpecsSection(payload, context.workingDir, context.config.agentRunner),
-      orientationSection: orientationSection,
-      featureId2: payload.featureId,
-      featureTitle: payload.featureTitle,
-      domain: payload.domain,
-      reworkSection: reworkSection,
-      tasksSection: tasksSection,
-    })
+    return this.prompts.buildStandaloneReworkPrompt(payload, context)
   }
 
   buildContinuationReworkPrompt(payload: DevelopmenPayload, context: Reviewontext): string {
-    const tasksList = formatTasksList(payload.tasks)
-    const workingDir = getSpecsDir(context.workingDir, payload.domain)
-    const planningSource = getPlanningSource(context)
-    const projectPathsList = formatProjectPathsList(payload.projectPaths)
-    const reworkSection = this.buildReworkSection(payload, context)
-
-    const tasksSection = [
-      `<tasks>`,
-      tasksList,
-      `</tasks>`,
-      ``,
-    ].join('\n')
-
-    return loadPrompt('development/continuation', {
-      featureId: payload.featureId,
-      featureTitle: payload.featureTitle,
-      label: planningSource.label,
-      path: planningSource.path,
-      workingDir: workingDir,
-      projectPathsList: projectPathsList,
-      reworkSection: reworkSection,
-      tasksSection: tasksSection,
-      workingDir2: workingDir,
-      featureId2: payload.featureId,
-      reworks: payload.reworks,
-    })
-  }
-
-  private buildReworkSection(payload: DevelopmenPayload, context: Reviewontext): string {
-    const workingDir = join(context.workingDir, 'docs', 'specs', payload.domain)
-    const reworkLogPath = payload.reworkLogPath
-      ? resolve(context.workingDir, payload.reworkLogPath)
-      : join(workingDir, 'REWORK-LOG.md')
-    const reworkLogContent = existsSync(reworkLogPath) ? readFileSync(reworkLogPath, 'utf8') : ''
-    return loadPrompt('development/rework-section', {
-      reworkLogPath: reworkLogPath,
-      reworkLogContentSection: inlineOrReference('rework_log_content', reworkLogContent, reworkLogPath, 'markdown', 'always', context.config.agentRunner),
-      reworkLogPath2: reworkLogPath,
-    }) + '\n'
-  }
-
-  private buildSpecsSection(payload: DevelopmenPayload, workingDir: string, activeRunner?: Reviewontext['config']['agentRunner']): string[] {
-    const specsDir = join(workingDir, 'docs', 'specs', payload.domain)
-    const specs = payload.specsContent
-    if (!specs) return []
-
-    const sections: string[] = [
-      `<specification_provenance>`,
-      `- 001/002 are domain-wide context shared by all projects in this feature.`,
-      `- Each 003/004 file is project-specific; \`<!-- File: ... -->\` markers identify ownership when content is concatenated.`,
-      `- Match each task's [project] tag to its project path and owning 003/004 artifacts.`,
-      `</specification_provenance>`,
-    ]
-
-    if (!payload.isRetry) {
-      sections.push(...inlineOrReference('problem_space', specs.problemSpace, join(specsDir, '001-problem-space.md'), 'markdown', 'never', activeRunner))
-      sections.push(...inlineOrReference('context_map', specs.contextMap, join(specsDir, '002-context-map.md'), 'markdown', 'never', activeRunner))
-    }
-
-    sections.push(...inlineOrReference('tactical_design', specs.tacticalDesign, join(specsDir, '003-*-tactical-design.md'), 'markdown', 'always', activeRunner))
-    sections.push(...inlineOrReference('test_scenarios', specs.testScenarios, join(specsDir, '004-*-test-scenarios.md'), 'markdown', 'always', activeRunner))
-
-    return sections
+    return this.prompts.buildContinuationReworkPrompt(payload, context)
   }
 }

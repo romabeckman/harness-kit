@@ -1,19 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs'
 import { tmpdir } from 'os'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import { JobRunnerService } from '../JobRunnerService'
 import { InMemoryJobStore } from '../../repository/InMemoryJobStore'
 import { WorkspaceLockManager } from '../../mutex/WorkspaceLockManager'
 import { JobQueue } from '../../queue/JobQueue'
 import type { OrchestrationJob } from '../../../../domain/types'
 import type { IAgentRunner } from '../../../../../agent-runner/IAgentRunner'
-import { Runner } from '../../../../../agent-runner/types'
+import { Runner, type AgentInvocation } from '../../../../../agent-runner/types'
 
 const orchestratorRun = vi.fn(async () => {})
 const backlog = vi.fn(() => [{ status: 'COMPLETED' }])
 const orchestratorConfig = vi.fn()
 const orchestratorSteering = vi.fn()
+const activeFeature = vi.fn()
 vi.mock('../../../../../orchestrator/HarnessOrchestrator', () => ({
   HarnessOrchestrator: class {
     fsm = { loadBacklog: backlog }
@@ -21,12 +22,19 @@ vi.mock('../../../../../orchestrator/HarnessOrchestrator', () => ({
     constructor(config: unknown) { this.config = config; orchestratorConfig(config) }
     run = orchestratorRun
     applySteeringActions = orchestratorSteering
+    getActiveFeature = activeFeature
+  },
+}))
+vi.mock('node:child_process', async importOriginal => ({
+  ...await importOriginal<typeof import('node:child_process')>(),
+  execFile: (_file: string, _args: string[], _options: unknown, done: (error: null, result: object) => void) => {
+    done(null, { stdout: '', stderr: '' })
   },
 }))
 
 class MockRunner implements IAgentRunner {
   readonly type = Runner.CLAUDE_CLI
-  async run(): Promise<any> {
+  async run(_invocation: AgentInvocation, _options?: { signal?: AbortSignal }): Promise<any> {
     return {
       success: true,
       stdout: 'done',
@@ -46,17 +54,19 @@ describe('JobRunnerService', () => {
   let lockManager: WorkspaceLockManager
   let jobQueue: JobQueue
   let service: JobRunnerService
+  let runner: MockRunner
 
   beforeEach(() => {
     vi.clearAllMocks()
     jobStore = new InMemoryJobStore()
     lockManager = new WorkspaceLockManager()
     jobQueue = new JobQueue()
+    runner = new MockRunner()
     service = new JobRunnerService({
       jobStore,
       lockManager,
       jobQueue,
-      agentRunner: new MockRunner(),
+      agentRunner: runner,
     })
   })
 
@@ -169,6 +179,158 @@ describe('JobRunnerService', () => {
     try {
       await service.executeJob(job)
       expect(orchestratorSteering).toHaveBeenCalledWith([{ type: 'add_rule', rule: 'Preserve compatibility' }])
+    } finally {
+      rmSync(workspace, { recursive: true, force: true })
+    }
+  })
+
+  async function prepareIsolatedJob() {
+    const workspace = mkdtempSync(join(tmpdir(), 'harness-job-'))
+    const job: OrchestrationJob = { jobId: 'job-1', status: 'queued', workspacePath: workspace,
+      request: { idempotencyKey: 'key', scope: 'task', project: 'backend', agent: 'claude-cli' }, createdAt: new Date().toISOString() }
+    const worktree = join(workspace, '.worktrees', job.jobId)
+    mkdirSync(worktree, { recursive: true })
+    vi.spyOn(service as any, 'prepareWorkspaceGit').mockResolvedValue({ effectiveWorkspacePath: worktree, createdWorktreePath: worktree, branch: 'job-1' })
+    const deploy = vi.spyOn(service as any, 'finalizeGitCommitPush').mockResolvedValue(undefined)
+    await jobStore.save(job)
+    return { workspace, worktree, job, deploy }
+  }
+
+  it('preserves per-job diagnostic artifacts independently of completed worktree cleanup', async () => {
+    const { workspace, worktree, job } = await prepareIsolatedJob()
+    try {
+      const product = join(worktree, 'docs', 'product')
+      const episode = join('project-dreaming', 'episodes', 'dc648fe0-36df-4d51-925a-9f61fa167ae9.json')
+      const handoff = join('project-dreaming', 'handoffs', 'guidance.json')
+      orchestratorRun.mockImplementationOnce(async () => {
+        for (const artifact of [episode, handoff, 'diagnose-sessions.jsonl']) {
+          mkdirSync(dirname(join(product, artifact)), { recursive: true })
+          writeFileSync(join(product, artifact), artifact)
+        }
+      })
+
+      await service.executeJob(job)
+
+      expect((await jobStore.findById(job.jobId))?.status).toBe('completed')
+      expect(existsSync(worktree)).toBe(false)
+      for (const artifact of [episode, handoff, 'diagnose-sessions.jsonl']) {
+        expect(readFileSync(join(workspace, '.harness-kit', 'job-artifacts', job.jobId, artifact), 'utf8')).toBe(artifact)
+      }
+    } finally {
+      rmSync(workspace, { recursive: true, force: true })
+    }
+  })
+
+  it('retains the original worktree and avoids deployment if diagnostic artifacts cannot be archived', async () => {
+    const { workspace, worktree, job, deploy } = await prepareIsolatedJob()
+    try {
+      const product = join(worktree, 'docs', 'product')
+      orchestratorRun.mockImplementationOnce(async () => {
+        mkdirSync(product, { recursive: true })
+        writeFileSync(join(product, 'diagnose-sessions.jsonl'), '{}')
+      })
+      writeFileSync(join(workspace, '.harness-kit'), 'archive storage unavailable')
+
+      await service.executeJob(job)
+
+      expect((await jobStore.findById(job.jobId))?.error?.code).toBe('ARTIFACT_ARCHIVE_FAILED')
+      expect(existsSync(worktree)).toBe(true)
+      expect(deploy).not.toHaveBeenCalled()
+    } finally {
+      rmSync(workspace, { recursive: true, force: true })
+    }
+  })
+
+  it('reports a pending refinement decision even if the development runner returned a generic failure', async () => {
+    const { workspace, worktree, job, deploy } = await prepareIsolatedJob()
+    try {
+      const specs = join(worktree, 'docs', 'specs', 'orders')
+      mkdirSync(specs, { recursive: true })
+      writeFileSync(join(specs, 'TDD-OUTPUT.json'), JSON.stringify({
+        featureId: 'F1', reworksCount: 0, status: 'FAILED', modifiedFiles: [],
+        metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 },
+        orientation_use: [{ orientation_id: 'approval', revision: 1, feature: 'feature:orders',
+          decision: 'needs_refinement', reason: 'Choose the approval policy.', test_ref: 'SC-1' }],
+      }))
+      activeFeature.mockReturnValueOnce({ id: 'F1', domain: 'orders', reworks: 0 })
+      orchestratorRun.mockRejectedValueOnce(new Error('Development agent failed before a verified TDD-OUTPUT.json was accepted.'))
+
+      await service.executeJob(job)
+
+      expect((await jobStore.findById(job.jobId))?.error).toMatchObject({
+        code: 'REFINEMENT_REQUIRED', message: expect.stringContaining('SC-1'),
+      })
+      expect(existsSync(worktree)).toBe(true)
+      expect(deploy).not.toHaveBeenCalled()
+    } finally {
+      rmSync(workspace, { recursive: true, force: true })
+    }
+  })
+
+  it('limits Project Dreaming and exposes its progress while the runner is active', async () => {
+    const { workspace, job } = await prepareIsolatedJob()
+    try {
+      const invocation = { agent: 'architect', skill: 'harness-kit:project-dreaming', timeoutMs: 3_600_000 } as AgentInvocation
+      const originalSignal = new AbortController().signal
+      const observed = vi.spyOn(runner, 'run').mockImplementation(async () => ({
+        progress: (await jobStore.findById(job.jobId))?.progress?.phase,
+      }))
+      let progress: string | undefined
+      orchestratorRun.mockImplementationOnce(async () => {
+        progress = (await orchestratorConfig.mock.lastCall?.[0].agentRunner.run(invocation, { signal: originalSignal })).progress
+      })
+
+      await service.executeJob(job)
+
+      expect(observed).toHaveBeenCalledWith(expect.objectContaining({ timeoutMs: 120_000 }), { signal: expect.any(AbortSignal) })
+      expect(observed.mock.calls[0]?.[1]?.signal).not.toBe(originalSignal)
+      expect(progress).toBe('PROJECT_DREAMING')
+    } finally {
+      rmSync(workspace, { recursive: true, force: true })
+    }
+  })
+
+  it('leaves a failed Memory phase resumable before deployment even after every feature passed', async () => {
+    const { workspace, worktree, job, deploy } = await prepareIsolatedJob()
+    try {
+      vi.spyOn(runner, 'run').mockResolvedValue({ success: false })
+      orchestratorRun.mockImplementationOnce(async () => {
+        await orchestratorConfig.mock.lastCall?.[0].agentRunner.run({ agent: 'architect', phaseKey: 'memory', skill: 'harness-kit:project-memory' })
+      })
+
+      await service.executeJob(job)
+
+      expect((await jobStore.findById(job.jobId))?.error?.code).toBe('MEMORY_FAILED')
+      expect(existsSync(worktree)).toBe(true)
+      expect(deploy).not.toHaveBeenCalled()
+    } finally {
+      rmSync(workspace, { recursive: true, force: true })
+    }
+  })
+
+  it('blocks deployment when the orchestration loop stops after a Memory timeout', async () => {
+    const { workspace, job, deploy } = await prepareIsolatedJob()
+    try {
+      const controller = new AbortController()
+      vi.spyOn(runner, 'run').mockImplementation(async () => {
+        controller.abort()
+        throw new Error('Agent timed out')
+      })
+      orchestratorRun.mockImplementationOnce(async () => {
+        try {
+          await orchestratorConfig.mock.lastCall?.[0].agentRunner.run(
+            { agent: 'architect', phaseKey: 'memory', skill: 'harness-kit:project-memory' },
+            { signal: controller.signal },
+          )
+        } catch {
+          // The core returns after a timeout even if the backlog is complete.
+        }
+      })
+
+      await service.executeJob(job)
+
+      expect((await jobStore.findById(job.jobId))?.error?.code).toBe('MEMORY_FAILED')
+      expect(deploy).not.toHaveBeenCalled()
     } finally {
       rmSync(workspace, { recursive: true, force: true })
     }

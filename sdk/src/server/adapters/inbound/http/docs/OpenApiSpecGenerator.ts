@@ -160,7 +160,7 @@ export class OpenApiSpecGenerator {
                 },
               },
               '400': {
-                description: 'Job is currently running or invalid ID',
+                description: 'Invalid or non-resumable job, invalid override, or missing steeringMessage for REFINEMENT_REQUIRED (REFINEMENT_DECISION_REQUIRED)',
                 content: {
                   'application/json': {
                     schema: { $ref: '#/components/schemas/HttpServerError' },
@@ -931,7 +931,7 @@ export class OpenApiSpecGenerator {
             type: 'object',
             additionalProperties: false,
             properties: {
-              steeringMessage: { type: 'string', description: 'Optional guidance for the resumed job' },
+              steeringMessage: { type: 'string', description: 'Guidance for the resumed job. Required and non-blank when the previous job failed with REFINEMENT_REQUIRED.' },
             },
           },
           RunRequestDtoExtended: {
@@ -947,7 +947,7 @@ export class OpenApiSpecGenerator {
               mode: { type: 'string', enum: ['fast'], default: 'fast', description: 'Execution mode is fixed to fast; interactive refinement and phase overrides are forbidden in HTTP mode' },
               action: { type: 'string', enum: ['reset', 'resume'], description: 'Execution action strategy (always "reset" on /orchestrator/run)' },
               reworks: { type: 'integer', default: 2, description: 'Maximum rework attempts (default 2)' },
-              score: { type: 'number', description: 'Minimum review score threshold' },
+              score: { type: 'number', minimum: 0.1, maximum: 1, default: 0.7, description: 'Minimum review score threshold' },
               steeringMessage: { type: 'string', description: 'Optional initial steering guidance message' },
               model: { type: 'string', description: 'Optional LLM model override string' },
               effort: { type: 'string', description: 'Optional effort/reasoning intensity level' },
@@ -974,15 +974,16 @@ export class OpenApiSpecGenerator {
               completedAt: { type: 'string', format: 'date-time' },
               progress: {
                 type: 'object',
+                description: 'Current stage when the server reports progress for a running job.',
                 properties: {
-                  phase: { type: 'string' },
+                  phase: { type: 'string', description: 'May include BOOTSTRAP, PLANNING, DEVELOPMENT, REVIEW, PROJECT_DREAMING, MEMORY or DEPLOY.' },
                   step: { type: 'integer' },
                 },
               },
               error: {
                 type: 'object',
                 properties: {
-                  code: { type: 'string' },
+                  code: { type: 'string', description: 'Job failure code, such as REFINEMENT_REQUIRED, MEMORY_FAILED or ARTIFACT_ARCHIVE_FAILED.' },
                   message: { type: 'string' },
                 },
               },

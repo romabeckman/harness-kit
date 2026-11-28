@@ -1,5 +1,6 @@
 import type { Feature, Task } from '../file-state/types'
 import type { ContextPayload } from '../agent-runner/types'
+import type { OrientationUse } from '../orchestrator/utils/PhaseFileUtils'
 
 export interface BootstrapPayload extends ContextPayload {
   scope: string
@@ -43,7 +44,6 @@ export interface ReviewPayload extends ContextPayload {
   projectPaths: string[]
   developerHandoff?: string
   tddSummary?: {
-    status: 'SUCCESS' | 'FAILED'
     metrics: {
       totalTests: number
       passed: number
@@ -53,6 +53,7 @@ export interface ReviewPayload extends ContextPayload {
     modifiedFiles: string[]
     reworksCount: number
     developerHandoff?: string
+    refinementRequests?: OrientationUse[]
   }
   steeringRules?: string[]
   totalReworks: number

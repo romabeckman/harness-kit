@@ -1,44 +1,44 @@
 {
-    "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
-    "name": "harness-kit",
-    "description": "Expert AI agents (Architect, Backend, Frontend, Adversarial QA, Tech Lead, Debugger) and skills (Autonomous Orchestrator, TDD Orchestrator, Scope Refinement, Grumpy Tech Lead, Project Memory) implementing Harness Engineering for autonomous, disciplined software development.",
-    "owner": {
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "harness-kit",
+  "description": "Expert AI agents (Architect, Backend, Frontend, Adversarial QA, Tech Lead, Debugger) and skills (Autonomous Orchestrator, TDD Orchestrator, Scope Refinement, Grumpy Tech Lead, Project Memory) implementing Harness Engineering for autonomous, disciplined software development.",
+  "owner": {
+    "name": "Romario Beckman",
+    "url": "https://github.com/romabeckman"
+  },
+  "plugins": [
+    {
+      "name": "harness-kit",
+      "source": "./",
+      "version": "1.8.0",
+      "description": "Expert AI agents (Architect, Backend, Frontend, QA, Code Reviewer, Debugger) and skills (TDD Orchestrator, Scope Refinement, Grumpy Tech Lead, Project Memory) implementing Harness Engineering for disciplined software development.",
+      "author": {
         "name": "Romario Beckman",
         "url": "https://github.com/romabeckman"
-    },
-    "plugins": [
-        {
-            "name": "harness-kit",
-            "source": "./",
-            "version": "1.7.5",
-            "description": "Expert AI agents (Architect, Backend, Frontend, QA, Code Reviewer, Debugger) and skills (TDD Orchestrator, Scope Refinement, Grumpy Tech Lead, Project Memory) implementing Harness Engineering for disciplined software development.",
-            "author": {
-                "name": "Romario Beckman",
-                "url": "https://github.com/romabeckman"
-            },
-            "homepage": "https://github.com/romabeckman/harness-kit",
-            "repository": "https://github.com/romabeckman/harness-kit",
-            "license": "MIT",
-            "category": "productivity",
-            "keywords": [
-                "agents",
-                "tdd",
-                "ddd",
-                "code-review",
-                "software-engineering",
-                "harness",
-                "ai-workflow",
-                "autonomous",
-                "orchestrator"
-            ],
-            "tags": [
-                "tdd",
-                "ddd",
-                "agents",
-                "code-review",
-                "autonomous-orchestrator",
-                "harness-engineering"
-            ]
-        }
-    ]
+      },
+      "homepage": "https://github.com/romabeckman/harness-kit",
+      "repository": "https://github.com/romabeckman/harness-kit",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": [
+        "agents",
+        "tdd",
+        "ddd",
+        "code-review",
+        "software-engineering",
+        "harness",
+        "ai-workflow",
+        "autonomous",
+        "orchestrator"
+      ],
+      "tags": [
+        "tdd",
+        "ddd",
+        "agents",
+        "code-review",
+        "autonomous-orchestrator",
+        "harness-engineering"
+      ]
+    }
+  ]
 }

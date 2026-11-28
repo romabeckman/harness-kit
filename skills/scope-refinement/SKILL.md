@@ -101,13 +101,14 @@ IF empty → ${rules} = "No additional rules provided"
 Before Phase 1, load orientation once for each `${projectPaths}` entry:
 
 1. Read `docs/.digest.md` and `docs/.graph.json` when present.
+   - Read `docs/business/intent.md` when present for project purpose and objectives. Use `business` nodes in the graph to find other business documents that affect the scope, such as steering, rules, or project relations. If the graph is missing or stale, look for relevant files in `docs/business/` directly.
 2. Select only nodes matching `${scope}` and `${domain}` by ID, title, path, or tags; include their one-hop edges.
 3. For each selected feature node:
    - Resolve and read every `related_docs.must_read` document.
    - Evaluate `related_docs.optional[].description` against `${scope}`, `${domain}`, and `${rules}`.
    - Read only optional documents whose condition applies.
 4. For selected feature nodes, extract only frontmatter and top `graph` block.
-5. Build `${orientation}` with project path, digest summary, selected nodes, required documents, selected optional documents, document paths, and selected feature micrographs.
+5. Build `${orientation}` with project path, digest summary, selected nodes, required documents, selected optional documents, document paths, and selected feature micrographs. Include a concise business summary with source paths and flag any material conflict with the requested scope for the refinement interview.
 6. Validate routed paths before Phases 3–4. Mark stale paths in `${orientation}`; do not create another routing artifact.
 
 Pass `${orientation}` to every phase agent. Agents must not reread global indexes when valid orientation is supplied. If orientation is absent, invalid, or stale, agents use their documented fallback.
@@ -122,7 +123,7 @@ Run this phase after `${orientation}` is loaded and before invoking any agent un
 
 1. Classify each project as frontend, backend, or other from its architecture and routed files.
 2. Analyze `${scope}`, `${orientation}`, `${projectPaths}`, and `${rules}` for decision-changing gaps involving business outcomes, invariants, scope boundaries, architecture, data ownership, integrations, authorization, sensitive data, performance, concurrency, failures, maintainability, or acceptance criteria. Simulate relevant flows under production load and partial failure before selecting questions.
-3. Generate only relevant questions. Do not repeat supplied facts or ask about syntax, style, or decisions that cannot affect the specifications.
+3. Generate only relevant questions. Do not repeat supplied facts or ask about syntax, style, or decisions that cannot affect the specifications. For PBB scope, use the interview for new gaps and preserve recorded business deferrals and unknowns.
 4. For every question, record:
 
 ```json
@@ -152,6 +153,11 @@ AUTONOMOUS  → Do not ask or pause.
 ```
 
 Stop when no decision-changing gap remains or 8 questions have been resolved. Store all entries as `${refinementAnswers}`. Consolidate their resolved decisions into `${refinedScope}` without changing the original `${scope}`. Explicit human answers outrank the original scope, repository evidence, and inference, in that order. Preserve deferred and unknown answers; never invent certainty.
+
+For PBB scope, carry supplied decisions through `${refinedScope}` with their
+original IDs, answers, authors, status, and affected behavior. Keep material
+clarifications visible by PBI and question ID. Limit design, ordered tasks,
+and executable scenarios to independent, supported outcomes.
 
 After `${refinedScope}` and `${refinementAnswers}` are resolved:
 

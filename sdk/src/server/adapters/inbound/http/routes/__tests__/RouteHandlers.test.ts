@@ -132,6 +132,30 @@ describe('RouteHandlers Integration Tests', () => {
     expect(statusParsed.status).toBe('queued')
   })
 
+  it('exposes a refinement failure and resumes only with the supplied decision', async () => {
+    await jobStore.save({ jobId: 'needs-decision', status: 'running', workspacePath: process.cwd(),
+      request: { idempotencyKey: 'refinement-route', scope: 'task', project: 'backend', agent: 'claude-cli' },
+      createdAt: new Date().toISOString() })
+    const statusPath = '/orchestrator/status/needs-decision'
+    const resumePath = '/orchestrator/jobs/needs-decision/resume'
+    const send = async (path: string, method: 'GET' | 'POST', body?: object) => {
+      const req = new MockIncomingMessage(path, method)
+      const res = new MockServerResponse()
+      const handling = routeHandlers.handleRequest(req as unknown as IncomingMessage, res as unknown as ServerResponse)
+      if (body) req.emit('data', Buffer.from(JSON.stringify(body)))
+      req.emit('end')
+      await handling
+      return { status: res.statusCode, body: JSON.parse(res.body) }
+    }
+
+    await jobStore.updateProgress('needs-decision', { phase: 'PROJECT_DREAMING' })
+    expect(await send(statusPath, 'GET')).toMatchObject({ status: 200, body: { status: 'running', progress: { phase: 'PROJECT_DREAMING' } } })
+    await jobStore.updateStatus('needs-decision', 'failed', { code: 'REFINEMENT_REQUIRED', message: 'SC-1 needs approval.' })
+    expect(await send(statusPath, 'GET')).toMatchObject({ status: 200, body: { status: 'failed', error: { code: 'REFINEMENT_REQUIRED' } } })
+    expect(await send(resumePath, 'POST', {})).toMatchObject({ status: 400, body: { code: 'REFINEMENT_DECISION_REQUIRED' } })
+    expect(await send(resumePath, 'POST', { steeringMessage: 'Use manual approval for SC-1.' })).toMatchObject({ status: 202, body: { status: 'queued' } })
+  })
+
   it('GET /orchestrator/settings?project=backend&agent=claude-cli -> 200 OK with model settings', async () => {
     const req = new MockIncomingMessage('/orchestrator/settings?project=backend&agent=claude-cli', 'GET')
     const res = new MockServerResponse()

@@ -9,6 +9,7 @@ export interface JobStoreRepository {
     status: JobStatus,
     error?: { code: string; message: string }
   ): Promise<void>
+  updateProgress?(jobId: string, progress: NonNullable<OrchestrationJob['progress']>): Promise<void>
   listActive(): Promise<OrchestrationJob[]>
   purgeCompleted(maxAgeMs?: number): Promise<number>
   delete(jobId: string): Promise<boolean>

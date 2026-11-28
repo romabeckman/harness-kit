@@ -66,7 +66,6 @@ export interface TddOutputSummary {
 
 export interface TddOutput {
   featureId: string
-  status: 'SUCCESS' | 'FAILED'
   metrics: {
     totalTests: number
     passed: number
@@ -76,6 +75,32 @@ export interface TddOutput {
   modifiedFiles: string[]
   developerHandoff?: string
   reworksCount: number
+  orientation_use?: OrientationUse[]
+  learning_evidence?: { project?: string; path: string; locator: string; summary: string; scenario_id?: string }[]
+}
+
+const orientationDecisions = ['applied', 'covered', 'skipped', 'needs_refinement'] as const
+
+export interface OrientationUse {
+  orientation_id: string
+  revision: number
+  feature: string
+  decision: typeof orientationDecisions[number]
+  reason: string
+  test_ref?: string
+  project?: string
+}
+
+function isOrientationUse(value: unknown): value is OrientationUse {
+  if (!value || typeof value !== 'object') return false
+  const entry = value as Partial<OrientationUse>
+  return typeof entry.orientation_id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.orientation_id)
+    && typeof entry.revision === 'number' && Number.isInteger(entry.revision) && entry.revision > 0
+    && typeof entry.feature === 'string' && /^feature:\S+$/.test(entry.feature)
+    && orientationDecisions.some(decision => decision === entry.decision)
+    && typeof entry.reason === 'string' && entry.reason.trim().length > 0
+    && (entry.test_ref === undefined || typeof entry.test_ref === 'string')
+    && (entry.project === undefined || typeof entry.project === 'string')
 }
 
 
@@ -92,7 +117,7 @@ export function readTddOutput(tddOutputPath: string): TddOutput {
   let data: unknown
   try {
     const raw = readFileSync(tddOutputPath, 'utf-8')
-    data = JSON.parse(raw)
+    data = JSON.parse(raw.replace(/^\uFEFF/, ''))
   } catch (err: any) {
     throw new Error(`Failed to parse TDD-OUTPUT.json: ${err.message}`)
   }
@@ -113,7 +138,7 @@ export function readTddOutput(tddOutputPath: string): TddOutput {
 
   if (
     typeof candidate.featureId !== 'string'
-    || (candidate.status !== 'SUCCESS' && candidate.status !== 'FAILED')
+    || (candidate.status !== undefined && candidate.status !== 'SUCCESS' && candidate.status !== 'FAILED')
     || !validMetrics
     || !Array.isArray(candidate.modifiedFiles)
     || !candidate.modifiedFiles.every(file => typeof file === 'string')
@@ -124,7 +149,42 @@ export function readTddOutput(tddOutputPath: string): TddOutput {
     throw new Error('Invalid TDD-OUTPUT.json: contract fields are missing or malformed.')
   }
 
-  return candidate as unknown as TddOutput
+  const { orientation_use: orientationUse, ...output } = candidate
+  if (orientationUse !== undefined) {
+    if (Array.isArray(orientationUse)) {
+      if (!orientationUse.every(isOrientationUse)) console.warn('[TDD-OUTPUT] Invalid optional orientation_use entries ignored.')
+      output.orientation_use = orientationUse.filter(isOrientationUse).map(({ orientation_id, revision, feature, decision, reason, test_ref, project }) => ({
+        orientation_id, revision, feature, decision, reason, test_ref, project,
+      }))
+    } else {
+      console.warn('[TDD-OUTPUT] Invalid optional orientation_use ignored.')
+    }
+  }
+  return output as unknown as TddOutput
+}
+
+export function readCompletedTddOutput(path: string, featureId: string, reworks: number): TddOutput {
+  const output = readTddOutput(path)
+  if (output.featureId !== featureId || output.reworksCount !== reworks) {
+    throw new Error('TDD-OUTPUT.json does not match the active feature and rework attempt.')
+  }
+  const refinement = output.orientation_use?.find(item => item.decision === 'needs_refinement')
+  if (refinement) {
+    throw new Error(`TDD-OUTPUT.json requires refinement for ${refinement.test_ref || refinement.orientation_id}: ${refinement.reason}`)
+  }
+  // Legacy failed reports may be incomplete even when the tests they ran passed.
+  if ('status' in output && output.status === 'FAILED') {
+    throw new Error('The legacy TDD report indicates that execution was incomplete.')
+  }
+  if (output.metrics.failed !== 0) {
+    throw new Error('TDD-OUTPUT.json must report zero failed tests for task completion.')
+  }
+  const { passed, totalTests } = output.metrics
+  if (!Number.isInteger(totalTests) || totalTests < 0 || passed !== totalTests ||
+      (output.developerHandoff?.length ?? 0) > 500) {
+    throw new Error('TDD-OUTPUT.json has inconsistent test counts or an oversized developer handoff.')
+  }
+  return output
 }
 
 
@@ -139,7 +199,7 @@ export function summarizeTddOutput(tddOutputPath: string): TddOutputSummary {
       : 'no modified files listed'
 
     return {
-      status: output.status,
+      status: ('status' in output && output.status === 'FAILED') || metrics.failed !== 0 ? 'FAILED' : 'REPORTED',
       rationale: `${metricStr}. ${files}. Reworks: ${output.reworksCount}.`,
     }
   } catch (err: any) {

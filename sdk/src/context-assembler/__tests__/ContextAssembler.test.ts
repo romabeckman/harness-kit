@@ -47,7 +47,6 @@ describe('ContextAssembler', () => {
     expect(payload.domain).toBe('domain')
     expect(payload.developerHandoff).toBe('Implemented typed handoff.')
     expect(payload.tddSummary).toEqual({
-      status: 'SUCCESS',
       metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 },
       modifiedFiles: ['src/example.ts'],
       reworksCount: 0,

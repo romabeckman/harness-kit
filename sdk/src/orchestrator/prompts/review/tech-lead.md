@@ -51,10 +51,12 @@ Write a raw JSON object to `{{specsDir}}/TL.json` and return the same raw object
   "architectureTip": "Single actionable sentence recommending an architectural improvement"
 }
 Note: openPoints may be an empty array [] when no issue meets the evaluation_principle bar. An empty array with a high score is a fully valid response.
+
+After forming your independent verdict, you may include an optional `learning_evidence` array for verified test choices, coverage, or contract findings. Each item has `project` (the owning project path as provided), `path` (project-relative inspected file), `locator` (exact heading, test title, or line range), `summary`, and optional `scenario_id`. A test choice may be useful even without an observed failure or measurable impact. Optionally set `review_reason` to `trigger_met`, `guidance_contradicted`, or `new_evidence` when supported; include the relevant ID and observed consequence when known. Check the cited source and distinguish facts from predictions. Omit unverified claims. This evidence leaves the score and verdict rules unchanged; Project Dreaming also inspects task sources when this array is absent.
 </expected_output>
 
 <spec_sources>
-- Development log: `{{specsDir2}}/TDD-OUTPUT.json` or `git status -s` to list all modified files in each project.
+- Use `git status -s` to list all modified files in each project.
 {{*tddSummary}}
 {{*specificationProvenance}}
 <development_handoff>

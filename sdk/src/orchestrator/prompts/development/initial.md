@@ -6,6 +6,8 @@ Invoke the `harness-kit:tdd-orchestrator` skill before starting.
 Mode: autonomous
 </skill_context>
 
+{{redGuidance}}
+
 <react_workflow>
 - THOUGHT: Analyze the TDD cycle step (RED/GREEN/REFACTOR).
 - ACTION: Write code or execute tests in the terminal.
@@ -14,7 +16,7 @@ Mode: autonomous
 
 <strict_rules>
 - You MUST read `docs/.digest.md` and `docs/.graph.json` (or fallback to `docs/README.md`, `docs/adr/ARCHITECTURE.md`, and `docs/adr/TESTS.md`) in each project before writing any code
-- Each project MUST have its own `docs/adr` and `docs/feature` folders where all ADRs and features are stored.
+- Read `docs/business/intent.md` if present and select additional business documents relevant to the task as directed by the TDD skill.
 - Read the project-scoped Refinement Questions and Answers in the matching tactical design and treat confirmed answers as implementation constraints.
 - Execute autonomously without pausing or asking for confirmation
 - NEVER change correct tests to force passing
@@ -34,15 +36,16 @@ Write `{{workingDir}}/TDD-OUTPUT.json` upon completion:
 ```json
 {
   "featureId": "{{featureId}}",
-  "status": "SUCCESS",
   "metrics": { "totalTests": 0, "passed": 0, "failed": 0, "coverage": 0.00 },
   "modifiedFiles": ["relative/path/to/file"],
   "developerHandoff": "Concise summary of work completed and review focus (maximum 500 characters).",
   "reworksCount": {{reworks}}
 }
 ```
-Allowed status values are `SUCCESS` and `FAILED`. Use `SUCCESS` only when every required test passes and `metrics.failed` is 0.
-`developerHandoff` must summarize what was implemented and what reviewers should inspect; it must not exceed 500 characters.
+`reworksCount` indicates the number of review-triggered corrections for this feature. Its value cannot be changed. Copy the exact value shown above into the output.
+Write the required report before returning. Record only the test results you observed.
+Describe any unfinished work in the handoff and record applicable `needs_refinement` decisions.
+`developerHandoff` must provide factual implementation details and review locations in at most 500 characters.
 </expected_output>
 
 <development_specifications>

@@ -7,6 +7,7 @@ import { AgentRunnerError, AgentRunnerErrorCode } from '../../agent-runner/Agent
 import type { HarnessSettings } from '../../settings/HarnessSettings'
 import type { TokenLedger } from '../../telemetry/TokenLedger'
 import type { ISessionLedger } from '../../diagnose/types'
+import { isDiagnosePhase } from '../../diagnose/types'
 import { DEFAULT_PHASE_TIMEOUT_MS, DEFAULT_WAIT_TIMEOUT_MS } from '../../settings/DefaultSettings'
 import { OrchestratorFormatter } from '../utils/OrchestratorFormatter'
 import { TerminalProgress } from '../../ui/TerminalProgress'
@@ -169,7 +170,7 @@ export class AgentInvocationService {
     let cancelTimeout = scheduleTimeout(0)
     try {
       const output = await this.agentRunner.run(finalInvocation, { signal: controller.signal })
-      if (this.diagnoseLedger) {
+      if (this.diagnoseLedger && isDiagnosePhase(currentPhase)) {
         try {
           const sessionId = output.session?.id ?? `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
           const isDevOrReview = currentPhase === Phase.DEVELOPMENT || currentPhase === Phase.REVIEW

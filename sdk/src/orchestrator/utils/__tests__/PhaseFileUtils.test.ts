@@ -6,6 +6,7 @@ import {
   listSpecFiles,
   listDocFiles,
   readTddOutput,
+  readCompletedTddOutput,
   summarizeTddOutput,
   getProductDir,
   getPlanningSource,
@@ -98,6 +99,18 @@ describe('PhaseFileUtils', () => {
   // ─── readTddOutput ────────────────────────────────────────────────────────
 
   describe('readTddOutput', () => {
+    it('reads a UTF-8 BOM-prefixed report', () => {
+      const path = join(tmpDir, 'TDD-OUTPUT.json')
+      const output = { featureId: 'F001', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }
+      writeFileSync(path, '\uFEFF' + JSON.stringify(output), 'utf8')
+      expect(readCompletedTddOutput(path, 'F001', 0)).toEqual(output)
+    })
+    it('preserves a valid refinement decision beside malformed entries', () => {
+      const path = join(tmpDir, 'TDD-OUTPUT.json')
+      writeFileSync(path, JSON.stringify({ featureId: 'F001', status: 'SUCCESS', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 1 }, modifiedFiles: [], reworksCount: 0, orientation_use: [{ orientation_id: 'decision', revision: 1, feature: 'feature:core', decision: 'needs_refinement', reason: 'Business decision required' }, { invalid: true }] }))
+      expect(() => readCompletedTddOutput(path, 'F001', 0)).toThrow('requires refinement')
+    })
+
     it('throws when file does not exist', () => {
       expect(() => readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))).toThrow('not found')
     })
@@ -105,7 +118,6 @@ describe('PhaseFileUtils', () => {
     it('returns the typed TDD output contract', () => {
       const output = {
         featureId: 'F001',
-        status: 'SUCCESS',
         metrics: { totalTests: 10, passed: 9, failed: 1, coverage: 0.92 },
         modifiedFiles: ['src/index.ts', 'src/utils.ts'],
         developerHandoff: 'Review retry handling.',
@@ -116,6 +128,19 @@ describe('PhaseFileUtils', () => {
       const result = readTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
 
       expect(result).toEqual(output)
+    })
+
+    it('accepts completion from matching test counts without a status field', () => {
+      const path = join(tmpDir, 'TDD-OUTPUT.json')
+      const output = {
+        featureId: 'F001',
+        metrics: { totalTests: 2, passed: 2, failed: 0, coverage: 1 },
+        modifiedFiles: ['src/index.ts'],
+        reworksCount: 1,
+      }
+      writeFileSync(path, JSON.stringify(output))
+
+      expect(readCompletedTddOutput(path, 'F001', 1)).toEqual(output)
     })
 
     it('throws when file contains invalid JSON', () => {
@@ -145,7 +170,7 @@ describe('PhaseFileUtils', () => {
 
       const result = summarizeTddOutput(join(tmpDir, 'TDD-OUTPUT.json'))
 
-      expect(result.status).toBe('SUCCESS')
+      expect(result.status).toBe('REPORTED')
       expect(result.rationale).toContain('5 total')
       expect(result.rationale).toContain('+2 more')
     })

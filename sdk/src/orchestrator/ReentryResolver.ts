@@ -8,14 +8,16 @@ import type { OnDiskState } from './types'
  * State Transition Table (ordered):
  * 1. No product files → BOOTSTRAP
  * 2. Active feature dependency is BLOCKED → CASCADE_BLOCKED
- * 3. Valid TDD-OUTPUT present AND all tasks COMPLETED → REVIEW
- * 4. Ready spec files without a valid handoff → DEVELOPMENT
- * 5. Active feature in terminal status (COMPLETED/BLOCKED/FAILED) → TRANSITION
+ * 3. Active feature in terminal status (COMPLETED/BLOCKED/FAILED) → TRANSITION
+ * 4. All active feature tasks COMPLETED → REVIEW
+ * 5. Ready spec files with unfinished tasks → DEVELOPMENT
  * 6. No active feature or feature NOT_STARTED with no specs → PLANNING
  * 7. Fallback → BOOTSTRAP
  */
 export class ReentryResolver {
   static resolve(state: OnDiskState): Phase {
+    const activeStatus = state.activeFeature?.status
+    const terminalFeature = activeStatus === 'COMPLETED' || activeStatus === 'BLOCKED' || activeStatus === 'FAILED'
     // 0. Respect saved phases except stale startup markers for populated backlogs.
     if (state.config?.currentPhase) {
       const persistedPhase = state.config.currentPhase as Phase
@@ -23,9 +25,11 @@ export class ReentryResolver {
       const staleInitialPhase = backlogAlreadyPopulated &&
         (persistedPhase === Phase.BOOTSTRAP || persistedPhase === Phase.REFINEMENT)
       if (Object.values(Phase).includes(persistedPhase) && persistedPhase !== Phase.HALTED) {
-        // A persisted REVIEW marker is only trustworthy when the completion
-        // evidence is still present and valid on disk.
-        if (!staleInitialPhase && (persistedPhase !== Phase.REVIEW || (state.tddOutputPresent && state.allTasksCompleted))) {
+        if (terminalFeature && (persistedPhase === Phase.DEVELOPMENT || persistedPhase === Phase.REVIEW)) {
+          return Phase.TRANSITION
+        }
+        // REVIEW also handles invalid or absent TDD results; do not repeat development on resume.
+        if (!staleInitialPhase) {
           return persistedPhase
         }
       }
@@ -45,22 +49,17 @@ export class ReentryResolver {
       if (blocked) return Phase.CASCADE_BLOCKED
     }
 
-    // 3. A valid TDD handoff AND all tasks COMPLETED → REVIEW
-    if (state.tddOutputPresent && state.allTasksCompleted) {
+    // 3. A terminal feature still needs TRANSITION even when old specs and output remain.
+    if (terminalFeature) return Phase.TRANSITION
+
+    // 4. Completed tasks are ready for review even when the handoff is unavailable.
+    if (state.allTasksCompleted) {
       return Phase.REVIEW
     }
 
-    // 4. Ready specs without a valid completed handoff → DEVELOPMENT
-    if (state.specFilesPresent && (!state.allTasksCompleted || !state.tddOutputPresent)) {
+    // 5. Ready specs with unfinished tasks → DEVELOPMENT
+    if (state.specFilesPresent) {
       return Phase.DEVELOPMENT
-    }
-
-    // 5. Active feature in terminal status → TRANSITION
-    if (state.activeFeature) {
-      const terminal: Array<typeof state.activeFeature.status> = ['COMPLETED', 'BLOCKED', 'FAILED']
-      if (terminal.includes(state.activeFeature.status)) {
-        return Phase.TRANSITION
-      }
     }
 
     // 6. All features in terminal status (none NOT_STARTED or IN_PROGRESS) → TRANSITION

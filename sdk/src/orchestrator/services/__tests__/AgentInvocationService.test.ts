@@ -354,23 +354,20 @@ describe('AgentInvocationService', () => {
       expect(appended.tokenUsage).toBeUndefined()
     })
 
-    it('does NOT include domain when currentPhase is BOOTSTRAP but still includes phase', async () => {
+    it.each([Phase.REFINEMENT, Phase.BOOTSTRAP, Phase.TRANSITION, Phase.MEMORY, Phase.DEPLOY])(
+      'does not enqueue a diagnose session for %s', async phase => {
       const runner = makeRunner()
       const diagnoseLedger = { append: vi.fn() } as unknown as ISessionLedger
       const service = new AgentInvocationService(runner, makeLedger(), diagnoseLedger)
 
       await service.invokeAgent(
         makeInvocation({ domain: 'auth-service' }),
-        Phase.BOOTSTRAP,
+        phase,
         makeConfig(),
         makeSettings()
       )
 
-      expect(diagnoseLedger.append).toHaveBeenCalledTimes(1)
-      const appended = (diagnoseLedger.append as ReturnType<typeof vi.fn>).mock.calls[0][0]
-      expect(appended.phase).toBe(Phase.BOOTSTRAP)
-      expect(appended.domain).toBeUndefined()
-      expect(appended.tokenUsage).toBeUndefined()
+      expect(diagnoseLedger.append).not.toHaveBeenCalled()
     })
   })
 

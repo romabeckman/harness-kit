@@ -23,6 +23,7 @@ For each path in ${projectPaths}:
 read all `related_docs.must_read`, evaluate applicable
 `related_docs.optional`, then continue with existing routing.
 4. Final fallback: read docs/README.md + docs/adr/ARCHITECTURE.md and scan docs/adr/ / docs/feature/
+5. Use the business summary and source paths from valid ${orientation}. In fallback, read docs/business/intent.md if present and resolve only business documents relevant to this phase through the graph or direct lookup under docs/business/.
 ```
 
 Use loaded context as foundation. Do not proceed without reading available architecture docs or digest graph index.

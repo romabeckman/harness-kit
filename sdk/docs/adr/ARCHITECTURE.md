@@ -50,7 +50,7 @@ Keep source under `src/`, test suites under `tests/`, and documentation under `d
 ### SUPPORTING MODULES
 
 | Project history erasure | Discover and safely delete agent-generated runtime history for Claude Code, Codex, Copilot, Antigravity, and OpenCode via `hrns erase`. | [SDK_PROJECT_HISTORY_ERASURE.md](../feature/agents/SDK_PROJECT_HISTORY_ERASURE.md) |
-| HTTP server | Expose non-interactive orchestration, settings, telemetry, reports, and health endpoints. | [HTTP_SERVER.md](../feature/server/HTTP_SERVER.md) |
+| HTTP server (beta) | Expose non-interactive orchestration, settings, telemetry, reports, and health endpoints. | [HTTP_SERVER.md](../feature/server/HTTP_SERVER.md) |
 | Terminal UI | Render banners, progress, and ANSI output. | [SDK_TERMINAL_UI.md](../feature/terminal/SDK_TERMINAL_UI.md) |
 | Package | Define public exports and npm build output. | [SDK_PACKAGE.md](../feature/package/SDK_PACKAGE.md) |
 | QA tester | Plan, validate, execute, and report runtime acceptance scenarios. | [QA_TESTER.md](../feature/qa/QA_TESTER.md) |
@@ -64,7 +64,7 @@ REQUIRED: Register runner strategies with `AgentRunnerRegistry`; instantiate the
 REQUIRED: Propagate `AbortSignal` into child processes and SDK requests.
 REQUIRED: Mutate persistent state through `IFileStateManager` using atomic temporary-file replacement.
 REQUIRED: Validate changes in order: `rtk npm install`, lint, build, typecheck, then tests.
-REQUIRED: Track and isolate agent sessions across phases using `DeveloperSessionState` with mandatory `phase` tag; resume Development and Review sessions on retries and clear all sessions on feature transition.
+REQUIRED: Track agent sessions across phases as described in [AGENT-SESSIONS.md](./AGENT-SESSIONS.md).
 REQUIRED: Select the outer agent runner explicitly for QA; keep QA phase decisions independent of provider-specific sub-agents.
 
 ### PROHIBITED

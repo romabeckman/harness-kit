@@ -1,12 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { DebugContext } from '../../../cli/DebugContext'
 import { ReviewHandler } from '../ReviewHandler'
+import { DreamingEpisodeStore } from '../../../file-state/DreamingEpisodeStore'
+import type { TddOutput } from '../../utils/PhaseFileUtils'
 import { Complexity, Phase } from '../../types'
 import type { Reviewontext } from '../AbstractPhaseHandler'
 import type { IFileStateManager } from '../../../file-state/FileStateManager'
-import type { Feature, BootstrapConfig } from '../../../file-state/types'
+import type { Feature, BootstrapConfig, Task } from '../../../file-state/types'
 import { AgentRunnerError, AgentRunnerErrorCode } from '../../../agent-runner/AgentRunnerError'
 
 function makeTempDir(): string {
@@ -123,6 +126,100 @@ describe('ReviewHandler', () => {
     handler = new ReviewHandler()
     workingDir = makeTempDir()
     mkdirSync(join(workingDir, 'docs', 'specs', 'sdk_core'), { recursive: true })
+    writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify({ featureId: 'F001', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }))
+  })
+
+  afterEach(() => DebugContext.reset())
+
+  it.each([true, false])('preserves fresh review reports only when debug is %s', async debug => {
+    if (debug) DebugContext.enable()
+    const specs = join(workingDir, 'docs', 'specs', 'sdk_core')
+    const reports = { TL: '{ "score": 0.95, "attempt": 1 }\n', QA: '{ "score": 0.96, "attempt": 1 }\n' }
+    const context = makeContext(workingDir, makeFsm(), async inv => {
+      const kind = inv.phaseKey === 'review_tl' ? 'TL' : 'QA'
+      writeFileSync(join(specs, `${kind}.json`), reports[kind])
+      return { success: true, raw: reports[kind] }
+    })
+    await handler.handle(Phase.REVIEW, context)
+    await handler.handle(Phase.REVIEW, context)
+    const directory = join(specs, '.debug')
+    expect(existsSync(directory)).toBe(debug)
+    if (debug) {
+      const files = readdirSync(directory)
+      expect(files).toHaveLength(4)
+      for (const kind of ['TL', 'QA'] as const) {
+        const copies = files.filter(file => new RegExp(`^${kind}-\\d{4}-\\d{2}-\\d{2}T[\\d-]+Z-[\\da-f-]{36}\\.json$`).test(file))
+        expect(copies).toHaveLength(2)
+        for (const file of copies) expect(readFileSync(join(directory, file), 'utf8')).toBe(reports[kind])
+      }
+    }
+  })
+
+  it('preserves a report even if the other reviewer fails', async () => {
+    DebugContext.enable()
+    const specs = join(workingDir, 'docs', 'specs', 'sdk_core')
+    const context = makeContext(workingDir, makeFsm(), async inv => {
+      if (inv.phaseKey === 'review_tl') {
+        writeFileSync(join(specs, 'TL.json'), 'partial report')
+        return { success: true, raw: '{}' }
+      }
+      throw new Error('review failed')
+    })
+    await handler.handle(Phase.REVIEW, context).catch(() => undefined)
+    const files = readdirSync(join(specs, '.debug'))
+    expect(files).toHaveLength(1)
+    expect(files[0]).toMatch(/^TL-.*\.json$/)
+    expect(readFileSync(join(specs, '.debug', files[0]), 'utf8')).toBe('partial report')
+  })
+
+  it('accepts independent approval even when a legacy TDD output reported failure', async () => {
+    const path = join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json')
+    writeFileSync(path, JSON.stringify({ featureId: 'F001', status: 'FAILED', metrics: { totalTests: 46, passed: 46, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0, developerHandoff: 'T04 needs refinement' }))
+    const fsm = makeFsm()
+    const context = makeContext(workingDir, fsm, async () => ({ raw: JSON.stringify({ score: 0.95 }) }))
+    expect(await handler.handle(Phase.REVIEW, context)).toBe(Phase.TRANSITION)
+    for (const [invocation] of vi.mocked(context.invokeAgent).mock.calls) {
+      expect(invocation.prompt).not.toMatch(/Status: FAILED|TDD-OUTPUT\.json|TDD output requires review and correction/)
+    }
+    expect(fsm.writeReworkLog).not.toHaveBeenCalled()
+    expect(fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
+  })
+  it.each(['missing', 'malformed', 'wrong feature', 'failed tests', 'counts', 'handoff', 'refinement'])('allows independent review with %s TDD output', async kind => {
+    const path = join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json')
+    const report: any = { featureId: 'F001', metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 0 }, modifiedFiles: [], reworksCount: 0 }
+    if (kind === 'wrong feature') report.featureId = 'F999'
+    if (kind === 'failed tests') report.metrics.failed = 1
+    if (kind === 'counts') report.metrics.passed = 0
+    if (kind === 'handoff') report.developerHandoff = 'x'.repeat(501)
+    if (kind === 'refinement') {
+      delete report.developerHandoff
+      report.orientation_use = [
+        { orientation_id: 'rule', revision: 1, feature: 'feature:test', project: 'sdk', decision: 'needs_refinement', reason: 'Choose the recovery policy', test_ref: 'SC-01' },
+        { orientation_id: 'covered-rule', revision: 1, feature: 'feature:test', decision: 'covered', reason: 'Already tested' },
+      ]
+    }
+    if (kind === 'missing') { const { unlinkSync } = await import('node:fs'); unlinkSync(path) }
+    else writeFileSync(path, kind === 'malformed' ? '{' : JSON.stringify(report))
+    const fsm = makeFsm()
+    const context = makeContext(workingDir, fsm, async () => ({ raw: JSON.stringify({ score: 0.95 }) }))
+    expect(await handler.handle(Phase.REVIEW, context)).toBe(Phase.TRANSITION)
+    expect(context.invokeAgent).toHaveBeenCalledTimes(2)
+    if (kind === 'refinement') {
+      for (const [invocation] of vi.mocked(context.invokeAgent).mock.calls) {
+        expect(invocation.prompt).toContain('Determine the appropriate action for each entry')
+        expect(invocation.prompt).toContain('needs_refinement')
+        expect(invocation.prompt).toContain('Choose the recovery policy')
+        expect(invocation.prompt).toContain('SC-01')
+        expect(invocation.prompt).not.toContain('covered-rule')
+      }
+    }
+    if (kind === 'missing' || kind === 'malformed') {
+      for (const [invocation] of vi.mocked(context.invokeAgent).mock.calls) {
+        expect(invocation.prompt).toContain(kind === 'missing' ? 'TDD-OUTPUT.json was not generated' : 'TDD-OUTPUT.json could not be read')
+      }
+    }
+    expect(fsm.writeReworkLog).not.toHaveBeenCalled()
+    expect(fsm.updateAllFeatureTasks).toHaveBeenCalledWith('F001', '-', 'COMPLETED')
   })
 
   it('delegates when phase is not REVIEW', async () => {
@@ -130,6 +227,112 @@ describe('ReviewHandler', () => {
     const context = makeContext(workingDir, fsm)
     const result = await handler.handle(Phase.PLANNING, context)
     expect(result).toBeNull()
+  })
+
+  it('returns to development when reviewers find issues and no handoff exists', async () => {
+    const { unlinkSync } = await import('node:fs')
+    unlinkSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'))
+    const fsm = makeFsm()
+    const context = makeContext(workingDir, fsm, async () => ({ raw: JSON.stringify({ score: 0.1, openPoints: ['Fix the failing scenario'] }) }))
+
+    await expect(handler.handle(Phase.REVIEW, context)).resolves.toBe(Phase.DEVELOPMENT)
+    expect(fsm.writeReworkLog).toHaveBeenCalledWith('sdk_core', expect.stringContaining('Fix the failing scenario'))
+  })
+
+  it.each([
+    ['trigger_met', 0.95, true],
+    ['guidance_contradicted', 0.95, true],
+    ['new_evidence', 0.95, true],
+    [undefined, 0.95, true],
+    ['trigger_met', 0.5, false],
+    ['new_evidence', 0.5, false],
+  ] as const)('routes %s after a review scoring %s', async (reason, score, expectedCall) => {
+    const feature = makeFeature()
+    const roots = ['server', 'web']
+    const store = new DreamingEpisodeStore(workingDir, join(workingDir, 'docs/product'))
+    const output: TddOutput = {
+      featureId: feature.id, reworksCount: 0, modifiedFiles: [],
+      metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 },
+    }
+    for (const root of roots) mkdirSync(join(workingDir, root))
+    const finding = { project: 'web', path: 'retry.test.ts', locator: 'preserves identity', summary: reason === 'new_evidence' ? 'A retry test exposed duplicate trace creation before review.' : 'retry-identity trigger matched', review_reason: reason }
+    writeFileSync(join(workingDir, 'web', finding.path), finding.locator)
+    writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify(output))
+    store.recordDevelopment(feature, output, roots.map(project => ({
+      featureId: feature.id, domain: feature.domain, taskId: project, project,
+      description: 'Verify retries', status: 'IN_PROGRESS', currentPhase: 'IMPLEMENTATION',
+    })), roots)
+    const fsm = makeFsm(feature)
+    const context = makeContext(workingDir, fsm, async inv => {
+      if (inv.skill === 'harness-kit:project-dreaming') return { success: false, raw: 'Unavailable' }
+      return { raw: JSON.stringify({ score, learning_evidence: [finding] }) }
+    }, { projectPaths: roots })
+    const phase = await handler.handle(Phase.REVIEW, { ...context, dreaming: store })
+    const calls = vi.mocked(context.invokeAgent).mock.calls.filter(([inv]) => inv.skill === 'harness-kit:project-dreaming')
+    expect(calls).toHaveLength(expectedCall ? 2 : 0)
+    if (expectedCall) {
+      const web = calls.map(([inv]) => JSON.parse(inv.prompt!.split('\n').at(-1)!)).find(item => item.project === join(workingDir, 'web'))
+      expect(web.attempts[0].projects[0].findings).toEqual([expect.objectContaining(reason ? { review_reason: reason } : { locator: 'preserves identity' })])
+      expect(calls[0][0].prompt).toContain('Explicitly invoke harness-kit:project-dreaming')
+      expect(phase).toBe(Phase.TRANSITION)
+      expect(fsm.appendDecision).toHaveBeenCalledWith(expect.objectContaining({ decision: expect.stringContaining('Retry Project Dreaming') }))
+    }
+  })
+
+  it('reviews retry evidence after a clean PASS and verifies the candidate in its owner', async () => {
+    const feature = makeFeature()
+    const root = join(workingDir, 'server')
+    mkdirSync(root)
+    writeFileSync(join(root, 'recovery.test.ts'), 'retains identity after restart')
+    const task: Task = { featureId: feature.id, domain: feature.domain, taskId: 'T01', project: 'server', description: 'Recovery', status: 'IN_PROGRESS', currentPhase: 'IMPLEMENTATION' }
+    const output: TddOutput = { featureId: feature.id, reworksCount: 0, modifiedFiles: ['recovery.test.ts'], metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 } }
+    const store = new DreamingEpisodeStore(workingDir, join(workingDir, 'docs/product'))
+    store.recordDevelopment(feature, output, [task], ['server'], 'development-session')
+    store.recordReview(feature, output, 'RETRY', [], [{ project: 'server', path: 'recovery.test.ts', locator: 'retains identity after restart', summary: 'Recovery after restart' }])
+    const retry = store.list()[0]
+    const accepted = { ...feature, reworks: 1 }
+    const acceptedOutput = { ...output, reworksCount: 1 }
+    store.recordDevelopment(accepted, acceptedOutput, [task], ['server'], 'development-session')
+    writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify(acceptedOutput))
+    const context = makeContext(workingDir, makeFsm(accepted), async invocation => {
+      if (invocation.skill !== 'harness-kit:project-dreaming') return { raw: JSON.stringify({ score: 0.95 }) }
+      const data = JSON.parse(invocation.prompt!.split('\n').at(-1)!)
+      expect(data.attempts.map((item: { id: string }) => item.id)).toEqual([retry.id, data.episode_id])
+      expect(data.attempts[0].projects[0].findings[0].locator).toBe('retains identity after restart')
+      const folder = join(root, 'docs/harness-history/learning/active')
+      mkdirSync(folder, { recursive: true })
+      writeFileSync(join(folder, 'restart-identity.md'), `---\nid: restart-identity\nfeature_node_id: "feature:recovery"\napplies_when: recovery changes\nproposed_action: test restart\nskip_when: equivalent coverage exists\nprediction: finds lost identity\nrefutation: baseline finds it\nreview_trigger: next recovery change\n---\n## Origin evidence\n${retry.id}\n`)
+      return { raw: JSON.stringify({ episode_id: data.episode_id, project: root, feature: 'feature:recovery', inspected_episode_ids: [retry.id, data.episode_id], status: 'recorded', evidence_refs: ['recovery.test.ts#retains identity after restart'], hypotheses: [{ id: 'restart-identity', disposition: 'created', origin_episode_ids: [retry.id] }] }) }
+    }, { projectPaths: ['server'] })
+    vi.mocked(context.getActiveFeature).mockReturnValue(accepted)
+    expect(await handler.handle(Phase.REVIEW, { ...context, dreaming: store })).toBe(Phase.TRANSITION)
+    const terminal = store.list().find(item => item.reworks === 1)!
+    expect(terminal.projects[0].analysis?.receipt).toMatchObject({ status: 'recorded', hypotheses: [{ id: 'restart-identity', origin_episode_ids: [retry.id] }] })
+    expect(readFileSync(join(root, 'docs/harness-history/learning/active/restart-identity.md'), 'utf8')).toContain(retry.id)
+  })
+
+  it('extracts a first-pass test decision when reviewers provide no learning evidence', async () => {
+    const feature = makeFeature()
+    const root = join(workingDir, 'server')
+    mkdirSync(root)
+    writeFileSync(join(root, 'recovery.test.ts'), 'preserves identity in the same service instance')
+    const task: Task = { featureId: feature.id, domain: feature.domain, taskId: 'T01', project: 'server', description: 'Recovery', status: 'IN_PROGRESS', currentPhase: 'IMPLEMENTATION' }
+    const output: TddOutput = { featureId: feature.id, reworksCount: 0, modifiedFiles: ['recovery.test.ts'], metrics: { totalTests: 1, passed: 1, failed: 0, coverage: 100 } }
+    const store = new DreamingEpisodeStore(workingDir, join(workingDir, 'docs/product'))
+    store.recordDevelopment(feature, output, [task], ['server'], 'development-session')
+    writeFileSync(join(workingDir, 'docs/specs/sdk_core/TDD-OUTPUT.json'), JSON.stringify(output))
+    const context = makeContext(workingDir, makeFsm(feature), async invocation => {
+      if (invocation.skill !== 'harness-kit:project-dreaming') return { raw: JSON.stringify({ score: 0.95 }) }
+      const data = JSON.parse(invocation.prompt!.split('\n').at(-1)!)
+      expect(data.attempts[0].projects[0].sources).toEqual(['recovery.test.ts'])
+      const folder = join(root, 'docs/harness-history/learning/active')
+      mkdirSync(folder, { recursive: true })
+      writeFileSync(join(folder, 'restart-identity.md'), `---\nid: restart-identity\nfeature_node_id: "feature:recovery"\napplies_when: recovery changes\nproposed_action: test persisted recovery after restart\nskip_when: equivalent coverage exists\nprediction: finds lost identity\nrefutation: baseline finds it\nreview_trigger: next recovery change\n---\n## Origin evidence\n${data.episode_id}\n`)
+      return { raw: JSON.stringify({ episode_id: data.episode_id, project: root, feature: 'feature:recovery', inspected_episode_ids: [data.episode_id], status: 'recorded', evidence_refs: ['recovery.test.ts#recovery'], hypotheses: [{ id: 'restart-identity', disposition: 'created', origin_episode_ids: [data.episode_id] }] }) }
+    }, { projectPaths: ['server'] })
+    vi.mocked(context.getActiveFeature).mockReturnValue(feature)
+    expect(await handler.handle(Phase.REVIEW, { ...context, dreaming: store })).toBe(Phase.TRANSITION)
+    expect(store.list()[0].projects[0].analysis?.receipt).toMatchObject({ status: 'recorded', hypotheses: [{ id: 'restart-identity' }] })
   })
 
   it('clears developerSession and transitions when skipValidation is true', async () => {
@@ -199,7 +402,8 @@ describe('ReviewHandler', () => {
     expect(qaCall.prompt).toContain('navigation context only')
     expect(tlCall.prompt).toContain('<tdd_summary>')
     expect(qaCall.prompt).toContain('<tdd_summary>')
-    expect(tlCall.prompt).toContain('Status: SUCCESS')
+    expect(tlCall.prompt).not.toContain('Status: SUCCESS')
+    expect(qaCall.prompt).not.toContain('Status: SUCCESS')
     expect(tlCall.prompt).toContain('Tests: 2 total, 2 passed, 0 failed')
     expect(tlCall.prompt).toContain('Modified files: src/example.ts')
     expect(tlCall.prompt).toContain('<specification_provenance>')
